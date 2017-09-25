@@ -265,7 +265,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
         int fieldOff = BinaryUtils.fieldOffsetRelativeOffheap(ptr, fieldOffPos, fieldOffLen);
 
-        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen))
+        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen) && ctx.isCompactNulls())
             return null;
 
         int fieldPos = start + fieldOff;

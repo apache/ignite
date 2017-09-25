@@ -371,7 +371,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         int fieldOff = BinaryUtils.fieldOffsetRelativeHeap(arr, fieldOffsetPos, fieldOffLen);
 
-        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen))
+        if (BinaryUtils.isNullOffset(fieldOff, fieldOffLen) && ctx.isCompactNulls())
             return null;
 
         int fieldPos = start + fieldOff;

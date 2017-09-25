@@ -194,6 +194,33 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         GridTestUtils.deepEquals(exp, res);
     }
 
+
+    public static class Q {
+        Object n;
+        int a = 0x11223344;
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testDbgNull() throws Exception {
+        Q q = new Q();
+
+        BinaryObjectBuilderImpl mutPo = wrap(q);
+
+        BinaryObjectExImpl bo = (BinaryObjectExImpl)mutPo.build();
+
+        byte[] data = bo.array();
+
+        System.out.print("+++ ");
+        for (byte b : data)
+            System.out.printf("%02X ", b);
+
+        Q res = mutPo.build().deserialize();
+
+        GridTestUtils.deepEquals(q, res);
+    }
+
     /**
      * @throws Exception If any error occurs.
      */

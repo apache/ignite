@@ -489,7 +489,7 @@ public abstract class BinaryFieldAccessor {
                 throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
-            if (val == null) {
+            if (val == null && writer.context().isCompactNulls()) {
                 writer.writeFieldIdNoSchemaUpdate(id, BinaryUtils.NULL_4);
 
                 return;

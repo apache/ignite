@@ -259,6 +259,9 @@ public class BinaryContext {
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
+    /** Compact nulls flag. */
+    private boolean compactNulls;
+
     /**
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
@@ -421,9 +424,12 @@ public class BinaryContext {
         );
 
         compactFooter = binaryCfg.isCompactFooter();
+
+        compactNulls = binaryCfg.isCompactNulls();
     }
 
     /**
+     * @param globalNameMapper Name mapper.
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
      * @param typeCfgs Type configurations.
@@ -1309,6 +1315,13 @@ public class BinaryContext {
      */
     public boolean isCompactFooter() {
         return compactFooter;
+    }
+
+    /**
+     * @return Whether field IDs should be skipped in footer or not.
+     */
+    public boolean isCompactNulls() {
+        return compactNulls;
     }
 
     /**

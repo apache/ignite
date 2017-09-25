@@ -959,9 +959,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeByteField(@Nullable Byte val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeByteFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeByteFieldPrimitive(val);
+        }
     }
 
     /**
@@ -985,9 +992,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeShortField(@Nullable Short val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeShortFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeShortFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1004,9 +1018,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeIntField(@Nullable Integer val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeIntFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeIntFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1023,9 +1044,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeLongField(@Nullable Long val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeLongFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeLongFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1042,9 +1070,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeFloatField(@Nullable Float val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeFloatFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeFloatFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1061,9 +1096,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeDoubleField(@Nullable Double val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeDoubleFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeDoubleFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1080,9 +1122,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeCharField(@Nullable Character val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeCharFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeCharFieldPrimitive(val);
+        }
     }
 
     /**
@@ -1099,16 +1148,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeBooleanField(@Nullable Boolean val) {
-        assert val != null : "Null value must be written as special offset";
+        if (val == null && !ctx.isCompactNulls()) {
+            out.writeByte(GridBinaryMarshaller.NULL);
 
-        writeBooleanFieldPrimitive(val);
+            return;
+        }
+        else {
+            assert val != null : "Null value must be written as special offset";
+
+            writeBooleanFieldPrimitive(val);
+        }
     }
 
     /**
      * @param val Value.
      */
     void writeDecimalField(@Nullable BigDecimal val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteDecimal(val);
     }
@@ -1117,17 +1173,16 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeStringField(@Nullable String val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteString(val);
-
     }
 
     /**
      * @param val Value.
      */
     void writeUuidField(@Nullable UUID val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteUuid(val);
     }
@@ -1136,7 +1191,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeDateField(@Nullable Date val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteDate(val);
     }
@@ -1145,7 +1200,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeTimestampField(@Nullable Timestamp val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteTimestamp(val);
     }
@@ -1154,7 +1209,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeTimeField(@Nullable Time val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteTime(val);
     }
@@ -1164,7 +1219,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void writeObjectField(@Nullable Object obj) throws BinaryObjectException {
-        assert obj != null : "Null value must be written as special offset";
+        assert obj != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteObject(obj);
     }
@@ -1173,7 +1228,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeByteArrayField(@Nullable byte[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteByteArray(val);
     }
@@ -1182,7 +1237,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeShortArrayField(@Nullable short[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteShortArray(val);
     }
@@ -1191,7 +1246,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeIntArrayField(@Nullable int[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteIntArray(val);
     }
@@ -1200,7 +1255,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeLongArrayField(@Nullable long[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteLongArray(val);
     }
@@ -1209,7 +1264,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeFloatArrayField(@Nullable float[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteFloatArray(val);
     }
@@ -1218,7 +1273,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeDoubleArrayField(@Nullable double[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteDoubleArray(val);
     }
@@ -1227,7 +1282,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeCharArrayField(@Nullable char[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteCharArray(val);
     }
@@ -1236,7 +1291,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeBooleanArrayField(@Nullable boolean[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteBooleanArray(val);
     }
@@ -1245,7 +1300,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeDecimalArrayField(@Nullable BigDecimal[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteDecimalArray(val);
     }
@@ -1254,7 +1309,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeStringArrayField(@Nullable String[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteStringArray(val);
     }
@@ -1263,7 +1318,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeUuidArrayField(@Nullable UUID[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteUuidArray(val);
     }
@@ -1272,7 +1327,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void  writeDateArrayField(@Nullable Date[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteDateArray(val);
     }
@@ -1281,7 +1336,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeTimestampArrayField(@Nullable Timestamp[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteTimestampArray(val);
     }
@@ -1290,7 +1345,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeTimeArrayField(@Nullable Time[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteTimeArray(val);
     }
@@ -1300,7 +1355,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void writeObjectArrayField(@Nullable Object[] val) throws BinaryObjectException {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteObjectArray(val);
     }
@@ -1310,7 +1365,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void writeCollectionField(@Nullable Collection<?> col) throws BinaryObjectException {
-        assert col != null : "Null value must be written as special offset";
+        assert col != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteCollection(col);
     }
@@ -1320,7 +1375,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void writeMapField(@Nullable Map<?, ?> map) throws BinaryObjectException {
-        assert map != null : "Null value must be written as special offset";
+        assert map != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteMap(map);
     }
@@ -1329,7 +1384,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeEnumField(@Nullable Enum<?> val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteEnum(val);
     }
@@ -1338,7 +1393,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param val Value.
      */
     void writeEnumArrayField(@Nullable Object[] val) {
-        assert val != null : "Null value must be written as special offset";
+        assert val != null || !ctx.isCompactNulls() : "Null value must be written as special offset";
 
         doWriteEnumArray(val);
     }
@@ -1486,7 +1541,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDate(String fieldName, @Nullable Date val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1501,7 +1556,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1516,7 +1571,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1531,7 +1586,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
-        if (obj == null)
+        if (obj == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1557,7 +1612,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1572,7 +1627,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1587,7 +1642,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1602,7 +1657,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1617,7 +1672,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1633,7 +1688,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDoubleArray(String fieldName, @Nullable double[] val)
         throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1648,7 +1703,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1664,7 +1719,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val)
         throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1680,7 +1735,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDecimalArray(String fieldName, @Nullable BigDecimal[] val)
         throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1696,7 +1751,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeStringArray(String fieldName, @Nullable String[] val)
         throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1711,7 +1766,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1726,7 +1781,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1741,7 +1796,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1756,7 +1811,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1771,7 +1826,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
      /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1787,7 +1842,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws BinaryObjectException {
-        if (col == null)
+        if (col == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1803,7 +1858,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map)
         throws BinaryObjectException {
-        if (map == null)
+        if (map == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1818,7 +1873,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
@@ -1833,7 +1888,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException {
-        if (val == null)
+        if (val == null && ctx.isCompactNulls())
             writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
