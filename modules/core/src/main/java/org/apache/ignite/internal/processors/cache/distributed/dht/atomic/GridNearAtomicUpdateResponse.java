@@ -642,6 +642,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicUpdateResponse.class, this, "parent");
+        return S.toString(GridNearAtomicUpdateResponse.class, this, super.toString());
     }
 }

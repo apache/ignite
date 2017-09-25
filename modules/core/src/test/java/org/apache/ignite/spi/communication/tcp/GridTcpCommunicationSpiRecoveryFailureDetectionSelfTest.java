@@ -33,6 +33,7 @@ public class GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest extends Gri
         spi.setAckSendThreshold(5);
         spi.setSocketSendBuffer(512);
         spi.setSocketReceiveBuffer(512);
+        spi.setConnectionsPerNode(1);
 
         return spi;
     }

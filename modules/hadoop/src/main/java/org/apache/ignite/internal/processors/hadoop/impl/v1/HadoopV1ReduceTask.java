@@ -23,6 +23,7 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -53,49 +54,63 @@ public class HadoopV1ReduceTask extends HadoopV1Task {
     @Override public void run(HadoopTaskContext taskCtx) throws IgniteCheckedException {
         HadoopJob job = taskCtx.job();
 
-        HadoopV2TaskContext ctx = (HadoopV2TaskContext)taskCtx;
+        HadoopV2TaskContext taskCtx0 = (HadoopV2TaskContext)taskCtx;
 
-        JobConf jobConf = ctx.jobConf();
-
-        HadoopTaskInput input = taskCtx.input();
-
-        HadoopV1OutputCollector collector = null;
+        if (!reduce && taskCtx.taskInfo().hasMapperIndex())
+            HadoopMapperUtils.mapperIndex(taskCtx.taskInfo().mapperIndex());
+        else
+            HadoopMapperUtils.clearMapperIndex();
 
         try {
-            collector = collector(jobConf, ctx, reduce || !job.info().hasReducer(), fileName(), ctx.attemptId());
+            JobConf jobConf = taskCtx0.jobConf();
 
-            Reducer reducer;
-            if (reduce) reducer = ReflectionUtils.newInstance(jobConf.getReducerClass(),
-                jobConf);
-            else reducer = ReflectionUtils.newInstance(jobConf.getCombinerClass(),
-                jobConf);
+            HadoopTaskInput input = taskCtx.input();
 
-            assert reducer != null;
+            HadoopV1OutputCollector collector = null;
 
             try {
-                try {
-                    while (input.next()) {
-                        if (isCancelled())
-                            throw new HadoopTaskCancelledException("Reduce task cancelled.");
+                collector = collector(jobConf, taskCtx0, reduce || !job.info().hasReducer(), fileName(), taskCtx0.attemptId());
 
-                        reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                Reducer reducer;
+                if (reduce) reducer = ReflectionUtils.newInstance(jobConf.getReducerClass(),
+                    jobConf);
+                else reducer = ReflectionUtils.newInstance(jobConf.getCombinerClass(),
+                    jobConf);
+
+                assert reducer != null;
+
+                try {
+                    try {
+                        while (input.next()) {
+                            if (isCancelled())
+                                throw new HadoopTaskCancelledException("Reduce task cancelled.");
+
+                            reducer.reduce(input.key(), input.values(), collector, Reporter.NULL);
+                        }
+
+                        if (!reduce)
+                            taskCtx.onMapperFinished();
+                    }
+                    finally {
+                        reducer.close();
                     }
                 }
                 finally {
-                    reducer.close();
+                    collector.closeWriter();
                 }
-            }
-            finally {
-                collector.closeWriter();
-            }
 
-            collector.commit();
+                collector.commit();
+            }
+            catch (Exception e) {
+                if (collector != null)
+                    collector.abort();
+
+                throw new IgniteCheckedException(e);
+            }
         }
-        catch (Exception e) {
-            if (collector != null)
-                collector.abort();
-
-            throw new IgniteCheckedException(e);
+        finally {
+            if (!reduce)
+                HadoopMapperUtils.clearMapperIndex();
         }
     }
 }
