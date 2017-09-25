@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.ignite.utils
 
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.spark.Partition
-
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
+object closeAfter {
+    def apply[R <: AutoCloseable, T](r: R)(c: (R) ⇒ T) = {
+        try {
+            c(r)
+        }
+        finally {
+            r.close
+        }
+    }
 }
+

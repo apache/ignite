@@ -314,32 +314,8 @@ class IgniteRDD[K, V] (
      * @return Spark schema.
      */
     private def buildSchema(fieldsMeta: java.util.List[GridQueryFieldMetadata]): StructType = {
-        new StructType(fieldsMeta.map(i ⇒ new StructField(i.fieldName(), dataType(i.fieldTypeName()), nullable = true))
+        new StructType(fieldsMeta.map(i ⇒ new StructField(i.fieldName(), IgniteRDD.dataType(i.fieldTypeName()), nullable = true))
             .toArray)
-    }
-
-    /**
-     * Gets Spark data type based on type name.
-     *
-     * @param typeName Type name.
-     * @return Spark data type.
-     */
-    private def dataType(typeName: String): DataType = typeName match {
-        case "java.lang.Boolean" ⇒ BooleanType
-        case "java.lang.Byte" ⇒ ByteType
-        case "java.lang.Short" ⇒ ShortType
-        case "java.lang.Integer" ⇒ IntegerType
-        case "java.lang.Long" ⇒ LongType
-        case "java.lang.Float" ⇒ FloatType
-        case "java.lang.Double" ⇒ DoubleType
-        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
-        case "java.lang.String" ⇒ StringType
-        case "java.util.Date" ⇒ DateType
-        case "java.sql.Date" ⇒ DateType
-        case "java.sql.Timestamp" ⇒ TimestampType
-        case "[B" ⇒ BinaryType
-
-        case _ ⇒ StructType(new Array[StructField](0))
     }
 
     /**
@@ -355,5 +331,31 @@ class IgniteRDD[K, V] (
         Stream.from(1, Math.max(1000, aff.partitions() * 2))
             .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
             .getOrElse(IgniteUuid.randomUuid())
+    }
+}
+
+object IgniteRDD {
+    /**
+      * Gets Spark data type based on type name.
+      *
+      * @param typeName Type name.
+      * @return Spark data type.
+      */
+    def dataType(typeName: String): DataType = typeName match {
+        case "java.lang.Boolean" ⇒ BooleanType
+        case "java.lang.Byte" ⇒ ByteType
+        case "java.lang.Short" ⇒ ShortType
+        case "java.lang.Integer" ⇒ IntegerType
+        case "java.lang.Long" ⇒ LongType
+        case "java.lang.Float" ⇒ FloatType
+        case "java.lang.Double" ⇒ DoubleType
+        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
+        case "java.lang.String" ⇒ StringType
+        case "java.util.Date" ⇒ DateType
+        case "java.sql.Date" ⇒ DateType
+        case "java.sql.Timestamp" ⇒ TimestampType
+        case "[B" ⇒ BinaryType
+
+        case _ ⇒ StructType(new Array[StructField](0))
     }
 }
