@@ -327,9 +327,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private boolean sqlEscapeAll;
 
-    /** */
-    private transient Class<?>[] indexedTypes;
-
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
@@ -397,7 +394,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         evictPlc = cc.getEvictionPolicy();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
         grpName = cc.getGroupName();
-        indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
@@ -1687,20 +1683,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed (thus array length must be always even).
-     * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
-     * each odd (1,3,5...) class will be considered as value type for cache entry.
-     * <p>
-     * The same key class can occur multiple times for different value classes, but each value class must be unique
-     * because SQL table will be named as value class simple name.
-     * <p>
-     * To expose fields of these types onto SQL level and to index them you have to use annotations
-     * from package {@link org.apache.ignite.cache.query.annotations}.
-     *
-     * @return Key and value type pairs.
+     * @return Always <code>null</code>.
+     * @deprecated Use {@link #getQueryEntities()} instead.
+     * @see #getQueryEntities()
+     * @see #setIndexedTypes(Class[])
      */
+    @Deprecated
     public Class<?>[] getIndexedTypes() {
-        return indexedTypes;
+        return null;
     }
 
     /**
@@ -1728,9 +1718,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         A.ensure((len & 1) == 0,
             "Number of indexed types is expected to be even. Refer to method javadoc for details.");
-
-        if (this.indexedTypes != null)
-            throw new CacheException("Indexed types can be set only once.");
 
         Class<?>[] newIndexedTypes = new Class<?>[len];
 
