@@ -1726,22 +1726,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Gets value without waiting for toplogy changes.
-     *
-     * @param key Key.
-     * @return Value.
-     */
-    @Override
-    public V getTopologySafe(K key) {
-        try {
-            return delegate.getTopologySafe(key);
-        }
-        catch (IgniteCheckedException | IgniteException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /**
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
