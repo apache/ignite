@@ -1432,10 +1432,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
 
                 if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
-                    txEntry.explicitVersion(explicitVer);
+                    throw new RuntimeException("[txs]updateExplicitVersion for NOT detached entry");
 
-                    if (explicitVer.isLess(minVer))
-                        minVer = explicitVer;
+//                    txEntry.explicitVersion(explicitVer);
+//
+//                    if (explicitVer.isLess(minVer))
+//                        minVer = explicitVer;
                 }
             }
         }
