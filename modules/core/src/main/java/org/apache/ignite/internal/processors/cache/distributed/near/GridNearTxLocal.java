@@ -876,24 +876,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 recovery);
 
             if (loadMissed) {
-                AffinityTopologyVersion topVer = topologyVersionSnapshot();
 
-                if (topVer == null)
-                    topVer = entryTopVer;
-
-                return loadMissing(cacheCtx,
-                    topVer != null ? topVer : topologyVersion(),
-                    Collections.singleton(cacheKey),
-                    filter,
-                    ret,
-                    needReadVer,
-                    singleRmv,
-                    hasFilters,
-                    /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
-                    retval,
-                    keepBinary,
-                    recovery,
-                    expiryPlc);
+                throw new RuntimeException("[transactions]loadMissedInenlistWrite");
+//
+//                AffinityTopologyVersion topVer = topologyVersionSnapshot();
+//
+//                if (topVer == null)
+//                    topVer = entryTopVer;
+//
+//                return loadMissing(cacheCtx,
+//                    topVer != null ? topVer : topologyVersion(),
+//                    Collections.singleton(cacheKey),
+//                    filter,
+//                    ret,
+//                    needReadVer,
+//                    singleRmv,
+//                    hasFilters,
+//                    /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
+//                    retval,
+//                    keepBinary,
+//                    recovery,
+//                    expiryPlc);
             }
 
             return new GridFinishedFuture<>();
