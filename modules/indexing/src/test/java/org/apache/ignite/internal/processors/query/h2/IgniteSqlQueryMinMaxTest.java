@@ -307,7 +307,7 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
                             "min(b._key), max(b._key), min(b.idxVal), max(b.idxVal), min(b.nonIdxVal), max(b.nonIdxVal) " +
                             "from \"intCache\".Integer a, \"valCache\".ValueObj b where a._key = b.idxVal " +
                             "group by b.groupVal order by b.groupVal")
-                            .setDistributedJoins(true));
+                            .setNonCollocatedJoins(true));
 
             result = cursor.getAll();
 

@@ -163,7 +163,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setPageSize(fetchSize);
             qry.setLocal(locQry);
             qry.setCollocated(collocatedQry);
-            qry.setDistributedJoins(distributedJoins);
+            qry.setNonCollocatedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder());
             qry.setLazy(lazy());
             qry.setSchema(schemaName);

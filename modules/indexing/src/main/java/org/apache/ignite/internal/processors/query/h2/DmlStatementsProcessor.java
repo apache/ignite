@@ -372,7 +372,7 @@ public class DmlStatementsProcessor {
         if (!loc && !plan.isLocSubqry) {
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQry, fieldsQry.isCollocated())
                 .setArgs(fieldsQry.getArgs())
-                .setDistributedJoins(fieldsQry.isDistributedJoins())
+                .setNonCollocatedJoins(fieldsQry.isNonCollocatedJoins())
                 .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
                 .setLocal(fieldsQry.isLocal())
                 .setPageSize(fieldsQry.getPageSize())

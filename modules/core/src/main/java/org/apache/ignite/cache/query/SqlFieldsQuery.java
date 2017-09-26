@@ -66,7 +66,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean enforceJoinOrder;
 
     /** */
-    private boolean distributedJoins;
+    private boolean nonCollocatedJoins;
 
     /** */
     private boolean replicatedOnly;
@@ -219,25 +219,48 @@ public class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Specify if distributed joins are enabled for this query.
+     * Specify if distributed joins are enabled for this query.<br><br>
+     * The method is deprecated  due to the confusing naming (to be deleted in v3.0).
+     * Use instead {@link #setNonCollocatedJoins(boolean)} which sets the same value.
      *
      * @param distributedJoins Distributed joins enabled.
      * @return {@code this} For chaining.
      */
+    @Deprecated
     public SqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
-        this.distributedJoins = distributedJoins;
-
+        this.nonCollocatedJoins = distributedJoins;
         return this;
     }
 
     /**
-     * Check if distributed joins are enabled for this query.
+     * Check if distributed joins are enabled for this query.<br><br>
+     * The method is deprecated  due to the confusing naming (to be deleted in v3.0).
+     * Use instead {@link #isNonCollocatedJoins()} which returns same value.
      *
      * @return {@code true} If distributed joins enabled.
      */
+    @Deprecated
     public boolean isDistributedJoins() {
-        return distributedJoins;
+        return nonCollocatedJoins;
     }
+
+    /**
+     * Specify if non collocated joins are enabled for this query.
+     *
+     * @param nonCollocatedJoins Non collocated joins enabled.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setNonCollocatedJoins(boolean nonCollocatedJoins) {
+        this.nonCollocatedJoins = nonCollocatedJoins;
+        return this;
+    }
+
+    /**
+     * Check if non collocated joins are enabled for this query.
+     *
+     * @return {@code true} If non collocated joins enabled.
+     */
+    public boolean isNonCollocatedJoins() { return nonCollocatedJoins; }
 
     /** {@inheritDoc} */
     @Override public SqlFieldsQuery setPageSize(int pageSize) {

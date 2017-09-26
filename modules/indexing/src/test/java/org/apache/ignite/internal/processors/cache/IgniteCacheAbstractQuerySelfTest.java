@@ -719,13 +719,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         QueryCursor<List<?>> query = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 LEFT JOIN Type1 as t1 ON t1.id = t2.id")
-                .setDistributedJoins(cacheMode() == PARTITIONED));
+                .setNonCollocatedJoins(cacheMode() == PARTITIONED));
 
         assertEquals(2, query.getAll().size());
 
         query = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 RIGHT JOIN Type1 as t1 ON t1.id = t2.id")
-                .setDistributedJoins(cacheMode() == PARTITIONED));
+                .setNonCollocatedJoins(cacheMode() == PARTITIONED));
 
         assertEquals(3, query.getAll().size());
     }

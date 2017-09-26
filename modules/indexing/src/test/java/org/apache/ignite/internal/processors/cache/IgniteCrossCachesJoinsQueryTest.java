@@ -782,7 +782,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             "from \"" + ORG_CACHE_NAME + "\".Organization o, \"" + PERSON_CACHE_NAME + "\".Person p " +
             "where p.orgId = o._key and o._key=?");
 
-        qry.setDistributedJoins(distributedJoins());
+        qry.setNonCollocatedJoins(distributedJoins());
 
         SqlQuery qry2 = null;
 
@@ -792,7 +792,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
                     "where Person.orgId = Organization._key and Organization._key=?"
             );
 
-            qry2.setDistributedJoins(distributedJoins());
+            qry2.setNonCollocatedJoins(distributedJoins());
         }
 
         long total = 0;
@@ -819,7 +819,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         SqlFieldsQuery qry3 = new SqlFieldsQuery("select count(*) " +
             "from \"" + ORG_CACHE_NAME + "\".Organization o, \"" + PERSON_CACHE_NAME + "\".Person p where p.orgId = o._key");
 
-        qry3.setDistributedJoins(distributedJoins());
+        qry3.setNonCollocatedJoins(distributedJoins());
 
         List<List<Object>> res = cache.query(qry3).getAll();
 
@@ -896,12 +896,12 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
             for (Query q : qrys) {
                 if (q instanceof SqlFieldsQuery) {
-                    ((SqlFieldsQuery)q).setDistributedJoins(distributedJoins());
+                    ((SqlFieldsQuery)q).setNonCollocatedJoins(distributedJoins());
 
                     ((SqlFieldsQuery)q).setArgs(key);
                 }
                 else {
-                    ((SqlQuery)q).setDistributedJoins(distributedJoins());
+                    ((SqlQuery)q).setNonCollocatedJoins(distributedJoins());
 
                     ((SqlQuery)q).setArgs(key);
                 }
@@ -936,7 +936,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             total += cnt;
 
         for (Query q : qrys) {
-            ((SqlFieldsQuery)q).setDistributedJoins(distributedJoins());
+            ((SqlFieldsQuery)q).setNonCollocatedJoins(distributedJoins());
 
             List<List<Object>> res = cache.query(q).getAll();
 
@@ -991,7 +991,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
                     "\"" + ACC_CACHE_NAME + "\".Account  " +
                     "where Person.orgId = Organization.id and Person.id = Account.personId and Organization.id = ?");
 
-                q.setDistributedJoins(distributedJoins());
+                q.setNonCollocatedJoins(distributedJoins());
 
                 q.setArgs(orgId);
 
@@ -1098,7 +1098,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             "group by o.name " +
             "having o.id = ?");
 
-        q.setDistributedJoins(distributedJoins());
+        q.setNonCollocatedJoins(distributedJoins());
 
         for (Map.Entry<Integer, Integer> e : data.maxSalaryPerOrg.entrySet()) {
             Integer orgId = e.getKey();
@@ -1137,7 +1137,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             "group by p.name " +
             "having p.id = ?");
 
-        q.setDistributedJoins(distributedJoins());
+        q.setNonCollocatedJoins(distributedJoins());
 
         List<Integer> keys = new ArrayList<>(data.accountsPerPerson.keySet());
 

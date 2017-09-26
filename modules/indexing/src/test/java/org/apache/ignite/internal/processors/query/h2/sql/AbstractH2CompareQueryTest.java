@@ -285,7 +285,7 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
         List<List<?>> cacheRes = cache.query(new SqlFieldsQuery(sql).
             setArgs(args).
-            setDistributedJoins(distrib).
+            setNonCollocatedJoins(distrib).
             setEnforceJoinOrder(enforceJoinOrder)).getAll();
 
         assertRsEquals(h2Res, cacheRes, ordering);

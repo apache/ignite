@@ -288,7 +288,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         X.println();
 
         X.println("   Plan: \n" + cacheCustOrd.query(new SqlFieldsQuery("EXPLAIN " + bigQry)
-            .setDistributedJoins(distributedJoins())).getAll());
+            .setNonCollocatedJoins(distributedJoins())).getAll());
 
         List<List<?>> res = compareQueryRes0(cacheCustOrd, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
 

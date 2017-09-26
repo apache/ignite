@@ -216,7 +216,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
         IgniteCache<?, ?> cache,
         boolean enforceJoinOrder) {
         return (String)cache.query(new SqlFieldsQuery("explain " + sql)
-            .setDistributedJoins(true)
+            .setNonCollocatedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder))
             .getAll().get(0).get(0);
     }
@@ -232,7 +232,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
         boolean enforceJoinOrder,
         int expSize) {
         String plan = (String)cache.query(new SqlFieldsQuery("explain " + sql)
-            .setDistributedJoins(true)
+            .setNonCollocatedJoins(true)
             .setEnforceJoinOrder(enforceJoinOrder))
             .getAll().get(0).get(0);
 
@@ -240,7 +240,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
         qry.setEnforceJoinOrder(enforceJoinOrder);
 
         QueryCursor<List<?>> cur = cache.query(qry);

@@ -217,7 +217,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
 
-            List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
+            List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setNonCollocatedJoins(true)).getAll();
 
             assertEquals(expectedPersons, result.size());
         }

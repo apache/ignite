@@ -108,7 +108,7 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
 
             SqlQuery qry = new SqlQuery<String, Person>(Person.class, joinSql).setArgs("Organization #0");
 
-            qry.setDistributedJoins(true);
+            qry.setNonCollocatedJoins(true);
 
             List<Person> prns = c1.query(qry).getAll();
 

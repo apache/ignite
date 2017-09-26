@@ -382,7 +382,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
         Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql);
 
-        qry.setDistributedJoins(true);
+        qry.setNonCollocatedJoins(true);
         qry.setEnforceJoinOrder(enforceJoinOrder);
         qry.setArgs(args);
 

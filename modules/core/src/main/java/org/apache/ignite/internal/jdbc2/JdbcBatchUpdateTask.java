@@ -167,7 +167,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         qry.setPageSize(fetchSize);
         qry.setLocal(locQry);
         qry.setCollocated(collocatedQry);
-        qry.setDistributedJoins(distributedJoins);
+        qry.setNonCollocatedJoins(distributedJoins);
         qry.setSchema(schemaName);
         qry.setArgs(args == null ? null : args.toArray());
 

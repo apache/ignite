@@ -1290,7 +1290,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setPageSize(pageSize)
                 .setArgs(args)
                 .setLocal(loc)
-                .setDistributedJoins(distrJoins)
+                .setNonCollocatedJoins(distrJoins)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated);
     }
@@ -1320,7 +1320,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setPageSize(pageSize)
                 .setArgs(args)
                 .setLocal(loc)
-                .setDistributedJoins(distrJoins)
+                .setNonCollocatedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
                 .setLazy(lazy)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)

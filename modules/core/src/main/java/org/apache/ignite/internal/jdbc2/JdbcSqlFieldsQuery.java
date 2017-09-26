@@ -90,6 +90,13 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
     }
 
     /** {@inheritDoc} */
+    @Override public JdbcSqlFieldsQuery setNonCollocatedJoins(boolean nonCollocatedJoins) {
+        super.setNonCollocatedJoins(nonCollocatedJoins);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public JdbcSqlFieldsQuery setPageSize(int pageSize) {
         super.setPageSize(pageSize);
 

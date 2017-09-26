@@ -1860,7 +1860,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         FieldsQueryCursor<List<?>> cur;
 
                         if (cctx.config().getQueryParallelism() > 1) {
-                            qry.setDistributedJoins(true);
+                            qry.setNonCollocatedJoins(true);
 
                             cur = idx.queryDistributedSqlFields(schemaName, qry, keepBinary, cancel, mainCacheId);
                         }
@@ -1943,8 +1943,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
-            throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
+        if (qry.isNonCollocatedJoins() && qry.getPartitions() != null)
+            throw new CacheException("Using both partitions and non collocated JOINs is not supported for the same query");
     }
 
     /**
@@ -1991,9 +1991,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
 
-        if (qry.isDistributedJoins() && qry.getPartitions() != null)
+        if (qry.isNonCollocatedJoins() && qry.getPartitions() != null)
             throw new CacheException(
-                "Using both partitions and distributed JOINs is not supported for the same query");
+                "Using both partitions and non collocated JOINs is not supported for the same query");
 
         if ((qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal())
             return queryLocalSql(cctx, qry, keepBinary);
@@ -2063,7 +2063,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             cctx.name());
 
                         if (cctx.config().getQueryParallelism() > 1) {
-                            qry.setDistributedJoins(true);
+                            qry.setNonCollocatedJoins(true);
 
                             return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
                         }

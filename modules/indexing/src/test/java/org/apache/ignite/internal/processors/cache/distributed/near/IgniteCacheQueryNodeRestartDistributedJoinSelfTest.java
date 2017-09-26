@@ -81,9 +81,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         SqlFieldsQuery qry0 ;
 
         if (broadcastQry)
-            qry0 = new SqlFieldsQuery(QRY_0_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
+            qry0 = new SqlFieldsQuery(QRY_0_BROADCAST).setNonCollocatedJoins(true).setEnforceJoinOrder(true);
         else
-            qry0 = new SqlFieldsQuery(QRY_0).setDistributedJoins(true);
+            qry0 = new SqlFieldsQuery(QRY_0).setNonCollocatedJoins(true);
 
         String plan = queryPlan(grid(0).cache("pu"), qry0);
 
@@ -100,9 +100,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
         final SqlFieldsQuery qry1;
 
         if (broadcastQry)
-            qry1 = new SqlFieldsQuery(QRY_1_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
+            qry1 = new SqlFieldsQuery(QRY_1_BROADCAST).setNonCollocatedJoins(true).setEnforceJoinOrder(true);
         else
-            qry1 = new SqlFieldsQuery(QRY_1).setDistributedJoins(true);
+            qry1 = new SqlFieldsQuery(QRY_1).setNonCollocatedJoins(true);
 
         plan = queryPlan(grid(0).cache("co"), qry1);
 
@@ -142,9 +142,9 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                             SqlFieldsQuery qry;
 
                             if (broadcastQry)
-                                qry = new SqlFieldsQuery(QRY_0_BROADCAST).setDistributedJoins(true).setEnforceJoinOrder(true);
+                                qry = new SqlFieldsQuery(QRY_0_BROADCAST).setNonCollocatedJoins(true).setEnforceJoinOrder(true);
                             else
-                                qry = new SqlFieldsQuery(QRY_0).setDistributedJoins(true);
+                                qry = new SqlFieldsQuery(QRY_0).setNonCollocatedJoins(true);
 
                             boolean smallPageSize = rnd.nextBoolean();
 
