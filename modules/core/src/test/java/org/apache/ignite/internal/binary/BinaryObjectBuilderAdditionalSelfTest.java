@@ -98,6 +98,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
 
+        cfg.setBinaryConfiguration(bCfg);
+
         cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
@@ -1429,38 +1431,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         BinaryObjectBuilderImpl binBuilder2 = wrap(binObj);
 
         binBuilder2.build();
-    }
-
-    public static class Q {
-        Integer n;
-        int a = 0x11223344;
-
-        Q q;
-    }
-
-    /**
-     * @throws Exception If any error occurs.
-     */
-    public void testDbgNull() throws Exception {
-        Q q = new Q();
-
-        q.q = new Q();
-
-        BinaryObjectBuilderImpl mutPo = wrap(q);
-
-        BinaryObjectExImpl bo = (BinaryObjectExImpl)mutPo.build();
-
-        System.out.println("Compact footer: " + bo.context().isCompactFooter());
-
-        byte[] data = bo.array();
-
-        System.out.print("+++ ");
-        for (byte b : data)
-            System.out.printf("%02X ", b);
-
-        Q res = mutPo.build().deserialize();
-
-        GridTestUtils.deepEquals(q, res);
     }
 
     /**
