@@ -12,6 +12,17 @@ This command will compile the project and also unpack scripts from `yardstick-re
 
 Artifacts can be found in `modules/yardstick/target/assembly` directory.
 
+Building from Ignite sources with ML Grid benchmarks
+====================================================
+
+You need Java 8 or higher and "ml" profile enabled. Run
+
+mvn clean package -Pyardstick -Pml -pl modules/yardstick -am -DskipTests
+
+in the Apache Ignite root directory.
+
+See also: https://apacheignite.readme.io/docs/machine-learning#section-getting-started
+
 Writing Ignite Benchmarks
 =========================
 
