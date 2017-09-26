@@ -707,6 +707,25 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
+        try {
+            JdbcRequestHandler handler = connHnd.handler(req.connectionId());
+
+            handler.cancelQuery(req.queryId());
+
+            return new JdbcResponse(null);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to cancel query [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -744,24 +763,5 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, e.toString());
-    }
-
-    /**
-     * @param req Execute query request.
-     * @return Response.
-     */
-    private JdbcResponse cancelQuery(JdbcQueryCancelRequest req) {
-        try {
-            JdbcRequestHandler handler = connHnd.handler(req.connectionId());
-
-            handler.cancelQuery(req.queryId());
-
-            return new JdbcResponse(null);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to cancel query [reqId=" + req.requestId() + ", req=" + req + ']', e);
-
-            return exceptionToResult(e);
-        }
     }
 }
