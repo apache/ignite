@@ -215,7 +215,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         cache.put(1L, new Person("Vasya", 2));
 
-        assertEquals(1, node.context().query().querySqlFieldsNoCache(
+        assertEquals(1, node.context().query().querySqlFields(
             new SqlFieldsQuery("SELECT id, name, orgId FROM TEST.Person where (id = ?)").setArgs(1L), false
         ).getAll().size());
     }

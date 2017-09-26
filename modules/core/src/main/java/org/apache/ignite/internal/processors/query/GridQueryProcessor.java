@@ -694,7 +694,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
+                // Ensure that candidates have unique index names.
+                // Otherwise we will not be able to apply pending operations.
                 Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
                 Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
 
@@ -1902,6 +1903,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Indexing query filter.
      */
     public IndexingQueryFilter backupFilter(final AffinityTopologyVersion topVer, @Nullable final int[] parts) {
+        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
@@ -1943,7 +1946,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return aff.primaryByKey(locNode, k, topVer);
+                        return aff.primaryByKey(locNode, k, topVer0);
                     }
                 };
             }
@@ -2253,7 +2256,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cols Columns to add.
      * @throws IgniteCheckedException If failed to update type descriptor.
      */
-    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols) throws IgniteCheckedException {
+    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols)
+        throws IgniteCheckedException {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField col : cols) {

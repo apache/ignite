@@ -440,7 +440,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setSchema(schemaName);
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true);
+                    .querySqlFields(qry, true);
 
                 assert !qryCur.isQuery();
 

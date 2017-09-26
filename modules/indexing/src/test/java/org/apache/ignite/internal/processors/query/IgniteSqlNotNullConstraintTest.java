@@ -870,7 +870,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private List<List<?>> executeSql(String sqlText) throws Exception {
         GridQueryProcessor qryProc = grid(NODE_CLIENT).context().query();
 
-        return qryProc.querySqlFieldsNoCache(new SqlFieldsQuery(sqlText), true).getAll();
+        return qryProc.querySqlFields(new SqlFieldsQuery(sqlText), true).getAll();
     }
 
     /** */
