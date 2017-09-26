@@ -74,8 +74,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list1.add(list2);
 
         try {
-            GridToStringBuilder.toString(ArrayList.class, list1);
-            GridToStringBuilder.toString(ArrayList.class, list2);
+            info(GridToStringBuilder.toString(ArrayList.class, list1));
+            info(GridToStringBuilder.toString(ArrayList.class, list2));
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
@@ -92,8 +92,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         list1.add(list2);
 
         try {
-            GridToStringBuilder.toString(ArrayList.class, list1, "name", list2);
-            GridToStringBuilder.toString(ArrayList.class, list2, "name", list1);
+            info(GridToStringBuilder.toString(ArrayList.class, list1, "name", list2));
+            info(GridToStringBuilder.toString(ArrayList.class, list2, "name", list1));
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
@@ -119,10 +119,10 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         n4.next = n3;
 
         try {
-            System.out.println(n1);
-            System.out.println(n2);
-            System.out.println(n3);
-            System.out.println(n4);
+            info(n1.toString());
+            info(n2.toString());
+            info(n3.toString());
+            info(n4.toString());
         } catch (StackOverflowError e) {
             fail("Recursion happened.");
         }
