@@ -155,6 +155,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 return;
             }
 
+            final AffinityTopologyVersion topVer0 = topVer;
+
             IgniteInternalFuture<MvccCoordinatorVersion> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
 
             cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
@@ -164,7 +166,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                         map(keys,
                             Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(),
-                            GridPartitionedGetFuture.this.topVer);
+                            topVer0);
 
                         markInitialized();
                     }
