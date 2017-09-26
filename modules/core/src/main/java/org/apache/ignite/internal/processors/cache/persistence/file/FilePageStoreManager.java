@@ -92,7 +92,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private PersistentStoreConfiguration pstCfg;
 
-    /** Absolute directory for file page store */
+    /** Absolute directory for file page store. Includes consistent id based folder */
     private File storeWorkDir;
 
     /** */

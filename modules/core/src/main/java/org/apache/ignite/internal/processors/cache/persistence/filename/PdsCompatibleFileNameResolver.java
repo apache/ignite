@@ -27,7 +27,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
@@ -40,11 +42,12 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
         "[0-9]*" +
         NODEIDX_UID_SEPARATOR;
     public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
-    public static final String UUID_STR_MASKED_FILES_PATTERN = "[a-fA-F0-9]{8}_[a-fA-F0-9]{4}_[a-fA-F0-9]{4}_[a-fA-F0-9]{4}_[a-fA-F0-9]{12}";
 
     private Serializable consId;
     private IgniteConfiguration cfg;
     private GridDiscoveryManager discovery;
+
+    /** Cached folder settings. */
     private PdsFolderSettings settings;
 
     public PdsCompatibleFileNameResolver(IgniteConfiguration cfg, GridDiscoveryManager discovery) {
@@ -105,7 +108,11 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
                 //already have such directory here
                 //todo other way to set this value
                 final UUID id = UUID.fromString(uid);
-                return new PdsFolderSettings(id, file, idx, false);
+                final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, file);
+                if (fileLockHolder != null) {
+                    System.out.println("locked>> " + pstStoreBasePath + " " + file);
+                    return new PdsFolderSettings(id, file, idx, false);
+                }
             }
         }
 
@@ -117,7 +124,30 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
 
         String consIdFolderReplacement = DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + NODEIDX_UID_SEPARATOR + uuidAsStr;
 
+        U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
+        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, consIdFolderReplacement);
+        if (fileLockHolder != null) {
+            System.out.println("locked>> " + pstStoreBasePath + " " + consIdFolderReplacement);
+            return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, false);
+        }
+
+        //todo error here
         return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, false);
+    }
+
+    private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File pstStoreBasePath, String file) {
+
+        try {
+            final File workDirPath = new File(pstStoreBasePath, file);
+            GridCacheDatabaseSharedManager.FileLockHolder  fileLockHolder
+                = new GridCacheDatabaseSharedManager.FileLockHolder(workDirPath.getAbsolutePath(), null, new NullLogger());
+            fileLockHolder.tryLock(1000);
+            return fileLockHolder;
+        }
+        catch (IgniteCheckedException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private File resolvePersistentStoreBasePath(PersistentStoreConfiguration pstCfg) throws IgniteCheckedException {

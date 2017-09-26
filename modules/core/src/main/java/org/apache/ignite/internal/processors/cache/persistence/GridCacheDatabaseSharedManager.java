@@ -3117,7 +3117,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private static class FileLockHolder {
+    public static class FileLockHolder {
         /** Lock file name. */
         private static final String lockFileName = "lock";
 
@@ -3139,7 +3139,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param path Path.
          */
-        private FileLockHolder(String path, GridKernalContext ctx, IgniteLogger log) {
+        public FileLockHolder(String path, GridKernalContext ctx, IgniteLogger log) {
             try {
                 file = Paths.get(path, lockFileName).toFile();
 
@@ -3164,26 +3164,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             SB sb = new SB();
 
-            //write node id
-            sb.a("[").a(ctx.localNodeId().toString()).a("]");
+            //todo revert it with providing correct data supplier
+            if(ctx!=null) {
+                //write node id
+                sb.a("[").a(ctx.localNodeId().toString()).a("]");
 
-            //write ip addresses
-            sb.a(ctx.discovery().localNode().addresses());
+                //write ip addresses
+                sb.a(ctx.discovery().localNode().addresses());
 
-            //write ports
-            sb.a("[");
-            Iterator<GridPortRecord> it = ctx.ports().records().iterator();
+                //write ports
+                sb.a("[");
+                Iterator<GridPortRecord> it = ctx.ports().records().iterator();
 
-            while (it.hasNext()) {
-                GridPortRecord rec = it.next();
+                while (it.hasNext()) {
+                    GridPortRecord rec = it.next();
 
-                sb.a(rec.protocol()).a(":").a(rec.port());
+                    sb.a(rec.protocol()).a(":").a(rec.port());
 
-                if (it.hasNext())
-                    sb.a(", ");
-            }
+                    if (it.hasNext())
+                        sb.a(", ");
+                }
 
-            sb.a("]");
+                sb.a("]");
+            } else
+                sb.a("No information about node");
 
             String failMsg;
 
