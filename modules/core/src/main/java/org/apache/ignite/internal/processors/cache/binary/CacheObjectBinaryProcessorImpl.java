@@ -155,9 +155,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @GridToStringExclude
     private IgniteBinary binaries;
 
-    /** Listener removes all registred binary schemas after the local client reconnected. */
+    /** Listener removes all registred binary schemas and user type descriptors after the local client reconnected. */
     private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
+            binaryContext().unregisterUserTypeDescriptors();
+
             binaryContext().unregisterBinarySchemas();
         }
     };
