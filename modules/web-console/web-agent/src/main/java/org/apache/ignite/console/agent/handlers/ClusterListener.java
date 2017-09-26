@@ -24,6 +24,7 @@ import io.socket.emitter.Emitter;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -35,6 +36,7 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -46,7 +48,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to retranslate topology from Ignite cluster available by node-uri.
+ * API to transfer topology from Ignite cluster available by node-uri.
  */
 public class ClusterListener {
     /** */
@@ -65,7 +67,7 @@ public class ClusterListener {
     private static final long DFLT_TIMEOUT = 3000L;
 
     /** JSON object mapper. */
-    private static final ObjectMapper mapper = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** Latest topology snapshot. */
     private TopologySnapshot top;
@@ -203,14 +205,23 @@ public class ClusterListener {
         TopologySnapshot(Collection<GridClientNodeBean> nodes) {
             nids = F.viewReadOnly(nodes, NODE2ID);
 
-            Collection<IgniteProductVersion> vers = F.transform(nodes,
-                new IgniteClosure<GridClientNodeBean, IgniteProductVersion>() {
-                    @Override public IgniteProductVersion apply(GridClientNodeBean bean) {
-                        return IgniteProductVersion.fromString((String)bean.getAttributes().get(ATTR_BUILD_VER));
+            Collection<T2<String, IgniteProductVersion>> vers = F.transform(nodes,
+                new IgniteClosure<GridClientNodeBean, T2<String, IgniteProductVersion>>() {
+                    @Override public T2<String, IgniteProductVersion> apply(GridClientNodeBean bean) {
+                        String ver = (String)bean.getAttributes().get(ATTR_BUILD_VER);
+
+                        return new T2<>(ver, IgniteProductVersion.fromString(ver));
                     }
                 });
 
-            clusterVer = Collections.min(vers).toString();
+            T2<String, IgniteProductVersion> min = Collections.min(vers, new Comparator<T2<String, IgniteProductVersion>>() {
+                @SuppressWarnings("ConstantConditions")
+                @Override public int compare(T2<String, IgniteProductVersion> o1, T2<String, IgniteProductVersion> o2) {
+                    return o1.get2().compareTo(o2.get2());
+                }
+            });
+
+            clusterVer = min.get1();
         }
 
         /**
@@ -234,10 +245,7 @@ public class ClusterListener {
 
         /**  */
         boolean differentCluster(TopologySnapshot old) {
-            if (old == null || F.isEmpty(old.nids))
-                return true;
-
-            return Collections.disjoint(nids, old.nids);
+            return old == null || F.isEmpty(old.nids) || Collections.disjoint(nids, old.nids);
         }
     }
 
@@ -250,7 +258,7 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
@@ -290,7 +298,7 @@ public class ClusterListener {
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = mapper.readValue(res.getData(),
+                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
                             new TypeReference<List<GridClientNodeBean>>() {});
 
                         TopologySnapshot newTop = new TopologySnapshot(nodes);

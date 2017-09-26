@@ -181,13 +181,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             }
 
             fut.listen(new CI1<IgniteInternalFuture<Object>>() {
-            @Override public void apply(IgniteInternalFuture<Object> fut) {
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
 
                         onDone(e);
 
@@ -422,7 +422,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true,
                 recovery);
         }
         else {
@@ -446,7 +445,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             taskName,
                             expiryPlc,
                             skipVals,
-                            /*can remap*/true,
                             recovery);
                     }
                 }

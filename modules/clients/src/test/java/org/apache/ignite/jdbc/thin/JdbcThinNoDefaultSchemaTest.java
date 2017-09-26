@@ -20,7 +20,9 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -119,10 +122,8 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoCacheNameQuery() throws Exception {
+    public void testSchemaNameInQuery() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
-
-        conn.setSchema("cache1");
 
         Statement stmt = conn.createStatement();
 
@@ -154,5 +155,80 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
         }
 
         stmt.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchemaInUrl() throws Exception {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache1\"")) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("select t._key, t._val from Integer t");
+
+            ResultSet rs = stmt.getResultSet();
+
+            while (rs.next())
+                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+        }
+
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("select t._key, t._val from Integer t");
+
+            ResultSet rs = stmt.getResultSet();
+
+            while (rs.next())
+                assertEquals(rs.getInt(2), rs.getInt(1) * 3);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSchemaInUrlAndInQuery() throws Exception {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("select t._key, t._val, v._val " +
+                "from \"cache1\".Integer t join Integer v on t._key = v._key");
+
+            ResultSet rs = stmt.getResultSet();
+
+            while (rs.next()) {
+                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+                assertEquals(rs.getInt(3), rs.getInt(1) * 3);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetSchema() throws Exception {
+        try(Connection conn = DriverManager.getConnection(URL)) {
+            // Try to execute query without set schema
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Statement stmt = conn.createStatement();
+
+                    stmt.execute("select t._key, t._val from Integer t");
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to parse query");
+
+            conn.setSchema("cache1");
+
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("select t._key, t._val from Integer t");
+
+            ResultSet rs = stmt.getResultSet();
+
+            while (rs.next())
+                assertEquals(rs.getInt(2), rs.getInt(1) * 2);
+        }
     }
 }

@@ -163,6 +163,17 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    //TODO: IGNITE-5925, tmp solution, wait this ticket.
+    @Override public double[] data() {
+        double[] res = new double[size];
+
+        for (int i = 0; i < size; i++)
+            res[i] = get(i);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
         out.writeInt(row);

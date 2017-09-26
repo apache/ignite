@@ -60,6 +60,11 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
         this.cachesToClose = cachesToClose;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return true;
+    }
+
     /**
      * @return Start request ID.
      */

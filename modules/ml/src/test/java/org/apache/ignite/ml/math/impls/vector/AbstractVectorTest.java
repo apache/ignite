@@ -357,7 +357,7 @@ public class AbstractVectorTest {
      */
     @SuppressWarnings("ClassWithoutNoArgConstructor")
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: find out how to fix warning about missing constructor
+        return new AbstractVector(storage) { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;
@@ -426,7 +426,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector() {
-        return new AbstractVector() { // TODO: find out how to fix warning about missing constructor
+        return new AbstractVector() { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;

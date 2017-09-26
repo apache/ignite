@@ -96,13 +96,13 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                     onDone(rdc.reduce());
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Exception in reducer is a bug, so we bypass checkComplete here.
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 // Bypass checkComplete because need to rethrow.
                 onDone(e);
@@ -112,30 +112,26 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
         catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
             ClusterTopologyCheckedException e) {
-            if (!ignoreFailure(e))
+            if (!processFailure(e, fut))
                 onDone(e);
         }
         catch (IgniteCheckedException e) {
-            if (!ignoreFailure(e)) {
-                if (e instanceof NodeStoppingException) {
-                    IgniteLogger log = logger();
-
-                    if (log != null && log.isDebugEnabled())
-                        log.debug("Failed to execute compound future reducer, node stopped.");
-                }
+            if (!processFailure(e, fut)) {
+                if (e instanceof NodeStoppingException)
+                    logDebug(logger(), "Failed to execute compound future reducer, node stopped.");
                 else
-                    U.error(null, "Failed to execute compound future reducer: " + this, e);
+                    logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
         }
         catch (RuntimeException e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            logError(null, "Failed to execute compound future reducer: " + this, e);
 
             onDone(e);
         }
         catch (AssertionError e) {
-            U.error(null, "Failed to execute compound future reducer: " + this, e);
+            logError(null, "Failed to execute compound future reducer: " + this, e);
 
             // Bypass checkComplete because need to rethrow.
             onDone(e);
@@ -166,7 +162,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @return Collection of futures.
      */
     @SuppressWarnings("unchecked")
-    public synchronized final Collection<IgniteInternalFuture<T>> futures() {
+    public final synchronized Collection<IgniteInternalFuture<T>> futures() {
         if (futs == null)
             return Collections.emptyList();
 
@@ -184,6 +180,17 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     protected boolean ignoreFailure(Throwable err) {
         return false;
+    }
+
+    /**
+     * Processes error thrown by some of the inner futures.
+     *
+     * @param err Thrown exception.
+     * @param fut Failed future.
+     * @return {@code True} if this error should be ignored.
+     */
+    protected boolean processFailure(Throwable err, IgniteInternalFuture<T> fut) {
+        return ignoreFailure(err);
     }
 
     /**
@@ -249,7 +256,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Clear futures.
      */
-    protected synchronized final void clear() {
+    protected final synchronized void clear() {
         futs = null;
     }
 
@@ -278,18 +285,36 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
             catch (AssertionError e) {
-                U.error(null, "Failed to execute compound future reducer: " + this, e);
+                logError(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 
                 throw e;
             }
         }
+    }
+
+    /**
+     * @param log IgniteLogger.
+     * @param msg ShortMessage.
+     * @param e Exception.
+     */
+    protected void logError(IgniteLogger log, String msg, Throwable e) {
+        U.error(log, msg, e);
+    }
+
+    /**
+     * @param log IgniteLogger.
+     * @param msg ShortMessage.
+     */
+    protected void logDebug(IgniteLogger log, String msg) {
+        if (log != null && log.isDebugEnabled())
+            log.debug(msg);
     }
 
     /**
@@ -338,7 +363,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return {@code True} if has at least one future.
      */
-    protected synchronized final boolean hasFutures() {
+    protected final synchronized boolean hasFutures() {
         return futs != null;
     }
 

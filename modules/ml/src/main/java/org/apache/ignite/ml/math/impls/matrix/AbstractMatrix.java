@@ -24,7 +24,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.Vector;
@@ -36,7 +39,9 @@ import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
 
 /**
@@ -44,8 +49,6 @@ import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
  * interface to minimize the effort required to implement it.
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
- *
- * TODO: add row/column optimization.
  */
 public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
@@ -328,8 +331,7 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         if (sto.isArrayBased())
-            for (double[] column : sto.data())
-                Arrays.fill(column, val);
+                Arrays.fill(sto.data(), val);
         else {
             int rows = rowSize();
             int cols = columnSize();
@@ -423,6 +425,85 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public Spliterator<Double> allSpliterator() {
+        return new Spliterator<Double>() {
+            /** {@inheritDoc} */
+            @Override public boolean tryAdvance(Consumer<? super Double> act) {
+                int rLen = rowSize();
+                int cLen = columnSize();
+
+                for (int i = 0; i < rLen; i++)
+                    for (int j = 0; j < cLen; j++)
+                        act.accept(storageGet(i, j));
+
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Spliterator<Double> trySplit() {
+                return null; // No Splitting.
+            }
+
+            /** {@inheritDoc} */
+            @Override public long estimateSize() {
+                return rowSize() * columnSize();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int characteristics() {
+                return ORDERED | SIZED;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public int nonZeroElements() {
+        int cnt = 0;
+
+        for (int i = 0; i < rowSize(); i++)
+            for (int j = 0; j < rowSize(); j++)
+                if (get(i, j) != 0.0)
+                    cnt++;
+
+        return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Spliterator<Double> nonZeroSpliterator() {
+        return new Spliterator<Double>() {
+            /** {@inheritDoc} */
+            @Override public boolean tryAdvance(Consumer<? super Double> act) {
+                int rLen = rowSize();
+                int cLen = columnSize();
+
+                for (int i = 0; i < rLen; i++)
+                    for (int j = 0; j < cLen; j++) {
+                        double val = storageGet(i, j);
+
+                        if (val != 0.0)
+                            act.accept(val);
+                    }
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Spliterator<Double> trySplit() {
+                return null; // No Splitting.
+            }
+
+            /** {@inheritDoc} */
+            @Override public long estimateSize() {
+                return nonZeroElements();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int characteristics() {
+                return ORDERED | SIZED;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix assignColumn(int col, Vector vec) {
         checkColumnIndex(col);
 
@@ -443,11 +524,9 @@ public abstract class AbstractMatrix implements Matrix {
         if (cols != vec.size())
             throw new CardinalityException(cols, vec.size());
 
-        if (sto.isArrayBased() && vec.getStorage().isArrayBased())
-            System.arraycopy(vec.getStorage().data(), 0, sto.data()[row], 0, cols);
-        else
-            for (int y = 0; y < cols; y++)
-                storageSet(row, y, vec.getX(y));
+        // TODO: IGNITE-5777, use Blas for this.
+        for (int y = 0; y < cols; y++)
+            storageSet(row, y, vec.getX(y));
 
         return this;
     }
@@ -503,7 +582,7 @@ public abstract class AbstractMatrix implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
         double res = dec.determinant();
         dec.destroy();
@@ -515,7 +594,7 @@ public abstract class AbstractMatrix implements Matrix {
         if (rowSize() != columnSize())
             throw new CardinalityException(rowSize(), columnSize());
 
-        //TODO: This decomposition should be cached
+        //TODO: IGNITE-5799, This decomposition should be cached
         LUDecomposition dec = new LUDecomposition(this);
 
         Matrix res = dec.solve(likeIdentity());
@@ -623,14 +702,23 @@ public abstract class AbstractMatrix implements Matrix {
 
         if (cols != data.length)
             throw new CardinalityException(cols, data.length);
-
-        if (sto.isArrayBased())
-            System.arraycopy(data, 0, sto.data()[row], 0, cols);
-        else
-            for (int y = 0; y < cols; y++)
-                setX(row, y, data[y]);
+        // TODO: IGNITE-5777, use Blas for this.
+        for (int y = 0; y < cols; y++)
+            setX(row, y, data[y]);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector getRow(int row) {
+        checkRowIndex(row);
+
+        Vector res = new DenseLocalOnHeapVector(columnSize());
+
+        for (int i = 0; i < columnSize(); i++)
+            res.setX(i, getX(row,i));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -649,19 +737,22 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public Vector getCol(int col) {
+        checkColumnIndex(col);
+
+        Vector res = new DenseLocalOnHeapVector(rowSize());
+
+        for (int i = 0; i < rowSize(); i++)
+            res.setX(i, getX(i,col));
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix setX(int row, int col, double val) {
         storageSet(row, col, val);
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix times(double x) {
-        Matrix cp = copy();
-
-        cp.map(Functions.mult(x));
-
-        return cp;
     }
 
     /** {@inheritDoc} */
@@ -685,6 +776,15 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
+    @Override public Matrix times(double x) {
+        Matrix cp = copy();
+
+        cp.map(Functions.mult(x));
+
+        return cp;
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector times(Vector vec) {
         int cols = columnSize();
 
@@ -695,8 +795,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res = likeVector(rows);
 
-        for (int x = 0; x < rows; x++)
-            res.setX(x, vec.dot(viewRow(x)));
+        Blas.gemv(1,this,vec,0,res);
 
         return res;
     }
@@ -708,21 +807,9 @@ public abstract class AbstractMatrix implements Matrix {
         if (cols != mtx.rowSize())
             throw new CardinalityException(cols, mtx.rowSize());
 
-        int rows = rowSize();
+        Matrix res = like(rowSize(), mtx.columnSize());
 
-        int mtxCols = mtx.columnSize();
-
-        Matrix res = like(rows, mtxCols);
-
-        for (int x = 0; x < rows; x++)
-            for (int y = 0; y < mtxCols; y++) {
-                double sum = 0.0;
-
-                for (int k = 0; k < cols; k++)
-                    sum += getX(x, k) * mtx.getX(k, y);
-
-                res.setX(x, y, sum);
-            }
+        Blas.gemm(1, this, mtx, 0, res);
 
         return res;
     }
@@ -881,5 +968,10 @@ public abstract class AbstractMatrix implements Matrix {
         MatrixStorage sto = getStorage();
 
         return (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
+        setX(row, col, f.apply(row, col, getX(row, col)));
     }
 }

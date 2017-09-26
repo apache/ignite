@@ -20,7 +20,6 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
@@ -68,7 +67,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' consistentId='someId012'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false' keepDeserialized='true'>
                                 <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -143,7 +142,9 @@ namespace Apache.Ignite.Core.Tests
                                 </memoryPolicies>
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
+                            <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                             <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
+                            <consistentId type='System.String'>someId012</consistentId>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -170,6 +171,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
+            Assert.AreEqual("someId012", cfg.ConsistentId);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -285,6 +287,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
+#pragma warning disable 618  // Obsolete
             var sql = cfg.SqlConnectorConfiguration;
             Assert.IsNotNull(sql);
             Assert.AreEqual("bar", sql.Host);
@@ -295,6 +298,18 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(sql.TcpNoDelay);
             Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, sql.ThreadPoolSize);
+#pragma warning restore 618
+
+            var client = cfg.ClientConnectorConfiguration;
+            Assert.IsNotNull(client);
+            Assert.AreEqual("bar", client.Host);
+            Assert.AreEqual(10, client.Port);
+            Assert.AreEqual(11, client.PortRange);
+            Assert.AreEqual(12, client.SocketSendBufferSize);
+            Assert.AreEqual(13, client.SocketReceiveBufferSize);
+            Assert.IsTrue(client.TcpNoDelay);
+            Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(15, client.ThreadPoolSize);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -355,6 +370,7 @@ namespace Apache.Ignite.Core.Tests
         /// Checks the property is present in schema.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void CheckPropertyIsPresentInSchema(Type type, XElement schema)
         {
             Func<string, string> toLowerCamel = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
@@ -497,15 +513,15 @@ namespace Apache.Ignite.Core.Tests
         {
             // Empty section.
             var cfg = IgniteConfiguration.FromXml("<x />");
-            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Empty section with XML header.
             cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
-            AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />");
-            AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
+            TestUtils.AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
 
             // Invalid xml.
             var ex = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -520,7 +536,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
-            AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
+            TestUtils.AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
@@ -572,7 +588,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var resCfg = SerializeDeserialize(cfg);
 
-            AssertReflectionEqual(cfg, resCfg);
+            TestUtils.AssertReflectionEqual(cfg, resCfg);
         }
 
         /// <summary>
@@ -585,53 +601,6 @@ namespace Apache.Ignite.Core.Tests
             return IgniteConfiguration.FromXml(xml);
         }
 
-        /// <summary>
-        /// Asserts equality with reflection.
-        /// </summary>
-        private static void AssertReflectionEqual(object x, object y)
-        {
-            var type = x.GetType();
-
-            Assert.AreEqual(type, y.GetType());
-
-            if (type.IsValueType || type == typeof (string) || type.IsSubclassOf(typeof (Type)))
-            {
-                Assert.AreEqual(x, y);
-                return;
-            }
-
-            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
-
-            foreach (var propInfo in props)
-            {
-                var propType = propInfo.PropertyType;
-
-                var xVal = propInfo.GetValue(x, null);
-                var yVal = propInfo.GetValue(y, null);
-
-                if (xVal == null || yVal == null)
-                {
-                    Assert.IsNull(xVal);
-                    Assert.IsNull(yVal);
-                }
-                else if (propType != typeof(string) && propType.IsGenericType &&
-                         (propType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                          propType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ))
-                {
-                    var xCol = ((IEnumerable) xVal).OfType<object>().ToList();
-                    var yCol = ((IEnumerable) yVal).OfType<object>().ToList();
-
-                    Assert.AreEqual(xCol.Count, yCol.Count);
-
-                    for (int i = 0; i < xCol.Count; i++)
-                        AssertReflectionEqual(xCol[i], yCol[i]);
-                }
-                else
-                {
-                    AssertReflectionEqual(xVal, yVal);
-                }
-            }
-        }
 
         /// <summary>
         /// Gets the test configuration.
@@ -879,7 +848,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "foo",
                     Port = 2,
@@ -912,7 +881,8 @@ namespace Apache.Ignite.Core.Tests
                     MetricsEnabled = true,
                     RateTimeInterval = TimeSpan.FromDays(1)
                 },
-                IsActiveOnStart = false
+                IsActiveOnStart = false,
+                ConsistentId = "myId123"
             };
         }
 

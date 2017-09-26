@@ -678,7 +678,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                binaryReceiver.Deserialize<StreamReceiverHolder>();
 
                 if (receiver != null)
-                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
+                {
+                    var target = new PlatformJniTarget(new UnmanagedNonReleaseableTarget(_ctx, cache), 
+                        _ignite.Marshaller);
+                    receiver.Receive(_ignite, target, stream, keepBinary);
+                }
 
                 return 0;
             }
@@ -898,20 +902,45 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                try
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                bool srvKeepBinary = reader.ReadBoolean();
-                var svc = reader.ReadObject<IService>();
+                    var srvKeepBinary = reader.ReadBoolean();
+                    var svc = reader.ReadObject<IService>();
 
-                ResourceProcessor.Inject(svc, _ignite);
+                    ResourceProcessor.Inject(svc, _ignite);
 
-                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                return _handleRegistry.Allocate(svc);
+                    stream.Reset();
+
+                    stream.WriteBool(true);  // Success.
+
+                    stream.SynchronizeOutput();
+
+                    return _handleRegistry.Allocate(svc);
+                }
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
+
+                    stream.SynchronizeOutput();
+
+                    return 0;
+                }
             }
         }
 
@@ -1171,9 +1200,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (affBase != null)
                 {
-                    var baseFunc0 = UU.Acquire(_ctx, baseFunc);
+                    var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
 
-                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0, _ignite.Marshaller));
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
                 }
 
                 return _handleRegistry.Allocate(func);

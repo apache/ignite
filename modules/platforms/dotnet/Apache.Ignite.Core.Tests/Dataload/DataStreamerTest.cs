@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /** Node. */
         private IIgnite _grid;
 
+        /** Node 2. */
+        private IIgnite _grid2;
+
         /** Cache. */
         private ICache<int, int?> _cache;
 
@@ -49,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             _grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            _grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "grid1"
             });
@@ -165,6 +168,46 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
+        /// Tests object graphs with loops.
+        /// </summary>
+        [Test]
+        public void TestObjectGraphs()
+        {
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
+            var obj4 = new Container();
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj1;
+            obj4.Inner = new Container();
+
+            using (var ldr = _grid.GetDataStreamer<int, Container>(CacheName))
+            {
+                ldr.AllowOverwrite = true;
+
+                ldr.AddData(1, obj1);
+                ldr.AddData(2, obj2);
+                ldr.AddData(3, obj3);
+                ldr.AddData(4, obj4);
+            }
+
+            var cache = _grid.GetCache<int, Container>(CacheName);
+
+            var res = cache[1];
+            Assert.AreEqual(res, res.Inner.Inner);
+
+            Assert.IsNotNull(cache[2].Inner);
+            Assert.IsNotNull(cache[2].Inner.Inner);
+            Assert.IsNotNull(cache[3].Inner);
+            Assert.IsNotNull(cache[3].Inner.Inner);
+            
+            Assert.IsNotNull(cache[4].Inner);
+            Assert.IsNull(cache[4].Inner.Inner);
+        }
+
+        /// <summary>
         /// Test "tryFlush".
         /// </summary>
         [Test]
@@ -188,39 +231,61 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestBufferSize()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                const int timeout = 5000;
+
+                var part1 = GetPrimaryPartitionKeys(_grid, 4);
+                var part2 = GetPrimaryPartitionKeys(_grid2, 4);
+
+                var task = ldr.AddData(part1[0], part1[0]);
 
                 Thread.Sleep(100);
 
-                Assert.IsFalse(fut.IsCompleted);
+                Assert.IsFalse(task.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
 
-                ldr.AddData(2, 2);
-                ldr.AddData(3, 3);
-                ldr.AddData(4, 4).Wait();
-                fut.Wait();
+                ldr.AddData(part2[0], part2[0]);
+                ldr.AddData(part1[1], part1[1]);
+                Assert.IsTrue(ldr.AddData(part2[1], part2[1]).Wait(timeout));
+                Assert.IsTrue(task.Wait(timeout));
 
-                Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(2, _cache.Get(2));
-                Assert.AreEqual(3, _cache.Get(3));
-                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(part1[0], _cache.Get(part1[0]));
+                Assert.AreEqual(part1[1], _cache.Get(part1[1]));
+                Assert.AreEqual(part2[0], _cache.Get(part2[0]));
+                Assert.AreEqual(part2[1], _cache.Get(part2[1]));
 
-                ldr.AddData(new List<KeyValuePair<int, int>>
+                Assert.IsTrue(ldr.AddData(new[]
                 {
-                    new KeyValuePair<int, int>(5, 5), 
-                    new KeyValuePair<int, int>(6, 6),
-                    new KeyValuePair<int, int>(7, 7), 
-                    new KeyValuePair<int, int>(8, 8)
-                }).Wait();
+                    new KeyValuePair<int, int>(part1[2], part1[2]),
+                    new KeyValuePair<int, int>(part1[3], part1[3]),
+                    new KeyValuePair<int, int>(part2[2], part2[2]),
+                    new KeyValuePair<int, int>(part2[3], part2[3])
+                }).Wait(timeout));
 
-                Assert.AreEqual(5, _cache.Get(5));
-                Assert.AreEqual(6, _cache.Get(6));
-                Assert.AreEqual(7, _cache.Get(7));
-                Assert.AreEqual(8, _cache.Get(8));
+                Assert.AreEqual(part1[2], _cache.Get(part1[2]));
+                Assert.AreEqual(part1[3], _cache.Get(part1[3]));
+                Assert.AreEqual(part2[2], _cache.Get(part2[2]));
+                Assert.AreEqual(part2[3], _cache.Get(part2[3]));
             }
+        }
+
+        /// <summary>
+        /// Gets the primary partition keys.
+        /// </summary>
+        private static int[] GetPrimaryPartitionKeys(IIgnite ignite, int count)
+        {
+            var affinity = ignite.GetAffinity(CacheName);
+            
+            var localNode = ignite.GetCluster().GetLocalNode();
+
+            var part = affinity.GetPrimaryPartitions(localNode).First();
+
+            return Enumerable.Range(0, int.MaxValue)
+                .Where(k => affinity.GetPartition(k) == part)
+                .Take(count)
+                .ToArray();
         }
 
         /// <summary>
@@ -547,5 +612,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             public int Val { get; set; }
         }
+
+        /// <summary>
+        /// Container class.
+        /// </summary>
+        private class Container
+        {
+            public Container Inner;
+        }
+
     }
 }

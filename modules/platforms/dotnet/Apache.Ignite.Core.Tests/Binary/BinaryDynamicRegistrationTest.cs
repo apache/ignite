@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -111,7 +113,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory(),
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -123,7 +126,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     CacheStoreFactory = new StoreFactory(),
                     ReadThrough = true,
-                    WriteThrough = true
+                    WriteThrough = true,
+                    KeepBinaryInStore = true
                 });
                 dynCache[2] = new Foo { Str = "test2", Int = 3 };
 
@@ -201,7 +205,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory {StringProp = "test", IntProp = 9},
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -357,11 +362,62 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests registration in multiple threads.
+        /// </summary>
+        [Test]
+        public void TestRegistrationMultithreaded([Values(true, false)] bool useTypeName)
+        {
+            const int iterations = 50;
+            const int threads = 4;
+
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
+                var bin = ignite.GetBinary();
+                Func<Type, IBinaryObjectBuilder> getBuilder = x =>
+                    useTypeName ? bin.GetBuilder(x.FullName) : bin.GetBuilder(x);
+                    
+                var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
+
+                foreach (var type in types)
+                {
+                    var type0 = type;  // Modified closure.
+
+                    for (var i = 0; i < iterations; i++)
+                    {
+                        var countdown = new CountdownEvent(threads);
+
+                        Action registerType = () =>
+                        {
+                            countdown.Signal();
+                            Assert.IsTrue(countdown.Wait(5000));
+
+                            var binObj = getBuilder(type0).SetIntField("x", 1).Build();
+                            cache[1] = binObj;
+
+                            Assert.AreEqual(binObj, cache[1]);
+                        };
+
+                        var tasks = Enumerable.Range(0, threads)
+                            .Select(x => Task.Factory.StartNew(registerType))
+                            .ToArray();
+
+                        Task.WaitAll(tasks);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests the type registration.
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
-            var cfg = new CacheConfiguration("cache") {CacheMode = CacheMode.Partitioned};
+            var cfg = new CacheConfiguration("cache")
+            {
+                CacheMode = CacheMode.Partitioned,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
+            };
 
             // Put on one grid.
             var cache1 = ignite1.GetOrCreateCache<int, object>(cfg);

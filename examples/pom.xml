@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>ignite-examples</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.3.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -103,6 +103,7 @@
         <spark.test.folder>src/test/java</spark.test.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
+        <ml.folder>src/main/java</ml.folder>
     </properties>
 
     <profiles>
@@ -234,6 +235,23 @@
         </profile>
 
         <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <java.ver>1.8</java.ver>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
             <id>lgpl</id>
 
             <properties>
@@ -292,6 +310,7 @@
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
                                 <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

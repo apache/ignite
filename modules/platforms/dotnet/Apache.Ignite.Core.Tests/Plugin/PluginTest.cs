@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
@@ -142,13 +144,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsTrue(task.IsCompleted);
             Assert.AreEqual("FOO", asyncRes);
 
+            // Async operation with cancellation.
+            var cts = new CancellationTokenSource();
+            task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString(), cts.Token);
+            Assert.IsFalse(task.IsCompleted);
+            cts.Cancel();
+            Assert.IsTrue(task.IsCanceled);
+            var aex = Assert.Throws<AggregateException>(() => { asyncRes = task.Result; });
+            Assert.IsInstanceOf<TaskCanceledException>(aex.GetBaseException());
+
             // Async operation with exception in entry point.
             Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
 
             // Async operation with exception in future.
             var errTask = target.DoOutOpAsync<object>(3, null, null);
             Assert.IsFalse(errTask.IsCompleted);
-            var aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            aex = Assert.Throws<AggregateException>(() => errTask.Wait());
             Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
 
             // Throws custom mapped exception.

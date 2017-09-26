@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -282,6 +283,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
+                                               boolean ifTblExists, boolean ifColNotExists)
+            throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
             GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
             if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
@@ -289,7 +297,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(String spaceName) throws IgniteCheckedException {
+        @Override public void unregisterCache(String spaceName, boolean destroy) throws IgniteCheckedException {
             // No-op
         }
 
