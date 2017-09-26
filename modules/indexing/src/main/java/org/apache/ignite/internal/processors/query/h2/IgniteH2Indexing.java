@@ -728,6 +728,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        clearCachedQueries();
     }
 
     /**
@@ -2341,6 +2343,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     it.remove();
             }
         }
+    }
+
+    /**
+     * Remove all cached queries from cached two-steps queries.
+     */
+    public void clearCachedQueries() {
+        twoStepCache.clear();
     }
 
     /** {@inheritDoc} */

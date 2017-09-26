@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
@@ -424,8 +425,10 @@ public class JdbcThinStatement implements Statement {
         try {
             JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
 
-            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS)
-                throw new BatchUpdateException(res.errorMessage(), null, res.errorCode(), res.updateCounts());
+            if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+                throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                    res.errorCode(), res.updateCounts());
+            }
 
             return res.updateCounts();
         }

@@ -36,6 +36,15 @@ public class ClientRequest implements ClientListenerRequest {
         reqId = reader.readLong();
     }
 
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     */
+    public ClientRequest(long reqId) {
+        this.reqId = reqId;
+    }
+
     /** {@inheritDoc} */
     @Override public long requestId() {
         return reqId;

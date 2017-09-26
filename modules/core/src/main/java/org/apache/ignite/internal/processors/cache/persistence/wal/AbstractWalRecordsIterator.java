@@ -258,7 +258,7 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = ioFactory.create(desc.file, "r");
+            FileIO fileIO = ioFactory.create(desc.file);
 
             try {
                 FileInput in = new FileInput(fileIO, buf);

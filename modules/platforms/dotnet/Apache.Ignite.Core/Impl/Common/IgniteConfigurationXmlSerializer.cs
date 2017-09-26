@@ -518,7 +518,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(obj != null);
 
-            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+            return obj.GetType().GetProperties()
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>
