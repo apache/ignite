@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -90,10 +91,12 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -116,6 +119,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -137,6 +141,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -146,6 +151,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.util.IgniteUtils.timeToUTC;
 
 /**
  *
@@ -552,16 +558,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 if (totalSize == 0)
-                    return (float)0;
+                    return (float) 0;
 
-                return (float)loadSize / totalSize;
+                return (float) loadSize / totalSize;
             }
         };
     }
 
     /** {@inheritDoc} */
     @Override public void readCheckpointAndRestoreMemory(
-        List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
+        List<DynamicCacheDescriptor> cachesToStart
+    ) throws IgniteCheckedException {
         checkpointReadLock();
 
         try {
@@ -1589,6 +1596,128 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String memPlcName = desc.config().getMemoryPolicyName();
 
         return (PageMemoryEx)sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
+    }
+
+    /**
+     *
+     */
+    public void applyUpdatesOnRecovery(
+        WALPointer pnt,
+        IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
+        IgnitePredicate<DataEntry> entryPredicate,
+        boolean debug
+    ) throws IgniteCheckedException {
+        cctx.kernalContext().query().skipFieldLookup(true);
+
+        StringBuilder sb = new StringBuilder();
+
+        if (debug)
+            sb.append("NodeId:").append(cctx.localNodeId()).append("\n");
+
+        try (WALIterator it = cctx.wal().replay(pnt)) {
+            Set<Integer> grpIds = new HashSet<>();
+
+            Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
+
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+
+                WALRecord rec = next.get2();
+
+                if (!recPredicate.apply(next)){
+                    if (debug)
+                        sb.append("Stop iteration ")
+                            .append(next.get1())
+                            .append(" rec ")
+                            .append(rec)
+                            .append("\n");
+
+                    break;
+                }
+
+                FileWALPointer p = (FileWALPointer)next.get1();
+
+                switch (rec.type()) {
+                    case DATA_RECORD:
+                        DataRecord dataRec = (DataRecord)rec;
+
+                        for (DataEntry dataEntry : dataRec.writeEntries()) {
+                            if (entryPredicate.apply(dataEntry)) {
+                                int cacheId = dataEntry.cacheId();
+
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                                assert cacheCtx != null;
+
+                                if (debug) {
+                                    GridCacheVersion ver = dataEntry.nearXidVersion();
+
+                                    String entry = "null";
+
+                                    if (dataEntry.value() != null)
+                                        entry = dataEntry.value()
+                                            .value(cacheCtx.cacheObjectContext(), true).toString();
+
+                                    sb.append(entry)
+                                        .append(" topVer=").append(ver.topologyVersion())
+                                        .append(" order=").append(ver.order())
+                                        .append(" nodeOrder=").append(ver.nodeOrder())
+                                        .append(" idx=").append(p.index())
+                                        .append(" offset=").append(p.fileOffset())
+                                        .append(" len=").append(p.length())
+                                        .append("\n");
+                                }
+
+                                applyUpdate(cacheCtx, dataEntry);
+
+                                grpIds.add(cacheCtx.groupId());
+                            }
+                        }
+
+                        break;
+                    case TX_RECORD:
+                        TxRecord txRec = (TxRecord)rec;
+
+                        if (debug){
+                            GridCacheVersion ver = txRec.nearXidVersion();
+
+                            sb.append(txRec.state())
+                                .append(" ").append(timeToUTC(txRec.timestamp()))
+                                .append(" topVer=").append(ver.topologyVersion())
+                                .append(" order=").append(ver.order())
+                                .append(" nodeOrder=").append(ver.nodeOrder())
+                                .append(" idx=").append(p.index())
+                                .append(" offset=").append(p.fileOffset())
+                                .append(" len=").append(p.length())
+                                .append("\n");
+                        }
+
+                        break;
+
+                    case PART_META_UPDATE_STATE:
+                        PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
+
+                        if (grpIds.contains(metaStateRecord.groupId())){
+                            partStates.put(
+                                new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
+                                new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+                        }
+
+                        break;
+
+                    default:
+                        // Skip other records.
+                }
+            }
+
+            restorePartitionState(partStates);
+        }
+        finally {
+            cctx.kernalContext().query().skipFieldLookup(false);
+
+            if (debug)
+                log.debug(sb.toString());
+        }
     }
 
     /**
