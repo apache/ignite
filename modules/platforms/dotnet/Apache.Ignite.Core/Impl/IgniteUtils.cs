@@ -409,13 +409,13 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>The full path of the temporary directory.</returns>
         internal static string GetTempDirectoryName()
         {
+            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
+
             while (true)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DirIgniteTmp + Path.GetRandomFileName());
-
                 try
                 {
-                    return Directory.CreateDirectory(dir).FullName;
+                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
                 }
                 catch (IOException)
                 {
