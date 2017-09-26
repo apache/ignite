@@ -111,6 +111,7 @@
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\Client\ClientStatus.cs" />
+    <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />
     <Compile Include="Impl\Client\ClientOp.cs" />

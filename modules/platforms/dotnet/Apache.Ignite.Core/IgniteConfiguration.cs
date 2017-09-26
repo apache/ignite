@@ -192,6 +192,12 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** Local event listeners. Stored as array to ensure index access. */
+        private LocalEventListener[] _localEventListeners;
+
+        /** Map from user-defined listener to it's id. */
+        private Dictionary<object, int> _localEventListenerIds;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -480,7 +486,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // Plugins (should be last)
+            // Plugins (should be last).
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -502,6 +508,36 @@ namespace Apache.Ignite.Core
                 }
 
                 writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+
+            // Local event listeners (should be last).
+            if (_localEventListeners != null)
+            {
+                writer.WriteInt(_localEventListeners.Length);
+
+                foreach (var listener in _localEventListeners)
+                {
+                    if (listener == null)
+                    {
+                        throw new IgniteException("LocalEventListeners can't be null.");
+                    }
+
+                    if (listener.ListenerObject == null)
+                    {
+                        throw new IgniteException("LocalEventListener.Listener can't be null.");
+                    }
+
+                    if (listener.EventTypes == null || listener.EventTypes.Count == 0)
+                    {
+                        throw new IgniteException("LocalEventListener.EventTypes can't be null or empty.");
+                    }
+
+                    writer.WriteIntArray(listener.EventTypes.ToArray());
+                }
             }
             else
             {
@@ -701,6 +737,7 @@ namespace Apache.Ignite.Core
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
+            LocalEventListeners = cfg.LocalEventListeners;
         }
 
         /// <summary>
@@ -854,6 +891,52 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
+
+        /// <summary>
+        /// Gets or sets pre-configured local event listeners.
+        /// <para />
+        /// This is similar to calling <see cref="IEvents.LocalListen{T}(IEventListener{T},int[])"/>,
+        /// but important difference is that some events occur during startup and can be only received this way.
+        /// </summary>
+        public ICollection<LocalEventListener> LocalEventListeners
+        {
+            get { return _localEventListeners; }
+            set
+            {
+                if (value != null)
+                {
+                    _localEventListeners = value.ToArray();
+                    
+                    _localEventListenerIds = new Dictionary<object, int>();
+
+                    for (var i = 0; i < _localEventListeners.Length; i++)
+                    {
+                        _localEventListenerIds[_localEventListeners[i].ListenerObject] = i;
+                    }
+                }
+                else
+                {
+                    _localEventListeners = null;
+                    _localEventListenerIds = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the local event listeners.
+        /// </summary>
+        internal LocalEventListener[] LocalEventListenersInternal
+        {
+            get { return _localEventListeners; }
+        }
+
+        /// <summary>
+        /// Gets the local event listener ids.
+        /// </summary>
+        internal Dictionary<object, int> LocalEventListenerIds
+        {
+            get { return _localEventListenerIds; }
+        }
 
         /// <summary>
         /// Gets or sets the time after which a certain metric value is considered expired.
