@@ -738,7 +738,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializeBinary,
         boolean recovery,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -754,7 +753,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             forcePrimary,
             null,
             skipVals,
-            canRemap,
             needVer);
     }
 
@@ -766,7 +764,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param skipVals Skip values flag.
-     * @param canRemap Can remap flag.
      * @return Get future.
      */
     IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> getDhtAllAsync(
@@ -777,7 +774,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean canRemap,
         boolean recovery,
         MvccCoordinatorVersion mvccVer
     ) {
@@ -792,7 +788,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            canRemap,
             /*need version*/true,
             mvccVer);
     }

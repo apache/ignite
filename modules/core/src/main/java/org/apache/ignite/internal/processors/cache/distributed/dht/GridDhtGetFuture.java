@@ -428,7 +428,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true,
                 recovery,
                 mvccVer);
         }
@@ -453,7 +452,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             taskName,
                             expiryPlc,
                             skipVals,
-                            /*can remap*/true,
                             recovery,
                             mvccVer);
                     }

@@ -365,9 +365,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true,
                 recovery,
-                null); // TODO IGNITE-3478
+                null);  // TODO IGNITE-3478
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -392,9 +391,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                /*can remap*/true,
                                 recovery,
-                                null); // TODO IGNITE-3478
+                                null);  // TODO IGNITE-3478
 
                         fut0.listen(createGetFutureListener());
                     }

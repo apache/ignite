@@ -2521,7 +2521,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     /*deserializeBinary*/false,
                     expiryPlc0,
                     skipVals,
-                    /*can remap*/true,
                     needVer,
                     /*keepCacheObject*/true,
                     recovery
@@ -2554,7 +2553,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     recovery,
                     expiryPlc0,
                     skipVals,
-                    /*can remap*/true,
                     needVer,
                     /*keepCacheObject*/true
                 ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {

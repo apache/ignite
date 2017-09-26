@@ -1828,7 +1828,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (written < expWritten && envFailed == null)
-                    U.await(writeComplete);
+                    U.awaitQuiet(writeComplete);
             }
             finally {
                 lock.unlock();
@@ -2163,7 +2163,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (fileIO != null)
-                    U.await(nextSegment);
+                    U.awaitQuiet(nextSegment);
             }
             finally {
                 lock.unlock();
