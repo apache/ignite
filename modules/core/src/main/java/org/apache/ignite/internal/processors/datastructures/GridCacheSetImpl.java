@@ -525,7 +525,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     @SuppressWarnings("unchecked")
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (ctx.isLocal() || ctx.isReplicated())
+        if (ctx.isLocal() || (ctx.isReplicated() && !ctx.localNode().isClient()))
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;
