@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsCompatibleFileNameResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -114,10 +116,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode())
+        final GridKernalContext ctx = cctx.kernalContext();
+        if (ctx.clientNode())
             return;
 
-        String consId = U.maskForFileName(cctx.kernalContext().discovery().consistentId().toString());
+
+        final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver(ctx.config(),
+            ctx.discovery());
+
+        final PdsFolderSettings folderSettings = rslvr.resolveFolders();
 
         if (pstCfg.getPersistentStorePath() != null) {
             File workDir0 = new File(pstCfg.getPersistentStorePath());
@@ -129,14 +136,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     false
                 );
 
-            storeWorkDir = new File(workDir0, consId);
+            storeWorkDir = new File(workDir0, folderSettings.folderName());
         }
-        else
-            storeWorkDir = new File(U.resolveWorkDirectory(
+        else {
+            final File defPersistenceStorePath = U.resolveWorkDirectory(
                 igniteCfg.getWorkDirectory(),
                 "db",
                 false
-            ), consId);
+            );
+            storeWorkDir = new File(defPersistenceStorePath, folderSettings.folderName());
+        }
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
     }

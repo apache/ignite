@@ -62,6 +62,8 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsCompatibleFileNameResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -69,7 +71,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -244,12 +245,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode()) {
-            String consId = consistentId();
+            final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver(cctx.gridConfig(), cctx.discovery());
 
-            A.notNullOrEmpty(consId, "consistentId");
-
-            consId = U.maskForFileName(consId);
-
+            final PdsFolderSettings resolveFolders = rslvr.resolveFolders();
+            final String consId = resolveFolders.folderName();
             checkWalConfiguration();
 
             walWorkDir = initDirectory(
@@ -298,13 +297,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", walArchivePath = " + psCfg.getWalArchivePath() + "]"
             );
         }
-    }
-
-    /**
-     * @return Consistent ID.
-     */
-    protected String consistentId() {
-        return cctx.discovery().consistentId().toString();
     }
 
     /** {@inheritDoc} */

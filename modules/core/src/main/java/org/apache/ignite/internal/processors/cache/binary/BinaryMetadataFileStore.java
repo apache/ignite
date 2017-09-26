@@ -24,6 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsCompatibleFileNameResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * which may lead to segmentation of nodes from cluster.
  */
 class BinaryMetadataFileStore {
-    /** */
+    /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
 
     /** */
@@ -68,14 +70,19 @@ class BinaryMetadataFileStore {
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
         else {
-            String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
+            final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver( ctx.config(),
+                ctx.discovery());
+
+            final PdsFolderSettings folderSettings = rslvr.resolveFolders();
+
+            String subFolder = folderSettings.folderName();
 
             workDir = new File(U.resolveWorkDirectory(
                 ctx.config().getWorkDirectory(),
                 "binary_meta",
                 false
             ),
-                consId);
+                subFolder);
         }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
