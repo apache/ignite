@@ -281,6 +281,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
             writer.WriteIntNullable(_publicThreadPoolSize);
@@ -546,6 +547,7 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            ConsistentId = r.ReadObject<object>();
 
             // Thread pools
             _publicThreadPoolSize = r.ReadIntNullable();
@@ -1262,6 +1264,9 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
         /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// <para />
+        /// This property is ignored when <see cref="PersistentStoreConfiguration"/> is present:
+        /// cluster is always inactive on start when Ignite Persistence is enabled.
         /// </summary>
         [DefaultValue(DefaultIsActiveOnStart)]
         public bool IsActiveOnStart
@@ -1269,5 +1274,10 @@ namespace Apache.Ignite.Core
             get { return _isActiveOnStart ?? DefaultIsActiveOnStart; }
             set { _isActiveOnStart = value; }
         }
+
+        /// <summary>
+        /// Gets or sets consistent globally unique node identifier which survives node restarts.
+        /// </summary>
+        public object ConsistentId { get; set; }
     }
 }
