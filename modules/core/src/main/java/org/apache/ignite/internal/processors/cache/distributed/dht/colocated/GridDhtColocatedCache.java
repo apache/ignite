@@ -72,7 +72,6 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -289,12 +288,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keyCheck)
             validateCacheKeys(keys);
 
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         if (tx != null && !tx.implicit() && !skipTx) {
-            return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
+            IgniteInternalFuture<Map<K, V>> fut = asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
                         readyTopVer,
@@ -306,6 +309,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         needVer);
                 }
             }, opCtx);
+
+            if (statsEnabled)
+                fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+            return fut;
         }
 
         AffinityTopologyVersion topVer = tx == null ?
@@ -314,7 +322,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
-        return loadAsync(
+        IgniteInternalFuture<Map<K, V>> fut = loadAsync(
             ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
             forcePrimary,
@@ -326,6 +334,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             canRemap,
             needVer);
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+        return fut;
     }
 
     /**
