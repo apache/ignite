@@ -228,6 +228,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (tx != null)
             tx.topologyVersion(topVer);
 
+        if (tx != null) throw new RuntimeException("Create dhtLockFuture and check thread id");
+
         assert tx == null || threadId == tx.threadId();
 
         this.threadId = threadId;
