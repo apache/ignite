@@ -47,8 +47,8 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    private static String CACHE_BOOKMARK = "Bookmark";
-    private static String NODE_CLIENT = "client";
+    private static final String CACHE_BOOKMARK = "Bookmark";
+    private static final String NODE_CLIENT = "client";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -67,6 +67,12 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         return c;
     }
 
+    /**
+     * build cache configuration
+     * @param name cache name
+     * @return configuration
+     * @see CacheConfiguration
+     */
     private CacheConfiguration buildCacheConfiguration(String name) {
         CacheConfiguration ccfg = new CacheConfiguration(name);
         QueryEntity bookmarkQueryEntity = new QueryEntity(String.class.getName(), Bookmark.class.getName());
@@ -96,6 +102,13 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /**
+     * method for create parametrized query and get first result
+     * @param field name of field
+     * @param value value
+     * @return fist searched object
+     * @see Bookmark
+     */
     private Bookmark searchBookmarkBy(String field, Object value) {
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
         SqlFieldsQuery query = new SqlFieldsQuery("SELECT _val from  Bookmark where "+field+"=?");
@@ -108,6 +121,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         return (Bookmark)row0.get(0);
     }
 
+    /**
+     * Method for testing parametrized query by String field
+     * @throws Exception if any error occurs
+     */
     public void testStringSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -121,6 +138,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Integer field
+     * @throws Exception if any error occurs
+     */
     public void testIntegerSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -134,6 +155,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Short field
+     * @throws Exception if any error occurs
+     */
     public void testShortSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -147,6 +172,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Long field
+     * @throws Exception if any error occurs
+     */
     public void testLongSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -160,6 +189,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Float field
+     * @throws Exception if any error occurs
+     */
     public void testFloatSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -173,6 +206,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Double field
+     * @throws Exception if any error occurs
+     */
     public void testDoubleSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -186,6 +223,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Boolean field
+     * @throws Exception if any error occurs
+     */
     public void testBooleanSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -199,6 +240,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by Byte field
+     * @throws Exception if any error occurs
+     */
     public void testByteSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -212,6 +257,11 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
+    /**
+     * Method for testing parametrized query by UUID field
+     * @throws Exception if any error occurs
+     * @see UUID
+     */
     public void testUUIDSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -225,6 +275,12 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("UUID value does not match", bookmark.getSerialNumber(), loadedBookmark.getSerialNumber());
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
+
+    /**
+     * Method for testing parametrized query by BigInteger field
+     * @throws Exception if any error occurs
+     * @see BigInteger
+     */
     public void testBigIntegerSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
@@ -238,6 +294,12 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("BigInteger value does not match", bookmark.getVisitCount(), loadedBookmark.getVisitCount());
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
+
+    /**
+     * Method for testing parametrized query by BigDecimal field
+     * @throws Exception if any error occurs
+     * @see BigDecimal
+     */
     public void testBigDecimalSupport() throws Exception {
 
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
