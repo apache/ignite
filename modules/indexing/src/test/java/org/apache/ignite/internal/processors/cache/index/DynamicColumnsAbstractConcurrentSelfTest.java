@@ -129,7 +129,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000L;
+        return 3 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */
@@ -539,8 +539,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" + dynColCnt.getAndIncrement(),
-                        Integer.class.getName()));
+                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" +
+                        dynColCnt.getAndIncrement(), Integer.class.getName()));
 
                     try {
                         fut.get();
@@ -551,6 +551,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                     catch (Exception e) {
                         fail("Unexpected exception: " + e);
                     }
+
+                    Thread.sleep(500);
                 }
 
                 return null;
@@ -562,7 +564,13 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME).withKeepBinary();
+                    assertNotNull(node);
+
+                    IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME);
+
+                    assertNotNull(cache);
+
+                    cache = cache.withKeepBinary();
 
                     String valTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME)
                         .iterator().next().valueTypeName();
@@ -783,8 +791,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" + dynColCnt.getAndIncrement(),
-                        Integer.class.getName()));
+                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" +
+                        dynColCnt.getAndIncrement(), Integer.class.getName()));
 
                     try {
                         fut.get();
