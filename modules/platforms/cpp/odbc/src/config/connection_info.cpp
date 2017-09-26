@@ -673,7 +673,7 @@ namespace ignite
                 // called SQLDriverConnect or SQLBrowseConnect, this is the value of the DSN keyword in the connection
                 // string passed to the driver. If the connection string did not contain the DSN keyword (such as when
                 // it contains the DRIVER keyword), this is an empty string.
-                strParams[SQL_DATA_SOURCE_NAME] = config.GetDsn();
+                strParams[SQL_DATA_SOURCE_NAME] = config.GetDsn("");
 #endif // SQL_DATA_SOURCE_NAME
 
 #ifdef SQL_DATA_SOURCE_READ_ONLY
@@ -760,7 +760,7 @@ namespace ignite
 #ifdef SQL_PROCEDURE_TERM
                 // A character string: "Y" if the data source supports procedures and the driver supports the ODBC
                 // procedure invocation syntax; "N" otherwise.
-                strParams[SQL_PROCEDURE_TERM] = "N";
+                strParams[SQL_PROCEDURES] = "N";
 #endif // SQL_PROCEDURE_TERM
 
 #ifdef SQL_ROW_UPDATES
@@ -2211,7 +2211,7 @@ namespace ignite
                 //     represent.
                 // SQL_CN_ANY = Correlation names are supported and can be any valid user - defined name.
                 // An SQL - 92 Entry level-conformant driver will always return SQL_CN_ANY.
-                shortParams[SQL_CORRELATION_NAME] = SQL_CB_NULL;
+                shortParams[SQL_CORRELATION_NAME] = SQL_CN_ANY;
 #endif // SQL_CORRELATION_NAME
 
 #ifdef SQL_FILE_USAGE
