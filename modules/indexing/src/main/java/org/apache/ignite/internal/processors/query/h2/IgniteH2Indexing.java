@@ -509,7 +509,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private void bindObject(PreparedStatement stmt, int idx, @Nullable Object obj) throws IgniteCheckedException {
         try {
-            log.info("bindObject [idx=" +idx + ", obj=" + obj.getClass() + ']');
             if (obj == null)
                 stmt.setNull(idx, Types.VARCHAR);
             else if (obj instanceof BigInteger)
