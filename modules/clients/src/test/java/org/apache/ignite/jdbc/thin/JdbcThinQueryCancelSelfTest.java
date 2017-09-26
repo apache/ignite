@@ -17,13 +17,13 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,7 +64,8 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
         CacheConfiguration<Integer, Integer> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cc.setCopyOnRead(true);
-        cc.setIndexedTypes(Integer.class, Integer.class);
+        cc.setIndexedTypes(Integer.class, Integer.class,
+            Long.class, Long.class);
         cc.setSqlFunctionClasses(TestSQLFunctions.class);
 
         cfg.setCacheConfiguration(cc);
@@ -80,6 +81,9 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
 
         for (int i = 0; i < MAX_ROWS; ++i)
             grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        for (int i = 0; i < MAX_ROWS; ++i)
+            grid(0).cache(DEFAULT_CACHE_NAME).put((long)i, (long)i);
     }
 
     /** {@inheritDoc} */
@@ -150,6 +154,54 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
                     return null;
                 }
             }, SQLException.class, "The query was cancelled while executing");
+
+            assert rs.next() : "The other cursor mustn't be closed";
+        } finally {
+            stmt2.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCancelBatch() throws Exception {
+        Statement stmt2 = conn.createStatement();
+
+        try {
+            stmt2.setFetchSize(1);
+
+            // Open the second cursor
+            ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
+
+            assert rs.next();
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(1000);
+
+                        stmt.cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+
+                        fail("Unexpected exception");
+                    }
+                }
+            });
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    // Execute long running query
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
+
+                    stmt.executeBatch();
+
+                    return null;
+                }
+            }, BatchUpdateException.class, "The query was cancelled while executing");
 
             assert rs.next() : "The other cursor mustn't be closed";
         } finally {

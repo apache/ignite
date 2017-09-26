@@ -46,6 +46,18 @@ class JdbcQueryCursor {
     /** Query results iterator. */
     private Iterator<List<Object>> iter;
 
+    /** Query canceled flag. */
+    private volatile boolean canceled;
+
+    /**
+     * To constrain IDLE cursor.
+     */
+    private JdbcQueryCursor() {
+        queryId = -1;
+        maxRows = -1;
+        cur = null;
+    }
+
     /**
      * @param queryId Query ID.
      * @param pageSize Fetch size.
@@ -56,6 +68,19 @@ class JdbcQueryCursor {
         this.queryId = queryId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
+        this.cur = cur;
+    }
+
+    /**
+     * To hold cursors of update queries.
+     *
+     * @param queryId Query ID.
+     * @param cur Query cursor.
+     */
+    JdbcQueryCursor(long queryId, QueryCursorImpl<List<Object>> cur) {
+        this.queryId = queryId;
+        this.pageSize = 1;
+        this.maxRows = 1;
         this.cur = cur;
     }
 
@@ -120,7 +145,8 @@ class JdbcQueryCursor {
      * Close the cursor.
      */
     public void close() {
-        cur.close();
+        if (cur != null)
+            cur.close();
     }
 
     /**
@@ -136,5 +162,28 @@ class JdbcQueryCursor {
      */
     public boolean isQuery() {
         return cur.isQuery();
+    }
+
+    /**
+     * @return Query canceled flag.
+     */
+    public boolean isCanceled() {
+        return canceled;
+    }
+
+    /**
+     * Cancel query.
+     */
+    public void cancel() {
+        canceled = true;
+
+        close();
+    }
+
+    /**
+     * @return Idle cursor to hold cancel state for DML queries.
+     */
+    public static JdbcQueryCursor idleCursor() {
+        return new JdbcQueryCursor();
     }
 }

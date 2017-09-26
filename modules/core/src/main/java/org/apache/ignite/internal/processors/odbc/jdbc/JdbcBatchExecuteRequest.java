@@ -50,6 +50,7 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * @param qryId Query ID used to cancel batch.
      * @param schemaName Schema name.
      * @param queries Queries.
      */

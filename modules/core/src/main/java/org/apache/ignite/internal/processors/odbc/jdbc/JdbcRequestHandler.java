@@ -106,15 +106,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Connection handler. */
     private final JdbcConnectionHandler connHnd;
 
-    /** Connection context. */
-    private final JdbcConnectionContext connCtx;
-
     /**
      * Constructor.
      *
      * @param ctx Context.
      * @param connHnd Connection handler.
-     * @param connCtx Connection context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
@@ -124,12 +120,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd, JdbcConnectionContext connCtx,
+    public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd,
         GridSpinBusyLock busyLock, int maxCursors, boolean distributedJoins, boolean enforceJoinOrder,
         boolean collocated, boolean replicatedOnly, boolean autoCloseCursors, boolean lazy) {
         this.ctx = ctx;
         this.connHnd = connHnd;
-        this.connCtx = connCtx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
         this.distributedJoins = distributedJoins;
@@ -218,9 +213,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return;
         }
 
-        cur.close();
-
-        qryCursors.remove(qryId);
+        cur.cancel();
     }
 
     /**
@@ -433,6 +426,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
         String schemaName = req.schemaName();
 
@@ -444,6 +438,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         try {
             String sql = null;
+
+            qryCursors.put(req.queryId(), JdbcQueryCursor.idleCursor());
 
             for (JdbcQuery q : req.queries()) {
                 if (q.sql() != null)
@@ -463,6 +459,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
                     .querySqlFieldsNoCache(qry, true);
+
+                JdbcQueryCursor jdbcCur = new JdbcQueryCursor(req.queryId(), (QueryCursorImpl)qryCur);
+
+                JdbcQueryCursor jdbcCurOld = qryCursors.put(req.queryId(), jdbcCur);
+
+                if (jdbcCurOld.isCanceled())
+                    throw new QueryCancelledException();
 
                 assert !qryCur.isQuery();
 
@@ -492,6 +495,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
 
             return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
+        }
+        finally {
+            qryCursors.remove(req.queryId());
         }
     }
 

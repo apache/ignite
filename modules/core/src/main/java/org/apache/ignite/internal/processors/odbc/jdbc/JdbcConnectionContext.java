@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * ODBC Connection Context.
@@ -114,7 +113,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        hnd = new JdbcRequestHandler(ctx, connHnd, this, busyLock, maxCursors, distributedJoins,
+        hnd = new JdbcRequestHandler(ctx, connHnd, busyLock, maxCursors, distributedJoins,
                 enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
 
         parser = new JdbcMessageParser(ctx);
