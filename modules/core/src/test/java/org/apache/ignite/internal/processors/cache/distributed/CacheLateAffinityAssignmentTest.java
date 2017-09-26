@@ -53,7 +53,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridNodeOrderComparator;
+import org.apache.ignite.internal.cluster.NodeOrderComparator;
+import org.apache.ignite.internal.cluster.NodeOrderLegacyComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -2852,7 +2853,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     affNodes.add(n);
             }
 
-            Collections.sort(affNodes, GridNodeOrderComparator.INSTANCE);
+            Collections.sort(affNodes, NodeOrderComparator.getInstance());
 
             AffinityFunctionContext affCtx = new GridAffinityFunctionContextImpl(
                 affNodes,

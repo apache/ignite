@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -174,4 +175,12 @@ public interface IgniteEx extends Ignite {
      * @param rebalanceEnabled rebalance enabled flag.
      */
     public void rebalanceEnabled(boolean rebalanceEnabled);
+
+    /**
+     * Changes Ignite grid state to active or inactive and sets it's baseline topology.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @param nodes Baseline topology nodes.
+     */
+    public void activeEx(boolean active, Collection<ClusterNode> nodes);
 }
