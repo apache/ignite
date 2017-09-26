@@ -82,16 +82,6 @@ namespace Apache.Ignite.Core.Impl
         private static Random _rnd;
 
         /// <summary>
-        /// Initializes the <see cref="IgniteUtils"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
-            Justification = "Readability.")]
-        static IgniteUtils()
-        {
-            TryCleanTempDirectories();
-        }
-
-        /// <summary>
         /// Gets thread local random.
         /// </summary>
         /// <value>Thread local random.</value>
@@ -388,21 +378,27 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
         /// </summary>
-        private static void TryCleanTempDirectories()
+        internal static void TryCleanTempDirectories()
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
+            var dt = DateTime.Now;
+
+            foreach (var dir in Directory.EnumerateDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
             {
+                if ((dt - Directory.GetCreationTime(dir)).TotalMinutes < 1)
+                {
+                    // Do not clean up recently created temp directories:
+                    // they may be used by currently starting up nodes.
+                    // This is a workaround for multiple node startup problem, see IGNITE-5730.
+                    continue;
+                }
+
                 try
                 {
                     Directory.Delete(dir, true);
                 }
-                catch (IOException)
+                catch (Exception)
                 {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
+                    // Ignore exceptions
                 }
             }
         }
