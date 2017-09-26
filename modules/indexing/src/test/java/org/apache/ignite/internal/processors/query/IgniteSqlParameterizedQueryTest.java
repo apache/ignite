@@ -74,7 +74,6 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         for (Field currentField : Bookmark.class.getDeclaredFields()) {
             bookmarkQueryEntity.addQueryField(currentField.getName(), currentField.getType().getName(), null);
         }
-        log.info("createEntityCacheConfiguration. full QueryEntity info : :"+bookmarkQueryEntity.toString());
         List<QueryEntity> queryEntities = new ArrayList<>();
         queryEntities.add(bookmarkQueryEntity);
         ccfg.setQueryEntities(queryEntities);
