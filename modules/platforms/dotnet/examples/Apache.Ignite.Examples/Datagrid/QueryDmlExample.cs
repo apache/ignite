@@ -93,7 +93,10 @@ namespace Apache.Ignite.Examples.Datagrid
                 "select emp._key, emp.name, org.name, emp.salary " +
                 "from Employee as emp, " +
                 "\"{0}\".Organization as org " +
-                "where emp.organizationId = org._key", OrganizationCacheName));
+                "where emp.organizationId = org._key", OrganizationCacheName))
+            {
+                EnableDistributedJoins = true
+            };
 
             using (var cursor = employeeCache.QueryFields(qry))
             {
