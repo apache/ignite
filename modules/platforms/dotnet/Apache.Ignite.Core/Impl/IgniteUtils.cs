@@ -396,9 +396,13 @@ namespace Apache.Ignite.Core.Impl
                 {
                     Directory.Delete(dir, true);
                 }
-                catch (Exception)
+                catch (IOException)
                 {
-                    // Ignore exceptions
+                    // Expected
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Expected
                 }
             }
         }
