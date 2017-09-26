@@ -2599,7 +2599,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         expireTime,
                         partition(),
                         updateCntr
-                    )));
+                    ), U.currentTimeMillis()));
                 }
 
                 drReplicate(drType, val, ver, topVer);
@@ -3214,7 +3214,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     writeVer,
                     expireTime,
                     partition(),
-                    updCntr)));
+                    updCntr), U.currentTimeMillis()));
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +

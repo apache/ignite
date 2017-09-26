@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * An exception is thrown when we reached tail of WAL segment cyclic buffer
+ * during reading from WAL.
  */
-public interface WALPointer extends Serializable {
+public class WalSegmentTailReachedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     *
      */
-    public WALPointer next();
+    public WalSegmentTailReachedException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 }
