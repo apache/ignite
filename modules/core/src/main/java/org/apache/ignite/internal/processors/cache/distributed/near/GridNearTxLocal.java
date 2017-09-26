@@ -2787,14 +2787,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (entry.detached()) {
             GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId(), entry.txKey());
 
-            if (cand != null && !xidVersion().equals(cand.version())) {
-                GridCacheVersion candVer = cand.version();
-
-                txEntry.explicitVersion(candVer);
-
-                if (candVer.compareTo(minVer) < 0)
-                    minVer = candVer;
-            }
+            throw new RuntimeException("[txs]updateExplicitVersion for detached entry");
+//            if (cand != null && !xidVersion().equals(cand.version())) {
+//                GridCacheVersion candVer = cand.version();
+//
+//                txEntry.explicitVersion(candVer);
+//
+//                if (candVer.compareTo(minVer) < 0)
+//                    minVer = candVer;
+//            }
         }
         else
             super.updateExplicitVersion(txEntry, entry);
