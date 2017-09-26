@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -376,6 +377,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     private volatile boolean disconnected;
+
+    /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
+    private PdsFolderResolver pdsFolderRslvr;
 
     /**
      * No-arg constructor is required by externalization.
@@ -1068,6 +1072,21 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     void disconnected(boolean disconnected) {
         this.disconnected = disconnected;
     }
+
+
+    /**{@inheritDoc}*/
+    @Override public PdsFolderResolver pdsFolderResolver() {
+        return pdsFolderRslvr;
+    }
+
+    /**
+     * @param pdsFolderRslvr PDS mode folder name resolver, also generates consistent ID in case new folder naming is
+     * used
+     */
+    void pdsFolderResolver(PdsFolderResolver pdsFolderRslvr) {
+        this.pdsFolderRslvr = pdsFolderRslvr;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

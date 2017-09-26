@@ -245,9 +245,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode()) {
-            final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver(cctx.gridConfig(), cctx.discovery());
-
-            final PdsFolderSettings resolveFolders = rslvr.resolveFolders();
+            final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
             final String consId = resolveFolders.folderName();
             checkWalConfiguration();
 

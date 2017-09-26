@@ -70,12 +70,7 @@ class BinaryMetadataFileStore {
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
         else {
-            final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver( ctx.config(),
-                ctx.discovery());
-
-            final PdsFolderSettings folderSettings = rslvr.resolveFolders();
-
-            String subFolder = folderSettings.folderName();
+            final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
 
             workDir = new File(U.resolveWorkDirectory(
                 ctx.config().getWorkDirectory(),

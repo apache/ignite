@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.filename;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
@@ -34,6 +35,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     private boolean deleteAfter = false;
     private boolean deleteBefore = true;
+
+    /** Configured consistent id. */
+    private String configuredConsistentId;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -62,25 +66,102 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
+        if (configuredConsistentId != null)
+            cfg.setConsistentId(configuredConsistentId);
         final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(psCfg);
         return cfg;
     }
 
+    /**
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     *
+     * @throws Exception if failed
+     */
     public void testNewStyleIdIsGenerated() throws Exception {
         IgniteEx igniteEx = startGrid(0);
         igniteEx.active(true);
         igniteEx.getOrCreateCache("dummy").put("hi", "there!");
-        //   File db = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
-        // List<File> files = Arrays.asList(db.listFiles());
 
-        String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
-        assertDirectoryExist("binary_meta", consistentIdMasked);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked);
-        assertDirectoryExist("db", consistentIdMasked);
+        final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
+        String consistentIdMasked = "Node0-" + consistentId;
+        assertPdsDirsDefaultExist(consistentIdMasked);
+        stopGrid(0);
+        final UUID uuid = UUID.fromString(consistentId);
+    }
+
+    /**
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     *
+     * @throws Exception if failed
+     */
+    public void testPreconfiguredConsitentIdIsApplied() throws Exception {
+        this.configuredConsistentId = "someConfiguredConsistentId";
+        IgniteEx igniteEx = startGrid(0);
+        igniteEx.active(true);
+        igniteEx.getOrCreateCache("dummy").put("hi", "there!");
+
+        assertPdsDirsDefaultExist(configuredConsistentId);
         stopGrid(0);
     }
 
+
+    /**
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     *
+     * @throws Exception if failed
+     */
+    public void testRestartOnExistingOldStyleId() throws Exception {
+        this.configuredConsistentId = "127.0.0.1:47500"; //this is for create old node folder
+        IgniteEx igniteEx = startGrid(0);
+        igniteEx.active(true);
+        final String expectedVal = "there is compatible mode with old style folders!";
+        igniteEx.getOrCreateCache("dummy").put("hi", expectedVal);
+
+        assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId));
+        stopGrid(0);
+
+        this.configuredConsistentId = null; //now set up grid on folder
+
+        IgniteEx igniteRestart = startGrid(0);
+        igniteRestart.active(true);
+        assertTrue(expectedVal.equals(igniteRestart.cache("dummy").get("hi")));
+        stopGrid(0);
+    }
+
+    /**
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     *
+     * @throws Exception if failed
+     */
+    public void testRestartOnSameFolderWillCauseSameUuidGeneration() throws Exception {
+        final UUID uuid;
+        {
+            IgniteEx igniteEx = startGrid(0);
+            igniteEx.active(true);
+            igniteEx.getOrCreateCache("dummy").put("hi", "there!");
+
+            final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
+            String consistentIdMasked = "Node0-" + consistentId;
+            assertPdsDirsDefaultExist(consistentIdMasked);
+            stopGrid(0);
+
+            uuid = UUID.fromString(consistentId);
+        }
+
+        {
+            IgniteEx igniteRestart = startGrid(0);
+            igniteRestart.active(true);
+            assertTrue("there!".equals(igniteRestart.cache("dummy").get("hi")));
+
+            final String consistentId = igniteRestart.cluster().localNode().consistentId().toString();
+            String consistentIdMasked = "Node0-" + consistentId;
+            assertPdsDirsDefaultExist(consistentIdMasked);
+            stopGrid(0);
+
+            assertEquals(uuid, UUID.fromString(consistentId));
+        }
+    }
 
     public void testNodeIndexIncremented() throws Exception {
         IgniteEx igniteEx = startGrid(0);
@@ -89,27 +170,35 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         igniteEx.getOrCreateCache("dummy").put("hi", "there!");
         igniteEx1.getOrCreateCache("dummy").put("hi1", "there!");
         String consistentIdMasked1 = "Node1-" + (igniteEx1.cluster().localNode().consistentId().toString());
-        assertDirectoryExist("binary_meta", consistentIdMasked1);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked1);
-        assertDirectoryExist("db", consistentIdMasked1);
-
+        assertPdsDirsDefaultExist(consistentIdMasked1);
 
         String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
-        assertDirectoryExist("binary_meta", consistentIdMasked);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked);
-        assertDirectoryExist("db", consistentIdMasked);
+        assertPdsDirsDefaultExist(consistentIdMasked);
         stopGrid(0);
         stopGrid(1);
     }
 
+    private void assertPdsDirsDefaultExist(String consistentIdMasked) throws IgniteCheckedException, IOException {
+        assertDirectoryExist("binary_meta", consistentIdMasked);
+        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked);
+        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, consistentIdMasked);
+        assertDirectoryExist("db", consistentIdMasked);
+    }
 
-    private void assertDirectoryExist(String ...subFolderNames) throws IgniteCheckedException, IOException {
+    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException, IOException {
         File curFolder = new File(U.defaultWorkDirectory());
         for (String name : subFolderNames) {
             curFolder = new File(curFolder, name);
         }
-        assertTrue("Directory "+ Arrays.asList(subFolderNames).toString()
-            +" is expected to exist [" + curFolder.getCanonicalPath() + "]", curFolder.exists() && curFolder.isDirectory());
+        final String path;
+        try {
+            path = curFolder.getCanonicalPath();
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to convert path: [" + curFolder.getAbsolutePath() + "]", e);
+        }
+        assertTrue("Directory " + Arrays.asList(subFolderNames).toString()
+            + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
     }
 
 }

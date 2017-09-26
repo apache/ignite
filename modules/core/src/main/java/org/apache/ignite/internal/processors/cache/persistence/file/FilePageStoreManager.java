@@ -120,11 +120,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (ctx.clientNode())
             return;
 
-
-        final PdsCompatibleFileNameResolver rslvr = new PdsCompatibleFileNameResolver(ctx.config(),
-            ctx.discovery());
-
-        final PdsFolderSettings folderSettings = rslvr.resolveFolders();
+        final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
         if (pstCfg.getPersistentStorePath() != null) {
             File workDir0 = new File(pstCfg.getPersistentStorePath());

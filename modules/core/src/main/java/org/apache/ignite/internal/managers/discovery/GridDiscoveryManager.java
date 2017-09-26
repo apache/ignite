@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -282,7 +283,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
-    private Object consistentId;
+    private Serializable consistentId;
 
     /** Discovery spi registered flag. */
     private boolean registeredDiscoSpi;
@@ -2016,9 +2017,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @return Consistent ID.
+     * Gets consistent ID.
+     *
+     * @return Consistent ID of this Ignite instance
      */
-    public Object consistentId() {
+    public Serializable consistentId() {
         if (consistentId == null) {
             try {
                 inject();
