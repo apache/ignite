@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -50,6 +53,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     private List<StoredCacheData> storedCfgs;
 
     /** */
+    @Nullable private BaselineTopology baselineTopology;
+
+    /** */
     @GridToStringExclude
     private transient ExchangeActions exchangeActions;
 
@@ -63,7 +69,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         UUID reqId,
         UUID initiatingNodeId,
         @Nullable List<StoredCacheData> storedCfgs,
-        boolean activate
+        boolean activate,
+        BaselineTopology baselineTopology
     ) {
         assert reqId != null;
         assert initiatingNodeId != null;
@@ -72,6 +79,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
         this.activate = activate;
+        this.baselineTopology = baselineTopology;
     }
 
     /**
@@ -124,6 +132,13 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean activate() {
         return activate;
+    }
+
+    /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return baselineTopology;
     }
 
     /**

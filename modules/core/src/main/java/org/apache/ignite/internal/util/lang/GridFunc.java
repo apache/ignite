@@ -3012,7 +3012,7 @@ public class GridFunc {
      */
     public static boolean eqNodes(Object n1, Object n2) {
         return n1 == n2 || !(n1 == null || n2 == null) && !(!(n1 instanceof ClusterNode) || !(n2 instanceof ClusterNode))
-            && ((ClusterNode)n1).id().equals(((ClusterNode)n2).id());
+            && ((ClusterNode)n1).consistentId().equals(((ClusterNode)n2).consistentId());
     }
 
     /**
