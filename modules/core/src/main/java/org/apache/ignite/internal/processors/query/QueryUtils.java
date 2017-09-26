@@ -222,7 +222,14 @@ public class QueryUtils {
         normalEntity.setKeyFields(entity.getKeyFields());
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
-        normalEntity.setNotNullFields(entity.getNotNullFields());
+
+        if (!F.isEmpty(entity.getNotNullFields())) {
+            QueryEntityEx normalEntity0 = new QueryEntityEx(normalEntity);
+
+            normalEntity0.setNotNullFields(entity.getNotNullFields());
+
+            normalEntity = normalEntity0;
+        }
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -1184,6 +1191,23 @@ public class QueryUtils {
      */
     public static String createTableKeyTypeName(String valTypeName) {
         return valTypeName + "_KEY";
+    }
+
+    /**
+     * Copy query entity.
+     *
+     * @param entity Query entity.
+     * @return Copied entity.
+     */
+    public static QueryEntity copy(QueryEntity entity) {
+        QueryEntity res;
+
+        if (entity instanceof QueryEntityEx)
+            res = new QueryEntityEx(entity);
+        else
+            res = new QueryEntity(entity);
+
+        return res;
     }
 
     /**
