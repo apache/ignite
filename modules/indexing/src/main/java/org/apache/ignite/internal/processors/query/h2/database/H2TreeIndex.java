@@ -186,20 +186,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
-        try {
-            int seg = segmentForRow(row);
-
-            H2Tree tree = treeForRead(seg);
-
-            return tree.findOne(row);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);

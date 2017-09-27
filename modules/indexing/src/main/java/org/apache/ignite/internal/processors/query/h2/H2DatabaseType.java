@@ -88,7 +88,7 @@ public enum H2DatabaseType {
     /** Map of Class to enum. */
     private static final Map<Class<?>, H2DatabaseType> map = new HashMap<>();
 
-    /**
+    /*
      * Initialize map of DB types.
      */
     static {
