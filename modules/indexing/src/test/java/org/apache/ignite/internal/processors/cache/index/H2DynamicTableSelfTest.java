@@ -277,7 +277,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 @Override public Object call() throws Exception {
                     doTestCustomNames("new", null, null);return null;
                 }
-            }, IgniteSQLException.class, "Table already exists: [cacheName=new, tblName=NameTest]");
+            }, IgniteSQLException.class, "Table already exists: NameTest");
         }
         finally {
             client().destroyCache("new");
