@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagPartitionRecover = flagPartitionRecover;
 
             _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
-                ? new CacheTransactionManager(_ignite.GetTransactions())
+                ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { return _ignite; }
+            get { return _ignite.GetIgnite(); }
         }
 
         /// <summary>
@@ -250,17 +250,21 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
                     Marshaller, IsKeepBinary);
 
-                writer.WriteObject(p0);
+                writer.WriteObjectDetached(p0);
             }
             else
-                writer.WriteObject<CacheEntryFilterHolder>(null);
+            {
+                writer.WriteObjectDetached<CacheEntryFilterHolder>(null);
+            }
 
             if (args != null && args.Length > 0)
             {
                 writer.WriteInt(args.Length);
 
                 foreach (var o in args)
-                    writer.WriteObject(o);
+                {
+                    writer.WriteObjectDetached(o);
+                }
             }
             else
             {
@@ -337,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             var res = DoOutInOpX((int)CacheOp.Peek,
                 w =>
                 {
-                    w.Write(key);
+                    w.WriteObjectDetached(key);
                     w.WriteInt(EncodePeekModes(modes));
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
@@ -473,8 +477,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndPutAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -499,8 +503,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndReplaceAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -567,8 +571,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.GetAndPutIfAbsentAsync, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(val);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(val);
             }, r => GetCacheResult(r));
         }
 
@@ -617,9 +621,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync<bool>(CacheOp.Replace3Async, w =>
             {
-                w.WriteObject(key);
-                w.WriteObject(oldVal);
-                w.WriteObject(newVal);
+                w.WriteObjectDetached(key);
+                w.WriteObjectDetached(oldVal);
+                w.WriteObjectDetached(newVal);
             });
         }
 
@@ -838,8 +842,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int) CacheOp.Invoke,
                 writer =>
                 {
-                    writer.Write(key);
-                    writer.Write(holder);
+                    writer.WriteObjectDetached(key);
+                    writer.WriteObjectDetached(holder);
                 },
                 (input, res) => res == True ? Unmarshal<TRes>(input) : default(TRes),
                 _readException);
@@ -858,8 +862,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutOpAsync(CacheOp.InvokeAsync, writer =>
                 {
-                    writer.Write(key);
-                    writer.Write(holder);
+                    writer.WriteObjectDetached(key);
+                    writer.WriteObjectDetached(holder);
                 },
                 r =>
                 {
@@ -1087,7 +1091,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteBoolean(qry.EnableDistributedJoins);
                 writer.WriteBoolean(qry.EnforceJoinOrder);
-                writer.WriteBoolean(false); // Lazy flag.
+                writer.WriteBoolean(qry.Lazy); // Lazy flag.
                 writer.WriteInt((int) qry.Timeout.TotalMilliseconds);
                 writer.WriteBoolean(qry.ReplicatedOnly);
                 writer.WriteBoolean(qry.Colocated);
@@ -1319,8 +1323,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoOutInOpX((int) op, w =>
             {
-                w.Write(x);
-                w.Write(y);
+                w.WriteObjectDetached(x);
+                w.WriteObjectDetached(y);
             }, _readException);
         }
 
@@ -1331,9 +1335,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return DoOutInOpX((int) op, w =>
             {
-                w.Write(x);
-                w.Write(y);
-                w.Write(z);
+                w.WriteObjectDetached(x);
+                w.WriteObjectDetached(y);
+                w.WriteObjectDetached(z);
             }, _readException);
         }
 
@@ -1364,8 +1368,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             return DoOutInOpX((int)cacheOp,
                 w =>
                 {
-                    w.Write(x);
-                    w.Write(y);
+                    w.WriteObjectDetached(x);
+                    w.WriteObjectDetached(y);
                 },
                 (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(),
                 _readException);

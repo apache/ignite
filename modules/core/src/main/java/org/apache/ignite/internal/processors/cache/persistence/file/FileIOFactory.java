@@ -20,26 +20,29 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.OpenOption;
 
+/**
+ * {@link FileIO} factory definition.
+ */
 public interface FileIOFactory extends Serializable {
+    /**
+     * Creates I/O interface for file with default I/O mode.
+     *
+     * @param file File.
+     * @return File I/O interface.
+     * @throws IOException If I/O interface creation was failed.
+     */
+    public FileIO create(File file) throws IOException;
 
     /**
-     * Creates I/O interface for file with default I/O mode
+     * Creates I/O interface for file with specified mode.
      *
      * @param file File
-     * @return File I/O interface
-     * @throws IOException If I/O interface creation was failed
+     * @param modes Open modes.
+     * @return File I/O interface.
+     * @throws IOException If I/O interface creation was failed.
      */
-    FileIO create(File file) throws IOException;
-
-    /**
-     * Creates I/O interface for file with specified mode
-     *
-     * @param file File
-     * @param mode I/O mode in
-     * @return File I/O interface
-     * @throws IOException If I/O interface creation was failed
-     */
-    FileIO create(File file, String mode) throws IOException;
+    public FileIO create(File file, OpenOption... modes) throws IOException;
 
 }

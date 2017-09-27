@@ -112,6 +112,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="checkpointWriteOrder" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Random" />
+            <xs:enumeration value="Sequential" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1309,6 +1316,53 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="clientConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="persistentStoreConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Persistent store configuration.</xs:documentation>
@@ -1409,6 +1463,11 @@
                                 <xs:documentation>Rate time interval.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="checkpointWriteOrder" type="checkpointWriteOrder">
+                            <xs:annotation>
+                                <xs:documentation>Checkpoint page write order on disk.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
@@ -1436,6 +1495,11 @@
                             </xs:element>
                         </xs:sequence>
                     </xs:complexType>
+                </xs:element>
+                <xs:element name="consistentId" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
+                    </xs:annotation>
                 </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
@@ -1651,6 +1715,11 @@
             <xs:attribute name="isActiveOnStart" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

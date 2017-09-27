@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.security.AccessController;
@@ -53,6 +54,8 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -532,6 +535,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -568,6 +572,14 @@ public class PlatformConfigurationUtils {
             cfg.setLongQueryWarningTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
+
+        Object consId = in.readObjectDetached();
+
+        if (consId instanceof Serializable) {
+            cfg.setConsistentId((Serializable) consId);
+        } else if (consId != null) {
+            throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
+        }
 
         // Thread pools.
         if (in.readBoolean())
@@ -679,6 +691,12 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
+
+        if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
+            cfg.setClientConnectorConfiguration(null);
 
         if (in.readBoolean())
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
@@ -983,6 +1001,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
@@ -1016,6 +1035,7 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
+        w.writeObject(cfg.getConsistentId());
 
         // Thread pools.
         w.writeBoolean(true);
@@ -1144,6 +1164,10 @@ public class PlatformConfigurationUtils {
         writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
+
+        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
+
+        w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
@@ -1442,6 +1466,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
+    @SuppressWarnings("deprecation")
     private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
         return new SqlConnectorConfiguration()
                 .setHost(in.readString())
@@ -1459,7 +1484,50 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
+    @SuppressWarnings("deprecation")
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the client connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
+        return new ClientConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
+
+    /**
+     * Writes the client connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {
@@ -1504,7 +1572,8 @@ public class PlatformConfigurationUtils {
                 .setAlwaysWriteFullPages(in.readBoolean())
                 .setMetricsEnabled(in.readBoolean())
                 .setSubIntervals(in.readInt())
-                .setRateTimeInterval(in.readLong());
+                .setRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()));
     }
 
     /**
@@ -1537,6 +1606,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isMetricsEnabled());
             w.writeInt(cfg.getSubIntervals());
             w.writeLong(cfg.getRateTimeInterval());
+            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
 
         } else {
             w.writeBoolean(false);

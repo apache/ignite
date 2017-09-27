@@ -102,6 +102,11 @@ namespace Apache.Ignite.Core.PersistentStore
         public const string DefaultWalArchivePath = "db/wal/archive";
 
         /// <summary>
+        /// Default value for <see cref="CheckpointWriteOrder"/>.
+        /// </summary>
+        public const CheckpointWriteOrder DefaultCheckpointWriteOrder = CheckpointWriteOrder.Sequential;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
         /// </summary>
         public PersistentStoreConfiguration()
@@ -120,6 +125,7 @@ namespace Apache.Ignite.Core.PersistentStore
             SubIntervals = DefaultSubIntervals;
             WalArchivePath = DefaultWalArchivePath;
             WalStorePath = DefaultWalStorePath;
+            CheckpointWriteOrder = DefaultCheckpointWriteOrder;
         }
 
         /// <summary>
@@ -149,6 +155,7 @@ namespace Apache.Ignite.Core.PersistentStore
             MetricsEnabled = reader.ReadBoolean();
             SubIntervals = reader.ReadInt();
             RateTimeInterval = reader.ReadLongAsTimespan();
+            CheckpointWriteOrder = (CheckpointWriteOrder) reader.ReadInt();
         }
 
         /// <summary>
@@ -178,6 +185,7 @@ namespace Apache.Ignite.Core.PersistentStore
             writer.WriteBoolean(MetricsEnabled);
             writer.WriteInt(SubIntervals);
             writer.WriteTimeSpanAsLong(RateTimeInterval);
+            writer.WriteInt((int) CheckpointWriteOrder);
         }
 
         /// <summary>
@@ -298,5 +306,11 @@ namespace Apache.Ignite.Core.PersistentStore
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with Java config")]
         public int SubIntervals { get; set; }
+
+        /// <summary>
+        /// Gets or sets the checkpoint page write order on disk.
+        /// </summary>
+        [DefaultValue(DefaultCheckpointWriteOrder)]
+        public CheckpointWriteOrder CheckpointWriteOrder { get; set; }
     }
 }
