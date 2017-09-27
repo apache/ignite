@@ -102,16 +102,15 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestConfigValidation()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                LocalEventListeners = new[]
+            var cfg = new IgniteConfiguration();
+
+            var ex = Assert.Throws<IgniteException>(() => cfg.LocalEventListeners = new[]
                 {
                     new LocalEventListener<IEvent>()
                 }
-            };
+            );
 
-            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.AreEqual("", ex.Message);
+            Assert.AreEqual("LocalEventListener.Listener can't be null.", ex.Message);
         }
 
         /// <summary>

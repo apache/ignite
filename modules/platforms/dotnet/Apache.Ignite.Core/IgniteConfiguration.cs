@@ -192,8 +192,10 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** Local event listeners. */
+
         /** Local event listeners. Stored as array to ensure index access. */
-        private LocalEventListener[] _localEventListeners;
+        private LocalEventListener[] _localEventListenersInternal;
 
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
@@ -515,11 +517,13 @@ namespace Apache.Ignite.Core
             }
 
             // Local event listeners (should be last).
-            if (_localEventListeners != null)
-            {
-                writer.WriteInt(_localEventListeners.Length);
+            InitLocalEventListeners();
 
-                foreach (var listener in _localEventListeners)
+            if (_localEventListenersInternal != null)
+            {
+                writer.WriteInt(_localEventListenersInternal.Length);
+
+                foreach (var listener in _localEventListenersInternal)
                 {
                     ValidateLocalEventListener(listener);
 
@@ -908,28 +912,24 @@ namespace Apache.Ignite.Core
         /// but important difference is that some events occur during startup and can be only received this way.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<LocalEventListener> LocalEventListeners
-        {
-            get { return _localEventListeners; }
-            set
-            {
-                if (value != null)
-                {
-                    _localEventListeners = value.ToArray();
-                    
-                    _localEventListenerIds = new Dictionary<object, int>();
+        public ICollection<LocalEventListener> LocalEventListeners { get; set; }
 
-                    for (var i = 0; i < _localEventListeners.Length; i++)
-                    {
-                        var listener = _localEventListeners[i];
-                        ValidateLocalEventListener(listener);
-                        _localEventListenerIds[listener.ListenerObject] = i;
-                    }
-                }
-                else
+        /// <summary>
+        /// Initializes the local event listeners collections.
+        /// </summary>
+        private void InitLocalEventListeners()
+        {
+            if (LocalEventListeners != null && _localEventListenersInternal == null)
+            {
+                _localEventListenersInternal = LocalEventListeners.ToArray();
+
+                _localEventListenerIds = new Dictionary<object, int>();
+
+                for (var i = 0; i < _localEventListenersInternal.Length; i++)
                 {
-                    _localEventListeners = null;
-                    _localEventListenerIds = null;
+                    var listener = _localEventListenersInternal[i];
+                    ValidateLocalEventListener(listener);
+                    _localEventListenerIds[listener.ListenerObject] = i;
                 }
             }
         }
@@ -939,7 +939,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         internal LocalEventListener[] LocalEventListenersInternal
         {
-            get { return _localEventListeners; }
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenersInternal;
+            }
         }
 
         /// <summary>
@@ -947,7 +952,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         internal Dictionary<object, int> LocalEventListenerIds
         {
-            get { return _localEventListenerIds; }
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenerIds;
+            }
         }
 
         /// <summary>
