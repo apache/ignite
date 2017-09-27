@@ -80,6 +80,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.RI
 /**
  * Splits a single SQL query into two step map-reduce query.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridSqlQuerySplitter {
     /** */
     private static final String MERGE_TABLE_SCHEMA = "PUBLIC"; // Schema PUBLIC must always exist.
@@ -962,8 +963,6 @@ public class GridSqlQuerySplitter {
                 select.setColumn(i, expr);
             }
 
-            assert expr instanceof GridSqlAlias;
-
             if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.<GridSqlAlias>newIdentityHashSet(), expr)) {
                 // Push down the whole expression.
                 pushDownColumn(tblAliases, cols, wrapAlias, expr, 0);
@@ -1739,9 +1738,6 @@ public class GridSqlQuerySplitter {
             normalizeExpression(from, 2);
         }
         else if (from instanceof GridSqlFunction) {
-            // TODO generate filtering function around the given function
-            // TODO SYSTEM_RANGE is a special case, it can not be wrapped
-
             // In case of alias parent we need to replace the alias itself.
             if (!prntAlias)
                 generateUniqueAlias(prnt, childIdx);
@@ -1754,6 +1750,7 @@ public class GridSqlQuerySplitter {
      * @param prnt Parent element.
      * @param childIdx Child index.
      */
+    @SuppressWarnings("StatementWithEmptyBody")
     private void normalizeExpression(GridSqlAst prnt, int childIdx) {
         GridSqlAst el = prnt.child(childIdx);
 
@@ -2321,8 +2318,6 @@ public class GridSqlQuerySplitter {
                 constant.value().getObject()), null, null, -1, -1);
         }
 
-        assert right instanceof GridSqlParameter;
-
         GridSqlParameter param = (GridSqlParameter) right;
 
         return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
@@ -2349,8 +2344,7 @@ public class GridSqlQuerySplitter {
 
         ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
 
-        for (CacheQueryPartitionInfo part: a)
-            list.add(part);
+        Collections.addAll(list, a);
 
         for (CacheQueryPartitionInfo part: b) {
             int i = 0;
@@ -2480,6 +2474,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return The actual AST element for this model.
          */
+        @SuppressWarnings("TypeParameterHidesVisibleType")
         private <X extends GridSqlAst> X ast() {
             return prnt.child(childIdx);
         }
@@ -2526,6 +2521,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return The actual AST element for this expression.
          */
+        @SuppressWarnings("TypeParameterHidesVisibleType")
         private <X extends GridSqlAst> X ast() {
             return prnt.child(childIdx);
         }

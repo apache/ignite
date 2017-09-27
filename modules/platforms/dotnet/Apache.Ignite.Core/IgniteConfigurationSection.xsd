@@ -112,6 +112,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="checkpointWriteOrder" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Random" />
+            <xs:enumeration value="Sequential" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1454,6 +1461,11 @@
                         <xs:attribute name="rateTimeInterval" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Rate time interval.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointWriteOrder" type="checkpointWriteOrder">
+                            <xs:annotation>
+                                <xs:documentation>Checkpoint page write order on disk.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

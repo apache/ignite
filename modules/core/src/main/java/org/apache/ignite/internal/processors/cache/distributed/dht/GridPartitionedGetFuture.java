@@ -73,29 +73,24 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** Logger. */
     private static IgniteLogger log;
 
-    /** Topology version. */
-    private AffinityTopologyVersion topVer;
-
     /**
      * @param cctx Context.
      * @param keys Keys.
-     * @param topVer Topology version.
      * @param readThrough Read through flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Recovery mode flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
-     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean forcePrimary,
         @Nullable UUID subjId,
@@ -104,7 +99,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer,
         boolean keepCacheObjects
     ) {
@@ -117,12 +111,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             deserializeBinary,
             expiryPlc,
             skipVals,
-            canRemap,
             needVer,
             keepCacheObjects,
             recovery);
-
-        this.topVer = topVer;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
@@ -130,8 +121,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /**
      * Initializes future.
+     *
+     * @param topVer Topology version.
      */
-    public void init() {
+    public void init(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
         if (lockedTopVer != null) {
@@ -140,7 +133,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
         }
         else {
-            AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
+            topVer = topVer.topologyVersion() > 0 ? topVer :
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
             map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
@@ -402,7 +395,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.allowFastLocalRead(part, affNodes, topVer);
 
-        if (fastLocGet && localGet(key, part, locVals))
+        if (fastLocGet && localGet(topVer, key, part, locVals))
             return false;
 
         ClusterNode node = affinityNode(affNodes);
@@ -438,12 +431,13 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /**
+     * @param topVer Topology version.
      * @param key Key.
      * @param part Partition.
      * @param locVals Local values.
      * @return {@code True} if there is no need to further search value.
      */
-    private boolean localGet(KeyCacheObject key, int part, Map<K, V> locVals) {
+    private boolean localGet(AffinityTopologyVersion topVer, KeyCacheObject key, int part, Map<K, V> locVals) {
         assert cctx.affinityNode() : this;
 
         GridDhtCacheAdapter<K, V> cache = cache();
