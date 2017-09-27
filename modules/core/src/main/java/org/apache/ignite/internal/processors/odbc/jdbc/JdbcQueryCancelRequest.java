@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcQueryCancelRequest extends JdbcRequest {
     /** Connection ID. */
-    private long connId;
+    private UUID connId;
 
     /** Query ID. */
     private long qryId;
@@ -42,7 +43,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
      * @param connId Connection ID.
      * @param qryId Query ID.
      */
-    public JdbcQueryCancelRequest(long connId, long qryId) {
+    public JdbcQueryCancelRequest(UUID connId, long qryId) {
         super(QRY_CANCEL);
 
         this.connId = connId;
@@ -52,7 +53,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
     /**
      * @return Query ID.
      */
-    public long connectionId() {
+    public UUID connectionId() {
         return connId;
     }
 
@@ -67,7 +68,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(connId);
+        writer.writeUuid(connId);
         writer.writeLong(qryId);
     }
 
@@ -75,7 +76,7 @@ public class JdbcQueryCancelRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        connId = reader.readLong();
+        connId = reader.readUuid();
         qryId = reader.readLong();
     }
 

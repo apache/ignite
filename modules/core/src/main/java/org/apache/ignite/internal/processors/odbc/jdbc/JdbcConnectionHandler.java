@@ -17,20 +17,17 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 /**
- * ODBC Connection Context.
+ * JDBC Connection handler.
  */
 public class JdbcConnectionHandler {
-    /** Connection ID sequence. */
-    private static final AtomicLong CONN_ID_GEN = new AtomicLong();
-
-    /** Request handlers map (connection Id -> handler). */
-    private final ConcurrentHashMap<Long, JdbcConnectionContext> ctxs = new ConcurrentHashMap<>();
+    /** Connection contexts map (connection Id -> context). */
+    private final ConcurrentHashMap<UUID, JdbcConnectionContext> ctxs = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal Context.
@@ -39,7 +36,7 @@ public class JdbcConnectionHandler {
      * @return JDBC connection context.
      */
     public JdbcConnectionContext createContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
-        long connId = CONN_ID_GEN.incrementAndGet();
+        UUID connId = UUID.randomUUID();
 
         JdbcConnectionContext cctx = new JdbcConnectionContext(ctx, this, busyLock, maxCursors, connId);
 
@@ -52,7 +49,7 @@ public class JdbcConnectionHandler {
      * @param connId Connection ID.
      * @return Handler for specified connection.
      */
-    public JdbcRequestHandler handler(long connId) {
+    public JdbcRequestHandler handler(UUID connId) {
         JdbcConnectionContext ctx = ctxs.get(connId);
 
         return ctx == null ? null : (JdbcRequestHandler)ctx.handler();
@@ -61,7 +58,7 @@ public class JdbcConnectionHandler {
     /**
      * @param connId Connection ID of the disconnected client.
      */
-    public void onDisconnect(long connId) {
+    public void onDisconnect(UUID connId) {
         ctxs.remove(connId);
     }
 }

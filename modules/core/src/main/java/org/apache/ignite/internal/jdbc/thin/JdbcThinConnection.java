@@ -35,6 +35,7 @@ import java.sql.Statement;
 import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
@@ -692,9 +693,7 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequestThroughNewConnection(JdbcRequest req) throws SQLException {
-        try {
-            JdbcThinTcpIo newIo = JdbcThinTcpIo.newIo(cliIo);
-
+        try (JdbcThinTcpIo newIo = JdbcThinTcpIo.newIo(cliIo)) {
             JdbcResponse res = newIo.sendRequest(req);
 
             if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
@@ -854,15 +853,8 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return Connection ID.
      */
-    long connectionId() {
+    UUID connectionId() {
         return cliIo.connectionId();
-    }
-
-    /**
-     * @return Executing query ID.
-     */
-    long currentQueryId() {
-        return QRY_ID_GEN.get();
     }
 
     /**

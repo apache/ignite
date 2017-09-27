@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -64,7 +65,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     private JdbcConnectionHandler connHnd;
 
     /** Connection ID. */
-    private final long connId;
+    private final UUID connId;
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
@@ -80,7 +81,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
      * @param connId Connection ID.
      */
     public JdbcConnectionContext(GridKernalContext ctx, JdbcConnectionHandler connHnd,
-        GridSpinBusyLock busyLock, int maxCursors, long connId) {
+        GridSpinBusyLock busyLock, int maxCursors, UUID connId) {
         this.ctx = ctx;
         this.connHnd = connHnd;
         this.busyLock = busyLock;
@@ -133,7 +134,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
 
         // Write connection ID.
-        writer.writeLong(connId);
+        writer.writeUuid(connId);
     }
 
 

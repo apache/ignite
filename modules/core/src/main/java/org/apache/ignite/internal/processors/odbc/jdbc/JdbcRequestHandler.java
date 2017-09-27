@@ -479,22 +479,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            int code;
+            JdbcResponse errResp = exceptionToResult(e);
 
-            String msg;
-
-            if (e instanceof IgniteSQLException) {
-                code = ((IgniteSQLException) e).statusCode();
-
-                msg = e.getMessage();
-            }
-            else {
-                code = IgniteQueryErrorCode.UNKNOWN;
-
-                msg = e.getMessage();
-            }
-
-            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
+            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries),
+                errResp.status(), errResp.error()));
         }
         finally {
             qryCursors.remove(req.queryId());

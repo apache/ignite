@@ -79,6 +79,9 @@ public class JdbcThinStatement implements Statement {
     /** Close this statement on result set close. */
     private boolean closeOnCompletion;
 
+    /** Current processing query ID. */
+    private long currQueryId = -1;
+
     /**
      * Creates new statement.
      *
@@ -125,7 +128,9 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        JdbcQueryExecuteResult res = conn.sendRequest(new JdbcQueryExecuteRequest(conn.nextQueryId(), stmtType,
+        currQueryId = conn.nextQueryId();
+
+        JdbcQueryExecuteResult res = conn.sendRequest(new JdbcQueryExecuteRequest(currQueryId, stmtType,
             conn.getSchema(), pageSize, maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
         assert res != null;
@@ -217,10 +222,10 @@ public class JdbcThinStatement implements Statement {
     @Override public void cancel() throws SQLException {
         ensureNotClosed();
 
-        if (conn.currentQueryId() < 0)
+        if (currQueryId < 0 || conn.connectionId() == null)
             return;
 
-        conn.sendRequestThroughNewConnection(new JdbcQueryCancelRequest(conn.connectionId(), conn.currentQueryId()));
+        conn.sendRequestThroughNewConnection(new JdbcQueryCancelRequest(conn.connectionId(), currQueryId));
     }
 
     /** {@inheritDoc} */
@@ -376,8 +381,10 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
+            currQueryId = conn.nextQueryId();
+
             JdbcBatchExecuteResult res = conn.sendRequest(
-                new JdbcBatchExecuteRequest(conn.nextQueryId(), conn.getSchema(), batch));
+                new JdbcBatchExecuteRequest(currQueryId, conn.getSchema(), batch));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

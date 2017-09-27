@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -119,7 +120,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
     private IgniteProductVersion igniteVer;
 
     /** Connection ID. */
-    private long connId;
+    private UUID connId;
 
     /**
      * Constructor.
@@ -226,7 +227,8 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
                 igniteVer = new IgniteProductVersion(maj, min, maintenance, stage, ts, hash);
 
-                connId = reader.readLong();
+                if (reader.available() > 0)
+                    connId = reader.readUuid();
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
@@ -487,7 +489,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
     /**
      * @return Connection ID.
      */
-    public long connectionId() {
+    public UUID connectionId() {
         return connId;
     }
 
