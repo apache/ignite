@@ -521,20 +521,7 @@ namespace Apache.Ignite.Core
 
                 foreach (var listener in _localEventListeners)
                 {
-                    if (listener == null)
-                    {
-                        throw new IgniteException("LocalEventListeners can't be null.");
-                    }
-
-                    if (listener.ListenerObject == null)
-                    {
-                        throw new IgniteException("LocalEventListener.Listener can't be null.");
-                    }
-
-                    if (listener.EventTypes == null || listener.EventTypes.Count == 0)
-                    {
-                        throw new IgniteException("LocalEventListener.EventTypes can't be null or empty.");
-                    }
+                    ValidateLocalEventListener(listener);
 
                     writer.WriteIntArray(listener.EventTypes.ToArray());
                 }
@@ -542,6 +529,28 @@ namespace Apache.Ignite.Core
             else
             {
                 writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Validates the local event listener.
+        /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        private static void ValidateLocalEventListener(LocalEventListener listener)
+        {
+            if (listener == null)
+            {
+                throw new IgniteException("LocalEventListeners can't be null.");
+            }
+
+            if (listener.ListenerObject == null)
+            {
+                throw new IgniteException("LocalEventListener.Listener can't be null.");
+            }
+
+            if (listener.EventTypes == null || listener.EventTypes.Count == 0)
+            {
+                throw new IgniteException("LocalEventListener.EventTypes can't be null or empty.");
             }
         }
 
@@ -912,7 +921,9 @@ namespace Apache.Ignite.Core
 
                     for (var i = 0; i < _localEventListeners.Length; i++)
                     {
-                        _localEventListenerIds[_localEventListeners[i].ListenerObject] = i;
+                        var listener = _localEventListeners[i];
+                        ValidateLocalEventListener(listener);
+                        _localEventListenerIds[listener.ListenerObject] = i;
                     }
                 }
                 else

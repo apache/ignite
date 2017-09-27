@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
@@ -93,6 +94,24 @@ namespace Apache.Ignite.Core.Tests
                 res = ignite.GetEvents().StopLocalListen(listener);
                 Assert.IsFalse(res);
             }
+        }
+
+        /// <summary>
+        /// Tests the configuration validation.
+        /// </summary>
+        [Test]
+        public void TestConfigValidation()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                LocalEventListeners = new[]
+                {
+                    new LocalEventListener<IEvent>()
+                }
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("", ex.Message);
         }
 
         /// <summary>
