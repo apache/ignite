@@ -425,10 +425,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 DynamicCacheChangeRequest startReq = startReqs.get(desc.cacheName());
 
-                cctx.cache().prepareCacheStart(desc.cacheConfiguration(),
+                cctx.cache().prepareCacheStart(
+                    desc.cacheConfiguration(),
                     desc,
                     startReq.nearCacheConfiguration(),
-                    topVer);
+                    topVer,
+                    false
+                );
 
                 startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
@@ -748,10 +751,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             try {
                 if (startCache) {
-                    cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
+                    cctx.cache().prepareCacheStart(
+                        req.startCacheConfiguration(),
                         cacheDesc,
                         nearCfg,
-                        evts.topologyVersion());
+                        evts.topologyVersion(),
+                        false
+                    );
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())

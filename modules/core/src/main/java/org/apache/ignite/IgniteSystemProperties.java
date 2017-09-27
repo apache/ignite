@@ -727,6 +727,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
 
+    /**
+     *
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
+
     /** If this property is set, {@link PersistentStoreConfiguration#writeThrottlingEnabled} will be overridden to true
      * independent of initial value in configuration. */
     public static final String IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED = "IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED";

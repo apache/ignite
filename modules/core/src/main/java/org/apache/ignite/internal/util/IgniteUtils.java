@@ -210,6 +210,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -10152,6 +10153,27 @@ public abstract class IgniteUtils {
             y /= 2;
 
         return (int)y;
+    }
+
+    /** */
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
+
+    /**
+     * @param time Time.
+     */
+    public static String timeToUTC(long time) {
+        return timeToString(time, "UTC", sdf);
+    }
+
+    /**
+     * @param time Time.
+     * @param timeZone Time zone.
+     * @param sdf Date format.
+     */
+    public static String timeToString(long time, String timeZone, SimpleDateFormat sdf) {
+        sdf.setTimeZone(TimeZone.getTimeZone(timeZone));
+
+        return sdf.format(new Date(time));
     }
 
     /**

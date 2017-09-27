@@ -68,6 +68,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Restart flag. */
     private boolean restart;
 
+    /** Deferred proxy restart flag. */
+    private boolean deferredProxyRestart;
+
     /** Destroy. */
     private boolean destroy;
 
@@ -402,6 +405,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void locallyConfigured(boolean locallyConfigured) {
         this.locallyConfigured = locallyConfigured;
+    }
+
+    /**
+     * @return Deferred proxy restart flag.
+     */
+    public boolean deferredProxyRestart() {
+        return deferredProxyRestart;
+    }
+
+    /**
+     * @param deferredProxyRestart New deferred proxy restart flag.
+     */
+    public void deferredProxyRestart(boolean deferredProxyRestart) {
+        this.deferredProxyRestart = deferredProxyRestart;
     }
 
     /** {@inheritDoc} */

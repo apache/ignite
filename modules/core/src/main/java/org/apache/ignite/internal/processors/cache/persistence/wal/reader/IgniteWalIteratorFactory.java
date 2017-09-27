@@ -78,7 +78,8 @@ public class IgniteWalIteratorFactory {
         final int pageSize,
         @Nullable final File binaryMetadataFileStoreDir,
         @Nullable final File marshallerMappingFileStoreDir,
-        final boolean keepBinary) {
+        final boolean keepBinary
+    ) {
         this.log = log;
         this.pageSize = pageSize;
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;

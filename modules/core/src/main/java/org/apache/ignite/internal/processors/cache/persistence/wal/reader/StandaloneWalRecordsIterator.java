@@ -100,18 +100,21 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * (BinaryObjects will be used instead)
      */
     StandaloneWalRecordsIterator(
-        @NotNull final File walFilesDir,
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final FileIOFactory ioFactory,
-        final boolean keepBinary) throws IgniteCheckedException {
+        @NotNull File walFilesDir,
+        @NotNull IgniteLogger log,
+        @NotNull GridCacheSharedContext sharedCtx,
+        @NotNull FileIOFactory ioFactory,
+        final boolean keepBinary
+    ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx, true),
+            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
             ioFactory,
             BUF_SIZE);
         this.keepBinary = keepBinary;
+
         init(walFilesDir, false, null);
+
         advance();
     }
 
@@ -135,13 +138,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull final File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx, true),
+            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
             ioFactory,
             BUF_SIZE);
 
         this.workDir = workDir;
         this.keepBinary = keepBinary;
+
         init(null, workDir, walFiles);
+
         advance();
     }
 
@@ -220,7 +225,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             resultingDescs.add(new FileWriteAheadLogManager.FileDescriptor(file, ptr.index()));
         }
+
         Collections.sort(resultingDescs);
+
         return resultingDescs;
     }
 
