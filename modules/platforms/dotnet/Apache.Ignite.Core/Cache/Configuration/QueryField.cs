@@ -134,9 +134,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             Debug.Assert(field != null);
 
-            if (field.FieldType != null)
+            if (field._type != null)
             {
-                FieldType = field.FieldType;
+                _type = field._type;
             }
         }
     }

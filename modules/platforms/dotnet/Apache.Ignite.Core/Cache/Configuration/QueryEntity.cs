@@ -340,14 +340,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             Debug.Assert(entity != null);
 
-            if (entity.KeyType != null)
+            if (entity._keyType != null)
             {
-                KeyType = entity.KeyType;
+                _keyType = entity._keyType;
             }
 
-            if (entity.ValueType != null)
+            if (entity._valueType != null)
             {
-                ValueType = entity.ValueType;
+                _valueType = entity._valueType;
             }
 
             if (Fields != null && entity.Fields != null)
