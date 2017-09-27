@@ -158,6 +158,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
         if (inlineSize() == 0)
