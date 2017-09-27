@@ -192,8 +192,6 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
-        /** Local event listeners. */
-
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
