@@ -408,14 +408,14 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Deferred proxy restart flag.
+     * @return state of cache after start
      */
     public boolean activeAfterStart() {
         return activeAfterStart;
     }
 
     /**
-     * @param activeAfterStart New deferred proxy restart flag.
+     * @param activeAfterStart state of cache after start
      */
     public void activeAfterStart(boolean activeAfterStart) {
         this.activeAfterStart = activeAfterStart;

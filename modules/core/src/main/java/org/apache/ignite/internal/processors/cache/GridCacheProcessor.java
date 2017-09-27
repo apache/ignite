@@ -2601,7 +2601,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheType Cache type.
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param deferredProxyRestart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param     activeAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
     private IgniteInternalFuture<?> dynamicStartCaches(
@@ -2609,7 +2609,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheType cacheType,
         boolean failIfExists,
         boolean checkThreadTx,
-        boolean deferredProxyRestart
+        boolean activeAfterStart
     ) {
         if (checkThreadTx)
             checkEmptyTransactions();
@@ -2638,7 +2638,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     false,
                     failIfExists,
                     true,
-                    deferredProxyRestart);
+                    activeAfterStart);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -3783,7 +3783,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param sql Whether the cache needs to be created as the result of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
-     * @param deferredProxyRestart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param activeAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -3796,7 +3796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted,
-        boolean deferredProxyRestart
+        boolean activeAfterStart
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -3806,7 +3806,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.failIfExists(failIfExists);
 
-        req.activeAfterStart(deferredProxyRestart);
+        req.activeAfterStart(activeAfterStart);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);
