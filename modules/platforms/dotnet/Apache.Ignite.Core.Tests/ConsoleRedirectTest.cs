@@ -149,6 +149,8 @@ namespace Apache.Ignite.Core.Tests
                     typeof(IgniteRunner).Assembly.FullName, typeof(IgniteRunner).FullName);
 
                 runner.Run();
+
+                Assert.AreEqual("newDomainGrid", runner.IgniteName);
             }
             finally
             {
@@ -160,19 +162,25 @@ namespace Apache.Ignite.Core.Tests
         private interface IIgniteRunner
         {
             void Run();
+
+            string IgniteName { get; }
         }
 
         private class IgniteRunner : MarshalByRefObject, IIgniteRunner
         {
+            private static IIgnite _ignite;
+
             public void Run()
             {
-                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     IgniteInstanceName = "newDomainGrid"
                 });
 
                 // Will be stopped automatically on domain unload.
             }
+
+            public string IgniteName { get { return _ignite.Name; } }
         }
     }
 }

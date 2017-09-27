@@ -855,7 +855,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this);
+                cctx.tm().rollbackTx(this, false);
 
                 state(ROLLED_BACK);
             }

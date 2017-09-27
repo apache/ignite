@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -72,7 +73,7 @@ namespace Apache.Ignite.Core.Impl
         internal const string FileIgniteJniDll = "ignite.jni.dll";
         
         /** Prefix for temp directory names. */
-        private const string DirIgniteTmp = "Ignite_";
+        private static readonly string DirIgniteTmp = Path.Combine(Path.GetTempPath(), "Ignite_");
         
         /** Loaded. */
         private static bool _loaded;        
@@ -80,16 +81,6 @@ namespace Apache.Ignite.Core.Impl
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
-
-        /// <summary>
-        /// Initializes the <see cref="IgniteUtils"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
-            Justification = "Readability.")]
-        static IgniteUtils()
-        {
-            TryCleanTempDirectories();
-        }
 
         /// <summary>
         /// Gets thread local random.
@@ -386,15 +377,18 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
+        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
         /// </summary>
-        private static void TryCleanTempDirectories()
+        /// <returns>The full path of the temporary directory.</returns>
+        internal static string GetTempDirectoryName()
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
+            while (true)
             {
+                var dir = DirIgniteTmp + Path.GetRandomFileName();
+
                 try
                 {
-                    Directory.Delete(dir, true);
+                    return Directory.CreateDirectory(dir).FullName;
                 }
                 catch (IOException)
                 {
@@ -408,18 +402,48 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
+        /// Unloads the jni DLL and removes temporary directory.
         /// </summary>
-        /// <returns>The full path of the temporary directory.</returns>
-        internal static string GetTempDirectoryName()
+        internal static void UnloadJniDllAndRemoveTempDirectory()
         {
-            while (true)
+            // Unload unmanaged dlls and remove temp folders.
+            // Multiple AppDomains could load multiple instances of the dll, so iterate over all modules.
+            foreach (ProcessModule mod in Process.GetCurrentProcess().Modules)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DirIgniteTmp + Path.GetRandomFileName());
+                if (mod.ModuleName != FileIgniteJniDll)
+                {
+                    continue;
+                }
 
+                UnloadJniDllAndRemoveTempDirectory(mod.BaseAddress, mod.FileName);
+            }
+        }
+
+        /// <summary>
+        /// Unloads the jni DLL and removes temporary directory.
+        /// </summary>
+        internal static void UnloadJniDllAndRemoveTempDirectory(IntPtr address, string fileName)
+        {
+            var dir = Path.GetDirectoryName(fileName);
+
+            if (dir == null || !dir.StartsWith(DirIgniteTmp))
+            {
+                return;
+            }
+
+            while (NativeMethods.FreeLibrary(address))
+            {
+                // No-op.
+                // FreeLibrary needs to be called multiple times, because each DllImport increases reference count.
+            }
+
+            // Retry 3 times: FreeLibrary might have a delay.
+            for (var i = 0; i < 3; i++)
+            {
                 try
                 {
-                    return Directory.CreateDirectory(dir).FullName;
+                    Directory.Delete(dir, true);
+                    break;
                 }
                 catch (IOException)
                 {

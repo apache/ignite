@@ -207,9 +207,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(
-        StoredCacheData cacheData
-    ) throws IgniteCheckedException {
+    @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         File cacheWorkDir = cacheWorkDirectory(cacheData.config());
         File file;
 
@@ -222,10 +220,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
 
-        if (!file.exists() || file.length() == 0) {
+        if (overwrite || !file.exists() || file.length() == 0) {
             try {
                 file.createNewFile();
 
+                // Pre-existing file will be truncated upon stream open.
                 try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
                     marshaller.marshal(cacheData, stream);
                 }

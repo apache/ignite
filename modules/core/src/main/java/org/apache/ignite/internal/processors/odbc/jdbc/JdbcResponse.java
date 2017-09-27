@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL listener response.
  */
-public class JdbcResponse extends SqlListenerResponse implements JdbcRawBinarylizable {
+public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinarylizable {
     /** Response object. */
     @GridToStringInclude
     private JdbcResult res;

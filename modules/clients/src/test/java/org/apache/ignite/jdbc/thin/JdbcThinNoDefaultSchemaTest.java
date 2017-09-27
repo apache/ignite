@@ -161,7 +161,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSchemaInUrl() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache1")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache1\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -172,7 +172,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
                 assertEquals(rs.getInt(2), rs.getInt(1) * 2);
         }
 
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -188,7 +188,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSchemaInUrlAndInQuery() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val, v._val " +
@@ -217,7 +217,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to query Ignite");
+            }, SQLException.class, "Failed to parse query");
 
             conn.setSchema("cache1");
 
