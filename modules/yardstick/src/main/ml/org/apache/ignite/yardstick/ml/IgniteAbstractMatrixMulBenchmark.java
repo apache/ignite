@@ -22,21 +22,39 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
-import org.apache.ignite.ml.math.EuclideanDistance;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs ML Grid operations.
  */
-@SuppressWarnings("unused")
-public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBenchmark {
+abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark {
+    /** */
+    private static final int SIZE = 1 << 8;
+
     /** */
     private static AtomicBoolean startLogged = new AtomicBoolean(false);
+
+    /** */
+    private double[][] dataSquare;
+
+    /** */
+    private double[][] dataRect1;
+
+    /** */
+    private double[][] dataRect2;
+
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        dataSquare = createAndFill(SIZE, SIZE);
+        dataRect1 = createAndFill(SIZE / 2, SIZE);
+        dataRect2 = createAndFill(SIZE, SIZE / 2);
+    }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
@@ -44,28 +62,24 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
             BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
         try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
+            // Create IgniteThread, we may want to work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 this.getClass().getSimpleName(), new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    // IMPL NOTE originally taken from KMeansDistributedClustererTest
-                    KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(
-                        new EuclideanDistance(), 1, 1, 1L);
+                    Matrix m1, m2, m3, m4, m5, m6;
 
-                    double[] v1 = new double[] {1959, 325100};
-                    double[] v2 = new double[] {1960, 373200};
+                    (m1 = createAndFill(dataSquare)).times((m2 = createAndFill(dataSquare)));
+                    (m3 = createAndFill(dataRect1)).times((m4 = createAndFill(dataRect2)));
+                    (m5 = createAndFill(dataRect2)).times((m6 = createAndFill(dataRect1)));
 
-                    SparseDistributedMatrix points = new SparseDistributedMatrix(
-                        2, 2, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-
-                    points.setRow(0, v1);
-                    points.setRow(1, v2);
-
-                    clusterer.cluster(points, 1);
-
-                    points.destroy();
+                    m1.destroy();
+                    m2.destroy();
+                    m3.destroy();
+                    m4.destroy();
+                    m5.destroy();
+                    m6.destroy();
                 }
             });
 
@@ -75,5 +89,24 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
         }
 
         return false;
+    }
+
+    /** Override in subclasses with specific type Matrix. */
+    abstract Matrix newMatrix(int rowSize, int colSize);
+
+    /** */
+    private Matrix createAndFill(double[][] data) {
+        return newMatrix(data.length, data[0].length).assign(data);
+    }
+
+    /** */
+    private double[][] createAndFill(int rowSize, int colSize) {
+        double[][] data = new double[rowSize][colSize];
+
+        for (int i = 0; i < rowSize; i++)
+            for (int j = 0; j < colSize; j++)
+                data[i][j] = -0.5d + Math.random();
+
+        return data;
     }
 }
