@@ -35,6 +35,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -46,13 +48,24 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFolderResolver {
     /** Database subfolders constant prefix. */
-    public static final String DB_FOLDER_PREFIX = "Node";
-    public static final String NODEIDX_UID_SEPARATOR = "-";
+    public static final String DB_FOLDER_PREFIX = "node";
 
-    public static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
-    public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    /** Node index and uid separator in subfolders name. */
+    private static final String NODEIDX_UID_SEPARATOR = "-";
 
-    public static final String SUBDIR_PATTERN = NODE_PATTERN + UUID_STR_PATTERN;
+    /** Constant node subfolder prefix and node index pattern (nodeII, where II - node index as decimal integer) */
+    private static final String NODE_PATTERN = DB_FOLDER_PREFIX + "[0-9]*" + NODEIDX_UID_SEPARATOR;
+
+    /** Uuid as string pattern. */
+    private static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+
+    /**
+     * Subdir (nodeII-UID, where II - node index as decimal integer, UID - string representation of consistent ID)
+     * pattern.
+     */
+    private static final String SUBDIR_PATTERN = NODE_PATTERN + UUID_STR_PATTERN;
+
+    /** Database subfolders for new style filter. */
     public static final FileFilter DB_SUBFOLDERS_NEW_STYLE_FILTER = new FileFilter() {
         @Override public boolean accept(File pathname) {
             return pathname.isDirectory() && pathname.getName().matches(SUBDIR_PATTERN);
@@ -62,15 +75,25 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     /** Database default folder. */
     public static final String DB_DEFAULT_FOLDER = "db";
 
+    /** Config. */
     private IgniteConfiguration cfg;
+
+    /** Discovery. */
     private GridDiscoveryManager discovery;
+
     /** Logger. */
     private IgniteLogger log;
+
+    /** Context. */
     private GridKernalContext ctx;
 
     /** Cached folder settings. */
     private PdsFolderSettings settings;
 
+    /**
+     * Creates folders resolver
+     * @param ctx Context.
+     */
     public PdsConsistentIdGeneratingFoldersResolver(GridKernalContext ctx) {
         super(ctx);
         this.cfg = ctx.config();
@@ -79,12 +102,17 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         this.ctx = ctx;
     }
 
+    /**
+     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overriden
+     *
+     * @return PDS folder settings compatible with previous versions
+     */
     public PdsFolderSettings compatibleResolve() {
         return new PdsFolderSettings(discovery.consistentId(), true);
     }
 
     /** {@inheritDoc} */
-    public PdsFolderSettings resolveFolders() throws IgniteCheckedException {
+    @Override public PdsFolderSettings resolveFolders() throws IgniteCheckedException {
         if (settings == null) {
             settings = prepareNewSettings();
 
@@ -144,6 +172,20 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     }
 
+    private static String padStart(String string, int minLength, char padChar) {
+        A.notNull(string, "String should not be empty");
+        if (string.length() >= minLength)
+            return string;
+
+        final SB sb = new SB(minLength);
+
+        for (int i = string.length(); i < minLength; ++i)
+            sb.a(padChar);
+
+        sb.a(string);
+        return sb.toString();
+
+    }
     /**
      * Creates new DB storage folder
      *
@@ -154,10 +196,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     @NotNull private PdsFolderSettings generateAndLockNewDbStorage(File pstStoreBasePath, int nodeIdx) throws IgniteCheckedException {
         final UUID uuid = UUID.randomUUID();
-        final String uuidAsStr = uuid.toString();
-        assert uuidAsStr.matches(UUID_STR_PATTERN);
-
-        String consIdFolderReplacement = DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + NODEIDX_UID_SEPARATOR + uuidAsStr;
+        String consIdFolderReplacement = genNewStyleSubfolderName(nodeIdx, uuid);
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
         if (fileLockHolder != null) {
@@ -166,6 +205,21 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
             return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, fileLockHolder, false);
         }
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
+    }
+
+    /**
+     * Generates DB subfolder name for provided node index (local) and UUID (consistent ID)
+     *
+     * @param nodeIdx node index.
+     * @param uuid consistent ID.
+     * @return folder file name
+     */
+    @NotNull public static String genNewStyleSubfolderName(final int nodeIdx, final UUID uuid) {
+        final String uuidAsStr = uuid.toString();
+        assert uuidAsStr.matches(UUID_STR_PATTERN);
+
+        final String nodeIdxPadded = padStart(Integer.toString(nodeIdx), 2, '0');
+        return DB_FOLDER_PREFIX + nodeIdxPadded + NODEIDX_UID_SEPARATOR + uuidAsStr;
     }
 
     /**
