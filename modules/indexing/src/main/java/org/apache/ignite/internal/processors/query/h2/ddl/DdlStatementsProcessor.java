@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -368,7 +369,14 @@ public class DdlStatementsProcessor {
         res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
-        res.setNotNullFields(notNullFields);
+
+        if (!F.isEmpty(notNullFields)) {
+            QueryEntityEx res0 = new QueryEntityEx(res);
+
+            res0.setNotNullFields(notNullFields);
+
+            res = res0;
+        }
 
         return res;
     }
