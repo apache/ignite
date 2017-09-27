@@ -587,6 +587,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
         }
 
         /// <summary>
@@ -824,7 +825,8 @@ namespace Apache.Ignite.Core.Tests
                     WalStorePath = Path.GetTempPath(),
                     MetricsEnabled = true,
                     SubIntervals = 7,
-                    RateTimeInterval = TimeSpan.FromSeconds(9)
+                    RateTimeInterval = TimeSpan.FromSeconds(9),
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random
                 },
                 ConsistentId = new MyConsistentId {Data = "abc"}
             };
