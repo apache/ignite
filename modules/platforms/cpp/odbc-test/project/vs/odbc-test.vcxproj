@@ -175,6 +175,7 @@
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
     <ClCompile Include="..\..\src\sql_aggregate_functions_test.cpp" />
+    <ClCompile Include="..\..\src\sql_get_info_test.cpp" />
     <ClCompile Include="..\..\src\sql_outer_join_test.cpp" />
     <ClCompile Include="..\..\src\sql_date_time_functions_test.cpp" />
     <ClCompile Include="..\..\src\sql_test_suite_fixture.cpp" />
