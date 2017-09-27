@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -69,12 +70,17 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
+    /** Reconnect should occurs before failure detection time is out. */
+    public static final long FAILURE_DETECTION_TIMEOUT = RECONNECT_TIMEOUT +2000;
+
     /** */
     protected boolean clientMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
@@ -152,6 +158,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+
         int srvs = serverCount();
 
         if (srvs > 0)
@@ -171,6 +179,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
         stopAllGrids();
     }

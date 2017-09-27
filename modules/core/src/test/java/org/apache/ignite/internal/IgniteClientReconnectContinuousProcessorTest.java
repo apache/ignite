@@ -23,6 +23,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -108,20 +109,6 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
         client.events().stopRemoteListen(opId);
 
         assertFalse(lsnr.latch.await(3000, MILLISECONDS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMessageListenerReconnectAndStopFromServer() throws Exception {
-        testMessageListenerReconnect(false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMessageListenerReconnectAndStopFromClient() throws Exception {
-        testMessageListenerReconnect(true);
     }
 
     /**

@@ -45,6 +45,7 @@ import org.h2.expression.Alias;
 import org.h2.expression.CompareLike;
 import org.h2.expression.Comparison;
 import org.h2.expression.ConditionAndOr;
+import org.h2.expression.ConditionExists;
 import org.h2.expression.ConditionIn;
 import org.h2.expression.ConditionInConstantSet;
 import org.h2.expression.ConditionInSelect;
@@ -78,6 +79,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
@@ -184,7 +186,10 @@ public class GridSqlQueryParser {
         "compareType");
 
     /** */
-    private static final Getter<ConditionInSelect, Query> QUERY = getter(ConditionInSelect.class, "query");
+    private static final Getter<ConditionInSelect, Query> QUERY_IN = getter(ConditionInSelect.class, "query");
+
+    /** */
+    private static final Getter<ConditionExists, Query> QUERY_EXISTS = getter(ConditionExists.class, "query");
 
     /** */
     private static final Getter<CompareLike, Expression> LEFT = getter(CompareLike.class, "left");
@@ -415,7 +420,7 @@ public class GridSqlQueryParser {
         res.distinct(select.isDistinct());
 
         Expression where = CONDITION.get(select);
-        res.where(parseExpression(where, false));
+        res.where(parseExpression(where, true));
 
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
@@ -447,7 +452,7 @@ public class GridSqlQueryParser {
             GridSqlElement gridFilter = parseTableFilter(f);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, f.isJoinOuter(),
-                parseExpression(f.getJoinCondition(), false));
+                parseExpression(f.getJoinCondition(), true));
         }
 
         res.from(from);
@@ -940,7 +945,7 @@ public class GridSqlQueryParser {
 
             res.addChild(parseExpression(LEFT_CIS.get((ConditionInSelect)expression), calcTypes));
 
-            Query qry = QUERY.get((ConditionInSelect)expression);
+            Query qry = QUERY_IN.get((ConditionInSelect)expression);
 
             res.addChild(parseQueryExpression(qry));
 
@@ -1039,6 +1044,16 @@ public class GridSqlQueryParser {
 
             for (Expression expr : exprs)
                 res.addChild(parseExpression(expr, calcTypes));
+
+            return res;
+        }
+
+        if (expression instanceof ConditionExists) {
+            Query qry = QUERY_EXISTS.get((ConditionExists)expression);
+
+            GridSqlOperation res = new GridSqlOperation(EXISTS);
+
+            res.addChild(parseQueryExpression(qry));
 
             return res;
         }

@@ -19,7 +19,6 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CollectionRegion;
@@ -48,7 +47,7 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
      * @param dataDesc Region data description.
      */
     public HibernateTransactionalDataRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, IgniteInternalCache<Object, Object> cache, CacheDataDescription dataDesc) {
+        Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache);
 
         this.dataDesc = dataDesc;
