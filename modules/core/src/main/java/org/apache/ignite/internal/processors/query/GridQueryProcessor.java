@@ -1389,20 +1389,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
                 templateName);
 
-        BinaryType exKeyType = ctx.grid().binary().type(entity.getKeyType());
+        if (F.isEmpty(cacheName))
+            cacheName = QueryUtils.createTableCacheName(schemaName, entity.getTableName());
 
-        if (exKeyType != null)
-            log.warning("Binary key type already registered [tableName=" + entity.getTableName() + ", " +
-                "keyTypeName=" + entity.getKeyType() + ']');
-
-        BinaryType exValType = ctx.grid().binary().type(entity.getValueType());
-
-        if (exValType != null)
-            log.warning("Binary key type already registered [tableName=" + entity.getTableName() + ", " +
-                "valueTypeName=" + entity.getValueType() + ']');
-
-        ccfg.setName(F.isEmpty(cacheName) ? QueryUtils.createTableCacheName(schemaName, entity.getTableName()) :
-            cacheName);
+        ccfg.setName(cacheName);
 
         if (!F.isEmpty(cacheGroup))
             ccfg.setGroupName(cacheGroup);
@@ -1435,9 +1425,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
-                !F.isEmpty(cacheName) ? "[cacheName=" + ccfg.getName() + ", tblName=" + entity.getTableName() + ']'
-                : entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
     }
 
     /**
