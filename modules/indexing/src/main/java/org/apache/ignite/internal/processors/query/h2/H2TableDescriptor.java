@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Information about table in database.
@@ -87,13 +87,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         this.cctx = cctx;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
-    }
-
-    /**
-     * @return Primary key hash index.
-     */
-    H2PkHashIndex primaryKeyHashIndex() {
-        return pkHashIdx;
     }
 
     /**
@@ -219,7 +212,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (type().valueClass() == String.class) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -232,7 +225,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (textIdx != null) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);

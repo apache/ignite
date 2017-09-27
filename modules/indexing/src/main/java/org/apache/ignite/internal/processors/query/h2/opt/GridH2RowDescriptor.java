@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Row descriptor.
  */
-public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
+public interface GridH2RowDescriptor {
     /**
      * Gets indexing.
      *
@@ -67,15 +63,8 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(KeyCacheObject key, int part, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
-        throws IgniteCheckedException;
-
-    /**
-     * @param link Link to get row for.
-     * @return Cached row.
-     */
-    public GridH2Row cachedRow(long link);
-
+    public GridH2Row createRow(KeyCacheObject key, int part, @Nullable CacheObject val, GridCacheVersion ver,
+        long expirationTime) throws IgniteCheckedException;
 
     /**
      * @return Value type.
@@ -122,26 +111,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
      */
     public boolean isColumnKeyProperty(int col);
-
-    /**
-     * @return Unsafe memory.
-     */
-    public GridUnsafeMemory memory();
-
-    /**
-     * @param row Deserialized offheap row to cache in heap.
-     */
-    public void cache(GridH2Row row);
-
-    /**
-     * @param ptr Offheap pointer to remove from cache.
-     */
-    public void uncache(long ptr);
-
-    /**
-     * @return Guard.
-     */
-    public GridUnsafeGuard guard();
 
     /**
      * Wraps object to respective {@link Value}.
