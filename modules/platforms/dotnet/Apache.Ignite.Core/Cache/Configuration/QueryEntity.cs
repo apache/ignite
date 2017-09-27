@@ -352,13 +352,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             if (Fields != null && entity.Fields != null)
             {
-                var fields = entity.Fields.Where(x => x != null).ToDictionary(x => x.Name, x => x);
+                var fields = entity.Fields.Where(x => x != null).ToDictionary(x => "_" + x.Name, x => x);
 
                 foreach (var field in Fields)
                 {
                     QueryField src;
 
-                    if (fields.TryGetValue(field.Name, out src))
+                    if (fields.TryGetValue("_" + field.Name, out src))
                     {
                         field.CopyLocalProperties(src);
                     }

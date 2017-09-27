@@ -749,13 +749,13 @@ namespace Apache.Ignite.Core
 
             if (CacheConfiguration != null && cfg.CacheConfiguration != null)
             {
-                var caches = cfg.CacheConfiguration.ToDictionary(x => x.Name, x => x);
+                var caches = cfg.CacheConfiguration.Where(x => x != null).ToDictionary(x => "_" + x.Name, x => x);
 
                 foreach (var cache in CacheConfiguration)
                 {
                     CacheConfiguration src;
 
-                    if (caches.TryGetValue(cache.Name, out src))
+                    if (cache != null && caches.TryGetValue("_" + cache.Name, out src))
                     {
                         cache.CopyLocalProperties(src);
                     }
