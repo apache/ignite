@@ -727,13 +727,16 @@ namespace Apache.Ignite.Core
         {
             IgniteInstanceName = cfg.IgniteInstanceName;
 
-            if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
-            {
-                BinaryConfiguration.MergeTypes(cfg.BinaryConfiguration);
-            }
-            else if (cfg.BinaryConfiguration != null)
+            var oldBinCfg = BinaryConfiguration;
+
+            if (cfg.BinaryConfiguration != null)
             {
                 BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+
+                if (oldBinCfg != null)
+                {
+                    BinaryConfiguration.MergeTypes(oldBinCfg);
+                }
             }
 
             JvmClasspath = cfg.JvmClasspath;
