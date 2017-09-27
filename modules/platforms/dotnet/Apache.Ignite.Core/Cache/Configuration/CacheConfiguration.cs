@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -35,6 +36,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -353,6 +355,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var entities = QueryEntities;
+            if (entities != null)
+            {
+                foreach (var entity in entities)
+                    entity.Validate(log, string.Format("Validating cache configuration '{0}'", Name ?? ""));
+            }
+        }
+
+        /// <summary>
         /// Gets or sets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
@@ -490,6 +507,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
+        /// <para />
+        /// Enabling this requires configured <see cref="IgniteConfiguration.SwapSpaceSpi"/>.
         /// </summary>
         [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
@@ -669,7 +688,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the affinity function to provide mapping from keys to nodes.
         /// <para />
-        /// Predefined implementations: 
+        /// Predefined implementations:
         /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
         /// </summary>
         public IAffinityFunction AffinityFunction { get; set; }

@@ -798,8 +798,9 @@ public class SchemaImportApp extends Application {
 
             /**
              * Check that system has Nautilus.
+             *
              * @return {@code True} when Nautilus is installed or {@code false} otherwise.
-             * @throws IOException
+             * @throws IOException If failed to detect Nautilus.
              */
             private boolean canUseNautilus() throws IOException {
                 if (U.isUnix() || new File("/usr/bin/xdg-mime").canExecute() || new File("/usr/bin/nautilus").canExecute()) {

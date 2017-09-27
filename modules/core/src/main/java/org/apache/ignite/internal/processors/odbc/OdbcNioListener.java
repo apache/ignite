@@ -121,7 +121,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
             OdbcRequestHandler handler = connData.getHandler();
 
-            OdbcResponse resp = handler.handle(req);
+            OdbcResponse resp = handler.handle(reqId, req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;

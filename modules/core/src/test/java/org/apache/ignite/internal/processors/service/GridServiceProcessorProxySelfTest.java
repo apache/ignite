@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Service proxy test.
@@ -61,6 +66,31 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
             assertEquals(0, rmtSvc.localIncrements());
         }
+    }
+
+    /**
+     * Unwraps error message from InvocationTargetException.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testException() throws Exception {
+        String name = "errorService";
+
+        Ignite ignite = grid(0);
+
+        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new ErrorServiceImpl());
+
+        final ErrorService svc = ignite.services().serviceProxy(name, ErrorService.class, false);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                svc.go();
+
+                return null;
+            }
+        }, IgniteException.class, "Test exception");
+
     }
 
     /**
@@ -212,12 +242,27 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 0; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            final int idx = i;
+
+            final AtomicReference< MapService<Integer, String>> ref = new AtomicReference<>();
+
+            //wait because after deployNodeSingleton we don't have guarantees what service was deploy.
+            boolean wait = GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    MapService<Integer, String> svc = grid(idx)
+                        .services()
+                        .serviceProxy(name, MapService.class, false);
+
+                    ref.set(svc);
+
+                    return svc instanceof Service;
+                }
+            }, 2000);
 
             // Make sure service is a local instance.
-            assertTrue("Invalid service instance [srv=" + svc + ", node=" + i + ']', svc instanceof Service);
+            assertTrue("Invalid service instance [srv=" + ref.get() + ", node=" + i + ']', wait);
 
-            svc.put(i, Integer.toString(i));
+            ref.get().put(i, Integer.toString(i));
         }
 
         MapService<Integer, String> map = ignite.services().serviceProxy(name, MapService.class, false);
@@ -353,6 +398,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             map.clear();
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return map.size();
         }
@@ -372,4 +418,41 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             X.println("Executing cache service: " + ctx.name());
         }
     }
+
+    /**
+     *
+     */
+    protected interface ErrorService extends Service {
+        /**
+         *
+         */
+        void go() throws Exception;
+    }
+
+    /**
+     *
+     */
+    protected class ErrorServiceImpl implements ErrorService {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void go() throws Exception {
+            throw new Exception("Test exception");
+        }
+    }
+
+
 }

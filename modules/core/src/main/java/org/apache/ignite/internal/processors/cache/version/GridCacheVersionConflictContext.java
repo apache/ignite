@@ -178,7 +178,7 @@ public class GridCacheVersionConflictContext<K, V> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return state == State.MERGE ?
-            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal) :
+            S.toString(GridCacheVersionConflictContext.class, this, "mergeValue", mergeVal, true) :
             S.toString(GridCacheVersionConflictContext.class, this);
     }
 

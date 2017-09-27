@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -85,6 +86,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private volatile GridCacheContext ctx;
 
     /** Local value of sequence. */
+    @GridToStringInclude(sensitive = true)
     private long locVal;
 
     /**  Upper bound of local counter. */

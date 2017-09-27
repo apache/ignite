@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -234,14 +236,41 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @param oldNodesDiscoData Discovery data from old nodes.
+     */
+    public void oldNodesDiscoveryData(Map<UUID, Map<Integer, byte[]>> oldNodesDiscoData) {
+        this.oldNodesDiscoData = oldNodesDiscoData;
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param discoData Discovery data to add.
      */
     public void addDiscoveryData(UUID nodeId, Map<Integer, byte[]> discoData) {
         // Old nodes disco data may be null if message
         // makes more than 1 pass due to stopping of the nodes in topology.
-        if (oldNodesDiscoData != null)
-            oldNodesDiscoData.put(nodeId, discoData);
+        if (oldNodesDiscoData != null) {
+            for (Map.Entry<UUID, Map<Integer, byte[]>> existingDataEntry : oldNodesDiscoData.entrySet()) {
+                Map<Integer, byte[]> existingData = existingDataEntry.getValue();
+
+                Iterator<Map.Entry<Integer, byte[]>> it = discoData.entrySet().iterator();
+
+                while (it.hasNext()) {
+                    Map.Entry<Integer, byte[]> discoDataEntry = it.next();
+
+                    byte[] curData = existingData.get(discoDataEntry.getKey());
+
+                    if (Arrays.equals(curData, discoDataEntry.getValue()))
+                        it.remove();
+                }
+
+                if (discoData.isEmpty())
+                    break;
+            }
+
+            if (!discoData.isEmpty())
+                oldNodesDiscoData.put(nodeId, discoData);
+        }
     }
 
     /**

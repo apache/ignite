@@ -61,7 +61,7 @@ final class SharedFsUtils {
         InputStream in = new FileInputStream(file);
 
         try {
-            return (SharedFsCheckpointData)m.unmarshal(in, U.gridClassLoader());
+            return U.unmarshal(m, in, U.gridClassLoader());
         }
         finally {
             U.close(in, log);
@@ -91,7 +91,7 @@ final class SharedFsUtils {
         try {
             out = new FileOutputStream(file);
 
-            m.marshal(data, out);
+            U.marshal(m, data, out);
         }
         finally {
             U.close(out, log);

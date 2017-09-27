@@ -97,12 +97,6 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         URI uri = URI.create(pathStr);
         IgfsPath path = new IgfsPath(uri);
 
-        assertNotNull(new IgfsPath(uri));
-        assertNotNull(new IgfsPath(pathStr));
-        assertNotNull(new IgfsPath("/"));
-        assertNotNull(new IgfsPath(path, pathStr));
-        assertNotNull(new IgfsPath());
-
         Class nullUri = URI.class;
         Class nullStr = String.class;
         Class nullPath = IgfsPath.class;

@@ -39,7 +39,9 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -50,6 +52,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -67,6 +70,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
@@ -87,6 +91,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -103,6 +108,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 
 /**
  * Binary processor implementation.
@@ -120,6 +126,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** */
     private volatile IgniteCacheProxy<BinaryMetadataKey, BinaryMetadata> metaDataCache;
+
+    /** */
+    private final ConcurrentHashMap8<BinaryMetadataKey, BinaryMetadata> locMetadataCache;
 
     /** */
     private final ConcurrentHashMap8<Integer, BinaryTypeImpl> clientMetaDataCache;
@@ -146,8 +155,20 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @GridToStringExclude
     private IgniteBinary binaries;
 
+    /** Listener removes all registred binary schemas and user type descriptors after the local client reconnected. */
+    private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
+        @Override public void onEvent(Event evt) {
+            binaryContext().unregisterUserTypeDescriptors();
+
+            binaryContext().unregisterBinarySchemas();
+        }
+    };
+
     /** Metadata updates collected before metadata cache is initialized. */
     private final Map<Integer, BinaryMetadata> metaBuf = new ConcurrentHashMap<>();
+
+    /** Cached affinity key field names. */
+    private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -160,11 +181,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         clientNode = this.ctx.clientNode();
 
         clientMetaDataCache = clientNode ? new ConcurrentHashMap8<Integer, BinaryTypeImpl>() : null;
+
+        boolean useLocCache = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE, false);
+
+        locMetadataCache = useLocCache ? new ConcurrentHashMap8<BinaryMetadataKey, BinaryMetadata>() : null;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
+            if (ctx.clientNode())
+                ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
+
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
                 @Override public void addMeta(int typeId, BinaryType newMeta) throws BinaryObjectException {
                     assert newMeta != null;
@@ -172,7 +200,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
-                    if (metaDataCache == null) {
+                    if (metaDataCache == null && locMetadataCache == null) {
                         BinaryMetadata oldMeta = metaBuf.get(typeId);
                         BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
@@ -195,13 +223,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                             return;
                     }
 
-                    assert metaDataCache != null;
+                    assert metaDataCache != null || locMetadataCache != null;
 
                     CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta0.wrap(binaryCtx));
                 }
 
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                    if (metaDataCache == null)
+                    if (metaDataCache == null && locMetadataCache == null)
                         U.awaitQuiet(startLatch);
 
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
@@ -252,6 +280,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) {
+        if (ctx.clientNode())
+            ctx.event().removeLocalEventListener(clientDisconLsnr);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         if (clientNode && !ctx.isDaemon()) {
             ctx.continuous().registerStaticRoutine(
@@ -265,6 +299,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
+        if (locMetadataCache != null) {
+            startLatch.countDown();
+
+            return;
+        }
+
         IgniteCacheProxy<Object, Object> proxy = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
 
         boolean old = proxy.context().deploy().ignoreOwnership(true);
@@ -280,8 +320,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             assert !metaDataCache.context().affinityNode();
 
             while (true) {
-                ClusterNode oldestSrvNode =
-                    CU.oldestAliveCacheServerNode(ctx.cache().context(), AffinityTopologyVersion.NONE);
+                ClusterNode oldestSrvNode = ctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldestSrvNode == null)
                     break;
@@ -550,22 +589,31 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         final BinaryMetadataKey key = new BinaryMetadataKey(typeId);
 
-        try {
-            BinaryMetadata oldMeta = metaDataCache.localPeek(key);
-            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
-
-            AffinityTopologyVersion topVer = ctx.cache().context().lockedTopologyVersion(null);
-
-            if (topVer == null)
-                topVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-            BinaryObjectException err = metaDataCache.invoke(topVer, key, new MetadataProcessor(mergedMeta));
-
-            if (err != null)
-                throw err;
+        if (locMetadataCache != null) {
+            locMetadataCache.merge(key, newMeta0, new ConcurrentHashMap8.BiFun<BinaryMetadata, BinaryMetadata, BinaryMetadata>() {
+                @Override public BinaryMetadata apply(BinaryMetadata curMeta, BinaryMetadata newMeta) {
+                    return BinaryUtils.mergeMetadata(curMeta, newMeta);
+                }
+            });
         }
-        catch (CacheException e) {
-            throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
+        else {
+            try {
+                BinaryMetadata oldMeta = metaDataCache.localPeek(key);
+                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+
+                AffinityTopologyVersion topVer = ctx.cache().context().lockedTopologyVersion(null);
+
+                if (topVer == null)
+                    topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+                BinaryObjectException err = metaDataCache.invoke(topVer, key, new MetadataProcessor(mergedMeta));
+
+                if (err != null)
+                    throw err;
+            }
+            catch (CacheException e) {
+                throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
+            }
         }
     }
 
@@ -578,17 +626,28 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 if (typeMeta != null)
                     return typeMeta;
 
-                BinaryMetadata meta = metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
+                BinaryMetadata meta;
+
+                if (locMetadataCache != null)
+                    meta = locMetadataCache.get(new BinaryMetadataKey(typeId));
+                else
+                    meta = metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
 
                 return meta != null ? meta.wrap(binaryCtx) : null;
             }
             else {
                 BinaryMetadataKey key = new BinaryMetadataKey(typeId);
 
-                BinaryMetadata meta = metaDataCache.localPeek(key);
+                BinaryMetadata meta;
 
-                if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
-                    meta = metaDataCache.getTopologySafe(key);
+                if (locMetadataCache != null)
+                    meta = locMetadataCache.get(key);
+                else {
+                    meta = metaDataCache.localPeek(key);
+
+                    if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
+                        meta = metaDataCache.getTopologySafe(key);
+                }
 
                 return meta != null ? meta.wrap(binaryCtx) : null;
             }
@@ -607,7 +666,20 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             for (Integer typeId : typeIds)
                 keys.add(new BinaryMetadataKey(typeId));
 
-            Map<BinaryMetadataKey, BinaryMetadata> meta = metaDataCache.getAll(keys);
+            Map<BinaryMetadataKey, BinaryMetadata> meta;
+
+            if (locMetadataCache != null) {
+                meta = new HashMap<>();
+
+                for (BinaryMetadataKey key : keys) {
+                    BinaryMetadata metadata = locMetadataCache.get(key);
+
+                    if (metadata != null)
+                        meta.put(key, metadata);
+                }
+            }
+            else
+                meta = metaDataCache.getAll(keys);
 
             Map<Integer, BinaryType> res = U.newHashMap(meta.size());
 
@@ -631,6 +703,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             });
         else {
+            if (locMetadataCache != null) {
+                ConcurrentHashMap8.ValuesView<BinaryMetadataKey, BinaryMetadata> vals = locMetadataCache.values();
+
+                ArrayList<BinaryType> res = new ArrayList<>(vals.size());
+
+                for (BinaryMetadata metadata : vals)
+                    res.add(metadata.wrap(binaryCtx));
+
+                return res;
+            }
+
             return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
                 new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
                     private static final long serialVersionUID = 0L;
@@ -673,22 +756,43 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @return Affinity key.
      */
     public Object affinityKey(BinaryObject po) {
+        // Fast path for already cached field.
+        if (po instanceof BinaryObjectEx) {
+            int typeId = ((BinaryObjectEx)po).typeId();
+
+            T1<BinaryField> fieldHolder = affKeyFields.get(typeId);
+
+            if (fieldHolder != null) {
+                BinaryField field = fieldHolder.get();
+
+                return field != null ? field.value(po) : po;
+            }
+        }
+
+        // Slow path if affinity field is not cached yet.
         try {
             BinaryType meta = po instanceof BinaryObjectEx ? ((BinaryObjectEx)po).rawType() : po.type();
 
             if (meta != null) {
-                String affKeyFieldName = meta.affinityKeyFieldName();
+                String name = meta.affinityKeyFieldName();
 
-                if (affKeyFieldName != null)
-                    return po.field(affKeyFieldName);
+                if (name != null) {
+                    BinaryField field = meta.field(name);
+
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<>(field));
+
+                    return field.value(po);
+                }
+                else
+                    affKeyFields.putIfAbsent(meta.typeId(), new T1<BinaryField>(null));
             }
             else if (po instanceof BinaryObjectEx) {
-                int id = ((BinaryObjectEx)po).typeId();
+                int typeId = ((BinaryObjectEx)po).typeId();
 
-                String affKeyFieldName = binaryCtx.affinityKeyFieldName(id);
+                String name = binaryCtx.affinityKeyFieldName(typeId);
 
-                if (affKeyFieldName != null)
-                    return po.field(affKeyFieldName);
+                if (name != null)
+                    return po.field(name);
             }
         }
         catch (BinaryObjectException e) {

@@ -96,7 +96,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         srv.start(ctx);
 
         ctx.io().addMessageListener(TOPIC_TIME_SYNC, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert msg instanceof GridClockDeltaSnapshotMessage;
 
                 GridClockDeltaSnapshotMessage msg0 = (GridClockDeltaSnapshotMessage)msg;
@@ -458,7 +458,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     srv.sendPacket(req, addr, port);
                 }
                 catch (IgniteCheckedException e) {
-                    LT.warn(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
+                    LT.error(log, e, "Failed to send time request to remote node [rmtNodeId=" + rmtNodeId +
                         ", addr=" + addr + ", port=" + port + ']');
                 }
             }
