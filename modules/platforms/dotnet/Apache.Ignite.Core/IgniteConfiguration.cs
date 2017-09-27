@@ -739,6 +739,7 @@ namespace Apache.Ignite.Core
                 }
             }
 
+            SpringConfigUrl = cfg.SpringConfigUrl;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
