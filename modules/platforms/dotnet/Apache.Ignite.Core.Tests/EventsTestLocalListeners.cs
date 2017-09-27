@@ -107,14 +107,14 @@ namespace Apache.Ignite.Core.Tests
                 LocalEventListeners = new LocalEventListener<IEvent>[1]
             };
 
+            // Null collection element.
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual("LocalEventListeners can't contain nulls.", ex.InnerException.Message);
+            Assert.AreEqual("LocalEventListeners can't contain nulls.", ex.Message);
             
+            // Null listener property.
             cfg.LocalEventListeners = new[] {new LocalEventListener<IEvent>()};
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual("LocalEventListener.Listener can't be null.", ex.InnerException.Message);
+            Assert.AreEqual("LocalEventListener.Listener can't be null.", ex.Message);
         }
 
         /// <summary>
