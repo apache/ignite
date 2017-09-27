@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest {
 
+    public static final String CACHE_NAME = "dummy";
     private boolean deleteAfter = false;
     private boolean deleteBefore = true;
 
@@ -81,7 +82,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public void testNewStyleIdIsGenerated() throws Exception {
         IgniteEx igniteEx = startGrid(0);
         igniteEx.active(true);
-        igniteEx.getOrCreateCache("dummy").put("hi", "there!");
+        igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
         final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
         String consistentIdMasked = "Node0-" + consistentId;
@@ -99,7 +100,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         this.configuredConsistentId = "someConfiguredConsistentId";
         IgniteEx igniteEx = startGrid(0);
         igniteEx.active(true);
-        igniteEx.getOrCreateCache("dummy").put("hi", "there!");
+        igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
         assertPdsDirsDefaultExist(configuredConsistentId);
         stopGrid(0);
@@ -115,8 +116,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         this.configuredConsistentId = "127.0.0.1:47500"; //this is for create old node folder
         IgniteEx igniteEx = startGrid(0);
         igniteEx.active(true);
-        final String expectedVal = "there is compatible mode with old style folders!";
-        igniteEx.getOrCreateCache("dummy").put("hi", expectedVal);
+        final String expVal = "there is compatible mode with old style folders!";
+        igniteEx.getOrCreateCache(CACHE_NAME).put("hi", expVal);
 
         assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId));
         stopGrid(0);
@@ -125,7 +126,23 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         IgniteEx igniteRestart = startGrid(0);
         igniteRestart.active(true);
-        assertTrue(expectedVal.equals(igniteRestart.cache("dummy").get("hi")));
+        assertTrue(expVal.equals(igniteRestart.cache(CACHE_NAME).get("hi")));
+        stopGrid(0);
+    }
+
+    /**
+     * Start stop grid without activation should cause lock to be released and restarted node should have index 0
+     * @throws Exception if failed
+     */
+    public void testStartWithoutActivate() throws Exception {
+        //start stop grid without activate
+        startGrid(0);
+        stopGrid(0);
+
+        IgniteEx igniteRestart = startGrid(0);
+        igniteRestart.active(true);
+        igniteRestart.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+        assertPdsDirsDefaultExist("Node0-" + igniteRestart.cluster().localNode().consistentId().toString());
         stopGrid(0);
     }
 
@@ -139,7 +156,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         {
             IgniteEx igniteEx = startGrid(0);
             igniteEx.active(true);
-            igniteEx.getOrCreateCache("dummy").put("hi", "there!");
+            igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
             final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
             String consistentIdMasked = "Node0-" + consistentId;
@@ -152,7 +169,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         {
             IgniteEx igniteRestart = startGrid(0);
             igniteRestart.active(true);
-            assertTrue("there!".equals(igniteRestart.cache("dummy").get("hi")));
+            assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
 
             final String consistentId = igniteRestart.cluster().localNode().consistentId().toString();
             String consistentIdMasked = "Node0-" + consistentId;
@@ -167,8 +184,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         IgniteEx igniteEx = startGrid(0);
         IgniteEx igniteEx1 = startGrid(1);
         igniteEx.active(true);
-        igniteEx.getOrCreateCache("dummy").put("hi", "there!");
-        igniteEx1.getOrCreateCache("dummy").put("hi1", "there!");
+        igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+        igniteEx1.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
         String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
         assertPdsDirsDefaultExist(consistentIdMasked);
 

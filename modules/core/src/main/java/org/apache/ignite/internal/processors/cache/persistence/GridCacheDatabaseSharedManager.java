@@ -62,6 +62,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -599,7 +601,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
         if (!folderSettings.isCompatible())
-            fileLockHolder = folderSettings.fileLockHolder();
+            fileLockHolder = folderSettings.takeLockedFileLockHolder();
         else
             fileLockHolder.tryLock(lockWaitTime);
     }
@@ -3134,8 +3136,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Lock. */
         private FileLock lock;
 
-        /** Id. */
-        private GridKernalContext ctx;
+        /** Kernal context to generate Id of locked node in file. */
+        @NotNull private GridKernalContext ctx;
 
         /** Logger. */
         private IgniteLogger log;
@@ -3143,7 +3145,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param path Path.
          */
-        public FileLockHolder(String path, GridKernalContext ctx, IgniteLogger log) {
+        public FileLockHolder(String path, @NotNull GridKernalContext ctx, IgniteLogger log) {
             try {
                 file = Paths.get(path, lockFileName).toFile();
 
@@ -3168,31 +3170,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             SB sb = new SB();
 
-            //todo revert it with providing correct data supplier
-            if (ctx != null) {
-                //write node id
-                sb.a("[").a(ctx.localNodeId().toString()).a("]");
+            //write node id
+            sb.a("[").a(ctx.localNodeId().toString()).a("]");
 
-                //write ip addresses
-                sb.a(ctx.discovery().localNode().addresses());
-
-                //write ports
-                sb.a("[");
-                Iterator<GridPortRecord> it = ctx.ports().records().iterator();
-
-                while (it.hasNext()) {
-                    GridPortRecord rec = it.next();
-
-                    sb.a(rec.protocol()).a(":").a(rec.port());
-
-                    if (it.hasNext())
-                        sb.a(", ");
-                }
-
-                sb.a("]");
+            //write ip addresses
+            final GridDiscoveryManager discovery = ctx.discovery();
+            //discovery may be not up and running
+            if (discovery != null) {
+                final ClusterNode node = discovery.localNode();
+                if (node != null)
+                    sb.a(node.addresses());
             }
-            else
-                sb.a("No information about node");
+
+            //write ports
+            sb.a("[");
+            Iterator<GridPortRecord> it = ctx.ports().records().iterator();
+
+            while (it.hasNext()) {
+                GridPortRecord rec = it.next();
+
+                sb.a(rec.protocol()).a(":").a(rec.port());
+
+                if (it.hasNext())
+                    sb.a(", ");
+            }
+
+            sb.a("]");
+
 
             String failMsg;
 
@@ -3273,17 +3277,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return content;
         }
 
-        /**
-         *
-         */
-        private void release() {
+        /** Releases file lock */
+        public void release() {
             U.releaseQuiet(lock);
         }
 
-        /**
-         *
-         */
-        private void close() {
+        /** Closes file channel */
+        public void close() {
             U.closeQuiet(lockFile);
         }
 

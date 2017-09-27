@@ -115,7 +115,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsCompatibleFileNameResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -935,10 +935,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.add(discoMgr, false);
 
-            ctx.pdsFolderResolver(new PdsCompatibleFileNameResolver(cfg, discoMgr));
+         ///  ctx.pdsFolderResolver(new PdsConsistentIdGeneratingFoldersResolver(cfg, discoMgr, log));
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
+
+                final PdsConsistentIdGeneratingFoldersResolver proc = new PdsConsistentIdGeneratingFoldersResolver(ctx);
+                //ctx.pdsFolderResolver(proc);
+                startProcessor(proc);
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new  GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));

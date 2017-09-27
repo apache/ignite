@@ -540,7 +540,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
-            stateProc =(GridClusterStateProcessor)comp;
+            stateProc = (GridClusterStateProcessor)comp;
         else if (comp instanceof GridTaskSessionProcessor)
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
@@ -580,9 +580,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof PlatformProcessor)
             platformProc = (PlatformProcessor)comp;
         else if (comp instanceof PoolProcessor)
-            poolProc = (PoolProcessor) comp;
+            poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
+        else if (comp instanceof PdsFolderResolver)
+            pdsFolderRslvr = (PdsFolderResolver)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1073,8 +1075,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.disconnected = disconnected;
     }
 
-
-    /**{@inheritDoc}*/
+    /** {@inheritDoc} */
     @Override public PdsFolderResolver pdsFolderResolver() {
         return pdsFolderRslvr;
     }
@@ -1086,7 +1087,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     void pdsFolderResolver(PdsFolderResolver pdsFolderRslvr) {
         this.pdsFolderRslvr = pdsFolderRslvr;
     }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class holds information required for folder generation for ignite persistent store
@@ -65,14 +66,23 @@ public class PdsFolderSettings {
         return consistentId;
     }
 
+    /**
+     * @return flag indicating if compatible mode is enabled, in that case all subfolders are generated from consistent
+     * ID without 'node' and node index prefix.
+     */
     public boolean isCompatible() {
         return compatible;
     }
 
     /**
+     * Returns already locked and clears file lock holder. After calling this method it is responsibility of calling
+     * site to unlock and close this lock
+     *
      * @return File lock holder with prelocked db directory
      */
-    public GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder() {
-        return fileLockHolder;
+    @Nullable public GridCacheDatabaseSharedManager.FileLockHolder takeLockedFileLockHolder() {
+        final GridCacheDatabaseSharedManager.FileLockHolder holder = fileLockHolder;
+        fileLockHolder = null;
+        return holder;
     }
 }

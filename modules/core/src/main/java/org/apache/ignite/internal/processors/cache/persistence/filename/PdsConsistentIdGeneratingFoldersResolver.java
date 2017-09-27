@@ -24,9 +24,14 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -34,7 +39,7 @@ import org.apache.ignite.logger.NullLogger;
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
  */
-public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
+public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFolderResolver {
     public static final String DB_FOLDER_PREFIX = "Node";
     public static final String NODEIDX_UID_SEPARATOR = "-";
 
@@ -46,13 +51,27 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
     private Serializable consId;
     private IgniteConfiguration cfg;
     private GridDiscoveryManager discovery;
+    /** Logger. */
+    private IgniteLogger log;
+    private GridKernalContext ctx;
 
     /** Cached folder settings. */
     private PdsFolderSettings settings;
 
-    public PdsCompatibleFileNameResolver(IgniteConfiguration cfg, GridDiscoveryManager discovery) {
+  /*  public PdsConsistentIdGeneratingFoldersResolver(IgniteConfiguration cfg, GridDiscoveryManager discovery,
+        IgniteLogger log) {
+        super();
         this.cfg = cfg;
         this.discovery = discovery;
+        this.log = log;
+    }*/
+
+    public PdsConsistentIdGeneratingFoldersResolver(GridKernalContext ctx) {
+        super(ctx);
+        this.cfg = ctx.config();
+        this.discovery = ctx.discovery();
+        this.log = ctx.log(PdsFolderResolver.class);
+        this.ctx = ctx;
     }
 
     public PdsFolderSettings compatibleResolve() {
@@ -70,6 +89,7 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
         }
         return settings;
     }
+
 
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
         if (!cfg.isPersistentStoreEnabled())
@@ -103,7 +123,7 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
             if (m.find()) {
                 int uidStart = m.end();
                 String uid = file.substring(uidStart);
-                System.out.println("found>> " + uid);
+                System.out.println("found>> " + uid); //todo remove
 
                 int idx = 0; //todo
                 //already have such directory here
@@ -114,9 +134,8 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
                     System.out.println("locked>> " + pstStoreBasePath + " " + file);
                     return new PdsFolderSettings(id, file, idx, fileLockHolder, false);
                 }
-                else {
+                else
                     nodeIdx++;
-                }
             }
         }
 
@@ -142,7 +161,7 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
         try {
             final File workDirPath = new File(pstStoreBasePath, file);
             GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
-                = new GridCacheDatabaseSharedManager.FileLockHolder(workDirPath.getAbsolutePath(), null, new NullLogger());
+                = new GridCacheDatabaseSharedManager.FileLockHolder(workDirPath.getAbsolutePath(), ctx, log);
             fileLockHolder.tryLock(1000);
             return fileLockHolder;
         }
@@ -176,4 +195,15 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
         return dirToFindOldConsIds;
     }
 
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        if (settings != null) {
+            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.takeLockedFileLockHolder();
+            if (fileLockHolder != null) {
+                fileLockHolder.release();
+                fileLockHolder.close();
+            }
+        }
+        super.stop(cancel);
+    }
 }
