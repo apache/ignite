@@ -219,6 +219,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
             AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
             AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventLocalListenerApply, EventLocalListenerApply);
             AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
             AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
             AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
@@ -896,6 +897,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite.HandleRegistry.Release(ptr);
 
             return 0;
+        }
+
+        private long EventLocalListenerApply(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var id = stream.ReadInt();
+
+                var listeners = _ignite.Configuration.LocalEventListenersInternal;
+
+                if (listeners == null || id >= listeners.Length)
+                {
+                    return 0;
+                }
+
+                var listener = listeners[id];
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                var res = listener.Invoke(reader);
+
+                return res ? 1 : 0;
+            }
         }
 
         #endregion
