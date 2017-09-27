@@ -7398,6 +7398,15 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Awaits for condition ignoring interrupts.
+     *
+     * @param cond Condition to await for.
+     */
+    public static void awaitQuiet(Condition cond) {
+        cond.awaitUninterruptibly();
+    }
+
+    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.

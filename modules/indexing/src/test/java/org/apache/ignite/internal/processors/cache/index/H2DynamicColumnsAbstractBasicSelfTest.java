@@ -30,6 +30,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
+
+import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Test to check dynamic columns related features.
@@ -238,7 +241,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
 
-        IgniteCache<Integer, City> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+        IgniteCache<Integer, ?> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
 
         run(cache, "ALTER TABLE \"City\".City ADD COLUMN population int");
 
@@ -256,13 +259,51 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         assertEquals(Collections.singletonList(Arrays.asList(1, 1, "Washington", "DC", 2500000)), res);
 
-        City city = cache.get(1);
+        if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            City city = (City)cache.get(1);
 
-        assertEquals(1, city.id());
-        assertEquals("Washington", city.name());
-        assertEquals("DC", city.state());
+            assertEquals(1, city.id());
+            assertEquals("Washington", city.name());
+            assertEquals("DC", city.state());
+        }
+        else {
+            BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
+
+            assertEquals(1, (int)city.field("id"));
+            assertEquals("Washington", (String)city.field("name"));
+            assertEquals("DC", (String)city.field("state"));
+            assertEquals(2500000, (int)city.field("population"));
+        }
 
         cache.destroy();
+    }
+
+    /**
+     * Test addition of column with not null constraint.
+     */
+    public void testAddNotNullColumn() {
+        run("ALTER TABLE Person ADD COLUMN age int NOT NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), false);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
+     * Test addition of column explicitly defined as nullable.
+     */
+    public void testAddNullColumn() {
+        run("ALTER TABLE Person ADD COLUMN age int NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), true);
+
+        for (Ignite node : Ignition.allGrids())
+            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**

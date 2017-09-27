@@ -324,15 +324,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
-            assertEquals("Invalid schema", "public", conn.getSchema());
+            assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + DEFAULT_CACHE_NAME)) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
-            assertEquals("Invalid schema", "_not_exist_schema_", conn.getSchema());
+            assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
     }
 
@@ -346,7 +346,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static JdbcThinTcpIo io(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return conn0.io();
+        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
     }
 
     /**

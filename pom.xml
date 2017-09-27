@@ -51,6 +51,7 @@
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
+        <module>modules/dev-utils</module>
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
@@ -102,6 +103,7 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>
+                <module>modules/compatibility</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
@@ -162,6 +164,13 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>compatibility</id>
+            <modules>
+                <module>modules/compatibility</module>
+            </modules>
         </profile>
 
         <profile>

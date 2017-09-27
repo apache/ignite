@@ -288,7 +288,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                             if (ver && bt && !_.isEmpty(supportedAgents)) {
                                 const btDistr = _.get(supportedAgents, [ver, 'buildTime']);
 
-                                if (_.isEmpty(btDistr) || btDistr < bt)
+                                if (_.isEmpty(btDistr) || btDistr !== bt)
                                     return cb('You are using an older version of the agent. Please reload agent');
                             }
 

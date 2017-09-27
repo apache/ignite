@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Initialize new root page.
@@ -111,5 +112,10 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
      */
     public byte[] rowBytes() {
         return rowBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NewRootInitRecord.class, this, "super", super.toString());
     }
 }
