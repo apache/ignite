@@ -517,13 +517,11 @@ namespace Apache.Ignite.Core
             }
 
             // Local event listeners (should be last).
-            InitLocalEventListeners();
-
-            if (_localEventListenersInternal != null)
+            if (LocalEventListeners != null)
             {
-                writer.WriteInt(_localEventListenersInternal.Length);
+                writer.WriteInt(LocalEventListeners.Count);
 
-                foreach (var listener in _localEventListenersInternal)
+                foreach (var listener in LocalEventListeners)
                 {
                     ValidateLocalEventListener(listener);
 
