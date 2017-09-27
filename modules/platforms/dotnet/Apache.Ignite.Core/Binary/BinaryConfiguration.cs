@@ -69,7 +69,10 @@ namespace Apache.Ignite.Core.Binary
 
             Types = cfg.Types == null ? null : cfg.Types.ToList();
 
-            CompactFooter = cfg.CompactFooter;
+            if (cfg.CompactFooterInternal != null)
+            {
+                CompactFooter = cfg.CompactFooterInternal.Value;
+            }
         }
 
         /// <summary>
