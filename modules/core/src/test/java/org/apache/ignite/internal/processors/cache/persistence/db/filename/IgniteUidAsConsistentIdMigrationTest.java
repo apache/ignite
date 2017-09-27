@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.db.filename;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,6 +46,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     private boolean deleteAfter = false;
     private boolean deleteBefore = true;
+    private boolean failIfDeleteNotCompleted = true;
 
     /** Configured consistent id. */
     private String configuredConsistentId;
@@ -68,8 +71,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        assertTrue(deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false)));
-        assertTrue(deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false)));
+        boolean ok = true;
+        ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        if (failIfDeleteNotCompleted)
+            assertTrue(ok);
     }
 
     /** {@inheritDoc} */
@@ -291,8 +297,28 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         ignite4Restart.active(true);
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite4Restart, 0));
         stopAllGrids();
+
+        Set<Integer> indexes = getAllNodeIndexesInFolder();
+        System.err.println(indexes);
+
     }
 
+    /**
+     * @return set of all indexes of nodes found in work folder
+     * @throws IgniteCheckedException if failed.
+     */
+    @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
+        Set<Integer> indexes = new TreeSet<>();
+        final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER);
+        final File[] files = curFolder.listFiles(PdsConsistentIdGeneratingFoldersResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        for (File file : files) {
+            final PdsConsistentIdGeneratingFoldersResolver.NodeIndexAndUid uid
+                = PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName(file, log);
+            if (uid != null)
+                indexes.add(uid.nodeIndex());
+        }
+        return indexes;
+    }
 
     /**
      * Checks existence of all storage-related directories

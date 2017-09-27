@@ -3126,7 +3126,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    public static class FileLockHolder {
+    public static class FileLockHolder implements AutoCloseable {
         /** Lock file name. */
         private static final String lockFileName = "lock";
 
