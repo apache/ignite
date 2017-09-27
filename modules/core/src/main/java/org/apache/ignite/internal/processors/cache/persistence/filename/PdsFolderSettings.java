@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -29,6 +30,16 @@ public class PdsFolderSettings {
 
     /** folder name containing consistent ID and optionally node index */
     private final String folderName;
+    /**
+     * File lock holder with prelocked db directory. For non compatible mode this holder contains prelocked work
+     * directory. This value is to be used at activate instead of locking.
+     */
+    private GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
+
+    /**
+     * Indicates if compatible mode is enabled, in that case all subfolders are generated from consistent ID without
+     * 'node' and node index prefix.
+     */
     private final boolean compatible;
 
     public PdsFolderSettings(Serializable consistentId, boolean compatible) {
@@ -37,9 +48,12 @@ public class PdsFolderSettings {
         this.folderName = U.maskForFileName(consistentId.toString());
     }
 
-    public PdsFolderSettings(UUID consistentId, String folderName, int nodeIdx, boolean compatible) {
+    public PdsFolderSettings(UUID consistentId, String folderName, int nodeIdx,
+        GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
+        boolean compatible) {
         this.consistentId = consistentId;
         this.folderName = folderName;
+        this.fileLockHolder = fileLockHolder;
         this.compatible = compatible;
     }
 
@@ -53,5 +67,12 @@ public class PdsFolderSettings {
 
     public boolean isCompatible() {
         return compatible;
+    }
+
+    /**
+     * @return File lock holder with prelocked db directory
+     */
+    public GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder() {
+        return fileLockHolder;
     }
 }

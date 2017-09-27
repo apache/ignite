@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -596,7 +597,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             log.debug("Try to capture file lock [nodeId=" +
                 cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
-        fileLockHolder.tryLock(lockWaitTime);
+        final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+        if (!folderSettings.isCompatible())
+            fileLockHolder = folderSettings.fileLockHolder();
+        else
+            fileLockHolder.tryLock(lockWaitTime);
     }
 
     /** {@inheritDoc} */
@@ -875,7 +880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             idxRebuildFuts.remove(cacheId, rebuildFut);
 
                             log().info("Finished indexes rebuilding for cache: [name=" + cacheCtx.config().getName()
-                                    + ", grpName=" + cacheCtx.config().getGroupName());
+                                + ", grpName=" + cacheCtx.config().getGroupName());
                         }
                     });
                 }
@@ -1189,7 +1194,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * For debugging only. TODO: remove.
-     *
      */
     public Map<T2<Integer, Integer>, T2<Long, WALPointer>> reservedForPreloading() {
         return reservedForPreloading;
@@ -2310,7 +2314,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
 
-
                 cpPagesTuple = beginAllCheckpoints();
 
                 hasPages = hasPageForWrite(cpPagesTuple.get1());
@@ -2400,7 +2403,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return tuple with collections of FullPageIds obtained from each PageMemory and overall number of dirty pages.
+         * @return tuple with collections of FullPageIds obtained from each PageMemory and overall number of dirty
+         * pages.
          */
         private IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> beginAllCheckpoints() {
             Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(memoryPolicies().size());
@@ -2792,9 +2796,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry CheckpointEntries}.
-     * Data is loaded from corresponding checkpoint directory.
-     * This directory holds files for checkpoint start and end.
+     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry
+     * CheckpointEntries}. Data is loaded from corresponding checkpoint directory. This directory holds files for
+     * checkpoint start and end.
      */
     @SuppressWarnings("PublicInnerClass")
     public class CheckpointHistory {
@@ -3165,7 +3169,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             SB sb = new SB();
 
             //todo revert it with providing correct data supplier
-            if(ctx!=null) {
+            if (ctx != null) {
                 //write node id
                 sb.a("[").a(ctx.localNodeId().toString()).a("]");
 
@@ -3186,7 +3190,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 sb.a("]");
-            } else
+            }
+            else
                 sb.a("No information about node");
 
             String failMsg;

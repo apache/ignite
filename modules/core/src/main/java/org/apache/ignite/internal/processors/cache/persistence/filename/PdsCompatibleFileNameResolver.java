@@ -96,6 +96,7 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
             }
         };
 
+        int nodeIdx = 0;
         final String[] newStyleFiles = pstStoreBasePath.list(filter);
         for (String file : newStyleFiles) {
             Matcher m = Pattern.compile(NODE_PATTERN).matcher(file);
@@ -111,7 +112,10 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
                 final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, file);
                 if (fileLockHolder != null) {
                     System.out.println("locked>> " + pstStoreBasePath + " " + file);
-                    return new PdsFolderSettings(id, file, idx, false);
+                    return new PdsFolderSettings(id, file, idx, fileLockHolder, false);
+                }
+                else {
+                    nodeIdx++;
                 }
             }
         }
@@ -120,26 +124,24 @@ public class PdsCompatibleFileNameResolver implements PdsFolderResolver {
         String uuidAsStr = uuid.toString();
 
         assert uuidAsStr.matches(UUID_STR_PATTERN);
-        int nodeIdx = 0;
 
         String consIdFolderReplacement = DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + NODEIDX_UID_SEPARATOR + uuidAsStr;
 
-        U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
+        final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false);//mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, consIdFolderReplacement);
         if (fileLockHolder != null) {
             System.out.println("locked>> " + pstStoreBasePath + " " + consIdFolderReplacement);
-            return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, false);
+            return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, fileLockHolder, false);
         }
 
-        //todo error here
-        return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, false);
+        throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
 
     private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File pstStoreBasePath, String file) {
 
         try {
             final File workDirPath = new File(pstStoreBasePath, file);
-            GridCacheDatabaseSharedManager.FileLockHolder  fileLockHolder
+            GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
                 = new GridCacheDatabaseSharedManager.FileLockHolder(workDirPath.getAbsolutePath(), null, new NullLogger());
             fileLockHolder.tryLock(1000);
             return fileLockHolder;

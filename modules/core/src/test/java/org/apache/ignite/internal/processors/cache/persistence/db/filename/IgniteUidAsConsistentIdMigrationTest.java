@@ -169,11 +169,12 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         igniteEx.active(true);
         igniteEx.getOrCreateCache("dummy").put("hi", "there!");
         igniteEx1.getOrCreateCache("dummy").put("hi1", "there!");
+        String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
+        assertPdsDirsDefaultExist(consistentIdMasked);
+
         String consistentIdMasked1 = "Node1-" + (igniteEx1.cluster().localNode().consistentId().toString());
         assertPdsDirsDefaultExist(consistentIdMasked1);
 
-        String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
-        assertPdsDirsDefaultExist(consistentIdMasked);
         stopGrid(0);
         stopGrid(1);
     }
