@@ -19,16 +19,18 @@ package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -36,7 +38,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test sql queries with parameters for all types The test fix IGNITE-6286
+ * Test sql queries with parameters for all types.
+ * The test is fix  for issue 'IGNITE-6286'
  *
  * @author Sergey Chernolyas &amp;sergey_chernolyas@gmail.com&amp;
  * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6286">IGNITE-6286</a>
@@ -75,14 +78,15 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
      */
     private CacheConfiguration buildCacheConfiguration(String name) {
         CacheConfiguration ccfg = new CacheConfiguration(name);
-        QueryEntity bookmarkQueryEntity = new QueryEntity(String.class.getName(), Bookmark.class.getName());
+        /*QueryEntity bookmarkQueryEntity = new QueryEntity(String.class.getName(), Bookmark.class.getName());
 
         for (Field currentField : Bookmark.class.getDeclaredFields()) {
             bookmarkQueryEntity.addQueryField(currentField.getName(), currentField.getType().getName(), null);
         }
         List<QueryEntity> queryEntities = new ArrayList<>();
         queryEntities.add(bookmarkQueryEntity);
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(queryEntities); */
+        ccfg.setIndexedTypes(String.class, Bookmark.class);
         return ccfg;
 
     }
@@ -117,7 +121,7 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
 
         QueryCursor<List<?>> cursor = cache.query(query);
         List<List<?>> results = cursor.getAll();
-        assertEquals(1, results.size());
+        assertEquals("Find by field '"+field+"' returns incorrect row count!",1, results.size());
         List<?> row0 = results.get(0);
         return (Bookmark)row0.get(0);
     }
@@ -131,231 +135,79 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
     }
 
-
     /**
-     * Method for testing parametrized query by String field
+     * testing parametrized query by field with supported type
      * @throws Exception if any error occurs
      */
-    public void testStringSupport() throws Exception {
-
+    public void testSupportedTypes() throws Exception {
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
         Bookmark bookmark = new Bookmark();
         bookmark.setId(UUID.randomUUID().toString());
         bookmark.setDescription("description");
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("description", "description");
-        assertEquals("String value does not match", bookmark.getDescription(), loadedBookmark.getDescription());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-
-    /**
-     * Method for testing parametrized query by Integer field
-     * @throws Exception if any error occurs
-     */
-    public void testIntegerSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setStockCount(Integer.MAX_VALUE);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("stockCount", Integer.MAX_VALUE);
-        assertEquals("Integer value does not match", bookmark.getStockCount(), loadedBookmark.getStockCount());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-    /**
-     * Method for testing parametrized query by Short field
-     * @throws Exception if any error occurs
-     */
-    public void testShortSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setUrlPort(Short.MAX_VALUE);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("urlPort", Short.MAX_VALUE);
-        assertEquals("Short value does not match", bookmark.getUrlPort(), loadedBookmark.getUrlPort());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-    /**
-     * Method for testing parametrized query by Long field
-     * @throws Exception if any error occurs
-     */
-    public void testLongSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setUserId(Long.MAX_VALUE);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("userId", Long.MAX_VALUE);
-        assertEquals("Long value does not match", bookmark.getUserId(), loadedBookmark.getUserId());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-    /**
-     * Method for testing parametrized query by Float field
-     * @throws Exception if any error occurs
-     */
-    public void testFloatSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setVisitRatio(Float.MAX_VALUE);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("visitRatio", Float.MAX_VALUE);
-        assertEquals("Float value does not match", bookmark.getVisitRatio(), loadedBookmark.getVisitRatio());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-    /**
-     * Method for testing parametrized query by Double field
-     * @throws Exception if any error occurs
-     */
-    public void testDoubleSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setTaxPercentage(Double.MAX_VALUE);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("taxPercentage", Double.MAX_VALUE);
-        assertEquals("Double value does not match", bookmark.getTaxPercentage(), loadedBookmark.getTaxPercentage());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-    /**
-     * Method for testing parametrized query by Boolean field
-     * @throws Exception if any error occurs
-     */
-    public void testBooleanSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setFavourite(true);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("favourite", true);
-        assertEquals("Boolean value does not match", bookmark.getFavourite(), loadedBookmark.getFavourite());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-    /**
-     * Method for testing parametrized query by Byte field
-     * @throws Exception if any error occurs
-     */
-    public void testByteSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
         bookmark.setDisplayMask(Byte.MAX_VALUE);
+        bookmark.setSerialNumber(UUID.randomUUID());
+        bookmark.setVisitCount(new BigInteger("1000000000000000"));
+        bookmark.setSiteWeight(new BigDecimal("1000000000000000.001"));
+        bookmark.setCreated(new Date());
         cache.put(bookmark.id, bookmark);
 
-        Bookmark loadedBookmark = searchBookmarkBy("displayMask", Byte.MAX_VALUE);
-        assertEquals("Byte value does not match", bookmark.getDisplayMask(), loadedBookmark.getDisplayMask());
-        checkCommonFields(bookmark, loadedBookmark);
+        for (Field currentField : Bookmark.class.getDeclaredFields()) {
+
+            Method getter = Bookmark.class.getMethod("get"+ StringUtils.capitalize(currentField.getName()));
+            Object value = getter.invoke(bookmark);
+
+            Bookmark loadedBookmark = searchBookmarkBy(currentField.getName(), value);
+            Object loadedValue = getter.invoke(loadedBookmark);
+            assertEquals(value.getClass().getSimpleName()+" value does not match",value, loadedValue);
+            checkCommonFields(bookmark, loadedBookmark);
+        }
     }
 
 
     /**
-     * Method for testing parametrized query by UUID field
-     * @throws Exception if any error occurs
-     * @see UUID
-     */
-    public void testUUIDSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
-        final UUID uuid = UUID.randomUUID();
-        bookmark.setSerialNumber(uuid);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("serialNumber", uuid);
-        assertEquals("UUID value does not match", bookmark.getSerialNumber(), loadedBookmark.getSerialNumber());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-    /**
-     * Method for testing parametrized query by BigInteger field
-     * @throws Exception if any error occurs
-     * @see BigInteger
-     */
-    public void testBigIntegerSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
-        BigInteger bi = new BigInteger("1000000000000000");
-        bookmark.setVisitCount(bi);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("visitCount", bi);
-        assertEquals("BigInteger value does not match", bookmark.getVisitCount(), loadedBookmark.getVisitCount());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-
-    /**
-     * Method for testing parametrized query by BigDecimal field
-     * @throws Exception if any error occurs
-     * @see BigDecimal
-     */
-    public void testBigDecimalSupport() throws Exception {
-
-        IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        Bookmark bookmark = new Bookmark();
-        bookmark.setId(UUID.randomUUID().toString());
-        BigDecimal bd = new BigDecimal("1000000000000000.001");
-        bookmark.setSiteWeight(bd);
-        cache.put(bookmark.id, bookmark);
-
-        Bookmark loadedBookmark = searchBookmarkBy("siteWeight", bd);
-        assertEquals("BigDecimal value does not match", bookmark.getSiteWeight(), loadedBookmark.getSiteWeight());
-        checkCommonFields(bookmark, loadedBookmark);
-    }
-
-    /**
-     * Object with all types that supported in H2
-     * @see <a href="http://www.h2database.com/html/datatypes.html">H2 types</a>
+     * Object with all predefined SQL Data Types
+     * @see <a href="https://apacheignite.readme.io/docs/dml#section-advanced-configuration">Predefined SQL Data Types</a>
      */
 
     public static class Bookmark implements Serializable {
+        @QuerySqlField
         private String id;
 
         // basic types
+        @QuerySqlField
         private String description;
+        @QuerySqlField
         private Integer stockCount;
+        @QuerySqlField
         private Short urlPort;
+        @QuerySqlField
         private Long userId;
+        @QuerySqlField
         private Float visitRatio;
+        @QuerySqlField
         private Double taxPercentage;
+        @QuerySqlField
         private Boolean favourite;
+        @QuerySqlField
         private Byte displayMask;
 
         // "special" types
-        //http://www.h2database.com/html/datatypes.html#uuid_type
+        @QuerySqlField
         private UUID serialNumber;
+        @QuerySqlField
         private BigDecimal siteWeight;
+        @QuerySqlField
         private BigInteger visitCount;
+
+        //data types
+        @QuerySqlField
+        private Date created;
 
         public String getId() {
             return id;
@@ -452,6 +304,14 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
 
         public void setVisitCount(BigInteger visitCount) {
             this.visitCount = visitCount;
+        }
+
+        public Date getCreated() {
+            return created;
+        }
+
+        public void setCreated(Date created) {
+            this.created = created;
         }
 
         @Override public boolean equals(Object o) {
