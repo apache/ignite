@@ -308,8 +308,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (reader.ReadBoolean())
                     {
                         // FactoryId-based plugin: skip.
+                        reader.ReadInt();  // Skip factory id.
                         var size = reader.ReadInt();
-                        reader.Stream.Seek(size, SeekOrigin.Current);
+                        reader.Stream.Seek(size, SeekOrigin.Current);  // Skip custom data.
                     }
                     else
                     {
@@ -412,7 +413,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                         cachePlugin.WriteBinary(writer);
 
-                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos - 4);  // Write size.
                     }
                     else
                     {
