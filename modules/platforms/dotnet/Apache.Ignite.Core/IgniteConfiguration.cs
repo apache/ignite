@@ -544,7 +544,7 @@ namespace Apache.Ignite.Core
         {
             if (listener == null)
             {
-                throw new IgniteException("LocalEventListeners can't be null.");
+                throw new IgniteException("LocalEventListeners can't contain nulls.");
             }
 
             if (listener.ListenerObject == null)
