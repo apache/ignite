@@ -1644,7 +1644,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
+    private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final String cacheName,
         @Nullable final QueryTypeDescriptorImpl desc) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));

@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
-
 /**
- * Compound memory object. Contains one or more memory regions.
+ * <!-- Package description. -->
+ * Contains compatibility test framework related classes and interfaces.
  */
-public interface GridUnsafeCompoundMemory {
-    /**
-     * Deallocates this compound memory object.
-     */
-    public void deallocate();
-
-    /**
-     * Merges another compound memory object with this one.
-     *
-     * @param compound Compound memory.
-     */
-    public void merge(GridUnsafeCompoundMemory compound);
-}
+package org.apache.ignite.compatibility.testframework.plugins;

@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
-
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
-import org.h2.result.SearchRow;
-
 /**
- * Search row which supports pointer operations.
+ * <!-- Package description. -->
+ * Contains compatibility test framework related classes and interfaces.
  */
-public interface GridSearchRowPointer extends SearchRow, GridOffHeapSmartPointer {
-    // No-op.
-}
+package org.apache.ignite.compatibility.testframework.junits.logger;

@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffheapSnapTreeSelfTest;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 
 /**
- * Indexing SPI tests.
+ *
  */
-public class IgniteSpiIndexingSelfTestSuite extends TestSuite {
+public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalTx> {
     /**
-     * @return Failover SPI tests suite.
-     * @throws Exception If failed.
+     * @return Commit flag.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Indexing SPI Test Suite");
-
-        suite.addTest(new TestSuite(GridOffheapSnapTreeSelfTest.class));
-
-        return suite;
-    }
+    boolean commit();
 }

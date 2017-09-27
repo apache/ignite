@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
-
 /**
- * Smart pointer with reference counting.
+ * <!-- Package description. -->
+ * Contains compatibility test framework related classes and interfaces.
  */
-public interface GridOffHeapSmartPointer {
-    /**
-     * @return Pointer address.
-     */
-    public long pointer();
-
-    /**
-     * Increment reference count.
-     */
-    public void incrementRefCount();
-
-    /**
-     * Decrement reference count.
-     */
-    public void decrementRefCount();
-}
+package org.apache.ignite.compatibility.persistence;

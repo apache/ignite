@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
-
 /**
- * Factory to create smart pointer instances.
+ * <!-- Package description. -->
+ * Contains test-suites which contains compatibility tests.
  */
-public interface GridOffHeapSmartPointerFactory<T extends GridOffHeapSmartPointer> {
-    /**
-     * @param ptr Pointer.
-     * @return Smart pointer instance (may or may not return the same instance multiple times).
-     */
-    public T createPointer(long ptr);
-}
+package org.apache.ignite.compatibility.testsuites;
