@@ -749,6 +749,7 @@ namespace Apache.Ignite.Core
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
+            PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
         }
 
