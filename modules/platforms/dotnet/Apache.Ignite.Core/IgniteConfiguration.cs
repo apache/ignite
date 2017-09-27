@@ -728,16 +728,9 @@ namespace Apache.Ignite.Core
         {
             IgniteInstanceName = cfg.IgniteInstanceName;
 
-            var oldBinCfg = BinaryConfiguration;
-
-            if (cfg.BinaryConfiguration != null)
+            if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
-                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
-
-                if (oldBinCfg != null)
-                {
-                    BinaryConfiguration.MergeTypes(oldBinCfg);
-                }
+                BinaryConfiguration.CopyLocalProperties(cfg.BinaryConfiguration);
             }
 
             SpringConfigUrl = cfg.SpringConfigUrl;
