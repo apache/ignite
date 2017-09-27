@@ -21,19 +21,24 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Test for new and old stype persistent storage folders generation
  */
 public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest {
 
+    /** Cache name for test. */
     public static final String CACHE_NAME = "dummy";
+
     private boolean deleteAfter = false;
     private boolean deleteBefore = true;
 
@@ -158,12 +163,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             igniteEx.active(true);
             igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
-            final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
-            String consistentIdMasked = "Node0-" + consistentId;
-            assertPdsDirsDefaultExist(consistentIdMasked);
-            stopGrid(0);
+            assertPdsDirsDefaultExist(newStyleSubfolder(igniteEx, 0));
 
-            uuid = UUID.fromString(consistentId);
+            uuid = (UUID)igniteEx.cluster().localNode().consistentId();
+            stopGrid(0);
         }
 
         {
@@ -171,39 +174,78 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             igniteRestart.active(true);
             assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
 
-            final String consistentId = igniteRestart.cluster().localNode().consistentId().toString();
-            String consistentIdMasked = "Node0-" + consistentId;
-            assertPdsDirsDefaultExist(consistentIdMasked);
+            final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
+            assertPdsDirsDefaultExist(newStyleSubfolder(igniteRestart, 0));
             stopGrid(0);
 
-            assertEquals(uuid, UUID.fromString(consistentId));
+            assertEquals(uuid, consIdRestart);
         }
     }
 
-    public void testNodeIndexIncremented() throws Exception {
-        IgniteEx igniteEx = startGrid(0);
-        IgniteEx igniteEx1 = startGrid(1);
-        igniteEx.active(true);
-        igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
-        igniteEx1.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
-        String consistentIdMasked = "Node0-" + (igniteEx.cluster().localNode().consistentId().toString());
-        assertPdsDirsDefaultExist(consistentIdMasked);
+    @NotNull private String newStyleSubfolder(Ignite igniteEx, int nodeIdx) {
+        final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
+        return PdsConsistentIdGeneratingFoldersResolver.DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + "-" + consistentId;
+    }
 
-        String consistentIdMasked1 = "Node1-" + (igniteEx1.cluster().localNode().consistentId().toString());
-        assertPdsDirsDefaultExist(consistentIdMasked1);
+    /**
+     * test two nodes started at the same db root folder, second node should get index 1
+     * @throws Exception if failed
+     */
+    public void testNodeIndexIncremented() throws Exception {
+        final Ignite ignite0 = startGrid(0);
+        final Ignite ignite1 = startGrid(1);
+
+        ignite0.active(true);
+
+        ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+        ignite1.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
+
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite0, 0));
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite1, 1));
 
         stopGrid(0);
         stopGrid(1);
     }
 
-    private void assertPdsDirsDefaultExist(String consistentIdMasked) throws IgniteCheckedException, IOException {
+    /**
+     * Test verified that new style folder is taken always with lowest index
+     * @throws Exception if failed
+     */
+    public void testAlwaysSmallestNodeIsCreated() throws Exception {
+        final Ignite ignite0 = startGrid(0);
+        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite2 = startGrid(2);
+        final Ignite ignite3 = startGrid(3);
+        final Ignite ignite4 = startGrid(4);
+
+        ignite0.active(true);
+
+        ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+        ignite3.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
+
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite0, 0));
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite1, 1));
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite2, 2));
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite3, 3));
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite4, 4));
+
+        stopAllGrids();
+
+        //this grid should take folder with index 0 as unlocked
+        final Ignite ignite4Restart = startGrid(4);
+        ignite4Restart.active(true);
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite4Restart, 0));
+        stopAllGrids();
+    }
+
+    private void assertPdsDirsDefaultExist(String consistentIdMasked) throws IgniteCheckedException {
         assertDirectoryExist("binary_meta", consistentIdMasked);
         assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked);
         assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, consistentIdMasked);
-        assertDirectoryExist("db", consistentIdMasked);
+        assertDirectoryExist(PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER, consistentIdMasked);
     }
 
-    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException, IOException {
+    private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
         File curFolder = new File(U.defaultWorkDirectory());
         for (String name : subFolderNames) {
             curFolder = new File(curFolder, name);

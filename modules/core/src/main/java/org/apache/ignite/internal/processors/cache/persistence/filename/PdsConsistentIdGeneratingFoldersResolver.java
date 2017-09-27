@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.Serializable;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,18 +27,16 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridKernalContextImpl;
-import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
 
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
  */
 public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFolderResolver {
+    /** Database subfolders constant prefix. */
     public static final String DB_FOLDER_PREFIX = "Node";
     public static final String NODEIDX_UID_SEPARATOR = "-";
 
@@ -47,8 +44,9 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         "[0-9]*" +
         NODEIDX_UID_SEPARATOR;
     public static final String UUID_STR_PATTERN = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    /** Database default folder. */
+    public static final String DB_DEFAULT_FOLDER = "db";
 
-    private Serializable consId;
     private IgniteConfiguration cfg;
     private GridDiscoveryManager discovery;
     /** Logger. */
@@ -57,14 +55,6 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /** Cached folder settings. */
     private PdsFolderSettings settings;
-
-  /*  public PdsConsistentIdGeneratingFoldersResolver(IgniteConfiguration cfg, GridDiscoveryManager discovery,
-        IgniteLogger log) {
-        super();
-        this.cfg = cfg;
-        this.discovery = discovery;
-        this.log = log;
-    }*/
 
     public PdsConsistentIdGeneratingFoldersResolver(GridKernalContext ctx) {
         super(ctx);
@@ -90,26 +80,18 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         return settings;
     }
 
-
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
         if (!cfg.isPersistentStoreEnabled())
             return compatibleResolve();
 
-        if (consId != null)
-            return new PdsFolderSettings(consId, true);
-
-        if (consId == null) {
-            if (cfg.getConsistentId() != null) {
-                consId = cfg.getConsistentId(); // compatible mode from configuration is used fot this case
-                return new PdsFolderSettings(consId, true);
-            }
+        // compatible mode from configuration is used fot this case
+        if (cfg.getConsistentId() != null) {
+            // compatible mode from configuration is used fot this case
+            return new PdsFolderSettings(cfg.getConsistentId(), true);
         }
-
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
-        final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
-
-        final File pstStoreBasePath = resolvePersistentStoreBasePath(pstCfg);
+        final File pstStoreBasePath = resolvePersistentStoreBasePath();
         final FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
                 return name.matches(NODE_PATTERN + UUID_STR_PATTERN);
@@ -149,15 +131,14 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false);//mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, consIdFolderReplacement);
         if (fileLockHolder != null) {
+            //todo remove debug output
             System.out.println("locked>> " + pstStoreBasePath + " " + consIdFolderReplacement);
             return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, fileLockHolder, false);
         }
-
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
 
     private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File pstStoreBasePath, String file) {
-
         try {
             final File workDirPath = new File(pstStoreBasePath, file);
             GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
@@ -166,12 +147,15 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
             return fileLockHolder;
         }
         catch (IgniteCheckedException e) {
+            //todo replace with logging if needed
             e.printStackTrace();
             return null;
         }
     }
 
-    private File resolvePersistentStoreBasePath(PersistentStoreConfiguration pstCfg) throws IgniteCheckedException {
+    private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+        final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+
         final File dirToFindOldConsIds;
         if (pstCfg.getPersistentStorePath() != null) {
             File workDir0 = new File(pstCfg.getPersistentStorePath());
@@ -188,7 +172,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         else {
             dirToFindOldConsIds = U.resolveWorkDirectory(
                 cfg.getWorkDirectory(),
-                "db",
+                DB_DEFAULT_FOLDER,
                 false
             );
         }

@@ -931,18 +931,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
-            final GridDiscoveryManager discoMgr = new GridDiscoveryManager(ctx);
+            final GridManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
 
-         ///  ctx.pdsFolderResolver(new PdsConsistentIdGeneratingFoldersResolver(cfg, discoMgr, log));
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
-
-                final PdsConsistentIdGeneratingFoldersResolver proc = new PdsConsistentIdGeneratingFoldersResolver(ctx);
-                //ctx.pdsFolderResolver(proc);
-                startProcessor(proc);
+                startProcessor(new PdsConsistentIdGeneratingFoldersResolver(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new  GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));

@@ -1080,14 +1080,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return pdsFolderRslvr;
     }
 
-    /**
-     * @param pdsFolderRslvr PDS mode folder name resolver, also generates consistent ID in case new folder naming is
-     * used
-     */
-    void pdsFolderResolver(PdsFolderResolver pdsFolderRslvr) {
-        this.pdsFolderRslvr = pdsFolderRslvr;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridKernalContextImpl.class, this);

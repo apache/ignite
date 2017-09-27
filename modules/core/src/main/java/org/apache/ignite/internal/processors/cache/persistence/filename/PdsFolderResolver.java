@@ -23,5 +23,10 @@ import org.apache.ignite.IgniteCheckedException;
  * Resolves folders for PDS mode, may have side effect as setting random UUID as node consistent ID
  */
 public interface PdsFolderResolver {
+    /**
+     * Prepares and caches PDS folder settings. Subsequent call to this method will provide same settings
+     * @return PDS folder settings, consistentID and prelocked DB file lock
+     * @throws IgniteCheckedException if failed
+     */
     public PdsFolderSettings resolveFolders() throws IgniteCheckedException;
 }

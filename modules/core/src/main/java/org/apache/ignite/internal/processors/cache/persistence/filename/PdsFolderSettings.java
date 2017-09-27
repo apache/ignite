@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * Class holds information required for folder generation for ignite persistent store
  */
 public class PdsFolderSettings {
+    /** Consistent id to be set to local node */
     private final Serializable consistentId;
 
     /** folder name containing consistent ID and optionally node index */
