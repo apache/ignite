@@ -1501,7 +1501,7 @@
                         <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="localEventListeners">
+                <xs:element name="localEventListeners" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Pre-configured local event listeners.</xs:documentation>
                     </xs:annotation>
