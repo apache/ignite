@@ -898,6 +898,7 @@ namespace Apache.Ignite.Core
         /// This is similar to calling <see cref="IEvents.LocalListen{T}(IEventListener{T},int[])"/>,
         /// but important difference is that some events occur during startup and can be only received this way.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<LocalEventListener> LocalEventListeners
         {
             get { return _localEventListeners; }

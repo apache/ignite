@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
@@ -37,6 +38,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// Gets or sets the event types.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> EventTypes { get; set; }
 
         /// <summary>

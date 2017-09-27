@@ -31,6 +31,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Platform local event filter. Delegates apply to native platform.
  */
 public class PlatformLocalEventListener implements IgnitePredicate<Event> {
+    /** */
+    private static final long serialVersionUID = 0L;
+    
     /** Listener id. */
     private final int id;
 
