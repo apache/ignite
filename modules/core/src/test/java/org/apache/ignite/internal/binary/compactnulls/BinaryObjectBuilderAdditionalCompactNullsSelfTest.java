@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.noncompact;
+package org.apache.ignite.internal.binary.compactnulls;
 
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 
 /**
  *
  */
-public class BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest extends BinaryObjectBuilderAdditionalSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean compactFooter() {
-        return false;
-    }
-
+public class BinaryObjectBuilderAdditionalCompactNullsSelfTest extends BinaryObjectBuilderAdditionalSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean compactNulls() {
         return true;

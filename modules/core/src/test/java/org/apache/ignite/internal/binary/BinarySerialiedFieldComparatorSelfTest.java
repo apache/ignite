@@ -438,25 +438,30 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
         assertNotNull(val1);
         assertNotNull(val2);
 
-        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val1), offheap2), true);
-        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val2), offheap2), false);
-        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(null), offheap2), false);
-        compareSingle(convert(buildSingle(val1), offheap1), convert(buildEmpty(), offheap2), false);
+//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val1), offheap2), true);
+//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val2), offheap2), false);
+//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(null), offheap2), false);
+//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildEmpty(), offheap2), false);
+//
+//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val1), offheap2), false);
+//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val2), offheap2), true);
+//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(null), offheap2), false);
+//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildEmpty(), offheap2), false);
 
-        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val1), offheap2), false);
-        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val2), offheap2), true);
-        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(null), offheap2), false);
-        compareSingle(convert(buildSingle(val2), offheap1), convert(buildEmpty(), offheap2), false);
+//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val1), offheap2), false);
+//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val2), offheap2), false);
+//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(null), offheap2), true);
+//        compareSingle(convert(buildSingle(null), offheap1), convert(buildEmpty(), offheap2), true);
+//
+//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val1), offheap2), false);
+//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val2), offheap2), false);
+//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(null), offheap2), true);
+//        compareSingle(convert(buildEmpty(), offheap1), convert(buildEmpty(), offheap2), true);
+    }
 
-        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val1), offheap2), false);
-        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val2), offheap2), false);
-        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(null), offheap2), true);
-        compareSingle(convert(buildSingle(null), offheap1), convert(buildEmpty(), offheap2), true);
-
-        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val1), offheap2), false);
-        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val2), offheap2), false);
-        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(null), offheap2), true);
-        compareSingle(convert(buildEmpty(), offheap1), convert(buildEmpty(), offheap2), true);
+    public void testQ() throws Exception {
+        buildSingle(null);
+        buildSingle(1);
     }
 
     /**
@@ -517,6 +522,15 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      * @return Result.
      */
     private BinaryObjectImpl buildSingle(Object val) {
+        System.out.print("+++ " + val);
+        BinaryObjectImpl bo = build(FIELD_SINGLE, val);
+
+        System.out.print("+++ ");
+        for (byte b : bo.array())
+            System.out.printf("%02X ", b);
+
+        System.out.println("");
+
         return build(FIELD_SINGLE, val);
     }
 

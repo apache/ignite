@@ -258,8 +258,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         Object assignedVal = assignedFldsById.remove(fieldId);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
-                            if (assignedVal == null || (assignedVal instanceof BinaryLazyValue
-                                && ((BinaryLazyValue)assignedVal).value() == null))
+                            if (ctx.isCompactNulls() && (assignedVal == null || (assignedVal instanceof BinaryLazyValue
+                                && ((BinaryLazyValue)assignedVal).value() == null)))
                                 writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                             else {
                                 writer.writeFieldId(fieldId, writer.currentOffset());
@@ -289,7 +289,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                             else
                                 val = readCache.get(fieldId);
 
-                            if (val == null)
+                            if (ctx.isCompactNulls() && val == null)
                                 writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                             else {
                                 writer.writeFieldId(fieldId, writer.currentOffset());
@@ -317,7 +317,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    if (val == null || (val instanceof BinaryLazyValue && ((BinaryLazyValue)val).value() == null))
+                    if (ctx.isCompactNulls() &&
+                        (val == null || (val instanceof BinaryLazyValue && ((BinaryLazyValue)val).value() == null)))
                         writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                     else {
                         writer.writeFieldId(fieldId, writer.currentOffset());
@@ -464,7 +465,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         // Get field offset first.
         int fieldOff = BinaryUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
 
-        if (BinaryUtils.isNullOffset(fieldOff, fieldOffsetLen))
+        if (ctx.isCompactNulls() && BinaryUtils.isNullOffset(fieldOff, fieldOffsetLen))
             return F.t(BinaryUtils.NULL_4, 0);
 
         int fieldPos = start + fieldOff;
@@ -484,7 +485,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 int nextFieldOff = BinaryUtils.fieldOffsetRelative(reader, offPos, fieldOffsetLen);
 
-                if (!BinaryUtils.isNullOffset(nextFieldOff, fieldOffsetLen)) {
+                if (!ctx.isCompactNulls() || !BinaryUtils.isNullOffset(nextFieldOff, fieldOffsetLen)) {
                     fieldLen = nextFieldOff - fieldOff;
 
                     break;
@@ -526,7 +527,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 Object val = null;
 
-                if (!BinaryUtils.isNullOffset(posAndLen.get1(), fieldOffsetLen))
+                if (!ctx.isCompactNulls() || !BinaryUtils.isNullOffset(posAndLen.get1(), fieldOffsetLen))
                     val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);

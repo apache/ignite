@@ -72,8 +72,7 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof BinaryBuilderSerializationAware) {
-            if (!compNulls)
-                ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
+            ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
             return;
         }
@@ -238,5 +237,4 @@ class BinaryBuilderSerializer {
         for (Object obj : arr)
             writeValue(writer, obj);
     }
-
 }

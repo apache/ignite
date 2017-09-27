@@ -29,7 +29,7 @@ import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalCompactNullsSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalCompactNullsSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
@@ -48,7 +48,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompac
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSelfTest;
-import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
