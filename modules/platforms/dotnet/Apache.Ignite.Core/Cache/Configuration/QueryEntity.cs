@@ -334,6 +334,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(QueryEntity entity)
+        {
+            Debug.Assert(entity != null);
+
+            if (entity.KeyType != null)
+            {
+                KeyType = entity.KeyType;
+            }
+
+            if (entity.ValueType != null)
+            {
+                ValueType = entity.ValueType;
+            }
+
+            if (Fields != null && entity.Fields != null)
+            {
+                var fields = entity.Fields.Where(x => x != null).ToDictionary(x => x.Name, x => x);
+
+                foreach (var field in Fields)
+                {
+                    QueryField src;
+
+                    if (fields.TryGetValue(field.Name, out src))
+                    {
+                        field.CopyLocalProperties(src);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Rescans the attributes in <see cref="KeyType"/> and <see cref="ValueType"/>.
         /// </summary>
         private void RescanAttributes(Type keyType, Type valType)

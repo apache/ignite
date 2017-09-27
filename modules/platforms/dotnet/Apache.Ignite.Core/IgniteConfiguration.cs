@@ -257,8 +257,8 @@ namespace Apache.Ignite.Core
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            CopyLocalProperties(baseConfig);
             Read(binaryReader);
+            CopyLocalProperties(baseConfig);
         }
 
         /// <summary>
@@ -753,6 +753,21 @@ namespace Apache.Ignite.Core
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
             PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
+
+            if (CacheConfiguration != null && cfg.CacheConfiguration != null)
+            {
+                var caches = cfg.CacheConfiguration.ToDictionary(x => x.Name, x => x);
+
+                foreach (var cache in CacheConfiguration)
+                {
+                    CacheConfiguration src;
+
+                    if (caches.TryGetValue(cache.Name, out src))
+                    {
+                        cache.CopyLocalProperties(src);
+                    }
+                }
+            }
         }
 
         /// <summary>
