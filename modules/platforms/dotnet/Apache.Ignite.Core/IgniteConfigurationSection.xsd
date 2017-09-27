@@ -1501,6 +1501,51 @@
                         <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
                     </xs:annotation>
                 </xs:element>
+                <xs:element name="localEventListeners">
+                    <xs:annotation>
+                        <xs:documentation>Pre-configured local event listeners.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="localEventListener" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Listener holder.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="eventTypes">
+                                            <xs:annotation>
+                                                <xs:documentation>Event types to listen for.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element type="xs:string" name="int" maxOccurs="unbounded" minOccurs="1"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="listener">
+                                            <xs:annotation>
+                                                <xs:documentation>Listener implementation.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute type="xs:string" name="type" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:string" name="type" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
