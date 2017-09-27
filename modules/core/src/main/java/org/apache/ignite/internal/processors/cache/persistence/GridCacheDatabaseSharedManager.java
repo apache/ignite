@@ -2366,6 +2366,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return new Checkpoint(cpEntry, cpPages, curr);
             }
             else {
+                if (curr.nextSnapshot)
+                    cctx.wal().fsync(null);
+
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
                         LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +
