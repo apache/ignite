@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                             <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
-                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
+                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' checkpointWriteOrder='Random' />
                             <consistentId type='System.String'>someId012</consistentId>
                         </igniteConfig>";
 
@@ -332,6 +332,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(pers.MetricsEnabled);
             Assert.AreEqual(3, pers.SubIntervals);
             Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
+            Assert.AreEqual(CheckpointWriteOrder.Random, pers.CheckpointWriteOrder);
         }
 
         /// <summary>
@@ -879,7 +880,8 @@ namespace Apache.Ignite.Core.Tests
                     WalStorePath = Path.GetTempPath(),
                     SubIntervals = 25,
                     MetricsEnabled = true,
-                    RateTimeInterval = TimeSpan.FromDays(1)
+                    RateTimeInterval = TimeSpan.FromDays(1),
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random
                 },
                 IsActiveOnStart = false,
                 ConsistentId = "myId123"
