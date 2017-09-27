@@ -100,22 +100,20 @@ public class GridLuceneIndex implements AutoCloseable {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param mem Unsafe memory.
      * @param cacheName Cache name.
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(GridKernalContext ctx, @Nullable GridUnsafeMemory mem,
-        @Nullable String cacheName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
+    public GridLuceneIndex(GridKernalContext ctx, @Nullable String cacheName, GridQueryTypeDescriptor type)
+        throws IgniteCheckedException {
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.type = type;
 
-        dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
+        dir = new GridLuceneDirectory(new GridUnsafeMemory(0));
 
         try {
-            writer = new IndexWriter(dir,
-                new IndexWriterConfig(new StandardAnalyzer()));
+            writer = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -158,6 +156,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 

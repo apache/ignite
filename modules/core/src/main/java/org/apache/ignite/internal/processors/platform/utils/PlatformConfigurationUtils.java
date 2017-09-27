@@ -54,6 +54,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1576,7 +1577,8 @@ public class PlatformConfigurationUtils {
                 .setAlwaysWriteFullPages(in.readBoolean())
                 .setMetricsEnabled(in.readBoolean())
                 .setSubIntervals(in.readInt())
-                .setRateTimeInterval(in.readLong());
+                .setRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()));
     }
 
     /**
@@ -1609,6 +1611,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isMetricsEnabled());
             w.writeInt(cfg.getSubIntervals());
             w.writeLong(cfg.getRateTimeInterval());
+            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
 
         } else {
             w.writeBoolean(false);
