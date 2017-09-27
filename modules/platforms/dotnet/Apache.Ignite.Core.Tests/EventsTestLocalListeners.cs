@@ -115,6 +115,17 @@ namespace Apache.Ignite.Core.Tests
             cfg.LocalEventListeners = new[] {new LocalEventListener<IEvent>()};
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
             Assert.AreEqual("LocalEventListener.Listener can't be null.", ex.Message);
+
+            // Null event types.
+            cfg.LocalEventListeners = new[] {new LocalEventListener<IEvent> {Listener = new Listener<IEvent>()}};
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("LocalEventListener.EventTypes can't be null or empty.", ex.Message);
+
+            // Empty event types.
+            cfg.LocalEventListeners = new[]
+                {new LocalEventListener<IEvent> {Listener = new Listener<IEvent>(), EventTypes = new int[0]}};
+            ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.AreEqual("LocalEventListener.EventTypes can't be null or empty.", ex.Message);
         }
 
         /// <summary>
