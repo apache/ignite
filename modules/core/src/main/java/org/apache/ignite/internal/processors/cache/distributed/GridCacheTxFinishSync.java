@@ -47,6 +47,7 @@ public class GridCacheTxFinishSync<K, V> {
     /** Nodes map. */
     private ConcurrentMap<GridCacheVersion, ThreadFinishSync> idMap = new ConcurrentHashMap8<>();
 
+    /** Thread map. */
     private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap8<>();
 
     /**
