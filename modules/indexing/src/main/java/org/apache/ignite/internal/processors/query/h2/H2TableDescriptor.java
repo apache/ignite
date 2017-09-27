@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Information about table in database.
@@ -87,13 +87,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         this.cctx = cctx;
 
         fullTblName = H2Utils.withQuotes(schema.schemaName()) + "." + H2Utils.withQuotes(type.tableName());
-    }
-
-    /**
-     * @return Primary key hash index.
-     */
-    H2PkHashIndex primaryKeyHashIndex() {
-        return pkHashIdx;
     }
 
     /**
@@ -207,7 +200,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
-            schema,
             "_key_PK",
             tbl,
             true,
@@ -219,7 +211,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (type().valueClass() == String.class) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -232,7 +224,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         if (textIdx != null) {
             try {
-                luceneIdx = new GridLuceneIndex(idx.kernalContext(), schema.offheap(), tbl.cacheName(), type);
+                luceneIdx = new GridLuceneIndex(idx.kernalContext(), tbl.cacheName(), type);
             }
             catch (IgniteCheckedException e1) {
                 throw new IgniteException(e1);
@@ -258,7 +250,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add explicit affinity key index if nothing alike was found.
         if (affCol != null && !affIdxFound) {
-            idxs.add(idx.createSortedIndex(schema, "AFFINITY_KEY", tbl, false,
+            idxs.add(idx.createSortedIndex("AFFINITY_KEY", tbl, false,
                 H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), affCol, keyCol), -1));
         }
 
@@ -308,7 +300,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (idxDesc.type() == QueryIndexType.SORTED) {
             cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
 
-            return idx.createSortedIndex(schema, idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
+            return idx.createSortedIndex(idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
             return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
