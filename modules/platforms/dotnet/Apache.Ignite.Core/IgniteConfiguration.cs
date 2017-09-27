@@ -535,7 +535,6 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Validates the local event listener.
         /// </summary>
-        // ReSharper disable ParameterOnlyUsedForPreconditionCheck.Local
         private static void ValidateLocalEventListener(LocalEventListener listener)
         {
             if (listener == null)
