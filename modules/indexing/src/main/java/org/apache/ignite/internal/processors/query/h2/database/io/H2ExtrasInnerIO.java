@@ -47,6 +47,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
      * @param payload Payload size.
      * @return IOVersions for given payload.
      */
+    @SuppressWarnings("unchecked")
     public static IOVersions<? extends BPlusInnerIO<SearchRow>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
@@ -76,6 +77,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
@@ -109,9 +111,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         assert link != 0;
 
-        GridH2Row r0 = ((H2Tree)tree).getRowFactory().getRow(link);
-
-        return r0;
+        return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
     /** {@inheritDoc} */

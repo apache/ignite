@@ -957,28 +957,30 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            tx.commitError(e);
-
-            tx.systemInvalidate(true);
-
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
-            IgniteInternalFuture<IgniteInternalTx> res = null;
+            if (tx != null) {
+                tx.commitError(e);
 
-            try {
-                res = tx.rollbackDhtLocalAsync();
+                tx.systemInvalidate(true);
 
-                // Only for error logging.
-                res.listen(CU.errorLogger(log));
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
+                try {
+                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
+
+                    // Only for error logging.
+                    res.listen(CU.errorLogger(log));
+
+                    return res;
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
             }
 
             if (e instanceof Error)
                 throw (Error)e;
 
-            return res;
+            return new GridFinishedFuture<>(e);
         }
     }
 

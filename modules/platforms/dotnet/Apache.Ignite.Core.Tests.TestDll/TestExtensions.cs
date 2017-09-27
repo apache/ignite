@@ -17,11 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.TestDll
 {
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
     /// Extension methods for tests.
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public static class TestExtensions
     {
         /// <summary>

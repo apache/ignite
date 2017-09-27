@@ -53,7 +53,7 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -116,7 +116,7 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -129,7 +129,7 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }

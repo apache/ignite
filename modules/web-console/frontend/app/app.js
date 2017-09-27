@@ -128,6 +128,7 @@ import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
+import igniteServices from './services';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -188,6 +189,7 @@ angular.module('ignite-console', [
     webConsoleHeader.name,
     webConsoleFooter.name,
     igniteIcon.name,
+    igniteServices.name,
     versionPicker.name,
     userNotifications.name,
     pageConfigure.name,

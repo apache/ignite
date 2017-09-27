@@ -56,8 +56,14 @@ namespace Apache.Ignite.Core.Tests.Examples
                 // Each example has a ReadKey at the end, which throws an exception in test environment.
                 if (ex.Message != "Cannot read keys when either application does not have a console or " +
                     "when console input has been redirected from a file. Try Console.Read.")
+                {
                     throw;
+                }
+
+                return;
             }
+
+            throw new Exception("ReadKey missing at the end of the example.");
         }
 
         /// <summary>

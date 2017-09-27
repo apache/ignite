@@ -49,6 +49,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private const string CacheName2 = "cacheName2";
 
         /** */
+        private const string SpringCacheName = "cache-default-spring";
+
+        /** */
         private static int _factoryProp;
 
 
@@ -79,7 +82,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                             MaxSize = 99 * 1024 * 1024
                         }
                     }
-                }
+                },
+                SpringConfigUrl = "Config\\cache-default.xml"
             };
 
             _ignite = Ignition.Start(cfg);
@@ -104,7 +108,24 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             AssertConfigIsDefault(_ignite.GetCache<int, int>(DefaultCacheName).GetConfiguration());
 
-            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == DefaultCacheName));
+            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration
+                .Single(c => c.Name == DefaultCacheName));
+        }
+
+        /// <summary>
+        /// Tests that defaults are the same in Java.
+        /// </summary>
+        [Test]
+        public void TestDefaultsAreSameInJava()
+        {
+            var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
+
+            var ignoredProps = new[] {"AffinityFunction"};
+
+            TestUtils.AssertReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
+                ignoredProperties: new HashSet<string>(ignoredProps));
+            
+            AssertConfigIsDefault(springConfig);
         }
 
         /// <summary>
@@ -221,7 +242,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
-            Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
 #pragma warning disable 618
@@ -240,6 +261,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
             Assert.AreEqual(CacheConfiguration.DefaultPartitionLossPolicy, cfg.PartitionLossPolicy);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteSynchronizationMode, cfg.WriteSynchronizationMode);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteThrough, cfg.WriteThrough);
+            Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
+            Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
         }
 
         /// <summary>
@@ -272,13 +299,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
+            Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
+            Assert.AreEqual(x.WriteSynchronizationMode, y.WriteSynchronizationMode);
 
             if (x.ExpiryPolicyFactory != null)
+            {
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
                     y.ExpiryPolicyFactory.CreateInstance().GetType());
+            }
             else
+            {
                 Assert.IsNull(y.ExpiryPolicyFactory);
+            }
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -65,11 +65,10 @@ public final class DmlAstUtils {
      * @param cols Columns to insert values into.
      * @param rows Rows to create pseudo-SELECT upon.
      * @param subQry Subquery to use rather than rows.
-     * @param desc Row descriptor.
      * @return Subquery or pseudo-SELECT to evaluate inserted expressions.
      */
     public static GridSqlQuery selectForInsertOrMerge(GridSqlColumn[] cols, List<GridSqlElement[]> rows,
-        GridSqlQuery subQry, GridH2RowDescriptor desc) {
+        GridSqlQuery subQry) {
         if (!F.isEmpty(rows)) {
             assert !F.isEmpty(cols);
 
@@ -141,9 +140,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -341,9 +340,9 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for UPDATE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
+        Column h2KeyCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.KEY_COL);
 
-        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+        Column h2ValCol = gridTbl.getColumn(GridH2KeyValueRowOnheap.VAL_COL);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));

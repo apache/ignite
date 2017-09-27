@@ -1703,11 +1703,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public V getTopologySafe(K key) {
-        return delegate.getTopologySafe(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync() {
         return delegate.withAsync();
     }

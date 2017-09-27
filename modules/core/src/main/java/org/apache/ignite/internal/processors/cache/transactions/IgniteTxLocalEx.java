@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,16 +42,18 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public void userCommit() throws IgniteCheckedException;
 
     /**
+     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @throws IgniteCheckedException If rollback failed.
      */
-    public void userRollback() throws IgniteCheckedException;
+    public void userRollback(boolean clearThreadMap) throws IgniteCheckedException;
 
     /**
      * Finishes transaction (either commit or rollback).
      *
      * @param commit {@code True} if commit, {@code false} if rollback.
+     * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @return {@code True} if state has been changed.
      * @throws IgniteCheckedException If finish failed.
      */
-    public boolean localFinish(boolean commit) throws IgniteCheckedException;
+    public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException;
 }

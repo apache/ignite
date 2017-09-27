@@ -29,7 +29,7 @@ import org.h2.value.Value;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, Row {
+public abstract class GridH2Row implements SearchRow, CacheDataRow, Row {
     /** */
     public long link; // TODO remove
 
@@ -44,21 +44,6 @@ public abstract class GridH2Row implements GridSearchRowPointer, CacheDataRow, R
 
     /** */
     public int partId; // TODO remove
-
-    /** {@inheritDoc} */
-    @Override public long pointer() {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void incrementRefCount() {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void decrementRefCount() {
-        throw new IllegalStateException();
-    }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
