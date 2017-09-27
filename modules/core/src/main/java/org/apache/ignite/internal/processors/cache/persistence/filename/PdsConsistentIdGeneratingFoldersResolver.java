@@ -20,6 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,6 +83,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         return new PdsFolderSettings(discovery.consistentId(), true);
     }
 
+    /** {@inheritDoc} */
     public PdsFolderSettings resolveFolders() throws IgniteCheckedException {
         if (settings == null) {
             settings = prepareNewSettings();
@@ -117,31 +122,42 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         }
 
-        FolderCandidate lastCheckedCandidate = null;
-        FolderCandidate listedCandidate;
-        int minNodeIdxToCheck = 0;
-        while ((listedCandidate = findLowestIndexInFolder(pstStoreBasePath, minNodeIdxToCheck)) != null) {
-            //already have such directory here
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(listedCandidate.file);
+        for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
+            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.file);
             if (fileLockHolder != null) {
                 //todo remove debug output
-                System.out.println("locked>> " + pstStoreBasePath + " " + listedCandidate.file);
-                return new PdsFolderSettings(listedCandidate.uuid(), listedCandidate.file.getName(), listedCandidate.nodeIndex(), fileLockHolder, false);
+                System.out.println("locked>> " + pstStoreBasePath + " " + next.file);
+                return new PdsFolderSettings(next.uuid(), next.file.getName(), next.nodeIndex(), fileLockHolder, false);
             }
-            //lock was not successful
-            lastCheckedCandidate = listedCandidate;
-            minNodeIdxToCheck = listedCandidate.nodeIndex() + 1;
         }
 
         // was not able to find free slot, allocating new
-        int nodeIdx = lastCheckedCandidate == null ? 0 : lastCheckedCandidate.nodeIndex() + 1;
-        UUID uuid = UUID.randomUUID();
-        String uuidAsStr = uuid.toString();
+        final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath);
+        try {
+            final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
+            final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
+            return generateAndLockNewDbStorage(pstStoreBasePath, nodeIdx);
+        }
+        finally {
+            rootDirLock.release();
+            rootDirLock.close();
+        }
+    }
 
+    /**
+     * Creates new DB storage folder
+     *
+     * @param pstStoreBasePath DB root path
+     * @param nodeIdx next node index to use in folder name
+     * @return new settings to be used in this node
+     * @throws IgniteCheckedException if failed
+     */
+    @NotNull private PdsFolderSettings generateAndLockNewDbStorage(File pstStoreBasePath, int nodeIdx) throws IgniteCheckedException {
+        final UUID uuid = UUID.randomUUID();
+        final String uuidAsStr = uuid.toString();
         assert uuidAsStr.matches(UUID_STR_PATTERN);
 
         String consIdFolderReplacement = DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + NODEIDX_UID_SEPARATOR + uuidAsStr;
-
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
         if (fileLockHolder != null) {
@@ -153,31 +169,45 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     }
 
     /**
-     * @param pstStoreBasePath root storage folder to scan
-     * @param minNodeIdxToCheck minimal index can be next candidate, 0-based (inclusive)
-     * @return null if there is no files in folder to test, or all files has lower index than bound {@code
-     * minNodeIdxToCheck}. Non null value is returned for folder having lowest node index
+     * Acquires lock to root storage directory, used to lock root directory in case creating new files is required.
+     * @param pstStoreBasePath rood DB dir to lock
+     * @return locked directory, should be released and closed later
+     * @throws IgniteCheckedException if failed
      */
-    @Nullable private FolderCandidate findLowestIndexInFolder(File pstStoreBasePath, int minNodeIdxToCheck) {
-        FolderCandidate candidate = null;
+    @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(
+        File pstStoreBasePath) throws IgniteCheckedException {
+        GridCacheDatabaseSharedManager.FileLockHolder rootDirLock;
+        int retry = 0;
+        while ((rootDirLock = tryLock(pstStoreBasePath)) == null) {
+            if (retry > 600)
+                throw new IgniteCheckedException("Unable to start under DB storage path [" + pstStoreBasePath + "]" +
+                    ". Lock is being held to root directory");
+            retry++;
+        }
+        return rootDirLock;
+    }
+
+    /**
+     * @param pstStoreBasePath root storage folder to scan
+     * @return emprty list if there is no files in folder to test.
+     * Non null value is returned for folder having applicable new style files.
+     * Collection is sorted ascending according to node ID, 0 node index is coming first
+     */
+    @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
+        final List<FolderCandidate> res = new ArrayList<>();
         for (File file : pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER)) {
             final NodeIndexAndUid nodeIdxAndUid = parseFileName(file);
             if (nodeIdxAndUid == null)
                 continue;
 
-            //filter out this folder because lock on such low candidate was alrady checked
-            if (nodeIdxAndUid.nodeIndex() < minNodeIdxToCheck)
-                continue;
-
-            if (candidate == null) {
-                candidate = new FolderCandidate(file, nodeIdxAndUid);
-                continue;
-            }
-
-            if (nodeIdxAndUid.nodeIndex() < candidate.nodeIndex())
-                candidate = new FolderCandidate(file, nodeIdxAndUid);
+            res.add(new FolderCandidate(file, nodeIdxAndUid));
         }
-        return candidate;
+        Collections.sort(res, new Comparator<FolderCandidate>() {
+            @Override public int compare(FolderCandidate c1, FolderCandidate c2) {
+                return Integer.compare(c1.nodeIndex(), c2.nodeIndex());
+            }
+        });
+        return res;
     }
 
     /**

@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Test for new and old stype persistent storage folders generation
+ * Test for new and old style persistent storage folders generation
  */
 public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest {
 
@@ -226,7 +226,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      *
      * @throws Exception if failed
      */
-    public void  testNodeIndexIncremented() throws Exception {
+    public void testNodeIndexIncremented() throws Exception {
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
 
@@ -252,7 +252,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Ignite ignite1 = startGrid(1);
         final Ignite ignite2 = startGrid(2);
         final Ignite ignite3 = startGrid(3);
-        final Ignite ignite4 = startGrid(4);
 
         ignite0.active(true);
 
@@ -263,24 +262,25 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite1, 1));
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite2, 2));
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite3, 3));
-        assertPdsDirsDefaultExist(newStyleSubfolder(ignite4, 4));
 
+        assertNodeIndexesInFolder(0, 1, 2, 3);
         stopAllGrids();
 
         //this grid should take folder with index 0 as unlocked
-        final Ignite ignite4Restart = startGrid(4);
+        final Ignite ignite4Restart = startGrid(3);
         ignite4Restart.active(true);
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite4Restart, 0));
+
+        assertNodeIndexesInFolder(0, 1, 2, 3);
         stopAllGrids();
     }
-
 
     /**
      * Test verified that new style folder is taken always with lowest index
      *
      * @throws Exception if failed
      */
-    public void testNewStyleAlwaysSmallestNodeIndexIsCreated2() throws Exception {
+    public void testNewStyleAlwaysSmallestNodeIndexIsCreatedMultithreaded() throws Exception {
         final Ignite ignite0 = startGridsMultiThreaded(11);
 
         ignite0.active(true);
@@ -290,6 +290,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite0, 0));
 
+        assertNodeIndexesInFolder(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         stopAllGrids();
 
         //this grid should take folder with index 0 as unlocked
@@ -298,9 +299,15 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertPdsDirsDefaultExist(newStyleSubfolder(ignite4Restart, 0));
         stopAllGrids();
 
-        Set<Integer> indexes = getAllNodeIndexesInFolder();
-        System.err.println(indexes);
+        assertNodeIndexesInFolder(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
 
+    /**
+     * @param indexes expected new style node indexes in folders
+     * @throws IgniteCheckedException if failed
+     */
+    private void assertNodeIndexesInFolder(Integer... indexes) throws IgniteCheckedException {
+        assertEquals(new TreeSet<>(Arrays.asList(indexes)), getAllNodeIndexesInFolder());
     }
 
     /**
@@ -308,8 +315,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        Set<Integer> indexes = new TreeSet<>();
         final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER);
+        final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsConsistentIdGeneratingFoldersResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
         for (File file : files) {
             final PdsConsistentIdGeneratingFoldersResolver.NodeIndexAndUid uid
