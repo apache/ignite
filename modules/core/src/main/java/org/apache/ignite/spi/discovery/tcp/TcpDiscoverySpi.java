@@ -962,27 +962,32 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** {@inheritDoc} */
     @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
         if (consistentId == null) {
-            initializeImpl();
-
-            initAddresses();
-
-            Serializable cfgId = ignite.configuration().getConsistentId();
-
-            if (cfgId == null) {
-                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
-
-                Collections.sort(sortedAddrs);
-
-                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
-                    consistentId = U.consistentId(sortedAddrs);
-                else
-                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
-            }
-            else
-                consistentId = cfgId;
+            final Serializable cfgId = ignite.configuration().getConsistentId();
+            consistentId = cfgId == null ? calculateConsistentIdAddrPortBased() : cfgId;
         }
 
         return consistentId;
+    }
+
+    /**
+     * Gets consistent ID but does not perform caching.
+     *
+     * @return Consistent ID of this Ignite instance
+     * @throws IgniteSpiException If failed.
+     */
+    public String calculateConsistentIdAddrPortBased() {
+        initializeImpl();
+
+        initAddresses();
+
+        final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+        Collections.sort(sortedAddrs);
+
+        if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+            return U.consistentId(sortedAddrs);
+        else
+            return U.consistentId(sortedAddrs, impl.boundPort());
     }
 
     /**

@@ -600,8 +600,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
         final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-        if (!folderSettings.isCompatible())
-            fileLockHolder = folderSettings.takeLockedFileLockHolder();
+        final FileLockHolder preLocked = folderSettings.takeLockedFileLockHolder();
+        if (preLocked != null) {
+            fileLockHolder.close();
+            fileLockHolder = preLocked;
+        }
         else
             fileLockHolder.tryLock(lockWaitTime);
     }

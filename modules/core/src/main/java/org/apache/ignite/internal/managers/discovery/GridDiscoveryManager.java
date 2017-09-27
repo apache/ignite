@@ -2023,17 +2023,27 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public Serializable consistentId() {
         if (consistentId == null) {
-            try {
-                inject();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to init consistent ID.", e);
-            }
+            final DiscoverySpi spi = tryInjectSpi();
 
-            consistentId = getSpi().consistentId();
+            consistentId = spi.consistentId();
         }
 
         return consistentId;
+    }
+
+    /**
+     * Performs injection of discovery SPI if needed, then provides DiscoverySpi SPI.
+     *
+     * @return Wrapped DiscoverySpi SPI.
+     */
+    public DiscoverySpi tryInjectSpi() {
+        try {
+            inject();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to init consistent ID.", e);
+        }
+        return getSpi();
     }
 
     /** @return Topology version. */

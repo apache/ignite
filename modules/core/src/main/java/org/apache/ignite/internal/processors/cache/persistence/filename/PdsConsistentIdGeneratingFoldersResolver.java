@@ -31,6 +31,8 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
@@ -86,12 +88,25 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
-            // compatible mode from configuration is used fot this case
+            // compatible mode from configuration is used fot this case, no locking, no consitent id change
             return new PdsFolderSettings(cfg.getConsistentId(), true);
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
+
+        // this is required to correctly initialize SPI
+        final DiscoverySpi spi = discovery.tryInjectSpi();
+        if(spi instanceof TcpDiscoverySpi) {
+            final TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)spi;
+            final String oldStyleConsistentId = tcpDiscoverySpi.calculateConsistentIdAddrPortBased();
+            final String subFolder = U.maskForFileName(oldStyleConsistentId);
+
+            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
+            if (fileLockHolder != null)
+                return new PdsFolderSettings(oldStyleConsistentId, subFolder, -1, fileLockHolder, false);
+
+        }
         final FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
                 return name.matches(NODE_PATTERN + UUID_STR_PATTERN);
@@ -111,7 +126,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
                 //already have such directory here
                 //todo other way to set this value
                 final UUID id = UUID.fromString(uid);
-                final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, file);
+                final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(new File(pstStoreBasePath, file));
                 if (fileLockHolder != null) {
                     System.out.println("locked>> " + pstStoreBasePath + " " + file);
                     return new PdsFolderSettings(id, file, idx, fileLockHolder, false);
@@ -128,8 +143,8 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         String consIdFolderReplacement = DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + NODEIDX_UID_SEPARATOR + uuidAsStr;
 
-        final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false);//mkdir here
-        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(pstStoreBasePath, consIdFolderReplacement);
+        final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
+        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
         if (fileLockHolder != null) {
             //todo remove debug output
             System.out.println("locked>> " + pstStoreBasePath + " " + consIdFolderReplacement);
@@ -138,17 +153,28 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
 
-    private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File pstStoreBasePath, String file) {
+    /**
+     * Tries to lock subfolder within storage root folder
+     *
+     * @param dbStoreDirWithSubdirectory DB store directory, is to be absolute and should include consistent ID based
+     * sub folder
+     * @return non null holder if lock was successful, null in case lock failed. If directory does not exist method
+     * will always fail to lock.
+     */
+    private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
+        if (!dbStoreDirWithSubdirectory.exists())
+            return null;
+        final String path = dbStoreDirWithSubdirectory.getAbsolutePath();
+        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
+            = new GridCacheDatabaseSharedManager.FileLockHolder(path, ctx, log);
         try {
-            final File workDirPath = new File(pstStoreBasePath, file);
-            GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
-                = new GridCacheDatabaseSharedManager.FileLockHolder(workDirPath.getAbsolutePath(), ctx, log);
             fileLockHolder.tryLock(1000);
             return fileLockHolder;
         }
         catch (IgniteCheckedException e) {
             //todo replace with logging if needed
             e.printStackTrace();
+            fileLockHolder.close();
             return null;
         }
     }

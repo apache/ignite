@@ -32,11 +32,13 @@ public class PdsFolderSettings {
 
     /** folder name containing consistent ID and optionally node index */
     private final String folderName;
+
     /**
      * File lock holder with prelocked db directory. For non compatible mode this holder contains prelocked work
-     * directory. This value is to be used at activate instead of locking.
+     * directory. This value is to be used at activate instead of locking. <br>
+     * May be null in case preconfigured consistent ID is used or in case lock holder was already taken by other processor
      */
-    private GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
+    @Nullable private GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
 
     /**
      * Indicates if compatible mode is enabled, in that case all subfolders are generated from consistent ID without
@@ -50,7 +52,8 @@ public class PdsFolderSettings {
         this.folderName = U.maskForFileName(consistentId.toString());
     }
 
-    public PdsFolderSettings(UUID consistentId, String folderName, int nodeIdx,
+
+    public PdsFolderSettings(Serializable consistentId, String folderName, int nodeIdx,
         GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
         boolean compatible) {
         this.consistentId = consistentId;

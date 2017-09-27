@@ -22,8 +22,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver;
@@ -46,7 +49,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     private String configuredConsistentId;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
         if (deleteBefore)
@@ -65,8 +68,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        assertTrue(deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false)));
+        assertTrue(deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false)));
     }
 
     /** {@inheritDoc} */
@@ -76,13 +79,19 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             cfg.setConsistentId(configuredConsistentId);
         final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(psCfg);
+
+        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
+        memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
+        memCfg.setMemoryPolicies(memPolCfg);
+        cfg.setMemoryConfiguration(memCfg);
         return cfg;
     }
 
     /**
-     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID.
      *
-     * @throws Exception if failed
+     * @throws Exception if failed.
      */
     public void testNewStyleIdIsGenerated() throws Exception {
         IgniteEx igniteEx = startGrid(0);
@@ -90,16 +99,15 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
         final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
-        String consistentIdMasked = "Node0-" + consistentId;
-        assertPdsDirsDefaultExist(consistentIdMasked);
+        assertPdsDirsDefaultExist(newStyleSubfolder(igniteEx, 0));
         stopGrid(0);
-        final UUID uuid = UUID.fromString(consistentId);
+        UUID.fromString(consistentId); //test UUID is parsaable from consistent ID test
     }
 
     /**
-     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     * Checks start on empty PDS folder using configured ConsistentId. We should start using this ID in compatible mode.
      *
-     * @throws Exception if failed
+     * @throws Exception if failed.
      */
     public void testPreconfiguredConsitentIdIsApplied() throws Exception {
         this.configuredConsistentId = "someConfiguredConsistentId";
@@ -111,32 +119,45 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopGrid(0);
     }
 
-
     /**
-     * Checks start on empty PDS folder, in that case node 0 should start with random UUID
+     * Checks start on configured ConsistentId with same value as default, this emulate old style folder is already
+     * available. We should restart using this folder.
      *
      * @throws Exception if failed
      */
     public void testRestartOnExistingOldStyleId() throws Exception {
-        this.configuredConsistentId = "127.0.0.1:47500"; //this is for create old node folder
-        IgniteEx igniteEx = startGrid(0);
+        final String expDfltConsistentId = "127.0.0.1:47500";
+        this.configuredConsistentId = expDfltConsistentId; //this is for create old node folder
+
+        final Ignite igniteEx = startGrid(0);
         igniteEx.active(true);
+
         final String expVal = "there is compatible mode with old style folders!";
+
         igniteEx.getOrCreateCache(CACHE_NAME).put("hi", expVal);
 
         assertPdsDirsDefaultExist(U.maskForFileName(configuredConsistentId));
         stopGrid(0);
 
-        this.configuredConsistentId = null; //now set up grid on folder
+        this.configuredConsistentId = null; //now set up grid on existing folder
 
-        IgniteEx igniteRestart = startGrid(0);
+        final Ignite igniteRestart = startGrid(0);
         igniteRestart.active(true);
-        assertTrue(expVal.equals(igniteRestart.cache(CACHE_NAME).get("hi")));
+
+        assertEquals(expDfltConsistentId, igniteRestart.cluster().localNode().consistentId());
+        final IgniteCache<Object, Object> cache = igniteRestart.cache(CACHE_NAME);
+
+        assertNotNull("Expected to have cache [" + CACHE_NAME + "] using [" + expDfltConsistentId + "] as PDS folder", cache);
+        final Object valFromCache = cache.get("hi");
+
+        assertNotNull("Expected to load data from cache using [" + expDfltConsistentId + "] as PDS folder", valFromCache);
+        assertTrue(expVal.equals(valFromCache));
         stopGrid(0);
     }
 
     /**
      * Start stop grid without activation should cause lock to be released and restarted node should have index 0
+     *
      * @throws Exception if failed
      */
     public void testStartWithoutActivate() throws Exception {
@@ -159,18 +180,18 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public void testRestartOnSameFolderWillCauseSameUuidGeneration() throws Exception {
         final UUID uuid;
         {
-            IgniteEx igniteEx = startGrid(0);
-            igniteEx.active(true);
-            igniteEx.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+            final Ignite ignite = startGrid(0);
+            ignite.active(true);
+            ignite.getOrCreateCache(CACHE_NAME).put("hi", "there!");
 
-            assertPdsDirsDefaultExist(newStyleSubfolder(igniteEx, 0));
+            assertPdsDirsDefaultExist(newStyleSubfolder(ignite, 0));
 
-            uuid = (UUID)igniteEx.cluster().localNode().consistentId();
+            uuid = (UUID)ignite.cluster().localNode().consistentId();
             stopGrid(0);
         }
 
         {
-            IgniteEx igniteRestart = startGrid(0);
+            final Ignite igniteRestart = startGrid(0);
             igniteRestart.active(true);
             assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
 
@@ -182,16 +203,24 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
     }
 
-    @NotNull private String newStyleSubfolder(Ignite igniteEx, int nodeIdx) {
-        final String consistentId = igniteEx.cluster().localNode().consistentId().toString();
+    /**
+     * Generates folder name in new style using constant prefix and UUID
+     *
+     * @param ignite ignite instance
+     * @param nodeIdx expected node index to check
+     * @return name of storage related subfolders
+     */
+    @NotNull private String newStyleSubfolder(final Ignite ignite, final int nodeIdx) {
+        final String consistentId = ignite.cluster().localNode().consistentId().toString();
         return PdsConsistentIdGeneratingFoldersResolver.DB_FOLDER_PREFIX + Integer.toString(nodeIdx) + "-" + consistentId;
     }
 
     /**
      * test two nodes started at the same db root folder, second node should get index 1
+     *
      * @throws Exception if failed
      */
-    public void testNodeIndexIncremented() throws Exception {
+    public void  testNodeIndexIncremented() throws Exception {
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
 
@@ -209,9 +238,10 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     /**
      * Test verified that new style folder is taken always with lowest index
+     *
      * @throws Exception if failed
      */
-    public void testAlwaysSmallestNodeIsCreated() throws Exception {
+    public void testNewStyleAlwaysSmallestNodeIndexIsCreated() throws Exception {
         final Ignite ignite0 = startGrid(0);
         final Ignite ignite1 = startGrid(1);
         final Ignite ignite2 = startGrid(2);
@@ -238,13 +268,51 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopAllGrids();
     }
 
-    private void assertPdsDirsDefaultExist(String consistentIdMasked) throws IgniteCheckedException {
-        assertDirectoryExist("binary_meta", consistentIdMasked);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, consistentIdMasked);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, consistentIdMasked);
-        assertDirectoryExist(PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER, consistentIdMasked);
+
+    /**
+     * Test verified that new style folder is taken always with lowest index
+     *
+     * @throws Exception if failed
+     */
+    public void testNewStyleAlwaysSmallestNodeIndexIsCreated2() throws Exception {
+        final Ignite ignite0 = startGridsMultiThreaded(11);
+
+        ignite0.active(true);
+
+        ignite0.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+        ignite0.getOrCreateCache(CACHE_NAME).put("hi1", "there!");
+
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite0, 0));
+
+        stopAllGrids();
+
+        //this grid should take folder with index 0 as unlocked
+        final Ignite ignite4Restart = startGrid(4);
+        ignite4Restart.active(true);
+        assertPdsDirsDefaultExist(newStyleSubfolder(ignite4Restart, 0));
+        stopAllGrids();
     }
 
+
+    /**
+     * Checks existence of all storage-related directories
+     *
+     * @param subDirName sub directories name expected
+     * @throws IgniteCheckedException if IO error occur
+     */
+    private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
+        assertDirectoryExist("binary_meta", subDirName);
+        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, subDirName);
+        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
+        assertDirectoryExist(PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER, subDirName);
+    }
+
+    /**
+     * Checks one folder existence
+     *
+     * @param subFolderNames subfolders array to touch
+     * @throws IgniteCheckedException if IO error occur
+     */
     private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
         File curFolder = new File(U.defaultWorkDirectory());
         for (String name : subFolderNames) {
