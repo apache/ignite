@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+namespace Apache.Ignite.Core.PersistentStore
+{
+    /// <summary>
+    /// Defines checkpoint pages order on disk.
+    /// </summary>
+    public enum CheckpointWriteOrder
+    {
+        /// <summary>
+        /// Pages are written in order provided by checkpoint pages collection iterator
+        /// (which is basically a hashtable).
+        /// </summary>
+        Random,
 
-/**
- * Smart pointer with reference counting.
- */
-public interface GridOffHeapSmartPointer {
-    /**
-     * @return Pointer address.
-     */
-    public long pointer();
-
-    /**
-     * Increment reference count.
-     */
-    public void incrementRefCount();
-
-    /**
-     * Decrement reference count.
-     */
-    public void decrementRefCount();
+        /// <summary>
+        /// All checkpoint pages are collected into single list and sorted by page index.
+        /// Provides almost sequential disk writes, which can be much faster on some SSD models.
+        /// </summary>
+        Sequential
+    }
 }
