@@ -77,6 +77,7 @@ ignite_odbc_tests_SOURCES = \
     src/sql_types_test.cpp \
     src/sql_date_time_functions_test.cpp \
     src/sql_outer_join_test.cpp \
+    src/sql_get_info_test.cpp \
     src/api_robustness_test.cpp \
     src/attributes_test.cpp \
     src/errors_test.cpp \

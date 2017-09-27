@@ -38,13 +38,20 @@ namespace Apache.Ignite.Core.Impl
         public const int ERROR_MOD_NOT_FOUND = 126;
 
         /// <summary>
-        /// Load DLL with WinAPI.
+        /// Loads unmanaged DLL with WinAPI.
         /// </summary>
         /// <param name="path">Path to dll.</param>
-        /// <returns></returns>
+        /// <returns>Pointer to the loaded library.</returns>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi, BestFitMapping = false, 
             ThrowOnUnmappableChar = true)]
         internal static extern IntPtr LoadLibrary(string path);
+
+        /// <summary>
+        /// Unloads the unmanaged DLL loaded with <see cref="LoadLibrary"/>.
+        /// </summary>
+        /// <param name="hModule">Pointer from <see cref="LoadLibrary"/>.</param>
+        [DllImport("kernel32", SetLastError = true)]
+        internal static extern bool FreeLibrary(IntPtr hModule);
 
         /// <summary>
         /// Gets the total physical memory.
