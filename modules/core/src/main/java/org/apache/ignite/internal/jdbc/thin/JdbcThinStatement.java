@@ -643,6 +643,7 @@ public class JdbcThinStatement implements Statement {
             return;
 
         boolean allRsClosed = true;
+
         if (resultSets != null) {
             for (JdbcThinResultSet rs : resultSets) {
                 if (!rs.isClosed())

@@ -94,7 +94,8 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
 
                 JdbcUtils.writeItems(writer, items);
             }
-        } else
+        }
+        else
             writer.writeInt(0);
     }
 
@@ -104,10 +105,10 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
         super.readBinary(reader);
 
         int cnt = reader.readInt();
+
         if (cnt == 0)
             results = Collections.emptyList();
-        else
-        {
+        else {
             results = new ArrayList<>(cnt);
 
             for (int i = 0; i < cnt; ++i) {
