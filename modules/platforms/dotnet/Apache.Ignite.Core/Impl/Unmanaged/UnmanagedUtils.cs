@@ -29,15 +29,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// </summary>
     internal static unsafe class UnmanagedUtils
     {
-        /** JNI dll path. */
-        private static readonly string JniDllPath;
-
-        /** JNI dll pointer. */
-        private static readonly IntPtr JniDllPtr;
-
-        /** JNI dll finalizer. */
-        private static readonly Finalizer JniDllFinalizer;
-
         /** Interop factory ID for .Net. */
         private const int InteropFactoryId = 1;
 
@@ -51,38 +42,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             var resName = string.Format("{0}.{1}", platform, IgniteUtils.FileIgniteJniDll);
 
-            JniDllPath = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
+            var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
-            JniDllPtr = NativeMethods.LoadLibrary(JniDllPath);
+            var ptr = NativeMethods.LoadLibrary(path);
 
-            if (JniDllPtr == IntPtr.Zero)
+            if (ptr == IntPtr.Zero)
             {
                 var err = Marshal.GetLastWin32Error();
 
                 throw new IgniteException(string.Format("Failed to load {0} from {1}: [{2}]",
-                    IgniteUtils.FileIgniteJniDll, JniDllPath, IgniteUtils.FormatWin32Error(err)));
+                    IgniteUtils.FileIgniteJniDll, path, IgniteUtils.FormatWin32Error(err)));
             }
 
-            JniDllFinalizer = new Finalizer();
-
-            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-
-            // Note: this event is never called for the default AppDomain.
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
             JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
-        }
-
-        /// <summary>
-        /// Handles the ProcessExit event of the current AppDomain.
-        /// </summary>
-        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        {
-            // We unload ignite.jni.dll both in ProcessExit and Finalizer:
-            // ProcessExit is not called from custom domain (NUnit does this, for example).
-            // DomainUnload can't be used because it fires before all UnmanagedTargets are released.
-            GC.SuppressFinalize(JniDllFinalizer);
-            IgniteUtils.UnloadJniDllAndRemoveTempDirectory();
         }
 
         /// <summary>
@@ -268,22 +242,5 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         #endregion
-
-        /// <summary>
-        /// A trick to clean up ignite.jni.dll when Ignite is started in non-default AppDomain.
-        /// We rely on finalizer order here, which is technically undefined:
-        /// everything that uses UnmanagedUtils must be cleaned up when this class is finalized.
-        /// </summary>
-        private class Finalizer
-        {
-            /// <summary>
-            /// Finalizes an instance of the <see cref="Finalizer"/> class.
-            /// </summary>
-            ~Finalizer()
-            {
-                // Clean up ignite.jni.dll for the current domain.
-                IgniteUtils.UnloadJniDllAndRemoveTempDirectory(JniDllPtr, JniDllPath);
-            }
-        }
     }
 }
