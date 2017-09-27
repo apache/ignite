@@ -268,7 +268,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             for (int i = 0; i < BATCH_SIZE; ++i)
                 assertEquals("Invalid update count",1, updCnts[i]);
 
-            if (!e.getMessage().contains("Failed to execute SQL query.")) {
+            if (!e.getMessage().contains("Data conversion error converting")) {
                 log.error("Invalid exception: ", e);
 
                 fail();

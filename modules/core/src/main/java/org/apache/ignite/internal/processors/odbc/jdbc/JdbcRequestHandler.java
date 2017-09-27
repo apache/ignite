@@ -739,9 +739,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         while (sqlEx == null && t != null) {
             if (t instanceof SQLException)
-                return new JdbcResponse(((SQLException) e).getErrorCode(), e.getMessage());
+                return new JdbcResponse(((SQLException) t).getErrorCode(), t.getMessage());
             else if (t instanceof IgniteSQLException)
-                return new JdbcResponse(((IgniteSQLException) e).statusCode(), e.getMessage());
+                return new JdbcResponse(((IgniteSQLException) t).statusCode(), t.getMessage());
             else if (t instanceof QueryCancelledException) {
                 return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED,
                     "The query was cancelled while executing");
