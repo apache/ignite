@@ -36,6 +36,8 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -669,9 +671,24 @@ public class GridSqlQueryParser {
 
         Column[] srcKeys = MERGE_KEYS.get(merge);
 
+        GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
+
+        GridH2RowDescriptor rowDesc = intoTbl.rowDescriptor();
+
         GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
-        for (int i = 0; i < srcKeys.length; i++)
-            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, srcKeys[i].getName());
+
+        for (int i = 0; i < srcKeys.length; i++) {
+            String colName = srcKeys[i].getName();
+
+            int colId = intoTbl.getColumn(colName).getColumnId();
+
+            if (!rowDesc.isKeyColumn(colId) && !F.eq(colName, rowDesc.type().affinityKey()))
+                throw new IgniteSQLException("Invalid column name in KEYS clause of MERGE - it may include only " +
+                    "key and/or affinity columns: " + colName, IgniteQueryErrorCode.PARSING);
+
+            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, colName);
+        }
+
         res.keys(keys);
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
