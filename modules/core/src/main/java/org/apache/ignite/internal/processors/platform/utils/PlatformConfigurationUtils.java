@@ -194,6 +194,8 @@ public class PlatformConfigurationUtils {
         if (storeFactory != null)
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
+        ccfg.setSqlIndexMaxInlineSize(in.readInt());
+
         int qryEntCnt = in.readInt();
 
         if (qryEntCnt > 0) {
@@ -518,6 +520,7 @@ public class PlatformConfigurationUtils {
 
         res.setName(in.readString());
         res.setIndexType(QueryIndexType.values()[in.readByte()]);
+        res.setInlineSize(in.readInt());
 
         int cnt = in.readInt();
 
@@ -869,6 +872,8 @@ public class PlatformConfigurationUtils {
         else
             writer.writeObject(null);
 
+        writer.writeInt(ccfg.getSqlIndexMaxInlineSize());
+
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
         if (qryEntities != null) {
@@ -985,6 +990,7 @@ public class PlatformConfigurationUtils {
 
         writer.writeString(index.getName());
         writeEnumByte(writer, index.getIndexType());
+        writer.writeInt(index.getInlineSize());
 
         LinkedHashMap<String, Boolean> fields = index.getFields();
 
