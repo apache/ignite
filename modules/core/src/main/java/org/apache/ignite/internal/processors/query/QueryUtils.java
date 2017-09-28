@@ -213,7 +213,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = new QueryEntity();
+        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -222,14 +222,7 @@ public class QueryUtils {
         normalEntity.setKeyFields(entity.getKeyFields());
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
-
-        if (!F.isEmpty(entity.getNotNullFields())) {
-            QueryEntityEx normalEntity0 = new QueryEntityEx(normalEntity);
-
-            normalEntity0.setNotNullFields(entity.getNotNullFields());
-
-            normalEntity = normalEntity0;
-        }
+        normalEntity.setNotNullFields(entity.getNotNullFields());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
