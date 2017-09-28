@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,6 +73,18 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     };
 
+    /** Database subfolders for old style filter. */
+    public static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
+        @Override public boolean accept(File pathname) {
+            if (!pathname.isDirectory())
+                return false;
+            final String name = pathname.getName();
+            if ("wal".equals(name))
+                return false;
+            return !name.matches(SUBDIR_PATTERN);
+        }
+    };
+
     /** Database default folder. */
     public static final String DB_DEFAULT_FOLDER = "db";
 
@@ -92,6 +105,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /**
      * Creates folders resolver
+     *
      * @param ctx Context.
      */
     public PdsConsistentIdGeneratingFoldersResolver(GridKernalContext ctx) {
@@ -105,8 +119,8 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     /**
      * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overriden
      *
-     * @return PDS folder settings compatible with previous versions
      * @param pstStoreBasePath DB storage base path
+     * @return PDS folder settings compatible with previous versions
      */
     private PdsFolderSettings compatibleResolve(final File pstStoreBasePath) {
         return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId(), true);
@@ -143,7 +157,6 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
-
         // this is required to correctly initialize SPI
         final DiscoverySpi spi = discovery.tryInjectSpi();
         if (spi instanceof TcpDiscoverySpi) {
@@ -158,7 +171,21 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
                     consistentId,
                     fileLockHolder,
                     false);
+        }
 
+        final File[] oldStyleFolders = pstStoreBasePath.listFiles(DB_SUBFOLDERS_OLD_STYLE_FILTER);
+        if (oldStyleFolders != null && oldStyleFolders.length != 0) {
+            for (File folder : oldStyleFolders) {
+                //todo with their sizes and dates.
+                String path;
+                try {
+                    path = folder.getCanonicalPath();
+                }
+                catch (IOException ignored) {
+                    path = folder.getAbsolutePath();
+                }
+                log.warning("There is other non-empty storage folder under storage base directory [" + path + "]");
+            }
         }
 
         for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
@@ -197,6 +224,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         return sb.toString();
 
     }
+
     /**
      * Creates new DB storage folder
      *
@@ -205,7 +233,8 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      * @return new settings to be used in this node
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private PdsFolderSettings generateAndLockNewDbStorage(File pstStoreBasePath, int nodeIdx) throws IgniteCheckedException {
+    @NotNull private PdsFolderSettings generateAndLockNewDbStorage(final File pstStoreBasePath,
+        final int nodeIdx) throws IgniteCheckedException {
         final UUID uuid = UUID.randomUUID();
         final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
@@ -235,6 +264,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /**
      * Acquires lock to root storage directory, used to lock root directory in case creating new files is required.
+     *
      * @param pstStoreBasePath rood DB dir to lock
      * @return locked directory, should be released and closed later
      * @throws IgniteCheckedException if failed
@@ -254,13 +284,16 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /**
      * @param pstStoreBasePath root storage folder to scan
-     * @return emprty list if there is no files in folder to test.
-     * Non null value is returned for folder having applicable new style files.
-     * Collection is sorted ascending according to node ID, 0 node index is coming first
+     * @return empty list if there is no files in folder to test. Non null value is returned for folder having
+     * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first
      */
     @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
+        final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        if (files == null)
+            return Collections.emptyList();
+
         final List<FolderCandidate> res = new ArrayList<>();
-        for (File file : pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER)) {
+        for (File file : files) {
             final NodeIndexAndUid nodeIdxAndUid = parseFileName(file);
             if (nodeIdxAndUid == null)
                 continue;

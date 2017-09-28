@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,6 +50,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     /** Configured consistent id. */
     private String configuredConsistentId;
+
+    /** Logger to accumulate messages, null will cause logger won't be customized */
+    private GridStringLogger stringLogger;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -90,6 +94,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
         memCfg.setMemoryPolicies(memPolCfg);
         cfg.setMemoryConfiguration(memCfg);
+
+        if (stringLogger != null)
+            cfg.setGridLogger(stringLogger);
         return cfg;
     }
 
@@ -199,6 +206,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     /**
      * This test starts node, activates, deactivates node, and then start second node.
      * Expected behaviour is following: second node will join topology with separate node folder
+     *
      * @throws Exception if failed
      */
     public void testStartNodeAfterDeactivate() throws Exception {
@@ -385,7 +393,43 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopGrid(0);
     }
 
+    /**
+     * Test case If there are no matching folders,
+     * but the directory constains old-style consistent IDs
+     * Ignite should print out a warning
+     *
+     * @throws Exception
+     */
+    public void testOldStyleNodeWithUnexpectedPort() throws Exception {
+        //emulated old-style node with not appropriate consistent ID
+        final String expDfltConsistentId1 = "127.0.0.1:49999";
+        this.configuredConsistentId = expDfltConsistentId1; //this is for create old node folder
+        final Ignite ignite = startActivateFillDataGrid(0);
+        final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
+        final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();
 
+        assertPdsDirsDefaultExist(prevVerFolder);
+        stopAllGrids();
+
+        this.configuredConsistentId = null;
+        this.stringLogger = new GridStringLogger();
+        startActivateGrid(0);
+        assertNodeIndexesInFolder(0); //one 0 index folder is created
+
+        final String wholeNodeLog = stringLogger.toString();
+        stopAllGrids();
+
+        assertTrue("Expected to warn user on existence of old style path",
+            wholeNodeLog.contains("There is other non-empty storage folder under storage base directory"));
+
+        assertTrue("Expected to warn user on existence of old style path [" + path + "]",
+            wholeNodeLog.contains(path));
+
+        stringLogger = null;
+        startActivateGrid(0);
+        assertNodeIndexesInFolder(0); //one 0 index folder is created
+        stopAllGrids();
+    }
 
     /**
      * @param indexes expected new style node indexes in folders
