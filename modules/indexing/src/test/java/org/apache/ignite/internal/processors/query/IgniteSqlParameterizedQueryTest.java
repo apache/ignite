@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -48,8 +45,10 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-
+    /** */
     private static final String CACHE_BOOKMARK = "Bookmark";
+
+    /** */
     private static final String NODE_CLIENT = "client";
 
     /** {@inheritDoc} */
@@ -68,7 +67,6 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
 
         return c;
     }
-
 
     /**
      * build cache configuration
@@ -98,33 +96,23 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-
     /**
      * method for create parametrized query and get first result
      * @param field name of field
-     * @param value value
+     * @param val value
      * @return fist searched object
      * @see Bookmark
      */
-    private Bookmark searchBookmarkBy(String field, Object value) {
+    private Object columnValue(String field, Object val) {
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
-        SqlFieldsQuery query = new SqlFieldsQuery("SELECT _val from  Bookmark where "+field+"=?");
-        query.setArgs(value);
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT " + field + " from  Bookmark where " + field + " = ?");
+        qry.setArgs(val);
 
-        QueryCursor<List<?>> cursor = cache.query(query);
+        QueryCursor<List<?>> cursor = cache.query(qry);
         List<List<?>> results = cursor.getAll();
-        assertEquals("Find by field '"+field+"' returns incorrect row count!",1, results.size());
+        assertEquals("Search by field '" + field +"' returns incorrect row count!",1, results.size());
         List<?> row0 = results.get(0);
-        return (Bookmark)row0.get(0);
-    }
-
-    /**
-     * check common fields
-     * @param bookmark source bookmark
-     * @param loadedBookmark bookmark loaded from Ignite
-     */
-    private void checkCommonFields(Bookmark bookmark, Bookmark loadedBookmark) {
-        assertEquals("Id value does not match", bookmark.getId(), loadedBookmark.getId());
+        return row0.get(0);
     }
 
     /**
@@ -135,7 +123,6 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         IgniteCache<String, Bookmark> cache = grid(NODE_CLIENT).cache(CACHE_BOOKMARK);
         Bookmark bookmark = new Bookmark();
         bookmark.setId(UUID.randomUUID().toString());
-        bookmark.setDescription("description");
         bookmark.setStockCount(Integer.MAX_VALUE);
         bookmark.setUrlPort(Short.MAX_VALUE);
         bookmark.setUserId(Long.MAX_VALUE);
@@ -149,163 +136,242 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
         bookmark.setCreated(new Date());
         cache.put(bookmark.id, bookmark);
 
-        for (Field currentField : Bookmark.class.getDeclaredFields()) {
-
-            Method getter = Bookmark.class.getMethod("get"+ StringUtils.capitalize(currentField.getName()));
-            Object value = getter.invoke(bookmark);
-
-            Bookmark loadedBookmark = searchBookmarkBy(currentField.getName(), value);
-            Object loadedValue = getter.invoke(loadedBookmark);
-            assertEquals(value.getClass().getSimpleName()+" value does not match",value, loadedValue);
-            checkCommonFields(bookmark, loadedBookmark);
-        }
+        assertEquals(bookmark.getId(), columnValue("id", bookmark.getId()));
+        assertEquals(bookmark.getStockCount(), columnValue("stockcount", bookmark.getStockCount()));
+        assertEquals(bookmark.getUrlPort(), columnValue("urlport", bookmark.getUrlPort()));
+        assertEquals(bookmark.getUserId(), columnValue("userid", bookmark.getUserId()));
+        assertEquals(bookmark.getVisitRatio(), columnValue("visitratio", bookmark.getVisitRatio()));
+        assertEquals(bookmark.getTaxPercentage(), columnValue("taxpercentage", bookmark.getTaxPercentage()));
+        assertEquals(bookmark.getFavourite(), columnValue("favourite", bookmark.getFavourite()));
+        assertEquals(bookmark.getDisplayMask(), columnValue("displaymask", bookmark.getDisplayMask()));
+        assertEquals(bookmark.getSerialNumber(), columnValue("serialnumber", bookmark.getSerialNumber()));
+        assertEquals(bookmark.getVisitCount(), columnValue("visitcount", bookmark.getVisitCount()));
+        assertEquals(bookmark.getSiteWeight(), columnValue("siteweight", bookmark.getSiteWeight()));
+        assertEquals(bookmark.getCreated(), columnValue("created", bookmark.getCreated()));
     }
-
 
     /**
      * Object with all predefined SQL Data Types
-     * @see <a href="https://apacheignite.readme.io/docs/dml#section-advanced-configuration">Predefined SQL Data Types</a>
+     * @see <a href="https://apacheignite.readme.io/docs/dml#section-advanced-configuration">SQL Data Types</a>
      */
-
-    public static class Bookmark implements Serializable {
+    private static class Bookmark implements Serializable {
+        /** */
         @QuerySqlField
         private String id;
 
-        // basic types
-        @QuerySqlField
-        private String description;
+        /** */
         @QuerySqlField
         private Integer stockCount;
+
+        /** */
         @QuerySqlField
         private Short urlPort;
+
+        /** */
         @QuerySqlField
         private Long userId;
+
+        /** */
         @QuerySqlField
         private Float visitRatio;
+
+        /** */
         @QuerySqlField
         private Double taxPercentage;
+
+        /** */
         @QuerySqlField
         private Boolean favourite;
+
+        /** */
         @QuerySqlField
         private Byte displayMask;
 
-        // "special" types
+        /** */
         @QuerySqlField
         private UUID serialNumber;
+
+        /** */
         @QuerySqlField
         private BigDecimal siteWeight;
+
+        /** */
         @QuerySqlField
         private BigInteger visitCount;
 
-        //data types
+        /** */
         @QuerySqlField
         private Date created;
 
+        /**
+         *
+         */
         public String getId() {
             return id;
         }
 
+        /**
+         *
+         */
         public void setId(String id) {
             this.id = id;
         }
 
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-
-
+        /**
+         *
+         */
         public Integer getStockCount() {
             return stockCount;
         }
 
+        /**
+         *
+         */
         public void setStockCount(Integer stockCount) {
             this.stockCount = stockCount;
         }
 
+        /**
+         *
+         */
         public Short getUrlPort() {
             return urlPort;
         }
 
+        /**
+         *
+         */
         public void setUrlPort(Short urlPort) {
             this.urlPort = urlPort;
         }
 
+        /**
+         *
+         */
         public Long getUserId() {
             return userId;
         }
 
+        /**
+         *
+         */
         public void setUserId(Long userId) {
             this.userId = userId;
         }
 
+        /**
+         *
+         */
         public Float getVisitRatio() {
             return visitRatio;
         }
 
+        /**
+         *
+         */
         public void setVisitRatio(Float visitRatio) {
             this.visitRatio = visitRatio;
         }
 
+        /**
+         *
+         */
         public Double getTaxPercentage() {
             return taxPercentage;
         }
 
+        /**
+         *
+         */
         public void setTaxPercentage(Double taxPercentage) {
             this.taxPercentage = taxPercentage;
         }
 
+        /**
+         *
+         */
         public Boolean getFavourite() {
             return favourite;
         }
 
+        /**
+         *
+         */
         public void setFavourite(Boolean favourite) {
             this.favourite = favourite;
         }
 
+        /**
+         *
+         */
         public Byte getDisplayMask() {
             return displayMask;
         }
 
+        /**
+         *
+         */
         public void setDisplayMask(Byte displayMask) {
             this.displayMask = displayMask;
         }
 
+        /**
+         *
+         */
         public UUID getSerialNumber() {
             return serialNumber;
         }
 
+        /**
+         *
+         */
         public void setSerialNumber(UUID serialNumber) {
             this.serialNumber = serialNumber;
         }
 
+        /**
+         *
+         */
         public BigDecimal getSiteWeight() {
             return siteWeight;
         }
 
+        /**
+         *
+         */
         public void setSiteWeight(BigDecimal siteWeight) {
             this.siteWeight = siteWeight;
         }
 
+        /**
+         *
+         */
         public BigInteger getVisitCount() {
             return visitCount;
         }
 
+        /**
+         *
+         */
         public void setVisitCount(BigInteger visitCount) {
             this.visitCount = visitCount;
         }
 
+        /**
+         *
+         */
         public Date getCreated() {
             return created;
         }
 
+        /**
+         *
+         */
         public void setCreated(Date created) {
             this.created = created;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -315,6 +381,7 @@ public class IgniteSqlParameterizedQueryTest extends GridCommonAbstractTest {
             return Objects.equals(id, bookmark.id);
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(id);
         }
