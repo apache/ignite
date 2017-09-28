@@ -66,9 +66,9 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param cols Columns whose presence must be checked.
      */
     static void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
-        try (Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            List<QueryField> flds = new ArrayList<>();
+        List<QueryField> flds = new ArrayList<>();
 
+        try (Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             try (ResultSet rs = c.getMetaData().getColumns(null, schemaName, tblName, "%")) {
                 while (rs.next()) {
                     String name = rs.getString("COLUMN_NAME");
@@ -82,24 +82,24 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                     flds.add(new QueryField(name, typeClsName, nullable == 1));
                 }
             }
+        }
 
-            Iterator<QueryField> it = flds.iterator();
+        Iterator<QueryField> it = flds.iterator();
 
-            for (int i = flds.size() - cols.length; i > 0 && it.hasNext(); i--)
-                it.next();
+        for (int i = flds.size() - cols.length; i > 0 && it.hasNext(); i--)
+            it.next();
 
-            for (QueryField exp : cols) {
-                assertTrue("New column not found in metadata: " + exp.name(), it.hasNext());
+        for (QueryField exp : cols) {
+            assertTrue("New column not found in metadata: " + exp.name(), it.hasNext());
 
-                QueryField act = it.next();
+            QueryField act = it.next();
 
-                assertEquals(exp.name(), act.name());
+            assertEquals(exp.name(), act.name());
 
-                assertEquals(exp.typeName(), act.typeName());
+            assertEquals(exp.typeName(), act.typeName());
 
-                // TODO uncomment after IGNITE-6529 is implemented.
-                //assertEquals(exp.isNullable(), act.isNullable());
-            }
+            // TODO uncomment after IGNITE-6529 is implemented.
+            //assertEquals(exp.isNullable(), act.isNullable());
         }
     }
 
