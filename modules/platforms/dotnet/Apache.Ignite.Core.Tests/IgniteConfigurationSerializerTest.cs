@@ -603,7 +603,11 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("field") {IndexType = QueryIndexType.FullText}
+                                    new QueryIndex("field")
+                                    {
+                                        IndexType = QueryIndexType.FullText,
+                                        InlineSize = 32
+                                    }
                                 },
                                 Aliases = new[]
                                 {

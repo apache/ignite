@@ -399,6 +399,11 @@
                                                                                             <xs:documentation>Index type.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
+                                                                                    <xs:attribute name="inlineSize" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
