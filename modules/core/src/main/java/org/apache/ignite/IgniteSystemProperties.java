@@ -732,6 +732,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED = "IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED";
 
     /**
+     * Properties for setup wal serializer version.
+     */
+    public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
