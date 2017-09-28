@@ -126,5 +126,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             JavaTypes.LogIndirectMappingWarning(_type, log, logInfo);
         }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(QueryField field)
+        {
+            Debug.Assert(field != null);
+
+            if (field._type != null)
+            {
+                _type = field._type;
+            }
+        }
     }
 }
