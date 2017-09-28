@@ -136,6 +136,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             Name = reader.ReadString();
             IndexType = (QueryIndexType) reader.ReadByte();
+            InlineSize = reader.ReadInt();
 
             var count = reader.ReadInt();
             Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
@@ -149,6 +150,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             writer.WriteString(Name);
             writer.WriteByte((byte) IndexType);
+            writer.WriteInt(InlineSize);
 
             if (Fields != null)
             {

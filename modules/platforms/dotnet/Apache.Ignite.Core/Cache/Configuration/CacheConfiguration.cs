@@ -290,6 +290,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
             GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
+            SqlIndexMaxInlineSize = reader.ReadInt();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0
@@ -369,6 +370,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) PartitionLossPolicy);
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
+            writer.WriteInt(SqlIndexMaxInlineSize);
 
             if (QueryEntities != null)
             {
