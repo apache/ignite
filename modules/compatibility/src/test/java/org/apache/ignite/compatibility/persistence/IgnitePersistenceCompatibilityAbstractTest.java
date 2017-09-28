@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Super class for all persistence compatibility tests.
  */
-public class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
+public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
