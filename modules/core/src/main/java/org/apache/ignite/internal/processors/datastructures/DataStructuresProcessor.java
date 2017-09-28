@@ -620,46 +620,53 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         assert grpName != null;
         assert type != null;
 
-        awaitInitialization();
+        boolean isInterrupted = Thread.interrupted();
 
-        final String cacheName = ATOMICS_CACHE_NAME + "@" + grpName;
+        try {
+            awaitInitialization();
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, grpName);
+            final String cacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
-        retryTopologySafe(new IgniteOutClosureX<Object>() {
-            @Override public Object applyx() throws IgniteCheckedException {
-                IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
+            final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name, grpName);
 
-                if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+            retryTopologySafe(new IgniteOutClosureX<Object>() {
+                @Override public Object applyx() throws IgniteCheckedException {
+                    IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
-                        if (val == null)
-                            return null;
+                    if (cache != null && cache.context().gate().enterIfNotStopped()) {
+                        try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                            AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                            if (val == null)
+                                return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                            if (val.type() != type)
+                                throw new IgniteCheckedException("Data structure has different type " +
+                                    "[name=" + name +
+                                    ", expectedType=" + type +
+                                    ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                            if (pred == null || pred.applyx(val)) {
+                                cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                tx.commit();
+
+                                if (afterRmv != null)
+                                    afterRmv.applyx(null);
+                            }
+                        }
+                        finally {
+                            cache.context().gate().leave();
                         }
                     }
-                    finally {
-                        cache.context().gate().leave();
-                    }
-                }
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
+        } finally {
+            if (isInterrupted)
+                Thread.currentThread().interrupt();
+        }
     }
 
     /**

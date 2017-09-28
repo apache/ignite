@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -42,6 +44,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -458,6 +461,77 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }
 
         fail("Thread hasn't been interrupted");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseSetInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).set(STRUCTURE_NAME, new CollectionConfiguration()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseQueueInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).queue(STRUCTURE_NAME, 0, new CollectionConfiguration()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicLongInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicLong(STRUCTURE_NAME, 10, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicReferenceInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicReference(STRUCTURE_NAME, 10, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseCountDownLatchInInterruptedThread() throws Exception {
+        IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 1, true, true);
+        latch.countDown();
+
+        doCloseByInterruptedThread(latch);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicStampedInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicStamped(STRUCTURE_NAME, 10, 10,true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseSemaphoreInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).semaphore(STRUCTURE_NAME, 1, true, true));
+    }
+
+    /**
+     * Tries close datastructure in interrupted thread
+     *
+     * @param closeableDs DataStructure to close.
+     * @throws Exception If failed.
+     */
+    private void doCloseByInterruptedThread(final Closeable closeableDs) throws Exception {
+        Thread.currentThread().interrupt();
+
+        try {
+            closeableDs.close();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     /**
