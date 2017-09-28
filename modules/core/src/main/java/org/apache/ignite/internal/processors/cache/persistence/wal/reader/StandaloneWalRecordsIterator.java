@@ -100,14 +100,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * (BinaryObjects will be used instead)
      */
     StandaloneWalRecordsIterator(
-        @NotNull final File walFilesDir,
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final FileIOFactory ioFactory,
-        final boolean keepBinary) throws IgniteCheckedException {
+        @NotNull File walFilesDir,
+        @NotNull IgniteLogger log,
+        @NotNull GridCacheSharedContext sharedCtx,
+        @NotNull FileIOFactory ioFactory,
+        boolean keepBinary
+    ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx, true),
+            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
             ioFactory,
             BUF_SIZE);
         this.keepBinary = keepBinary;
@@ -127,15 +128,15 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param walFiles Wal files.
      */
     StandaloneWalRecordsIterator(
-        @NotNull final IgniteLogger log,
-        @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final FileIOFactory ioFactory,
-        final boolean workDir,
-        final boolean keepBinary,
-        @NotNull final File... walFiles) throws IgniteCheckedException {
+            @NotNull IgniteLogger log,
+            @NotNull GridCacheSharedContext sharedCtx,
+            @NotNull FileIOFactory ioFactory,
+            boolean workDir,
+            boolean keepBinary,
+            @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
-            new RecordV1Serializer(sharedCtx, true),
+            FileWriteAheadLogManager.forVersion(sharedCtx, FileWriteAheadLogManager.LATEST_SERIALIZER_VERSION),
             ioFactory,
             BUF_SIZE);
 
