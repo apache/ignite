@@ -395,15 +395,13 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
     /**
      * Test case If there are no matching folders,
-     * but the directory constains old-style consistent IDs
-     * Ignite should print out a warning
+     * but the directory contains old-style consistent IDs.
+     * Ignite should print out a warning.
      *
-     * @throws Exception
+     * @throws Exception if failed.
      */
     public void testOldStyleNodeWithUnexpectedPort() throws Exception {
-        //emulated old-style node with not appropriate consistent ID
-        final String expDfltConsistentId1 = "127.0.0.1:49999";
-        this.configuredConsistentId = expDfltConsistentId1; //this is for create old node folder
+        this.configuredConsistentId = "127.0.0.1:49999"; //emulated old-style node with not appropriate consistent ID
         final Ignite ignite = startActivateFillDataGrid(0);
         final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
         final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();

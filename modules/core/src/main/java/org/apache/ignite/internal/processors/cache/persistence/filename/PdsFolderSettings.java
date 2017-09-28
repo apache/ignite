@@ -30,20 +30,20 @@ import org.jetbrains.annotations.Nullable;
 public class PdsFolderSettings {
     /**
      * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
-     * configuration. Note WAL storage may be configured outside this path
+     * configuration. Note WAL storage may be configured outside this path.
      */
     private final File persistentStoreRootPath;
 
-    /** Sub folder name containing consistent ID and optionally node index */
+    /** Sub folder name containing consistent ID and optionally node index. */
     private final String folderName;
 
-    /** Consistent id to be set to local node */
+    /** Consistent id to be set to local node. */
     private final Serializable consistentId;
 
     /**
      * File lock holder with prelocked db directory. For non compatible mode this holder contains prelocked work
      * directory. This value is to be used at activate instead of locking. <br> May be null in case preconfigured
-     * consistent ID is used or in case lock holder was already taken by other processor
+     * consistent ID is used or in case lock holder was already taken by other processor.
      */
     @Nullable private final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
 
@@ -54,22 +54,19 @@ public class PdsFolderSettings {
     private final boolean compatible;
 
 
-    public PdsFolderSettings(
-        @NotNull final File persistentStoreRootPath,
-        @NotNull final Serializable consistentId,
-        final boolean compatible) {
-
-        this.consistentId = consistentId;
-        this.compatible = compatible;
-        this.folderName = U.maskForFileName(consistentId.toString());
-        this.persistentStoreRootPath = persistentStoreRootPath;
-        this.fileLockHolder = null;
-    }
-
+    /**
+     * Creates settings in for new PST(DB) folder mode
+     *
+     * @param persistentStoreRootPath Persistent store root path.
+     * @param folderName Sub folder name containing consistent ID and optionally node index.
+     * @param consistentId Consistent id.
+     * @param fileLockHolder File lock holder with prelocked db directory.
+     * @param compatible Compatible mode flag
+     */
     public PdsFolderSettings(final File persistentStoreRootPath,
         final String folderName,
         final Serializable consistentId,
-        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
+        @Nullable final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
         final boolean compatible) {
 
         this.consistentId = consistentId;
@@ -77,6 +74,23 @@ public class PdsFolderSettings {
         this.fileLockHolder = fileLockHolder;
         this.compatible = compatible;
         this.persistentStoreRootPath = persistentStoreRootPath;
+    }
+
+    /**
+     * Creates settings for compatible mode. Folder name is consistent ID (masked), no node prefix is added
+     *
+     * @param persistentStoreRootPath root DB path
+     * @param consistentId node consistent ID
+     */
+    public PdsFolderSettings(
+        @NotNull final File persistentStoreRootPath,
+        @NotNull final Serializable consistentId) {
+
+        this.consistentId = consistentId;
+        this.compatible = true;
+        this.folderName = U.maskForFileName(consistentId.toString());
+        this.persistentStoreRootPath = persistentStoreRootPath;
+        this.fileLockHolder = null;
     }
 
     /**

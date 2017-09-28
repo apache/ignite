@@ -606,7 +606,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFolderResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(new File("."), U.maskForFileName(discovery().consistentId().toString()), true);
+                return new PdsFolderSettings(new File("."), U.maskForFileName(discovery().consistentId().toString()));
             }
         };
     }

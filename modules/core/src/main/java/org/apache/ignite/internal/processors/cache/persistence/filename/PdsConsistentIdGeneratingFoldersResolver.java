@@ -123,7 +123,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      * @return PDS folder settings compatible with previous versions
      */
     private PdsFolderSettings compatibleResolve(final File pstStoreBasePath) {
-        return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId(), true);
+        return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId());
     }
 
     /** {@inheritDoc} */
@@ -153,7 +153,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
-            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId(), true);
+            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
