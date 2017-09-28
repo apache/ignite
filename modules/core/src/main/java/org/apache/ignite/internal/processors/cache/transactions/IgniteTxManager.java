@@ -1541,7 +1541,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param rmtNodeId Remote node ID.
      * @param threadId Near tx thread ID.
-     * @return {@code null} if ack was received or future that will be completed when ack is received.
+     * @return {@code null} If ack was received or future that will be completed when ack is received.
      */
     @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)

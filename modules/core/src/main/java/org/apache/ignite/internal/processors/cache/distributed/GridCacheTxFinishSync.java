@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -63,15 +64,20 @@ public class GridCacheTxFinishSync<K, V> {
      * Callback invoked before finish request is sent to remote node.
      *
      * @param nodeId Node ID request being sent to.
-     * @param tx Transaction. */
+     * @param tx Transaction.
+     */
     public void onFinishSend(UUID nodeId, GridNearTxLocal tx) {
+        assert tx != null;
+
         ThreadFinishSync threadSync = idMap.get(tx.xidVersion());
 
         if (threadSync == null) {
-            ThreadFinishSync val = new ThreadFinishSync();
+            assert !threadMap.containsKey(tx.threadId());
 
-            threadMap.putIfAbsent(tx.threadId(), val);
-            threadSync = idMap.putIfAbsent(tx.xidVersion(), val);
+            threadSync = new ThreadFinishSync();
+
+            threadMap.put(tx.threadId(), threadSync);
+            idMap.put(tx.xidVersion(), threadSync);
         }
 
         threadSync.onSend(nodeId);
