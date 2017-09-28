@@ -159,9 +159,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "ALTER TABLE Person ADD COLUMN city varchar");
 
         run(cache, "INSERT INTO Person (id, name, city) values (1, 'John Doe', 'New York')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (2, 'Mike Watts', 'Denver')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (3, 'Ann Pierce', 'New York')");
 
         run(cache, "CREATE INDEX pidx1 ON Person(name, city desc)");
@@ -205,11 +203,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "CREATE INDEX pidx2 on Person(age desc)");
 
         run(cache, "DROP INDEX pidx2");
-
         run(cache, "DROP INDEX pidx1");
-
         run(cache, "DROP INDEX cidx2");
-
         run(cache, "DROP INDEX cidx1");
 
         run(cache, "DELETE FROM Person where age > 10");
