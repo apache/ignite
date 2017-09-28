@@ -21,7 +21,6 @@ import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -54,13 +53,15 @@ import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
  */
 public final class UpdatePlanBuilder {
-    /** */
+    /**
+     * Constructor.
+     */
     private UpdatePlanBuilder() {
         // No-op.
     }
@@ -111,11 +112,11 @@ public final class UpdatePlanBuilder {
             GridSqlInsert ins = (GridSqlInsert) stmt;
             target = ins.into();
 
-            tbl = gridTableForElement(target);
+            tbl = DmlAstUtils.gridTableForElement(target);
             desc = tbl.dataTable().rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
         }
@@ -124,24 +125,18 @@ public final class UpdatePlanBuilder {
 
             target = merge.into();
 
-            tbl = gridTableForElement(target);
+            tbl = DmlAstUtils.gridTableForElement(target);
             desc = tbl.dataTable().rowDescriptor();
 
-            // This check also protects us from attempts to update key or its fields directly -
-            // when no key except cache key can be used, it will serve only for uniqueness checks,
-            // not for updates, and hence will allow putting new pairs only.
-            // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
-            GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !desc.isKeyColumn(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId()))
-                throw new CacheException("SQL MERGE does not support arbitrary keys");
-
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query(), desc);
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
         }
-        else throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+        else {
+            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        }
 
         // Let's set the flag only for subqueries that have their FROM specified.
         isTwoStepSubqry = (isTwoStepSubqry && (sel instanceof GridSqlUnion ||
@@ -212,7 +207,8 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos) throws IgniteCheckedException {
+    private static UpdatePlan planForUpdate(GridSqlStatement stmt, @Nullable Integer errKeysPos)
+        throws IgniteCheckedException {
         GridSqlElement target;
 
         FastUpdateArguments fastUpdate;
@@ -238,7 +234,7 @@ public final class UpdatePlanBuilder {
             throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
-        GridSqlTable tbl = gridTableForElement(target);
+        GridSqlTable tbl = DmlAstUtils.gridTableForElement(target);
 
         GridH2Table gridTbl = tbl.dataTable();
 
@@ -267,8 +263,9 @@ public final class UpdatePlanBuilder {
 
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
-                    Column column = updatedCols.get(i).column();
-                    if (desc.isValueColumn(column.getColumnId()))
+                    Column col = updatedCols.get(i).column();
+
+                    if (desc.isValueColumn(col.getColumnId()))
                         valColIdx = i;
                 }
 
@@ -441,21 +438,6 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * @param target Expression to extract the table from.
-     * @return Back end table for this element.
-     */
-    private static GridSqlTable gridTableForElement(GridSqlElement target) {
-        Set<GridSqlTable> tbls = new HashSet<>();
-
-        DmlAstUtils.collectAllGridTablesInTarget(target, tbls);
-
-        if (tbls.size() != 1)
-            throw new IgniteSQLException("Failed to determine target table", IgniteQueryErrorCode.TABLE_NOT_FOUND);
-
-        return tbls.iterator().next();
-    }
-
-    /**
      * Check that UPDATE statement affects no key columns.
      *
      * @param statement Statement.
@@ -473,7 +455,8 @@ public final class UpdatePlanBuilder {
         DmlAstUtils.collectAllGridTablesInTarget(updTarget, tbls);
 
         if (tbls.size() != 1)
-            throw new IgniteSQLException("Failed to determine target table for UPDATE", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+            throw new IgniteSQLException("Failed to determine target table for UPDATE",
+                IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         GridSqlTable tbl = tbls.iterator().next();
 

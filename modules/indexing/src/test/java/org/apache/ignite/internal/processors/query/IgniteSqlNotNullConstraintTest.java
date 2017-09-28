@@ -144,7 +144,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        QueryEntity qe = new QueryEntity(Integer.class, Person.class);
+        QueryEntityEx qe = new QueryEntityEx(new QueryEntity(Integer.class, Person.class));
 
         qe.setNotNullFields(Collections.singleton("name"));
 
@@ -188,7 +188,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     public void testQueryEntityGetSetNotNullFields() throws Exception {
-        QueryEntity qe = new QueryEntity();
+        QueryEntityEx qe = new QueryEntityEx();
 
         assertNull(qe.getNotNullFields());
 
@@ -205,9 +205,9 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
 
     /** */
     public void testQueryEntityEquals() throws Exception {
-        QueryEntity a = new QueryEntity();
+        QueryEntityEx a = new QueryEntityEx();
 
-        QueryEntity b = new QueryEntity();
+        QueryEntityEx b = new QueryEntityEx();
 
         assertEquals(a, b);
 

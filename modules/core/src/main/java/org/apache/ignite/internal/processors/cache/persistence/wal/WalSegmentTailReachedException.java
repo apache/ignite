@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.cache.persistence.wal;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Smart pointer with reference counting.
+ * An exception is thrown when we reached tail of WAL segment cyclic buffer
+ * during reading from WAL.
  */
-public interface GridOffHeapSmartPointer {
-    /**
-     * @return Pointer address.
-     */
-    public long pointer();
+public class WalSegmentTailReachedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Increment reference count.
+     *
      */
-    public void incrementRefCount();
-
-    /**
-     * Decrement reference count.
-     */
-    public void decrementRefCount();
+    public WalSegmentTailReachedException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 }

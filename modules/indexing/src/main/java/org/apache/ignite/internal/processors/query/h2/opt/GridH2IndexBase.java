@@ -72,8 +72,8 @@ import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.buildCollocationModel;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
@@ -204,14 +204,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public void removex(SearchRow row) {
         remove(row);
     }
-
-    /**
-     * Finds a single row by the given row.
-     *
-     * @param row Search row.
-     * @return Search result.
-     */
-    public abstract GridH2Row findOne(GridH2Row row);
 
     /**
      * @param ses Session.

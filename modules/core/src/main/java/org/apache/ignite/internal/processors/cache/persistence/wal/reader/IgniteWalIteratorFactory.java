@@ -133,7 +133,7 @@ public class IgniteWalIteratorFactory {
      * @param pageSize Page size which was used in Ignite Persistent Data store to read WAL from, size is validated
      * according its boundaries.
      */
-    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, final int pageSize) {
+    public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, int pageSize) {
         this(log, new PersistentStoreConfiguration().getFileIOFactory(), pageSize);
     }
 
@@ -148,8 +148,7 @@ public class IgniteWalIteratorFactory {
      * @return closable WAL records iterator, should be closed when non needed
      * @throws IgniteCheckedException if failed to read folder
      */
-    public WALIterator iteratorArchiveDirectory(
-        @NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
+    public WALIterator iteratorArchiveDirectory(@NotNull final File walDirWithConsistentId) throws IgniteCheckedException {
         return new StandaloneWalRecordsIterator(walDirWithConsistentId, log, prepareSharedCtx(), ioFactory, keepBinary);
     }
 

@@ -229,8 +229,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
-                // Plugins should be copied directly.
-                PluginConfigurations = other.PluginConfigurations;
+                CopyLocalProperties(other);
             }
         }
 
@@ -309,8 +308,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (reader.ReadBoolean())
                     {
                         // FactoryId-based plugin: skip.
+                        reader.ReadInt();  // Skip factory id.
                         var size = reader.ReadInt();
-                        reader.Stream.Seek(size, SeekOrigin.Current);
+                        reader.Stream.Seek(size, SeekOrigin.Current);  // Skip custom data.
                     }
                     else
                     {
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                         cachePlugin.WriteBinary(writer);
 
-                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos - 4);  // Write size.
                     }
                     else
                     {
@@ -426,6 +426,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteInt(0);
             }
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(CacheConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
+            PluginConfigurations = cfg.PluginConfigurations;
+
+            if (QueryEntities != null && cfg.QueryEntities != null)
+            {
+                var entities = cfg.QueryEntities.Where(x => x != null).ToDictionary(x => GetQueryEntityKey(x), x => x);
+
+                foreach (var entity in QueryEntities.Where(x => x != null))
+                {
+                    QueryEntity src;
+
+                    if (entities.TryGetValue(GetQueryEntityKey(entity), out src))
+                    {
+                        entity.CopyLocalProperties(src);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the query entity key.
+        /// </summary>
+        private static string GetQueryEntityKey(QueryEntity x)
+        {
+            return x.KeyTypeName + "^" + x.ValueTypeName;
         }
 
         /// <summary>

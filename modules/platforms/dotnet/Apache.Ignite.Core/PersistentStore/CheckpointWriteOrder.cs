@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+namespace Apache.Ignite.Core.PersistentStore
+{
+    /// <summary>
+    /// Defines checkpoint pages order on disk.
+    /// </summary>
+    public enum CheckpointWriteOrder
+    {
+        /// <summary>
+        /// Pages are written in order provided by checkpoint pages collection iterator
+        /// (which is basically a hashtable).
+        /// </summary>
+        Random,
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffheapSnapTreeSelfTest;
-
-/**
- * Indexing SPI tests.
- */
-public class IgniteSpiIndexingSelfTestSuite extends TestSuite {
-    /**
-     * @return Failover SPI tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Indexing SPI Test Suite");
-
-        suite.addTest(new TestSuite(GridOffheapSnapTreeSelfTest.class));
-
-        return suite;
+        /// <summary>
+        /// All checkpoint pages are collected into single list and sorted by page index.
+        /// Provides almost sequential disk writes, which can be much faster on some SSD models.
+        /// </summary>
+        Sequential
     }
 }

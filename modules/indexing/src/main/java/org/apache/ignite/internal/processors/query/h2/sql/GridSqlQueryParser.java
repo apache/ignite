@@ -36,6 +36,8 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
@@ -441,6 +443,15 @@ public class GridSqlQueryParser {
     private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
 
     /** */
+    private static final String PARAM_CACHE_NAME = "CACHE_NAME";
+
+    /** */
+    private static final String PARAM_KEY_TYPE = "KEY_TYPE";
+
+    /** */
+    private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -669,9 +680,24 @@ public class GridSqlQueryParser {
 
         Column[] srcKeys = MERGE_KEYS.get(merge);
 
+        GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
+
+        GridH2RowDescriptor rowDesc = intoTbl.rowDescriptor();
+
         GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
-        for (int i = 0; i < srcKeys.length; i++)
-            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, srcKeys[i].getName());
+
+        for (int i = 0; i < srcKeys.length; i++) {
+            String colName = srcKeys[i].getName();
+
+            int colId = intoTbl.getColumn(colName).getColumnId();
+
+            if (!rowDesc.isKeyColumn(colId) && !F.eq(colName, rowDesc.type().affinityKey()))
+                throw new IgniteSQLException("Invalid column name in KEYS clause of MERGE - it may include only " +
+                    "key and/or affinity columns: " + colName, IgniteQueryErrorCode.PARSING);
+
+            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, colName);
+        }
+
         res.keys(keys);
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
@@ -983,6 +1009,17 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
+        if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
+            throw new IgniteSQLException("Key and value type names " +
+                "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
+
+        if (res.affinityKey() == null) {
+            LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
+
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1)
+                res.affinityKey(pkCols0.iterator().next());
+        }
+
         return res;
     }
 
@@ -1165,6 +1202,27 @@ public class GridSqlQueryParser {
                         "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.atomicityMode(atomicityMode);
+
+                break;
+
+            case PARAM_CACHE_NAME:
+                ensureNotEmpty(name, val);
+
+                res.cacheName(val);
+
+                break;
+
+            case PARAM_KEY_TYPE:
+                ensureNotEmpty(name, val);
+
+                res.keyTypeName(val);
+
+                break;
+
+            case PARAM_VAL_TYPE:
+                ensureNotEmpty(name, val);
+
+                res.valueTypeName(val);
 
                 break;
 
