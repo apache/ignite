@@ -264,6 +264,7 @@ public final class UpdatePlanBuilder {
                     colTypes[i] = updatedCols.get(i).resultType().type();
 
                     Column col = updatedCols.get(i).column();
+
                     if (desc.isValueColumn(col.getColumnId()))
                         valColIdx = i;
                 }
