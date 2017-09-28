@@ -524,7 +524,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         break; // While.
 
                     try {
-                        GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
+                        GridCacheMvccCandidate cand = entry.localCandidate(Thread.currentThread().getId());
 
                         AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
