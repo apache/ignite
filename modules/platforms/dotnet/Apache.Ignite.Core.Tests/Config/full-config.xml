@@ -1,5 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' consistentId='someId012'>
+<igniteConfiguration
+              workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' 
+              isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' 
+              peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' 
+              consistentId='someId012'>
     <localhost>127.1.1.1</localhost>
     <binaryConfiguration compactFooter='false' keepDeserialized='true'>
         <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -37,7 +41,7 @@
                         <queryAlias fullName='somefield.field' alias='shortField' />
                     </aliases>
                     <indexes>
-                        <queryIndex name='idx' indexType='Geospatial'>
+                        <queryIndex name='idx' indexType='Geospatial' inlineSize='123'>
                             <fields>
                                 <queryIndexField name='indexFld' isDescending='true' />
                             </fields>
@@ -102,4 +106,4 @@
             <listener type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyEventListener' />
         </localEventListener>
     </localEventListeners>
-</igniteConfig>
+</igniteConfiguration>
