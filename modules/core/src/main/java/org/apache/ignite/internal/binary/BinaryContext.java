@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1301,6 +1302,20 @@ public class BinaryContext {
      */
     public void unregisterBinarySchemas() {
         schemas = null;
+    }
+
+    /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
     }
 
     /**
