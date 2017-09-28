@@ -187,7 +187,7 @@ public class JdbcThinResultSet implements ResultSet {
             this.fetchSize = fetchSize;
             this.rows = rows;
 
-            rowsIter = rows.iterator();
+            rowsIter = rows != null ? rows.iterator() : null;
         }
         else
             this.updCnt = updCnt;
@@ -228,10 +228,10 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closeStmt)
-            stmt.close();
-
         close0();
+
+        if (closeStmt)
+            stmt.closeIfAllResultsClosed();
     }
 
     /**
