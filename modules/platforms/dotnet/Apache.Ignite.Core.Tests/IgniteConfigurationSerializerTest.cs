@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
-            
+
             var queryIndex = queryEntity.Indexes.Single();
             Assert.AreEqual(QueryIndexType.Geospatial, queryIndex.IndexType);
             Assert.AreEqual("indexFld", queryIndex.Fields.Single().Name);
@@ -258,6 +258,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(3, pers.SubIntervals);
             Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
             Assert.AreEqual(CheckpointWriteOrder.Random, pers.CheckpointWriteOrder);
+            Assert.IsTrue(pers.WriteThrottlingEnabled);
 
             var listeners = cfg.LocalEventListeners;
             Assert.AreEqual(2, listeners.Count);
@@ -820,7 +821,8 @@ namespace Apache.Ignite.Core.Tests
                     SubIntervals = 25,
                     MetricsEnabled = true,
                     RateTimeInterval = TimeSpan.FromDays(1),
-                    CheckpointWriteOrder = CheckpointWriteOrder.Random
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random,
+                    WriteThrottlingEnabled = true
                 },
                 IsActiveOnStart = false,
                 ConsistentId = "myId123",

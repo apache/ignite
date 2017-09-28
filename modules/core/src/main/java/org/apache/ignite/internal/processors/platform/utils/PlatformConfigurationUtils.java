@@ -1584,7 +1584,8 @@ public class PlatformConfigurationUtils {
                 .setMetricsEnabled(in.readBoolean())
                 .setSubIntervals(in.readInt())
                 .setRateTimeInterval(in.readLong())
-                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()));
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+                .setWriteThrottlingEnabled(in.readBoolean());
     }
 
     /**
@@ -1618,6 +1619,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getSubIntervals());
             w.writeLong(cfg.getRateTimeInterval());
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
+            w.writeBoolean(cfg.isWriteThrottlingEnabled());
 
         } else {
             w.writeBoolean(false);
