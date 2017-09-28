@@ -143,8 +143,24 @@ namespace Apache.Ignite.Core.Tests
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                             <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
-                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
+                            <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' checkpointWriteOrder='Random' />
                             <consistentId type='System.String'>someId012</consistentId>
+                            <localEventListeners>
+                              <localEventListener type='Apache.Ignite.Core.Events.LocalEventListener`1[[Apache.Ignite.Core.Events.CacheRebalancingEvent]]'>
+                                <eventTypes>
+                                  <int>CacheObjectPut</int>
+                                  <int>81</int>
+                                </eventTypes>
+                                <listener type='Apache.Ignite.Core.Tests.EventsTestLocalListeners+Listener`1[[Apache.Ignite.Core.Events.CacheRebalancingEvent]]' />
+                            </localEventListener>
+                              <localEventListener type='Apache.Ignite.Core.Events.LocalEventListener`1[[Apache.Ignite.Core.Events.IEvent]]'>
+                                <eventTypes>
+                                  <int>CacheObjectPut</int>
+                                  <int>81</int>
+                                </eventTypes>
+                                <listener type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyEventListener' />
+                            </localEventListener>
+                          </localEventListeners>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -332,6 +348,16 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(pers.MetricsEnabled);
             Assert.AreEqual(3, pers.SubIntervals);
             Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
+            Assert.AreEqual(CheckpointWriteOrder.Random, pers.CheckpointWriteOrder);
+
+            var listeners = cfg.LocalEventListeners;
+            Assert.AreEqual(2, listeners.Count);
+
+            var rebalListener = (LocalEventListener<CacheRebalancingEvent>) listeners.First();
+            Assert.AreEqual(new[] {EventType.CacheObjectPut, 81}, rebalListener.EventTypes);
+            Assert.AreEqual("Apache.Ignite.Core.Tests.EventsTestLocalListeners+Listener`1" +
+                            "[Apache.Ignite.Core.Events.CacheRebalancingEvent]",
+                rebalListener.Listener.GetType().ToString());
         }
 
         /// <summary>
@@ -879,10 +905,19 @@ namespace Apache.Ignite.Core.Tests
                     WalStorePath = Path.GetTempPath(),
                     SubIntervals = 25,
                     MetricsEnabled = true,
-                    RateTimeInterval = TimeSpan.FromDays(1)
+                    RateTimeInterval = TimeSpan.FromDays(1),
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random
                 },
                 IsActiveOnStart = false,
-                ConsistentId = "myId123"
+                ConsistentId = "myId123",
+                LocalEventListeners = new[]
+                {
+                    new LocalEventListener<IEvent>
+                    {
+                        EventTypes = new[] {1, 2},
+                        Listener = new MyEventListener()
+                    }
+                }
             };
         }
 
@@ -1083,6 +1118,14 @@ namespace Apache.Ignite.Core.Tests
             }
 
             void ICachePluginConfiguration.WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class MyEventListener : IEventListener<IEvent>
+        {
+            public bool Invoke(IEvent evt)
             {
                 throw new NotImplementedException();
             }
