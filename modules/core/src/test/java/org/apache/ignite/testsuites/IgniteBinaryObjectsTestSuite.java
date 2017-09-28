@@ -29,7 +29,6 @@ import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalCompactNullsSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
@@ -43,12 +42,14 @@ import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalCompactNullsSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinarySerialiedFieldComparatorCompactNullSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSelfTest;
-import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
@@ -102,7 +103,6 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalCompactNullsSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
@@ -119,7 +119,6 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
@@ -151,6 +150,12 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
+
+        // Compact nulls
+        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderAdditionalCompactNullsSelfTest.class);
+        suite.addTestSuite(BinarySerialiedFieldComparatorCompactNullSelfTest.class);
+
 
         return suite;
     }

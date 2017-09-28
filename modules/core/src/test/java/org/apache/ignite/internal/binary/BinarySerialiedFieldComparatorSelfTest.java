@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,7 +80,16 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
 
         cfg.setMarshaller(new BinaryMarshaller());
 
+        cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactNulls(compactNulls()));
+
         return cfg;
+    }
+
+    /**
+     * @return Compact nulls flag;
+     */
+    protected boolean compactNulls() {
+        return false;
     }
 
     /**
@@ -438,30 +448,25 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
         assertNotNull(val1);
         assertNotNull(val2);
 
-//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val1), offheap2), true);
-//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val2), offheap2), false);
-//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(null), offheap2), false);
-//        compareSingle(convert(buildSingle(val1), offheap1), convert(buildEmpty(), offheap2), false);
-//
-//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val1), offheap2), false);
-//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val2), offheap2), true);
-//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(null), offheap2), false);
-//        compareSingle(convert(buildSingle(val2), offheap1), convert(buildEmpty(), offheap2), false);
+        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val1), offheap2), true);
+        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(val2), offheap2), false);
+        compareSingle(convert(buildSingle(val1), offheap1), convert(buildSingle(null), offheap2), false);
+        compareSingle(convert(buildSingle(val1), offheap1), convert(buildEmpty(), offheap2), false);
 
-//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val1), offheap2), false);
-//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val2), offheap2), false);
-//        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(null), offheap2), true);
-//        compareSingle(convert(buildSingle(null), offheap1), convert(buildEmpty(), offheap2), true);
-//
-//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val1), offheap2), false);
-//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val2), offheap2), false);
-//        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(null), offheap2), true);
-//        compareSingle(convert(buildEmpty(), offheap1), convert(buildEmpty(), offheap2), true);
-    }
+        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val1), offheap2), false);
+        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(val2), offheap2), true);
+        compareSingle(convert(buildSingle(val2), offheap1), convert(buildSingle(null), offheap2), false);
+        compareSingle(convert(buildSingle(val2), offheap1), convert(buildEmpty(), offheap2), false);
 
-    public void testQ() throws Exception {
-        buildSingle(null);
-        buildSingle(1);
+        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val1), offheap2), false);
+        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(val2), offheap2), false);
+        compareSingle(convert(buildSingle(null), offheap1), convert(buildSingle(null), offheap2), true);
+        compareSingle(convert(buildSingle(null), offheap1), convert(buildEmpty(), offheap2), true);
+
+        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val1), offheap2), false);
+        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(val2), offheap2), false);
+        compareSingle(convert(buildEmpty(), offheap1), convert(buildSingle(null), offheap2), true);
+        compareSingle(convert(buildEmpty(), offheap1), convert(buildEmpty(), offheap2), true);
     }
 
     /**
@@ -522,15 +527,6 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      * @return Result.
      */
     private BinaryObjectImpl buildSingle(Object val) {
-        System.out.print("+++ " + val);
-        BinaryObjectImpl bo = build(FIELD_SINGLE, val);
-
-        System.out.print("+++ ");
-        for (byte b : bo.array())
-            System.out.printf("%02X ", b);
-
-        System.out.println("");
-
         return build(FIELD_SINGLE, val);
     }
 
