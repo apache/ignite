@@ -137,6 +137,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
         public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
 
+        /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
+        public const int DefaultSqlIndexMaxInlineSize = -1;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -184,6 +187,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
+            SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
         }
 
         /// <summary>
@@ -769,5 +773,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Grouping caches reduces overall overhead, since internal data structures are shared.
         /// </summary>
         public string GroupName { get;set; }
+
+        /// <summary>
+        /// Gets or sets maximum inline size in bytes for sql indexes. See also <see cref="QueryIndex.InlineSize"/>.
+        /// -1 for automatic.
+        /// </summary>
+        [DefaultValue(DefaultSqlIndexMaxInlineSize)]
+        public int SqlIndexMaxInlineSize { get; set; }
     }
 }

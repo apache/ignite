@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
 
@@ -29,9 +30,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public class QueryIndex
     {
         /// <summary>
+        /// Default value for <see cref="InlineSize"/>.
+        /// </summary>
+        public const int DefaultInlineSize = -1;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
         /// </summary>
-        public QueryIndex()
+        public QueryIndex() : this((string[]) null)
         {
             // No-op.
         }
@@ -50,9 +56,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="isDescending">Sort direction.</param>
         /// <param name="fieldNames">Names of the fields to index.</param>
-        public QueryIndex(bool isDescending, params string[] fieldNames)
+        public QueryIndex(bool isDescending, params string[] fieldNames) 
+            : this(isDescending, QueryIndexType.Sorted, fieldNames)
         {
-            Fields = fieldNames.Select(f => new QueryIndexField(f, isDescending)).ToArray();
+            // No-op.
         }
 
         /// <summary>
@@ -62,8 +69,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="indexType">Type of the index.</param>
         /// <param name="fieldNames">Names of the fields to index.</param>
         public QueryIndex(bool isDescending, QueryIndexType indexType, params string[] fieldNames) 
-            : this(isDescending, fieldNames)
         {
+            if (fieldNames != null)
+            {
+                Fields = fieldNames.Select(f => new QueryIndexField(f, isDescending)).ToArray();
+            }
+
+            InlineSize = DefaultInlineSize;
             IndexType = indexType;
         }
 
@@ -113,6 +125,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Index inline will be enabled for all fixed-length types,
         ///  but <b>will not be enabled</b> for <see cref="string"/>.
         /// </summary>
+        [DefaultValue(DefaultInlineSize)]
         public int InlineSize { get; set; }
 
         /// <summary>
