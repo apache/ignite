@@ -191,7 +191,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         byte clientType = reader.readByte();
 
-        ClientListenerConnectionContext connCtx = prepareContext(clientType, ses);
+        ClientListenerConnectionContext connCtx = prepareContext(clientType);
 
         String errMsg = null;
 
@@ -229,10 +229,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * Prepare context.
      *
      * @param clientType Client type.
-     * @param ses I/O Session.
      * @return Context.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType, GridNioSession ses) {
+    private ClientListenerConnectionContext prepareContext(byte clientType) {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
