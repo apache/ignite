@@ -174,7 +174,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut1.get();
 
-        checkNodesState(TBL_NAME, c("age", Integer.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("age", Integer.class.getName()));
 
         // Test migration from normal server to non-affinity server.
         idxLatch = blockIndexing(srv2Id);
@@ -190,7 +190,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut2.get();
 
-        checkNodesState(TBL_NAME, c("city", String.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("city", String.class.getName()));
     }
 
     /**
@@ -238,7 +238,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, c1, c2);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c1, c2);
     }
 
     /**
@@ -275,7 +275,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c);
     }
 
     /**
@@ -334,7 +334,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         finishLatch.await();
 
         // Make sure new column is there.
-        checkNodesState(TBL_NAME, c("v", Integer.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("v", Integer.class.getName()));
 
         run(srv1, "update person set \"v\" = case when mod(id, 2) <> 0 then substring(name, 7, length(name) - 6) " +
             "else null end");
@@ -450,7 +450,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Validate index state.
         idxFut.get();
 
-        checkNodesState(TBL_NAME, c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c);
     }
 
     /**
@@ -656,7 +656,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             }
         });
 
-        checkNodeState((IgniteEx)cli, schemaName, TBL_NAME, cols);
+        checkTableState(schemaName, TBL_NAME, cols);
     }
 
     /**
@@ -845,7 +845,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         idxQry += ')';
 
-        checkNodesState(TBL_NAME, expCols);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, expCols);
 
         put(cli, 0, 500);
 

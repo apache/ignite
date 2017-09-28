@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -515,7 +516,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new HashSet<>();
+            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
