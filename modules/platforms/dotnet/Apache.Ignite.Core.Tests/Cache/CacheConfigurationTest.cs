@@ -494,6 +494,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.IndexType, y.IndexType);
+            Assert.AreEqual(x.InlineSize, y.InlineSize);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
         }
@@ -594,7 +595,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                             new QueryIndex(new QueryIndexField("location", true))
                             {
                                 Name= "index2",
-                                IndexType = QueryIndexType.FullText
+                                IndexType = QueryIndexType.FullText,
+                                InlineSize = 1024
                             }
                         }
                     }
@@ -795,7 +797,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             public void WriteBinary(IBinaryRawWriter writer)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
     }
