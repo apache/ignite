@@ -71,6 +71,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Name of the column that represents affinity key. */
     private String affinityKey;
 
+    /** If PRIMARY KEY consists of a single column, don't create new binary type for it and store keys as is. */
+    private boolean plainKey;
+
     /** Extra WITH-params. */
     private List<String> params;
 
@@ -268,6 +271,21 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
+    }
+
+    /**
+     * @return If PRIMARY KEY consists of a single column, don't create new binary type for it and store keys as is.
+     */
+    public boolean plainKey() {
+        return plainKey;
+    }
+
+    /**
+     * @param plainKey If PRIMARY KEY consists of a single column, don't create new binary type for it
+     *     and store keys as is.
+     */
+    public void plainKey(boolean plainKey) {
+        this.plainKey = plainKey;
     }
 
     /**

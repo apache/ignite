@@ -364,10 +364,20 @@ public class DdlStatementsProcessor {
         if (!F.isEmpty(createTbl.valueTypeName()))
             valTypeName = createTbl.valueTypeName();
 
+        if (createTbl.plainKey()) {
+            assert createTbl.primaryKeyColumns().size() == 1;
+
+            GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
+
+            assert pkCol != null;
+
+            keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+        }
+        else
+            res.setKeyFields(createTbl.primaryKeyColumns());
+
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
-
-        res.setKeyFields(createTbl.primaryKeyColumns());
 
         if (!F.isEmpty(notNullFields)) {
             QueryEntityEx res0 = new QueryEntityEx(res);

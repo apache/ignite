@@ -475,6 +475,9 @@ public class GridSqlQueryParser {
     private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
 
     /** */
+    private static final String PARAM_PLAIN_KEY = "PLAIN_PRIMARY_KEY";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -1056,6 +1059,10 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
 
+        if (res.plainKey() && pkCols.size() != 1)
+            throw new IgniteSQLException("Plain primary key option works only with single column primary keys.",
+                IgniteQueryErrorCode.PARSING);
+
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
 
@@ -1333,6 +1340,14 @@ public class GridSqlQueryParser {
                         "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.writeSynchronizationMode(writeSyncMode);
+
+                break;
+
+            case PARAM_PLAIN_KEY:
+                if (F.isEmpty(val))
+                    res.plainKey(true);
+                else
+                    res.plainKey(Boolean.valueOf(val));
 
                 break;
 
