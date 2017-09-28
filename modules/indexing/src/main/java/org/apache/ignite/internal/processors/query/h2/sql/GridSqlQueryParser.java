@@ -397,6 +397,29 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
+    /** Class for private class: 'org.h2.command.CommandList'. */
+    private static final Class<? extends Command> CLS_COMMAND_LIST;
+
+    /** */
+    private static final Getter<Command, Command> LIST_COMMAND;
+
+    /** */
+    private static final Getter<Command, String> REMAINING;
+
+    static {
+        try {
+            CLS_COMMAND_LIST = (Class<? extends Command>)CommandContainer.class.getClassLoader()
+                .loadClass("org.h2.command.CommandList");
+
+            LIST_COMMAND = getter(CLS_COMMAND_LIST, "command");
+
+            REMAINING = getter(CLS_COMMAND_LIST, "remaining");
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** */
     private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_TBL_NAME =
         getter(AlterTableAlterColumn.class, "tableName");
@@ -482,6 +505,26 @@ public class GridSqlQueryParser {
         assert cmd instanceof CommandContainer;
 
         return PREPARED.get(cmd);
+    }
+
+    /**
+     * @param stmt Prepared statement.
+     * @return Parsed select.
+     */
+    public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
+        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+
+        if (cmd instanceof CommandContainer)
+            return new PreparedWithRemaining(PREPARED.get(cmd), null);
+        else {
+            Class<?> cmdCls = cmd.getClass();
+
+            if (cmdCls.getName().equals("org.h2.command.CommandList")) {
+                return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
+            }
+            else
+                throw new IgniteSQLException("Unexpected statement command");
+        }
     }
 
     /**
@@ -1796,6 +1839,44 @@ public class GridSqlQueryParser {
             catch (IllegalAccessException e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PreparedWithRemaining {
+        /** Prepared. */
+        private Prepared prepared;
+
+        /** Remaining sql. */
+        private String remainingSql;
+
+        /**
+         * @param prepared Prepared.
+         * @param sql Remaining SQL.
+         */
+        public PreparedWithRemaining(Prepared prepared, String sql) {
+            this.prepared = prepared;
+
+            if (sql != null)
+                sql = sql.trim();
+
+            remainingSql = !F.isEmpty(sql) ? sql : null;
+        }
+
+        /**
+         * @return Prepared.
+         */
+        public Prepared prepared() {
+            return prepared;
+        }
+
+        /**
+         * @return Remaining SQL.
+         */
+        public String remainingSql() {
+            return remainingSql;
         }
     }
 }
