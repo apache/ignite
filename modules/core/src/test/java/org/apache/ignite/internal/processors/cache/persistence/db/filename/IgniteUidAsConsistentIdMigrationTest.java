@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation
@@ -226,8 +229,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
             assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, igniteRestart));
 
-            awaitPartitionMapExchange();
-            assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
             stopGrid(1);
             assertFalse(consIdRestart.equals(uuid));
         }
@@ -403,6 +404,12 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public void testOldStyleNodeWithUnexpectedPort() throws Exception {
         this.configuredConsistentId = "127.0.0.1:49999"; //emulated old-style node with not appropriate consistent ID
         final Ignite ignite = startActivateFillDataGrid(0);
+        final IgniteCache<Object, Object> second = ignite.getOrCreateCache("second");
+
+        final int entries = 100;
+        for (int i = 0; i < entries; i++)
+            second.put((int)(Math.random() * entries), getClass().getName());
+
         final String prevVerFolder = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
         final String path = new File(new File(U.defaultWorkDirectory(), "db"), prevVerFolder).getCanonicalPath();
 
@@ -417,11 +424,25 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final String wholeNodeLog = stringLogger.toString();
         stopAllGrids();
 
+        String foundWarning = null;
+        for (String line : wholeNodeLog.split("\n")) {
+            if (line.contains("There is other non-empty storage folder under storage base directory")) {
+                foundWarning = line;
+                break;
+            }
+        }
+
+        if (foundWarning != null)
+            log.info("\nWARNING generated successfully [\n" + foundWarning + "\n]");
+
         assertTrue("Expected to warn user on existence of old style path",
-            wholeNodeLog.contains("There is other non-empty storage folder under storage base directory"));
+            foundWarning != null);
 
         assertTrue("Expected to warn user on existence of old style path [" + path + "]",
-            wholeNodeLog.contains(path));
+            foundWarning.contains(path));
+
+        assertTrue("Expected to print some size for [" + path + "]",
+            Pattern.compile(" [0-9]* bytes").matcher(foundWarning).find());
 
         stringLogger = null;
         startActivateGrid(0);
@@ -446,8 +467,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsConsistentIdGeneratingFoldersResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
         for (File file : files) {
-            final PdsConsistentIdGeneratingFoldersResolver.NodeIndexAndUid uid
-                = PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName(file, log);
+            final PdsConsistentIdGeneratingFoldersResolver.FolderCandidate uid
+                = parseSubFolderName(file, log);
             if (uid != null)
                 indexes.add(uid.nodeIndex());
         }

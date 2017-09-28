@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -176,24 +177,21 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         final File[] oldStyleFolders = pstStoreBasePath.listFiles(DB_SUBFOLDERS_OLD_STYLE_FILTER);
         if (oldStyleFolders != null && oldStyleFolders.length != 0) {
             for (File folder : oldStyleFolders) {
-                //todo with their sizes and dates.
-                String path;
-                try {
-                    path = folder.getCanonicalPath();
-                }
-                catch (IOException ignored) {
-                    path = folder.getAbsolutePath();
-                }
+                String path = getPathDisplayableInfo(folder);
                 log.warning("There is other non-empty storage folder under storage base directory [" + path + "]");
             }
         }
 
         for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.file);
+            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.subFolderFile());
             if (fileLockHolder != null) {
-                //todo remove debug output
-                System.out.println("locked>> " + pstStoreBasePath + " " + next.file);
-                return new PdsFolderSettings(pstStoreBasePath, next.file.getName(), next.uuid(), fileLockHolder, false);
+                log.info("Successfully locked DB folder [" + next.subFolderFile() + "]");
+
+                return new PdsFolderSettings(pstStoreBasePath,
+                    next.subFolderFile().getName(),
+                    next.uuid(),
+                    fileLockHolder,
+                    false);
             }
         }
 
@@ -210,6 +208,67 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     }
 
+    /**
+     * Calculate overall folder size
+     * @param dir directory to scan
+     * @return total size in bytes
+     */
+    private static FolderParams folderSize(File dir) {
+        final FolderParams params = new FolderParams();
+        visitFolder(dir, params);
+        return params;
+    }
+
+    private static void visitFolder(final File dir, final FolderParams params) {
+        for (File file : dir.listFiles()) {
+            if (file.isDirectory())
+                visitFolder(file, params);
+            else {
+                params.size += file.length();
+                params.lastModified = Math.max(params.lastModified, dir.lastModified());
+            }
+        }
+    }
+
+    private static class FolderParams {
+        private long size = 0;
+        private long lastModified =0;
+    }
+
+    @NotNull private String getPathDisplayableInfo(final File folder) {
+        final SB res = new SB();
+        res.a(getCanonicalPath(folder));
+        res.a(", ");
+        final FolderParams params = folderSize(folder);
+        res.a(params.size);
+        res.a(" bytes, modified ");
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
+        res.a(simpleDateFormat.format(params.lastModified));
+        res.a(" ");
+        return res.toString();
+    }
+
+    /**
+     * Returns the canonical pathname string of this abstract pathname.
+     * @param file path to convert
+     * @return canonical pathname or at leas absolute if convert to canonical failed
+     */
+    @NotNull private String getCanonicalPath(final File file) {
+        try {
+            return file.getCanonicalPath();
+        }
+        catch (IOException ignored) {
+            return file.getAbsolutePath();
+        }
+    }
+
+    /**
+     * Pad start of string with provided character.
+     * @param str sting to pad
+     * @param minLength expected length.
+     * @param padChar padding character
+     * @return padded string
+     */
     private static String padStart(String str, int minLength, char padChar) {
         A.notNull(str, "String should not be empty");
         if (str.length() >= minLength)
@@ -240,8 +299,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
         if (fileLockHolder != null) {
-            //todo remove debug output
-            System.out.println("locked>> " + pstStoreBasePath + " " + consIdBasedFolder);
+            log.info("Successfully created new DB folder [" + newRandomFolder + "]");
             return new PdsFolderSettings(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
         }
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
@@ -294,11 +352,9 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         final List<FolderCandidate> res = new ArrayList<>();
         for (File file : files) {
-            final NodeIndexAndUid nodeIdxAndUid = parseFileName(file);
-            if (nodeIdxAndUid == null)
-                continue;
-
-            res.add(new FolderCandidate(file, nodeIdxAndUid));
+            final FolderCandidate candidate = parseFileName(file);
+            if (candidate != null)
+                res.add(candidate);
         }
         Collections.sort(res, new Comparator<FolderCandidate>() {
             @Override public int compare(FolderCandidate c1, FolderCandidate c2) {
@@ -368,28 +424,31 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      * @param subFolderFile new style folder name to parse
      * @return Pair of UUID and node index
      */
-    private NodeIndexAndUid parseFileName(@NotNull final File subFolderFile) {
+    private FolderCandidate parseFileName(@NotNull final File subFolderFile) {
         return parseSubFolderName(subFolderFile, log);
     }
 
     /**
-     * @param file new style file to parse.
+     * @param subFolderFile new style file to parse.
      * @param log Logger.
      * @return Pair of UUID and node index.
      */
-    @Nullable public static NodeIndexAndUid parseSubFolderName(
-        @NotNull File file, IgniteLogger log) {
-        final String fileName = file.getName();
-        Matcher m = Pattern.compile(NODE_PATTERN).matcher(fileName);
-        if (!m.find())
+    @Nullable public static FolderCandidate parseSubFolderName(
+        @NotNull final File subFolderFile,
+        @NotNull final IgniteLogger log) {
+
+        final String fileName = subFolderFile.getName();
+        final Matcher matcher = Pattern.compile(NODE_PATTERN).matcher(fileName);
+        if (!matcher.find())
             return null;
-        int uidStart = m.end();
+
+        int uidStart = matcher.end();
         try {
-            String uid = fileName.substring(uidStart);
+            final String uid = fileName.substring(uidStart);
             final UUID uuid = UUID.fromString(uid);
             final String substring = fileName.substring(DB_FOLDER_PREFIX.length(), uidStart - NODEIDX_UID_SEPARATOR.length());
             final int idx = Integer.parseInt(substring);
-            return new NodeIndexAndUid(idx, uuid);
+            return new FolderCandidate(subFolderFile, idx, uuid);
         }
         catch (Exception e) {
             log.warning("Unable to parse new style file format: " + e);
@@ -409,41 +468,40 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         super.stop(cancel);
     }
 
+    /**
+     * Represents parsed new style file and encoded parameters in this file name
+     */
     public static class FolderCandidate {
-
-        private final File file;
-        private final NodeIndexAndUid params;
-
-        public FolderCandidate(File file, NodeIndexAndUid params) {
-
-            this.file = file;
-            this.params = params;
-        }
-
-        public int nodeIndex() {
-            return params.nodeIndex();
-        }
-
-        public Serializable uuid() {
-            return params.uuid();
-        }
-    }
-
-    public static class NodeIndexAndUid {
-        private final int nodeIndex;
+        /** Absolute file path pointing to DB subfolder within DB storage root folder. */
+        private final File subFolderFile;
+        /** Node index (local, usually 0 if multiple nodes are not started at local PC). */
+        private final int nodeIdx;
+        /** Uuid contained in file name, is to be set as consistent ID. */
         private final UUID uuid;
 
-        public NodeIndexAndUid(int nodeIndex, UUID nodeConsistentId) {
-            this.nodeIndex = nodeIndex;
-            this.uuid = nodeConsistentId;
+        /**
+         * @param subFolderFile  Absolute file path pointing to DB subfolder.
+         * @param nodeIdx Node index.
+         * @param uuid Uuid.
+         */
+        public FolderCandidate(File subFolderFile, int nodeIdx, UUID uuid) {
+            this.subFolderFile = subFolderFile;
+            this.nodeIdx = nodeIdx;
+            this.uuid = uuid;
         }
 
+        /** @return Node index (local, usually 0 if multiple nodes are not started at local PC). */
         public int nodeIndex() {
-            return nodeIndex;
+            return nodeIdx;
         }
 
+        /** @return Uuid contained in file name, is to be set as consistent ID. */
         public Serializable uuid() {
             return uuid;
+        }
+
+        public File subFolderFile() {
+            return subFolderFile;
         }
     }
 
