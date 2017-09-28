@@ -659,7 +659,8 @@ namespace Apache.Ignite.Core.Tests
                         },
                         MemoryPolicyName = "somePolicy",
                         PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
-                        GroupName = "abc"
+                        GroupName = "abc",
+                        SqlIndexMaxInlineSize = 24
                     }
                 },
                 ClientMode = true,

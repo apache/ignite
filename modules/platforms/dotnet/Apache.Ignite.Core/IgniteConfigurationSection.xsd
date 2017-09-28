@@ -769,6 +769,11 @@
                                             <xs:documentation>Cache group name. Caches with the same group name share single underlying 'physical' cache (partition set), but are logically isolated.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="sqlIndexMaxInlineSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of SQL inline index. Part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
