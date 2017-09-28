@@ -201,7 +201,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             FinishMiniFuture finishFut = null;
 
             synchronized (sync) {
-                for (int i = 0; i < futuresCount(); i++) {
+                int size = futuresCountNoLock();
+
+                for (int i = 0; i < size; i++) {
                     IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                     if (fut.getClass() == FinishMiniFuture.class) {
@@ -296,33 +298,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
-            if (err != null) {
-                tx.commitError(err);
+            if (err != null)
+                tx.setRollbackOnly();
 
-                boolean marked = tx.setRollbackOnly();
-
-                if (err instanceof IgniteTxRollbackCheckedException) {
-                    if (marked) {
-                        try {
-                            tx.rollback();
-                        }
-                        catch (IgniteCheckedException ex) {
-                            U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                        }
-                    }
-                }
-                else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
-                    try {
-                        tx.close();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to invalidate transaction: " + tx, ex);
-                    }
-                }
+            if (commit) {
+                if (tx.commitError() != null)
+                    err = tx.commitError();
+                else if (err != null)
+                    tx.commitError(err);
             }
-
-            if (commit && tx.commitError() != null)
-                err = tx.commitError();
 
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
@@ -347,7 +331,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     finishOnePhase(commit);
 
-                    tx.tmFinish(commit);
+                    try {
+                        tx.tmFinish(commit);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to finish tx: " + tx, e);
+
+                        if (err == null)
+                            err = e;
+                    }
                 }
 
                 if (super.onDone(tx0, err)) {
@@ -358,7 +350,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                             GridCacheContext cacheCtx = e.context();
 
                             try {
-                                if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
+                                if (e.op() != NOOP && !cacheCtx.affinity().keyLocalNode(e.key(), topVer)) {
                                     GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
                                     if (entry != null)
