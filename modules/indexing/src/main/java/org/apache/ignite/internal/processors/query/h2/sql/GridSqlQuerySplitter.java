@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -172,7 +171,8 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param stmt Prepared statement.
+     * @param conn Connection.
+     * @param prepared Prepared.
      * @param params Parameters.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
@@ -183,7 +183,8 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
-        JdbcPreparedStatement stmt,
+        Connection conn,
+        Prepared prepared,
         Object[] params,
         boolean collocatedGrpBy,
         boolean distributedJoins,
@@ -195,7 +196,7 @@ public class GridSqlQuerySplitter {
 
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
-        GridSqlQuery qry = parse(prepared(stmt), false);
+        GridSqlQuery qry = parse(prepared, false);
 
         String originalSql = qry.getSQL();
 
@@ -212,8 +213,6 @@ public class GridSqlQuerySplitter {
         splitter.normalizeQuery(qry);
 
 //        debug("NORMALIZED", qry.getSQL());
-
-        Connection conn = stmt.getConnection();
 
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
@@ -234,12 +233,12 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
+                Prepared prepared0 = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
                     true, enforceJoinOrder);
 
-                allCollocated &= isCollocated((Query)prepared);
+                allCollocated &= isCollocated((Query)prepared0);
 
-                mapSqlQry.query(parse(prepared, true).getSQL());
+                mapSqlQry.query(parse(prepared0, true).getSQL());
             }
 
             // We do not need distributed joins if all MAP queries are collocated.

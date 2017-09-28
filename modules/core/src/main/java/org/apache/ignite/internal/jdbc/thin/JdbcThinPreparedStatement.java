@@ -238,7 +238,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public boolean execute() throws SQLException {
         executeWithArguments(JdbcStatementType.ANY_STATEMENT_TYPE);
 
-        return rs.isQuery();
+        return resultSets.get(0).isQuery();
     }
 
     /**
