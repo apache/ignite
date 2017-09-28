@@ -221,6 +221,9 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             // No-op.
         }
 
+        // Repair split with concurrent server node join race.
+        resolveSplitWithRace(CONFIGLESS_GRID_IDX);
+
         // Repair split by adding activator node in topology.
         resolveSplit();
 
@@ -272,6 +275,42 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
      */
     private void resolveSplit() throws Exception {
         startGrid(RESOLVER_GRID_IDX);
+
+        stopGrid(RESOLVER_GRID_IDX);
+    }
+
+    /**
+     * Resolves split by client node join with server node join race simulation.
+     *
+     * @param srvNode server node index to simulate join race
+     *
+     * @throws Exception If failed.
+     */
+    private void resolveSplitWithRace(int srvNode) throws Exception {
+        startGrid(RESOLVER_GRID_IDX);
+
+        startGrid(srvNode);
+
+        awaitPartitionMapExchange();
+
+        tryPut(srvNode);
+
+        clearAll();
+
+        stopGrid(srvNode);
+
+        awaitPartitionMapExchange();
+
+        try {
+            tryPut(0);
+
+            clearAll();
+
+            fail();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
 
         stopGrid(RESOLVER_GRID_IDX);
     }
@@ -336,16 +375,20 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         /** State. */
         private transient State state;
 
+        /** Activator node order on last repair. */
+        private transient long lastActivatorOrder;
+
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
             initIfNeeded(nodes);
 
-            if (!F.view(nodes, new IgnitePredicate<ClusterNode>() {
+            for (ClusterNode node : F.view(nodes, new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return !node.isClient() && node.attribute(DC_NODE_ATTR) == null;
                 }
-            }).isEmpty()) {
-                log.error("No valid server nodes are detected in topology: [cacheName=" + cacheName + ']');
+            })) {
+                log.error("Not valid server nodes are detected in topology: [" +
+                    "cacheName=" + cacheName + ", node=" + node + ']');
 
                 return false;
             }
@@ -361,11 +404,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 // Find discovery event node.
                 ClusterNode evtNode = evtNode(nodes);
 
-                if (activator(evtNode)) {
+                if (activator(evtNode) && evtNode.order() > lastActivatorOrder) {
                     if (log.isInfoEnabled())
                         log.info("Grid segmentation is repaired: [cacheName=" + cacheName + ']');
 
-                    state = State.REPAIRED;
+                    repair(evtNode);
                 }
                 else {
                     if (state == State.VALID) {
@@ -431,18 +474,37 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 if (!segmented)
                     return;
 
-                for (ClusterNode node : top) {
-                    if (activator(node)) {
-                        state = State.REPAIRED;
+                ClusterNode activator = null;
 
-                        return;
+                for (ClusterNode node : top) {
+                    if (activator(node) && (activator == null || activator.order() < node.order())) {
+                        activator = node;
+
+                        break;
                     }
+                }
+
+                if (activator != null) {
+                    repair(activator);
+
+                    return;
                 }
             }
         }
 
         /**
-         * Returns node with biggest order (event topology version).
+         * Set REPAIRED state and remember activator order.
+         *
+         * @param activator Activator node.
+         */
+        private void repair(ClusterNode activator) {
+            state = State.REPAIRED;
+
+            lastActivatorOrder = activator.order();
+        }
+
+        /**
+         * Returns node with the biggest order (event topology version).
          *
          * @param nodes Topology nodes.
          * @return ClusterNode Node.
@@ -460,11 +522,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
         /** States. */
         private enum State {
-            /** Topology valid. */
+            /** Topology is valid. */
             VALID,
-            /** Topology not valid */
+            /** Topology is not valid */
             NOTVALID,
-            /** Topology repaired (valid) */
+            /** Topology is repaired (valid) */
             REPAIRED;
         }
     }
