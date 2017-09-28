@@ -302,6 +302,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
             Assert.AreEqual(x.WriteSynchronizationMode, y.WriteSynchronizationMode);
+            Assert.AreEqual(x.SqlIndexMaxInlineSize, y.SqlIndexMaxInlineSize);
 
             if (x.ExpiryPolicyFactory != null)
             {
@@ -626,7 +627,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 EnableStatistics = true,
                 MemoryPolicyName = "myMemPolicy",
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
-                PluginConfigurations = new[] { new MyPluginConfiguration() }
+                PluginConfigurations = new[] { new MyPluginConfiguration() },
+                SqlIndexMaxInlineSize = 10000
             };
         }
         /// <summary>
