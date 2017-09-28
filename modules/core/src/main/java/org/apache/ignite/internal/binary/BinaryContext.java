@@ -472,7 +472,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         descs.add(clsName0, mapper, serializer, identity, affField,
-                            typeCfg.isEnum(), typeCfg.getEnumValues(), true);
+                            isEnum(clsName0), typeCfg.getEnumValues(), true);
                     }
                 }
                 else {
@@ -544,6 +544,22 @@ public class BinaryContext {
      */
     public static BinaryNameMapper defaultNameMapper() {
         return DFLT_MAPPER.nameMapper();
+    }
+
+    /**
+     * @param clsName Class name.
+     * @return {@code true} in case the class is enum. Otherwise returns {@code false}.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private static boolean isEnum(String clsName) {
+        try {
+            Class cls = U.gridClassLoader().loadClass(clsName);
+
+            return cls.isEnum();
+        }
+        catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     /**
