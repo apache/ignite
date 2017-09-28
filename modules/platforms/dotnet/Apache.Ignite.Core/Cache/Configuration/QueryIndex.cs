@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public const int DefaultInlineSize = -1;
 
+        /** Inline size. */
+        private int _inlineSize = DefaultInlineSize;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
         /// </summary>
@@ -75,7 +78,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 Fields = fieldNames.Select(f => new QueryIndexField(f, isDescending)).ToArray();
             }
 
-            InlineSize = DefaultInlineSize;
             IndexType = indexType;
         }
 
@@ -126,7 +128,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         ///  but <b>will not be enabled</b> for <see cref="string"/>.
         /// </summary>
         [DefaultValue(DefaultInlineSize)]
-        public int InlineSize { get; set; }
+        public int InlineSize
+        {
+            get { return _inlineSize; }
+            set { _inlineSize = value; }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
