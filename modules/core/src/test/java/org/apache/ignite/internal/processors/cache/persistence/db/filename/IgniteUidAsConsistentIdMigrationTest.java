@@ -196,30 +196,35 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
     }
 
+    /**
+     * This test starts node, activates, deactivates node, and then start second node.
+     * Expected behaviour is following: second node will join topology with separate node folder
+     * @throws Exception if failed
+     */
     public void testStartNodeAfterDeactivate() throws Exception {
         final UUID uuid;
         {
-            final int idx = 0;
-            final Ignite ignite = startActivateFillDataGrid(idx);
+            final Ignite ignite = startActivateFillDataGrid(0);
 
             assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
 
             uuid = (UUID)ignite.cluster().localNode().consistentId();
             ignite.active(false);
         }
-
         {
-            //todo delete following line when fixed:
-            // configuredConsistentId = "configuredConsistentId";
             final Ignite igniteRestart = startActivateGrid(1);
-            assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
-
+            grid(0).active(true);
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
-            //todo outcomment following line when fixed:
-            // assertPdsDirsDefaultExist(newStyleSubfolder(igniteRestart, 1));
+
+            assertPdsDirsDefaultExist(genNewStyleSubfolderName(1, igniteRestart));
+
+            awaitPartitionMapExchange();
+            assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
             stopGrid(1);
+            assertFalse(consIdRestart.equals(uuid));
         }
         stopGrid(0);
+        assertNodeIndexesInFolder(0, 1);
     }
 
     @NotNull private Ignite startActivateFillDataGrid(int idx) throws Exception {

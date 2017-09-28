@@ -108,7 +108,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -283,8 +282,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final ConcurrentMap<Integer, IgniteInternalFuture> idxRebuildFuts = new ConcurrentHashMap<>();
 
-    /** Lock holder. */
-    private FileLockHolder fileLockHolder;
+    /**
+     * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
+     * In this case lock is held on PDS resover manager and it is not required to manage locking here
+     */
+    @Nullable private FileLockHolder fileLockHolder;
 
     /** Lock wait time. */
     private final long lockWaitTime;
@@ -370,7 +372,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         snapshotMgr = cctx.snapshot();
 
-        if (!cctx.kernalContext().clientNode()) {
+        final GridKernalContext kernalCtx = cctx.kernalContext();
+        if (!kernalCtx.clientNode()) {
             IgnitePageStoreManager store = cctx.pageStore();
 
             assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
@@ -382,7 +385,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
-            fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+            final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
+                .resolveFolders()
+                .getLockedFileLockHolder();
+            if (preLocked == null)
+                fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log);
 
             persStoreMetrics.wal(cctx.wal());
         }
@@ -491,8 +498,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /* Must be here, because after deactivate we can invoke activate and file lock must be already configured */
         stopping = false;
 
-        if (!cctx.localNode().isClient())
-            fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+        if (!cctx.localNode().isClient()) {
+            //we replace lock with new instance (only if we're responsible for locking folders)
+            if (fileLockHolder != null)
+                fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
+        }
     }
 
     /**
@@ -595,27 +605,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void lock() throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Try to capture file lock [nodeId=" +
-                cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+        if (fileLockHolder != null) {
+            if (log.isDebugEnabled())
+                log.debug("Try to capture file lock [nodeId=" +
+                    cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
-        final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-        final FileLockHolder preLocked = folderSettings.takeLockedFileLockHolder();
-        if (preLocked != null) {
-            fileLockHolder.close();
-            fileLockHolder = preLocked;
-        }
-        else
             fileLockHolder.tryLock(lockWaitTime);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void unLock() {
-        if (log.isDebugEnabled())
-            log.debug("Release file lock [nodeId=" +
-                cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
+        if (fileLockHolder != null) {
+            if (log.isDebugEnabled())
+                log.debug("Release file lock [nodeId=" +
+                    cctx.localNodeId() + " path=" + fileLockHolder.lockPath() + "]");
 
-        fileLockHolder.release();
+            fileLockHolder.release();
+        }
     }
 
     /** {@inheritDoc} */
@@ -638,7 +645,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!cctx.kernalContext().clientNode()) {
             unLock();
 
-            fileLockHolder.close();
+            if (fileLockHolder != null)
+                fileLockHolder.close();
         }
 
         unRegistrateMetricsMBean();

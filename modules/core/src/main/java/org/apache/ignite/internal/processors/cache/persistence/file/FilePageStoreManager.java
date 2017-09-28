@@ -91,7 +91,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private PersistentStoreConfiguration pstCfg;
 
-    /** Absolute directory for file page store. Includes consistent id based folder */
+    /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
 
     /** */
@@ -121,27 +121,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        if (pstCfg.getPersistentStorePath() != null) {
-            File workDir0 = new File(pstCfg.getPersistentStorePath());
-
-            if (!workDir0.isAbsolute())
-                workDir0 = U.resolveWorkDirectory(
-                    igniteCfg.getWorkDirectory(),
-                    pstCfg.getPersistentStorePath(),
-                    false
-                );
-
-            storeWorkDir = new File(workDir0, folderSettings.folderName());
-        }
-        else {
-            final File defPersistenceStorePath = U.resolveWorkDirectory(
-                igniteCfg.getWorkDirectory(),
-                "db",
-                false
-            );
-            storeWorkDir = new File(defPersistenceStorePath, folderSettings.folderName());
-        }
-
+        storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
     }
 
@@ -552,7 +532,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return Store work dir.
+     * @return Store work dir. Includes consistent-id based folder
      */
     public File workDir() {
         return storeWorkDir;

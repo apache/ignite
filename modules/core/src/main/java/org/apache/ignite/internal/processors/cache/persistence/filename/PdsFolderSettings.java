@@ -17,76 +17,106 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
+import java.io.File;
 import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Class holds information required for folder generation for ignite persistent store
  */
 public class PdsFolderSettings {
+    /**
+     * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
+     * configuration. Note WAL storage may be configured outside this path
+     */
+    private final File persistentStoreRootPath;
+
+    /** Sub folder name containing consistent ID and optionally node index */
+    private final String folderName;
+
     /** Consistent id to be set to local node */
     private final Serializable consistentId;
 
-    /** folder name containing consistent ID and optionally node index */
-    private final String folderName;
-
     /**
      * File lock holder with prelocked db directory. For non compatible mode this holder contains prelocked work
-     * directory. This value is to be used at activate instead of locking. <br>
-     * May be null in case preconfigured consistent ID is used or in case lock holder was already taken by other processor
+     * directory. This value is to be used at activate instead of locking. <br> May be null in case preconfigured
+     * consistent ID is used or in case lock holder was already taken by other processor
      */
-    @Nullable private GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
+    @Nullable private final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
 
     /**
      * Indicates if compatible mode is enabled, in that case all subfolders are generated from consistent ID without
-     * 'node' and node index prefix.
+     * 'node' and node index prefix. In compatible mode there is no overriding for consistent ID is done.
      */
     private final boolean compatible;
 
-    public PdsFolderSettings(Serializable consistentId, boolean compatible) {
+
+    public PdsFolderSettings(
+        @NotNull final File persistentStoreRootPath,
+        @NotNull final Serializable consistentId,
+        final boolean compatible) {
+
         this.consistentId = consistentId;
         this.compatible = compatible;
         this.folderName = U.maskForFileName(consistentId.toString());
+        this.persistentStoreRootPath = persistentStoreRootPath;
+        this.fileLockHolder = null;
     }
 
+    public PdsFolderSettings(final File persistentStoreRootPath,
+        final String folderName,
+        final Serializable consistentId,
+        final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
+        final boolean compatible) {
 
-    public PdsFolderSettings(Serializable consistentId, String folderName, int nodeIdx,
-        GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
-        boolean compatible) {
         this.consistentId = consistentId;
         this.folderName = folderName;
         this.fileLockHolder = fileLockHolder;
         this.compatible = compatible;
+        this.persistentStoreRootPath = persistentStoreRootPath;
     }
 
+    /**
+     * @return subfolders name based on consistent ID. In compatible mode this is escaped consistent ID, in new mode
+     * this is UUID based folder name
+     */
     public String folderName() {
         return folderName;
     }
 
+    /**
+     * @return Consistent id to be set to local node
+     */
     public Serializable consistentId() {
         return consistentId;
     }
 
     /**
      * @return flag indicating if compatible mode is enabled, in that case all subfolders are generated from consistent
-     * ID without 'node' and node index prefix.
+     * ID without 'node' and node index prefix. In compatible mode there is no overriding for consistent ID is done.
      */
     public boolean isCompatible() {
         return compatible;
     }
 
     /**
-     * Returns already locked and clears file lock holder. After calling this method it is responsibility of calling
-     * site to unlock and close this lock
+     * Returns already locked file lock holder to lock file in {@link #persistentStoreRootPath}. Unlock and close this
+     * lock is not required
      *
      * @return File lock holder with prelocked db directory
      */
-    @Nullable public GridCacheDatabaseSharedManager.FileLockHolder takeLockedFileLockHolder() {
-        final GridCacheDatabaseSharedManager.FileLockHolder holder = fileLockHolder;
-        fileLockHolder = null;
-        return holder;
+    @Nullable public GridCacheDatabaseSharedManager.FileLockHolder getLockedFileLockHolder() {
+        return fileLockHolder;
+    }
+
+    /**
+     * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
+     * store configuration. Note WAL storage may be configured outside this path
+     */
+    public File persistentStoreRootPath() {
+        return persistentStoreRootPath;
     }
 }

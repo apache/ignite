@@ -106,9 +106,10 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overriden
      *
      * @return PDS folder settings compatible with previous versions
+     * @param pstStoreBasePath DB storage base path
      */
-    public PdsFolderSettings compatibleResolve() {
-        return new PdsFolderSettings(discovery.consistentId(), true);
+    private PdsFolderSettings compatibleResolve(final File pstStoreBasePath) {
+        return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId(), true);
     }
 
     /** {@inheritDoc} */
@@ -124,29 +125,39 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         return settings;
     }
 
+    /**
+     * Creates new settings when we don't have cached one.
+     *
+     * @return new settings with prelocked directory (if appropriate).
+     * @throws IgniteCheckedException if IO failed.
+     */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
+        final File pstStoreBasePath = resolvePersistentStoreBasePath();
         if (!cfg.isPersistentStoreEnabled())
-            return compatibleResolve();
+            return compatibleResolve(pstStoreBasePath);
 
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
-            return new PdsFolderSettings(cfg.getConsistentId(), true);
+            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId(), true);
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
-        final File pstStoreBasePath = resolvePersistentStoreBasePath();
 
         // this is required to correctly initialize SPI
         final DiscoverySpi spi = discovery.tryInjectSpi();
         if (spi instanceof TcpDiscoverySpi) {
             final TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)spi;
-            final String oldStyleConsistentId = tcpDiscoverySpi.calculateConsistentIdAddrPortBased();
-            final String subFolder = U.maskForFileName(oldStyleConsistentId);
+            final String consistentId = tcpDiscoverySpi.calculateConsistentIdAddrPortBased();
+            final String subFolder = U.maskForFileName(consistentId);
 
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
             if (fileLockHolder != null)
-                return new PdsFolderSettings(oldStyleConsistentId, subFolder, -1, fileLockHolder, false);
+                return new PdsFolderSettings(pstStoreBasePath,
+                    subFolder,
+                    consistentId,
+                    fileLockHolder,
+                    false);
 
         }
 
@@ -155,7 +166,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
             if (fileLockHolder != null) {
                 //todo remove debug output
                 System.out.println("locked>> " + pstStoreBasePath + " " + next.file);
-                return new PdsFolderSettings(next.uuid(), next.file.getName(), next.nodeIndex(), fileLockHolder, false);
+                return new PdsFolderSettings(pstStoreBasePath, next.file.getName(), next.uuid(), fileLockHolder, false);
             }
         }
 
@@ -172,17 +183,17 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     }
 
-    private static String padStart(String string, int minLength, char padChar) {
-        A.notNull(string, "String should not be empty");
-        if (string.length() >= minLength)
-            return string;
+    private static String padStart(String str, int minLength, char padChar) {
+        A.notNull(str, "String should not be empty");
+        if (str.length() >= minLength)
+            return str;
 
         final SB sb = new SB(minLength);
 
-        for (int i = string.length(); i < minLength; ++i)
+        for (int i = str.length(); i < minLength; ++i)
             sb.a(padChar);
 
-        sb.a(string);
+        sb.a(str);
         return sb.toString();
 
     }
@@ -196,13 +207,13 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     @NotNull private PdsFolderSettings generateAndLockNewDbStorage(File pstStoreBasePath, int nodeIdx) throws IgniteCheckedException {
         final UUID uuid = UUID.randomUUID();
-        String consIdFolderReplacement = genNewStyleSubfolderName(nodeIdx, uuid);
-        final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdFolderReplacement, false); //mkdir here
+        final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
+        final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
         if (fileLockHolder != null) {
             //todo remove debug output
-            System.out.println("locked>> " + pstStoreBasePath + " " + consIdFolderReplacement);
-            return new PdsFolderSettings(uuid, consIdFolderReplacement, nodeIdx, fileLockHolder, false);
+            System.out.println("locked>> " + pstStoreBasePath + " " + consIdBasedFolder);
+            return new PdsFolderSettings(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
         }
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
@@ -289,6 +300,11 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     }
 
+    /**
+     * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
+     * store configuration
+     * @throws IgniteCheckedException if I/O failed
+     */
     private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
 
@@ -351,7 +367,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (settings != null) {
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.takeLockedFileLockHolder();
+            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.getLockedFileLockHolder();
             if (fileLockHolder != null) {
                 fileLockHolder.release();
                 fileLockHolder.close();

@@ -110,7 +110,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
-    private MarshallerContextImpl marshallerContext;
+    private MarshallerContextImpl marshallerCtx;
 
     /**
      * @param log Logger.
@@ -134,13 +134,13 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerContext = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null);
         this.cfg = prepareIgniteConfiguration();
         this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 
         if (marshallerMappingFileStoreDir != null) {
-            marshallerContext.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
-            marshallerContext.onMarshallerProcessorStarted(this, null);
+            marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+            marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
     }
 
@@ -180,7 +180,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(pstCfg);
 
-        marshaller.setContext(marshallerContext);
+        marshaller.setContext(marshallerCtx);
 
         return cfg;
     }
@@ -583,7 +583,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
-        return marshallerContext;
+        return marshallerCtx;
     }
 
     /** {@inheritDoc} */
@@ -606,7 +606,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFolderResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(U.maskForFileName(discovery().consistentId().toString()), true);
+                return new PdsFolderSettings(new File("."), U.maskForFileName(discovery().consistentId().toString()), true);
             }
         };
     }
