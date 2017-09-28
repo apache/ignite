@@ -302,7 +302,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return result.
      */
     protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
-        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)).getAll();
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)
+            .setDistributedJoins(true);
+
+        return cache.query(qry).getAll();
     }
 
     /**
