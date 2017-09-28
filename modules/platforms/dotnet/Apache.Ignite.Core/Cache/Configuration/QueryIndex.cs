@@ -96,7 +96,24 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets a collection of fields to be indexed.
         /// </summary>
-        public ICollection<QueryIndexField> Fields { get; private set; }
+        public ICollection<QueryIndexField> Fields { get; set; }
+
+        /// <summary>
+        /// Gets index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+        /// thus minimizing data page accesses and increasing query performance.
+        /// <para />
+        /// Allowed values:
+        /// <ul>
+        /// <li><c>-1</c> (default) - determine inline size automatically(see below)</li>
+        /// <li><c>0</c> - index inline is disabled(not recommended)</li>
+        /// <li>positive value - fixed index inline</li >
+        /// </ul>
+        /// When set to <c>-1</c>, Ignite will try to detect inline size automatically.It will be no more than
+        /// <see cref="CacheConfiguration.SqlIndexMaxInlineSize"/>.
+        /// Index inline will be enabled for all fixed-length types,
+        ///  but <b>will not be enabled</b> for <see cref="string"/>.
+        /// </summary>
+        public int InlineSize { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
