@@ -224,7 +224,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             extrasSize = extrasSize();
         }
 
-        return SIZE_OVERHEAD + extrasSize + kb.length + (vb == null ? 0 : vb.length);
+        return SIZE_OVERHEAD + extrasSize + kb.length + (vb == null ? 1 : vb.length);
     }
 
     /** {@inheritDoc} */
