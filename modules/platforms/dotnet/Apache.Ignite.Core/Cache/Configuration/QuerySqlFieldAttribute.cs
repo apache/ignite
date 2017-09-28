@@ -29,8 +29,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class QuerySqlFieldAttribute : Attribute
     {
-        /** Index inline size. */
-        private int? _indexInlineSize;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QuerySqlFieldAttribute"/> class.
+        /// </summary>
+        public QuerySqlFieldAttribute()
+        {
+            IndexInlineSize = QueryIndex.DefaultInlineSize;
+        }
 
         /// <summary>
         /// Gets or sets the sql field name.
@@ -65,10 +70,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the index inline size, see <see cref="QueryIndex.InlineSize"/>.
         /// </summary>
         [DefaultValue(QueryIndex.DefaultInlineSize)]
-        public int IndexInlineSize
-        {
-            get { return _indexInlineSize ?? QueryIndex.DefaultInlineSize; }
-            set { _indexInlineSize = value; }
-        }
+        public int IndexInlineSize { get; set; }
     }
 }
