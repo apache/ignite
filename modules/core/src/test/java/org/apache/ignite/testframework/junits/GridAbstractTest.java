@@ -1184,6 +1184,15 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param idx Index of the grid to stop.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopGrid(int idx, boolean cancel, boolean awaitTop) {
+        stopGrid(getTestGridName(idx), false, awaitTop);
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
      */
     protected void stopAndCancelGrid(int idx) {
         stopGrid(getTestGridName(idx), true);
