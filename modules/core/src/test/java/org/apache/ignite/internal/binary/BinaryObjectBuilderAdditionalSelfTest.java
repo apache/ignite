@@ -96,7 +96,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         bCfg.setCompactNulls(compactNulls());
 
-        bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
+        // TODO: IGNITE-6522 - enums are handled incorrect with wildcards.
+        // bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
 
         cfg.setBinaryConfiguration(bCfg);
 
