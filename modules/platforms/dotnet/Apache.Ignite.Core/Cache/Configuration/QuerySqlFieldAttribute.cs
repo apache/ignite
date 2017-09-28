@@ -29,6 +29,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public sealed class QuerySqlFieldAttribute : Attribute
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="QuerySqlFieldAttribute"/> class.
+        /// </summary>
+        public QuerySqlFieldAttribute()
+        {
+            IndexInlineSize = QueryIndex.DefaultInlineSize;
+        }
+
+        /// <summary>
         /// Gets or sets the sql field name.
         /// If not provided, property or field name will be used.
         /// </summary>
@@ -56,5 +64,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index inline size, see <see cref="QueryIndex.InlineSize"/>.
+        /// </summary>
+        public int IndexInlineSize { get; set; }
     }
 }
