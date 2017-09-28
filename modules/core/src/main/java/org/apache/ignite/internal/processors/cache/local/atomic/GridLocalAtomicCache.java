@@ -340,7 +340,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final boolean deserializeBinary,
         boolean recovery,
         final boolean skipVals,
-        boolean canRemap,
         final boolean needVer
     ) {
         A.notNull(keys, "keys");
@@ -543,7 +542,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             /*force primary*/false,
             expiry,
             skipVals,
-            /*can remap*/true,
             needVer).get();
     }
 
