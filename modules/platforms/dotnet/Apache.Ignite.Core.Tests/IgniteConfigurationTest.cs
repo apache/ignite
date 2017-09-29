@@ -92,6 +92,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
             CheckDefaultValueAttributes(new IgniteClientConfiguration());
+            CheckDefaultValueAttributes(new QueryIndex());
         }
 
         /// <summary>

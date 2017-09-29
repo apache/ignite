@@ -79,6 +79,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
+    /** */
+    public static final String DFLT_STORE_DIR = "db";
+
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
 

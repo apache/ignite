@@ -76,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.genNewStyleSubfolderName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test suite for WAL segments reader and event generator.
@@ -171,7 +172,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -192,7 +193,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
 
         final String workDir = U.defaultWorkDirectory();
-        final File db = U.resolveWorkDirectory(workDir, "db", false);
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
         final File walArchive = new File(wal, "archive");
 
@@ -500,7 +501,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         @Nullable final BiConsumer<Object, Object> objConsumer,
         @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
-        final File db = U.resolveWorkDirectory(workDir, "db", false);
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
         final File walArchive = new File(wal, "archive");
 
@@ -584,9 +585,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             ctrlMap.put(next.getKey(), next.getValue());
         }
 
-        for (Cache.Entry<Object, Object> next : addlCache) {
-            ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
-        }
+            for (Cache.Entry<Object, Object> next : addlCache) {
+                ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
+            }
 
         final String subfolderName = genDbSubfolderName(ignite0, 0);
 

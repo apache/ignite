@@ -91,6 +91,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import sun.nio.ch.DirectBuffer;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  *
  */
@@ -179,7 +181,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         cacheName = "partitioned";
     }
@@ -190,7 +192,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -606,7 +608,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private File cacheDir(final String cacheName, String consId) throws IgniteCheckedException {
         consId = consId.replaceAll("[\\.:]", "_");
 
-        final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         assert dbDir.exists();
 
