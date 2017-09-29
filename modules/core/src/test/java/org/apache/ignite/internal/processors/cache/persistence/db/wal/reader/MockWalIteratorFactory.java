@@ -112,8 +112,6 @@ public class MockWalIteratorFactory {
         });
 
         final GridDiscoveryManager disco = Mockito.mock(GridDiscoveryManager.class);
-
-        when(disco.consistentId()).thenReturn(consistentId);
         when(ctx.discovery()).thenReturn(disco);
 
         final IgniteWriteAheadLogManager mgr = new FileWriteAheadLogManager(ctx);

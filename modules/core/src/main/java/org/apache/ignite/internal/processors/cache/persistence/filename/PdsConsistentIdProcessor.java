@@ -31,17 +31,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +53,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
  */
-public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFoldersResolver {
+public class PdsConsistentIdProcessor extends GridProcessorAdapter implements PdsFoldersResolver {
     /** Database subfolders constant prefix. */
     private static final String DB_FOLDER_PREFIX = "node";
 
@@ -80,12 +82,10 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     /** Database subfolders for old style filter. */
     private static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
         @Override public boolean accept(File pathname) {
-            if (!pathname.isDirectory())
-                return false;
-            final String name = pathname.getName();
-            if ("wal".equals(name))
-                return false;
-            return !name.matches(SUBDIR_PATTERN);
+            return pathname.isDirectory()
+                && !"wal".equals(pathname.getName())
+                && !pathname.getName().matches(SUBDIR_PATTERN);
+
         }
     };
 
@@ -94,9 +94,6 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /** Config. */
     private IgniteConfiguration cfg;
-
-    /** Discovery. */
-    private GridDiscoveryManager discovery;
 
     /** Logger. */
     private IgniteLogger log;
@@ -112,10 +109,10 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      *
      * @param ctx Context.
      */
-    public PdsConsistentIdGeneratingFoldersResolver(final GridKernalContext ctx) {
+    public PdsConsistentIdProcessor(final GridKernalContext ctx) {
         super(ctx);
+
         this.cfg = ctx.config();
-        this.discovery = ctx.discovery();
         this.log = ctx.log(PdsFoldersResolver.class);
         this.ctx = ctx;
     }
@@ -124,10 +121,28 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden.
      *
      * @param pstStoreBasePath DB storage base path or null if persistence is not enabled.
+     * @param consistentId compatibility consistent ID
      * @return PDS folder settings compatible with previous versions.
      */
-    private PdsFolderSettings compatibleResolve(@Nullable final File pstStoreBasePath) {
-        return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId());
+    private PdsFolderSettings compatibleResolve(@Nullable final File pstStoreBasePath,
+        final Serializable consistentId) {
+        if (cfg.getConsistentId() != null) {
+            // compatible mode from configuration is used fot this case, no locking, no consitent id change
+            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
+        }
+
+        return new PdsFolderSettings(pstStoreBasePath, consistentId);
+    }
+
+    /**
+     * Performs injection of discovery SPI if needed, then provides DiscoverySpi SPI.
+     *
+     * @return Wrapped DiscoverySpi SPI.
+     */
+    @NotNull private DiscoverySpi getDiscoverySpi() {
+        final DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
+        A.ensure(spi instanceof TcpDiscoverySpi, "TCP discovery SPI: invalid implementation: " + spi.getName());
+        return spi;
     }
 
     /** {@inheritDoc} */
@@ -136,8 +151,12 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
             settings = prepareNewSettings();
 
             if (!settings.isCompatible()) {
-                //todo are there any other way to set this value?
-                cfg.setConsistentId(settings.consistentId());
+                ctx.discovery().addLocalNodeInitializedEventListener(new CI1<ClusterNode>() {
+                    @Override public void apply(ClusterNode node) {
+                        if (node instanceof TcpDiscoveryNode)
+                            ((TcpDiscoveryNode)node).setConsistentId(settings.consistentId());
+                    }
+                });
             }
         }
         return settings;
@@ -151,12 +170,13 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
+        final Serializable consistentId = getDiscoverySpi().consistentId();
 
         if (!cfg.isPersistentStoreEnabled())
-            return compatibleResolve(pstStoreBasePath);
+            return compatibleResolve(pstStoreBasePath, consistentId);
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
-            return compatibleResolve(pstStoreBasePath);
+            return compatibleResolve(pstStoreBasePath, consistentId);
 
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
@@ -165,23 +185,16 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
 
-        // this is required to correctly initialize SPI
-        final DiscoverySpi spi = discovery.tryInjectSpi();
+        final String subFolder = U.maskForFileName(consistentId.toString());
 
-        if (spi instanceof TcpDiscoverySpi) {
-            final TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)spi;
-            final String consistentId = tcpDiscoverySpi.calculateConsistentIdAddrPortBased();
-            final String subFolder = U.maskForFileName(consistentId);
+        final GridCacheDatabaseSharedManager.FileLockHolder oldStyleFolderLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
 
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
-
-            if (fileLockHolder != null)
-                return new PdsFolderSettings(pstStoreBasePath,
-                    subFolder,
-                    consistentId,
-                    fileLockHolder,
-                    false);
-        }
+        if (oldStyleFolderLockHolder != null)
+            return new PdsFolderSettings(pstStoreBasePath,
+                subFolder,
+                consistentId,
+                oldStyleFolderLockHolder,
+                false);
 
         final File[] oldStyleFolders = pstStoreBasePath.listFiles(DB_SUBFOLDERS_OLD_STYLE_FILTER);
 

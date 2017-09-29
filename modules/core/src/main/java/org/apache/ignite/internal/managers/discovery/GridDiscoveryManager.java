@@ -282,9 +282,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
-    /** */
-    private Serializable consistentId;
-
     /** Discovery spi registered flag. */
     private boolean registeredDiscoSpi;
 
@@ -2017,26 +2014,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets consistent ID.
-     *
-     * @return Consistent ID of this Ignite instance
-     */
-    public Serializable consistentId() {
-        if (consistentId == null) {
-            final DiscoverySpi spi = tryInjectSpi();
-
-            consistentId = spi.consistentId();
-        }
-
-        return consistentId;
-    }
-
-    /**
      * Performs injection of discovery SPI if needed, then provides DiscoverySpi SPI.
+     * Manual injection is required because normal startup of SPI is done after processor started.
      *
      * @return Wrapped DiscoverySpi SPI.
      */
-    public DiscoverySpi tryInjectSpi() {
+    public DiscoverySpi getInjectedDiscoverySpi() {
         try {
             inject();
         }

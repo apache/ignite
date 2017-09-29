@@ -975,7 +975,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      * @return Consistent ID of this Ignite instance
      * @throws IgniteSpiException If failed.
      */
-    public String calculateConsistentIdAddrPortBased() {
+    private Serializable calculateConsistentIdAddrPortBased() {
         initializeImpl();
 
         initAddresses();

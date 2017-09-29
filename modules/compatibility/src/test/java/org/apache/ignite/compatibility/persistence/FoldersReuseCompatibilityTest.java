@@ -19,7 +19,6 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
@@ -31,19 +30,18 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation and compatible startup of current ignite version
  */
 public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
-
     /** Cache name for test. */
     private static final String CACHE_NAME = "dummy";
 
@@ -62,7 +60,9 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
         configPersistence(cfg);
+
         return cfg;
     }
 
@@ -100,6 +100,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         stopAllGrids();
 
         IgniteEx ignite = startGrid(0);
+
         ignite.active(true);
         ignite.getOrCreateCache("cache2createdForNewGrid").put("Object", "Value");
         assertEquals(1, ignite.context().discovery().topologyVersion());
@@ -166,15 +167,18 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @throws IgniteCheckedException if failed.
      */
     @NotNull private Set<Integer> getAllNodeIndexesInFolder() throws IgniteCheckedException {
-        final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER);
+        final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
-        final File[] files = curFolder.listFiles(PdsConsistentIdGeneratingFoldersResolver.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+
         for (File file : files) {
-            final PdsConsistentIdGeneratingFoldersResolver.FolderCandidate uid
+            final PdsConsistentIdProcessor.FolderCandidate uid
                 = parseSubFolderName(file, log);
+
             if (uid != null)
                 indexes.add(uid.nodeIndex());
         }
+
         return indexes;
     }
 
@@ -188,7 +192,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         assertDirectoryExist("binary_meta", subDirName);
         assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, subDirName);
         assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
-        assertDirectoryExist(PdsConsistentIdGeneratingFoldersResolver.DB_DEFAULT_FOLDER, subDirName);
+        assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
     }
 
     /**
@@ -199,9 +203,11 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      */
     private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
         File curFolder = new File(U.defaultWorkDirectory());
+
         for (String name : subFolderNames) {
             curFolder = new File(curFolder, name);
         }
+
         final String path;
         try {
             path = curFolder.getCanonicalPath();
@@ -209,6 +215,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to convert path: [" + curFolder.getAbsolutePath() + "]", e);
         }
+
         assertTrue("Directory " + Arrays.asList(subFolderNames).toString()
             + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
     }

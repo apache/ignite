@@ -396,11 +396,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
-            @Override public Serializable consistentId() {
-                return ""; // some non null value is required
-            }
-        };
+        return new GridDiscoveryManager(this);
     }
 
     /** {@inheritDoc} */
@@ -606,7 +602,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(new File("."), U.maskForFileName(discovery().consistentId().toString()));
+                return new PdsFolderSettings(new File("."), U.maskForFileName(""));
             }
         };
     }

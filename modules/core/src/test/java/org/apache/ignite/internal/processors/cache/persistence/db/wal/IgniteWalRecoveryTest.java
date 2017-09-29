@@ -575,7 +575,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             stopGrid(1);
 
-            final File cacheDir = cacheDir("partitioned", ignite.context().discovery().consistentId().toString());
+            final File cacheDir = cacheDir("partitioned", ignite.cluster().localNode().consistentId().toString());
 
             final boolean renamed = cacheDir.renameTo(new File(cacheDir.getParent(), "cache-partitioned0"));
 
