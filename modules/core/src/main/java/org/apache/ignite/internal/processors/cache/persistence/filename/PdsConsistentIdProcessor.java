@@ -85,7 +85,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return pathname.isDirectory()
                 && !"wal".equals(pathname.getName())
                 && !pathname.getName().matches(SUBDIR_PATTERN);
-
         }
     };
 
@@ -180,7 +179,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
-            // compatible mode from configuration is used fot this case, no locking, no consitent id change
+            // compatible mode from configuration is used fot this case, no locking, no consistent id change
             return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
         }
         // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
