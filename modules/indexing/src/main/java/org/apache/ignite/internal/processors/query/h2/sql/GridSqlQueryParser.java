@@ -475,7 +475,10 @@ public class GridSqlQueryParser {
     private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
 
     /** */
-    private static final String PARAM_PLAIN_KEY = "PLAIN_PRIMARY_KEY";
+    private static final String PARAM_WRAP_KEY = "WRAP_KEY";
+
+    /** */
+    private static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
@@ -1010,11 +1013,17 @@ public class GridSqlQueryParser {
             pkCols.add(gridCol.columnName());
         }
 
+        if (pkCols.size() > 1)
+            res.wrapKey(true);
+
         int valColsNum = cols.size() - pkCols.size();
 
         if (valColsNum == 0)
             throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (valColsNum > 1)
+            res.wrapValue(true);
 
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
@@ -1058,10 +1067,6 @@ public class GridSqlQueryParser {
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
-
-        if (res.plainKey() && pkCols.size() != 1)
-            throw new IgniteSQLException("Plain primary key option works only with single column primary keys.",
-                IgniteQueryErrorCode.PARSING);
 
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
@@ -1267,12 +1272,16 @@ public class GridSqlQueryParser {
 
                 res.keyTypeName(val);
 
+                res.wrapKey(true);
+
                 break;
 
             case PARAM_VAL_TYPE:
                 ensureNotEmpty(name, val);
 
                 res.valueTypeName(val);
+
+                res.wrapValue(true);
 
                 break;
 
@@ -1343,11 +1352,26 @@ public class GridSqlQueryParser {
 
                 break;
 
-            case PARAM_PLAIN_KEY:
-                if (F.isEmpty(val))
-                    res.plainKey(true);
-                else
-                    res.plainKey(Boolean.valueOf(val));
+            case PARAM_WRAP_KEY: {
+                boolean bVal = F.isEmpty(val) || Boolean.parseBoolean(val);
+
+                if (res.wrapKey() && !bVal)
+                    throw new IgniteSQLException("Key wrapping may not be turned off when it has more than one column.",
+                        IgniteQueryErrorCode.PARSING);
+
+                res.wrapKey(bVal);
+
+                break;
+            }
+
+            case PARAM_WRAP_VALUE:
+                boolean bVal = F.isEmpty(val) || Boolean.parseBoolean(val);
+
+                if (res.wrapValue() && !bVal)
+                    throw new IgniteSQLException("Value wrapping may not be turned off " +
+                        "when it has more than one column.", IgniteQueryErrorCode.PARSING);
+
+                res.wrapValue(bVal);
 
                 break;
 

@@ -358,23 +358,53 @@ public class DdlStatementsProcessor {
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-        if (!F.isEmpty(createTbl.keyTypeName()))
+        if (!F.isEmpty(createTbl.keyTypeName())) {
+            assert createTbl.wrapKey();
+
             keyTypeName = createTbl.keyTypeName();
+        }
 
-        if (!F.isEmpty(createTbl.valueTypeName()))
+        if (!F.isEmpty(createTbl.valueTypeName())) {
+            assert createTbl.wrapValue();
+
             valTypeName = createTbl.valueTypeName();
+        }
 
-        if (createTbl.plainKey()) {
+        if (!createTbl.wrapKey()) {
             assert createTbl.primaryKeyColumns().size() == 1;
+
+            assert F.isEmpty(createTbl.keyTypeName());
 
             GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
 
             assert pkCol != null;
 
             keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+
+            res.setKeyFieldName(pkCol.columnName());
         }
         else
             res.setKeyFields(createTbl.primaryKeyColumns());
+
+        if (!createTbl.wrapValue()) {
+            assert createTbl.columns().size() - createTbl.primaryKeyColumns().size() == 1;
+
+            GridSqlColumn valCol = null;
+
+            for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
+                if (!createTbl.primaryKeyColumns().contains(e.getKey())) {
+                    valCol = e.getValue();
+
+                    break;
+                }
+            }
+
+            assert valCol != null;
+
+            valTypeName = DataType.getTypeClassName(valCol.column().getType());
+
+            res.setValueFieldName(valCol.columnName());
+        }
 
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.jsr166.ConcurrentHashMap8;
-
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Database schema object.
@@ -33,7 +32,7 @@ public class H2Schema {
     private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
 
     /** */
-    private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
 
     /**
      * Constructor.
@@ -70,8 +69,8 @@ public class H2Schema {
      * @param typeName Type name.
      * @return Table.
      */
-    public H2TableDescriptor tableByTypeName(String typeName) {
-        return typeToTbl.get(typeName);
+    public H2TableDescriptor tableByTypeName(String cacheName, String typeName) {
+        return typeToTbl.get(new TypeKey(cacheName, typeName));
     }
 
     /**
@@ -81,7 +80,7 @@ public class H2Schema {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
 
-        if (typeToTbl.putIfAbsent(tbl.typeName(), tbl) != null)
+        if (typeToTbl.putIfAbsent(new TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
     }
 
@@ -91,7 +90,7 @@ public class H2Schema {
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(tbl.typeName());
+        typeToTbl.remove(new TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -104,7 +103,7 @@ public class H2Schema {
 
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(tbl.typeName());
+        typeToTbl.remove(new TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -117,5 +116,47 @@ public class H2Schema {
         tbls.clear();
 
         typeToTbl.clear();
+    }
+
+    /**
+     * Key for types lookup.
+     */
+    private final static class TypeKey {
+        /**
+         * Cache name.
+         */
+        private final String cacheName;
+
+        /**
+         * Type name.
+         */
+        private final String typeName;
+
+        /**
+         * @param cacheName Cache name.
+         * @param typeName Type name.
+         */
+        private TypeKey(String cacheName, String typeName) {
+            this.cacheName = cacheName;
+            this.typeName = typeName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            TypeKey typeKey = (TypeKey) o;
+
+            return cacheName.equals(typeKey.cacheName) && typeName.equals(typeKey.typeName);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = cacheName.hashCode();
+            result = 31 * result + typeName.hashCode();
+            return result;
+        }
     }
 }

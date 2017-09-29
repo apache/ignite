@@ -71,8 +71,11 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Name of the column that represents affinity key. */
     private String affinityKey;
 
-    /** If PRIMARY KEY consists of a single column, don't create new binary type for it and store keys as is. */
-    private boolean plainKey;
+    /** Forcefully turn single column PK into an Object. */
+    private boolean wrapKey;
+
+    /** Forcefully turn single column value into an Object. */
+    private boolean wrapVal;
 
     /** Extra WITH-params. */
     private List<String> params;
@@ -274,18 +277,31 @@ public class GridSqlCreateTable extends GridSqlStatement {
     }
 
     /**
-     * @return If PRIMARY KEY consists of a single column, don't create new binary type for it and store keys as is.
+     * @return Forcefully turn single column PK into an Object.
      */
-    public boolean plainKey() {
-        return plainKey;
+    public boolean wrapKey() {
+        return wrapKey;
     }
 
     /**
-     * @param plainKey If PRIMARY KEY consists of a single column, don't create new binary type for it
-     *     and store keys as is.
+     * @param wrapKey Forcefully turn single column PK into an Object.
      */
-    public void plainKey(boolean plainKey) {
-        this.plainKey = plainKey;
+    public void wrapKey(boolean wrapKey) {
+        this.wrapKey = wrapKey;
+    }
+
+    /**
+     * @return Forcefully turn single column value into an Object.
+     */
+    public boolean wrapValue() {
+        return wrapVal;
+    }
+
+    /**
+     * @param wrapVal Forcefully turn single column value into an Object..
+     */
+    public void wrapValue(boolean wrapVal) {
+        this.wrapVal = wrapVal;
     }
 
     /**

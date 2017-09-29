@@ -66,13 +66,13 @@ public interface GridQueryIndexing {
      * Parses SQL query into two step query and executes it.
      *
      * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param mainCacheId Main cache ID.
-     * @return Cursor.
+     * @param mainCacheId Main cache ID.    @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
         boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
 
     /**
@@ -109,13 +109,13 @@ public interface GridQueryIndexing {
      * Executes regular query.
      *
      * @param schemaName Schema name.
-     * @param qry Query.
+     * @param cacheName
+     *@param qry Query.
      * @param filter Cache name and key filter.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
+     * @param keepBinary Keep binary flag.    @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, SqlQuery qry,
-        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
+    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
+                                                              IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -134,14 +134,14 @@ public interface GridQueryIndexing {
      * Executes text query.
      *
      * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param qry Text query.
      * @param typeName Type name.
-     * @param filter Cache name and key filter.
-     * @return Queried rows.
+     * @param filter Cache name and key filter.    @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String qry,
-        String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
+        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
