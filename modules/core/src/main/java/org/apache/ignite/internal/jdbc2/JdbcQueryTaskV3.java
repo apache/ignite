@@ -22,7 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcDriver;
 
 /**
- * Task for SQL queries execution through {@link IgniteJdbcDriver}.
+ * Task for fetch results of multi-statement query.
  */
 class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
     /** Serial version uid. */

@@ -285,7 +285,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         int stmtCnt = 10;
 
-        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
 
         for (int i = 0; i < stmtCnt; ++i)
             sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
@@ -318,7 +319,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         int stmtCnt = 10;
 
-        StringBuilder sql = new StringBuilder("drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
 
         for (int i = 0; i < stmtCnt; ++i) {
             if (i % 2 == 0)
