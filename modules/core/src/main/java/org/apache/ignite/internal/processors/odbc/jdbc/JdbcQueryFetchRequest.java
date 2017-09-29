@@ -26,8 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query fetch request.
  */
 public class JdbcQueryFetchRequest extends JdbcRequest {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long curId;
 
     /** Fetch size. */
     private int pageSize;
@@ -40,21 +40,21 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     }
 
     /**
-     * @param queryId Query ID.
+     * @param curId Query ID.
      * @param pageSize Fetch size.
      */
-    public JdbcQueryFetchRequest(long queryId, int pageSize) {
+    public JdbcQueryFetchRequest(long curId, int pageSize) {
         super(QRY_FETCH);
 
-        this.queryId = queryId;
+        this.curId = curId;
         this.pageSize = pageSize;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return curId;
     }
 
     /**
@@ -68,7 +68,7 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeLong(curId);
         writer.writeInt(pageSize);
     }
 
@@ -76,7 +76,7 @@ public class JdbcQueryFetchRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
+        curId = reader.readLong();
         pageSize = reader.readInt();
    }
 

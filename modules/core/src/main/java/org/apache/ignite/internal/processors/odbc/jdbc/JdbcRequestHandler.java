@@ -37,6 +37,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -67,8 +68,8 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_ME
  * JDBC request handler.
  */
 public class JdbcRequestHandler implements ClientListenerRequestHandler {
-    /** Query ID sequence. */
-    private static final AtomicLong QRY_ID_GEN = new AtomicLong();
+    /** Cursor ID sequence. */
+    private static final AtomicLong CURSOR_ID_GEN = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -82,7 +83,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
-    /** Current queries cursors. */
+    /** Current queries. (query ID -> query holder) */
+    private final ConcurrentHashMap<Long, JdbcQueryHolder> queries = new ConcurrentHashMap<>();
+
+    /** Current queries cursors. (cursor ID -> cursor) */
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
@@ -103,6 +107,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** Protocol version. */
+    private ClientListenerProtocolVersion protocolVer;
+
     /** Connection handler. */
     private final JdbcConnectionHandler connHnd;
 
@@ -119,10 +126,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd,
         GridSpinBusyLock busyLock, int maxCursors, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean autoCloseCursors, boolean lazy) {
+        boolean collocated, boolean replicatedOnly, boolean autoCloseCursors, boolean lazy,
+        ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.connHnd = connHnd;
         this.busyLock = busyLock;
@@ -133,6 +142,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
     }
@@ -205,15 +215,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param qryId Query ID to cancel.
      */
     public void cancelQuery(long qryId) {
-        JdbcQueryCursor cur = qryCursors.get(qryId);
+        JdbcQueryHolder qryHld = queries.get(qryId);
 
-        if (cur == null) {
+        if (qryHld == null) {
             log.warning("Cancel query do nothing. Cannot find query [qryId=" + qryId + ']');
 
             return;
         }
 
-        cur.cancel();
+        qryHld.cancel();
     }
 
     /**
@@ -225,8 +235,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         {
             try
             {
-                for (JdbcQueryCursor cursor : qryCursors.values())
-                    cursor.close();
+                for (JdbcQueryHolder qryHld : queries.values())
+                    qryHld.cancel();
+
+                queries.clear();
+
+                for (JdbcQueryCursor cur : qryCursors.values())
+                    cur.close();
+
+                qryCursors.clear();
             }
             finally {
                 busyLock.leaveBusy();
@@ -242,7 +259,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     @SuppressWarnings("unchecked")
     private JdbcResponse executeQuery(JdbcQueryExecuteRequest req) {
-        int cursorCnt = qryCursors.size();
+        int cursorCnt = queries.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
@@ -250,7 +267,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
                 ", current=" + cursorCnt + ']');
 
-        long qryId = req.queryId() < 0 ? QRY_ID_GEN.getAndIncrement() : req.queryId();
+        long qryId = req.queryId();
+
+        JdbcQueryHolder qryHld = null;
+
+        if (qryId > 0) {
+            qryHld = new JdbcQueryHolder();
+
+            queries.put(qryId, qryHld);
+        }
 
         try {
             String sql = req.sqlQuery();
@@ -294,39 +319,95 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            FieldsQueryCursor<List<?>> qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
+                protocolVer.compareTo(JdbcConnectionContext.VER_2_3_1) < 0 ||
+                    req.expectedStatementType() != JdbcStatementType.ANY_STATEMENT_TYPE);
 
-            JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+            if (results.size() == 1) {
+                FieldsQueryCursor<List<?>> qryCur = results.get(0);
 
-            qryCursors.put(qryId, cur);
+                long curId = CURSOR_ID_GEN.incrementAndGet();
 
-            cur.open();
+                JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
-            JdbcQueryExecuteResult res;
+                if (qryHld != null)
+                    qryHld.addCursor(cur);
 
-            if (cur.isQuery())
-                res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
+                cur.open();
+
+                JdbcQueryExecuteResult res;
+
+                if (cur.isQuery())
+                    res = new JdbcQueryExecuteResult(curId, cur.fetchRows(), !cur.hasNext());
+                else {
+                    List<List<Object>> items = cur.fetchRows();
+
+                    assert items != null && items.size() == 1 && items.get(0).size() == 1
+                        && items.get(0).get(0) instanceof Long :
+                        "Invalid result set for not-SELECT query. [qry=" + sql +
+                            ", res=" + S.toString(List.class, items) + ']';
+
+                    res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                }
+
+                if (res.last() && (!res.isQuery() || autoCloseCursors)) {
+                    cur.close();
+
+                    qryCursors.remove(curId);
+                }
+                else
+                    qryCursors.put(curId, cur);
+
+                return new JdbcResponse(res);
+            }
             else {
-                List<List<Object>> items = cur.fetchRows();
+                List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
+                List<List<Object>> items = null;
+                boolean last = true;
 
-                assert items != null && items.size() == 1 && items.get(0).size() == 1
-                    && items.get(0).get(0) instanceof Long :
-                    "Invalid result set for not-SELECT query. [qry=" + sql +
-                        ", res=" + S.toString(List.class, items) + ']';
+                for (FieldsQueryCursor<List<?>> c : results) {
+                    QueryCursorImpl qryCur = (QueryCursorImpl)c;
 
-                res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                    JdbcResultInfo jdbcRes;
+
+                    if (qryCur.isQuery()) {
+                        long curId = CURSOR_ID_GEN.incrementAndGet();
+
+                        JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(), qryCur);
+
+                        jdbcRes = new JdbcResultInfo(true, -1, curId);
+
+                        if (qryHld != null)
+                            qryHld.addCursor(cur);
+
+                        cur.open();
+
+                        if (items == null) {
+                            items = cur.fetchRows();
+                            last = cur.hasNext();
+                        }
+
+                        qryCursors.put(curId, cur);
+                    }
+                    else
+                        jdbcRes = new JdbcResultInfo(false, (Long)((List<?>)qryCur.getAll().get(0)).get(0), -1);
+
+                    jdbcResults.add(jdbcRes);
+                }
+
+                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
             }
-
-            if (res.last() && (!res.isQuery() || autoCloseCursors)) {
-                cur.close();
-
-                qryCursors.remove(qryId);
-            }
-
-            return new JdbcResponse(res);
         }
         catch (Exception e) {
-            qryCursors.remove(qryId);
+            List<JdbcQueryCursor> curs = qryHld.cursors();
+
+            if (!F.isEmpty(curs)) {
+                for (JdbcQueryCursor c : curs) {
+                    c.close();
+
+                    qryCursors.remove(c.cursorId());
+                }
+            }
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
@@ -342,20 +423,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse closeQuery(JdbcQueryCloseRequest req) {
         try {
-            JdbcQueryCursor cur = qryCursors.remove(req.queryId());
+            JdbcQueryCursor cur = qryCursors.remove(req.cursorId());
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to find query cursor with ID: " + req.queryId());
+                    "Failed to find query cursor with ID: " + req.cursorId());
 
             cur.close();
 
             return new JdbcResponse(null);
         }
         catch (Exception e) {
-            qryCursors.remove(req.queryId());
+            queries.remove(req.cursorId());
 
-            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req.queryId() + ']', e);
+            U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + req.cursorId() + ']', e);
 
             return exceptionToResult(e);
         }
@@ -369,11 +450,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse fetchQuery(JdbcQueryFetchRequest req) {
         try {
-            JdbcQueryCursor cur = qryCursors.get(req.queryId());
+            JdbcQueryCursor cur = qryCursors.get(req.cursorId());
 
             if (cur == null)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
-                    "Failed to find query cursor with ID: " + req.queryId());
+                    "Failed to find query cursor with ID: " + req.cursorId());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
@@ -384,7 +465,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryFetchResult res = new JdbcQueryFetchResult(cur.fetchRows(), !cur.hasNext());
 
             if (res.last() && (!cur.isQuery() || autoCloseCursors)) {
-                qryCursors.remove(req.queryId());
+                queries.remove(req.cursorId());
 
                 cur.close();
             }
@@ -428,6 +509,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     @SuppressWarnings("unchecked")
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
+        long qryId = req.queryId() < 0 ? CURSOR_ID_GEN.getAndIncrement() : req.queryId();
+
+        JdbcQueryHolder qryHld = new JdbcQueryHolder();
+
+        queries.put(qryId, qryHld);
+
         String schemaName = req.schemaName();
 
         if (F.isEmpty(schemaName))
@@ -438,8 +525,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         try {
             String sql = null;
-
-            qryCursors.put(req.queryId(), JdbcQueryCursor.idleCursor());
 
             for (JdbcQuery q : req.queries()) {
                 if (q.sql() != null)
@@ -457,14 +542,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
+                if (qryHld.isCanceled())
+                    throw new QueryCancelledException();
+
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true);
+                    .querySqlFieldsNoCache(qry, true, true).get(0);
 
-                JdbcQueryCursor jdbcCur = new JdbcQueryCursor(req.queryId(), (QueryCursorImpl)qryCur);
-
-                JdbcQueryCursor jdbcCurOld = qryCursors.put(req.queryId(), jdbcCur);
-
-                if (jdbcCurOld.isCanceled())
+                if (qryHld.isCanceled())
                     throw new QueryCancelledException();
 
                 assert !qryCur.isQuery();
@@ -485,7 +569,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 errResp.status(), errResp.error()));
         }
         finally {
-            qryCursors.remove(req.queryId());
+            queries.remove(req.queryId());
         }
     }
 

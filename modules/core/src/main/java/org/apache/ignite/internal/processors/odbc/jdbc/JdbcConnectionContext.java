@@ -40,8 +40,11 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.5: added "lazy" flag. */
     private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
+    /** Version 2.3.1: added "multiple statements query" feature. */
+    public static final ClientListenerProtocolVersion VER_2_3_1 = ClientListenerProtocolVersion.create(2, 3, 1);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_1;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -69,6 +72,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
 
@@ -115,7 +119,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
             lazyExec = reader.readBoolean();
 
         hnd = new JdbcRequestHandler(ctx, connHnd, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec);
+                enforceJoinOrder, collocated, replicatedOnly, autoCloseCursors, lazyExec, ver);
 
         parser = new JdbcMessageParser(ctx);
     }

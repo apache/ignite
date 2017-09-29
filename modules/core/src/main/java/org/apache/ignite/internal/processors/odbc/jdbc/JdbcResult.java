@@ -56,6 +56,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Database schemas metadata result. */
     static final byte META_SCHEMAS = 12;
 
+    /** Multiple statements query results. */
+    static final byte QRY_EXEC_MULT = 13;
+
     /** Success status. */
     private byte type;
 
@@ -136,6 +139,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_SCHEMAS:
                 res = new JdbcMetaSchemasResult();
+
+                break;
+
+            case QRY_EXEC_MULT:
+                res = new JdbcQueryExecuteMultipleStatementsResult();
 
                 break;
 

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query execute result.
  */
 public class JdbcQueryExecuteResult extends JdbcResult {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long curId;
 
     /** Query result rows. */
     private List<List<Object>> items;
@@ -50,27 +50,27 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     }
 
     /**
-     * @param queryId Query ID.
+     * @param curId Cursor ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      */
-    JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
+    JdbcQueryExecuteResult(long curId, List<List<Object>> items, boolean last) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
+        this.curId = curId;
         this.items = items;
         this.last = last;
         this.isQuery = true;
     }
 
     /**
-     * @param queryId Query ID.
+     * @param curId Query ID.
      * @param updateCnt Update count for DML queries.
      */
-    public JdbcQueryExecuteResult(long queryId, long updateCnt) {
+    public JdbcQueryExecuteResult(long curId, long updateCnt) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
+        this.curId = curId;
         this.last = true;
         this.isQuery = false;
         this.updateCnt = updateCnt;
@@ -79,8 +79,8 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
-        return queryId;
+    public long cursorId() {
+        return curId;
     }
 
     /**
@@ -115,7 +115,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeLong(curId);
         writer.writeBoolean(isQuery);
 
         if (isQuery) {
@@ -134,7 +134,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
+        curId = reader.readLong();
         isQuery = reader.readBoolean();
 
         if (isQuery) {

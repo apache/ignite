@@ -17,31 +17,47 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query close request.
+ * JDBC statement result information. Keeps statement type (SELECT or UPDATE) and
+ * cursorId or update count (depends on statement type).
  */
-public class JdbcQueryCloseRequest extends JdbcRequest {
+public class JdbcResultInfo implements JdbcRawBinarylizable {
+    /** Query flag. */
+    private boolean isQuery;
+
+    /** Update count. */
+    private long updCnt;
+
     /** Cursor ID. */
     private long curId;
 
     /**
+     * Default constructor is used for serialization.
      */
-    JdbcQueryCloseRequest() {
-        super(QRY_CLOSE);
+    JdbcResultInfo() {
+        // No-op.
     }
 
     /**
-     * @param curId Query ID.
+     * @param isQuery Query flag.
+     * @param updCnt Update count.
+     * @param curId  Query ID.
      */
-    public JdbcQueryCloseRequest(long curId) {
-        super(QRY_CLOSE);
-
+    public JdbcResultInfo(boolean isQuery, long updCnt, long curId) {
+        this.isQuery = isQuery;
+        this.updCnt = updCnt;
         this.curId = curId;
+    }
+
+    /**
+     * @return Query flag.
+     */
+    public boolean isQuery() {
+        return isQuery;
     }
 
     /**
@@ -51,22 +67,29 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         return curId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    /**
+     * @return Update count.
+     */
+    public long updateCount() {
+        return updCnt;
+    }
 
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer) {
+        writer.writeBoolean(isQuery);
+        writer.writeLong(updCnt);
         writer.writeLong(curId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
-
+    @Override public void readBinary(BinaryReaderExImpl reader) {
+        isQuery = reader.readBoolean();
+        updCnt = reader.readLong();
         curId = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryCloseRequest.class, this);
+        return S.toString(JdbcResultInfo.class, this);
     }
 }
