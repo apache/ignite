@@ -185,6 +185,11 @@ public class BinaryConfiguration {
     }
 
     /**
+     * Get whether to write null fields in compact form.
+     *
+     * When enabled, the null fields of an object are encoded by special offset constants
+     * (offsets are written at the binary object footer) and don't require any space at the binary object body.
+     *
      * @return Whether to write null references in compact form.
      */
     public boolean isCompactNulls() {
@@ -192,7 +197,7 @@ public class BinaryConfiguration {
     }
 
     /**
-     * Set whether to write null references in compact form.
+     * Set whether to write null fields in compact form. See {@link #isCompactNulls()} for more info.
      *
      * @param compactNulls Whether to write null references in compact form.
      * @return {@code this} for chaining.
