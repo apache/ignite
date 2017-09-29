@@ -42,23 +42,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
+                BinaryConfiguration = new BinaryConfiguration(typeof(QueryPerson)),
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
+                    new CacheConfiguration(CacheName, new QueryEntity(typeof(int), typeof(QueryPerson))
                     {
                         TableName = "CustomTableName",
                         Fields = new[]
                         {
-                            new QueryField("Name", typeof (string)),
-                            new QueryField("Age", typeof (int)),
+                            new QueryField("Name", typeof(string)),
+                            new QueryField("Age", typeof(int)),
                             new QueryField("Birthday", typeof(DateTime)),
                         },
                         Indexes = new[]
                         {
-                            new QueryIndex(false, QueryIndexType.FullText, "Name")
+                            new QueryIndex
                             {
-                                InlineSize = 2048
+                                InlineSize = 2048,
+                                IndexType = QueryIndexType.FullText,
+                                Fields = new[]
+                                {
+                                    new QueryIndexField
+                                    {
+                                        IsDescending = false,
+                                        Name = "Name"
+                                    }
+                                }
+
                             },
                             new QueryIndex("Age")
                         }

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
 
@@ -110,6 +111,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets a collection of fields to be indexed.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryIndexField> Fields { get; set; }
 
         /// <summary>
