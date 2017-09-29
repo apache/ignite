@@ -67,56 +67,6 @@ namespace ignite
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
         }
 
-        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, common::Decimal& decimal)
-        {
-            int8_t hdr = reader.ReadInt8();
-
-            assert(hdr == ignite::impl::binary::IGNITE_TYPE_DECIMAL);
-
-            int32_t scale = reader.ReadInt32();
-
-            int32_t len = reader.ReadInt32();
-
-            std::vector<int8_t> mag;
-
-            mag.resize(len);
-
-            impl::binary::BinaryUtils::ReadInt8Array(reader.GetStream(), mag.data(), static_cast<int32_t>(mag.size()));
-
-            int32_t sign = 1;
-            
-            if (mag[0] < 0)
-            {
-                mag[0] &= 0x7F;
-
-                sign = -1;
-            }
-
-            common::Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
-
-            decimal.Swap(res);
-        }
-
-        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const common::Decimal& decimal)
-        {
-            writer.WriteInt8(ignite::impl::binary::IGNITE_TYPE_DECIMAL);
-
-            const common::BigInteger &unscaled = decimal.GetUnscaledValue();
-
-            writer.WriteInt32(decimal.GetScale());
-
-            common::FixedSizeArray<int8_t> magnitude;
-
-            unscaled.MagnitudeToBytes(magnitude);
-
-            if (unscaled.GetSign() == -1)
-                magnitude[0] |= -0x80;
-
-            writer.WriteInt32(magnitude.GetSize());
-
-            impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), magnitude.GetData(), magnitude.GetSize());
-        }
-
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen)
         {
             std::string res;

@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Parent builder. */
         private readonly BinaryObjectBuilder _builder;
 
+        /** Whether to read arrays lengths in varint encoding. */
+        private readonly bool _useVarintArrayLength;
+
         /** Handles. */
         private BinaryReaderHandleDictionary _hnds;
 
@@ -67,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _mode = mode;
             _builder = builder;
             _frame.Pos = stream.Position;
+            _useVarintArrayLength = _marsh.UseVarintArrayLength;
 
             Stream = stream;
         }
@@ -85,6 +89,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryMode Mode
         {
             get { return _mode; }
+        }
+
+        /// <summary>
+        /// Indicates whether to read arrays lengths in varint encoding.
+        /// </summary>
+        internal bool UseVarintArrayLength
+        {
+            get { return _useVarintArrayLength; }
         }
 
         /** <inheritdoc /> */
@@ -927,6 +939,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Seeks specified field and invokes provided func.
         /// </summary>
+        private T ReadField<T>(string fieldName, Func<IBinaryStream, bool, T> readFunc, byte expHdr)
+        {
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
+        }
+
+        /// <summary>
+        /// Seeks specified field and invokes provided func.
+        /// </summary>
         private T ReadField<T>(string fieldName, Func<T> readFunc, byte expHdr)
         {
             return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
@@ -946,6 +966,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return Read(() => readFunc(Stream), expHdr);
+        }
+
+        /// <summary>
+        /// Reads header and invokes specified func if the header is not null.
+        /// </summary>
+        private T Read<T>(Func<IBinaryStream, bool, T> readFunc, byte expHdr)
+        {
+            return Read(() => readFunc(Stream, _useVarintArrayLength), expHdr);
         }
 
         /// <summary>

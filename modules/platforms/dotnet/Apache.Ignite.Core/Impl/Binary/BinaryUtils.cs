@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** System marshaller. */
         private static readonly Marshaller Marsh = new Marshaller(
-            new BinaryConfiguration { CompactFooter = false })
+            new BinaryConfiguration { CompactFooter = false, UseVarintArrayLength = false})
         {
             RegistrationDisabled = true
         };
@@ -119,61 +119,68 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return Marsh; }
         }
 
-        /**
-         * <summary>Write boolean array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteBooleanArray(bool[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a boolean array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteBooleanArray(bool[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteBoolArray(vals);
         }
 
-        /**
-         * <summary>Read boolean array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static bool[] ReadBooleanArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a boolean array.
+        /// </summary>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static bool[] ReadBooleanArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             return stream.ReadBoolArray(len);
         }
 
-        /**
-         * <summary>Write byte array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         * <returns>Length of written data.</returns>
-         */
-        public static void WriteByteArray(byte[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a byte array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        /// <returns>Length of written data.</returns>
+        public static void WriteByteArray(byte[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteByteArray(vals);
         }
 
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static byte[] ReadByteArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a byte array.
+        /// </summary>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static byte[] ReadByteArray(IBinaryStream stream, bool varint)
         {
-            return stream.ReadByteArray(stream.ReadInt());
+            int len = ReadArrayLength(stream, varint);
+
+            return stream.ReadByteArray(len);
         }
 
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="stream">Output stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static unsafe sbyte[] ReadSbyteArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a byte array.
+        /// </summary>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static unsafe sbyte[] ReadSbyteArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             sbyte[] res = new sbyte[len];
 
@@ -185,26 +192,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Write short array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteShortArray(short[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a short array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteShortArray(short[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteShortArray(vals);
         }
 
-        /**
-         * <summary>Read short array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static unsafe ushort[] ReadUshortArray(IBinaryStream stream)
+
+        /// <summary>
+        /// Reads a short array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static unsafe ushort[] ReadUshortArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             ushort[] res = new ushort[len];
 
@@ -216,46 +226,54 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Read short array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static short[] ReadShortArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a short array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static short[] ReadShortArray(IBinaryStream stream, bool varint)
         {
-            return stream.ReadShortArray(stream.ReadInt());
+            int len = ReadArrayLength(stream, varint);
+
+            return stream.ReadShortArray(len);
         }
 
-        /**
-         * <summary>Write int array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteIntArray(int[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes an integer array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteIntArray(int[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteIntArray(vals);
         }
 
-        /**
-         * <summary>Read int array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static int[] ReadIntArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads an integer array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static int[] ReadIntArray(IBinaryStream stream, bool varint)
         {
-            return stream.ReadIntArray(stream.ReadInt());
+            int len = ReadArrayLength(stream, varint);
+            
+            return stream.ReadIntArray(len);
         }
 
-        /**
-         * <summary>Read int array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static unsafe uint[] ReadUintArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads an integer array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static unsafe uint[] ReadUintArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             uint[] res = new uint[len];
 
@@ -267,36 +285,41 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Write long array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteLongArray(long[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a long array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteLongArray(long[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteLongArray(vals);
         }
 
-        /**
-         * <summary>Read long array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static long[] ReadLongArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a long array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static long[] ReadLongArray(IBinaryStream stream, bool varint)
         {
-            return stream.ReadLongArray(stream.ReadInt());
+            int len = ReadArrayLength(stream, varint);
+
+            return stream.ReadLongArray(len);
         }
 
-        /**
-         * <summary>Read ulong array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static unsafe ulong[] ReadUlongArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a ulong array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static unsafe ulong[] ReadUlongArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             ulong[] res = new ulong[len];
 
@@ -308,74 +331,78 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Write char array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteCharArray(char[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a char array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteCharArray(char[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteCharArray(vals);
         }
 
-        /**
-         * <summary>Read char array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static char[] ReadCharArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a char array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static char[] ReadCharArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             return stream.ReadCharArray(len);
         }
 
-        /**
-         * <summary>Write float array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteFloatArray(float[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a float array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteFloatArray(float[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteFloatArray(vals);
         }
 
-        /**
-         * <summary>Read float array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static float[] ReadFloatArray(IBinaryStream stream)
+        /// <summary>
+        /// Reads a float array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static float[] ReadFloatArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             return stream.ReadFloatArray(len);
         }
 
-        /**
-         * <summary>Write double array.</summary>
-         * <param name="vals">Value.</param>
-         * <param name="stream">Output stream.</param>
-         */
-        public static void WriteDoubleArray(double[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a double array.
+        /// </summary>
+        /// <param name="vals">Value.</param>
+        /// <param name="stream">Output stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteDoubleArray(double[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             stream.WriteDoubleArray(vals);
         }
 
-        /**
-         * <summary>Read double array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Value.</returns>
-         */
-        public static double[] ReadDoubleArray(IBinaryStream stream)
+        /// <summary>Reads a double array.</summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Value.</returns>
+        public static double[] ReadDoubleArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             return stream.ReadDoubleArray(len);
         }
@@ -410,13 +437,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write nullable date array.
+        /// Writes a nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             foreach (DateTime? val in vals)
             {
@@ -431,12 +459,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /**
-         * <summary>Write string in UTF8 encoding.</summary>
-         * <param name="val">String.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static unsafe void WriteString(string val, IBinaryStream stream)
+        /// <summary>
+        /// Writes a string in UTF8 encoding.
+        /// </summary>
+        /// <param name="val">String.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static unsafe void WriteString(string val, IBinaryStream stream, bool varint)
         {
             int charCnt = val.Length;
 
@@ -444,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
-                stream.WriteInt(byteCnt);
+                WriteArrayLength(byteCnt, stream, varint);
 
                 stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
@@ -615,45 +644,120 @@ namespace Apache.Ignite.Core.Impl.Binary
             return len == charArrCnt ? new string(res) : new string(res, 0, charArrCnt);
         }
 
-        /**
-         * <summary>Read string in UTF8 encoding.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>String.</returns>
-         */
-        public static string ReadString(IBinaryStream stream)
+        /// <summary>
+        /// Reads a string in UTF8 encoding.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>String.</returns>
+        public static string ReadString(IBinaryStream stream, bool varint)
         {
-            byte[] bytes = ReadByteArray(stream);
+            byte[] bytes = ReadByteArray(stream, varint);
 
             return bytes != null ? Utf8BytesToString(bytes) : null;
         }
 
-        /**
-         * <summary>Write string array in UTF8 encoding.</summary>
-         * <param name="vals">String array.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteStringArray(string[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a string array in UTF8 encoding.
+        /// </summary>
+        /// <param name="vals">String array.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteStringArray(string[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             foreach (string val in vals)
             {
                 if (val != null)
                 {
                     stream.WriteByte(BinaryTypeId.String);
-                    WriteString(val, stream);
+                    WriteString(val, stream, varint);
                 }
                 else
                     stream.WriteByte(HdrNull);
             }
         }
 
-        /**
-         * <summary>Write decimal value.</summary>
-         * <param name="val">Decimal value.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteDecimal(decimal val, IBinaryStream stream)
+        /// <summary>
+        /// Writes a value of length of an array, which can be written in default format or varint encoding.
+        /// </summary>
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.
+        /// </a>
+        /// <param name="val">Integer value.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteArrayLength(int val, IBinaryStream stream, bool varint)
+        {
+            if (varint)
+                WriteUvarint(val, stream); 
+            else
+                stream.WriteInt(val);
+        }
+
+        /// <summary>
+        /// Reads a value of length of an array, which can be presented in default format or varint encoding.
+        /// </summary>
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.
+        /// </a>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Integer value.</returns>
+        public static int ReadArrayLength(IBinaryStream stream, bool varint)
+        {
+            return varint ? ReadUvarint(stream) : stream.ReadInt();
+        }
+
+        /// <summary>
+        /// Writes an integer value in varint encoding.
+        /// </summary>
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.
+        /// </a>
+        /// <param name="val">Integer value.</param>
+        /// <param name="stream">Stream.</param>
+        public static void WriteUvarint(int val, IBinaryStream stream)
+        {
+            while ((val & 0xFFFFFF80) != 0)
+            {
+                stream.WriteByte((byte)((val & 0x7F) | 0x80));
+                val = (int)((uint)val >> 7);
+            }
+
+            stream.WriteByte((byte)(val & 0x7F));
+        }
+
+        /// <summary>
+        /// Reads an integer value which is presented in varint encoding.
+        /// </summary>
+        /// <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.
+        /// </a>
+        /// <param name="stream">Stream.</param>
+        /// <returns>Decoded integer value.</returns>
+        public static int ReadUvarint(IBinaryStream stream)
+        {
+            int val = 0;
+            int bits = 0;
+            int b;
+
+            while (((b = stream.ReadByte()) & 0x80) != 0)
+            {
+                val |= (int)((uint)(b & 0x7F) << bits);
+                bits += 7;
+
+                if (bits > 35)
+                    throw new BinaryObjectException("Varint reading failed, sequence length is too long");
+            }
+
+            return val | (int)((uint)b << bits);
+        }
+
+        /// <summary>
+        /// Writes a decimal value.
+        /// </summary>
+        /// <param name="val">Decimal value.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteDecimal(decimal val, IBinaryStream stream, bool varint)
         {
             // Vals are:
             // [0] = lo
@@ -675,7 +779,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (idx == -1)
             {
                 // Writing zero.
-                stream.WriteInt(1);
+                WriteArrayLength(1, stream, varint);
                 stream.WriteByte(0);
             }
             else
@@ -699,14 +803,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part24 & 0x80) == 0x80)
                             {
-                                stream.WriteInt(len + 1);
+                                WriteArrayLength(len + 1, stream, varint);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                stream.WriteInt(len);
+                                WriteArrayLength(len, stream, varint);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part24 | -0x80) : part24));
                             stream.WriteByte((byte)part16);
@@ -717,14 +821,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part16 & 0x80) == 0x80)
                             {
-                                stream.WriteInt(len);
+                                WriteArrayLength(len, stream, varint);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                stream.WriteInt(len - 1);
+                                WriteArrayLength(len - 1, stream, varint);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
@@ -734,14 +838,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part8 & 0x80) == 0x80)
                             {
-                                stream.WriteInt(len - 1);
+                                WriteArrayLength(len - 1, stream, varint);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                stream.WriteInt(len - 2);
+                                WriteArrayLength(len - 2, stream, varint);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
@@ -750,14 +854,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         {
                             if ((part0 & 0x80) == 0x80)
                             {
-                                stream.WriteInt(len - 2);
+                                WriteArrayLength(len - 2, stream, varint);
 
                                 stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
                                 neg = false;
                             }
                             else
-                                stream.WriteInt(len - 3);
+                                WriteArrayLength(len - 3, stream, varint);
 
                             stream.WriteByte((byte)(neg ? ((sbyte)part0 | -0x80) : part0));
                         }
@@ -773,18 +877,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /**
-         * <summary>Read decimal value.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Decimal value.</returns>
-         */
-        public static decimal? ReadDecimal(IBinaryStream stream)
+        /// <summary>
+        /// Reads a decimal value.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Decimal value.</returns>
+        public static decimal? ReadDecimal(IBinaryStream stream, bool varint)
         {
             int scale = stream.ReadInt();
 
             bool neg = false;
 
-            byte[] mag = ReadByteArray(stream);
+            byte[] mag = ReadByteArray(stream, varint);
 
             if ((sbyte)mag[0] < 0)
             {
@@ -831,14 +936,15 @@ namespace Apache.Ignite.Core.Impl.Binary
             return new decimal(lo, mid, hi, neg, (byte)scale);
         }
 
-        /**
-         * <summary>Write decimal array.</summary>
-         * <param name="vals">Decimal array.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static void WriteDecimalArray(decimal?[] vals, IBinaryStream stream)
+        /// <summary>
+        /// Writes a decimal array.
+        /// </summary>
+        /// <param name="vals">Decimal array.</param>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteDecimalArray(decimal?[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             foreach (var val in vals)
             {
@@ -846,26 +952,27 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     stream.WriteByte(BinaryTypeId.Decimal);
 
-                    WriteDecimal(val.Value, stream);
+                    WriteDecimal(val.Value, stream, varint);
                 }
                 else
                     stream.WriteByte(HdrNull);
             }
         }
 
-        /**
-         * <summary>Read decimal array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>Decimal array.</returns>
-         */
-        public static decimal?[] ReadDecimalArray(IBinaryStream stream)
+        /// <summary>
+        /// Read decimal array.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to read arrays lengths in varint encoding.</param>
+        /// <returns>Decimal array.</returns>
+        public static decimal?[] ReadDecimalArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             var vals = new decimal?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDecimal(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadDecimal(stream, varint);
 
             return vals;
         }
@@ -998,9 +1105,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteGuidArray(Guid?[] vals, IBinaryStream stream)
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
+        public static void WriteGuidArray(Guid?[] vals, IBinaryStream stream, bool varint)
         {
-            stream.WriteInt(vals.Length);
+            WriteArrayLength(vals.Length, stream, varint);
 
             foreach (Guid? val in vals)
             {
@@ -1046,7 +1154,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.WriteString(elemType.FullName);
             }
 
-            stream.WriteInt(val.Length);
+            WriteArrayLength(val.Length, stream, ctx.UseVarintArrayLength);
 
             for (int i = 0; i < val.Length; i++)
                 ctx.Write(val.GetValue(i));
@@ -1092,7 +1200,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ctx.ReadString();
             }
 
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, ctx.UseVarintArrayLength);
 
             var vals = new T[len];
 
@@ -1108,10 +1216,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>
+        /// <param name="varint">Whether to write arrays lengths in varint encoding.</param>
         /// <returns>Timestamp array.</returns>
-        public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
+        public static DateTime?[] ReadTimestampArray(IBinaryStream stream, bool varint)
         {
-            int len = stream.ReadInt();
+            int len = ReadArrayLength(stream, varint);
 
             DateTime?[] vals = new DateTime?[len];
 
@@ -1287,7 +1396,8 @@ namespace Apache.Ignite.Core.Impl.Binary
          */
         public static void WriteBinary(IBinaryStream stream, BinaryObject val)
         {
-            WriteByteArray(val.Data, stream);
+            stream.WriteInt(val.Data.Length);
+            stream.WriteByteArray(val.Data);
 
             stream.WriteInt(val.Offset);
         }

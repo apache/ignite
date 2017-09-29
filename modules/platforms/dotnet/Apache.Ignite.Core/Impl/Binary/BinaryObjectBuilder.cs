@@ -869,16 +869,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryTypeId.Decimal:
                     TransferBytes(inStream, outStream, 4); // Transfer scale
 
-                    int magLen = inStream.ReadInt(); // Transfer magnitude length.
+                    // Transfer magnitude length.
+                    int magLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength);
 
-                    outStream.WriteInt(magLen);
+                    BinaryUtils.WriteArrayLength(magLen, outStream, ctx.UseVarintArrayLength);
 
                     TransferBytes(inStream, outStream, magLen); // Transfer magnitude.
 
                     break;
 
                 case BinaryTypeId.String:
-                    BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);
+                    BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream,
+                        ctx.UseVarintArrayLength);
 
                     break;
 
@@ -893,42 +895,42 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
 
                 case BinaryTypeId.ArrayByte:
-                    TransferArray(inStream, outStream, 1);
+                    TransferArray(inStream, outStream, 1, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayShort:
-                    TransferArray(inStream, outStream, 2);
+                    TransferArray(inStream, outStream, 2, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayInt:
-                    TransferArray(inStream, outStream, 4);
+                    TransferArray(inStream, outStream, 4, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayLong:
-                    TransferArray(inStream, outStream, 8);
+                    TransferArray(inStream, outStream, 8, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayFloat:
-                    TransferArray(inStream, outStream, 4);
+                    TransferArray(inStream, outStream, 4, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayDouble:
-                    TransferArray(inStream, outStream, 8);
+                    TransferArray(inStream, outStream, 8, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayChar:
-                    TransferArray(inStream, outStream, 2);
+                    TransferArray(inStream, outStream, 2, ctx.UseVarintArrayLength);
 
                     break;
 
                 case BinaryTypeId.ArrayBool:
-                    TransferArray(inStream, outStream, 1);
+                    TransferArray(inStream, outStream, 1, ctx.UseVarintArrayLength);
 
                     break;
 
@@ -936,9 +938,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 case BinaryTypeId.ArrayString:
                 case BinaryTypeId.ArrayGuid:
                 case BinaryTypeId.ArrayTimestamp:
-                    int arrLen = inStream.ReadInt();
+                    int arrLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength);
 
-                    outStream.WriteInt(arrLen);
+                    BinaryUtils.WriteArrayLength(arrLen, outStream, ctx.UseVarintArrayLength);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, null);
@@ -953,14 +955,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     if (type == BinaryTypeId.Unregistered)
                     {
-                        outStream.WriteByte(inStream.ReadByte());  // String header.
+                        outStream.WriteByte(inStream.ReadByte()); // String header.
 
-                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
+                        BinaryUtils.WriteString(BinaryUtils.ReadString(inStream, ctx.UseVarintArrayLength), outStream,
+                            ctx.UseVarintArrayLength); // String data.
                     }
 
-                    arrLen = inStream.ReadInt();
+                    arrLen = BinaryUtils.ReadArrayLength(inStream, ctx.UseVarintArrayLength);
 
-                    outStream.WriteInt(arrLen);
+                    BinaryUtils.WriteArrayLength(arrLen, outStream, ctx.UseVarintArrayLength);
 
                     for (int i = 0; i < arrLen; i++)
                         Mutate0(ctx, inStream, outStream, false, EmptyVals);
@@ -995,7 +998,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
                     
                 case BinaryTypeId.Binary:
-                    TransferArray(inStream, outStream, 1); // Data array.
+                    int len = inStream.ReadInt();
+
+                    outStream.WriteInt(len);
+
+                    TransferBytes(inStream, outStream, len); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.
 
                     break;
@@ -1031,12 +1038,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="inStream">Input stream.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="elemSize">Element size.</param>
+        /// <param name="varint">Whether to consider arrays lengths in varint encoding.</param>
         private static void TransferArray(BinaryHeapStream inStream, IBinaryStream outStream,
-            int elemSize)
+            int elemSize, bool varint)
         {
-            int len = inStream.ReadInt();
+            int len = BinaryUtils.ReadArrayLength(inStream, varint);
 
-            outStream.WriteInt(len);
+            BinaryUtils.WriteArrayLength(len, outStream, varint);
 
             TransferBytes(inStream, outStream, elemSize * len);
         }
@@ -1079,6 +1087,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             /** Binary writer. */
             private readonly BinaryWriter _writer;
 
+            /** Whether to consider arrays lengths in varint encoding. */
+            private readonly bool _useVarintArrayLength;
+
             /** Children contexts. */
             private ICollection<Context> _children;
 
@@ -1100,6 +1111,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             public Context(BinaryWriter writer)
             {
                 _writer = writer;
+
+                _useVarintArrayLength = writer.UseVarintArrayLength;
             }
 
             /// <summary>
@@ -1182,6 +1195,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ctx = ctx._parent;
                     }
                 }
+            }
+
+            /// <summary>
+            /// Indicates whether to write arrays lengths in varint encoding.
+            /// </summary>
+            public bool UseVarintArrayLength
+            {
+                get { return _useVarintArrayLength; }
             }
         }
     }

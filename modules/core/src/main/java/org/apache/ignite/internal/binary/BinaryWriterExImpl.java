@@ -61,6 +61,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Schema. */
     private final BinaryWriterSchemaHolder schema;
 
+    /** Varint array length flag. */
+    private final boolean useVarintArrayLength;
+
     /** */
     private int typeId;
 
@@ -110,6 +113,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         this.handles = handles;
 
         start = out.position();
+
+        useVarintArrayLength = ctx.isUseVarintArrayLength();
     }
 
     /**
@@ -382,7 +387,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4 + 4);
+            out.unsafeEnsure(1 + 4 + 5);
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
@@ -400,7 +405,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             if (negative)
                 vals[0] |= -0x80;
 
-            out.unsafeWriteInt(vals.length);
+            doUnsafeWriteArrayLength(vals.length);
             out.writeByteArray(vals);
         }
     }
@@ -419,10 +424,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             else
                 strArr = val.getBytes(UTF_8);
 
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
-            out.unsafeWriteInt(strArr.length);
 
+            doUnsafeWriteArrayLength(strArr.length);
             out.writeByteArray(strArr);
         }
     }
@@ -504,9 +509,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.BYTE_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeByteArray(val);
         }
@@ -519,9 +524,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.SHORT_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeShortArray(val);
         }
@@ -534,12 +539,83 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.INT_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeIntArray(val);
         }
+    }
+
+    /**
+     * Writes value of length of an array, which can be written in default format or varint encoding.
+     * Writing method depends on {@link #useVarintArrayLength}.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know necessary number of bytes for writing,
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
+     *
+     * @param val Value to write.
+     * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
+     */
+    public void doUnsafeWriteArrayLength(int val) {
+        if (useVarintArrayLength)
+            doUnsafeWriteUnsignedVarint(val);
+        else
+            out.unsafeWriteInt(val);
+    }
+
+    /**
+     * Writes value of length of an array, which can be written in default format or varint encoding.
+     * Writing method depends on {@link #useVarintArrayLength}.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * If you need to know necessary number of bytes for writing,
+     * use the method {@link BinaryUtils#sizeOfArrayLengthValue(int, boolean)}.
+     *
+     * @param val Value to write.
+     * @see BinaryUtils#sizeOfArrayLengthValue(int, boolean)
+     */
+    public void doWriteArrayLength(int val) {
+        if (useVarintArrayLength)
+            doWriteUnsignedVarint(val);
+        else
+            out.writeInt(val);
+    }
+
+    /**
+     * Writes integer value in varint encoding. Value must be positive.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param val Value to write.
+     */
+    public void doWriteUnsignedVarint(int val) {
+        while ((val & 0xFFFFFF80) != 0) {
+            out.writeByte((byte)((val & 0x7F) | 0x80));
+            val >>>= 7;
+        }
+
+        out.writeByte((byte)(val & 0x7F));
+    }
+
+    /**
+     * Writes an integer value in varint encoding. Uses unsafe writing methods. Before calling, make sure that {@link
+     * #out} has 5 bytes for writing. Value must be positive.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @param val Value to write.
+     */
+    public void doUnsafeWriteUnsignedVarint(int val) {
+        while ((val & 0xFFFFFF80) != 0) {
+            out.unsafeWriteByte((byte)((val & 0x7F) | 0x80));
+            val >>>= 7;
+        }
+
+        out.unsafeWriteByte((byte)(val & 0x7F));
     }
 
     /**
@@ -549,9 +625,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.LONG_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeLongArray(val);
         }
@@ -564,9 +640,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.FLOAT_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeFloatArray(val);
         }
@@ -579,9 +655,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DOUBLE_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeDoubleArray(val);
         }
@@ -594,9 +670,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.CHAR_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeCharArray(val);
         }
@@ -609,9 +685,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.BOOLEAN_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             out.writeBooleanArray(val);
         }
@@ -624,9 +700,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             for (BigDecimal str : val)
                 doWriteDecimal(str);
@@ -640,9 +716,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             for (String str : val)
                 doWriteString(str);
@@ -656,9 +732,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.UUID_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             for (UUID uuid : val)
                 doWriteUuid(uuid);
@@ -672,9 +748,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.DATE_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             for (Date date : val)
                 doWriteDate(date);
@@ -688,9 +764,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
          if (val == null)
              out.writeByte(GridBinaryMarshaller.NULL);
          else {
-             out.unsafeEnsure(1 + 4);
+             out.unsafeEnsure(1 + 5);
              out.unsafeWriteByte(GridBinaryMarshaller.TIMESTAMP_ARR);
-             out.unsafeWriteInt(val.length);
+             doUnsafeWriteArrayLength(val.length);
 
              for (Timestamp ts : val)
                  doWriteTimestamp(ts);
@@ -704,9 +780,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            out.unsafeEnsure(1 + 4);
+            out.unsafeEnsure(1 + 5);
             out.unsafeWriteByte(GridBinaryMarshaller.TIME_ARR);
-            out.unsafeWriteInt(val.length);
+            doUnsafeWriteArrayLength(val.length);
 
             for (Time time : val)
                 doWriteTime(time);
@@ -737,7 +813,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 doWriteString(val.getClass().getComponentType().getName());
             }
 
-            out.writeInt(val.length);
+            doWriteArrayLength(val.length);
 
             for (Object obj : val)
                 doWriteObject(obj);
@@ -862,7 +938,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 doWriteString(val.getClass().getComponentType().getName());
             }
 
-            out.writeInt(val.length);
+            doWriteArrayLength(val.length);
 
             // TODO: Denis: Redundant data for each element of the array.
             for (Object o : val)
@@ -1909,5 +1985,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryContext context() {
         return ctx;
+    }
+
+    /**
+     * Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+     * lengths in varint encoding.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @return Whether to consider arrays lengths in varint encoding.
+     */
+    public boolean isUseVarintArrayLength() {
+        return useVarintArrayLength;
     }
 }

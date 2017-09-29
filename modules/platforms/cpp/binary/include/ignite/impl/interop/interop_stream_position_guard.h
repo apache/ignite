@@ -18,7 +18,9 @@
 #ifndef _IGNITE_IMPL_INTEROP_INTEROP_STREAM_POSITION_GUARD
 #define _IGNITE_IMPL_INTEROP_INTEROP_STREAM_POSITION_GUARD
 
-#include "ignite/impl/interop/interop_memory.h"
+#include <stdint.h>
+
+#include <ignite/common/common.h>
 
 namespace ignite
 {
@@ -30,7 +32,7 @@ namespace ignite
              * Interop stream position guard.
              */
             template<typename T>
-            class IGNITE_IMPORT_EXPORT InteropStreamPositionGuard {
+            class InteropStreamPositionGuard {
             public:
                 /**
                  * Create new position guard and saves current stream position.
@@ -55,8 +57,6 @@ namespace ignite
 
                 /**
                  * Releases guard so it will not restore streams position on destruction.
-                 *
-                 * @param val Value.
                  */
                 void Release()
                 {
@@ -72,6 +72,12 @@ namespace ignite
 
                 IGNITE_NO_COPY_ASSIGNMENT(InteropStreamPositionGuard)
             };
+
+            /* Forward declaration. */
+            class InteropInputStream;
+
+            /** Interop input stream position guard. */
+            typedef InteropStreamPositionGuard<InteropInputStream> InputStreamPositionGuard;
         }
     }
 }

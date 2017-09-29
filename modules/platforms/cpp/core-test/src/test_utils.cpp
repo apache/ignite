@@ -94,3 +94,24 @@ namespace ignite_test
         return err.GetCode() == TEST_ERROR;
     }
 }
+
+std::ostream& std::operator<<(ostream& os, const ignite::Date& obj)
+{
+    os << obj.GetMilliseconds();
+
+    return os;
+}
+
+std::ostream& std::operator<<(ostream& os, const ignite::Time& obj)
+{
+    os << obj.GetMilliseconds();
+
+    return os;
+}
+
+std::ostream& std::operator<<(ostream& os, const ignite::Timestamp& obj)
+{
+    os << obj.GetSeconds() << '.' << setw(9) << setfill('0') << obj.GetSecondFraction();
+
+    return os;
+}

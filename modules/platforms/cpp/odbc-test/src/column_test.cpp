@@ -28,6 +28,7 @@
 #include "ignite/odbc/column.h"
 
 using namespace ignite::impl::binary;
+using namespace ignite::impl::interop;
 using namespace ignite::odbc::app;
 using namespace ignite::odbc;
 
@@ -42,9 +43,9 @@ BOOST_AUTO_TEST_CASE(TestColumnDefaultConstruction)
 
 BOOST_AUTO_TEST_CASE(TestColumnShort)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     int16_t data = 42;
 
@@ -53,8 +54,8 @@ BOOST_AUTO_TEST_CASE(TestColumnShort)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column(reader);
 
@@ -90,9 +91,9 @@ BOOST_AUTO_TEST_CASE(TestColumnShort)
 
 BOOST_AUTO_TEST_CASE(TestColumnString)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     std::string data("Some test data.");
 
@@ -100,8 +101,8 @@ BOOST_AUTO_TEST_CASE(TestColumnString)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column(reader);
 
@@ -137,9 +138,9 @@ BOOST_AUTO_TEST_CASE(TestColumnString)
 
 BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     std::string data("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 
@@ -147,8 +148,8 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column(reader);
 
@@ -208,9 +209,9 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
 BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     std::string data1("Some test data.");
     std::string data2("Other TEST DATA.");
@@ -220,8 +221,8 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column1(reader);
 
@@ -285,19 +286,22 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArray)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     const int8_t bytes[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> data(bytes, bytes + sizeof(bytes) / sizeof(bytes[0]));
+
+    BOOST_CHECKPOINT("Writing array");
     writer.WriteInt8Array(&data[0], static_cast<int32_t>(data.size()));
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
+    BOOST_CHECKPOINT("Constructing column");
     Column column(reader);
 
     BOOST_REQUIRE(column.IsValid());
@@ -332,9 +336,9 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArray)
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     const int8_t bytes[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> data(bytes, bytes + sizeof(bytes)/sizeof(bytes[0]));
@@ -344,8 +348,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column(reader);
 
@@ -395,9 +399,9 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayHalfBuffer)
 
 BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
 {
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-    ignite::impl::interop::InteropOutputStream outStream(&mem);
-    ignite::impl::binary::BinaryWriterImpl writer(&outStream, 0);
+    InteropUnpooledMemory mem(4096);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
 
     const int8_t bytes1[] = { 'A','B','C','D','E','F','G','H','I','J' };
     const int8_t bytes2[] = { 'a','b','c','d','e','f','g','h','i','j' };    
@@ -408,8 +412,8 @@ BOOST_AUTO_TEST_CASE(TestColumnByteArrayTwoColumns)
 
     outStream.Synchronize();
 
-    ignite::impl::interop::InteropInputStream inStream(&mem);
-    ignite::impl::binary::BinaryReaderImpl reader(&inStream);
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
 
     Column column1(reader);
     inStream.Position(column1.GetEndPosition());

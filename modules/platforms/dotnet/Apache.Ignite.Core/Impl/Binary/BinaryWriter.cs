@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Stream. */
         private readonly IBinaryStream _stream;
 
+        /** Whether to write arrays lengths in varint encoding. */
+        private readonly bool _useVarintArrayLength;
+
         /** Builder (used only during build). */
         private BinaryObjectBuilder _builder;
 
@@ -112,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayBool);
-                BinaryUtils.WriteBooleanArray(val, _stream);
+                BinaryUtils.WriteBooleanArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -127,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayBool);
-                BinaryUtils.WriteBooleanArray(val, _stream);
+                BinaryUtils.WriteBooleanArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -175,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayByte);
-                BinaryUtils.WriteByteArray(val, _stream);
+                BinaryUtils.WriteByteArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -190,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayByte);
-                BinaryUtils.WriteByteArray(val, _stream);
+                BinaryUtils.WriteByteArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -238,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayShort);
-                BinaryUtils.WriteShortArray(val, _stream);
+                BinaryUtils.WriteShortArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -253,7 +256,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayShort);
-                BinaryUtils.WriteShortArray(val, _stream);
+                BinaryUtils.WriteShortArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -301,7 +304,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayChar);
-                BinaryUtils.WriteCharArray(val, _stream);
+                BinaryUtils.WriteCharArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -316,7 +319,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayChar);
-                BinaryUtils.WriteCharArray(val, _stream);
+                BinaryUtils.WriteCharArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -364,7 +367,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayInt);
-                BinaryUtils.WriteIntArray(val, _stream);
+                BinaryUtils.WriteIntArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -379,7 +382,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayInt);
-                BinaryUtils.WriteIntArray(val, _stream);
+                BinaryUtils.WriteIntArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -427,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayLong);
-                BinaryUtils.WriteLongArray(val, _stream);
+                BinaryUtils.WriteLongArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -442,7 +445,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayLong);
-                BinaryUtils.WriteLongArray(val, _stream);
+                BinaryUtils.WriteLongArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -490,7 +493,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayFloat);
-                BinaryUtils.WriteFloatArray(val, _stream);
+                BinaryUtils.WriteFloatArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -505,7 +508,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayFloat);
-                BinaryUtils.WriteFloatArray(val, _stream);
+                BinaryUtils.WriteFloatArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -553,7 +556,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayDouble);
-                BinaryUtils.WriteDoubleArray(val, _stream);
+                BinaryUtils.WriteDoubleArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -568,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayDouble);
-                BinaryUtils.WriteDoubleArray(val, _stream);
+                BinaryUtils.WriteDoubleArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -586,7 +589,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Decimal);
-                BinaryUtils.WriteDecimal(val.Value, _stream);
+                BinaryUtils.WriteDecimal(val.Value, _stream, _useVarintArrayLength);
             }
         }
 
@@ -601,7 +604,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.Decimal);
-                BinaryUtils.WriteDecimal(val.Value, _stream);
+                BinaryUtils.WriteDecimal(val.Value, _stream, _useVarintArrayLength);
             }
         }
 
@@ -619,7 +622,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayDecimal);
-                BinaryUtils.WriteDecimalArray(val, _stream);
+                BinaryUtils.WriteDecimalArray(val, _stream, _useVarintArrayLength);
             }
         }
         
@@ -634,7 +637,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayDecimal);
-                BinaryUtils.WriteDecimalArray(val, _stream);
+                BinaryUtils.WriteDecimalArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -685,7 +688,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -700,7 +703,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-                BinaryUtils.WriteTimestampArray(val, _stream);
+                BinaryUtils.WriteTimestampArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -718,7 +721,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.String);
-                BinaryUtils.WriteString(val, _stream);
+                BinaryUtils.WriteString(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -733,7 +736,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.String);
-                BinaryUtils.WriteString(val, _stream);
+                BinaryUtils.WriteString(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -751,7 +754,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayString);
-                BinaryUtils.WriteStringArray(val, _stream);
+                BinaryUtils.WriteStringArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -766,7 +769,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayString);
-                BinaryUtils.WriteStringArray(val, _stream);
+                BinaryUtils.WriteStringArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -817,7 +820,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayGuid);
-                BinaryUtils.WriteGuidArray(val, _stream);
+                BinaryUtils.WriteGuidArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -832,7 +835,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 _stream.WriteByte(BinaryTypeId.ArrayGuid);
-                BinaryUtils.WriteGuidArray(val, _stream);
+                BinaryUtils.WriteGuidArray(val, _stream, _useVarintArrayLength);
             }
         }
 
@@ -1124,6 +1127,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             _marsh = marsh;
             _stream = stream;
+            _useVarintArrayLength = _marsh.UseVarintArrayLength;
         }
 
         /// <summary>
@@ -1467,6 +1471,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal ICollection<BinaryType> GetBinaryTypes()
         {
             return _metas == null ? null : _metas.Values;
+        }
+
+        /// <summary>
+        /// Indicates whether to write arrays lengths in varint encoding.
+        /// </summary>
+        internal bool UseVarintArrayLength
+        {
+            get { return _useVarintArrayLength; }
         }
 
         /// <summary>

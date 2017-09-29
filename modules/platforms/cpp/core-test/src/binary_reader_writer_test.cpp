@@ -28,6 +28,7 @@
 
 #include "ignite/binary_test_defs.h"
 #include "ignite/binary_test_utils.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace ignite::impl::interop;
@@ -74,8 +75,8 @@ void CheckPrimitive(T val)
     BOOST_REQUIRE(readVal == val);
 }
 
-template<typename T>
-void CheckPrimitiveArray(T dflt, T val1, T val2)
+template<typename T, typename T2>
+void CheckPrimitiveArray(T2 dflt, T2 val1, T2 val2)
 {
     const char* fieldName = "test";
 
@@ -132,8 +133,8 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == -1);
 
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
     }
 
     {
@@ -165,13 +166,13 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
 
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 0);
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 0);
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
     }
 
     {
@@ -199,19 +200,19 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 0) == 1);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 1);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 1);
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 1);
-        BOOST_REQUIRE(arr1[0] == val1);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
         arr1[0] = dflt;
 
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 1);
-        BOOST_REQUIRE(arr1[0] == val1);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
         arr1[0] = dflt;
     }
 
@@ -245,16 +246,16 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         BOOST_CHECK_EXCEPTION(ReadArray<T>(reader, NULL, arr1, 2), IgniteError, IsBinaryError);
 
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 2);
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 1) == 2);
-        BOOST_REQUIRE(arr1[0] == dflt);
-        BOOST_REQUIRE(arr1[1] == dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), dflt);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), dflt);
 
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 2) == 2);
-        BOOST_REQUIRE(arr1[0] == val1);
-        BOOST_REQUIRE(arr1[1] == val2);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[0]), val1);
+        BOOST_CHECK_EQUAL(static_cast<T2>(arr1[1]), val2);
     }
 }
 

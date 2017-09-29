@@ -17,16 +17,26 @@
 
 #include <time.h>
 
-#include "ignite/ignite_error.h"
+#include <ignite/common/platform_utils.h>
+#include <ignite/common/fixed_size_array.h>
+#include <ignite/ignite_error.h>
 
-#include "ignite/impl/interop/interop.h"
-#include "ignite/impl/binary/binary_utils.h"
+#include <ignite/impl/interop/interop.h>
+#include <ignite/impl/interop/interop_stream_position_guard.h>
+#include <ignite/impl/binary/binary_utils.h>
 
+using namespace ignite::common;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 
 namespace
 {
+    /** Length of arrays format environment variable. */
+    const std::string IGNITE_NO_VARINT_ARRAY_LENGTH = "IGNITE_NO_VARINT_ARRAY_LENGTH";
+
+    /** Length of arrays writing mode. */
+    const bool USE_VARINT_ARRAY_LENGHT = ToLower(GetEnv(IGNITE_NO_VARINT_ARRAY_LENGTH)) != "true";
+
     /**
      * Check if there is enough data in memory.
      * @throw IgniteError if there is not enough memory.
@@ -35,7 +45,7 @@ namespace
      * @param pos Position.
      * @param len Data to read.
      */
-    inline void CheckEnoughData(InteropMemory& mem, int32_t pos, int32_t len)
+    void CheckEnoughData(InteropMemory& mem, int32_t pos, int32_t len)
     {
         if (mem.Length() < (pos + len))
         {
@@ -54,7 +64,7 @@ namespace
      * @return Primitive.
      */
     template<typename T>
-    inline T ReadPrimitive(InteropMemory& mem, int32_t pos)
+    T ReadPrimitive(InteropMemory& mem, int32_t pos)
     {
         CheckEnoughData(mem, pos, sizeof(T));
 
@@ -70,7 +80,7 @@ namespace
      * @return Primitive.
      */
     template<typename T>
-    inline T UnsafeReadPrimitive(InteropMemory& mem, int32_t pos)
+    T UnsafeReadPrimitive(InteropMemory& mem, int32_t pos)
     {
         return *reinterpret_cast<T*>(mem.Data() + pos);
     }
@@ -108,7 +118,7 @@ namespace ignite
                 return ReadPrimitive<int8_t>(mem, pos);
             }
 
-            int8_t BinaryUtils::UnsafeReadInt8(interop::InteropMemory& mem, int32_t pos)
+            int8_t BinaryUtils::UnsafeReadInt8(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int8_t>(mem, pos);
             }
@@ -153,12 +163,12 @@ namespace ignite
                 return stream->ReadInt16();
             }
 
-            int16_t BinaryUtils::ReadInt16(interop::InteropMemory& mem, int32_t pos)
+            int16_t BinaryUtils::ReadInt16(InteropMemory& mem, int32_t pos)
             {
                 return ReadPrimitive<int16_t>(mem, pos);
             }
 
-            int16_t BinaryUtils::UnsafeReadInt16(interop::InteropMemory& mem, int32_t pos)
+            int16_t BinaryUtils::UnsafeReadInt16(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int16_t>(mem, pos);
             }
@@ -203,12 +213,12 @@ namespace ignite
                 return stream->ReadInt32();
             }
 
-            int32_t BinaryUtils::ReadInt32(interop::InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::ReadInt32(InteropMemory& mem, int32_t pos)
             {
                 return ReadPrimitive<int32_t>(mem, pos);
             }
 
-            int32_t BinaryUtils::UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::UnsafeReadInt32(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int32_t>(mem, pos);
             }
@@ -288,7 +298,7 @@ namespace ignite
                 stream->WriteDoubleArray(val, len);
             }
 
-            Guid BinaryUtils::ReadGuid(interop::InteropInputStream* stream)
+            Guid BinaryUtils::ReadGuid(InteropInputStream* stream)
             {
                 int64_t most = stream->ReadInt64();
                 int64_t least = stream->ReadInt64();
@@ -296,25 +306,25 @@ namespace ignite
                 return Guid(most, least);
             }
 
-            void BinaryUtils::WriteGuid(interop::InteropOutputStream* stream, const Guid val)
+            void BinaryUtils::WriteGuid(InteropOutputStream* stream, const Guid val)
             {
                 stream->WriteInt64(val.GetMostSignificantBits());
                 stream->WriteInt64(val.GetLeastSignificantBits());
             }
 
-            Date BinaryUtils::ReadDate(interop::InteropInputStream * stream)
+            Date BinaryUtils::ReadDate(InteropInputStream * stream)
             {
                 int64_t milliseconds = stream->ReadInt64();
 
                 return Date(milliseconds);
             }
 
-            void BinaryUtils::WriteDate(interop::InteropOutputStream* stream, const Date val)
+            void BinaryUtils::WriteDate(InteropOutputStream* stream, const Date val)
             {
                 stream->WriteInt64(val.GetMilliseconds());
             }
 
-            Timestamp BinaryUtils::ReadTimestamp(interop::InteropInputStream* stream)
+            Timestamp BinaryUtils::ReadTimestamp(InteropInputStream* stream)
             {
                 int64_t milliseconds = stream->ReadInt64();
                 int32_t nanoseconds = stream->ReadInt32();
@@ -322,28 +332,156 @@ namespace ignite
                 return Timestamp(milliseconds / 1000, (milliseconds % 1000) * 1000000 + nanoseconds);
             }
 
-            void BinaryUtils::WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val)
+            void BinaryUtils::WriteTimestamp(InteropOutputStream* stream, const Timestamp val)
             {
                 stream->WriteInt64(val.GetSeconds() * 1000 + val.GetSecondFraction() / 1000000);
                 stream->WriteInt32(val.GetSecondFraction() % 1000000);
             }
 
-            Time BinaryUtils::ReadTime(interop::InteropInputStream* stream)
+            Time BinaryUtils::ReadTime(InteropInputStream* stream)
             {
                 int64_t ms = stream->ReadInt64();
 
                 return Time(ms);
             }
 
-            void BinaryUtils::WriteTime(interop::InteropOutputStream* stream, const Time val)
+            void BinaryUtils::WriteTime(InteropOutputStream* stream, const Time val)
             {
                 stream->WriteInt64(val.GetMilliseconds());
             }
 
-            void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)
+            int32_t BinaryUtils::ReadString(InteropInputStream* stream, char* buf, const int32_t len, InputStreamPositionGuard& guard)
             {
-                stream->WriteInt32(len);
+                int32_t realLen = ReadArraySize(stream);
+
+                if (buf && len >= realLen)
+                {
+                    stream->ReadInt8Array(reinterpret_cast<int8_t*>(buf), realLen);
+
+                    if (len > realLen)
+                        buf[realLen] = 0; // Set NULL terminator if possible.
+
+                    guard.Release();
+                }
+
+                return realLen;
+            }
+
+            void BinaryUtils::WriteString(InteropOutputStream* stream, const char* val, const int32_t len)
+            {
+                WriteArraySize(stream, len);
                 stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);
+            }
+
+            void BinaryUtils::ReadString(InteropInputStream* stream, std::string& val)
+            {
+                int32_t realLen = ReadArraySize(stream);
+
+                if (realLen > 0)
+                {
+                    val.resize(realLen, 0);
+
+                    stream->ReadInt8Array(reinterpret_cast<int8_t*>(&val[0]), realLen);
+                }
+            }
+
+            void BinaryUtils::WriteString(InteropOutputStream* stream, const std::string& val)
+            {
+                int32_t len = static_cast<int32_t>(val.size());
+                WriteArraySize(stream, len);
+                stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val.data()), len);
+            }
+
+            void BinaryUtils::ReadDecimal(InteropInputStream* stream, Decimal& decimal)
+            {
+                int32_t scale = ReadInt32(stream);
+
+                int32_t len = ReadArraySize(stream);
+
+                if (!len)
+                {
+                    decimal = Decimal();
+
+                    return;
+                }
+
+                FixedSizeArray<int8_t> magnitude(len);
+
+                ReadInt8Array(stream, magnitude.GetData(), magnitude.GetSize());
+
+                int32_t sign = 1;
+
+                if (magnitude[0] < 0)
+                {
+                    magnitude[0] &= 0x7F;
+
+                    sign = -1;
+                }
+
+                Decimal res(magnitude.GetData(), magnitude.GetSize(), scale, sign);
+
+                decimal.Swap(res);
+            }
+
+            void BinaryUtils::WriteDecimal(InteropOutputStream* stream, const Decimal& decimal)
+            {
+                const BigInteger &unscaled = decimal.GetUnscaledValue();
+
+                WriteInt32(stream, decimal.GetScale());
+
+                FixedSizeArray<int8_t> magnitude;
+
+                unscaled.MagnitudeToBytes(magnitude);
+
+                if (unscaled.GetSign() == -1)
+                    magnitude[0] |= -0x80;
+
+                WriteArraySize(stream, magnitude.GetSize());
+
+                WriteInt8Array(stream, magnitude.GetData(), magnitude.GetSize());
+            }
+
+            int32_t BinaryUtils::ReadUnsignedVarint(InteropInputStream* stream)
+            {
+                int32_t accum = 0;
+                int8_t buf;
+                int32_t bitpos = 0;
+                do
+                {
+                    buf = stream->ReadInt8();
+                    accum |= (buf & 0x7F) << bitpos;
+                    bitpos += 7;
+                } while (buf & 0x80);
+
+                return accum;
+            }
+
+            void BinaryUtils::WriteUnsignedVarint(InteropOutputStream* stream, int32_t val)
+            {
+                uint32_t uval = static_cast<uint32_t>(val);
+                while ((uval & 0xFFFFFF80) != 0)
+                {
+                    stream->WriteInt8(static_cast<int8_t>((uval & 0x7F) | 0x80));
+                    uval >>= 7;
+                }
+
+                stream->WriteInt8(static_cast<int8_t>(uval & 0x7F));
+            }
+
+            int32_t BinaryUtils::ReadArraySize(InteropInputStream* stream)
+            {
+                if (USE_VARINT_ARRAY_LENGHT)
+                    return ReadUnsignedVarint(stream);
+
+                return ReadInt32(stream);
+            }
+
+            void BinaryUtils::WriteArraySize(InteropOutputStream* stream, int32_t val)
+            {
+                if (USE_VARINT_ARRAY_LENGHT)
+                    WriteUnsignedVarint(stream, val);
+                else
+                    WriteInt32(stream, val);
             }
         }
     }

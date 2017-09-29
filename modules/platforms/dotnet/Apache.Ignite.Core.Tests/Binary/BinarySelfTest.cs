@@ -67,7 +67,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             _marsh = new Marshaller(new BinaryConfiguration
             {
                 CompactFooter = GetCompactFooter(),
-                NameMapper = GetNameMapper()
+                NameMapper = GetNameMapper(),
+                UseVarintArrayLength = UseVarintArrayLength()
             });
         }
 
@@ -86,7 +87,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return BinaryBasicNameMapper.FullNameInstance;
         }
-        
+
+        /// <summary>
+        /// Indicates whether to consider arrays lengths in varint encoding.
+        /// </summary>
+        protected virtual bool UseVarintArrayLength()
+        {
+            return false;
+        }
+
         /**
          * <summary>Check write of primitive boolean.</summary>
          */
@@ -627,7 +636,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(vals, newVals);
         }
-        
+
+        /// <summary>
+        /// Checks the writing an integer value in varint encoding.
+        /// </summary>
+        [Test]
+        public void TestWriteUvarint()
+        {
+            int[] vals = {int.MinValue, short.MinValue, -16384, -128, 0, 127, 16383, short.MaxValue, int.MaxValue};
+
+            var stream = new BinaryHeapStream(64);
+
+            foreach (int val in vals)
+                BinaryUtils.WriteUvarint(val, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            foreach (int val in vals)
+                Assert.AreEqual(val, BinaryUtils.ReadUvarint(stream));
+        }
+
         /// <summary>
         /// Test object with dates.
         /// </summary>

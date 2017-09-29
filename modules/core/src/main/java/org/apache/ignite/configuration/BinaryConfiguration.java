@@ -33,6 +33,9 @@ public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
+    /** Default varint array length flag setting. */
+    public static final boolean DFLT_USE_VARINT_ARRAY_LENGTH = false;
+
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
@@ -47,6 +50,9 @@ public class BinaryConfiguration {
 
     /** Compact footer flag. */
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
+
+    /** Varint array length flag. */
+    private boolean useVarintArrayLength = DFLT_USE_VARINT_ARRAY_LENGTH;
 
     /**
      * Sets class names of binary objects explicitly.
@@ -174,6 +180,39 @@ public class BinaryConfiguration {
      */
     public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
+    }
+
+    /**
+     * Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+     * lengths in varint encoding.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external sources
+     * (e.g. cache store which stores data in binary form, data center replication, etc.). Otherwise binary objects
+     * without any associated metadata could appear in the cluster and Ignite will not be able to deserialize it.
+     *
+     * Defaults to {@link #DFLT_USE_VARINT_ARRAY_LENGTH}.
+     *
+     * @return Whether to consider arrays lengths in varint encoding.
+     * @see #DFLT_USE_VARINT_ARRAY_LENGTH
+     */
+    public boolean isUseVarintArrayLength() {
+        return useVarintArrayLength;
+    }
+
+    /**
+     * Switches whether to consider arrays lengths in varint encoding. See {@link #isUseVarintArrayLength()} for more
+     * info.
+     *
+     * @param useVarintArrayLength Whether to consider arrays lengths in varint encoding.
+     * @return {@code this} for chaining.
+     * @see #isUseVarintArrayLength()
+     */
+    public BinaryConfiguration setUseVarintArrayLength(boolean useVarintArrayLength) {
+        this.useVarintArrayLength = useVarintArrayLength;
 
         return this;
     }

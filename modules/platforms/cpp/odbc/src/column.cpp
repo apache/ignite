@@ -27,7 +27,7 @@ namespace
 
     bool GetObjectLength(InteropInputStream& stream, int32_t& len)
     {
-        InteropStreamPositionGuard<InteropInputStream> guard(stream);
+        InputStreamPositionGuard guard(stream);
 
         int8_t hdr = stream.ReadInt8();
 
@@ -147,7 +147,7 @@ namespace ignite
             if (!stream)
                 return;
 
-            InteropStreamPositionGuard<InteropInputStream> guard(*stream);
+            InputStreamPositionGuard guard(*stream);
 
             int32_t sizeTmp = 0;
 
@@ -266,7 +266,7 @@ namespace ignite
                 {
                     common::Decimal res;
 
-                    utility::ReadDecimal(reader, res);
+                    reader.ReadDecimal(res);
 
                     sizeTmp = res.GetMagnitudeLength() + 8;
 
@@ -302,7 +302,7 @@ namespace ignite
 
                 case IGNITE_TYPE_ARRAY_BYTE:
                 {
-                    sizeTmp = reader.ReadInt32();
+                    sizeTmp = BinaryUtils::ReadArraySize(stream);
                     assert(sizeTmp >= 0);
 
                     startPosTmp = stream->Position();
@@ -342,7 +342,7 @@ namespace ignite
             if (!stream)
                 return SqlResult::AI_ERROR;
 
-            InteropStreamPositionGuard<InteropInputStream> guard(*stream);
+            InputStreamPositionGuard guard(*stream);
 
             stream->Position(startPos);
 
@@ -467,7 +467,7 @@ namespace ignite
                 {
                     common::Decimal res;
 
-                    utility::ReadDecimal(reader, res);
+                    reader.ReadDecimal(res);
 
                     dataBuf.PutDecimal(res);
 
