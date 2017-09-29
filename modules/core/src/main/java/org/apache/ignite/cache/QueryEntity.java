@@ -83,8 +83,8 @@ public class QueryEntity implements Serializable {
     /** Table name. */
     private String tableName;
 
-    /** Fields that must have non-null value. */
-    private Set<String> notNullFields;
+    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+    private Set<String> _notNullFields;
 
     /**
      * Creates an empty query entity.
@@ -113,7 +113,7 @@ public class QueryEntity implements Serializable {
 
         tableName = other.tableName;
 
-        notNullFields = other.notNullFields != null ? new HashSet<>(other.notNullFields) : null;
+        _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
     }
 
     /**
@@ -365,7 +365,7 @@ public class QueryEntity implements Serializable {
      * @return Set of names of fields that must have non-null values.
      */
     @Nullable public Set<String> getNotNullFields() {
-        return notNullFields;
+        return _notNullFields;
     }
 
     /**
@@ -375,7 +375,7 @@ public class QueryEntity implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
-        this.notNullFields = notNullFields;
+        this._notNullFields = notNullFields;
 
         return this;
     }
@@ -620,6 +620,7 @@ public class QueryEntity implements Serializable {
 
         if (o == null || getClass() != o.getClass())
             return false;
+
         QueryEntity entity = (QueryEntity)o;
 
         return F.eq(keyType, entity.keyType) &&
@@ -631,13 +632,13 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(notNullFields, entity.notNullFields);
+            F.eq(_notNullFields, entity._notNullFields);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, notNullFields);
+            tableName, _notNullFields);
     }
 
     /** {@inheritDoc} */

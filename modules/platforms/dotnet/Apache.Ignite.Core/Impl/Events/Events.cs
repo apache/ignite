@@ -310,18 +310,33 @@ namespace Apache.Ignite.Core.Impl.Events
             {
                 Dictionary<int, LocalHandledEventFilter> filters;
 
-                if (!_localFilters.TryGetValue(listener, out filters))
-                    return false;
+                if (_localFilters.TryGetValue(listener, out filters))
+                {
+                    var success = false;
 
-                var success = false;
+                    // Should do this inside lock to avoid race with subscription
+                    // ToArray is required because we are going to modify underlying dictionary during enumeration
+                    foreach (var filter in GetLocalFilters(listener, types).ToArray())
+                        success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
 
-                // Should do this inside lock to avoid race with subscription
-                // ToArray is required because we are going to modify underlying dictionary during enumeration
-                foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
-
-                return success;
+                    return success;
+                }
             }
+
+            // Looks for a predefined filter (IgniteConfiguration.LocalEventListeners).
+            var ids = Ignite.Configuration.LocalEventListenerIds;
+
+            int predefinedListenerId;
+            if (ids != null && ids.TryGetValue(listener, out predefinedListenerId))
+            {
+                return DoOutInOp((int) Op.StopLocalListen, w =>
+                {
+                    w.WriteInt(predefinedListenerId);
+                    w.WriteIntArray(types);
+                }, s => s.ReadBool());
+            }
+
+            return false;
         }
 
         /** <inheritDoc /> */

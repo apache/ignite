@@ -242,11 +242,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException {
+        @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+            boolean keepBinary, GridQueryCancel cancel,
+            @Nullable Integer mainCacheId, boolean failOnMultipleStmts) throws IgniteCheckedException {
             return null;
         }
-
 
         /** {@inheritDoc} */
         @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,

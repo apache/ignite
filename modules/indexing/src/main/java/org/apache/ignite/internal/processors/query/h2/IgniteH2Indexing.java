@@ -145,7 +145,6 @@ import org.h2.command.dml.Insert;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
@@ -1244,7 +1243,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (qry.getTimeout() > 0)
             fqry.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-        final QueryCursor<List<?>> res = queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId);
+        final QueryCursor<List<?>> res =
+            queryDistributedSqlFields(schemaName, fqry, keepBinary, null, mainCacheId, true).get(0);
 
         final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
             @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -1277,10 +1277,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName,
-        SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) {
-        final String sqlQry = qry.getSql();
-
+    @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
         Connection c = connectionForSchema(schemaName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
@@ -1289,18 +1287,38 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), distributedJoins);
 
-        GridCacheTwoStepQuery twoStepQry = null;
-        List<GridQueryFieldMetadata> meta;
+        String sqlQry = qry.getSql();
 
-        final H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
+        H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
-            twoStepQry = cachedQry.query().copy();
-            meta = cachedQry.meta();
+            checkQueryType(qry, true);
+
+            GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
+
+            List<GridQueryFieldMetadata> meta = cachedQry.meta();
+
+            List<FieldsQueryCursor<List<?>>> res = Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
+                qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
+                twoStepQry, meta));
+
+            return res;
         }
-        else {
+
+        List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
+
+        Object[] argsOrig = qry.getArgs();
+        int firstArg = 0;
+        Object[] args;
+        String remainingSql = sqlQry;
+
+        while (remainingSql != null) {
+            args = null;
+            GridCacheTwoStepQuery twoStepQry = null;
+            List<GridQueryFieldMetadata> meta;
+
             final UUID locNodeId = ctx.localNodeId();
 
             // Here we will just parse the statement, no need to optimize it at all.
@@ -1319,16 +1337,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     while (true) {
                         try {
                             // Do not cache this statement because the whole query object will be cached later on.
-                            stmt = prepareStatement(c, sqlQry, false);
+                            stmt = prepareStatement(c, remainingSql, false);
 
                             break;
                         }
                         catch (SQLException e) {
                             if (!cachesCreated && (
                                 e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                                e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                                e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                            ) {
+                                    e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                                    e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                                ) {
                                 try {
                                     ctx.cache().createMissingQueryCaches();
                                 }
@@ -1344,19 +1362,59 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         }
                     }
 
-                    prepared = GridSqlQueryParser.prepared(stmt);
+                    GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
 
-                    if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
-                        throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
-                            IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+                    // remaining == null if the query string contains single SQL statement.
+                    remainingSql = prep.remainingSql();
 
-                    if (prepared.isQuery()) {
-                        bindParameters(stmt, F.asList(qry.getArgs()));
+                    if (remainingSql != null && failOnMultipleStmts)
+                        throw new IgniteSQLException("Multiple statements queries are not supported");
 
-                        twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(),
-                            grpByCollocated, distributedJoins, enforceJoinOrder, this);
+                    sqlQry = prep.prepared().getSQL();
 
-                        assert twoStepQry != null;
+                    prepared = prep.prepared();
+
+                    int paramsCnt = prepared.getParameters().size();
+
+                    if (paramsCnt > 0) {
+                        if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
+                            throw new IgniteException("Invalid number of query parameters. " +
+                                "Cannot find " + (argsOrig.length + 1 - firstArg) + " parameter.");
+                        }
+
+                        args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
+
+                        firstArg += paramsCnt;
+                    }
+
+                    cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
+                        distributedJoins, enforceJoinOrder, qry.isLocal());
+
+                    cachedQry = twoStepCache.get(cachedQryKey);
+
+                    if (cachedQry != null) {
+                        checkQueryType(qry, true);
+
+                        twoStepQry = cachedQry.query().copy();
+                        meta = cachedQry.meta();
+
+                        res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
+                            qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
+                            twoStepQry, meta));
+
+                        continue;
+                    }
+                    else {
+                        checkQueryType(qry, prepared.isQuery());
+
+                        if (prepared.isQuery()) {
+                            bindParameters(stmt, F.asList(args));
+
+                            twoStepQry = GridSqlQuerySplitter.split(c, prepared, args,
+                                grpByCollocated, distributedJoins, enforceJoinOrder, this);
+
+                            assert twoStepQry != null;
+                        }
                     }
                 }
                 finally {
@@ -1367,17 +1425,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            return dmlProc.updateSqlFieldsDistributed(schemaName, stmt, qry, cancel);
+                            res.add(dmlProc.updateSqlFieldsDistributed(schemaName, prepared,
+                                new SqlFieldsQuery(qry).setSql(sqlQry).setArgs(args), cancel));
+
+                            continue;
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                                ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
+                                ", params=" + Arrays.deepToString(args) + "]", e);
                         }
                     }
 
                     if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                         try {
-                            return ddlProc.runDdlStatement(sqlQry, stmt);
+                            res.add(ddlProc.runDdlStatement(sqlQry, prepared));
+
+                            continue;
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
@@ -1428,38 +1491,74 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             finally {
                 U.close(stmt, log);
             }
+
+            res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
+                qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
+                twoStepQry, meta));
+
+            if (cachedQry == null && !twoStepQry.explain()) {
+                cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
+
+                twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
+            }
         }
 
+        return res;
+    }
+
+    /**
+     * Check expected statement type (when it is set by JDBC) and given statement type.
+     *
+     * @param qry Query.
+     * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
+     */
+    private void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
+        if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)qry).isQuery() != isQry)
+            throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
+                IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param pageSize Page size.
+     * @param partitions Partitions.
+     * @param args Arguments.
+     * @param keepBinary Keep binary flag.
+     * @param lazy Lazy flag.
+     * @param timeout Timeout.
+     * @param cancel Cancel.
+     * @param sqlQry SQL query string.
+     * @param enforceJoinOrder Enforce join orded flag.
+     * @param twoStepQry Two-steps query.
+     * @param meta Metadata.
+     * @return Cursor.
+     */
+    private FieldsQueryCursor<List<?>> executeTwoStepsQuery(String schemaName, int pageSize, int partitions[],
+        Object[] args, boolean keepBinary, boolean lazy, int timeout,
+        GridQueryCancel cancel, String sqlQry, boolean enforceJoinOrder, GridCacheTwoStepQuery twoStepQry,
+        List<GridQueryFieldMetadata> meta) {
         if (log.isDebugEnabled())
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-        twoStepQry.pageSize(qry.getPageSize());
+        twoStepQry.pageSize(pageSize);
 
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        int partitions[] = qry.getPartitions();
-
         if (partitions == null && twoStepQry.derivedPartitions() != null) {
             try {
-                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), qry.getArgs());
+                partitions = calculateQueryPartitions(twoStepQry.derivedPartitions(), args);
             } catch (IgniteCheckedException e) {
                 throw new CacheException("Failed to calculate derived partitions: [qry=" + sqlQry + ", params=" +
-                    Arrays.deepToString(qry.getArgs()) + "]", e);
+                    Arrays.deepToString(args) + "]", e);
             }
         }
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, qry.getTimeout(), cancel,
-                qry.getArgs(), partitions, qry.isLazy()), cancel);
+            runQueryTwoStep(schemaName, twoStepQry, keepBinary, enforceJoinOrder, timeout, cancel,
+                args, partitions, lazy), cancel);
 
         cursor.fieldsMeta(meta);
-
-        if (cachedQry == null && !twoStepQry.explain()) {
-            cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
-
-            twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
-        }
 
         return cursor;
     }
