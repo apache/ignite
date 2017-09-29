@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
     using System.Reflection;
     using System.Xml;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
@@ -497,6 +498,10 @@ namespace Apache.Ignite.Core.Impl.Common
 
             if (property != null &&
                 property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
+                return EventTypeConverter.Instance;
+
+            if (property != null &&
+                property.DeclaringType == typeof (LocalEventListener) && property.Name == "EventTypes")
                 return EventTypeConverter.Instance;
 
             if (propertyType == typeof (object))

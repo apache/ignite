@@ -192,6 +192,12 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** Local event listeners. Stored as array to ensure index access. */
+        private LocalEventListener[] _localEventListenersInternal;
+
+        /** Map from user-defined listener to it's id. */
+        private Dictionary<object, int> _localEventListenerIds;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -251,8 +257,8 @@ namespace Apache.Ignite.Core
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            CopyLocalProperties(baseConfig);
             Read(binaryReader);
+            CopyLocalProperties(baseConfig);
         }
 
         /// <summary>
@@ -480,7 +486,7 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // Plugins (should be last)
+            // Plugins (should be last).
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -506,6 +512,46 @@ namespace Apache.Ignite.Core
             else
             {
                 writer.WriteInt(0);
+            }
+
+            // Local event listeners (should be last).
+            if (LocalEventListeners != null)
+            {
+                writer.WriteInt(LocalEventListeners.Count);
+
+                foreach (var listener in LocalEventListeners)
+                {
+                    ValidateLocalEventListener(listener);
+
+                    writer.WriteIntArray(listener.EventTypes.ToArray());
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Validates the local event listener.
+        /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateLocalEventListener(LocalEventListener listener)
+        {
+            if (listener == null)
+            {
+                throw new IgniteException("LocalEventListeners can't contain nulls.");
+            }
+
+            if (listener.ListenerObject == null)
+            {
+                throw new IgniteException("LocalEventListener.Listener can't be null.");
+            }
+
+            if (listener.EventTypes == null || listener.EventTypes.Count == 0)
+            {
+                throw new IgniteException("LocalEventListener.EventTypes can't be null or empty.");
             }
         }
 
@@ -684,13 +730,10 @@ namespace Apache.Ignite.Core
 
             if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
-                BinaryConfiguration.MergeTypes(cfg.BinaryConfiguration);
-            }
-            else if (cfg.BinaryConfiguration != null)
-            {
-                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+                BinaryConfiguration.CopyLocalProperties(cfg.BinaryConfiguration);
             }
 
+            SpringConfigUrl = cfg.SpringConfigUrl;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
@@ -701,6 +744,23 @@ namespace Apache.Ignite.Core
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
             PluginConfigurations = cfg.PluginConfigurations;
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
+            PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
+            LocalEventListeners = cfg.LocalEventListeners;
+
+            if (CacheConfiguration != null && cfg.CacheConfiguration != null)
+            {
+                var caches = cfg.CacheConfiguration.Where(x => x != null).ToDictionary(x => "_" + x.Name, x => x);
+
+                foreach (var cache in CacheConfiguration)
+                {
+                    CacheConfiguration src;
+
+                    if (cache != null && caches.TryGetValue("_" + cache.Name, out src))
+                    {
+                        cache.CopyLocalProperties(src);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -854,6 +914,61 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
+
+        /// <summary>
+        /// Gets or sets pre-configured local event listeners.
+        /// <para />
+        /// This is similar to calling <see cref="IEvents.LocalListen{T}(IEventListener{T},int[])"/>,
+        /// but important difference is that some events occur during startup and can be only received this way.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<LocalEventListener> LocalEventListeners { get; set; }
+
+        /// <summary>
+        /// Initializes the local event listeners collections.
+        /// </summary>
+        private void InitLocalEventListeners()
+        {
+            if (LocalEventListeners != null && _localEventListenersInternal == null)
+            {
+                _localEventListenersInternal = LocalEventListeners.ToArray();
+
+                _localEventListenerIds = new Dictionary<object, int>();
+
+                for (var i = 0; i < _localEventListenersInternal.Length; i++)
+                {
+                    var listener = _localEventListenersInternal[i];
+                    ValidateLocalEventListener(listener);
+                    _localEventListenerIds[listener.ListenerObject] = i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the local event listeners.
+        /// </summary>
+        internal LocalEventListener[] LocalEventListenersInternal
+        {
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenersInternal;
+            }
+        }
+
+        /// <summary>
+        /// Gets the local event listener ids.
+        /// </summary>
+        internal Dictionary<object, int> LocalEventListenerIds
+        {
+            get
+            {
+                InitLocalEventListeners();
+
+                return _localEventListenerIds;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the time after which a certain metric value is considered expired.

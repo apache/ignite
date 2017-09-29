@@ -144,7 +144,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        QueryEntity qe = new QueryEntity(Integer.class, Person.class);
+        QueryEntity qe = new QueryEntity(new QueryEntity(Integer.class, Person.class));
 
         qe.setNotNullFields(Collections.singleton("name"));
 

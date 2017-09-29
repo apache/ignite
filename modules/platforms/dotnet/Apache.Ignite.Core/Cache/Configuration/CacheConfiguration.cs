@@ -137,6 +137,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
         public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
 
+        /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
+        public const int DefaultSqlIndexMaxInlineSize = -1;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -184,6 +187,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
+            SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
         }
 
         /// <summary>
@@ -229,8 +233,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
-                // Plugins should be copied directly.
-                PluginConfigurations = other.PluginConfigurations;
+                CopyLocalProperties(other);
             }
         }
 
@@ -287,6 +290,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
             GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
+            SqlIndexMaxInlineSize = reader.ReadInt();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0
@@ -309,8 +313,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (reader.ReadBoolean())
                     {
                         // FactoryId-based plugin: skip.
+                        reader.ReadInt();  // Skip factory id.
                         var size = reader.ReadInt();
-                        reader.Stream.Seek(size, SeekOrigin.Current);
+                        reader.Stream.Seek(size, SeekOrigin.Current);  // Skip custom data.
                     }
                     else
                     {
@@ -365,6 +370,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) PartitionLossPolicy);
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
+            writer.WriteInt(SqlIndexMaxInlineSize);
 
             if (QueryEntities != null)
             {
@@ -413,7 +419,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                         cachePlugin.WriteBinary(writer);
 
-                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos - 4);  // Write size.
                     }
                     else
                     {
@@ -426,6 +432,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteInt(0);
             }
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(CacheConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
+            PluginConfigurations = cfg.PluginConfigurations;
+
+            if (QueryEntities != null && cfg.QueryEntities != null)
+            {
+                var entities = cfg.QueryEntities.Where(x => x != null).ToDictionary(x => GetQueryEntityKey(x), x => x);
+
+                foreach (var entity in QueryEntities.Where(x => x != null))
+                {
+                    QueryEntity src;
+
+                    if (entities.TryGetValue(GetQueryEntityKey(entity), out src))
+                    {
+                        entity.CopyLocalProperties(src);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the query entity key.
+        /// </summary>
+        private static string GetQueryEntityKey(QueryEntity x)
+        {
+            return x.KeyTypeName + "^" + x.ValueTypeName;
         }
 
         /// <summary>
@@ -736,5 +775,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Grouping caches reduces overall overhead, since internal data structures are shared.
         /// </summary>
         public string GroupName { get;set; }
+
+        /// <summary>
+        /// Gets or sets maximum inline size in bytes for sql indexes. See also <see cref="QueryIndex.InlineSize"/>.
+        /// -1 for automatic.
+        /// </summary>
+        [DefaultValue(DefaultSqlIndexMaxInlineSize)]
+        public int SqlIndexMaxInlineSize { get; set; }
     }
 }

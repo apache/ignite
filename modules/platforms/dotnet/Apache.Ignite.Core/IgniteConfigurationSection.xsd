@@ -328,6 +328,11 @@
                                                                                             <xs:documentation>Indicates whether this field belongs to the cache key.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
+                                                                                    <xs:attribute name="notNull" type="xs:boolean">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Indicates whether null value is allowed for the field.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
@@ -397,6 +402,11 @@
                                                                                     <xs:attribute name="indexType" type="queryIndexType">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Index type.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="inlineSize" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
                                                                                 </xs:complexType>
@@ -762,6 +772,11 @@
                                     <xs:attribute name="groupName" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>Cache group name. Caches with the same group name share single underlying 'physical' cache (partition set), but are logically isolated.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="sqlIndexMaxInlineSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of SQL inline index. Part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>
@@ -1468,6 +1483,11 @@
                                 <xs:documentation>Checkpoint page write order on disk.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="writeThrottlingEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Threads that generate dirty pages too fast during ongoing checkpoint will be throttled.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
@@ -1500,6 +1520,51 @@
                     <xs:annotation>
                         <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
                     </xs:annotation>
+                </xs:element>
+                <xs:element name="localEventListeners" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Pre-configured local event listeners.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="localEventListener" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Listener holder.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="eventTypes">
+                                            <xs:annotation>
+                                                <xs:documentation>Event types to listen for.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element type="xs:string" name="int" maxOccurs="unbounded" minOccurs="1"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="listener">
+                                            <xs:annotation>
+                                                <xs:documentation>Listener implementation.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute type="xs:string" name="type" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:string" name="type" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
                 </xs:element>
             </xs:all>
             <xs:attribute name="igniteInstanceName" type="xs:string">
