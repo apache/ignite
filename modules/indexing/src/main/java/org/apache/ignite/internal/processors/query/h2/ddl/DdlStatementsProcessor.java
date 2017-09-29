@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -59,7 +58,6 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 
@@ -91,17 +89,18 @@ public class DdlStatementsProcessor {
      * Execute DDL statement.
      *
      * @param sql SQL.
-     * @param stmt H2 statement to parse and execute.
+     * @param prepared Prepared.
+     * @return Cursor on query results.
+     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
         throws IgniteCheckedException {
-        assert stmt instanceof JdbcPreparedStatement;
 
         IgniteInternalFuture fut = null;
 
         try {
-            GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
+            GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
 
             if (stmt0 instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;

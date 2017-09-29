@@ -980,7 +980,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err)) {
+        if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
             cctx.mvcc().removeVersionedFuture(this);
 
@@ -999,7 +999,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void complete() {
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
 
-        res.error(new IgniteCheckedException("Failed to prepare transaction."));
+        res.error(err != null ? err : new IgniteCheckedException("Failed to prepare transaction."));
 
         onComplete(res);
     }
