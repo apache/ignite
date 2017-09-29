@@ -1670,8 +1670,36 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     *
+     * @throws Exception If fails
      */
+    public void testFiledOffsetCloseToNullOffset() throws Exception {
+        for (int size = 0x00; size < 0x100; ++size)
+            checkFieldSize(size);
+
+        for (int size = 0xFF00; size < 0x10000; ++size)
+            checkFieldSize(size);
+    }
+
+    /**
+     * @param size Size of the field to check different field's offsets.
+     */
+    private void checkFieldSize(int size) {
+        BinaryObjectBuilder builder = newWrapper("SimpleCls1");
+
+        builder.setField("arr1", new byte[size]);
+
+        builder.setField("nullField", null, Object.class);
+
+        builder.setField("arr2", new byte[size]);
+
+        assertEquals(size, ((byte[])builder.build().field("arr1")).length);
+        assertEquals(size, ((byte[])builder.build().field("arr2")).length);
+        assertNull(builder.build().field("nullField"));
+    }
+
+    /**
+         *
+         */
     private static class TestObjectExternalizable implements Externalizable {
         /** */
         private String val;

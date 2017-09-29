@@ -3338,6 +3338,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testFiledOffsetCloseToNullOffset() throws Exception {
+        BinaryMarshaller m = binaryMarshaller();
+
+        for (int size = 0x00; size < 0x100; ++size)
+            checkFieldSize(size);
+
+        for (int size = 0xFF00; size < 0x10000; ++size)
+            checkFieldSize(size);
+    }
+
+    /**
+     * @param size Size of the field to check different field's offsets.
+     */
+    private void checkFieldSize(int size) throws IgniteCheckedException {
+        BinaryObjectImpl binObj = marshal(new TestFieldOffset(size), binaryMarshaller());
+
+        TestFieldOffset obj = marshalUnmarshal(new TestFieldOffset(size));
+
+        assertEquals(size, obj.arr1.length);
+        assertEquals(size, obj.arr1.length);
+        assertNull(obj.nullField);
+    }
+
+    /**
      * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
      * @param marsh Binary marshaller.
      * @return Instance of BinaryObjectOffheapImpl.
@@ -3349,6 +3375,28 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             ptr,
             0,
             obj.array().length);
+    }
+
+    /**
+     *
+     */
+    private static class TestFieldOffset {
+        /** Array 1. */
+        byte [] arr1;
+
+        /** Null field. */
+        Object nullField = null;
+
+        /** Array 2. */
+        byte [] arr2;
+
+        /**
+         * @param size Size of arrays.
+         */
+        TestFieldOffset(int size) {
+            arr1 = new byte[size];
+            arr2 = new byte[size];
+        }
     }
 
     /**
@@ -3745,6 +3793,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
+        bCfg.setCompactNulls(compactNulls());
 
         bCfg.setTypeConfigurations(cfgs);
 
@@ -3772,6 +3821,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
         return marsh;
+    }
+
+    /**
+     * @return Compact nulls flag.
+     */
+    protected boolean compactNulls() {
+        return false;
     }
 
     /**

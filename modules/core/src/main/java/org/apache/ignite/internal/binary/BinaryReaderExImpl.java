@@ -2208,7 +2208,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             int off = BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
 
-            if (BinaryUtils.isNullOffset(off, fieldOffLen))
+            if (BinaryUtils.isNullOffset(off, fieldOffLen) && ctx.isCompactNulls())
                 return FieldState.NULL;
 
             streamPosition(start + off);
@@ -2242,7 +2242,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 int off = BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
                     fieldOffLen);
 
-                if (BinaryUtils.isNullOffset(off, fieldOffLen))
+                if (BinaryUtils.isNullOffset(off, fieldOffLen) && ctx.isCompactNulls())
                     return FieldState.NULL;
 
                 streamPosition(start + off);

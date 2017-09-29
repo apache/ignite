@@ -42,6 +42,8 @@ import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryMarshallerCompactNullsSelfTest;
+import org.apache.ignite.internal.binary.compactnulls.BinaryMarshallerNonCompactCompactNullsSelfTest;
 import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalCompactNullsSelfTest;
 import org.apache.ignite.internal.binary.compactnulls.BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest;
 import org.apache.ignite.internal.binary.compactnulls.BinarySerialiedFieldComparatorCompactNullSelfTest;
@@ -155,7 +157,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactCompactNullSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalCompactNullsSelfTest.class);
         suite.addTestSuite(BinarySerialiedFieldComparatorCompactNullSelfTest.class);
-
+        suite.addTestSuite(BinaryMarshallerCompactNullsSelfTest.class);
+        suite.addTestSuite(BinaryMarshallerNonCompactCompactNullsSelfTest.class);
 
         return suite;
     }
