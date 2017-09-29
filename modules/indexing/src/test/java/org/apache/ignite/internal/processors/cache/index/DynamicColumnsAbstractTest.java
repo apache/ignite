@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -116,6 +116,14 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 assertEquals(col.name(), e.getKey());
 
                 assertEquals(col.typeName(), e.getValue());
+
+                if (!col.isNullable()) {
+                    assertNotNull(entity.getNotNullFields());
+
+                    assertTrue(entity.getNotNullFields().contains(col.name()));
+                }
+                else if (entity.getNotNullFields() != null)
+                    assertFalse(entity.getNotNullFields().contains(col.name()));
             }
         }
 
@@ -151,6 +159,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 assertEquals(col.name(), e.getKey());
 
                 assertEquals(col.typeName(), e.getValue().getName());
+
+                assertTrue(col.isNullable() || desc.property(col.name()).notNull());
             }
         }
 
@@ -183,9 +193,11 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                 assertFalse(rowDesc.isKeyValueOrVersionColumn(i));
 
+                assertEquals(col.isNullable(), c.isNullable());
+
                 try {
                     assertEquals(DataType.getTypeFromClass(Class.forName(col.typeName())),
-                        rowDesc.fieldType(i - GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT));
+                        rowDesc.fieldType(i - GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT));
                 }
                 catch (ClassNotFoundException e) {
                     throw new AssertionError(e);
@@ -213,7 +225,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return New column with given name and type.
      */
     protected static QueryField c(String name, String typeName) {
-        return new QueryField(name, typeName);
+        return new QueryField(name, typeName, true);
     }
 
     /**
@@ -252,8 +264,8 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
             .setMemoryPolicies(
                 new MemoryPolicyConfiguration()
                     .setName("default")
-                    .setMaxSize(32 * 1024 * 1024L)
-                    .setInitialSize(32 * 1024 * 1024L)
+                    .setMaxSize(128 * 1024 * 1024L)
+                    .setInitialSize(128 * 1024 * 1024L)
             );
 
         cfg.setMemoryConfiguration(memCfg);
@@ -290,7 +302,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return result.
      */
     protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
-        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)).getAll();
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)
+            .setDistributedJoins(true);
+
+        return cache.query(qry).getAll();
     }
 
     /**

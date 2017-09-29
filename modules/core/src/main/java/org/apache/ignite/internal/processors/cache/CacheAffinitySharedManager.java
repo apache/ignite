@@ -2596,8 +2596,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
             try {
                 cctx.pageStore().storeCacheData(
-                    new StoredCacheData(cfg)
-                );
+                    new StoredCacheData(cfg),
+                    false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);

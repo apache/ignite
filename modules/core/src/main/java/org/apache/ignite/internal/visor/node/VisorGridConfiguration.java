@@ -165,7 +165,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         BinaryConfiguration bc = c.getBinaryConfiguration();
 
         if (bc != null)
-            binaryCfg = new VisorBinaryConfiguration();
+            binaryCfg = new VisorBinaryConfiguration(bc);
 
         cacheKeyCfgs = VisorCacheKeyConfiguration.list(c.getCacheKeyConfiguration());
 

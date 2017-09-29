@@ -735,7 +735,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public boolean checkpointLockIsHeldByThread() {
-        return false;
+        return true;
     }
 
     /**

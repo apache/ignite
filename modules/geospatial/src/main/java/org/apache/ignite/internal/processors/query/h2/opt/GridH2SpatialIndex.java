@@ -51,7 +51,7 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Spatial index.
@@ -97,6 +97,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param segmentsCnt Index segments count.
      * @param cols Columns.
      */
+    @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
@@ -157,7 +158,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        assert row instanceof GridH2AbstractKeyValueRow : "requires key to be at 0";
+        assert row instanceof GridH2KeyValueRowOnheap : "requires key to be at 0";
 
         Lock l = lock.writeLock();
 
@@ -307,11 +308,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return true;
     }
@@ -321,6 +317,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param filter Table filter.
      * @return Iterator over rows.
      */
+    @SuppressWarnings("unchecked")
     private GridCursor<GridH2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
             return EMPTY_CURSOR;

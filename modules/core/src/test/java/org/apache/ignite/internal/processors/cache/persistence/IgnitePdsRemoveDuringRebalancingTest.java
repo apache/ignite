@@ -40,6 +40,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  *
  */
@@ -69,7 +71,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath("db");
+        memPlcCfg.setSwapFilePath(DFLT_STORE_DIR);
 
         dbCfg.setMemoryPolicies(memPlcCfg);
         dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
@@ -93,18 +95,18 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
-        U.delete(new File(U.getIgniteHome(), "db"));
+        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         G.stopAll(true);
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
-        U.delete(new File(U.getIgniteHome(), "db"));
+        U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
 
     /**

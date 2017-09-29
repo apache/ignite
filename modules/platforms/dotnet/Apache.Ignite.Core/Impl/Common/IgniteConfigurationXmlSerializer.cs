@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
     using System.Reflection;
     using System.Xml;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
@@ -499,6 +500,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
 
+            if (property != null &&
+                property.DeclaringType == typeof (LocalEventListener) && property.Name == "EventTypes")
+                return EventTypeConverter.Instance;
+
             if (propertyType == typeof (object))
                 return ObjectStringConverter.Instance;
 
@@ -518,7 +523,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(obj != null);
 
-            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+            return obj.GetType().GetProperties()
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>

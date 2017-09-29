@@ -207,7 +207,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
                 CompareMode.getInstance(null, 0));
 
-            ih.put(pageAddr, off, ValueString.get(v1), maxSize);
+            ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
 
             Comparator<Value> comp = new Comparator<Value>() {
                 @Override public int compare(Value o1, Value o2) {
@@ -215,7 +215,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
                 }
             };
 
-            return ih.compare(pageAddr, off, maxSize,  ValueString.get(v2), comp);
+            return ih.compare(pageAddr, off, maxSize,  v2 == null ? ValueNull.INSTANCE : ValueString.get(v2), comp);
         }
         finally {
             if (page != 0L)
@@ -378,6 +378,10 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
     /** */
     public void testNull() throws Exception {
         testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
+        testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
+
+        int maxSize = 3 + 2; // 2 ascii chars + 3 bytes header.
+        assertEquals(1, putAndCompare("aa", null, maxSize));
     }
 
     /** */
