@@ -72,6 +72,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test suite for WAL segments reader and event generator.
@@ -171,7 +172,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         if (fillWalBeforeTest)
-            deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+            deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -196,7 +197,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             consistentId = "127_0_0_1_47500";
 
         final String workDir = U.defaultWorkDirectory();
-        final File db = U.resolveWorkDirectory(workDir, "db", false);
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
         final File walArchive = new File(wal, "archive");
 
@@ -499,7 +500,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         @Nullable final BiConsumer<Object, Object> objConsumer,
         @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
-        final File db = U.resolveWorkDirectory(workDir, "db", false);
+        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
         final File walArchive = new File(wal, "archive");
 
