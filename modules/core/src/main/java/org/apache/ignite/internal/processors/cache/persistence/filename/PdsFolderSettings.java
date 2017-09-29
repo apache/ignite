@@ -30,9 +30,11 @@ import org.jetbrains.annotations.Nullable;
 public class PdsFolderSettings {
     /**
      * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
-     * configuration. Note WAL storage may be configured outside this path.
+     * configuration. <br>
+     * Note WAL storage may be configured outside this path.<br>
+     * This value may be null if persistence is not enabled
      */
-    private final File persistentStoreRootPath;
+    @Nullable private final File persistentStoreRootPath;
 
     /** Sub folder name containing consistent ID and optionally node index. */
     private final String folderName;
@@ -57,13 +59,13 @@ public class PdsFolderSettings {
     /**
      * Creates settings in for new PST(DB) folder mode
      *
-     * @param persistentStoreRootPath Persistent store root path.
+     * @param persistentStoreRootPath Persistent store root path or null if non PDS mode
      * @param folderName Sub folder name containing consistent ID and optionally node index.
      * @param consistentId Consistent id.
      * @param fileLockHolder File lock holder with prelocked db directory.
      * @param compatible Compatible mode flag
      */
-    public PdsFolderSettings(final File persistentStoreRootPath,
+    public PdsFolderSettings(@Nullable final File persistentStoreRootPath,
         final String folderName,
         final Serializable consistentId,
         @Nullable final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
@@ -83,7 +85,7 @@ public class PdsFolderSettings {
      * @param consistentId node consistent ID
      */
     public PdsFolderSettings(
-        @NotNull final File persistentStoreRootPath,
+        @Nullable final File persistentStoreRootPath,
         @NotNull final Serializable consistentId) {
 
         this.consistentId = consistentId;
@@ -128,9 +130,9 @@ public class PdsFolderSettings {
 
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
-     * store configuration. Note WAL storage may be configured outside this path
+     * store configuration. Note WAL storage may be configured outside this path. May return null for non pds mode
      */
-    public File persistentStoreRootPath() {
+    @Nullable public File persistentStoreRootPath() {
         return persistentStoreRootPath;
     }
 }

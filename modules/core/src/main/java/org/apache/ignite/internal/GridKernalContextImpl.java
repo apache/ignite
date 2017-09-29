@@ -1011,7 +1011,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public Map<String, ? extends ExecutorService> customExecutors() {
+    @Override public Map<String, ? extends ExecutorService> customExecutors() {
         return customExecSvcs;
     }
 

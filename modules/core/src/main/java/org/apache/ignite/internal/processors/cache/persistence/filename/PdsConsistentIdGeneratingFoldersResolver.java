@@ -118,12 +118,12 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     }
 
     /**
-     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overriden
+     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden
      *
-     * @param pstStoreBasePath DB storage base path
+     * @param pstStoreBasePath DB storage base path or null if persistence is not enabled
      * @return PDS folder settings compatible with previous versions
      */
-    private PdsFolderSettings compatibleResolve(final File pstStoreBasePath) {
+    private PdsFolderSettings compatibleResolve(@Nullable final File pstStoreBasePath) {
         return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId());
     }
 
@@ -391,11 +391,13 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
-     * store configuration
+     * store configuration. Null if persistence is not enabled
      * @throws IgniteCheckedException if I/O failed
      */
-    private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+        if (pstCfg == null)
+            return null;
 
         final File dirToFindOldConsIds;
         if (pstCfg.getPersistentStorePath() != null) {
