@@ -431,18 +431,71 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests exception in Initialize.
         /// </summary>
         [Test]
-        public void TestInitException()
+        public void TestDeployMultipleException([Values(true, false)] bool keepBinary)
+        {
+            VerifyDeploymentException((services, svc) =>
+                services.DeployMultiple(SvcName, svc, Grids.Length, 1), keepBinary);
+        }
+
+        /// <summary>
+        /// Tests exception in Initialize.
+        /// </summary>
+        [Test]
+        public void TestDeployException([Values(true, false)] bool keepBinary)
+        {
+            VerifyDeploymentException((services, svc) =>
+                services.Deploy(new ServiceConfiguration
+                {
+                    Name = SvcName,
+                    Service = svc,
+                    TotalCount = Grids.Length,
+                    MaxPerNodeCount = 1
+                }), keepBinary);
+        }
+
+        /// <summary>
+        /// Verifies the deployment exception.
+        /// </summary>
+        private void VerifyDeploymentException(Action<IServices, IService> deploy, bool keepBinary)
         {
             var svc = new TestIgniteServiceSerializable { ThrowInit = true };
 
-            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+            var services = Services;
+
+            if (keepBinary)
+            {
+                services = services.WithKeepBinary();
+            }
+
+            var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
+
+            var text = keepBinary
+                ? "Service deployment failed with a binary error. Examine BinaryCause for details."
+                : "Service deployment failed with an exception. Examine InnerException for details.";
+
+            Assert.AreEqual(text, deploymentException.Message);
+
+            Exception ex;
+
+            if (keepBinary)
+            {
+                Assert.IsNull(deploymentException.InnerException);
+
+                ex = deploymentException.BinaryCause.Deserialize<Exception>();
+            }
+            else
+            {
+                Assert.IsNull(deploymentException.BinaryCause);
+
+                ex = deploymentException.InnerException;
+            }
+
+            Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
-            Assert.IsNotNull(ex.InnerException);
-            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackGateway.serviceInit"), 
-                ex.InnerException.Message);
+            Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
+                "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
-
             Assert.IsNull(svc0);
         }
 
@@ -481,19 +534,27 @@ namespace Apache.Ignite.Core.Tests.Services
             AssertNoService();
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnRead()
         {
             var svc = new TestIgniteServiceBinarizableErr();
 
-            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-            Assert.AreEqual("Expected exception", ex.Message);
+            var ex = Assert.Throws<ServiceDeploymentException>(() =>
+                Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+
+            Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnWrite()
         {
@@ -507,6 +568,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
         [Test]
         public void TestCallJavaService()
         {
@@ -778,6 +842,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public Guid NodeId
             {
+                // ReSharper disable once InconsistentlySynchronizedField
                 get { return _grid.GetCluster().GetLocalNode().Id; }
             }
 

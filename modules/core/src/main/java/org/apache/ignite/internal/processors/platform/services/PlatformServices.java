@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
@@ -38,6 +39,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -104,6 +106,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
         = new CopyOnWriteConcurrentMap<>();
 
+    /** Future result writer. */
+    private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
+
     /** */
     private final IgniteServices services;
 
@@ -148,20 +153,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_DEPLOY: {
-                dotnetDeploy(reader, services);
-
-                return TRUE;
-            }
-
             case OP_DOTNET_DEPLOY_ASYNC: {
                 dotnetDeploy(reader, servicesAsync);
 
-                return readAndListenFuture(reader);
-            }
-
-            case OP_DOTNET_DEPLOY_MULTIPLE: {
-                dotnetDeployMultiple(reader, services);
+                readAndListenFuture(reader, currentFuture(), RESULT_WRITER);
 
                 return TRUE;
             }
@@ -169,7 +164,9 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
                 dotnetDeployMultiple(reader, servicesAsync);
 
-                return readAndListenFuture(reader);
+                readAndListenFuture(reader, currentFuture(), RESULT_WRITER);
+
+                return TRUE;
             }
 
             case OP_CANCEL: {
@@ -214,6 +211,32 @@ public class PlatformServices extends PlatformAbstractTarget {
                         }
                     }
                 );
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY: {
+                try {
+                    dotnetDeploy(reader, services);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_MULTIPLE: {
+                try {
+                    dotnetDeployMultiple(reader, services);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
 
                 return;
             }
@@ -582,4 +605,20 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
         }
     }
+
+    /**
+     * Writes an EventBase.
+     */
+    private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
+        /** <inheritDoc /> */
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+            PlatformUtils.writeInvocationResult(writer, obj, err);
+        }
+
+        /** <inheritDoc /> */
+        @Override public boolean canWrite(Object obj, Throwable err) {
+            return true;
+        }
+    }
+
 }

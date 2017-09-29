@@ -436,8 +436,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         if (state() != PREPARING) {
             if (!state(PREPARING)) {
-                if (state() == PREPARED && isSystemInvalidate())
+                if (state() == PREPARED && isSystemInvalidate()) {
                     fut.complete();
+
+                    return fut;
+                }
 
                 if (setRollbackOnly()) {
                     if (timeout == -1)
