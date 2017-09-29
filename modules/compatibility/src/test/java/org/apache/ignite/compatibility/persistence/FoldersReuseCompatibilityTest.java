@@ -40,41 +40,61 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName;
 
 /**
- * Test for new and old style persistent storage folders generation
+ * Test for new and old style persistent storage folders generation and compatible startup of current ignite version
  */
 public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
 
-    private Serializable configuredConsistentId = null;
-
     /** Cache name for test. */
-    public static final String CACHE_NAME = "dummy";
+    private static final String CACHE_NAME = "dummy";
+
+    /** Key to store in previous version of ignite */
+    private static final String KEY = "ObjectFromPast";
+
+    /** Value to store in previous version of ignite */
+    private static final String VAL = "ValueFromPast";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // No-op. super.afterTest();
-
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         configPersistence(cfg);
         return cfg;
     }
 
+    /**
+     * Test startup of current ignite version using DB storage folder from previous version of Ignite. Expected to start
+     * successfully with existing DB
+     *
+     * @throws Exception if failed.
+     */
     public void testFoldersReuseCompatibility_2_2() throws Exception {
         runFoldersReuse("2.2.0");
     }
 
+    /**
+     * Test startup of current ignite version using DB storage folder from previous version of Ignite. Expected to start
+     * successfully with existing DB
+     *
+     * @throws Exception if failed.
+     */
     public void testFoldersReuseCompatibility_2_1() throws Exception {
         runFoldersReuse("2.1.0");
-
     }
 
+    /**
+     * Test startup of current ignite version using DB storage folder from previous version of Ignite. Expected to start
+     * successfully with existing DB
+     *
+     * @param ver 3 digit Ignite version to check compatibility with
+     * @throws Exception if failed.
+     */
     private void runFoldersReuse(String ver) throws Exception {
         final IgniteEx grid = startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure());
-
-        // assertPdsDirsDefaultExist(U.maskForFileName(grid.cluster().node().consistentId().toString()));
 
         grid.close();
         stopAllGrids();
@@ -86,23 +106,24 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         assertPdsDirsDefaultExist(U.maskForFileName(ignite.cluster().node().consistentId().toString()));
 
-        ignite.active(true);
+        assertEquals(VAL, ignite.cache(CACHE_NAME).get(KEY));
+
         assertNodeIndexesInFolder();// should not create any new style directories
 
         stopAllGrids();
     }
 
-    /** */
+    /** Started node test actions closure. */
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.active(true);
-            ignite.getOrCreateCache(CACHE_NAME).put("ObjectFromPast", "ValueFromPast");
+            ignite.getOrCreateCache(CACHE_NAME).put(KEY, VAL);
         }
     }
 
-    /** */
-    private class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    /** Setup compatible node closure. */
+    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setLocalHost("127.0.0.1");
@@ -111,12 +132,15 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
             cfg.setDiscoverySpi(disco);
 
-            if (configuredConsistentId != null)
-                cfg.setConsistentId(configuredConsistentId);
             configPersistence(cfg);
         }
     }
 
+    /**
+     * Setup persistence for compatible and current version node.
+     *
+     * @param cfg ignite config to setup.
+     */
     private static void configPersistence(IgniteConfiguration cfg) {
         final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(psCfg);

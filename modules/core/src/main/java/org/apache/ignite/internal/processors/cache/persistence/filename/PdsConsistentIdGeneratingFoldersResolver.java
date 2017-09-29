@@ -45,12 +45,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
  */
-public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFolderResolver {
+public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapter implements PdsFoldersResolver {
     /** Database subfolders constant prefix. */
-    public static final String DB_FOLDER_PREFIX = "node";
+    private static final String DB_FOLDER_PREFIX = "node";
 
     /** Node index and uid separator in subfolders name. */
     private static final String NODEIDX_UID_SEPARATOR = "-";
@@ -75,7 +78,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     };
 
     /** Database subfolders for old style filter. */
-    public static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
+    private static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
         @Override public boolean accept(File pathname) {
             if (!pathname.isDirectory())
                 return false;
@@ -109,19 +112,19 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      *
      * @param ctx Context.
      */
-    public PdsConsistentIdGeneratingFoldersResolver(GridKernalContext ctx) {
+    public PdsConsistentIdGeneratingFoldersResolver(final GridKernalContext ctx) {
         super(ctx);
         this.cfg = ctx.config();
         this.discovery = ctx.discovery();
-        this.log = ctx.log(PdsFolderResolver.class);
+        this.log = ctx.log(PdsFoldersResolver.class);
         this.ctx = ctx;
     }
 
     /**
-     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden
+     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden.
      *
-     * @param pstStoreBasePath DB storage base path or null if persistence is not enabled
-     * @return PDS folder settings compatible with previous versions
+     * @param pstStoreBasePath DB storage base path or null if persistence is not enabled.
+     * @return PDS folder settings compatible with previous versions.
      */
     private PdsFolderSettings compatibleResolve(@Nullable final File pstStoreBasePath) {
         return new PdsFolderSettings(pstStoreBasePath, discovery.consistentId());
@@ -148,7 +151,11 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
+
         if (!cfg.isPersistentStoreEnabled())
+            return compatibleResolve(pstStoreBasePath);
+
+        if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
             return compatibleResolve(pstStoreBasePath);
 
         // compatible mode from configuration is used fot this case
@@ -160,12 +167,14 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         // this is required to correctly initialize SPI
         final DiscoverySpi spi = discovery.tryInjectSpi();
+
         if (spi instanceof TcpDiscoverySpi) {
             final TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi)spi;
             final String consistentId = tcpDiscoverySpi.calculateConsistentIdAddrPortBased();
             final String subFolder = U.maskForFileName(consistentId);
 
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
+
             if (fileLockHolder != null)
                 return new PdsFolderSettings(pstStoreBasePath,
                     subFolder,
@@ -175,6 +184,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
 
         final File[] oldStyleFolders = pstStoreBasePath.listFiles(DB_SUBFOLDERS_OLD_STYLE_FILTER);
+
         if (oldStyleFolders != null && oldStyleFolders.length != 0) {
             for (File folder : oldStyleFolders) {
                 String path = getPathDisplayableInfo(folder);
@@ -184,6 +194,7 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         for (FolderCandidate next : getNodeIndexSortedCandidates(pstStoreBasePath)) {
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.subFolderFile());
+
             if (fileLockHolder != null) {
                 log.info("Successfully locked DB folder [" + next.subFolderFile() + "]");
 
@@ -197,9 +208,11 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
         // was not able to find free slot, allocating new
         final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath);
+
         try {
             final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
             final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
+
             return generateAndLockNewDbStorage(pstStoreBasePath, nodeIdx);
         }
         finally {
@@ -209,9 +222,9 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
     }
 
     /**
-     * Calculate overall folder size
-     * @param dir directory to scan
-     * @return total size in bytes
+     * Calculate overall folder size.
+     * @param dir directory to scan.
+     * @return total size in bytes.
      */
     private static FolderParams folderSize(File dir) {
         final FolderParams params = new FolderParams();
@@ -219,6 +232,12 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         return params;
     }
 
+    /**
+     * Scans provided directory and its sub dirs, collects found metrics.
+     *
+     * @param dir directory to start scan from.
+     * @param params input/output.
+     */
     private static void visitFolder(final File dir, final FolderParams params) {
         for (File file : dir.listFiles()) {
             if (file.isDirectory())
@@ -230,19 +249,30 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
         }
     }
 
+    /** Path metrics */
     private static class FolderParams {
-        private long size = 0;
-        private long lastModified =0;
+        /** Overall size in bytes. */
+        private long size;
+
+        /** Last modified. */
+        private long lastModified;
     }
 
+    /**
+     * @param folder folder to scan.
+     * @return folder displayable information.
+     */
     @NotNull private String getPathDisplayableInfo(final File folder) {
         final SB res = new SB();
+
         res.a(getCanonicalPath(folder));
         res.a(", ");
         final FolderParams params = folderSize(folder);
+
         res.a(params.size);
         res.a(" bytes, modified ");
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm a");
+
         res.a(simpleDateFormat.format(params.lastModified));
         res.a(" ");
         return res.toString();
@@ -264,10 +294,11 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
 
     /**
      * Pad start of string with provided character.
-     * @param str sting to pad
+     *
+     * @param str sting to pad.
      * @param minLength expected length.
-     * @param padChar padding character
-     * @return padded string
+     * @param padChar padding character.
+     * @return padded string.
      */
     private static String padStart(String str, int minLength, char padChar) {
         A.notNull(str, "String should not be empty");
@@ -294,10 +325,12 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     @NotNull private PdsFolderSettings generateAndLockNewDbStorage(final File pstStoreBasePath,
         final int nodeIdx) throws IgniteCheckedException {
+
         final UUID uuid = UUID.randomUUID();
         final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
         final File newRandomFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
+
         if (fileLockHolder != null) {
             log.info("Successfully created new DB folder [" + newRandomFolder + "]");
             return new PdsFolderSettings(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
@@ -314,9 +347,11 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     @NotNull public static String genNewStyleSubfolderName(final int nodeIdx, final UUID uuid) {
         final String uuidAsStr = uuid.toString();
+
         assert uuidAsStr.matches(UUID_STR_PATTERN);
 
         final String nodeIdxPadded = padStart(Integer.toString(nodeIdx), 2, '0');
+
         return DB_FOLDER_PREFIX + nodeIdxPadded + NODEIDX_UID_SEPARATOR + uuidAsStr;
     }
 
@@ -329,8 +364,10 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
      */
     @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(
         File pstStoreBasePath) throws IgniteCheckedException {
+
         GridCacheDatabaseSharedManager.FileLockHolder rootDirLock;
         int retry = 0;
+
         while ((rootDirLock = tryLock(pstStoreBasePath)) == null) {
             if (retry > 600)
                 throw new IgniteCheckedException("Unable to start under DB storage path [" + pstStoreBasePath + "]" +
@@ -502,6 +539,9 @@ public class PdsConsistentIdGeneratingFoldersResolver extends GridProcessorAdapt
             return uuid;
         }
 
+        /**
+         * @return Absolute file path pointing to DB subfolder within DB storage root folder.
+         */
         public File subFolderFile() {
             return subFolderFile;
         }

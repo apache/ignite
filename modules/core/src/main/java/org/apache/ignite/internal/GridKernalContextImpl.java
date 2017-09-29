@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -379,7 +379,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private volatile boolean disconnected;
 
     /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
-    private PdsFolderResolver pdsFolderRslvr;
+    private PdsFoldersResolver pdsFolderRslvr;
 
     /**
      * No-arg constructor is required by externalization.
@@ -583,8 +583,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
-        else if (comp instanceof PdsFolderResolver)
-            pdsFolderRslvr = (PdsFolderResolver)comp;
+        else if (comp instanceof PdsFoldersResolver)
+            pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1077,7 +1077,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
 
     /**{@inheritDoc}*/
-    @Override public PdsFolderResolver pdsFolderResolver() {
+    @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
     }
 

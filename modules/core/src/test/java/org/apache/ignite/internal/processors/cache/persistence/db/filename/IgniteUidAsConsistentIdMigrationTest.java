@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdGeneratingFoldersResolver.parseSubFolderName;
 
 /**
@@ -47,15 +49,22 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     /** Cache name for test. */
     public static final String CACHE_NAME = "dummy";
 
-    private boolean deleteAfter = false;
-    private boolean deleteBefore = true;
-    private boolean failIfDeleteNotCompleted = true;
+    /** Clear DB folder after each test. May be set to false for local debug */
+    private static final boolean deleteAfter = false;
+
+    /** Clear DB folder before each test. */
+    private static final boolean deleteBefore = true;
+
+    /** Fail test if delete of DB folder was not completed. */
+    private static final boolean failIfDeleteNotCompleted = true;
 
     /** Configured consistent id. */
     private String configuredConsistentId;
 
     /** Logger to accumulate messages, null will cause logger won't be customized */
-    private GridStringLogger stringLogger;
+    private GridStringLogger strLog;
+
+    private boolean clearPropsAfterTest = false;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -63,6 +72,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         if (deleteBefore)
             deleteWorkFiles();
+
     }
 
     /** {@inheritDoc} */
@@ -71,6 +81,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         if (deleteAfter)
             deleteWorkFiles();
+
+        if (clearPropsAfterTest) {
+            System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
+            System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
+        }
     }
 
     /**
@@ -98,8 +113,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         memCfg.setMemoryPolicies(memPolCfg);
         cfg.setMemoryConfiguration(memCfg);
 
-        if (stringLogger != null)
-            cfg.setGridLogger(stringLogger);
+        if (strLog != null)
+            cfg.setGridLogger(strLog);
         return cfg;
     }
 
@@ -395,6 +410,76 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     }
 
     /**
+     * Tests compatible mode enabled by this test to start.
+     * Expected to be 2 folders and no new style folders in this case.
+     *
+     * @throws Exception if failed.
+     */
+    public void testStartOldStyleNodesByCompatibleProperty() throws Exception {
+        clearPropsAfterTest = true;
+        System.setProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, "true");
+
+        final Ignite ignite1 = startGrid(0);
+        final Ignite ignite2 = startGrid(1);
+        ignite1.active(true);
+        final String expVal = "there is compatible mode with old style folders!";
+
+        ignite2.getOrCreateCache(CACHE_NAME).put("hi", expVal);
+
+        assertNodeIndexesInFolder(); // expected to have no new style folders
+
+        final Object consistentId1 = ignite1.cluster().localNode().consistentId();
+        assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
+        final Object consistentId2 = ignite2.cluster().localNode().consistentId();
+        assertPdsDirsDefaultExist(U.maskForFileName(consistentId2.toString()));
+        stopAllGrids();
+
+        System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
+        final Ignite igniteRestart = startGrid(0);
+        final Ignite igniteRestart2 = startGrid(1);
+        igniteRestart2.active(true);
+
+        assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
+        assertEquals(consistentId2, igniteRestart2.cluster().localNode().consistentId());
+
+        assertNodeIndexesInFolder(); //new style nodes should not be found
+        stopGrid(0);
+    }
+
+    /**
+     * Tests compatible mode enabled by this test to start, also no port is enabled.
+     * Expected to be 1 folder and no new style folders in this case.
+     *
+     * @throws Exception if failed.
+     */
+    public void testStartOldStyleNoPortsNodesByCompatibleProperty() throws Exception {
+        clearPropsAfterTest = true;
+        System.setProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, "true");
+        System.setProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT, "true");
+
+        final Ignite ignite1 = startGrid(0);
+        ignite1.active(true);
+        final String expVal = "there is compatible mode with old style folders!";
+
+        ignite1.getOrCreateCache(CACHE_NAME).put("hi", expVal);
+
+        assertNodeIndexesInFolder(); // expected to have no new style folders
+
+        final Object consistentId1 = ignite1.cluster().localNode().consistentId();
+        assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
+        stopAllGrids();
+
+        System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
+        final Ignite igniteRestart = startGrid(0);
+        igniteRestart.active(true);
+
+        assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
+
+        assertNodeIndexesInFolder(); //new style nodes should not be found
+        stopGrid(0);
+    }
+
+    /**
      * Test case If there are no matching folders,
      * but the directory contains old-style consistent IDs.
      * Ignite should print out a warning.
@@ -417,11 +502,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopAllGrids();
 
         this.configuredConsistentId = null;
-        this.stringLogger = new GridStringLogger();
+        this.strLog = new GridStringLogger();
         startActivateGrid(0);
         assertNodeIndexesInFolder(0); //one 0 index folder is created
 
-        final String wholeNodeLog = stringLogger.toString();
+        final String wholeNodeLog = strLog.toString();
         stopAllGrids();
 
         String foundWarning = null;
@@ -444,7 +529,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertTrue("Expected to print some size for [" + path + "]",
             Pattern.compile(" [0-9]* bytes").matcher(foundWarning).find());
 
-        stringLogger = null;
+        strLog = null;
         startActivateGrid(0);
         assertNodeIndexesInFolder(0); //one 0 index folder is created
         stopAllGrids();

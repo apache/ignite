@@ -30,7 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.jetbrains.annotations.Nullable;
@@ -105,7 +105,7 @@ public class MockWalIteratorFactory {
 
         when(ctx.config()).thenReturn(cfg);
         when(ctx.clientNode()).thenReturn(false);
-        when(ctx.pdsFolderResolver()).thenReturn(new PdsFolderResolver() {
+        when(ctx.pdsFolderResolver()).thenReturn(new PdsFoldersResolver() {
             @Override public PdsFolderSettings resolveFolders() {
                 return new PdsFolderSettings(new File("."), subfolderName, consistentId, null, false);
             }
