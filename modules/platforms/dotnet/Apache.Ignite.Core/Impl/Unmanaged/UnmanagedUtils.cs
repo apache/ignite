@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using JNI = IgniteJniNativeMethods;
 
@@ -57,6 +58,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
             JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            // Clean directories in background to avoid extra work on start.
+            Task.Factory.StartNew(IgniteUtils.TryCleanTempDirectories);
         }
 
         /// <summary>

@@ -51,6 +51,7 @@ noinst_HEADERS = \
     ignite/odbc/diagnostic/diagnosable.h \
     ignite/odbc/diagnostic/diagnosable_adapter.h \
     ignite/odbc/connection.h \
+    ignite/odbc/odbc_error.h \
     ignite/odbc/message.h \
     ignite/odbc/cursor.h \
     ignite/odbc/common_types.h \

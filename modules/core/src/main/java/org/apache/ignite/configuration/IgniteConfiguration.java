@@ -2207,6 +2207,9 @@ public class IgniteConfiguration {
      * significantly speed up large topology startup time.
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
+     * <p>
+     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
      */
@@ -2217,6 +2220,9 @@ public class IgniteConfiguration {
     /**
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
+     * <p>
+     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.
      * @return {@code this} instance.

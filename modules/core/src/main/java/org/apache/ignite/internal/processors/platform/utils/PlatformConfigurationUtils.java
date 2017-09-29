@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.security.AccessController;
@@ -53,6 +54,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,11 +65,14 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
+import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -571,6 +576,14 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
 
+        Object consId = in.readObjectDetached();
+
+        if (consId instanceof Serializable) {
+            cfg.setConsistentId((Serializable) consId);
+        } else if (consId != null) {
+            throw new IgniteException("IgniteConfiguration.ConsistentId should be Serializable.");
+        }
+
         // Thread pools.
         if (in.readBoolean())
             cfg.setPublicThreadPoolSize(in.readInt());
@@ -692,6 +705,8 @@ public class PlatformConfigurationUtils {
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         readPluginConfiguration(cfg, in);
+
+        readLocalEventListeners(cfg, in);
     }
 
     /**
@@ -1025,6 +1040,7 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
+        w.writeObject(cfg.getConsistentId());
 
         // Thread pools.
         w.writeBoolean(true);
@@ -1561,7 +1577,9 @@ public class PlatformConfigurationUtils {
                 .setAlwaysWriteFullPages(in.readBoolean())
                 .setMetricsEnabled(in.readBoolean())
                 .setSubIntervals(in.readInt())
-                .setRateTimeInterval(in.readLong());
+                .setRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+                .setWriteThrottlingEnabled(in.readBoolean());
     }
 
     /**
@@ -1594,11 +1612,38 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isMetricsEnabled());
             w.writeInt(cfg.getSubIntervals());
             w.writeLong(cfg.getRateTimeInterval());
+            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
+            w.writeBoolean(cfg.isWriteThrottlingEnabled());
 
         } else {
             w.writeBoolean(false);
         }
     }
+
+    /**
+     * Reads the plugin configuration.
+     *
+     * @param cfg Ignite configuration to update.
+     * @param in Reader.
+     */
+    private static void readLocalEventListeners(IgniteConfiguration cfg, BinaryRawReader in) {
+        int cnt = in.readInt();
+
+        if (cnt == 0) {
+            return;
+        }
+
+        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            int[] types = in.readIntArray();
+
+            lsnrs.put(new PlatformLocalEventListener(i), types);
+        }
+
+        cfg.setLocalEventListeners(lsnrs);
+    }
+
 
 
     /**

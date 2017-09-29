@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -58,7 +58,6 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 
@@ -90,17 +89,18 @@ public class DdlStatementsProcessor {
      * Execute DDL statement.
      *
      * @param sql SQL.
-     * @param stmt H2 statement to parse and execute.
+     * @param prepared Prepared.
+     * @return Cursor on query results.
+     * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, PreparedStatement stmt)
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
         throws IgniteCheckedException {
-        assert stmt instanceof JdbcPreparedStatement;
 
         IgniteInternalFuture fut = null;
 
         try {
-            GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
+            GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
 
             if (stmt0 instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;
@@ -182,9 +182,9 @@ public class DdlStatementsProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
-                        cmd.affinityKey(), cmd.atomicityMode(), cmd.writeSynchronizationMode(), cmd.backups(),
-                        cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
+                        cmd.cacheGroup(),cmd.affinityKey(), cmd.atomicityMode(),
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -358,11 +358,24 @@ public class DdlStatementsProcessor {
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
+        if (!F.isEmpty(createTbl.keyTypeName()))
+            keyTypeName = createTbl.keyTypeName();
+
+        if (!F.isEmpty(createTbl.valueTypeName()))
+            valTypeName = createTbl.valueTypeName();
+
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
 
         res.setKeyFields(createTbl.primaryKeyColumns());
-        res.setNotNullFields(notNullFields);
+
+        if (!F.isEmpty(notNullFields)) {
+            QueryEntityEx res0 = new QueryEntityEx(res);
+
+            res0.setNotNullFields(notNullFields);
+
+            res = res0;
+        }
 
         return res;
     }

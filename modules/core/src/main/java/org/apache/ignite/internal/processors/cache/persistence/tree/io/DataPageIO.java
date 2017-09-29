@@ -68,8 +68,8 @@ public class DataPageIO extends PageIO {
     /** */
     private static final int FIRST_ENTRY_OFF = INDIRECT_CNT_OFF + 1;
 
-    /** */
-    private static final int ITEMS_OFF = FIRST_ENTRY_OFF + 2;
+    /** Offset of items (internal page pointers) within data page */
+    public static final int ITEMS_OFF = FIRST_ENTRY_OFF + 2;
 
     /** */
     private static final int ITEM_SIZE = 2;
@@ -1445,7 +1445,7 @@ public class DataPageIO extends PageIO {
     /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("DataPageIO [\n");
-        printPageLayout(addr, 0, sb);
+        printPageLayout(addr, pageSize, sb);
         sb.a("\n]");
     }
 

@@ -81,6 +81,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default rebalance batch size in bytes. </summary>
         public const int DefaultRebalanceBatchSize = 512*1024; // 512K
 
+        /// <summary> Default value for <see cref="WriteSynchronizationMode"/> property.</summary>
+        public const CacheWriteSynchronizationMode DefaultWriteSynchronizationMode = 
+            CacheWriteSynchronizationMode.PrimarySync;
+
         /// <summary> Default value for eager ttl flag. </summary>
         public const bool DefaultEagerTtl = true;
 
@@ -112,7 +116,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
         /// <summary> Default value for keep portable in store behavior .</summary>
+        [Obsolete("Use DefaultKeepBinaryInStore instead.")]
         public const bool DefaultKeepVinaryInStore = true;
+
+        /// <summary> Default value for <see cref="KeepBinaryInStore"/> property.</summary>
+        public const bool DefaultKeepBinaryInStore = false;
 
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
@@ -154,9 +162,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AtomicityMode = DefaultAtomicityMode;
             CacheMode = DefaultCacheMode;
             CopyOnRead = DefaultCopyOnRead;
+            WriteSynchronizationMode = DefaultWriteSynchronizationMode;
             EagerTtl = DefaultEagerTtl;
             Invalidate = DefaultInvalidate;
-            KeepBinaryInStore = DefaultKeepVinaryInStore;
+            KeepBinaryInStore = DefaultKeepBinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
 #pragma warning disable 618
@@ -220,8 +229,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
-                // Plugins should be copied directly.
-                PluginConfigurations = other.PluginConfigurations;
+                CopyLocalProperties(other);
             }
         }
 
@@ -300,8 +308,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (reader.ReadBoolean())
                     {
                         // FactoryId-based plugin: skip.
+                        reader.ReadInt();  // Skip factory id.
                         var size = reader.ReadInt();
-                        reader.Stream.Seek(size, SeekOrigin.Current);
+                        reader.Stream.Seek(size, SeekOrigin.Current);  // Skip custom data.
                     }
                     else
                     {
@@ -404,7 +413,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                         cachePlugin.WriteBinary(writer);
 
-                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos);  // Write size.
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos - 4);  // Write size.
                     }
                     else
                     {
@@ -417,6 +426,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteInt(0);
             }
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(CacheConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
+            PluginConfigurations = cfg.PluginConfigurations;
+
+            if (QueryEntities != null && cfg.QueryEntities != null)
+            {
+                var entities = cfg.QueryEntities.Where(x => x != null).ToDictionary(x => GetQueryEntityKey(x), x => x);
+
+                foreach (var entity in QueryEntities.Where(x => x != null))
+                {
+                    QueryEntity src;
+
+                    if (entities.TryGetValue(GetQueryEntityKey(entity), out src))
+                    {
+                        entity.CopyLocalProperties(src);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the query entity key.
+        /// </summary>
+        private static string GetQueryEntityKey(QueryEntity x)
+        {
+            return x.KeyTypeName + "^" + x.ValueTypeName;
         }
 
         /// <summary>
@@ -438,6 +480,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
+        [DefaultValue(DefaultWriteSynchronizationMode)]
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
 
         /// <summary>
@@ -467,7 +510,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the flag indicating whether <see cref="ICacheStore"/> is working with binary objects 
         /// instead of deserialized objects.
         /// </summary>
-        [DefaultValue(DefaultKeepVinaryInStore)]
+        [DefaultValue(DefaultKeepBinaryInStore)]
         public bool KeepBinaryInStore { get; set; }
 
         /// <summary>
