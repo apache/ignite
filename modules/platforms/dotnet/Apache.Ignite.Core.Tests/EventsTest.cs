@@ -634,13 +634,10 @@ namespace Apache.Ignite.Core.Tests
             };
 
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(igniteCfg));
-            Assert.AreEqual("Failed to start Ignite.NET, check inner exception for details", ex.Message);
-
-            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Unsupported IgniteConfiguration.EventStorageSpi: " +
                             "'Apache.Ignite.Core.Tests.MyEventStorage'. Supported implementations: " +
                             "'Apache.Ignite.Core.Events.NoopEventStorageSpi', " +
-                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.InnerException.Message);
+                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.Message);
         }
 
         /// <summary>

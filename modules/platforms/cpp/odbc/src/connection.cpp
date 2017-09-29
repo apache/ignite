@@ -27,6 +27,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/odbc_error.h"
 
 namespace
 {
@@ -46,7 +47,8 @@ namespace ignite
             socket(),
             connected(false),
             parser(),
-            config()
+            config(),
+            info(config)
         {
             // No-op.
         }
@@ -58,9 +60,6 @@ namespace ignite
 
         const config::ConnectionInfo& Connection::GetInfo() const
         {
-            // Connection info is constant and the same for all connections now.
-            const static config::ConnectionInfo info;
-
             return info;
         }
 
@@ -140,6 +139,8 @@ namespace ignite
 
             if (res == SqlResult::AI_ERROR)
                 Close();
+            else
+                parser.SetProtocolVersion(config.GetProtocolVersion());
 
             return res;
         }
@@ -196,7 +197,7 @@ namespace ignite
         void Connection::Send(const int8_t* data, size_t len)
         {
             if (!connected)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
+                throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
 
@@ -211,7 +212,7 @@ namespace ignite
             size_t sent = SendAll(msg.GetData(), msg.GetSize());
 
             if (sent != len + sizeof(OdbcProtocolHeader))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
             LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
         }
@@ -242,7 +243,7 @@ namespace ignite
         void Connection::Receive(std::vector<int8_t>& msg)
         {
             if (!connected)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
+                throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             msg.clear();
 
@@ -251,13 +252,13 @@ namespace ignite
             size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message header");
 
             if (hdr.len < 0)
             {
                 Close();
 
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message length is negative");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Protocol error: Message length is negative");
             }
 
             if (hdr.len == 0)
@@ -271,7 +272,7 @@ namespace ignite
             {
                 msg.resize(received);
 
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
+                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
             }
 
             LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
@@ -449,9 +450,15 @@ namespace ignite
             {
                 SyncMessage(req, rsp);
             }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, err.GetText());
 
                 return SqlResult::AI_ERROR;
             }
@@ -471,7 +478,7 @@ namespace ignite
                             << "driver protocol version introduced in version: "
                             << config.GetProtocolVersion().ToString() << ".";
 
-                AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, constructor.str());
+                AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 
                 return SqlResult::AI_ERROR;
             }

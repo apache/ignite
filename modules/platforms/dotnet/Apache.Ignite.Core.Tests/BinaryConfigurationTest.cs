@@ -93,10 +93,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCodeConfiguration()
         {
-            StartGrid(new BinaryConfiguration
+            var cfg = new BinaryConfiguration
             {
                 TypeConfigurations = TestTypes.Select(x => new BinaryTypeConfiguration(x)).ToList()
-            });
+            };
+
+            StartGrid(new BinaryConfiguration(cfg));
 
             CheckBinarizableTypes(TestTypes);
         }

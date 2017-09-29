@@ -71,10 +71,15 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 .then(() => {
                     const i = _.findIndex($ctrl.gridOptions.data, (u) => u._id === user._id);
 
-                    if (i >= 0)
+                    if (i >= 0) {
                         $ctrl.gridOptions.data.splice(i, 1);
-                })
-                .then(() => $ctrl.adjustHeight($ctrl.gridOptions.data.length));
+                        $ctrl.gridApi.selection.clearSelectedRows();
+                    }
+
+                    $ctrl.adjustHeight($ctrl.gridOptions.data.length);
+
+                    return $ctrl._refreshRows();
+                });
         };
 
         const toggleAdmin = () => {
@@ -86,7 +91,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             user.adminChanging = true;
 
             AdminData.toggleAdmin(user)
-                .then(() => user.admin = !user.admin)
                 .finally(() => user.adminChanging = false);
         };
 
@@ -165,6 +169,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
             fastWatch: true,
             exporterSuppressColumns: ['actions'],
             exporterCsvColumnSeparator: ';',
+            rowIdentity: (row) => row._id,
+            getRowIdentity: (row) => row._id,
             onRegisterApi: (api) => {
                 $ctrl.gridApi = api;
 
@@ -193,6 +199,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
                     $ctrl.countries = _.values(_.groupBy(data, 'countryCode'));
 
                     $ctrl.adjustHeight(data.length);
+
+                    $ctrl._refreshRows();
                 });
         };
 
@@ -244,6 +252,13 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
         if (!_.isEqual(ids, this.selected))
             this.selected = ids;
+    }
+
+    _refreshRows() {
+        if (this.gridApi) {
+            this.gridApi.grid.refreshRows()
+                .then(() => this.selected.length && this._updateSelected());
+        }
     }
 
     exportCsv() {

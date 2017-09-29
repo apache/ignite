@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
  * Thin client response.
  */
-public class ClientResponse extends SqlListenerResponse {
+public class ClientResponse extends ClientListenerResponse {
     /** Request id. */
     private final long reqId;
 
@@ -33,7 +33,32 @@ public class ClientResponse extends SqlListenerResponse {
      * @param reqId Request id.
      */
     public ClientResponse(long reqId) {
-        super(STATUS_SUCCESS, null);
+        super(ClientStatus.SUCCESS, null);
+
+        this.reqId = reqId;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     * @param err Error message.
+     */
+    public ClientResponse(long reqId, String err) {
+        super(ClientStatus.FAILED, err);
+
+        this.reqId = reqId;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param reqId Request id.
+     * @param status Status code.
+     * @param err Error message.
+     */
+    public ClientResponse(long reqId, int status, String err) {
+        super(status, err);
 
         this.reqId = reqId;
     }
@@ -41,7 +66,21 @@ public class ClientResponse extends SqlListenerResponse {
     /**
      * Encodes the response data.
      */
-    public void encode(BinaryRawWriter writer) {
+    public void encode(BinaryRawWriterEx writer) {
         writer.writeLong(reqId);
+        writer.writeInt(status());
+
+        if (status() != ClientStatus.SUCCESS) {
+            writer.writeString(error());
+        }
+    }
+
+    /**
+     * Gets the request id.
+     *
+     * @return Request id.
+     */
+    public long requestId() {
+        return reqId;
     }
 }

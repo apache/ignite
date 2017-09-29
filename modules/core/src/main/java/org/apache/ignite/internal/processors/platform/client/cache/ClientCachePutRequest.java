@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
@@ -45,7 +45,7 @@ public class ClientCachePutRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(GridKernalContext ctx) {
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).put(key, val);
 
         return super.process(ctx);

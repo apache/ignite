@@ -17,37 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
- * Tests complex scenario with topology validator.
- * Grid is split between to data centers, defined by attribute {@link #DC_NODE_ATTR}.
- * If only nodes from single DC are left in topology, grid is moved into inoperative state until special
+ * Tests complex scenario with topology validator. Grid is split between to data centers, defined by attribute {@link
+ * #DC_NODE_ATTR}. If only nodes from single DC are left in topology, grid is moved into inoperative state until special
  * activator node'll enter a topology, enabling grid operations.
  */
 public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstractTest {
@@ -58,10 +50,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
-    private static final int GRID_CNT = 4;
+    private static final int GRID_CNT = 8;
 
     /** */
-    private static final int CACHES_CNT = 10;
+    private static final int CACHES_CNT = 100;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
@@ -70,7 +62,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     private static final int CONFIGLESS_GRID_IDX = GRID_CNT + 1;
 
     /** */
-    private static CountDownLatch initLatch = new CountDownLatch(GRID_CNT);
+    private boolean useCacheGrp = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -86,44 +78,53 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
                 cfg.setUserAttributes(F.asMap(ACTIVATOR_NODE_ATTR, "true"));
             }
-            else {
-                CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
-
-                for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
-                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-                    ccfg.setName(testCacheName(cnt));
-                    ccfg.setCacheMode(PARTITIONED);
-                    ccfg.setBackups(0);
-                    ccfg.setTopologyValidator(new SplitAwareTopologyValidator());
-
-                    ccfgs[cnt] = ccfg;
-                }
-
-                cfg.setCacheConfiguration(ccfgs);
-            }
+            else
+                cfg.setActiveOnStart(false);
         }
 
         return cfg;
     }
 
+    /**  */
+    protected Collection<CacheConfiguration> getCacheConfigurations() {
+        CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
+
+        for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            ccfg.setName(testCacheName(cnt));
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
+            ccfg.setBackups(0);
+            ccfg.setTopologyValidator(new SplitAwareTopologyValidator());
+
+            if (useCacheGrp)
+                ccfg.setGroupName("testGroup");
+
+            ccfgs[cnt] = ccfg;
+        }
+
+        return Arrays.asList(ccfgs);
+    }
+
     /**
      * @param idx Index.
+     * @return Cache name.
      */
     private String testCacheName(int idx) {
         return "test" + idx;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         startGridsMultiThreaded(GRID_CNT);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         stopAllGrids();
     }
@@ -134,21 +135,57 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testTopologyValidator() throws Exception {
-        assertTrue(initLatch.await(10, TimeUnit.SECONDS));
+        testTopologyValidator0(false);
+    }
+
+    /**
+     * Tests topology split scenario.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTopologyValidatorWithCacheGroup() throws Exception {
+        testTopologyValidator0(true);
+    }
+
+    /**
+     * Tests topology split scenario.
+     * @param useCacheGrp Use cache group.
+     *
+     * @throws Exception If failed.
+     */
+    private void testTopologyValidator0(boolean useCacheGrp) throws Exception {
+        this.useCacheGrp = useCacheGrp;
+
+        IgniteEx grid = grid(0);
+
+        grid.getOrCreateCaches(getCacheConfigurations());
+
+        // Init grid index arrays
+        int[] dc1 = new int[GRID_CNT / 2];
+
+        for (int i = 0; i < dc1.length; ++i)
+            dc1[i] = i * 2 + 1;
+
+        int[] dc0 = new int[GRID_CNT - dc1.length];
+
+        for (int i = 0; i < dc0.length; ++i)
+            dc0[i] = i * 2;
 
         // Tests what each node is able to do puts.
-        tryPut(0, 1, 2, 3);
+        tryPut(dc0);
+
+        tryPut(dc1);
 
         clearAll();
 
-        stopGrid(1);
-
-        stopGrid(3);
+        // Force segmentation.
+        for (int idx : dc1)
+            stopGrid(idx);
 
         awaitPartitionMapExchange();
 
         try {
-            tryPut(0, 2);
+            tryPut(dc0);
 
             fail();
         }
@@ -156,24 +193,27 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             // No-op.
         }
 
+        // Repair split by adding activator node in topology.
         resolveSplit();
 
-        tryPut(0, 2);
+        tryPut(dc0);
 
         clearAll();
 
+        // Fix split by adding node from second DC.
         startGrid(CONFIGLESS_GRID_IDX);
 
         awaitPartitionMapExchange();
 
         tryPut(CONFIGLESS_GRID_IDX);
 
+        // Force split by removing last node from second DC.
         stopGrid(CONFIGLESS_GRID_IDX);
 
         awaitPartitionMapExchange();
 
         try {
-            tryPut(0, 2);
+            tryPut(dc0);
 
             fail();
         }
@@ -181,23 +221,48 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             // No-op.
         }
 
+        // Repair split by adding activator node in topology.
         resolveSplit();
 
-        tryPut(0, 2);
+        tryPut(dc0);
 
         clearAll();
 
-        startGrid(1);
+        // Removing one node from segmented DC, shouldn't reset repair state.
+        stopGrid(0);
 
         awaitPartitionMapExchange();
 
-        tryPut(0, 1, 2);
+        for (int i = 0; i < dc0.length; i++) {
+            int idx = dc0[i];
+
+            if (idx == 0)
+                continue;
+
+            assertEquals("Expecting put count", CACHES_CNT, tryPut(idx));
+        }
+
+        clearAll(2);
+
+        // Add node to segmented DC, shouldn't reset repair state.
+        startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        assertEquals("Expecting put count", CACHES_CNT * dc0.length, tryPut(dc0));
+    }
+
+    /**
+     * @param g Node index.
+     */
+    private void clearAll(int g) {
+        for (int i = 0; i < CACHES_CNT; i++)
+            grid(g).cache(testCacheName(i)).clear();
     }
 
     /** */
     private void clearAll() {
-        for (int i = 0; i < CACHES_CNT; i++)
-            grid(0).cache(testCacheName(i)).clear();
+        clearAll(0);
     }
 
     /**
@@ -214,34 +279,45 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     /**
      * @param grids Grids to test.
      */
-    private void tryPut(int... grids) {
+    private int tryPut(int... grids) {
+        int putCnt = 0;
+
         for (int i = 0; i < grids.length; i++) {
             IgniteEx g = grid(grids[i]);
-
             for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
                 String cacheName = testCacheName(cnt);
 
                 for (int k = 0; k < 100; k++) {
                     if (g.affinity(cacheName).isPrimary(g.localNode(), k)) {
-                        log().info("Put " + k + " to node " + g.localNode().id().toString());
-
                         IgniteCache<Object, Object> cache = g.cache(cacheName);
 
-                        cache.put(k, k);
+                        try {
+                            cache.put(k, k);
+                        }
+                        catch (Throwable t) {
+                            log.error("Failed to put entry: [cache=" + cacheName + ", key=" + k + ", nodeId=" +
+                                g.name() + ']', t);
+
+                            throw t;
+                        }
 
                         assertEquals(1, cache.localSize());
+
+                        putCnt++;
 
                         break;
                     }
                 }
             }
         }
+
+        return putCnt;
     }
 
     /**
      * Prevents cache from performing any operation if only nodes from single data center are left in topology.
      */
-    private static class SplitAwareTopologyValidator implements TopologyValidator, LifecycleAware {
+    private static class SplitAwareTopologyValidator implements TopologyValidator {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -257,40 +333,55 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         @LoggerResource
         private IgniteLogger log;
 
-        /** */
-        private transient volatile long activatorTopVer;
+        /** State. */
+        private transient State state;
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
+            initIfNeeded(nodes);
+
             if (!F.view(nodes, new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return !node.isClient() && node.attribute(DC_NODE_ATTR) == null;
                 }
-            }).isEmpty())
+            }).isEmpty()) {
+                log.error("No valid server nodes are detected in topology: [cacheName=" + cacheName + ']');
+
                 return false;
-
-            IgniteKernal kernal = (IgniteKernal)ignite;
-
-            GridDhtPartitionsExchangeFuture curFut = kernal.context().cache().context().exchange().lastTopologyFuture();
-
-            long cacheTopVer = curFut.context().events().topologyVersion().topologyVersion();
-
-            if (hasSplit(nodes)) {
-                boolean resolved = activatorTopVer != 0 && cacheTopVer >= activatorTopVer;
-
-                if (!resolved)
-                    log.info("Grid segmentation is detected, switching to inoperative state.");
-
-                return resolved;
             }
-            else
-                activatorTopVer = 0;
 
-            return true;
+            boolean segmented = segmented(nodes);
+
+            if (!segmented)
+                state = State.VALID; // Also clears possible REPAIRED state.
+            else {
+                if (state == State.REPAIRED) // Any topology change in segmented grid in repaired mode is valid.
+                    return true;
+
+                // Find discovery event node.
+                ClusterNode evtNode = evtNode(nodes);
+
+                if (activator(evtNode)) {
+                    if (log.isInfoEnabled())
+                        log.info("Grid segmentation is repaired: [cacheName=" + cacheName + ']');
+
+                    state = State.REPAIRED;
+                }
+                else {
+                    if (state == State.VALID) {
+                        if (log.isInfoEnabled())
+                            log.info("Grid segmentation is detected: [cacheName=" + cacheName + ']');
+                    }
+
+                    state = State.NOTVALID;
+                }
+            }
+
+            return state != State.NOTVALID;
         }
 
         /** */
-        private boolean hasSplit(Collection<ClusterNode> nodes) {
+        private boolean segmented(Collection<ClusterNode> nodes) {
             ClusterNode prev = null;
 
             for (ClusterNode node : nodes) {
@@ -307,38 +398,74 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             return true;
         }
 
-        /** {@inheritDoc} */
-        @Override public void start() throws IgniteException {
-            if (ignite.cluster().localNode().isClient())
-                return;
-
-            initLatch.countDown();
-
-            ignite.events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                    ClusterNode node = discoEvt.eventNode();
-
-                    if (isMarkerNode(node))
-                        activatorTopVer = discoEvt.topologyVersion();
-
-                    return true;
-                }
-            }, EventType.EVT_NODE_LEFT);
-        }
-
         /**
          * @param node Node.
          * @return {@code True} if this is marker node.
          */
-        private boolean isMarkerNode(ClusterNode node) {
+        private boolean activator(ClusterNode node) {
             return node.isClient() && node.attribute(ACTIVATOR_NODE_ATTR) != null;
         }
 
-        /** {@inheritDoc} */
-        @Override public void stop() {
-            // No-op.
+        /**
+         * Sets initial validator state.
+         *
+         * @param nodes Topology nodes.
+         */
+        private void initIfNeeded(Collection<ClusterNode> nodes) {
+            if (state != null)
+                return;
+
+            // Search for activator node in history on start.
+            long topVer = evtNode(nodes).order();
+
+            while(topVer > 0) {
+                Collection<ClusterNode> top = ignite.cluster().topology(topVer--);
+
+                // Stop on reaching history limit.
+                if (top == null)
+                    return;
+
+                boolean segmented = segmented(top);
+
+                // Stop on reaching valid topology.
+                if (!segmented)
+                    return;
+
+                for (ClusterNode node : top) {
+                    if (activator(node)) {
+                        state = State.REPAIRED;
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Returns node with biggest order (event topology version).
+         *
+         * @param nodes Topology nodes.
+         * @return ClusterNode Node.
+         */
+        private ClusterNode evtNode(Collection<ClusterNode> nodes) {
+            ClusterNode evtNode = null;
+
+            for (ClusterNode node : nodes) {
+                if (evtNode == null || node.order() > evtNode.order())
+                    evtNode = node;
+            }
+
+            return evtNode;
+        }
+
+        /** States. */
+        private enum State {
+            /** Topology valid. */
+            VALID,
+            /** Topology not valid */
+            NOTVALID,
+            /** Topology repaired (valid) */
+            REPAIRED;
         }
     }
 }

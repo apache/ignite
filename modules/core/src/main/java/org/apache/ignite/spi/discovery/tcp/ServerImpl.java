@@ -465,7 +465,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
 
-        Collection<TcpDiscoveryNode> rmts = null;
         Collection<TcpDiscoveryNode> nodes = null;
 
         if (!disconnect)
@@ -474,22 +473,23 @@ class ServerImpl extends TcpDiscoveryImpl {
             spi.getSpiContext().deregisterPorts();
 
             nodes = ring.visibleNodes();
-            rmts = F.view(nodes, F.remoteNodes(locNode.id()));
         }
 
         long topVer = ring.topologyVersion();
 
         ring.clear();
 
-        if (rmts != null && !rmts.isEmpty()) {
-            // This is restart/disconnection and remote nodes are not empty.
-            // We need to fire FAIL event for each.
+        if (nodes != null) {
+            // This is restart/disconnection and we need to fire FAIL event for each remote node.
             DiscoverySpiListener lsnr = spi.lsnr;
 
             if (lsnr != null) {
-                Collection<ClusterNode> processed = new HashSet<>();
+                Collection<ClusterNode> processed = new HashSet<>(nodes.size());
 
-                for (TcpDiscoveryNode n : rmts) {
+                for (TcpDiscoveryNode n : nodes) {
+                    if(n.isLocal())
+                        continue;
+
                     assert n.visible();
 
                     processed.add(n);
@@ -930,7 +930,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         " node is configured to use loopback address, but " + secondNode + " node is not " +
                         "(consider changing 'localAddress' configuration parameter) " +
                         "[locNodeAddrs=" + U.addressesAsString(locNode) + ", rmtNodeAddrs=" +
-                        U.addressesAsString(msg.addresses(), msg.hostNames()) + ']');
+                        U.addressesAsString(msg.addresses(), msg.hostNames()) +
+                        ", creatorNodeId=" + msg.creatorNodeId() + ']');
                 }
                 else
                     LT.warn(log, "Node has not been connected to topology and will repeat join process. " +

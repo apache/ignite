@@ -122,6 +122,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransform
 import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDestroySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
+import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
@@ -133,6 +134,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiN
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
+import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
@@ -157,8 +159,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
         suite.addTestSuite(SqlConnectorConfigurationValidationSelfTest.class);
+        suite.addTestSuite(ClientConnectorConfigurationValidationSelfTest.class);
 
         suite.addTestSuite(SqlSchemaSelfTest.class);
+        suite.addTestSuite(MultipleStatementsSqlQuerySelfTest.class);
 
         // Misc tests.
         // TODO: Enable when IGNITE-1094 is fixed.

@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTopologySafeGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledPutGetRestartTest;
@@ -83,7 +82,6 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 
-        suite.addTestSuite(IgniteCacheTopologySafeGetSelfTest.class);
         suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
 
         suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);

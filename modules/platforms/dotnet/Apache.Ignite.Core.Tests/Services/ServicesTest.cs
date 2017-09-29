@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
@@ -545,6 +546,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<ServiceDeploymentException>(() =>
                 Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
@@ -705,11 +707,12 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void CheckServiceStarted(IIgnite grid, int count = 1)
         {
-            var services = grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
+            Func<ICollection<TestIgniteServiceSerializable>> getServices = () =>
+                grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
 
-            Assert.AreEqual(count, services.Count);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => count == getServices().Count, 5000));
 
-            var svc = services.First();
+            var svc = getServices().First();
 
             Assert.IsNotNull(svc);
 
