@@ -565,7 +565,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (!busyLock.enterBusy()) {
             IgniteCheckedException e = new IgniteCheckedException("Service deployment has been cancelled (node is stopping): " +
-                cfg.getName());
+                cfgs);
 
             return new GridFinishedFuture<>(e);
         }
