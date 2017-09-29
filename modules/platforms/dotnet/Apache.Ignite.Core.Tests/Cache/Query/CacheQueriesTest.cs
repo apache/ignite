@@ -421,6 +421,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests that query configuration propagates from Spring XML correctly.
+        /// </summary>
+        [Test]
+        public void TestQueryConfiguration()
+        {
+            var qe = Cache().GetConfiguration().QueryEntities.Single();
+
+            Assert.AreEqual(typeof(QueryPerson).FullName, qe.ValueTypeName);
+
+            var age = qe.Fields.First();
+            Assert.AreEqual("age", age.Name);
+            Assert.AreEqual(typeof(int), age.FieldType);
+            Assert.IsFalse(age.IsKeyField);
+
+            var name = qe.Fields.Last();
+            Assert.AreEqual("name", name.Name);
+            Assert.AreEqual(typeof(string), name.FieldType);
+            Assert.IsFalse(name.IsKeyField);
+
+            var textIdx = qe.Indexes.First();
+            Assert.AreEqual(QueryIndexType.FullText, textIdx.IndexType);
+            Assert.AreEqual("name", textIdx.Fields.Single().Name);
+            Assert.AreEqual(QueryIndex.DefaultInlineSize, textIdx.InlineSize);
+
+            var sqlIdx = qe.Indexes.Last();
+            Assert.AreEqual(QueryIndexType.Sorted, sqlIdx.IndexType);
+            Assert.AreEqual("age", sqlIdx.Fields.Single().Name);
+            Assert.AreEqual(2345, sqlIdx.InlineSize);
+        }
+
+        /// <summary>
         /// Check text query.
         /// </summary>
         [Test]
