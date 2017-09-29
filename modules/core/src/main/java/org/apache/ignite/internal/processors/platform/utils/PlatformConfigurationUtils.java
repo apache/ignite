@@ -459,6 +459,7 @@ public class PlatformConfigurationUtils {
         // Fields
         int cnt = in.readInt();
         Set<String> keyFields = new HashSet<>(cnt);
+        Set<String> notNullFields = new HashSet<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -471,12 +472,18 @@ public class PlatformConfigurationUtils {
 
                 if (in.readBoolean())
                     keyFields.add(fieldName);
+
+                if (in.readBoolean())
+                    notNullFields.add(fieldName);
             }
 
             res.setFields(fields);
 
             if (!keyFields.isEmpty())
                 res.setKeyFields(keyFields);
+
+            if (!notNullFields.isEmpty())
+                res.setNotNullFields(notNullFields);
         }
 
         // Aliases
@@ -937,6 +944,7 @@ public class PlatformConfigurationUtils {
 
         if (fields != null) {
             Set<String> keyFields = queryEntity.getKeyFields();
+            Set<String> notNullFields = queryEntity.getNotNullFields();
 
             writer.writeInt(fields.size());
 
@@ -944,6 +952,7 @@ public class PlatformConfigurationUtils {
                 writer.writeString(field.getKey());
                 writer.writeString(field.getValue());
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
+                writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
             }
         }
         else
