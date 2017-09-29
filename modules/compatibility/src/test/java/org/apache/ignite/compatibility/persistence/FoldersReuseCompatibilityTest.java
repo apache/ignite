@@ -144,6 +144,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      */
     private static void configPersistence(IgniteConfiguration cfg) {
         final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
+
         cfg.setPersistentStoreConfiguration(psCfg);
 
         final MemoryConfiguration memCfg = new MemoryConfiguration();

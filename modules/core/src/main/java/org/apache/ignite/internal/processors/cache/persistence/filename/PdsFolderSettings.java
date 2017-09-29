@@ -55,7 +55,6 @@ public class PdsFolderSettings {
      */
     private final boolean compatible;
 
-
     /**
      * Creates settings in for new PST(DB) folder mode
      *

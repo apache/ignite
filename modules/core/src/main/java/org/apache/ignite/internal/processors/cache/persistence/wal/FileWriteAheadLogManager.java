@@ -260,20 +260,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode()) {
             final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-            final String consId = resolveFolders.folderName();
+
             checkWalConfiguration();
 
             walWorkDir = initDirectory(
                 psCfg.getWalStorePath(),
                 PersistentStoreConfiguration.DFLT_WAL_STORE_PATH,
-                consId,
+                resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
             walArchiveDir = initDirectory(
                 psCfg.getWalArchivePath(),
                 PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH,
-                consId,
+                resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
 

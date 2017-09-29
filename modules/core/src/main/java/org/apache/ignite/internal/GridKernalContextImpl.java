@@ -1075,7 +1075,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.disconnected = disconnected;
     }
 
-
     /**{@inheritDoc}*/
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;

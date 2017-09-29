@@ -948,11 +948,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
         final String folderName;
-        if(folderSettings.isCompatible()) {
-            final String consId = String.valueOf(folderSettings.consistentId());
 
-            folderName = consId.replaceAll("[:,\\.]", "_");
-        } else
+        if(folderSettings.isCompatible())
+            folderName = String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_");
+        else
             folderName = folderSettings.folderName();
 
         return buildPath(path, folderName);

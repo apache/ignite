@@ -123,8 +123,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param consistentId compatibility consistent ID
      * @return PDS folder settings compatible with previous versions.
      */
-    private PdsFolderSettings compatibleResolve(@Nullable final File pstStoreBasePath,
-        final Serializable consistentId) {
+    private PdsFolderSettings compatibleResolve(
+        @Nullable final File pstStoreBasePath,
+        @NotNull final Serializable consistentId) {
+
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
             return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
@@ -139,9 +141,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return Wrapped DiscoverySpi SPI.
      */
     @NotNull private DiscoverySpi getDiscoverySpi() {
-        final DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
-        A.ensure(spi instanceof TcpDiscoverySpi, "TCP discovery SPI: invalid implementation: " + spi.getName());
-        return spi;
+        return ctx.discovery().getInjectedDiscoverySpi();
     }
 
     /** {@inheritDoc} */
@@ -240,7 +240,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      */
     private static FolderParams folderSize(File dir) {
         final FolderParams params = new FolderParams();
+
         visitFolder(dir, params);
+
         return params;
     }
 
@@ -261,15 +263,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
     }
 
-    /** Path metrics */
-    private static class FolderParams {
-        /** Overall size in bytes. */
-        private long size;
-
-        /** Last modified. */
-        private long lastModified;
-    }
-
     /**
      * @param folder folder to scan.
      * @return folder displayable information.
@@ -287,6 +280,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         res.a(simpleDateFormat.format(params.lastModified));
         res.a(" ");
+
         return res.toString();
     }
 
@@ -323,6 +317,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             sb.a(padChar);
 
         sb.a(str);
+
         return sb.toString();
 
     }
@@ -374,8 +369,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @return locked directory, should be released and closed later
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(
-        File pstStoreBasePath) throws IgniteCheckedException {
+    @NotNull private GridCacheDatabaseSharedManager.FileLockHolder lockRootDirectory(File pstStoreBasePath)
+        throws IgniteCheckedException {
 
         GridCacheDatabaseSharedManager.FileLockHolder rootDirLock;
         int retry = 0;
@@ -386,6 +381,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                     ". Lock is being held to root directory");
             retry++;
         }
+
         return rootDirLock;
     }
 
@@ -396,10 +392,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      */
     @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
         final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
+
         if (files == null)
             return Collections.emptyList();
 
         final List<FolderCandidate> res = new ArrayList<>();
+
         for (File file : files) {
             final FolderCandidate candidate = parseFileName(file);
             if (candidate != null)
@@ -410,6 +408,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 return Integer.compare(c1.nodeIndex(), c2.nodeIndex());
             }
         });
+
         return res;
     }
 
@@ -424,9 +423,11 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private GridCacheDatabaseSharedManager.FileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
         if (!dbStoreDirWithSubdirectory.exists())
             return null;
+
         final String path = dbStoreDirWithSubdirectory.getAbsolutePath();
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder
             = new GridCacheDatabaseSharedManager.FileLockHolder(path, ctx, log);
+
         try {
             fileLockHolder.tryLock(1000);
             return fileLockHolder;
@@ -445,10 +446,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      */
     @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+
         if (pstCfg == null)
             return null;
 
         final File dirToFindOldConsIds;
+
         if (pstCfg.getPersistentStorePath() != null) {
             File workDir0 = new File(pstCfg.getPersistentStorePath());
 
@@ -468,6 +471,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 false
             );
         }
+
         return dirToFindOldConsIds;
     }
 
@@ -494,15 +498,18 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return null;
 
         int uidStart = matcher.end();
+
         try {
             final String uid = fileName.substring(uidStart);
             final UUID uuid = UUID.fromString(uid);
             final String substring = fileName.substring(DB_FOLDER_PREFIX.length(), uidStart - NODEIDX_UID_SEPARATOR.length());
             final int idx = Integer.parseInt(substring);
+
             return new FolderCandidate(subFolderFile, idx, uuid);
         }
         catch (Exception e) {
             log.warning("Unable to parse new style file format: " + e);
+
             return null;
         }
     }
@@ -511,6 +518,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (settings != null) {
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.getLockedFileLockHolder();
+
             if (fileLockHolder != null) {
                 fileLockHolder.release();
                 fileLockHolder.close();
@@ -519,14 +527,25 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         super.stop(cancel);
     }
 
+    /** Path metrics */
+    private static class FolderParams {
+        /** Overall size in bytes. */
+        private long size;
+
+        /** Last modified. */
+        private long lastModified;
+    }
+
     /**
      * Represents parsed new style file and encoded parameters in this file name
      */
     public static class FolderCandidate {
         /** Absolute file path pointing to DB subfolder within DB storage root folder. */
         private final File subFolderFile;
+
         /** Node index (local, usually 0 if multiple nodes are not started at local PC). */
         private final int nodeIdx;
+
         /** Uuid contained in file name, is to be set as consistent ID. */
         private final UUID uuid;
 
@@ -541,12 +560,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             this.uuid = uuid;
         }
 
-        /** @return Node index (local, usually 0 if multiple nodes are not started at local PC). */
+        /**
+         * @return Node index (local, usually 0 if multiple nodes are not started at local PC).
+         */
         public int nodeIndex() {
             return nodeIdx;
         }
 
-        /** @return Uuid contained in file name, is to be set as consistent ID. */
+        /**
+         * @return Uuid contained in file name, is to be set as consistent ID.
+         */
         public Serializable uuid() {
             return uuid;
         }
@@ -558,7 +581,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return subFolderFile;
         }
     }
-
 }
 
 

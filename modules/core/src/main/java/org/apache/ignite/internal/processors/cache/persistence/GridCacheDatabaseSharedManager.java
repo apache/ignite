@@ -373,6 +373,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         snapshotMgr = cctx.snapshot();
 
         final GridKernalContext kernalCtx = cctx.kernalContext();
+
         if (!kernalCtx.clientNode()) {
             IgnitePageStoreManager store = cctx.pageStore();
 
@@ -3186,9 +3187,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             //write ip addresses
             final GridDiscoveryManager discovery = ctx.discovery();
-            //discovery may be not up and running
-            if (discovery != null) {
+
+            if (discovery != null) { //discovery may be not up and running
                 final ClusterNode node = discovery.localNode();
+
                 if (node != null)
                     sb.a(node.addresses());
             }
@@ -3207,7 +3209,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             sb.a("]");
-
 
             String failMsg;
 

@@ -159,6 +159,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     public void testRestartOnExistingOldStyleId() throws Exception {
         final String expDfltConsistentId = "127.0.0.1:47500";
+
         this.configuredConsistentId = expDfltConsistentId; //this is for create old node folder
 
         final Ignite igniteEx = startActivateGrid(0);
@@ -218,9 +219,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         {
             final Ignite igniteRestart = startActivateGrid(0);
+
             assertTrue("there!".equals(igniteRestart.cache(CACHE_NAME).get("hi")));
 
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
+
             assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, igniteRestart));
             stopGrid(0);
 
@@ -246,6 +249,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         }
         {
             final Ignite igniteRestart = startActivateGrid(1);
+
             grid(0).active(true);
             final Object consIdRestart = igniteRestart.cluster().localNode().consistentId();
 
@@ -258,9 +262,16 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertNodeIndexesInFolder(0, 1);
     }
 
+    /**
+     * @param idx Index of the grid to start.
+     * @return Started and activated grid.
+     * @throws Exception If failed.
+     */
     @NotNull private Ignite startActivateFillDataGrid(int idx) throws Exception {
         final Ignite ignite = startActivateGrid(idx);
+
         ignite.getOrCreateCache(CACHE_NAME).put("hi", "there!");
+
         return ignite;
     }
 
@@ -273,7 +284,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     @NotNull private Ignite startActivateGrid(int idx) throws Exception {
         final Ignite ignite = startGrid(idx);
+
         ignite.active(true);
+
         return ignite;
     }
 
@@ -286,9 +299,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     @NotNull private String genNewStyleSubfolderName(final int nodeIdx, final Ignite ignite) {
         final Object consistentId = ignite.cluster().localNode().consistentId();
+
         assertTrue("For new style folders consistent ID should be UUID," +
                 " but actual class is " + (consistentId == null ? null : consistentId.getClass()),
             consistentId instanceof UUID);
+
         return PdsConsistentIdProcessor.genNewStyleSubfolderName(nodeIdx, (UUID)consistentId);
     }
 
@@ -380,12 +395,15 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     public void testStartTwoOldStyleNodes() throws Exception {
         final String expDfltConsistentId1 = "127.0.0.1:47500";
+
         this.configuredConsistentId = expDfltConsistentId1; //this is for create old node folder
         final Ignite ignite = startGrid(0);
 
         final String expDfltConsistentId2 = "127.0.0.1:47501";
+
         this.configuredConsistentId = expDfltConsistentId2; //this is for create old node folder
         final Ignite ignite2 = startGrid(1);
+
         ignite.active(true);
 
         final String expVal = "there is compatible mode with old style folders!";
@@ -400,12 +418,14 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         final Ignite igniteRestart = startGrid(0);
         final Ignite igniteRestart2 = startGrid(1);
+
         igniteRestart2.active(true);
 
         assertEquals(expDfltConsistentId1, igniteRestart.cluster().localNode().consistentId());
         assertEquals(expDfltConsistentId2, igniteRestart2.cluster().localNode().consistentId());
 
         final IgniteCache<Object, Object> cache = igniteRestart.cache(CACHE_NAME);
+
         assertNotNull("Expected to have cache [" + CACHE_NAME + "] using [" + expDfltConsistentId1 + "] as PDS folder", cache);
         final Object valFromCache = cache.get("hi");
 
@@ -438,14 +458,17 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertNodeIndexesInFolder(); // expected to have no new style folders
 
         final Object consistentId1 = ignite1.cluster().localNode().consistentId();
+
         assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
         final Object consistentId2 = ignite2.cluster().localNode().consistentId();
+
         assertPdsDirsDefaultExist(U.maskForFileName(consistentId2.toString()));
         stopAllGrids();
 
         System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
         final Ignite igniteRestart = startGrid(0);
         final Ignite igniteRestart2 = startGrid(1);
+
         igniteRestart2.active(true);
 
         assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
@@ -477,6 +500,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertNodeIndexesInFolder(); // expected to have no new style folders
 
         final Object consistentId1 = ignite1.cluster().localNode().consistentId();
+
         assertPdsDirsDefaultExist(U.maskForFileName(consistentId1.toString()));
         stopAllGrids();
 
@@ -484,6 +508,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
 
         final Ignite igniteRestart = startGrid(0);
+
         igniteRestart.active(true);
 
         assertEquals(consistentId1, igniteRestart.cluster().localNode().consistentId());
@@ -505,6 +530,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final IgniteCache<Object, Object> second = ignite.getOrCreateCache("second");
 
         final int entries = 100;
+
         for (int i = 0; i < entries; i++)
             second.put((int)(Math.random() * entries), getClass().getName());
 
@@ -564,12 +590,14 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final File curFolder = new File(U.defaultWorkDirectory(), PdsConsistentIdProcessor.DB_DEFAULT_FOLDER);
         final Set<Integer> indexes = new TreeSet<>();
         final File[] files = curFolder.listFiles(PdsConsistentIdProcessor.DB_SUBFOLDERS_NEW_STYLE_FILTER);
+
         for (File file : files) {
-            final PdsConsistentIdProcessor.FolderCandidate uid
-                = parseSubFolderName(file, log);
+            final PdsConsistentIdProcessor.FolderCandidate uid = parseSubFolderName(file, log);
+
             if (uid != null)
                 indexes.add(uid.nodeIndex());
         }
+
         return indexes;
     }
 
@@ -594,10 +622,13 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
         File curFolder = new File(U.defaultWorkDirectory());
+
         for (String name : subFolderNames) {
             curFolder = new File(curFolder, name);
         }
+
         final String path;
+
         try {
             path = curFolder.getCanonicalPath();
         }
