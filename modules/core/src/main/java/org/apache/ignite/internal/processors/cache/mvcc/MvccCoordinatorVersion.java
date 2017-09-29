@@ -34,7 +34,7 @@ public interface MvccCoordinatorVersion extends Message {
     public long coordinatorVersion();
 
     /**
-     * @return Cleanup version.
+     * @return Cleanup version (all smaller versions are safe to remove).
      */
     public long cleanupVersion();
 
@@ -42,4 +42,9 @@ public interface MvccCoordinatorVersion extends Message {
      * @return Counter.
      */
     public long counter();
+
+    /**
+     *
+     */
+    public boolean initialLoad();
 }

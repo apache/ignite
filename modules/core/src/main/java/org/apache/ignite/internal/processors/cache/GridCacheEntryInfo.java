@@ -101,6 +101,11 @@ public class GridCacheEntryInfo implements Message, MvccCoordinatorVersion {
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean initialLoad() {
+        return true;
+    }
+
     /**
      * @return Cache ID.
      */

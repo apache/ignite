@@ -1333,11 +1333,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridLongList mvccUpdate(GridCacheContext cctx,
+        @Override public GridLongList mvccUpdate(
+            GridCacheContext cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            assert mvccVer != null;
+
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
@@ -1370,49 +1373,51 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert !old;
 
-                MvccLongList activeTxs = mvccVer.activeTransactions();
-
-                // TODO IGNITE-3484: need special method.
-                GridCursor<CacheDataRow> cur = dataTree.find(
-                    new MvccSearchRow(cacheId, key, mvccVer.coordinatorVersion(), mvccVer.counter() - 1),
-                    new MvccSearchRow(cacheId, key, 1, 1));
-
                 GridLongList waitTxs = null;
 
-                boolean first = true;
+                if (!mvccVer.initialLoad()) {
+                    MvccLongList activeTxs = mvccVer.activeTransactions();
 
-                boolean activeTx = false;
+                    // TODO IGNITE-3484: need special method.
+                    GridCursor<CacheDataRow> cur = dataTree.find(
+                        new MvccSearchRow(cacheId, key, mvccVer.coordinatorVersion(), mvccVer.counter() - 1),
+                        new MvccSearchRow(cacheId, key, 1, 1));
 
-                while (cur.next()) {
-                    CacheDataRow oldVal = cur.get();
+                    boolean first = true;
 
-                    assert oldVal.link() != 0 : oldVal;
+                    boolean activeTx = false;
 
-                    if (activeTxs != null && oldVal.mvccCoordinatorVersion() == mvccVer.coordinatorVersion() &&
-                        activeTxs.contains(oldVal.mvccCounter())) {
-                        if (waitTxs == null)
-                            waitTxs = new GridLongList();
+                    while (cur.next()) {
+                        CacheDataRow oldVal = cur.get();
 
-                        assert oldVal.mvccCounter() != mvccVer.counter();
+                        assert oldVal.link() != 0 : oldVal;
 
-                        waitTxs.add(oldVal.mvccCounter());
+                        if (activeTxs != null && oldVal.mvccCoordinatorVersion() == mvccVer.coordinatorVersion() &&
+                            activeTxs.contains(oldVal.mvccCounter())) {
+                            if (waitTxs == null)
+                                waitTxs = new GridLongList();
 
-                        activeTx = true;
-                    }
+                            assert oldVal.mvccCounter() != mvccVer.counter();
 
-                    if (!activeTx) {
-                        // Should not delete oldest version which is less than cleanup version.
-                        int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
+                            waitTxs.add(oldVal.mvccCounter());
 
-                        if (cmp <= 0) {
-                            if (first)
-                                first = false;
-                            else {
-                                boolean rmvd = dataTree.removex(oldVal);
+                            activeTx = true;
+                        }
 
-                                assert rmvd;
+                        if (!activeTx) {
+                            // Should not delete oldest version which is less than cleanup version.
+                            int cmp = compare(oldVal, mvccVer.coordinatorVersion(), mvccVer.cleanupVersion());
 
-                                rowStore.removeRow(oldVal.link());
+                            if (cmp <= 0) {
+                                if (first)
+                                    first = false;
+                                else {
+                                    boolean rmvd = dataTree.removex(oldVal);
+
+                                    assert rmvd;
+
+                                    rowStore.removeRow(oldVal.link());
+                                }
                             }
                         }
                     }

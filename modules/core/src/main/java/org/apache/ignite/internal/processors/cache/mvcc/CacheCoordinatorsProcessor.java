@@ -76,6 +76,9 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     public static final long COUNTER_NA = 0L;
 
     /** */
+    public static final long START_VER = 1L;
+
+    /** */
     private static final boolean STAT_CNTRS = false;
 
     /** */
@@ -88,7 +91,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     private volatile MvccCoordinator curCrd;
 
     /** */
-    private final AtomicLong mvccCntr = new AtomicLong(1L);
+    private final AtomicLong mvccCntr = new AtomicLong(START_VER);
 
     /** */
     private final GridAtomicLong committedCntr = new GridAtomicLong(1L);

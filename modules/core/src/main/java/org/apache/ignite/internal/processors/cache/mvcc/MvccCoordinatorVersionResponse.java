@@ -59,7 +59,20 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
     }
 
     /**
+     * @param crdVer Coordinator version.
      * @param cntr Counter.
+     * @param cleanupVer Cleanup version.
+     */
+    public MvccCoordinatorVersionResponse(long crdVer, long cntr, long cleanupVer) {
+        this.crdVer = crdVer;
+        this.cntr = cntr;
+        this.cleanupVer = cleanupVer;
+    }
+
+    /**
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     * @param cleanupVer Cleanup version.
      * @param futId Future ID.
      */
     void init(long futId, long crdVer, long cntr, long cleanupVer) {
@@ -69,6 +82,9 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
         this.cleanupVer = cleanupVer;
     }
 
+    /**
+     * @param txId Transaction counter.
+     */
     void addTx(long txId) {
         if (txs == null)
             txs = new long[4];
@@ -78,6 +94,9 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
         txs[txsCnt++] = txId;
     }
 
+    /**
+     *
+     */
     void resetTransactionsCount() {
         txsCnt = 0;
     }
@@ -137,6 +156,11 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
     /** {@inheritDoc} */
     @Override public long coordinatorVersion() {
         return crdVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean initialLoad() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
@@ -2351,6 +2352,37 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         finally {
             done.set(true);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadWithStreamer() throws Exception {
+        startGridsMultiThreaded(5);
+
+        client = true;
+
+        startGrid(5);
+
+        Ignite node = ignite(0);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 2, 64));
+
+        final int KEYS = 10_000;
+
+        Map<Integer, Integer> data = new HashMap<>();
+
+        try (IgniteDataStreamer<Integer, Integer> streamer = node.dataStreamer(cache.getName())) {
+            for (int i = 0; i < KEYS; i++) {
+                streamer.addData(i, i);
+
+                data.put(i, i);
+            }
+        }
+
+        checkCacheData(data, cache.getName());
+
+        checkPutGet(F.asList(cache.getName()));
     }
 
     /**
