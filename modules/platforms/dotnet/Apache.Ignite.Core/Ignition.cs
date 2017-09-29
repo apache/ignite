@@ -213,6 +213,8 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
+
             lock (SyncRoot)
             {
                 // 0. Init logger

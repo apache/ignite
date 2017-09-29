@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -119,7 +120,7 @@ public class JdbcThinConnection implements Connection {
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        this.schema = schema == null ? "PUBLIC" : schema;
+        this.schema = normalizeSchema(schema);
 
         String host = extractHost(props);
         int port = extractPort(props);
@@ -798,5 +799,25 @@ public class JdbcThinConnection implements Connection {
      */
     public String url() {
         return url;
+    }
+
+    /**
+     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    private static String normalizeSchema(String schemaName) {
+        if (F.isEmpty(schemaName))
+            return QueryUtils.DFLT_SCHEMA;
+
+        String res;
+
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+            res = schemaName.substring(1, schemaName.length() - 1);
+        else
+            res = schemaName.toUpperCase();
+
+        return res;
     }
 }

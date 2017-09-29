@@ -55,6 +55,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
@@ -120,7 +121,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(150 * 1024 * 1024);
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setSwapFilePath("work/swap");
 
@@ -162,14 +163,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

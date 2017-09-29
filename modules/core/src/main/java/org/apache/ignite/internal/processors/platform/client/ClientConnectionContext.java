@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * Thin Client connection context.
  */
@@ -37,16 +39,50 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** Request handler. */
     private final ClientRequestHandler handler;
 
+    /** Handle registry. */
+    private final ClientResourceRegistry resReg = new ClientResourceRegistry();
+
+    /** Kernal context. */
+    private final GridKernalContext kernalCtx;
+
+    /** Max cursors. */
+    private final int maxCursors;
+
+    /** Cursor counter. */
+    private final AtomicLong curCnt = new AtomicLong();
+
     /**
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param maxCursors Max active cursors.
      */
-    public ClientConnectionContext(GridKernalContext ctx) {
+    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
         assert ctx != null;
 
+        kernalCtx = ctx;
+
         parser = new ClientMessageParser(ctx);
-        handler = new ClientRequestHandler(ctx);
+        handler = new ClientRequestHandler(this);
+        this.maxCursors = maxCursors;
+    }
+
+    /**
+     * Gets the handle registry.
+     *
+     * @return Handle registry.
+     */
+    public ClientResourceRegistry resources() {
+        return resReg;
+    }
+
+    /**
+     * Gets the kernal context.
+     *
+     * @return Kernal context.
+     */
+    public GridKernalContext kernalContext() {
+        return kernalCtx;
     }
 
     /** {@inheritDoc} */
@@ -76,6 +112,29 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
-        // No-op.
+        resReg.clean();
+    }
+
+    /**
+     * Increments the cursor count.
+     */
+    public void incrementCursors() {
+        long curCnt0 = curCnt.get();
+
+        if (curCnt0 >= maxCursors) {
+            throw new IgniteClientException(ClientStatus.TOO_MANY_CURSORS,
+                "Too many open cursors (either close other open cursors or increase the " +
+                "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + curCnt0 + ']');
+        }
+
+        curCnt.incrementAndGet();
+    }
+
+    /**
+     * Increments the cursor count.
+     */
+    public void decrementCursors() {
+        curCnt.decrementAndGet();
     }
 }

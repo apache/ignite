@@ -8,7 +8,7 @@ The main feature set of Ignite In-Memory Data Fabric includes:
 * Advanced Clustering
 * Compute Grid
 * Data Grid
-* Distributed SQL
+* SQL Database
 * Service Grid
 * IGFS - Ignite File System
 * Distributed Data Structures

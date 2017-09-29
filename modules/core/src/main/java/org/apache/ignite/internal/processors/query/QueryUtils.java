@@ -213,7 +213,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = new QueryEntity();
+        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -1184,6 +1184,23 @@ public class QueryUtils {
      */
     public static String createTableKeyTypeName(String valTypeName) {
         return valTypeName + "_KEY";
+    }
+
+    /**
+     * Copy query entity.
+     *
+     * @param entity Query entity.
+     * @return Copied entity.
+     */
+    public static QueryEntity copy(QueryEntity entity) {
+        QueryEntity res;
+
+        if (entity instanceof QueryEntityEx)
+            res = new QueryEntityEx(entity);
+        else
+            res = new QueryEntity(entity);
+
+        return res;
     }
 
     /**

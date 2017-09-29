@@ -194,7 +194,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e) {
+    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -241,9 +241,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         int cursorCnt = qryCursors.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many opened cursors (either close other " +
-                "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
-                "[maximum=" + maxCursors + ", current=" + cursorCnt + ']');
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close other " +
+                "open cursors or increase the limit through " +
+                "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + cursorCnt + ']');
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 
@@ -332,7 +333,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     if (qryCur.isQuery()) {
                         jdbcRes = new JdbcResultInfo(true, -1, qryId);
 
-                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                            (QueryCursorImpl)qryCur);
 
                         qryCursors.put(qryId, cur);
 
