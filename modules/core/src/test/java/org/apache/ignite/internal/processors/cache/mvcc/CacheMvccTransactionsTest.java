@@ -1828,10 +1828,20 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
             for (Integer key : keys)
                 vals.put(key, i);
 
-            try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cache.putAll(vals);
+            while (true) {
+                try (Transaction tx = getNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.putAll(vals);
 
-                tx.commit();
+                    tx.commit();
+
+                    break;
+                }
+                catch (Exception e) {
+                    if (!X.hasCause(e, ClusterTopologyException.class))
+                        fail("Unexpected error: " + e);
+                    else
+                        info("Tx error, need retry: " + e);
+                }
             }
         }
 
@@ -2223,6 +2233,8 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         client = false;
 
         stopGrid(0);
+
+        awaitPartitionMapExchange();
 
         checkCoordinatorsConsistency(5);
     }
