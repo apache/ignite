@@ -454,7 +454,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (attr.IsIndexed)
                     {
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
-                            attr.IndexGroups));
+                            attr.IndexGroups)
+                        {
+                            InlineSize = attr.IndexInlineSize
+                        });
                     }
 
                     fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
