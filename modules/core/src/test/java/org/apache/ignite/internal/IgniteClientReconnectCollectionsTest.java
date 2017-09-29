@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -48,21 +49,32 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
         return 1;
     }
 
+    static final CollectionConfiguration TRANS_CONF = new CollectionConfiguration();
+
+    static final CollectionConfiguration ATOMIC_CONF = new CollectionConfiguration();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        TRANS_CONF.setCacheMode(PARTITIONED);
+        TRANS_CONF.setAtomicityMode(TRANSACTIONAL);
+
+        ATOMIC_CONF.setCacheMode(PARTITIONED);
+        ATOMIC_CONF.setAtomicityMode(ATOMIC);
+    }
+
+
     /**
      * @throws Exception If failed.
      */
     public void testCollectionsReconnectClusterRestart() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
-        final IgniteQueue<Object> queue = client.queue("q", 0, colCfg);
-        final IgniteSet<Object> set = client.set("s", colCfg);
+        final IgniteQueue<Object> queue = client.queue("q", 0, TRANS_CONF);
+        final IgniteSet<Object> set = client.set("s", TRANS_CONF);
 
         Ignite srv = grid(0);
 
@@ -88,12 +100,16 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
             }
         }, IllegalStateException.class, null);
 
-        try (IgniteQueue<Object> queue2 = client.queue("q", 0, colCfg)) {
+        try (IgniteQueue<Object> queue2 = client.queue("q", 0, TRANS_CONF)) {
             queue2.add(1);
+
+            assert queue2.size() == 1 : queue2.size();
         }
 
-        try (IgniteSet<Object> set2 = client.set("s", colCfg)) {
+        try (IgniteSet<Object> set2 = client.set("s", TRANS_CONF)) {
             set2.add(1);
+
+            assert set2.size() == 1 : set2.size();
         }
     }
 
@@ -101,114 +117,107 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
      * @throws Exception If failed.
      */
     public void testQueueReconnect() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        queueReconnect(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
-        queueReconnect(colCfg);
-
-        colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
-
-        queueReconnect(colCfg);
+        queueReconnect(ATOMIC_CONF);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueueReconnectRemoved() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        queueReconnectRemoved(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
-        queueReconnectRemoved(colCfg);
-
-        colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
-
-        queueReconnectRemoved(colCfg);
+        queueReconnectRemoved(ATOMIC_CONF);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueueReconnectInProgress() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        queueReconnectInProgress(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
-        queueReconnectInProgress(colCfg);
-
-        colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
-
-        queueReconnectInProgress(colCfg);
+        queueReconnectInProgress(ATOMIC_CONF);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSetReconnect() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        setReconnect(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
-        setReconnect(colCfg);
-
-        colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
-
-        setReconnect(colCfg);
+        setReconnect(ATOMIC_CONF);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSetReconnectRemoved() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        setReconnectRemove(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
-
-        setReconnectRemove(colCfg);
-
-        colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
-
-        setReconnectRemove(colCfg);
+        setReconnectRemove(ATOMIC_CONF);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSetReconnectInProgress() throws Exception {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        setReconnectInProgress(TRANS_CONF);
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(ATOMIC);
+        setReconnectInProgress(ATOMIC_CONF);
+    }
 
-        setReconnectInProgress(colCfg);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSrvReconnect() throws Exception {
+        srvNodeReconnect(TRANS_CONF);
 
-        colCfg = new CollectionConfiguration();
+        srvNodeReconnect(ATOMIC_CONF);
+    }
 
-        colCfg.setCacheMode(PARTITIONED);
-        colCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * @param colCfg Collection configuration.
+     * @throws Exception If failed.
+     */
+    private void srvNodeReconnect(CollectionConfiguration colCfg) throws Exception {
 
-        setReconnectInProgress(colCfg);
+        final Ignite client = grid(serverCount());
+
+        final Ignite srv = clientRouter(client);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    reconnectClientNode(client, srv, new Runnable() {
+                        @Override public void run() {
+                            try {
+                                latch.await();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        t.start();
+
+        IgniteQueue<Object> queue = srv.queue("q", 0, colCfg);
+        IgniteSet<Object> set = srv.set("s", colCfg);
+
+        latch.countDown();
+
+        t.join();
+
+        IgniteQueue<Object> q = client.queue("q", 0, null);
+
+        assertNotNull(q);
     }
 
     /**
