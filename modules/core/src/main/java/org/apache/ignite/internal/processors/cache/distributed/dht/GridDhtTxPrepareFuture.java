@@ -61,8 +61,10 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -255,6 +257,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert nearMap != null;
 
         timeoutObj = timeout > 0 ? new PrepareTimeoutObject(timeout) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteLogger logger() {
+        return log;
     }
 
     /** {@inheritDoc} */
@@ -872,7 +879,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
-        res.mvccCoordinatorVersion(tx.mvccCoordinatorVersion());
+        res.mvccInfo(tx.mvccInfo());
 
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
@@ -1229,19 +1236,23 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            IgniteInternalFuture<Long> waitCrdCntrFut = null;
+            IgniteInternalFuture<MvccCoordinatorVersion> waitCrdCntrFut = null;
 
             if (req.requestMvccCounter()) {
+                assert last;
+
                 assert tx.txState().mvccEnabled(cctx);
 
-                ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+                MvccCoordinator crd = cctx.coordinators().currentCoordinator();
 
                 assert crd != null : tx.topologyVersion();
 
-                if (crd.isLocal())
-                    tx.mvccCoordinatorVersion(cctx.coordinators().requestTxCounterOnCoordinator(tx));
+                if (crd.nodeId().equals(cctx.localNodeId()))
+                    onMvccResponse(cctx.localNodeId(), cctx.coordinators().requestTxCounterOnCoordinator(tx));
                 else {
-                    IgniteInternalFuture<Long> crdCntrFut = cctx.coordinators().requestTxCounter(crd, this, tx.nearXidVersion());
+                    IgniteInternalFuture<MvccCoordinatorVersion> crdCntrFut = cctx.coordinators().requestTxCounter(crd,
+                        this,
+                        tx.nearXidVersion());
 
                     if (tx.onePhaseCommit())
                         waitCrdCntrFut = crdCntrFut;
@@ -1271,22 +1282,22 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (waitCrdCntrFut != null) {
                     skipInit = true;
 
-                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> fut) {
+                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
                             try {
                                 fut.get();
 
                                 sendPrepareRequests();
+
+                                markInitialized();
                             }
                             catch (Throwable e) {
-                                U.error(log, "Failed to get coordinator counter: " + e, e);
+                                U.error(log, "Failed to get mvcc version for tx [txId=" + tx.nearXidVersion() +
+                                    ", err=" + e + ']', e);
 
                                 GridNearTxPrepareResponse res = createPrepareResponse(e);
 
                                 onDone(res, res.error());
-                            }
-                            finally {
-                                markInitialized();
                             }
                         }
                     });
@@ -1302,8 +1313,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccResponse(MvccCoordinatorVersion res) {
-        tx.mvccCoordinatorVersion(res);
+    @Override public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res) {
+        tx.mvccInfo(new TxMvccInfo(crdId, res));
     }
 
     /** {@inheritDoc} */
@@ -1325,7 +1336,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccCoordinatorVersion() != null;
+        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccInfo() != null;
 
         int miniId = 0;
 
@@ -1376,7 +1387,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                tx.mvccCoordinatorVersion());
+                tx.mvccInfo());
 
             int idx = 0;
 
@@ -1490,7 +1501,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    tx.mvccCoordinatorVersion());
+                    tx.mvccInfo());
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

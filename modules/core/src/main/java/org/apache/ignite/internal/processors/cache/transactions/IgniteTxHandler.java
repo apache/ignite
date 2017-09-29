@@ -605,6 +605,8 @@ public class IgniteTxHandler {
         if (expVer.equals(curVer))
             return false;
 
+        // TODO IGNITE-3478 check mvcc crd for mvcc enabled txs.
+
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
 
@@ -860,7 +862,7 @@ public class IgniteTxHandler {
             tx = ctx.tm().tx(dhtVer);
 
         if (tx != null) {
-            tx.mvccCoordinatorVersion(req.mvccCoordinatorVersion());
+            tx.mvccInfo(req.mvccInfo());
 
             req.txState(tx.txState());
         }
@@ -1312,7 +1314,7 @@ public class IgniteTxHandler {
                 tx.commitVersion(req.commitVersion());
                 tx.invalidate(req.isInvalidate());
                 tx.systemInvalidate(req.isSystemInvalidate());
-                tx.mvccCoordinatorVersion(req.mvccCoordinatorVersion());
+                tx.mvccInfo(req.mvccInfo());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
@@ -1359,7 +1361,7 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
-            tx.mvccCoordinatorVersion(req.mvccCoordinatorVersion());
+            tx.mvccInfo(req.mvccInfo());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);

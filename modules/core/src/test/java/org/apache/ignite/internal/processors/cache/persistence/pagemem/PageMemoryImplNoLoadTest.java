@@ -56,7 +56,6 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null,
             null,
             null,
-            null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
             new IgniteCacheDatabaseSharedManager(),

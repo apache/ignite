@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -105,7 +105,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private List<IgniteTxKey> nearWritesCacheMissed;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private TxMvccInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -146,7 +146,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
-        MvccCoordinatorVersion mvccVer) {
+        TxMvccInfo mvccInfo) {
         super(tx,
             timeout,
             null,
@@ -175,14 +175,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         nearNodeId = tx.nearNodeId();
 
-        this.mvccVer = mvccVer;
+        this.mvccInfo = mvccInfo;
     }
 
     /**
-     * @return Counter.
+     * @return Mvcc info.
      */
-    public MvccCoordinatorVersion mvccCoordinatorVersion() {
-        return mvccVer;
+    public TxMvccInfo mvccInfo() {
+        return mvccInfo;
     }
 
     /**
@@ -421,7 +421,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccInfo", mvccInfo))
                     return false;
 
                 writer.incrementState();
@@ -521,7 +521,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 23:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccInfo = reader.readMessage("mvccInfo");
 
                 if (!reader.isLastRead())
                     return false;

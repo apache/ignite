@@ -36,17 +36,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -123,9 +121,6 @@ public class GridCacheSharedContext<K, V> {
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
-    /** Cache mvcc coordinator. */
-    private CacheCoordinatorsSharedManager crd;
-
     /** Cache contexts map. */
     private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -170,7 +165,6 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param kernalCtx  Context.
-     * @param crd Cache mvcc coordinator manager.
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
@@ -184,7 +178,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
-        CacheCoordinatorsSharedManager crd,
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
@@ -203,7 +196,6 @@ public class GridCacheSharedContext<K, V> {
         this.kernalCtx = kernalCtx;
 
         setManagers(mgrs,
-            crd,
             txMgr,
             jtaMgr,
             verMgr,
@@ -376,7 +368,6 @@ public class GridCacheSharedContext<K, V> {
         List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
         setManagers(mgrs,
-            crd,
             txMgr,
             jtaMgr,
             verMgr,
@@ -416,7 +407,6 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param mgrs Managers list.
-     * @param coord Cache mvcc coordinator manager.
      * @param txMgr Transaction manager.
      * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
@@ -428,7 +418,6 @@ public class GridCacheSharedContext<K, V> {
      * @param ttlMgr Ttl cleanup manager.
      */
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
-        CacheCoordinatorsSharedManager coord,
         IgniteTxManager txMgr,
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
@@ -442,7 +431,6 @@ public class GridCacheSharedContext<K, V> {
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
         GridCacheSharedTtlCleanupManager ttlMgr) {
-        this.crd = add(mgrs, coord);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -785,8 +773,8 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Cache mvcc coordinator manager.
      */
-    public CacheCoordinatorsSharedManager coordinators() {
-        return crd;
+    public CacheCoordinatorsProcessor coordinators() {
+        return kernalCtx.coordinators();
     }
 
     /**
@@ -844,7 +832,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
      * This method must be called only after
-     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
+     * {@link GridDhtPartitionTopology#updateTopologyVersion}
      * method is called so that all new updates will wait to switch to the new version.
      * This method will capture:
      * <ul>

@@ -59,7 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -254,7 +254,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected ConsistentIdMapper consistentIdMapper;
 
     /** */
-    protected MvccCoordinatorVersion mvccVer;
+    protected TxMvccInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -374,13 +374,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
 
-    public MvccCoordinatorVersion mvccCoordinatorVersion() {
-        return mvccVer;
+    /**
+     * @return Mvcc info.
+     */
+    @Nullable public TxMvccInfo mvccInfo() {
+        return mvccInfo;
     }
 
     /** {@inheritDoc} */
-    @Override public void mvccCoordinatorVersion(MvccCoordinatorVersion mvccVer) {
-        this.mvccVer = mvccVer;
+    @Override public void mvccInfo(TxMvccInfo mvccInfo) {
+        this.mvccInfo = mvccInfo;
     }
 
     /**
@@ -1893,7 +1896,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void mvccCoordinatorVersion(MvccCoordinatorVersion mvccVer) {
+        @Override public void mvccInfo(TxMvccInfo mvccInfo) {
             // No-op.
         }
 

@@ -160,7 +160,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param txMapping Transaction mapping.
      */
     final void checkOnePhase(GridDhtTxMapping txMapping) {
-        if (tx.storeWriteThrough())
+        if (tx.storeWriteThrough() || tx.txState().mvccEnabled(cctx)) // TODO IGNITE-3479 (onePhase + mvcc)
             return;
 
         Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();

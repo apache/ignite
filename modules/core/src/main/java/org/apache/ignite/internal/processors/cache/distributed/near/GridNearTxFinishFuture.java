@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -420,12 +421,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        if (!commit && tx.mvccCoordinatorVersion() != null) {
-            ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+        if (!commit && tx.mvccInfo() != null) {
+            TxMvccInfo mvccInfo = tx.mvccInfo();
 
-            assert crd != null;
-
-            cctx.coordinators().ackTxRollback(crd, tx.mvccCoordinatorVersion());
+            cctx.coordinators().ackTxRollback(mvccInfo.coordinator(), mvccInfo.version());
         }
 
         try {
@@ -433,11 +432,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 GridLongList waitTxs = tx.mvccWaitTransactions();
 
                 if (waitTxs != null) {
-                    ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+                    TxMvccInfo mvccInfo = tx.mvccInfo();
 
-                    assert crd != null;
+                    assert mvccInfo != null;
 
-                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(crd, waitTxs);
+                    IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(mvccInfo.coordinator(), waitTxs);
 
                     add(fut);
                 }
@@ -752,7 +751,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.subjectId(),
             tx.taskNameHash(),
-            tx.mvccCoordinatorVersion(),
+            tx.mvccInfo(),
             tx.activeCachesDeploymentEnabled()
         );
 

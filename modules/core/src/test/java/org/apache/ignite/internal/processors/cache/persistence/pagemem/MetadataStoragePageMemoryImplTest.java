@@ -67,7 +67,6 @@ public class MetadataStoragePageMemoryImplTest extends MetadataStorageSelfTest{
             null,
             null,
             null,
-            null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
             new IgniteCacheDatabaseSharedManager(),

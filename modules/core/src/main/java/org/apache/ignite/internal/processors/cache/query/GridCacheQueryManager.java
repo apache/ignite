@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -825,7 +826,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode, ClusterNode mvccCrd)
+    private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, boolean locNode, MvccCoordinator mvccCrd)
         throws IgniteCheckedException {
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -1461,11 +1462,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            final ClusterNode mvccCrd;
+            final MvccCoordinator mvccCrd;
 
             // TODO IGNITE-3478.
             if (cctx.mvccEnabled()) {
-                mvccCrd = cctx.shared().coordinators().coordinator(cctx.shared().exchange().readyAffinityVersion());
+                mvccCrd = cctx.affinity().mvccCoordinator(cctx.shared().exchange().readyAffinityVersion());
 
                 IgniteInternalFuture<MvccCoordinatorVersion> fut0 = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
 
@@ -2915,7 +2916,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private IgniteCacheExpiryPolicy expiryPlc;
 
         /** */
-        private ClusterNode mvccCrd;
+        private MvccCoordinator mvccCrd;
 
         /** */
         private MvccCoordinatorVersion mvccVer;
@@ -2938,7 +2939,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IgniteBiPredicate<K, V> scanFilter,
             boolean locNode,
             GridCacheContext cctx,
-            ClusterNode mvccCrd,
+            MvccCoordinator mvccCrd,
             IgniteLogger log) {
             assert mvccCrd == null || qry.mvccVersion() != null;
 

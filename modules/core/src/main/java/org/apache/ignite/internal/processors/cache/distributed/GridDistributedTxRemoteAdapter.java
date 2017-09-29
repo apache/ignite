@@ -474,7 +474,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        assert !txState.mvccEnabled(cctx) || mvccVer != null;
+                        assert !txState.mvccEnabled(cctx) || mvccInfo != null;
 
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
 
@@ -597,7 +597,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccVer);
+                                                        mvccInfo != null ? mvccInfo.version() : null);
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -622,7 +622,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccVer);
+                                                        mvccInfo != null ? mvccInfo.version() : null);
 
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {
@@ -655,7 +655,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     resolveTaskName(),
                                                     dhtVer,
                                                     txEntry.updateCounter(),
-                                                    mvccVer);
+                                                    mvccInfo != null ? mvccInfo.version() : null);
 
                                                 // Keep near entry up to date.
                                                 if (nearCached != null)

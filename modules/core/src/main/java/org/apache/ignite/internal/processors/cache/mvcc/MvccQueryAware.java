@@ -17,21 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface MvccResponseListener {
+public interface MvccQueryAware {
     /**
-     * @param crdId Coordinator node ID.
-     * @param res Version.
+     * @param newCrd New coordinator.
+     * @return Version used by this query.
      */
-    public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res);
+    @Nullable public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd);
+
+    /**
+     * @param topVer Topology version when version was requested.
+     */
+    public void onMvccVersionReceived(AffinityTopologyVersion topVer);
 
     /**
      * @param e Error.
      */
-    public void onMvccError(IgniteCheckedException e);
+    public void onMvccVersionError(IgniteCheckedException e);
 }

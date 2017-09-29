@@ -25,7 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -68,7 +68,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private GridCacheVersion writeVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private TxMvccInfo mvccInfo;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -126,7 +126,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccCoordinatorVersion mvccVer
+        TxMvccInfo mvccInfo
     ) {
         super(
             xidVer,
@@ -155,7 +155,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
         this.miniId = miniId;
-        this.mvccVer = mvccVer;
+        this.mvccInfo = mvccInfo;
 
         needReturnValue(retVal);
         waitRemoteTransactions(waitRemoteTxs);
@@ -213,7 +213,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<Long> updateIdxs,
         boolean retVal,
         boolean waitRemoteTxs,
-        MvccCoordinatorVersion mvccVer
+        TxMvccInfo mvccInfo
     ) {
         this(nearNodeId,
             futId,
@@ -239,7 +239,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             addDepInfo,
             retVal,
             waitRemoteTxs,
-            mvccVer);
+            mvccInfo);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -252,8 +252,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Counter.
      */
-    public MvccCoordinatorVersion mvccCoordinatorVersion() {
-        return mvccVer;
+    public TxMvccInfo mvccInfo() {
+        return mvccInfo;
     }
 
     /**
@@ -382,7 +382,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccInfo", mvccInfo))
                     return false;
 
                 writer.incrementState();
@@ -448,7 +448,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 23:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccInfo = reader.readMessage("mvccInfo");
 
                 if (!reader.isLastRead())
                     return false;

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -46,7 +46,7 @@ public class MvccDataRow extends DataRow {
         super(grp, hash, link, part, rowData);
 
         assert crdVer > 0 : crdVer;
-        assert mvccCntr != CacheCoordinatorsSharedManager.COUNTER_NA;
+        assert mvccCntr != CacheCoordinatorsProcessor.COUNTER_NA;
 
         this.crdVer = crdVer;
         this.mvccCntr = mvccCntr;

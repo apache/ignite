@@ -114,6 +114,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -937,8 +938,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
+                startProcessor(new CacheCoordinatorsProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-                startProcessor(new  GridAffinityProcessor(ctx));
+                startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(new GridClusterStateProcessor(ctx));

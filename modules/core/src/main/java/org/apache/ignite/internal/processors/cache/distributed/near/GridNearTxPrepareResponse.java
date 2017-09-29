@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -99,7 +99,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private AffinityTopologyVersion clientRemapVer;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private TxMvccInfo mvccInfo;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -150,17 +150,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     }
 
     /**
-     * @param mvccVer Mvcc version.
+     * @param mvccInfo Mvcc info.
      */
-    public void mvccCoordinatorVersion(MvccCoordinatorVersion mvccVer) {
-        this.mvccVer = mvccVer;
+    public void mvccInfo(TxMvccInfo mvccInfo) {
+        this.mvccInfo = mvccInfo;
     }
 
     /**
-     * @return Mvcc version.
+     * @return Mvcc info.
      */
-    public MvccCoordinatorVersion mvccCoordinatorVersion() {
-        return mvccVer;
+    @Nullable public TxMvccInfo mvccInfo() {
+        return mvccInfo;
     }
 
     /**
@@ -407,7 +407,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccInfo", mvccInfo))
                     return false;
 
                 writer.incrementState();
@@ -499,7 +499,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 15:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccInfo = reader.readMessage("mvccInfo");
 
                 if (!reader.isLastRead())
                     return false;

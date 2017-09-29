@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,13 +53,11 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
                 @Override public void apply(final GridNearTxFinishFuture fut) {
                     GridNearTxLocal tx = fut.tx();
 
-                    if (tx.mvccCoordinatorVersion() != null) {
-                        ClusterNode crd = fut.context().coordinators().coordinator(tx.topologyVersion());
+                    TxMvccInfo mvccInfo = tx.mvccInfo();
 
-                        assert crd != null;
-
+                    if (mvccInfo != null) {
                         IgniteInternalFuture<Void> ackFut = fut.context().coordinators().ackTxCommit(
-                            crd, tx.mvccCoordinatorVersion());
+                            mvccInfo.coordinator(), mvccInfo.version());
 
                         ackFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                             @Override public void apply(IgniteInternalFuture<Void> ackFut) {

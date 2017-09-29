@@ -17,21 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import java.io.Serializable;
 
 /**
  *
  */
-public interface MvccResponseListener {
-    /**
-     * @param crdId Coordinator node ID.
-     * @param res Version.
-     */
-    public void onMvccResponse(UUID crdId, MvccCoordinatorVersion res);
+public class CacheCoordinatorsDiscoveryData implements Serializable {
+    /** */
+    private MvccCoordinator crd;
 
     /**
-     * @param e Error.
+     * @param crd Coordinator.
      */
-    public void onMvccError(IgniteCheckedException e);
+    public CacheCoordinatorsDiscoveryData(MvccCoordinator crd) {
+        this.crd = crd;
+    }
+
+    /**
+     * @return Current coordinator.
+     */
+    public MvccCoordinator coordinator() {
+        return crd;
+    }
 }

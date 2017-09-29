@@ -41,10 +41,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -58,14 +61,13 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Colocated get future.
  */
-public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
+public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> implements MvccQueryAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -76,10 +78,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private static IgniteLogger log;
 
     /** */
-    private ClusterNode mvccCrd;
-
-    /** */
-    private MvccCoordinatorVersion mvccVer;
+    private MvccQueryTracker mvccTracker;
 
     /**
      * @param cctx Context.
@@ -128,6 +127,20 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /**
+     * @return Mvcc version if mvcc is enabled for cache.
+     */
+    @Nullable private MvccCoordinatorVersion mvccVersion() {
+        if (!cctx.mvccEnabled())
+            return null;
+
+        MvccCoordinatorVersion ver = mvccTracker.mvccVersion();
+
+        assert ver != null : "[fut=" + this + ", mvccTracker=" + mvccTracker + "]";
+
+        return ver;
+    }
+
+    /**
      * Initializes future.
      *
      * @param topVer Topology version.
@@ -145,40 +158,43 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
         }
 
-        // TODO IGNITE-3478 (correct failover and remap).
         if (cctx.mvccEnabled()) {
-            mvccCrd = cctx.shared().coordinators().coordinator(topVer);
+            mvccTracker = new MvccQueryTracker(cctx, canRemap, this);
 
-            if (mvccCrd == null) {
-                onDone(new ClusterTopologyCheckedException("Mvcc coordinator is not assigned: " + topVer));
+            trackable = true;
 
-                return;
-            }
+            cctx.mvcc().addFuture(this, futId);
 
-            final AffinityTopologyVersion topVer0 = topVer;
-
-            IgniteInternalFuture<MvccCoordinatorVersion> cntrFut = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
-
-            cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccCoordinatorVersion>>() {
-                @Override public void apply(IgniteInternalFuture<MvccCoordinatorVersion> fut) {
-                    try {
-                        mvccVer = fut.get();
-
-                        map(keys,
-                            Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(),
-                            topVer0);
-
-                        markInitialized();
-                    }
-                    catch (IgniteCheckedException e) {
-                        onDone(e);
-                    }
-                }
-            });
+            mvccTracker.requestVersion(topVer);
 
             return;
         }
 
+        initialMap(topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMvccVersionReceived(AffinityTopologyVersion topVer) {
+        initialMap(topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMvccVersionError(IgniteCheckedException e) {
+        onDone(e);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        if (mvccTracker != null)
+            return mvccTracker.onMvccCoordinatorChange(newCrd);
+
+        return null;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    private void initialMap(AffinityTopologyVersion topVer) {
         map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
 
         markInitialized();
@@ -241,11 +257,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
 
-            if (mvccVer != null) {
-                assert mvccCrd != null;
-
-                cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer);
-            }
+            if (mvccTracker != null)
+                mvccTracker.onQueryDone();
 
             cache().sendTtlUpdateRequest(expiryPlc);
 
@@ -340,7 +353,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        mvccVer);
+                        mvccVersion());
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -397,7 +410,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    mvccVer);
+                    mvccVersion());
 
                 add(fut); // Append new future.
 
@@ -504,7 +517,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 if (readNoEntry) {
                     CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().mvccRead(cctx, key, mvccVer) :
+                        cctx.offheap().mvccRead(cctx, key, mvccVersion()) :
                         cctx.offheap().read(cctx, key);
 
                     if (row != null) {
@@ -548,7 +561,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccVer,
+                                mvccVersion(),
                                 null);
 
                             if (getRes != null) {
@@ -568,7 +581,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccVer);
+                                mvccVersion());
                         }
 
                         cache.context().evicts().touch(entry, topVer);
@@ -660,6 +673,17 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         return Collections.emptyMap();
+    }
+
+    /**
+     * @param curTopVer Current topology version.
+     * @return Future to wait for before remapping.
+     */
+    private IgniteInternalFuture<AffinityTopologyVersion> waitRemapFuture(AffinityTopologyVersion curTopVer) {
+        AffinityTopologyVersion updTopVer =
+            new AffinityTopologyVersion(Math.max(curTopVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
+
+        return cctx.affinity().affinityReadyFuture(updTopVer);
     }
 
     /** {@inheritDoc} */
@@ -766,17 +790,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                final AffinityTopologyVersion updTopVer =
-                    new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
+                IgniteInternalFuture<AffinityTopologyVersion> waitFut = waitRemapFuture(topVer);
 
-                cctx.affinity().affinityReadyFuture(updTopVer).listen(
-                    new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                waitFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
-                                fut.get();
+                                AffinityTopologyVersion topVer = fut.get();
 
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), updTopVer);
+                                map(keys.keySet(), F.t(node, keys), topVer);
 
                                 onDone(Collections.<K, V>emptyMap());
                             }

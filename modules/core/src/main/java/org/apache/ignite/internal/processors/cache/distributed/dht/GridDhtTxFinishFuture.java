@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -295,11 +296,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         GridLongList waitTxs = tx.mvccWaitTransactions();
 
         if (waitTxs != null) {
-            ClusterNode crd = cctx.coordinators().coordinator(tx.topologyVersion());
+            TxMvccInfo mvccInfo = tx.mvccInfo();
 
-            assert crd != null;
+            assert mvccInfo != null;
 
-            IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(crd, waitTxs);
+            IgniteInternalFuture fut = cctx.coordinators().waitTxsFuture(mvccInfo.coordinator(), waitTxs);
 
             add(fut);
 
@@ -411,7 +412,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccCoordinatorVersion() != null;
+        assert !commit || !tx.txState().mvccEnabled(cctx) || tx.mvccInfo() != null;
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
@@ -469,7 +470,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 updCntrs,
                 false,
                 false,
-                tx.mvccCoordinatorVersion());
+                tx.mvccInfo());
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
@@ -539,7 +540,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    tx.mvccCoordinatorVersion());
+                    tx.mvccInfo());
 
                 req.writeVersion(tx.writeVersion());
 
@@ -582,6 +583,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
+            // TODO IGNITE-3478 (mvcc wait txs fut)
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
                     MiniFuture f = (MiniFuture)fut;
@@ -608,6 +610,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
     /** {@inheritDoc} */
     @Override public String toString() {
+        // TODO IGNITE-3478 (mvcc wait txs fut)
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -81,6 +82,9 @@ public class DiscoCache {
     /** */
     private final AffinityTopologyVersion topVer;
 
+    /** */
+    private final MvccCoordinator mvccCrd;
+
     /**
      * @param topVer Topology version.
      * @param state Current cluster state.
@@ -99,6 +103,7 @@ public class DiscoCache {
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,
+        MvccCoordinator mvccCrd,
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
@@ -111,6 +116,7 @@ public class DiscoCache {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
+        this.mvccCrd = mvccCrd;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
@@ -133,6 +139,13 @@ public class DiscoCache {
         }
 
         minNodeVer = minVer;
+    }
+
+    /**
+     * @return Mvcc coordinator node.
+     */
+    @Nullable public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /**

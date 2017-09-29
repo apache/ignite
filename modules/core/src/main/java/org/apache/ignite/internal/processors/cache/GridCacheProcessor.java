@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
@@ -2176,7 +2175,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx,
         Collection<CacheStoreSessionListener> storeSesLsnrs) throws IgniteCheckedException {
-        CacheCoordinatorsSharedManager coord = new CacheCoordinatorsSharedManager();
         IgniteTxManager tm = new IgniteTxManager();
         GridCacheMvccManager mvccMgr = new GridCacheMvccManager();
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
@@ -2215,7 +2213,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         return new GridCacheSharedContext(
             kernalCtx,
-            coord,
             tm,
             verMgr,
             mvccMgr,

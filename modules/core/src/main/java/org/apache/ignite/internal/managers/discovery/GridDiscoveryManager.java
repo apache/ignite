@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -615,6 +616,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 DiscoCache discoCache = null;
+
+                ctx.coordinators().onDiscoveryEvent(type, topSnapshot, topVer);
 
                 boolean locJoinEvt = type == EVT_NODE_JOINED && node.id().equals(locNode.id());
 
@@ -2261,6 +2264,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             state,
             loc,
+            ctx.coordinators().discoveryData().coordinator(),
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
