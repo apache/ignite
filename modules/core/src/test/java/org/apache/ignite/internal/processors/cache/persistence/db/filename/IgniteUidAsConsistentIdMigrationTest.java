@@ -505,7 +505,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         stopAllGrids();
 
         System.clearProperty(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID);
-        System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
 
         final Ignite igniteRestart = startGrid(0);
 
@@ -515,6 +514,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         assertNodeIndexesInFolder(); //new style nodes should not be found
         stopGrid(0);
+        System.clearProperty(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT);
     }
 
     /**
