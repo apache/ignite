@@ -419,6 +419,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     procRes = processor.process(invokeEntry, t.get2());
 
                                     val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
+
+                                    if (val != null) // no validation for remove case
+                                        cacheCtx.validateKeyAndValue(key, val);
                                 }
                                 catch (Exception e) {
                                     err = e;
@@ -970,7 +973,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err)) {
+        if (super.onDone(res, res == null ? err : null)) {
             // Don't forget to clean up.
             cctx.mvcc().removeVersionedFuture(this);
 
@@ -989,7 +992,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void complete() {
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
 
-        res.error(new IgniteCheckedException("Failed to prepare transaction."));
+        res.error(err != null ? err : new IgniteCheckedException("Failed to prepare transaction."));
 
         onComplete(res);
     }
@@ -1505,7 +1508,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             try {
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
-                assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) : dhtNodes;
+                assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
+                    "localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +

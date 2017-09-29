@@ -49,6 +49,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private const string CacheName2 = "cacheName2";
 
         /** */
+        private const string SpringCacheName = "cache-default-spring";
+
+        /** */
         private static int _factoryProp;
 
 
@@ -79,7 +82,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                             MaxSize = 99 * 1024 * 1024
                         }
                     }
-                }
+                },
+                SpringConfigUrl = "Config\\cache-default.xml"
             };
 
             _ignite = Ignition.Start(cfg);
@@ -104,7 +108,24 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             AssertConfigIsDefault(_ignite.GetCache<int, int>(DefaultCacheName).GetConfiguration());
 
-            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == DefaultCacheName));
+            AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration
+                .Single(c => c.Name == DefaultCacheName));
+        }
+
+        /// <summary>
+        /// Tests that defaults are the same in Java.
+        /// </summary>
+        [Test]
+        public void TestDefaultsAreSameInJava()
+        {
+            var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
+
+            var ignoredProps = new[] {"AffinityFunction"};
+
+            TestUtils.AssertReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
+                ignoredProperties: new HashSet<string>(ignoredProps));
+            
+            AssertConfigIsDefault(springConfig);
         }
 
         /// <summary>
@@ -221,7 +242,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultEagerTtl, cfg.EagerTtl);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
-            Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
 #pragma warning disable 618
@@ -240,6 +261,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindFlushThreadCount, cfg.WriteBehindFlushThreadCount);
             Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
             Assert.AreEqual(CacheConfiguration.DefaultPartitionLossPolicy, cfg.PartitionLossPolicy);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteSynchronizationMode, cfg.WriteSynchronizationMode);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteBehindCoalescing, cfg.WriteBehindCoalescing);
+            Assert.AreEqual(CacheConfiguration.DefaultWriteThrough, cfg.WriteThrough);
+            Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
+            Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
         }
 
         /// <summary>
@@ -272,13 +299,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
+            Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
+            Assert.AreEqual(x.WriteSynchronizationMode, y.WriteSynchronizationMode);
+            Assert.AreEqual(x.SqlIndexMaxInlineSize, y.SqlIndexMaxInlineSize);
 
             if (x.ExpiryPolicyFactory != null)
+            {
                 Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
                     y.ExpiryPolicyFactory.CreateInstance().GetType());
+            }
             else
+            {
                 Assert.IsNull(y.ExpiryPolicyFactory);
+            }
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
@@ -461,6 +495,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.IndexType, y.IndexType);
+            Assert.AreEqual(x.InlineSize, y.InlineSize);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
         }
@@ -476,6 +511,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
+            Assert.AreEqual(x.NotNull, y.NotNull);
         }
 
         /// <summary>
@@ -552,7 +588,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         {
                             new QueryField("length", typeof(int)), 
                             new QueryField("name", typeof(string)) {IsKeyField = true},
-                            new QueryField("location", typeof(string)),
+                            new QueryField("location", typeof(string)) {NotNull = true},
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]
@@ -561,7 +597,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                             new QueryIndex(new QueryIndexField("location", true))
                             {
                                 Name= "index2",
-                                IndexType = QueryIndexType.FullText
+                                IndexType = QueryIndexType.FullText,
+                                InlineSize = 1024
                             }
                         }
                     }
@@ -591,7 +628,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 EnableStatistics = true,
                 MemoryPolicyName = "myMemPolicy",
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
-                PluginConfigurations = new[] { new MyPluginConfiguration() }
+                PluginConfigurations = new[] { new MyPluginConfiguration() },
+                SqlIndexMaxInlineSize = 10000
             };
         }
         /// <summary>
@@ -762,7 +800,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             public void WriteBinary(IBinaryRawWriter writer)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
     }

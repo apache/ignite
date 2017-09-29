@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -401,6 +402,66 @@ namespace Apache.Ignite.Core.Tests
         public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
+        }
+
+        /// <summary>
+        /// Asserts equality with reflection.
+        /// </summary>
+        public static void AssertReflectionEqual(object x, object y, string propertyPath = null,
+            HashSet<string> ignoredProperties = null)
+        {
+            var type = x.GetType();
+
+            Assert.AreEqual(type, y.GetType());
+
+            propertyPath = propertyPath ?? type.Name;
+
+            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
+            {
+                Assert.AreEqual(x, y, propertyPath);
+                return;
+            }
+
+            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
+
+            foreach (var propInfo in props)
+            {
+                var propType = propInfo.PropertyType;
+
+                if (ignoredProperties != null && ignoredProperties.Contains(propInfo.Name))
+                {
+                    continue;
+                }
+
+                var propName = propertyPath + "." + propInfo.Name;
+
+                var xVal = propInfo.GetValue(x, null);
+                var yVal = propInfo.GetValue(y, null);
+
+                if (xVal == null || yVal == null)
+                {
+                    Assert.IsNull(xVal, propName);
+                    Assert.IsNull(yVal, propName);
+                }
+                else if (propType != typeof(string) && propType.IsGenericType &&
+                         (propType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                          propType.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
+                {
+                    var xCol = ((IEnumerable)xVal).OfType<object>().ToList();
+                    var yCol = ((IEnumerable)yVal).OfType<object>().ToList();
+
+                    Assert.AreEqual(xCol.Count, yCol.Count, propName);
+
+                    for (var i = 0; i < xCol.Count; i++)
+                    {
+                        AssertReflectionEqual(xCol[i], yCol[i], propName, ignoredProperties);
+                    }
+                }
+                else
+                {
+                    AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
+                }
+            }
         }
     }
 }

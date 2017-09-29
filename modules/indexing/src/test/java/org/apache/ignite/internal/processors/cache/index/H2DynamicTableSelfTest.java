@@ -31,6 +31,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -42,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -52,7 +54,9 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 
@@ -77,6 +81,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             Ignition.start(cfg);
 
         client().addCacheConfiguration(cacheConfiguration());
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
     }
 
     /** {@inheritDoc} */
@@ -98,6 +104,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Override protected void afterTest() throws Exception {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
 
         super.afterTest();
     }
@@ -107,7 +114,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
-        doTestCreateTable(CACHE_NAME, null, null);
+        doTestCreateTable(CACHE_NAME, null, null, null);
     }
 
     /**
@@ -115,7 +122,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableWithCacheGroup() throws Exception {
-        doTestCreateTable(CACHE_NAME, "MyGroup", null);
+        doTestCreateTable(CACHE_NAME, "MyGroup", null, null);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} actually creates new cache from template,
+     * H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWriteSyncMode() throws Exception {
+        doTestCreateTable(CACHE_NAME + "_async", null, null, CacheWriteSynchronizationMode.FULL_ASYNC);
     }
 
     /**
@@ -124,7 +140,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableReplicated() throws Exception {
-        doTestCreateTable("REPLICATED", null, CacheMode.REPLICATED);
+        doTestCreateTable("REPLICATED", null, CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -133,7 +149,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTablePartitioned() throws Exception {
-        doTestCreateTable("PARTITIONED", null, CacheMode.PARTITIONED);
+        doTestCreateTable("PARTITIONED", null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -142,7 +158,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableReplicatedCaseInsensitive() throws Exception {
-        doTestCreateTable("replicated", null, CacheMode.REPLICATED);
+        doTestCreateTable("replicated", null, CacheMode.REPLICATED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -151,7 +167,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTablePartitionedCaseInsensitive() throws Exception {
-        doTestCreateTable("partitioned", null, CacheMode.PARTITIONED);
+        doTestCreateTable("partitioned", null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -160,7 +176,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception if failed.
      */
     public void testCreateTableNoTemplate() throws Exception {
-        doTestCreateTable(null, null, CacheMode.PARTITIONED);
+        doTestCreateTable(null, null, CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -170,6 +186,168 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         doTestTableNameCaseSensitivity("Person", false);
 
         doTestTableNameCaseSensitivity("Person", true);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     * @throws Exception if failed.
+     */
+    public void testFullSyncWriteMode() throws Exception {
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_SYNC,
+            "write_synchronization_mode=full_sync");
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     * @throws Exception if failed.
+     */
+    public void testPrimarySyncWriteMode() throws Exception {
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.PRIMARY_SYNC,
+            "write_synchronization_mode=primary_sync");
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     * @throws Exception if failed.
+     */
+    public void testFullAsyncWriteMode() throws Exception {
+        doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_ASYNC,
+            "write_synchronization_mode=full_async");
+    }
+
+    /**
+     * Test behavior only in case of cache name override.
+     */
+    public void testCustomCacheName() {
+        doTestCustomNames("cname", null, null);
+    }
+
+    /**
+     * Test behavior only in case of key type name override.
+     */
+    public void testCustomKeyTypeName() {
+        doTestCustomNames(null, "keytype", null);
+    }
+
+    /**
+     * Test behavior only in case of value type name override.
+     */
+    public void testCustomValueTypeName() {
+        doTestCustomNames(null, null, "valtype");
+    }
+
+    /**
+     * Test behavior only in case of cache and key type name override.
+     */
+    public void testCustomCacheAndKeyTypeName() {
+        doTestCustomNames("cname", "keytype", null);
+    }
+
+    /**
+     * Test behavior only in case of cache and value type name override.
+     */
+    public void testCustomCacheAndValueTypeName() {
+        doTestCustomNames("cname", null, "valtype");
+    }
+
+    /**
+     * Test behavior only in case of key and value type name override.
+     */
+    public void testCustomKeyAndValueTypeName() {
+        doTestCustomNames(null, "keytype", "valtype");
+    }
+
+    /**
+     * Test behavior only in case of cache, key, and value type name override.
+     */
+    public void testCustomCacheAndKeyAndValueTypeName() {
+        doTestCustomNames("cname", "keytype", "valtype");
+    }
+
+    /**
+     * Test that attempting to create a cache with a pre-existing name yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDuplicateCustomCacheName() throws Exception {
+        client().getOrCreateCache("new");
+
+        try {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    doTestCustomNames("new", null, null);return null;
+                }
+            }, IgniteSQLException.class, "Table already exists: NameTest");
+        }
+        finally {
+            client().destroyCache("new");
+        }
+    }
+
+    /**
+     * Test that appending supplied arguments to {@code CREATE TABLE} results in creating new cache that has settings
+     * as expected
+     * @param cacheName Cache name, or {@code null} if the name generated by default should be used.
+     * @param keyTypeName Key type name, or {@code null} if the name generated by default should be used.
+     * @param valTypeName Value type name, or {@code null} if the name generated by default should be used.
+     */
+    private void doTestCustomNames(String cacheName, String keyTypeName, String valTypeName) {
+        GridStringBuilder b = new GridStringBuilder("CREATE TABLE \"NameTest\" (id int primary key, x varchar) WITH ");
+
+        assert !F.isEmpty(cacheName) || !F.isEmpty(keyTypeName) || !F.isEmpty(valTypeName);
+
+        if (!F.isEmpty(cacheName))
+            b.a("\"cache_name=").a(cacheName).a('"').a(',');
+
+        if (!F.isEmpty(keyTypeName))
+            b.a("\"key_type=").a(keyTypeName).a('"').a(',');
+
+        if (!F.isEmpty(valTypeName))
+            b.a("\"value_type=").a(valTypeName).a('"');
+
+        String res = b.toString();
+
+        if (res.endsWith(","))
+            res = res.substring(0, res.length() - 1);
+
+        execute(client(), res);
+
+        String resCacheName = U.firstNotNull(cacheName, QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA,
+            "NameTest"));
+
+        IgniteInternalCache<BinaryObject, BinaryObject> cache = client().cachex(resCacheName);
+
+        assertNotNull(cache);
+
+        CacheConfiguration ccfg = cache.configuration();
+
+        assertEquals(1, ccfg.getQueryEntities().size());
+
+        QueryEntity e = (QueryEntity)ccfg.getQueryEntities().iterator().next();
+
+        if (!F.isEmpty(keyTypeName))
+            assertEquals(keyTypeName, e.getKeyType());
+        else
+            assertTrue(e.getKeyType().startsWith("SQL_PUBLIC"));
+
+        if (!F.isEmpty(valTypeName))
+            assertEquals(valTypeName, e.getValueType());
+        else
+            assertTrue(e.getValueType().startsWith("SQL_PUBLIC"));
+
+        execute(client(), "INSERT INTO \"NameTest\" (id, x) values (1, 'a')");
+
+        List<List<?>> qres = execute(client(), "SELECT id, x from \"NameTest\"");
+
+        assertEqualsCollections(Collections.singletonList(Arrays.asList(1, "a")), qres);
+
+        BinaryObject key = client().binary().builder(e.getKeyType()).setField("ID", 1).build();
+
+        BinaryObject val = (BinaryObject)client().cache(resCacheName).withKeepBinary().get(key);
+
+        BinaryObject exVal = client().binary().builder(e.getValueType()).setField("X", "a").build();
+
+        assertEquals(exVal, val);
     }
 
     /**
@@ -277,13 +455,21 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
      * @param cacheGrp Cache group name, or {@code null} if no group is set.
-     * @param mode Expected cache mode, or {@code null} if no check is needed.
+     * @param cacheMode Expected cache mode, or {@code null} if no check is needed.
+     * @param writeSyncMode Expected write sync mode, or {@code null} if no check is needed.
+     * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
-    private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode mode) {
-        execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
+    private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
+        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) {
+        String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"" +
-            (F.isEmpty(cacheGrp) ? "" : ",\"cacheGroup=" + cacheGrp + '"'));
+            (F.isEmpty(cacheGrp) ? "" : ",\"cacheGroup=" + cacheGrp + '"');
+
+        for (String p : additionalParams)
+            sql += ",\"" + p + "\"";
+
+        execute(sql);
 
         String cacheName = cacheName("Person");
 
@@ -296,7 +482,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertNotNull(cacheDesc);
 
-            if (mode == CacheMode.REPLICATED)
+            if (cacheMode == CacheMode.REPLICATED)
                 assertEquals(Integer.MAX_VALUE, cacheDesc.cacheConfiguration().getBackups());
             else
                 assertEquals(10, cacheDesc.cacheConfiguration().getBackups());
@@ -307,8 +493,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(cacheGrp, cacheDesc.groupDescriptor().groupName());
 
-            if (mode != null)
-                assertEquals(mode, cacheDesc.cacheConfiguration().getCacheMode());
+            if (cacheMode != null)
+                assertEquals(cacheMode, cacheDesc.cacheConfiguration().getCacheMode());
+
+            if (writeSyncMode != null)
+                assertEquals(writeSyncMode, cacheDesc.cacheConfiguration().getWriteSynchronizationMode());
 
             QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
 
@@ -371,6 +560,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyCacheGroup() {
         assertCreateTableWithParamsThrows("cachegroup=", "Parameter value cannot be empty: CACHEGROUP");
+    }
+
+    /**
+     * Test that attempting to omit mandatory value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
+     */
+    public void testEmptyWriteSyncMode() {
+        assertCreateTableWithParamsThrows("write_synchronization_mode=",
+            "Parameter value cannot be empty: WRITE_SYNCHRONIZATION_MODE");
+    }
+
+    /**
+     * Test that attempting to provide invalid value of WRITE_SYNCHRONIZATION_MODE parameter yields an error.
+     */
+    public void testInvalidWriteSyncMode() {
+        assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
+            "Invalid value of \"WRITE_SYNCHRONIZATION_MODE\" parameter " +
+                "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): invalid");
     }
 
     /**
@@ -535,8 +741,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setKeyType("CityKey");
                 e.setValueType("City");
 
-                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null,
-                    null, CacheAtomicityMode.ATOMIC, 10, false);
+                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null,
+                    null, CacheAtomicityMode.ATOMIC, null, 10, false);
 
                 return null;
             }
@@ -950,8 +1156,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param node Node.
      * @param sql Statement.
      */
-    private void execute(Ignite node, String sql) {
-        queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true);
+    private List<List<?>> execute(Ignite node, String sql) {
+        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**

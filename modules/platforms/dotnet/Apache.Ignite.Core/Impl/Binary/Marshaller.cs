@@ -192,6 +192,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (ignite != null && metas != null && metas.Count > 0)
             {
                 ignite.BinaryProcessor.PutBinaryTypes(metas);
+                OnBinaryTypesSent(metas);
             }
         }
 
@@ -307,8 +308,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (Ignite != null)
             {
-                ICollection<BinaryType> metas = new[] {new BinaryType(desc, this)};
+                var metas = new[] {new BinaryType(desc, this)};
                 Ignite.BinaryProcessor.PutBinaryTypes(metas);
+                OnBinaryTypesSent(metas);
             }
         }
 
@@ -356,7 +358,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
         /// <param name="newMetas">Binary types.</param>
-        public void OnBinaryTypesSent(IEnumerable<BinaryType> newMetas)
+        private void OnBinaryTypesSent(IEnumerable<BinaryType> newMetas)
         {
             foreach (var meta in newMetas)
             {

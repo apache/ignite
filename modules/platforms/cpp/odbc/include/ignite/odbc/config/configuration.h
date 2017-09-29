@@ -204,9 +204,9 @@ namespace ignite
                  *
                  * @return Data Source Name.
                  */
-                const std::string& GetDsn() const
+                const std::string& GetDsn(const std::string& dflt = DefaultValue::dsn) const
                 {
-                    return GetStringValue(Key::dsn, DefaultValue::dsn);
+                    return GetStringValue(Key::dsn, dflt);
                 }
 
                 /**

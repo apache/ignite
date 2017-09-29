@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -109,7 +109,7 @@ public class JdbcThinUtils {
     public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
 
     /** Default port. */
-    public static final int DFLT_PORT = SqlConnectorConfiguration.DFLT_PORT;
+    public static final int DFLT_PORT = ClientConnectorConfiguration.DFLT_PORT;
 
     /**
      * Trim prefix from property.

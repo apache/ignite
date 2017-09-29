@@ -114,6 +114,7 @@ public class CacheQueryPartitionInfo {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

@@ -63,7 +63,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
      * @param cursor Underlying cursor.
      * @param batchSize Batch size.
      */
-    public PlatformAbstractQueryCursor(PlatformContext platformCtx, QueryCursorEx<T> cursor, int batchSize) {
+    PlatformAbstractQueryCursor(PlatformContext platformCtx, QueryCursorEx<T> cursor, int batchSize) {
         super(platformCtx);
 
         this.cursor = cursor;
@@ -88,6 +88,11 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
                     }
 
                     writer.writeInt(cntPos, cnt);
+
+                    writer.writeBoolean(iter.hasNext());
+
+                    if (!iter.hasNext())
+                        cursor.close();
                 }
                 catch (Exception err) {
                     throw PlatformUtils.unwrapQueryException(err);
@@ -188,7 +193,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
          *
          * @param writer Writer.
          */
-        public Consumer(PlatformAbstractQueryCursor<T> cursor, BinaryRawWriterEx writer) {
+        Consumer(PlatformAbstractQueryCursor<T> cursor, BinaryRawWriterEx writer) {
             this.cursor = cursor;
             this.writer = writer;
         }

@@ -281,5 +281,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\batch_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
