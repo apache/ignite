@@ -46,17 +46,23 @@ class JdbcQueryCursor {
     /** Query results iterator. */
     private Iterator<List<Object>> iter;
 
+    /** Query cursors holder. */
+    private JdbcQueryHolder qryHld;
+
     /**
      * @param cursorId Query ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
+     * @param qryHld Query holder.
      */
-    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur,
+        JdbcQueryHolder qryHld) {
         this.cursorId = cursorId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+        this.qryHld = qryHld;
     }
 
     /**
@@ -137,5 +143,12 @@ class JdbcQueryCursor {
      */
     public boolean isQuery() {
         return cur.isQuery();
+    }
+
+    /**
+     * @return Query holder object.
+     */
+    public JdbcQueryHolder queryHolder() {
+        return qryHld;
     }
 }

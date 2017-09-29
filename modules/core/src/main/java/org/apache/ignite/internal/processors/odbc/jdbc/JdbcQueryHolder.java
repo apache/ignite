@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -31,8 +31,17 @@ class JdbcQueryHolder {
     /** Query canceled flag. */
     private volatile boolean canceled;
 
-    /** JDBC cursor. */
-    private List<JdbcQueryCursor> cursors;
+    /** JDBC cursors. */
+    private ConcurrentHashMap<Long , JdbcQueryCursor> cursors;
+
+    private long qryId;
+
+    /**
+     * @param qryId Query ID.
+     */
+    JdbcQueryHolder(long qryId) {
+        this.qryId = qryId;
+    }
 
     /**
      * Cancel query.
@@ -42,7 +51,7 @@ class JdbcQueryHolder {
             canceled = true;
 
             if (!F.isEmpty(cursors)) {
-                for (JdbcQueryCursor c : cursors)
+                for (JdbcQueryCursor c : cursors.values())
                     c.close();
             }
         }
@@ -58,8 +67,11 @@ class JdbcQueryHolder {
     /**
      * @return JDBC cursors.
      */
-    List<JdbcQueryCursor> cursors() {
-        return cursors;
+    Collection<JdbcQueryCursor> cursors() {
+        if (cursors == null)
+            return null;
+
+        return cursors.values();
     }
 
     /**
@@ -68,12 +80,35 @@ class JdbcQueryHolder {
     void addCursor(JdbcQueryCursor cur) {
         synchronized (mux) {
             if (cursors == null)
-                cursors = new ArrayList<>();
+                cursors = new ConcurrentHashMap<>();
 
-            cursors.add(cur);
+            cursors.put(cur.cursorId(), cur);
 
             if (canceled)
                 cur.close();
         }
+    }
+
+    /**
+     * @param curId Cursor ID.
+     */
+    void removeCursor(long curId) {
+        assert cursors != null;
+
+        cursors.remove(curId);
+    }
+
+    /**
+     * @return {@code true} if there are not cursors.
+     */
+    boolean isEmpty() {
+        return cursors == null || cursors.isEmpty();
+    }
+
+    /**
+     * @return Query ID.
+     */
+    public long queryId() {
+        return qryId;
     }
 }

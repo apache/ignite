@@ -272,7 +272,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         JdbcQueryHolder qryHld = null;
 
         if (qryId > 0) {
-            qryHld = new JdbcQueryHolder();
+            qryHld = new JdbcQueryHolder(qryId);
 
             queries.put(qryId, qryHld);
         }
@@ -328,7 +328,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 long curId = CURSOR_ID_GEN.incrementAndGet();
 
-                JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)qryCur, qryHld);
 
                 if (qryHld != null)
                     qryHld.addCursor(cur);
@@ -354,6 +355,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     cur.close();
 
                     qryCursors.remove(curId);
+                    queries.remove(qryId);
                 }
                 else
                     qryCursors.put(curId, cur);
@@ -373,7 +375,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     if (qryCur.isQuery()) {
                         long curId = CURSOR_ID_GEN.incrementAndGet();
 
-                        JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(), qryCur);
+                        JdbcQueryCursor cur = new JdbcQueryCursor(curId, req.pageSize(), req.maxRows(), qryCur, qryHld);
 
                         jdbcRes = new JdbcResultInfo(true, -1, curId);
 
@@ -399,7 +401,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
         catch (Exception e) {
-            List<JdbcQueryCursor> curs = qryHld.cursors();
+            Collection<JdbcQueryCursor> curs = qryHld.cursors();
 
             if (!F.isEmpty(curs)) {
                 for (JdbcQueryCursor c : curs) {
@@ -408,6 +410,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qryCursors.remove(c.cursorId());
                 }
             }
+
+            queries.remove(qryId);
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
@@ -430,6 +434,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     "Failed to find query cursor with ID: " + req.cursorId());
 
             cur.close();
+
+            cur.queryHolder().removeCursor(cur.cursorId());
+
+            if (cur.queryHolder().isEmpty())
+                queries.remove(cur.queryHolder().queryId());
 
             return new JdbcResponse(null);
         }
@@ -509,11 +518,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     @SuppressWarnings("unchecked")
     private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
-        long qryId = req.queryId() < 0 ? CURSOR_ID_GEN.getAndIncrement() : req.queryId();
+        long qryId = req.queryId();
 
-        JdbcQueryHolder qryHld = new JdbcQueryHolder();
+        JdbcQueryHolder qryHld = null;
 
-        queries.put(qryId, qryHld);
+        if (qryId > 0) {
+            qryHld = new JdbcQueryHolder(qryId);
+
+            queries.put(qryId, qryHld);
+        }
 
         String schemaName = req.schemaName();
 
@@ -542,13 +555,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
-                if (qryHld.isCanceled())
+                if (qryHld != null && qryHld.isCanceled())
                     throw new QueryCancelledException();
 
                 QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
                     .querySqlFieldsNoCache(qry, true, true).get(0);
 
-                if (qryHld.isCanceled())
+                if (qryHld != null && qryHld.isCanceled())
                     throw new QueryCancelledException();
 
                 assert !qryCur.isQuery();
