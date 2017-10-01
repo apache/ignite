@@ -1878,6 +1878,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             if (req.operation() == TRANSFORM)
                 retVal = updRes.returnValue();
+
+            if (!F.isEmpty(res.failedKeys())) {
+                if (retVal == null)
+                    retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, false);
+                else
+                    retVal.success(false);
+            }
         }
         else {
             updRes = updateSingle(node,
@@ -1893,6 +1900,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 sndPrevVal);
 
             retVal = updRes.returnValue();
+
+            if (!F.isEmpty(res.failedKeys()))
+                retVal.success(false);
+
             dhtFut = updRes.dhtFuture();
         }
 
@@ -2148,6 +2159,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 continue;
 
                             updated = ctx.toCacheObject(ctx.unwrapTemporary(val));
+
+                            ctx.validateKeyAndValue(entry.key(), updated);
                         }
 
                         // Update previous batch.

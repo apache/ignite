@@ -958,6 +958,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val0 = cctx.unwrapTemporary(interceptorVal);
 
                 val = cctx.toCacheObject(val0);
+
+                cctx.validateKeyAndValue(key, val);
             }
 
             // Determine new ttl and expire time.
@@ -1464,6 +1466,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
                         updated = cctx.toCacheObject(updated0);
+
+                        cctx.validateKeyAndValue(key, updated);
                     }
                 }
                 else {
@@ -1761,7 +1765,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 case CONFLICT_USE_OLD:
                 case FILTER_FAILED:
                 case INVOKE_NO_OP:
+                    return updateRes;
+
                 case INTERCEPTOR_CANCEL:
+                    IgniteBiTuple<Object, Exception> compRes = updateRes.computedResult();
+
+                    Exception ex = compRes == null ? null : compRes.getValue();
+
+                    if (ex != null)
+                        throw new IgniteCheckedException(ex);
+
                     return updateRes;
             }
 
@@ -4374,6 +4387,27 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updated0 = cctx.unwrapTemporary(interceptorVal);
 
                     updated = cctx.toCacheObject(updated0);
+
+                    try {
+                        cctx.validateKeyAndValue(entry.key, updated);
+                    }
+                    catch (Exception e) {
+                        treeOp = IgniteTree.OperationType.NOOP;
+
+                        invokeRes = new IgniteBiTuple<>(null, e);
+
+                        updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INTERCEPTOR_CANCEL,
+                            oldVal,
+                            null,
+                            invokeRes,
+                            CU.TTL_ETERNAL,
+                            CU.EXPIRE_TIME_ETERNAL,
+                            null,
+                            null,
+                            0);
+
+                        return;
+                    }
                 }
             }
 
