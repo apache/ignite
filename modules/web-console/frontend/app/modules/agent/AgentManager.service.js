@@ -310,7 +310,7 @@ export default class IgniteAgentManager {
             this.socket.removeListener('disconnect', onDisconnect);
 
             if (err)
-                latch.reject(err);
+                return latch.reject(err);
 
             latch.resolve(res);
         });
@@ -552,9 +552,10 @@ export default class IgniteAgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
+     * @param {Boolean} lazy query flag.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local) {
+    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy) {
         // Page size for query.
         const pageSz = 1024;
 
@@ -572,7 +573,7 @@ export default class IgniteAgentManager {
                 });
         };
 
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
+        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy)
             .then(fetchResult);
     }
 
