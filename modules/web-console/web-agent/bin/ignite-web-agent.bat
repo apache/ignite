@@ -20,6 +20,25 @@ Setlocal EnableDelayedExpansion
 
 if "%OS%" == "Windows_NT"  setlocal
 
+:: Check IGNITE_HOME.
+pushd "%~dp0"
+set IGNITE_HOME=%CD%
+
+:checkIgniteHome2
+:: Strip double quotes from IGNITE_HOME
+set IGNITE_HOME=%IGNITE_HOME:"=%
+
+:: remove all trailing slashes from IGNITE_HOME.
+if %IGNITE_HOME:~-1,1% == \ goto removeTrailingSlash
+if %IGNITE_HOME:~-1,1% == / goto removeTrailingSlash
+goto checkIgniteHome3
+
+:removeTrailingSlash
+set IGNITE_HOME=%IGNITE_HOME:~0,-1%
+goto checkIgniteHome2
+
+:checkIgniteHome3
+
 :: Check JAVA_HOME.
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
