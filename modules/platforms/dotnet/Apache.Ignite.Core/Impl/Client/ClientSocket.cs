@@ -201,6 +201,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Connects the socket.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
+            Justification = "Socket is returned from this method.")]
         private static Socket Connect(IgniteClientConfiguration cfg)
         {
             List<Exception> errors = null;
