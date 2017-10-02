@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -34,15 +35,15 @@ public class MvccDataRow extends DataRow {
     private long mvccCntr;
 
     /**
-     * @param grp
-     * @param hash
-     * @param link
-     * @param part
-     * @param rowData
-     * @param crdVer
-     * @param mvccCntr
+     * @param grp Context.
+     * @param hash Key hash.
+     * @param link Link.
+     * @param part Partition number.
+     * @param rowData Data.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
      */
-    public MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
+    MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
         super(grp, hash, link, part, rowData);
 
         assert crdVer > 0 : crdVer;
@@ -53,11 +54,13 @@ public class MvccDataRow extends DataRow {
     }
 
     /**
-     * @param key
-     * @param val
-     * @param ver
-     * @param part
-     * @param cacheId
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
+     * @param part Partition.
+     * @param cacheId Cache ID.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
      */
     public MvccDataRow(KeyCacheObject key,
         CacheObject val,
@@ -80,5 +83,10 @@ public class MvccDataRow extends DataRow {
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
         return mvccCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MvccDataRow.class, this, "super", super.toString());
     }
 }

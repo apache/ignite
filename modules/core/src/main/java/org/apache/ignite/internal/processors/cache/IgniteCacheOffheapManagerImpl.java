@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -68,6 +71,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -434,6 +438,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert row == null || row.value() != null : row;
 
         return row;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<T2<CacheObject, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
+        throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(cctx, key);
+
+        return dataStore != null ? dataStore.mvccFindAllVersions(cctx, key) :
+            Collections.<T2<CacheObject,MvccCounter>>emptyList();
     }
 
     /**
@@ -1649,6 +1662,35 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             afterRowFound(row, key);
 
             return row;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(
+            GridCacheContext cctx,
+            KeyCacheObject key)
+            throws IgniteCheckedException
+        {
+            assert grp.mvccEnabled();
+
+            key.valueBytes(cctx.cacheObjectContext());
+
+            int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            GridCursor<CacheDataRow> cur = dataTree.find(
+                new MvccSearchRow(cacheId, key, Long.MAX_VALUE, Long.MAX_VALUE),
+                new MvccSearchRow(cacheId, key, 1, 1));
+
+            List<T2<CacheObject, MvccCounter>> res = new ArrayList<>();
+
+            while (cur.next()) {
+                CacheDataRow row = cur.get();
+
+                MvccCounter mvccCntr = new MvccCounter(row.mvccCoordinatorVersion(), row.mvccCounter());
+
+                res.add(new T2<>(row.value(), mvccCntr));
+            }
+
+            return res;
         }
 
         /** {@inheritDoc} */

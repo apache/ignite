@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -111,15 +114,6 @@ public interface IgniteCacheOffheapManager {
     @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @return Cached row, if available, null otherwise.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
-        throws IgniteCheckedException;
-
-    /**
      * @param p Partition.
      * @return Data store.
      * @throws IgniteCheckedException If failed.
@@ -172,6 +166,23 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
+        throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return Cached row, if available, null otherwise.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public CacheDataRow mvccRead(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
+        throws IgniteCheckedException;
+
+    /**
+     * @param cctx
+     * @param key
+     * @return
+     */
+    public List<T2<CacheObject, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException;
 
     /**
@@ -523,6 +534,17 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccCoordinatorVersion ver)
+            throws IgniteCheckedException;
+
+        /**
+         * For testing only.
+         *
+         * @param cctx Cache context.
+         * @param key Key.
+         * @return All stored versions for given key.
+         * @throws IgniteCheckedException If failed.
+         */
+        List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException;
 
         /**

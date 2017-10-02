@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -1313,6 +1316,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 return delegate.mvccFind(cctx, key, mvccVer);
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(true);
+
+            if (delegate != null)
+                return delegate.mvccFindAllVersions(cctx, key);
+
+            return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
