@@ -2354,6 +2354,9 @@ let methodsThatCanBeMadeStatic =
    // any of its class or base classes instance fields or instance methods.
    where !m.IsAbstract && !m.IsVirtual &&
          !m.AccessThis && !m.IsExplicitInterfaceImpl &&
+         m.Name != "get_IsLateAffinityAssignment()" &&
+         m.Name != "set_IsLateAffinityAssignment(Boolean)" &&
+
 
           // Optimization: Using FirstOrDefault() avoid to check all members, 
           //               as soon as one member is found
@@ -2409,7 +2412,7 @@ select new {
 // base-types, you should consider if it makes sense, to move such a method  
 // to a static utility class.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Constructor should not call a virtual method</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Constructor should not call a virtual method</Name>
 warnif count > 0
 
 from t in Application.Types where 
