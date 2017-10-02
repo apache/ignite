@@ -2548,7 +2548,8 @@ from f in Application.Fields where
  !f.IsInitOnly &&
  !f.IsGeneratedByCompiler &&
   // Contract API define such a insideContractEvaluation static field
-  f.Name != "insideContractEvaluation"
+  f.Name != "insideContractEvaluation" &&
+ !f.HasAttribute("System.ThreadStaticAttribute")
 let assignedBy = f.MethodsAssigningMe.Where(m => !m.IsStatic)
 where assignedBy .Count() > 0
 select new { 
