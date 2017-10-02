@@ -309,7 +309,20 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+        List<ClusterNode> affNodes;
+        try {
+            affNodes = cctx.affinity().nodesByPartition(part, topVer);
+        } catch (Throwable e) {
+            U.error(log, "Failed to get affinity nodes by partition [part=" + part +
+                ", topVer=" + topVer + ", future=" + this + "]", e);
+
+            onDone(serverNotFoundError(topVer));
+
+            if (e instanceof Error)
+                throw e;
+
+            return null;
+        }
 
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
