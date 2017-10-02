@@ -34,6 +34,7 @@ class JdbcQueryHolder {
     /** JDBC cursors. */
     private ConcurrentHashMap<Long , JdbcQueryCursor> cursors;
 
+    /** Query ID. */
     private long qryId;
 
     /**
