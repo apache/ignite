@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <NDepend AppName="Apache.Ignite" Platform="DotNet" FileWrittenByProductVersion="2017.2.2.8962">
   <OutputDir KeepXmlFiles="False">c:\w\incubator-ignite\modules\platforms\dotnet\NDependOut</OutputDir>
   <Assemblies>
@@ -81,7 +81,8 @@
       <High2Critical_SeverityThreshold>72000000000</High2Critical_SeverityThreshold>
       <Critical2Blocker_SeverityThreshold>360000000000</Critical2Blocker_SeverityThreshold>
     </DebtSettings>
-  </ProjectDebtSettings><Queries>
+  </ProjectDebtSettings>
+  <Queries>
     <Group Name="Quality Gates" Active="True" ShownInReport="True">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quality Gates Evolution</Name>
 from qg in QualityGates
@@ -2630,8 +2631,16 @@ let cctorSuspects = assembly.ChildMethods.Where(
        // Optimization: types involved in a type cycle necessarily don't have type level.
        m.ParentType.Level == null)
 
+let excludedTypes = new [] 
+{
+    "Apache.Ignite.Core.Impl.Binary.BinaryObjectBuilder",
+    "Apache.Ignite.Core.Impl.Binary.BinarySystemHandlers"
+}.ToHashSet()
+
 where cctorSuspects.Count() > 1
-let typesSuspects = cctorSuspects.ParentTypes().ToHashSet()
+let typesSuspects = cctorSuspects.ParentTypes()
+.Where(t => !excludedTypes.Contains(t.FullName))
+.ToHashSet()
 
 //
 // dicoTmp associates to each type suspect T, a set of types from typesSuspects
@@ -10939,4 +10948,7 @@ select new {
 //</HowToFix>]]></Query>
       </Group>
     </Group>
-  </Queries></NDepend>
+  </Queries>
+  <WarnFilter>
+  </WarnFilter>
+</NDepend>
