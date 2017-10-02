@@ -49,7 +49,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public static final String CACHE_NAME = "dummy";
 
     /** Clear DB folder after each test. May be set to false for local debug */
-    private static final boolean deleteAfter = false;
+    private static final boolean deleteAfter = true;
 
     /** Clear DB folder before each test. */
     private static final boolean deleteBefore = true;
@@ -63,8 +63,20 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     /** Logger to accumulate messages, null will cause logger won't be customized */
     private GridStringLogger strLog;
 
-    /** Clear properties after test. Flag protects from failed test */
+    /** Clear properties after this test run. Flag protects from failed test */
     private boolean clearPropsAfterTest = false;
+
+    /** Place storage in temp folder for current test run. */
+    private boolean placeStorageInTemp;
+
+    /** A path to persistent store custom path for current test run. */
+    private File pstStoreCustomPath;
+
+    /** A path to persistent store WAL work custom path. */
+    private File pstWalStoreCustomPath;
+
+    /** A path to persistent store WAL archive custom path. */
+    private File pstWalArchCustomPath;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -93,7 +105,17 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     private void deleteWorkFiles() throws IgniteCheckedException {
         boolean ok = true;
 
-        ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        if (pstStoreCustomPath != null)
+            ok &= deleteRecursively(pstStoreCustomPath);
+        else
+            ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+
+        if (pstWalArchCustomPath != null)
+            ok &= deleteRecursively(pstWalArchCustomPath);
+
+        if (pstWalStoreCustomPath != null)
+            ok &= deleteRecursively(pstWalStoreCustomPath);
+
         ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
 
         if (failIfDeleteNotCompleted)
@@ -108,6 +130,18 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             cfg.setConsistentId(configuredConsistentId);
 
         final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
+
+        if (placeStorageInTemp) {
+            final File tempDir = new File(System.getProperty("java.io.tmpdir"));
+
+            pstStoreCustomPath = new File(tempDir, "Store");
+            pstWalStoreCustomPath = new File(tempDir, "WalStore");
+            pstWalArchCustomPath = new File(tempDir, "WalArchive");
+
+            psCfg.setPersistentStorePath(pstStoreCustomPath.getAbsolutePath());
+            psCfg.setWalStorePath(pstWalStoreCustomPath.getAbsolutePath());
+            psCfg.setWalArchivePath(pstWalArchCustomPath.getAbsolutePath());
+        }
 
         cfg.setPersistentStoreConfiguration(psCfg);
 
@@ -135,6 +169,28 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         //test UUID is parsable from consistent ID test
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         assertPdsDirsDefaultExist(genNewStyleSubfolderName(0, ignite));
+        stopGrid(0);
+    }
+
+    /**
+     * Checks start on empty PDS folder, in that case node 0 should start with random UUID.
+     *
+     * @throws Exception if failed.
+     */
+    public void testNewStyleIdIsGeneratedInCustomStorePath() throws Exception {
+        placeStorageInTemp = true;
+        final Ignite ignite = startActivateFillDataGrid(0);
+
+        //test UUID is parsable from consistent ID test
+        UUID.fromString(ignite.cluster().localNode().consistentId().toString());
+        final String subfolderName = genNewStyleSubfolderName(0, ignite);
+
+        assertDirectoryExist("binary_meta", subfolderName);
+
+        assertDirectoryExist(pstWalArchCustomPath, subfolderName);
+        assertDirectoryExist(pstWalArchCustomPath, subfolderName);
+        assertDirectoryExist(pstStoreCustomPath, subfolderName);
+
         stopGrid(0);
     }
 
@@ -615,13 +671,27 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     }
 
     /**
-     * Checks one folder existence
+     * Checks one folder existence.
      *
-     * @param subFolderNames subfolders array to touch
-     * @throws IgniteCheckedException if IO error occur
+     * @param subFolderNames sub folders chain array to touch.
+     * @throws IgniteCheckedException if IO error occur.
      */
     private void assertDirectoryExist(String... subFolderNames) throws IgniteCheckedException {
-        File curFolder = new File(U.defaultWorkDirectory());
+        final File curFolder = new File(U.defaultWorkDirectory());
+
+        assertDirectoryExist(curFolder, subFolderNames);
+    }
+
+
+    /**
+     * Checks one folder existence.
+     *
+     * @param workFolder current work folder.
+     * @param subFolderNames sub folders chain array to touch.
+     * @throws IgniteCheckedException if IO error occur.
+     */
+    private void assertDirectoryExist(final File workFolder, String... subFolderNames) throws IgniteCheckedException {
+        File curFolder = workFolder;
 
         for (String name : subFolderNames) {
             curFolder = new File(curFolder, name);

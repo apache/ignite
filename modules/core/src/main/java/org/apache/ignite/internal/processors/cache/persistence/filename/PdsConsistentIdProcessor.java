@@ -372,9 +372,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     }
 
     /**
-     * @param pstStoreBasePath root storage folder to scan
+     * @param pstStoreBasePath root storage folder to scan.
      * @return empty list if there is no files in folder to test. Non null value is returned for folder having
-     * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first
+     * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first.
      */
     @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
         final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
@@ -386,6 +386,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         for (File file : files) {
             final FolderCandidate candidate = parseFileName(file);
+
             if (candidate != null)
                 res.add(candidate);
         }
@@ -399,10 +400,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     }
 
     /**
-     * Tries to lock subfolder within storage root folder
+     * Tries to lock subfolder within storage root folder.
      *
      * @param dbStoreDirWithSubdirectory DB store directory, is to be absolute and should include consistent ID based
-     * sub folder
+     * sub folder.
      * @return non null holder if lock was successful, null in case lock failed. If directory does not exist method will
      * always fail to lock.
      */
@@ -416,6 +417,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         try {
             fileLockHolder.tryLock(1000);
+
             return fileLockHolder;
         }
         catch (IgniteCheckedException e) {
@@ -427,8 +429,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
-     * store configuration. Null if persistence is not enabled
-     * @throws IgniteCheckedException if I/O failed
+     * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
+     * @throws IgniteCheckedException if I/O failed.
      */
     @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
         final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
@@ -436,29 +438,14 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (pstCfg == null)
             return null;
 
-        final File dirToFindOldConsIds;
+        final String pstPath = pstCfg.getPersistentStorePath();
 
-        if (pstCfg.getPersistentStorePath() != null) {
-            File workDir0 = new File(pstCfg.getPersistentStorePath());
+        return U.resolveWorkDirectory(
+            cfg.getWorkDirectory(),
+            pstPath != null ? pstPath : DB_DEFAULT_FOLDER,
+            false
+        );
 
-            if (!workDir0.isAbsolute())
-                dirToFindOldConsIds = U.resolveWorkDirectory(
-                    cfg.getWorkDirectory(),
-                    pstCfg.getPersistentStorePath(),
-                    false
-                );
-            else
-                dirToFindOldConsIds = workDir0;
-        }
-        else {
-            dirToFindOldConsIds = U.resolveWorkDirectory(
-                cfg.getWorkDirectory(),
-                DB_DEFAULT_FOLDER,
-                false
-            );
-        }
-
-        return dirToFindOldConsIds;
     }
 
     /**
