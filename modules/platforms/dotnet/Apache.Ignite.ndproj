@@ -2088,7 +2088,7 @@ select new {
 // The estimated Debt, which means the effort to fix such issue,
 // depends linearly upon the depth of inheritance.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class with no descendant should be sealed if possible</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Class with no descendant should be sealed if possible</Name>
 warnif count > 0 from t in JustMyCode.Types where 
   t.IsClass && 
   t.NbChildren ==0 && 
@@ -2137,7 +2137,7 @@ select new {
 // meant to be subclassed. Certainly most matched class will end up
 // being declared as *sealed*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Overrides of Method() should call base.Method()</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Overrides of Method() should call base.Method()</Name>
 warnif count > 0
 from t in Types  // Take account of third-party base classes also
 
@@ -2280,7 +2280,7 @@ select new {
 // By default issues of this rule have an **Low** severity
 // because they reflect more an advice than a problem.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Non-static classes should be instantiated or turned to static</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Non-static classes should be instantiated or turned to static</Name>
 warnif count > 0
 from t in JustMyCode.Types
 where  t.IsClass &&
@@ -2840,6 +2840,36 @@ select new {
 //
 // More documentation: http://www.ndepend.com/docs/technical-debt
 //</Description>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quality Gates Evolution</Name>
+from qg in QualityGates
+let qgBaseline = qg.OlderVersion()
+let relyOnDiff = qgBaseline == null
+let evolution = relyOnDiff ? (TrendIcon?)null : 
+                // When a quality gate relies on diff between now and baseline
+                // it is not executed against the baseline
+                qg.ValueDiff() == 0d ?
+                TrendIcon.Constant :
+                (qg.ValueDiff() > 0 ? 
+                  ( qg.MoreIsBad ?  TrendIcon.RedUp: TrendIcon.GreenUp) :
+                  (!qg.MoreIsBad ?  TrendIcon.RedDown: TrendIcon.GreenDown))
+select new { qg, 
+   Evolution      =  evolution,
+
+   BaselineStatus =  relyOnDiff? (QualityGateStatus?) null : qgBaseline.Status,
+   Status         =  qg.Status,
+
+   BaselineValue  =  relyOnDiff? (null) : qgBaseline.ValueString,
+   Value          =  qg.ValueString, 
+}
+ 
+// <Description>
+// Show quality gates evolution between baseline and now.
+//
+// When a quality gate relies on diff between now and baseline (like *New Debt since Baseline*)
+// it is not executed against the baseline and as a consequence its evolution is not available.
+//
+// Double-click a quality gate for editing.
+// </Description>]]></Query>
     </Group>
     <Group Name="Design" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid custom delegates</Name>
