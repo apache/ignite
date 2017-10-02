@@ -92,6 +92,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
             CheckDefaultValueAttributes(new IgniteClientConfiguration());
+            CheckDefaultValueAttributes(new QueryIndex());
         }
 
         /// <summary>
@@ -277,6 +278,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(pers.MetricsEnabled, resPers.MetricsEnabled);
                 Assert.AreEqual(pers.RateTimeInterval, resPers.RateTimeInterval);
                 Assert.AreEqual(pers.SubIntervals, resPers.SubIntervals);
+                Assert.AreEqual(pers.CheckpointWriteOrder, resPers.CheckpointWriteOrder);
+                Assert.AreEqual(pers.WriteThrottlingEnabled, resPers.WriteThrottlingEnabled);
             }
         }
 
@@ -588,6 +591,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
         }
 
         /// <summary>
@@ -826,7 +830,8 @@ namespace Apache.Ignite.Core.Tests
                     MetricsEnabled = true,
                     SubIntervals = 7,
                     RateTimeInterval = TimeSpan.FromSeconds(9),
-                    CheckpointWriteOrder = CheckpointWriteOrder.Random
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random,
+                    WriteThrottlingEnabled = true
                 },
                 ConsistentId = new MyConsistentId {Data = "abc"}
             };
