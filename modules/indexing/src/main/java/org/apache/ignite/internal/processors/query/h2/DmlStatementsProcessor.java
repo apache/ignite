@@ -199,8 +199,8 @@ public class DmlStatementsProcessor {
                 cctx.operationContextPerCall(opCtx);
             }
 
-            items += r.cnt;
-            errKeys = r.errKeys;
+            items += r.counter();
+            errKeys = r.errorKeys();
 
             if (F.isEmpty(errKeys))
                 break;
@@ -270,7 +270,7 @@ public class DmlStatementsProcessor {
         checkUpdateResult(res);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(res.cnt)), cancel, false);
+            (Collections.singletonList(res.counter())), cancel, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -297,7 +297,7 @@ public class DmlStatementsProcessor {
             filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
-            new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
+            new IgniteSingletonIterator(Collections.singletonList(res.counter())));
     }
 
     /**
@@ -1180,7 +1180,11 @@ public class DmlStatementsProcessor {
         return stmt instanceof Merge || stmt instanceof Insert || stmt instanceof Update || stmt instanceof Delete;
     }
 
-    /** */
+    /**
+     * Check update result for erroneous keys and throws concurrent update exception if necessary.
+     *
+     * @param r Update result.
+     */
     static void checkUpdateResult(UpdateResult r) {
         if (!F.isEmpty(r.errorKeys())) {
             String msg = "Failed to update some keys because they had been modified concurrently " +

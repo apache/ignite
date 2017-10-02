@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -35,13 +35,13 @@ class DistributedUpdateRun {
     private final int nodeCount;
 
     /** Registers nodes that have responded. */
-    private final GridConcurrentHashSet<UUID> rspNodes;
+    private final HashSet<UUID> rspNodes;
 
     /** Accumulates total number of updated rows. */
-    private final AtomicLong updCntr = new AtomicLong();
+    private long updCntr = 0L;
 
     /** Accumulates error keys. */
-    private final GridConcurrentHashSet<Object> errorKeys = new GridConcurrentHashSet<>();
+    private HashSet<Object> errorKeys;
 
     /** Query info. */
     private final GridRunningQueryInfo qry;
@@ -59,7 +59,7 @@ class DistributedUpdateRun {
         this.nodeCount = nodeCount;
         this.qry = qry;
 
-        rspNodes = new GridConcurrentHashSet<>(nodeCount);
+        rspNodes = new HashSet<>(nodeCount);
     }
 
     /**
@@ -100,24 +100,32 @@ class DistributedUpdateRun {
      * @param msg Response message.
      */
     void handleResponse(UUID id, GridH2DmlResponse msg) {
-        if (!rspNodes.add(id))
-            return; // ignore duplicated messages
+        synchronized (this) {
+            if (!rspNodes.add(id))
+                return; // ignore duplicated messages
 
-        String err = msg.error();
+            String err = msg.error();
 
-        if (err != null) {
-            fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err)? "" : err) + "[reqId=" +
-                msg.requestId() + ", node=" + id + "]."));
+            if (err != null) {
+                fut.onDone(new IgniteCheckedException("Update failed. " + (F.isEmpty(err) ? "" : err) + "[reqId=" +
+                    msg.requestId() + ", node=" + id + "]."));
 
-            return;
+                return;
+            }
+
+            if (!F.isEmpty(msg.errorKeys())) {
+                List<Object> errList = Arrays.asList(msg.errorKeys());
+
+                if (errorKeys == null)
+                    errorKeys = new HashSet<>(errList);
+                else
+                    errorKeys.addAll(errList);
+            }
+
+            updCntr += msg.updateCounter();
+
+            if (rspNodes.size() == nodeCount)
+                fut.onDone(new UpdateResult(updCntr, errorKeys.toArray()));
         }
-
-        if (!F.isEmpty(msg.errorKeys()))
-            errorKeys.addAll(Arrays.asList(msg.errorKeys()));
-
-        long cntr = updCntr.addAndGet(msg.updateCounter());
-
-        if (rspNodes.size() == nodeCount)
-            fut.onDone(new UpdateResult(cntr, errorKeys.toArray()));
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 
 /** Update result - modifications count and keys to re-run query with, if needed. */
 public final class UpdateResult {
@@ -30,13 +29,17 @@ public final class UpdateResult {
     final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
 
     /** Number of processed items. */
-    final long cnt;
+    private final long cnt;
 
     /** Keys that failed to be updated or deleted due to concurrent modification of values. */
-    @NotNull
-    final Object[] errKeys;
+    private final Object[] errKeys;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param cnt Updated rows count.
+     * @param errKeys Array of erroneous keys.
+     */
     public @SuppressWarnings("ConstantConditions") UpdateResult(long cnt, Object[] errKeys) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);

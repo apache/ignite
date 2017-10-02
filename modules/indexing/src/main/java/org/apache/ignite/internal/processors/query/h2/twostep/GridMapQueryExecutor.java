@@ -839,10 +839,6 @@ public class GridMapQueryExecutor {
         }
     }
 
-    private void onDmlRequest0() {
-
-    }
-
     /**
      * @param node Node.
      * @param qryReqId Query request ID.
