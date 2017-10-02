@@ -111,9 +111,9 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <see cref="DataStreamerConfiguration.DefaultPerNodeBufferSize"/>.
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
-        [DefaultValue(DataStreamerConfiguration.DefaultPerNodeBufferSize)]
+        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
         int PerNodeBufferSize { get; set; }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Default is 0, which means Ignite calculates this automatically as 
         /// <see cref="IgniteConfiguration.DataStreamerThreadPoolSize"/> * 
-        /// <see cref="DataStreamerConfiguration.DefaultParallelOperationsMultiplier"/>.
+        /// <see cref="DataStreamerDefaults.DefaultParallelOperationsMultiplier"/>.
         /// </summary>
         int PerNodeParallelOperations { get; set; }
 
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Datastream
 
         /// <summary>
         /// Gets or sets the timeout. Negative values mean no timeout.
-        /// Default is <see cref="DataStreamerConfiguration.DefaultTimeout"/>.
+        /// Default is <see cref="DataStreamerDefaults.DefaultTimeout"/>.
         /// <para />
         /// Timeout is used in the following cases:
         /// <li>Any data addition method can be blocked when all per node parallel operations are exhausted.

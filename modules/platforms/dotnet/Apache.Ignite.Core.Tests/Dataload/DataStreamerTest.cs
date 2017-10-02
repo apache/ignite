@@ -110,21 +110,21 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.SkipStore = false;
                 Assert.IsFalse(ldr.SkipStore);
 
-                Assert.AreEqual(DataStreamerConfiguration.DefaultPerNodeBufferSize, ldr.PerNodeBufferSize);
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerNodeBufferSize, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 1;
                 Assert.AreEqual(1, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 2;
                 Assert.AreEqual(2, ldr.PerNodeBufferSize);
 
                 Assert.AreEqual(0, ldr.PerNodeParallelOperations);
-                var ops = DataStreamerConfiguration.DefaultParallelOperationsMultiplier *
+                var ops = DataStreamerDefaults.DefaultParallelOperationsMultiplier *
                           IgniteConfiguration.DefaultThreadPoolSize;
                 ldr.PerNodeParallelOperations = ops;
                 Assert.AreEqual(ops, ldr.PerNodeParallelOperations);
                 ldr.PerNodeParallelOperations = 2;
                 Assert.AreEqual(2, ldr.PerNodeParallelOperations);
 
-                Assert.AreEqual(DataStreamerConfiguration.DefaultTimeout, ldr.Timeout);
+                Assert.AreEqual(DataStreamerDefaults.DefaultTimeout, ldr.Timeout);
                 ldr.Timeout = TimeSpan.MaxValue;
                 Assert.AreEqual(TimeSpan.MaxValue, ldr.Timeout);
                 ldr.Timeout = TimeSpan.FromSeconds(1.5);

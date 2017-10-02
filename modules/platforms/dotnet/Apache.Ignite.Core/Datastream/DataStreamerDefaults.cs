@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Datastream
     using System;
 
     /// <summary>
-    /// Data streamer configuration.
+    /// Data streamer configuration defaults.
     /// </summary>
-    public static class DataStreamerConfiguration
+    public static class DataStreamerDefaults
     {
         /// <summary>
         /// The default per node buffer size, see <see cref="IDataStreamer{TK,TV}.PerNodeBufferSize"/>.
