@@ -58,15 +58,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>TimeSpan.</returns>
         public static TimeSpan ReadLongAsTimespan(this IBinaryRawReader reader)
         {
-            long ms = reader.ReadLong();
-
-            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
-                return TimeSpan.MaxValue;
-
-            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
-                return TimeSpan.MinValue;
-
-            return TimeSpan.FromMilliseconds(ms);
+            return BinaryUtils.LongToTimeSpan(reader.ReadLong());
         }
 
         /// <summary>
