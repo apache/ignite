@@ -45,7 +45,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default:multipleStatements=true@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -352,6 +352,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
                 assert stmt.getUpdateCount() == -1;
 
                 ResultSet rs = stmt.getResultSet();
+
+                assert rs.getMetaData().getColumnCount() == 2;
 
                 int rowsCnt = 0;
 

@@ -189,7 +189,7 @@ public class JdbcStatement implements Statement {
      * @throws SQLException On error.
      */
     protected void execute0(String sql, Boolean isQuery) throws SQLException {
-        if (conn.isMultipleStatementsSupported())
+        if (conn.isMultipleStatementsAllowed())
             executeMultipleStmt(sql, isQuery);
         else
             executeSingle(sql, isQuery);

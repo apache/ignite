@@ -80,6 +80,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
@@ -164,6 +165,9 @@ public class JdbcConnection implements Connection {
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
 
+    /** Allow multiple query with multiple statements. */
+    private final boolean multipleStmts;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -203,6 +207,8 @@ public class JdbcConnection implements Connection {
         // If value is zero, server data-streamer pool size multiplied
         // by IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER will be used
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
+
+        multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -843,8 +849,8 @@ public class JdbcConnection implements Connection {
     /**
      * @return {@code true} if target node has DML support, {@code false} otherwise.
      */
-    boolean isMultipleStatementsSupported() {
-        return ignite.version().greaterThanEqual(2, 1, 5);
+    boolean isMultipleStatementsAllowed() {
+        return multipleStmts;
     }
 
     /**
