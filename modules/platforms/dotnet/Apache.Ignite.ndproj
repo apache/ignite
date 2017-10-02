@@ -1960,14 +1960,17 @@ select new {
 ]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Base class should not use derivatives</Name>
 warnif count > 0 
+let excludedTypes = new[] {"TcpDiscoveryIpFinderBase", "EvictionPolicyBase", "PlatformTargetAdapter"}
 from baseClass in JustMyCode.Types
-where baseClass.IsClass && baseClass.NbChildren > 0 // <-- for optimization!
+where baseClass.IsClass  && !excludedTypes.Contains(baseClass.Name)
+      && baseClass.NbChildren > 0 // <-- for optimization!
 let derivedClassesUsed = baseClass.DerivedTypes.UsedBy(baseClass)
    // Don't warn when a base class is using nested private derived class
    .Where(derivedClass => 
             !(derivedClass.IsNested && 
               derivedClass.Visibility == Visibility.Private && 
-              derivedClass.ParentType == baseClass))
+              derivedClass.ParentType == baseClass
+              ))
 where derivedClassesUsed.Count() > 0
 
 let derivedClassesMemberUsed = derivedClassesUsed.SelectMany(c => c.Members).UsedBy(baseClass)
