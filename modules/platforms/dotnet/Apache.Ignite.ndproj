@@ -5896,7 +5896,7 @@ select new {
 // *finer solution* by tagging each concerned type with 
 // *CannotDecreaseVisibilityAttribute*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields that could have a lower visibility</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields that could have a lower visibility</Name>
 warnif count > 0 from f in JustMyCode.Fields where 
   f.Visibility != f.OptimalVisibility &&
  !f.HasAttribute("NDepend.Attributes.CannotDecreaseVisibilityAttribute".AllowNoMatch()) &&
@@ -5959,7 +5959,7 @@ select new {
 // *finer solution* by tagging eah concerned field with 
 // *CannotDecreaseVisibilityAttribute*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types that could be declared as private, nested in a parent type</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types that could be declared as private, nested in a parent type</Name>
 
 warnif count > 0 
 from t in JustMyCode.Types
@@ -6002,7 +6002,7 @@ select new {
 // However *nested private types* are hardly testable. Hence this rule  
 // might not be applied to types consumed directly by tests.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid publicly visible constant fields</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid publicly visible constant fields</Name>
 warnif count > 0 
 from f in JustMyCode.Fields
 where f.IsLiteral && 
@@ -6036,7 +6036,7 @@ select new {
 // **&& !f.IsEnumValue** to avoid matching these. Unless you decide
 // to banish public enumerations, just let the rule *as is*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields should be declared as private</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields should be declared as private</Name>
 warnif count > 0 from f in JustMyCode.Fields where 
  !f.IsPrivate && 
 
@@ -6098,7 +6098,7 @@ select new {
 // in case of problem.
 //</HowToFix>
 ]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Constructors of abstract classes should be declared as protected or private</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Constructors of abstract classes should be declared as protected or private</Name>
 warnif count > 0
 from t in Application.Types where 
   t.IsClass && 
@@ -6128,7 +6128,7 @@ select new {
 // either declare the constructor as *protected*, 
 // or do not declare the type as *abstract*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Avoid public methods not publicly visible</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[//<Name>Avoid public methods not publicly visible</Name>
 
 warnif count > 0
 from m in JustMyCode.Methods where 
@@ -6930,6 +6930,30 @@ select new {
 // taken account by the compiler only when the VS project has 
 // Microsoft Code Contract enabled. 
 //</HowToFix>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Rules violated</Name>
+from r in Rules
+where r.IsViolated()
+orderby r.Debt().Value descending
+select new { 
+   r, 
+   Issues = r.Issues(), 
+   Debt = r.Debt(), 
+   AnnualInterest = r.AnnualInterest(), 
+   BreakingPoint = r.BreakingPoint(),
+   Category = r.Category
+}
+
+//<Description>
+// **Debt**: Estimated effort to fix all rule issues.
+//
+// **Annual Interest**: Estimated annual cost to leave all rule issues unfixed.
+//
+// **Breaking Point**: Estimated point in time from now, when leaving the rule issues unfixed cost as much as fixing the rule issues.
+// A low value indicates an a rule with easy-to-fix issue with high annual interest.
+// This value can be used to prioritize issues fix, to significantly reduce interest with minimum effort.
+//
+// More documentation: http://www.ndepend.com/docs/technical-debt
+//</Description>]]></Query>
     </Group>
     <Group Name="Naming Conventions" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instance fields naming convention</Name>
