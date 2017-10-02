@@ -856,7 +856,7 @@ public class GridReduceQueryExecutor {
      * @param parts Partitions.
      * @param isReplicatedOnly Whether query uses only replicated caches.
      * @param cancel Cancel state.
-     * @return Update result.
+     * @return Update result, or {@code null} when some map node doesn't support distributed DML.
      */
     public UpdateResult update(
         String schemaName,
@@ -892,6 +892,15 @@ public class GridReduceQueryExecutor {
                 nodes = singletonList(locNode);
             else
                 nodes = singletonList(F.rand(nodes));
+        }
+
+        for (ClusterNode n : nodes) {
+            if (!n.version().greaterThanEqual(2, 3, 0)) {
+                log.warning("Server-side DML optimization is skipped because map node does not support it. " +
+                    "Falling back to normal DML. [node=" + n.id() + ", v=" + n.version() + "].");
+
+                return null;
+            }
         }
 
         final DistributedUpdateRun r = new DistributedUpdateRun(nodes.size(), qryInfo);

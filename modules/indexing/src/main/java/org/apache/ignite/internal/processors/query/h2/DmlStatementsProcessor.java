@@ -413,8 +413,13 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed && !loc && !fieldsQry.isLocal())
-            return doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
+        if (plan.distributed && !loc && !fieldsQry.isLocal()) {
+            UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
+
+            // null is returned in case not all nodes support distributed DML.
+            if (result != null)
+                return result;
+        }
 
         assert !F.isEmpty(plan.selectQry);
 
