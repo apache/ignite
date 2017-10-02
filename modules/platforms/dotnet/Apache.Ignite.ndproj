@@ -2813,6 +2813,30 @@ select new { r,
 //
 // More documentation: http://www.ndepend.com/docs/technical-debt
 //</Description>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Rules violated</Name>
+from r in Rules
+where r.IsViolated()
+orderby r.Debt().Value descending
+select new { 
+   r, 
+   Issues = r.Issues(), 
+   Debt = r.Debt(), 
+   AnnualInterest = r.AnnualInterest(), 
+   BreakingPoint = r.BreakingPoint(),
+   Category = r.Category
+}
+
+//<Description>
+// **Debt**: Estimated effort to fix all rule issues.
+//
+// **Annual Interest**: Estimated annual cost to leave all rule issues unfixed.
+//
+// **Breaking Point**: Estimated point in time from now, when leaving the rule issues unfixed cost as much as fixing the rule issues.
+// A low value indicates an a rule with easy-to-fix issue with high annual interest.
+// This value can be used to prioritize issues fix, to significantly reduce interest with minimum effort.
+//
+// More documentation: http://www.ndepend.com/docs/technical-debt
+//</Description>]]></Query>
     </Group>
     <Group Name="Design" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid custom delegates</Name>
@@ -5697,7 +5721,7 @@ select new {
 //</HowToFix>]]></Query>
     </Group>
     <Group Name="Visibility" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods that could have a lower visibility</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods that could have a lower visibility</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
    m.Visibility != m.OptimalVisibility &&
 
