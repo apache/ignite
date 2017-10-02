@@ -124,6 +124,7 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTes
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteCacheInterceptorSqlNotNullConstraintTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
@@ -338,8 +339,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteSqlNotNullConstraintTest.class);
         suite.addTestSuite(IgniteCacheInterceptorSqlNotNullConstraintTest.class);
         suite.addTestSuite(LongIndexNameTest.class);
-
         suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);
+        suite.addTestSuite(IgniteSqlParameterizedQueryTest.class);
 
         return suite;
     }
