@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
+import org.h2.value.DataType;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -321,8 +327,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         execute(client(), res);
 
-        String resCacheName = U.firstNotNull(cacheName, QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA,
-            "NameTest"));
+        String resCacheName = U.firstNotNull(cacheName, cacheName("NameTest"));
 
         IgniteInternalCache<BinaryObject, BinaryObject> cache = client().cachex(resCacheName);
 
@@ -939,7 +944,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("create index on \"PUBLIC\".t (b desc)");
         execute("drop table \"PUBLIC\".t");
 
-        assertNull(client().cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "t")));
+        assertNull(client().cache(cacheName("t")));
 
         execute("create table \"PUBLIC\".t (a int primary key, b varchar(30))");
 
@@ -1063,6 +1068,127 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) with \"wrap_value=false\"",
             "Value wrapping may not be turned off when it has more than one column.");
+    }
+
+    /**
+     * Test behavior when neither key nor value should be wrapped.
+     * @throws SQLException if failed.
+     */
+    public void testNoWrap() throws SQLException {
+        doTestKeyValueWrap(false, false);
+    }
+
+    /**
+     * Test behavior when only key is wrapped.
+     * @throws SQLException if failed.
+     */
+    public void testKeyWrap() throws SQLException {
+        doTestKeyValueWrap(true, false);
+    }
+
+    /**
+     * Test behavior when only value is wrapped.
+     * @throws SQLException if failed.
+     */
+    public void testValueWrap() throws SQLException {
+        doTestKeyValueWrap(false, true);
+    }
+
+    /**
+     * Test behavior when both key and value is wrapped.
+     * @throws SQLException if failed.
+     */
+    public void testKeyAndValueWrap() throws SQLException {
+        doTestKeyValueWrap(true, true);
+    }
+
+    /**
+     * Test behavior for given combination of wrap flags.
+     * @param wrapKey Whether key wrap should be enforced.
+     * @param wrapVal Whether value wrap should be enforced.
+     * @throws SQLException if failed.
+     */
+    private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal) throws SQLException {
+        try {
+            String sql = String.format("CREATE TABLE T (\"id\" int primary key, \"x\" varchar) WITH " +
+                "\"wrap_key=%b,wrap_value=%b\"", wrapKey, wrapVal);
+
+            if (wrapKey)
+                sql += ",\"key_type=tkey\"";
+
+            if (wrapVal)
+                sql += ",\"value_type=tval\"";
+
+            execute(sql);
+
+            execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
+
+            LinkedHashMap<String, String> resCols = new LinkedHashMap<>();
+
+            List<Object> resData = new ArrayList<>();
+
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+                try (ResultSet colsRs = conn.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "T", ".*")) {
+                    while (colsRs.next())
+                        resCols.put(colsRs.getString("COLUMN_NAME"),
+                            DataType.getTypeClassName(DataType.convertSQLTypeToValueType(colsRs
+                                .getShort("DATA_TYPE"))));
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM T")) {
+                    try (ResultSet dataRs = ps.executeQuery()) {
+                        assertTrue(dataRs.next());
+
+                        for (int i = 0; i < dataRs.getMetaData().getColumnCount(); i++)
+                            resData.add(dataRs.getObject(i + 1));
+                    }
+                }
+            }
+
+            LinkedHashMap<String, String> expCols = new LinkedHashMap<>();
+
+            expCols.put("id", Integer.class.getName());
+            expCols.put("x", String.class.getName());
+
+            assertEquals(expCols, resCols);
+
+            assertEqualsCollections(Arrays.asList(1, "a"), resData);
+
+            Object key = createKeyForWrapTest(1, wrapKey);
+
+            Object val = client().cache(cacheName("T")).withKeepBinary().get(key);
+
+            assertNotNull(val);
+
+            assertEquals(createValueForWrapTest("a", wrapVal), val);
+        }
+        finally {
+            execute("DROP TABLE IF EXISTS T");
+        }
+    }
+
+    /**
+     * @param key Key to wrap.
+     * @param wrap Whether key should be wrapped.
+     * @return (optionally wrapped) key.
+     */
+    private Object createKeyForWrapTest(int key, boolean wrap) {
+        if (!wrap)
+            return key;
+
+        return client().binary().builder("tkey").setField("id", key).build();
+    }
+
+    /**
+     * @param val Value to wrap.
+     * @param wrap Whether value should be wrapped.
+     * @return (optionally wrapped) value.
+     */
+    private Object createValueForWrapTest(String val, boolean wrap) {
+        if (!wrap)
+            return val;
+
+        return client().binary().builder("tval").setField("x", val).build();
     }
 
     /**
