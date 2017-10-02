@@ -7345,7 +7345,7 @@ select new {
 //<HowToFix>
 // To fix a violation of this rule, rename concerned types.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid prefixing type name with parent namespace name</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid prefixing type name with parent namespace name</Name>
 warnif count > 0
 
 from n in JustMyCode.Namespaces
@@ -7461,6 +7461,36 @@ select new {
 // To fix a violation of this rule,
 // Rename the method, or transform it into an operation that can fail.
 //</HowToFix>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quality Gates Evolution</Name>
+from qg in QualityGates
+let qgBaseline = qg.OlderVersion()
+let relyOnDiff = qgBaseline == null
+let evolution = relyOnDiff ? (TrendIcon?)null : 
+                // When a quality gate relies on diff between now and baseline
+                // it is not executed against the baseline
+                qg.ValueDiff() == 0d ?
+                TrendIcon.Constant :
+                (qg.ValueDiff() > 0 ? 
+                  ( qg.MoreIsBad ?  TrendIcon.RedUp: TrendIcon.GreenUp) :
+                  (!qg.MoreIsBad ?  TrendIcon.RedDown: TrendIcon.GreenDown))
+select new { qg, 
+   Evolution      =  evolution,
+
+   BaselineStatus =  relyOnDiff? (QualityGateStatus?) null : qgBaseline.Status,
+   Status         =  qg.Status,
+
+   BaselineValue  =  relyOnDiff? (null) : qgBaseline.ValueString,
+   Value          =  qg.ValueString, 
+}
+ 
+// <Description>
+// Show quality gates evolution between baseline and now.
+//
+// When a quality gate relies on diff between now and baseline (like *New Debt since Baseline*)
+// it is not executed against the baseline and as a consequence its evolution is not available.
+//
+// Double-click a quality gate for editing.
+// </Description>]]></Query>
     </Group>
     <Group Name="Source Files Organization" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid referencing source file out of Visual Studio project directory</Name>
@@ -8206,7 +8236,7 @@ select new {
 // shutdown and the circonstances of the failure should be reported
 // as a bug to the product team.
 //</HowToFix>]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Use integral or string argument for indexers</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Use integral or string argument for indexers</Name>
 warnif count > 0
 from m in Application.Methods where 
   m.IsIndexerGetter && 
@@ -8293,6 +8323,15 @@ select new {
 // derive from **System.Exception** or one of its 
 // subclasses in the *System* namespace.
 //</HowToFix>]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[from n in Namespaces
+where n.Name ==  "Apache.Ignite.Core.Communication"
+from i in n.AllIssues()   // If we call Issues() instead of AllIssue() we only get issues on the namespace
+select new { 
+   i, 
+   Debt = i.Debt, 
+   AnnualInterest = i.AnnualInterest,
+   BreakingPoint = i.BreakingPoint 
+}]]></Query>
       </Group>
       <Group Name="System.Collection" Active="True" ShownInReport="False">
         <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Collection properties should be read only</Name>
