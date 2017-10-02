@@ -504,7 +504,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     txEntry.oldValue(oldVal);
                 }
 
-                if (tx.hasInterceptor()) {
+                if (tx.hasInterceptor() &&
+                    (txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM)) {
                     Object newVal = txEntry.hasValue() ? txEntry.value() : val;
 
                     //CacheObject cacheVal = (val instanceof CacheObject) ? val : cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
