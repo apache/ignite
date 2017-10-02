@@ -135,28 +135,13 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         return new PdsFolderSettings(pstStoreBasePath, consistentId);
     }
 
-    /**
-     * Performs injection of discovery SPI if needed, then provides DiscoverySpi SPI.
-     *
-     * @return Wrapped DiscoverySpi SPI.
-     */
-    @NotNull private DiscoverySpi getDiscoverySpi() {
-        return ctx.discovery().getInjectedDiscoverySpi();
-    }
-
     /** {@inheritDoc} */
     @Override public PdsFolderSettings resolveFolders() throws IgniteCheckedException {
         if (settings == null) {
             settings = prepareNewSettings();
 
-            if (!settings.isCompatible()) {
-                ctx.discovery().addLocalNodeInitializedEventListener(new CI1<ClusterNode>() {
-                    @Override public void apply(ClusterNode node) {
-                        if (node instanceof TcpDiscoveryNode)
-                            ((TcpDiscoveryNode)node).setConsistentId(settings.consistentId());
-                    }
-                });
-            }
+            if (!settings.isCompatible())
+                ctx.discovery().consistentId(settings.consistentId());
         }
         return settings;
     }
@@ -169,7 +154,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
         final File pstStoreBasePath = resolvePersistentStoreBasePath();
-        final Serializable consistentId = getDiscoverySpi().consistentId();
+        //here deprecated method is used to get compatible version of consistentId
+        final Serializable consistentId = ctx.discovery().consistentId();
 
         if (!cfg.isPersistentStoreEnabled())
             return compatibleResolve(pstStoreBasePath, consistentId);
