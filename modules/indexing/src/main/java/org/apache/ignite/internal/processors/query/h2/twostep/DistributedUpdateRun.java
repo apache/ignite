@@ -125,7 +125,7 @@ class DistributedUpdateRun {
             updCntr += msg.updateCounter();
 
             if (rspNodes.size() == nodeCount)
-                fut.onDone(new UpdateResult(updCntr, errorKeys.toArray()));
+                fut.onDone(new UpdateResult(updCntr, errorKeys == null ? null : errorKeys.toArray()));
         }
     }
 }
