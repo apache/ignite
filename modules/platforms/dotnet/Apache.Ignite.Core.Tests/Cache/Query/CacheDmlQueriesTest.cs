@@ -103,6 +103,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the NotNull constraint.
+        /// </summary>
+        [Test]
+        public void TestNotNull()
+        {
+            var cfg = new CacheConfiguration("not_null", new QueryEntity(typeof(int), typeof(Foo))
+            {
+                Fields = new[]
+                {
+                    new QueryField("id", typeof(int)) {NotNull = true}, 
+                    new QueryField("name", typeof(string)) 
+                }
+            });
+
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+                "insert into foo(_key, name) values (?, ?)", 1, "bar")).GetAll());
+
+            Assert.AreEqual("Null value is not allowed for field 'ID'", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests the NotNull constraint.
+        /// </summary>
+        [Test]
+        public void TestNotNullAttribute()
+        {
+            var cfg = new CacheConfiguration("not_null_attr", new QueryEntity(typeof(int), typeof(Foo)));
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
+                "insert into foo(_key, id) values (?, ?)", 1, 2)).GetAll());
+
+            Assert.AreEqual("Null value is not allowed for field 'NAME'", ex.Message);
+        }
+
+        /// <summary>
         /// Tests all primitive key types.
         /// </summary>
         [Test]
@@ -388,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private class Foo
         {
             [QuerySqlField] public int Id { get; set; }
-            [QuerySqlField] public string Name { get; set; }
+            [QuerySqlField(NotNull = true)] public string Name { get; set; }
         }
 
         /// <summary>

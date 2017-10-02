@@ -858,7 +858,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// </summary>
             public void RunThread()
             {
-                new Thread(Run).Start();
+                Task.Factory.StartNew(Run);
             }
         }
 

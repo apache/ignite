@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -87,6 +88,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 
 /**
  * File WAL manager.
@@ -164,7 +166,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private RecordSerializer serializer;
 
     /** Serializer latest version to use. */
-    private int serializerVersion = LATEST_SERIALIZER_VERSION;
+    private final int serializerVersion =
+        IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
     /** */
     private volatile long oldestArchiveSegmentIdx;
@@ -291,10 +294,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
-            if (mode != WALMode.DEFAULT) {
+            if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
                     log.info("Started write-ahead log manager [mode=" + mode + ']');
             }
+            else
+                U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
+                    "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
         }
     }
 
