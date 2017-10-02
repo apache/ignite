@@ -60,6 +60,11 @@ fi
 
 SOURCE="${BASH_SOURCE[0]}"
 
+#
+# Set IGNITE_HOME.
+#
+export IGNITE_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+
 DIR="$( dirname "$SOURCE" )"
 
 while [ -h "$SOURCE" ]
