@@ -89,12 +89,12 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private static String ERR_MSG = "Null value is not allowed for field 'NAME'";
 
     /** Expected error message for read-through restriction. */
-    private static String READ_THROUGH_ERR_MSG = "Not null field configuration is not supported " +
-        "with read-through cache store.";
+    private static String READ_THROUGH_ERR_MSG = "NOT NULL constraint is not supported when " +
+        "CacheConfiguration.readThrough is enabled.";
 
     /** Expected error message for cache interceptor restriction. */
-    private static String INTERCEPTOR_ERR_MSG = "Not null field configuration is not supported " +
-        "with cache interceptor enabled.";
+    private static String INTERCEPTOR_ERR_MSG = "NOT NULL constraint is not supported when " +
+        "CacheConfiguration.interceptor is set.";
 
     /** Name of the node which configuration includes restricted cache config. */
     private static String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
