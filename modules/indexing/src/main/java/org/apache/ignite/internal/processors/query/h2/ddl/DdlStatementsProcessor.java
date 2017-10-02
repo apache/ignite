@@ -31,7 +31,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -258,7 +257,7 @@ public class DdlStatementsProcessor {
                         assert tbl.rowDescriptor() != null;
 
                         if (!allFieldsNullable)
-                            GridCacheUtils.checkNotNullFieldsRestrictions(tbl.cache().config());
+                            QueryUtils.checkNotNullAllowed(tbl.cache().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
