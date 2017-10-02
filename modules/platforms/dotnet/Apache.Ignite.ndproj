@@ -704,7 +704,7 @@ select new {
 ]]></Query>
     </Group>
     <Group Name="Code Smells" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid types too big</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid types too big</Name>
 warnif count > 0 from t in JustMyCode.Types where 
 
    // First filter on type to optimize 
@@ -795,7 +795,7 @@ select new {
 // static methods that can be easily splitted and moved from one type 
 // to another.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with too many methods</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with too many methods</Name>
 warnif count > 0 from t in JustMyCode.Types 
 
   // Optimization: Fast discard of non-relevant types 
@@ -860,7 +860,7 @@ select new {
 // static methods that can be easily splitted and moved from one type 
 // to another.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with too many fields</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with too many fields</Name>
 warnif count > 0 from t in JustMyCode.Types 
 
   // Optimization: Fast discard of non-relevant types 
@@ -921,7 +921,7 @@ methodsAssigningFields ,
 // varies linearly from 1 hour for a type with 15 fields,
 // to up to 10 hours for a type with 200 or more fields. 
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid methods too big, too complex</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid methods too big, too complex</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
    m.ILNestingDepth > 2 &&
   (m.NbLinesOfCode > 35 ||
@@ -992,7 +992,7 @@ select new {
 // The estimated Debt, which means the effort to fix such issue,
 // varies from 40 minutes to 8 hours, linearly from a weighted complexity score.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid methods with too many parameters</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid methods with too many parameters</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
   m.NbParameters >= 7
   orderby m.NbParameters descending
@@ -1026,7 +1026,7 @@ select new {
 // varies linearly from 1 hour for a method with 7 parameters,
 // up to 6 hours for a methods with 40 or more parameters.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods with too many local variables</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods with too many local variables</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
   m.NbVariables > 15 
   orderby m.NbVariables descending
@@ -1066,7 +1066,7 @@ select new {
 // varies linearly from 10 minutes for a method with 15 variables,
 // up to 2 hours for a methods with 80 or more variables.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods with too many overloads</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods with too many overloads</Name>
 warnif count > 0 
 
 let lookup = JustMyCode.Methods.Where(m =>
@@ -1122,7 +1122,7 @@ select new {
 // The estimated Debt, which means the effort to fix such issue,
 // is of 3 minutes per method overload.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods potentially poorly commented</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods potentially poorly commented</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
   m.PercentageComment < 10 && 
   m.NbLinesOfCode > 20  
@@ -1177,7 +1177,7 @@ select new {
 // varies linearly from 2 minutes for 10 lines of code not commented,
 // up to 20 minutes for 200 or more, lines of code not commented.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with poor cohesion</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid types with poor cohesion</Name>
 warnif count > 0 from t in JustMyCode.Types where 
   t.LCOM > 0.8  && 
   t.NbFields > 10 && 
@@ -1892,7 +1892,7 @@ select new {
 //</HowToFix>]]></Query>
     </Group>
     <Group Name="Object Oriented Design" Active="True" ShownInReport="True">
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid interfaces too big</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid interfaces too big</Name>
 warnif count > 0 
 
 from i in JustMyCode.Types
@@ -2578,7 +2578,7 @@ select new {
 // hold assignable states through *instance* fields, not
 // through *static* fields.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid empty interfaces</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid empty interfaces</Name>
 warnif count > 0 from t in JustMyCode.Types where 
    t.IsInterface && 
    t.NbMethods == 0
@@ -2748,6 +2748,67 @@ select new {
 // is equal to 20 minutes per cycle plus 10 minutes per type class constructor
 // involved in the cycle.
 //</HowToFix>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Rules violated</Name>
+from r in Rules
+where r.IsViolated()
+orderby r.Debt().Value descending
+select new { 
+   r, 
+   Issues = r.Issues(), 
+   Debt = r.Debt(), 
+   AnnualInterest = r.AnnualInterest(), 
+   BreakingPoint = r.BreakingPoint(),
+   Category = r.Category
+}
+
+//<Description>
+// **Debt**: Estimated effort to fix all rule issues.
+//
+// **Annual Interest**: Estimated annual cost to leave all rule issues unfixed.
+//
+// **Breaking Point**: Estimated point in time from now, when leaving the rule issues unfixed cost as much as fixing the rule issues.
+// A low value indicates an a rule with easy-to-fix issue with high annual interest.
+// This value can be used to prioritize issues fix, to significantly reduce interest with minimum effort.
+//
+// More documentation: http://www.ndepend.com/docs/technical-debt
+//</Description>]]></Query>
+      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Critical issues (grouped per rules)</Name>
+let issues = Issues.Where(i => i.Severity == Severity.Critical)
+let rules = issues.ToLookup(i => i.Rule)
+from grouping in rules
+let r = grouping.Key
+let ruleIssues = grouping.ToArray()
+orderby ruleIssues.Length descending
+let debt = ruleIssues.Sum(i => i.Debt)
+let annualInterest = ruleIssues.Sum(i => i.AnnualInterest)
+let breakingPoint = debt.BreakingPoint(annualInterest)
+select new { r, 
+             ruleIssues, 
+             debt,
+             annualInterest, 
+             breakingPoint,
+             Category = r.Category
+}
+
+//<Description>
+// Issues with a Critical severity level shouldn't move to production. It still can for business imperative needs purposes, but at worth it must be fixed during the next iterations.
+//
+// **Debt**: Estimated effort to fix the rule issues.
+//
+// **Annual Interest**: Estimated annual cost to leave the rule issues unfixed.
+//
+// **Breaking Point**: Estimated point in time from now, when leaving the 
+// rule issues unfixed cost as much as fixing the issues.
+// A low value indicates easy-to-fix issues with high annual interest.
+// This value can be used to prioritize issues fix, to significantly 
+// reduce interest with minimum effort.
+//
+// **Unfold** the cell in *ruleIssues* column to preview all its issues.
+//
+// **Double-click a rule** to edit the rule and list all its issues.
+//
+// More documentation: http://www.ndepend.com/docs/technical-debt
+//</Description>]]></Query>
     </Group>
     <Group Name="Design" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid custom delegates</Name>
@@ -3460,7 +3521,7 @@ select new {
 //</HowToFix>]]></Query>
     </Group>
     <Group Name="Architecture" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid namespaces mutually dependent</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid namespaces mutually dependent</Name>
 warnif count > 0
 
 // Optimization: restraint application assemblies set
@@ -6243,7 +6304,7 @@ select new {
 // that the field value shouldn't change is made
 // explicit.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid non-readonly static fields</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid non-readonly static fields</Name>
 warnif count > 0
 from f in Application.Fields
 where f.IsStatic && 
@@ -7217,7 +7278,7 @@ select new {
 // To fix a violation of this rule, rename the field with a shortest name
 // that equally conveys the same information.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid having different types with same name</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid having different types with same name</Name>
 warnif count > 0
 
 // Special type names for which multiple types with such name are allowed.
