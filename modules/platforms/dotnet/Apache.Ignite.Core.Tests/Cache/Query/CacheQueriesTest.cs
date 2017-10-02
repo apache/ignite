@@ -687,8 +687,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var entity = Cache().GetConfiguration().QueryEntities.Single();
 
-            Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
-            Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+            var ageField = entity.Fields.Single(x => x.Name == "age");
+            Assert.AreEqual(typeof(int), ageField.FieldType);
+            Assert.IsFalse(ageField.NotNull);
+            Assert.IsFalse(ageField.IsKeyField);
+
+            var nameField = entity.Fields.Single(x => x.Name == "name");
+            Assert.AreEqual(typeof(string), nameField.FieldType);
+            Assert.IsTrue(nameField.NotNull);
+            Assert.IsFalse(nameField.IsKeyField);
         }
 
         /// <summary>

@@ -9407,24 +9407,43 @@ public abstract class IgniteUtils {
      * @param cls The class to search,
      * @param name Name of the method.
      * @param paramTypes Method parameters.
-     * @return Method or {@code null}
+     * @return Method or {@code null}.
      */
     @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
         while (cls != null) {
-            try {
-                Method mtd = cls.getDeclaredMethod(name, paramTypes);
+            Method mtd = getNonPublicMethod(cls, name, paramTypes);
 
-                if (mtd.getReturnType() != void.class) {
-                    mtd.setAccessible(true);
-
-                    return mtd;
-                }
-            }
-            catch (NoSuchMethodException ignored) {
-                // No-op.
-            }
+            if (mtd != null)
+                return mtd;
 
             cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets a method from the class.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method getNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        try {
+            Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+            if (mtd.getReturnType() != void.class) {
+                mtd.setAccessible(true);
+
+                return mtd;
+            }
+        }
+        catch (NoSuchMethodException ignored) {
+            // No-op.
         }
 
         return null;
