@@ -1064,10 +1064,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testWrappingAlwaysOnWithComplexObjects() {
         assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id, c)) with \"wrap_key=false\"",
-            "Key wrapping may not be turned off when it has more than one column.");
+            "Key wrapping may not be turned off when custom key type name is specified, " +
+                "or key has more than one column.");
 
         assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) with \"wrap_value=false\"",
-            "Value wrapping may not be turned off when it has more than one column.");
+            "Value wrapping may not be turned off when custom value type name is specified, " +
+                "or value has more than one column.");
     }
 
     /**

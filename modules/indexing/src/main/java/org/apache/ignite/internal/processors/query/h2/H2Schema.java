@@ -118,45 +118,4 @@ public class H2Schema {
         typeToTbl.clear();
     }
 
-    /**
-     * Key for types lookup.
-     */
-    private final static class TypeKey {
-        /**
-         * Cache name.
-         */
-        private final String cacheName;
-
-        /**
-         * Type name.
-         */
-        private final String typeName;
-
-        /**
-         * @param cacheName Cache name.
-         * @param typeName Type name.
-         */
-        private TypeKey(String cacheName, String typeName) {
-            this.cacheName = cacheName;
-            this.typeName = typeName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            TypeKey typeKey = (TypeKey) o;
-
-            return cacheName.equals(typeKey.cacheName) && typeName.equals(typeKey.typeName);
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = cacheName.hashCode();
-            result = 31 * result + typeName.hashCode();
-            return result;
-        }
-    }
 }

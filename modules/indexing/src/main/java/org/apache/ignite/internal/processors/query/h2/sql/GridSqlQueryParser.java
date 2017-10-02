@@ -1064,6 +1064,15 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
+        if (!res.wrapKey() && (!F.isEmpty(res.keyTypeName()) || res.primaryKeyColumns().size() > 1))
+            throw new IgniteSQLException("Key wrapping may not be turned off when custom key type name is specified, " +
+                "or key has more than one column.", IgniteQueryErrorCode.PARSING);
+
+        if (!res.wrapValue() && (!F.isEmpty(res.valueTypeName()) || res.columns().size() -
+            res.primaryKeyColumns().size() > 1))
+            throw new IgniteSQLException("Value wrapping may not be turned off when custom value type name is " +
+                "specified, or value has more than one column.", IgniteQueryErrorCode.PARSING);
+
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
@@ -1272,16 +1281,12 @@ public class GridSqlQueryParser {
 
                 res.keyTypeName(val);
 
-                res.wrapKey(true);
-
                 break;
 
             case PARAM_VAL_TYPE:
                 ensureNotEmpty(name, val);
 
                 res.valueTypeName(val);
-
-                res.wrapValue(true);
 
                 break;
 
@@ -1353,25 +1358,13 @@ public class GridSqlQueryParser {
                 break;
 
             case PARAM_WRAP_KEY: {
-                boolean bVal = F.isEmpty(val) || Boolean.parseBoolean(val);
-
-                if (res.wrapKey() && !bVal)
-                    throw new IgniteSQLException("Key wrapping may not be turned off when it has more than one column.",
-                        IgniteQueryErrorCode.PARSING);
-
-                res.wrapKey(bVal);
+                res.wrapKey(F.isEmpty(val) || Boolean.parseBoolean(val));
 
                 break;
             }
 
             case PARAM_WRAP_VALUE:
-                boolean bVal = F.isEmpty(val) || Boolean.parseBoolean(val);
-
-                if (res.wrapValue() && !bVal)
-                    throw new IgniteSQLException("Value wrapping may not be turned off " +
-                        "when it has more than one column.", IgniteQueryErrorCode.PARSING);
-
-                res.wrapValue(bVal);
+                res.wrapValue(F.isEmpty(val) || Boolean.parseBoolean(val));
 
                 break;
 
