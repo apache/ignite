@@ -511,6 +511,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
+            Assert.AreEqual(x.NotNull, y.NotNull);
         }
 
         /// <summary>
@@ -587,7 +588,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         {
                             new QueryField("length", typeof(int)), 
                             new QueryField("name", typeof(string)) {IsKeyField = true},
-                            new QueryField("location", typeof(string)),
+                            new QueryField("location", typeof(string)) {NotNull = true},
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]

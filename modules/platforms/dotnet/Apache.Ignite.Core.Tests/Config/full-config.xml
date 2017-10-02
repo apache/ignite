@@ -55,7 +55,7 @@
             <queryEntities>
                 <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                     <fields>
-                        <queryField name='length' fieldType='System.Int32' isKeyField='true' />
+                        <queryField name='length' fieldType='System.Int32' isKeyField='true' notNull='true' />
                     </fields>
                     <aliases>
                         <queryAlias fullName='somefield.field' alias='shortField' />
