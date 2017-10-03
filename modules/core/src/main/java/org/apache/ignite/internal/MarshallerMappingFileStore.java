@@ -169,6 +169,9 @@ final class MarshallerMappingFileStore {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                     String className = reader.readLine();
 
+                    if (className == null)
+                        throw new IgniteCheckedException("Class name is null for [platformId=" + platformId + ", typeId=" + typeId + "], marshaller mappings storage is broken. Clean up marshaller directory (<work_dir>/marshaller) and restart the node.");
+
                     marshCtx.registerClassNameLocally(platformId, typeId, className);
                 }
             }
