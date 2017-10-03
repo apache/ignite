@@ -1013,17 +1013,12 @@ public class GridSqlQueryParser {
             pkCols.add(gridCol.columnName());
         }
 
-        if (pkCols.size() > 1)
-            res.wrapKey(true);
-
-        int valColsNum = cols.size() - pkCols.size();
+        int keyColsNum = pkCols.size();
+        int valColsNum = cols.size() - keyColsNum;
 
         if (valColsNum == 0)
             throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        if (valColsNum > 1)
-            res.wrapValue(true);
 
         res.columns(cols);
         res.primaryKeyColumns(pkCols);
@@ -1064,14 +1059,44 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
-        if (!res.wrapKey() && (!F.isEmpty(res.keyTypeName()) || res.primaryKeyColumns().size() > 1))
-            throw new IgniteSQLException("Key wrapping may not be turned off when custom key type name is specified, " +
-                "or key has more than one column.", IgniteQueryErrorCode.PARSING);
+        // Process key wrapping.
+        Boolean wrapKey = res.wrapKey();
 
-        if (!res.wrapValue() && (!F.isEmpty(res.valueTypeName()) || res.columns().size() -
-            res.primaryKeyColumns().size() > 1))
-            throw new IgniteSQLException("Value wrapping may not be turned off when custom value type name is " +
-                "specified, or value has more than one column.", IgniteQueryErrorCode.PARSING);
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.keyTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when " + PARAM_KEY_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+
+        res.wrapKey(wrapKey0);
+
+        // Process value wrapping.
+        Boolean wrapVal = res.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                    "columns exist.", IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.valueTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when " + PARAM_VAL_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapVal0 =
+            (res.wrapValue() != null && res.wrapValue()) || !F.isEmpty(res.valueTypeName()) || valColsNum > 1;
+
+        res.wrapValue(wrapVal0);
 
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +

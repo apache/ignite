@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Database schema object.
@@ -29,10 +29,10 @@ public class H2Schema {
     private final String schemaName;
 
     /** */
-    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -70,7 +70,7 @@ public class H2Schema {
      * @return Table.
      */
     public H2TableDescriptor tableByTypeName(String cacheName, String typeName) {
-        return typeToTbl.get(new TypeKey(cacheName, typeName));
+        return typeToTbl.get(new H2TypeKey(cacheName, typeName));
     }
 
     /**
@@ -80,7 +80,7 @@ public class H2Schema {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
 
-        if (typeToTbl.putIfAbsent(new TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
+        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
     }
 
@@ -90,7 +90,7 @@ public class H2Schema {
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(new TypeKey(tbl.cache().name(), tbl.typeName()));
+        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -103,7 +103,7 @@ public class H2Schema {
 
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(new TypeKey(tbl.cache().name(), tbl.typeName()));
+        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -117,5 +117,4 @@ public class H2Schema {
 
         typeToTbl.clear();
     }
-
 }

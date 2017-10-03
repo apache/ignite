@@ -72,10 +72,10 @@ public class GridSqlCreateTable extends GridSqlStatement {
     private String affinityKey;
 
     /** Forcefully turn single column PK into an Object. */
-    private boolean wrapKey;
+    private Boolean wrapKey;
 
     /** Forcefully turn single column value into an Object. */
-    private boolean wrapVal;
+    private Boolean wrapVal;
 
     /** Extra WITH-params. */
     private List<String> params;
@@ -279,7 +279,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Forcefully turn single column PK into an Object.
      */
-    public boolean wrapKey() {
+    public Boolean wrapKey() {
         return wrapKey;
     }
 
@@ -293,7 +293,7 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /**
      * @return Forcefully turn single column value into an Object.
      */
-    public boolean wrapValue() {
+    public Boolean wrapValue() {
         return wrapVal;
     }
 

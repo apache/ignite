@@ -109,13 +109,13 @@ public interface GridQueryIndexing {
      * Executes regular query.
      *
      * @param schemaName Schema name.
-     * @param cacheName
+     * @param cacheName Cache name.
      *@param qry Query.
      * @param filter Cache name and key filter.
      * @param keepBinary Keep binary flag.    @return Cursor.
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
-                                                              IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
+        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
