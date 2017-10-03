@@ -1042,13 +1042,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's possible to create tables with matching key and/or value primitive types.
      */
     public void testDynamicTablesInteroperability() {
-        execute("create table a (id int primary key, x varchar)");
+        execute("create table a (id int primary key, x varchar) with \"wrap_value=false\"");
 
-        execute("create table b (id long primary key, y varchar)");
+        execute("create table b (id long primary key, y varchar) with \"wrap_value=false\"");
 
-        execute("create table c (id int primary key, z long)");
+        execute("create table c (id int primary key, z long) with \"wrap_value=false\"");
 
-        execute("create table d (id int primary key, w varchar)");
+        execute("create table d (id int primary key, w varchar) with \"wrap_value=false\"");
 
         execute("drop table a");
 

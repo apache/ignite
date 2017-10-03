@@ -1091,12 +1091,11 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when " + PARAM_VAL_TYPE + " is set.",
                     IgniteQueryErrorCode.PARSING);
             }
+
+            res.wrapValue(false);
         }
-
-        boolean wrapVal0 =
-            (res.wrapValue() != null && res.wrapValue()) || !F.isEmpty(res.valueTypeName()) || valColsNum > 1;
-
-        res.wrapValue(wrapVal0);
+        else
+            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
 
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +

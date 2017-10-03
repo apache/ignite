@@ -100,6 +100,9 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /** Attempt to set {@code null} to a column which explicitly forbids that. */
+    public final static int NULL_COLUMN_VALUE = 4007;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
@@ -130,6 +133,7 @@ public final class IgniteQueryErrorCode {
 
             case NULL_KEY:
             case NULL_VALUE:
+            case NULL_COLUMN_VALUE:
                 return SqlStateCode.NULL_VALUE;
 
             case UNSUPPORTED_OPERATION:
