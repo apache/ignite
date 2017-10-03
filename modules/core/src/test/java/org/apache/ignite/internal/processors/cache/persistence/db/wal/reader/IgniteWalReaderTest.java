@@ -683,6 +683,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             Integer iVal = keyBinObj.field("iVal");
                             rmv = ctrlMapForBinaryObjects.remove(new TestSerializable(iVal)) != null;
                         }
+                        else if (Objects.equals(TestExternalizable.class.getName(), binaryObjTypeName)) {
+                            Integer iVal = ((TestExternalizable)keyBinObj.deserialize()).iVal;
+                            rmv = ctrlMapForBinaryObjects.remove(new TestExternalizable(iVal)) != null;
+                        }
                         else if (Objects.equals(TestEnum.class.getName(), binaryObjTypeName)) {
                             TestEnum key1 = TestEnum.values()[keyBinObj.enumOrdinal()];
                             rmv = ctrlMapForBinaryObjects.remove(key1) != null;
