@@ -35,8 +35,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 @SuppressWarnings("unused")
 public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest {
     /** Bean name. */
-    private static final String DUMMY_BEAN = "dummyResourceBean";
-    
+    private static final String DUMMY_BEAN = "dummyResourceBean";    
     /** Test grid with Spring context. */
     private static Ignite grid;
 
@@ -78,7 +77,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             private transient DummyResourceBean dummyRsrcBean;
 
             @Override public Object call() throws Exception {
-            	assertNull(dummyRsrcBean);
+                assertNull(dummyRsrcBean);
 
                 return null;
             }
@@ -112,7 +111,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             private transient DummyResourceBean dummyRsrcBean;
 
             @Override public Object call() throws Exception {
-            	assertNull(dummyRsrcBean);
+                assertNull(dummyRsrcBean);
 
                 return null;
             }
