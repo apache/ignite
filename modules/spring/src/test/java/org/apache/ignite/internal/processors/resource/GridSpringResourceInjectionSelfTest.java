@@ -36,7 +36,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest {
     /** Bean name. */
     private static final String DUMMY_BEAN = "dummyResourceBean";
-
+    
     /** Test grid with Spring context. */
     private static Ignite grid;
 
@@ -70,6 +70,24 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    public void testClosureFieldByResourceNameWithRequired() throws Exception {
+        grid.compute().call(new IgniteCallable<Object>() {
+			private static final long serialVersionUID = 1L;
+			
+			@SpringResource(resourceName = "dummyNullResourceBean", required = false)
+            private transient DummyResourceBean dummyRsrcBean;
+
+            @Override public Object call() throws Exception {
+            	assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
+    }
+    
+    /**
+     * @throws Exception If failed.
+     */
     public void testClosureFieldByResourceClass() throws Exception {
         grid.compute().call(new IgniteCallable<Object>() {
             @SpringResource(resourceClass = DummyResourceBean.class)
@@ -83,6 +101,23 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
         });
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureFieldByResourceClassWithRequired() throws Exception {
+        grid.compute().call(new IgniteCallable<Object>() {
+			private static final long serialVersionUID = 1L;
+			
+			@SpringResource(resourceClass = DummyNullResourceBean.class, required = false)
+            private transient DummyResourceBean dummyRsrcBean;
+
+            @Override public Object call() throws Exception {
+            	assertNull(dummyRsrcBean);
+
+                return null;
+            }
+        });
+    }    
     /**
      * @throws Exception If failed.
      */
@@ -367,6 +402,15 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             // No-op.
         }
     }
+    
+    public static class DummyNullResourceBean {
+        /**
+         *
+         */
+        public DummyNullResourceBean() {
+            // No-op.
+        }
+    }    
 
     /**
      * Another dummy resource bean.
