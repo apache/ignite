@@ -882,6 +882,7 @@
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
                                         <exclude>**/*.csproj</exclude>
+                                        <exclude>**/*.ndproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>

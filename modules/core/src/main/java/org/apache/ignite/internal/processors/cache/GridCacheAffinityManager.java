@@ -100,7 +100,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = aff.readyFuture(topVer);
 
-        return fut != null ? fut : new GridFinishedFuture<>(topVer);
+        return fut != null ? fut : cctx.shared().exchange().lastFinishedFuture();
     }
 
     /**

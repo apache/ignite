@@ -790,15 +790,15 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                IgniteInternalFuture<AffinityTopologyVersion> waitFut = waitRemapFuture(topVer);
+                AffinityTopologyVersion updTopVer =
+                    new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
-                waitFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                cctx.affinity().affinityReadyFuture(updTopVer).listen(
+                    new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
-                                AffinityTopologyVersion topVer = fut.get();
-
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), topVer);
+                                map(keys.keySet(), F.t(node, keys), fut.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }
