@@ -33,7 +33,7 @@ public class BinaryConfiguration {
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
-    /** Default compact footer flag setting. */
+    /** Default externalizableBinary flag setting. */
     public static final boolean DFLT_EXTERNALIZABLE_BINARY = true;
 
     /** ID mapper. */
