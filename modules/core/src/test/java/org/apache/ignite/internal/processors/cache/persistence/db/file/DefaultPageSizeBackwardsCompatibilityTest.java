@@ -24,7 +24,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,7 +82,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6().setCheckpointingFrequency(3_000));
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setCheckpointingFrequency(3_000));
 
         cfg.setConsistentId(gridName);
 

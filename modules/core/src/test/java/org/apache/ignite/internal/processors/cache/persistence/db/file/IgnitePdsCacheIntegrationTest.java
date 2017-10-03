@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -79,7 +79,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 

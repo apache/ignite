@@ -27,7 +27,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -71,7 +71,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg(TMPL_NAME));
 
-        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
         pCfg.setCheckpointingFrequency(1000);
 

@@ -59,7 +59,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
@@ -1572,8 +1572,8 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
-    private static DataStorageConfiguration6 readPersistentStoreConfiguration(BinaryRawReader in) {
-        return new DataStorageConfiguration6()
+    private static DataStorageConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
+        return new DataStorageConfiguration()
                 .setPersistentStorePath(in.readString())
                 .setCheckpointingFrequency(in.readLong())
                 .setCheckpointingPageBufferSize(in.readLong())
@@ -1602,7 +1602,7 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
-    private static void writePersistentStoreConfiguration(BinaryRawWriter w, DataStorageConfiguration6 cfg) {
+    private static void writePersistentStoreConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {

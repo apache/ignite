@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -61,7 +61,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         cfg.setConsistentId("ConsId" + (condId++));
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
-        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
         pCfg.setPersistentStorePath(testName + "/db");
         pCfg.setWalArchivePath(testName + "/db/wal/archive");

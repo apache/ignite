@@ -30,7 +30,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -168,7 +168,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
         );
 

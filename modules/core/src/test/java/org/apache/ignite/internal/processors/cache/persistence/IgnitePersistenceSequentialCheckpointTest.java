@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 
 /**
@@ -29,7 +29,7 @@ public class IgnitePersistenceSequentialCheckpointTest extends IgnitePersistentS
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6()
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointingThreads(4)
             .setCheckpointWriteOrder(CheckpointWriteOrder.SEQUENTIAL));

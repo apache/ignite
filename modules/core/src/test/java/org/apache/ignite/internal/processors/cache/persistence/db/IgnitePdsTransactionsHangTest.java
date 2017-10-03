@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -124,7 +124,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         cfg.setTransactionConfiguration(txCfg);
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setWalHistorySize(1)
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
         );

@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
@@ -93,7 +93,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(memCfg);
 
-        DataStorageConfiguration6 storeCfg = new DataStorageConfiguration6()
+        DataStorageConfiguration storeCfg = new DataStorageConfiguration()
                 .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
                 // Setting WAL Segment size to high values forces flushing by timeout.

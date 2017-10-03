@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -68,7 +68,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6());
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
         cfg.setConsistentId(igniteInstanceName);
 
         return cfg;

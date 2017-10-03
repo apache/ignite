@@ -49,7 +49,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -149,7 +149,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
         pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 

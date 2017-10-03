@@ -30,7 +30,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
@@ -123,7 +122,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         cfg.setMemoryConfiguration(memCfg);
 
         if (persistenceEnabled()) {
-            DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
+            DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
             pCfg.setWalMode(WALMode.LOG_ONLY);
 

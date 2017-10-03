@@ -66,7 +66,7 @@ import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -260,7 +260,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile boolean printCheckpointStats = true;
 
     /** Database configuration. */
-    private final DataStorageConfiguration6 persistenceCfg;
+    private final DataStorageConfiguration persistenceCfg;
 
     /** */
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
@@ -409,7 +409,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Checkpoint buffer size.
      */
     public static long checkpointBufferSize(IgniteConfiguration cfg) {
-        DataStorageConfiguration6 persistenceCfg = cfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration persistenceCfg = cfg.getPersistentStoreConfiguration();
 
         if (persistenceCfg == null)
             return 0L;
@@ -2492,8 +2492,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Reorders list of checkpoint pages and splits them into needed number of sublists according to
-     * {@link DataStorageConfiguration6#getCheckpointingThreads()} and
-     * {@link DataStorageConfiguration6#getCheckpointWriteOrder()}.
+     * {@link DataStorageConfiguration#getCheckpointingThreads()} and
+     * {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
      *
      * @param cpPagesTuple Checkpoint pages tuple.
      */

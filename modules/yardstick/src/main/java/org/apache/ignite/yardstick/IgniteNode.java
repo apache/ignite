@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -169,7 +169,7 @@ public class IgniteNode implements BenchmarkServer {
         }
 
         if (args.persistentStoreEnabled()) {
-            DataStorageConfiguration6 pcCfg = new DataStorageConfiguration6();
+            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

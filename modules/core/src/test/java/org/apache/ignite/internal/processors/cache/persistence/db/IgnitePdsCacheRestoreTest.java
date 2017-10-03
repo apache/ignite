@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -61,7 +61,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
 
         cfg.setMemoryConfiguration(memCfg);
 
-        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
         pCfg.setWalMode(WALMode.LOG_ONLY);
 

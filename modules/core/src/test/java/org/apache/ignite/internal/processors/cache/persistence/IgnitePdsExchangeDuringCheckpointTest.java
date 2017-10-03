@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -107,7 +107,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         cfg.setCacheConfiguration(ccfg);
 
-        DataStorageConfiguration6 psiCfg = new DataStorageConfiguration6()
+        DataStorageConfiguration psiCfg = new DataStorageConfiguration()
             .setCheckpointingThreads(1)
             .setCheckpointingFrequency(1)
             .setWalMode(WALMode.LOG_ONLY);

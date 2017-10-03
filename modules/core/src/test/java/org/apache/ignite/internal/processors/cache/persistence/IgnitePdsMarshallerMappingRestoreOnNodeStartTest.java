@@ -23,7 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -42,7 +42,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
         cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIndex).toString());
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration()

@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -66,7 +66,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
         cfg.setMemoryConfiguration(dbCfg);
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setWalSegmentSize(4 * 1024 * 1024)
                 .setWalHistorySize(2)
                 .setWalSegments(10)

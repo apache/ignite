@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -253,7 +253,7 @@ public class IgniteBenchmarkArguments {
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
     /**
-     * @return {@code True} if need set {@link DataStorageConfiguration6}.
+     * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
     public boolean persistentStoreEnabled() {
         return persistentStoreEnabled;

@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -87,7 +87,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg1);
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setWalMode(WALMode.BACKGROUND)
                 .setCheckpointingFrequency(20_000)
                 .setCheckpointingPageBufferSize(1000L * 1000 * 1000)

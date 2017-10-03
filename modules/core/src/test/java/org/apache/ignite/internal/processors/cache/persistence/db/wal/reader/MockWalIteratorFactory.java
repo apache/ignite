@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -74,15 +74,15 @@ public class MockWalIteratorFactory {
      * @throws IgniteCheckedException if IO failed
      */
     public WALIterator iterator(File wal, File walArchive) throws IgniteCheckedException {
-        final DataStorageConfiguration6 persistentCfg1 = Mockito.mock(DataStorageConfiguration6.class);
+        final DataStorageConfiguration persistentCfg1 = Mockito.mock(DataStorageConfiguration.class);
 
         when(persistentCfg1.getWalStorePath()).thenReturn(wal.getAbsolutePath());
         when(persistentCfg1.getWalArchivePath()).thenReturn(walArchive.getAbsolutePath());
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
-        when(persistentCfg1.getTlbSize()).thenReturn(DataStorageConfiguration6.DFLT_TLB_SIZE);
-        when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration6.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
+        when(persistentCfg1.getTlbSize()).thenReturn(DataStorageConfiguration.DFLT_TLB_SIZE);
+        when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
-        final FileIOFactory fileIOFactory = new DataStorageConfiguration6().getFileIOFactory();
+        final FileIOFactory fileIOFactory = new DataStorageConfiguration().getFileIOFactory();
         when(persistentCfg1.getFileIOFactory()).thenReturn(fileIOFactory);
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);

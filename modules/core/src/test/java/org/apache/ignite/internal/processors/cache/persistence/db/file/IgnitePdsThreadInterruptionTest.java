@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
@@ -71,8 +71,8 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /**
      * @return Store config.
      */
-    private DataStorageConfiguration6 storeConfiguration() {
-        DataStorageConfiguration6 cfg = new DataStorageConfiguration6();
+    private DataStorageConfiguration storeConfiguration() {
+        DataStorageConfiguration cfg = new DataStorageConfiguration();
 
         cfg.setWalMode(WALMode.LOG_ONLY);
 

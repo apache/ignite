@@ -58,7 +58,7 @@
         </property>
 
         <property name="persistentStoreConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration6"/>
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
         </property>
     </bean>
 </beans>

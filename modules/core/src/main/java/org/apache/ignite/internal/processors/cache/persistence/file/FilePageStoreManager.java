@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -91,7 +91,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final IgniteConfiguration igniteCfg;
 
     /** */
-    private DataStorageConfiguration6 pstCfg;
+    private DataStorageConfiguration pstCfg;
 
     /** Absolute directory for file page store */
     private File storeWorkDir;
@@ -108,7 +108,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        DataStorageConfiguration6 pstCfg = igniteCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration pstCfg = igniteCfg.getPersistentStoreConfiguration();
 
         assert pstCfg != null : "WAL should not be created if persistence is disabled.";
 

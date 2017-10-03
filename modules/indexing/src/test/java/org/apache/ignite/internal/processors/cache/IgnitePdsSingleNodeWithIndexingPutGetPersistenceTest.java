@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +34,7 @@ public class IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest extends Ignite
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPersistentStoreConfiguration(
-            new DataStorageConfiguration6()
+            new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 

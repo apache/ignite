@@ -460,7 +460,7 @@ public class IgniteConfiguration {
     private DataStorageConfiguration memCfg;
 
     /** Persistence store configuration. */
-    private DataStorageConfiguration6 pstCfg;
+    private DataStorageConfiguration pstCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -2178,7 +2178,7 @@ public class IgniteConfiguration {
      *
      * @return Persistence configuration.
      */
-    public DataStorageConfiguration6 getPersistentStoreConfiguration() {
+    public DataStorageConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
@@ -2195,7 +2195,7 @@ public class IgniteConfiguration {
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setPersistentStoreConfiguration(DataStorageConfiguration6 pstCfg) {
+    public IgniteConfiguration setPersistentStoreConfiguration(DataStorageConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
         return this;
@@ -2208,7 +2208,7 @@ public class IgniteConfiguration {
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
      * <p>
-     * This flag is ignored when {@link DataStorageConfiguration6} is present:
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
      * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
@@ -2221,7 +2221,7 @@ public class IgniteConfiguration {
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
      * <p>
-     * This flag is ignored when {@link DataStorageConfiguration6} is present:
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
      * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.

@@ -16,7 +16,7 @@
  */
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
@@ -28,18 +28,18 @@ public interface DataStorageMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.
      * <p>
-     * The length of time interval is configured via {@link DataStorageConfiguration6#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration6#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
      * configuration property.
      */
     public float getWalLoggingRate();
 
     /**
      * Gets the average number of bytes per second written during the last time interval.
-     * The length of time interval is configured via {@link DataStorageConfiguration6#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration6#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
      * configuration property.
      */
     public float getWalWritingRate();
@@ -52,9 +52,9 @@ public interface DataStorageMetrics {
     /**
      * Gets the average WAL fsync duration in microseconds over the last time interval.
      * <p>
-     * The length of time interval is configured via {@link DataStorageConfiguration6#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration6#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
      * configuration property.
      */
     public float getWalFsyncTimeAverage();

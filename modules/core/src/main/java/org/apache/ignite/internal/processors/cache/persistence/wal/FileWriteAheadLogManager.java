@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.DataStorageConfiguration6;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
@@ -145,7 +145,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final long fsyncDelay;
 
     /** */
-    private final DataStorageConfiguration6 psCfg;
+    private final DataStorageConfiguration psCfg;
 
     /** Events service */
     private final GridEventStorageManager evt;
@@ -208,7 +208,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
-     * See {@link DataStorageConfiguration6#setWalAutoArchiveAfterInactivity(long)}<br>
+     * See {@link DataStorageConfiguration#setWalAutoArchiveAfterInactivity(long)}<br>
      */
     private final long walAutoArchiveAfterInactivity;
 
@@ -238,7 +238,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
         igCfg = ctx.config();
 
-        DataStorageConfiguration6 psCfg = igCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration psCfg = igCfg.getPersistentStoreConfiguration();
 
         assert psCfg != null : "WAL should not be created if persistence is disabled.";
 
@@ -268,14 +268,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             walWorkDir = initDirectory(
                 psCfg.getWalStorePath(),
-                DataStorageConfiguration6.DFLT_WAL_STORE_PATH,
+                DataStorageConfiguration.DFLT_WAL_STORE_PATH,
                 consId,
                 "write ahead log work directory"
             );
 
             walArchiveDir = initDirectory(
                 psCfg.getWalArchivePath(),
-                DataStorageConfiguration6.DFLT_WAL_ARCHIVE_PATH,
+                DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 consId,
                 "write ahead log archive directory"
             );
@@ -1430,7 +1430,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Validate files depending on {@link DataStorageConfiguration6#getWalSegments()}  and create if need.
+     * Validate files depending on {@link DataStorageConfiguration#getWalSegments()}  and create if need.
      * Check end when exit condition return false or all files are passed.
      *
      * @param startWith Start with.
@@ -1771,7 +1771,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
         private final Condition writeComplete = lock.newCondition();
 
-        /** Condition for timed wait of several threads, see {@link DataStorageConfiguration6#getWalFsyncDelayNanos()} */
+        /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
         private final Condition fsync = lock.newCondition();
 
         /**
@@ -2491,7 +2491,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private final FileArchiver archiver;
 
         /** */
-        private final DataStorageConfiguration6 psCfg;
+        private final DataStorageConfiguration psCfg;
 
         /** Optional start pointer. */
         @Nullable
@@ -2519,7 +2519,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File walArchiveDir,
             @Nullable FileWALPointer start,
             @Nullable FileWALPointer end,
-            DataStorageConfiguration6 psCfg,
+            DataStorageConfiguration psCfg,
             @NotNull RecordSerializer serializer,
             FileIOFactory ioFactory,
             FileArchiver archiver,
