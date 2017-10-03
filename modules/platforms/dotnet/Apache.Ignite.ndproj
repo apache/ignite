@@ -2938,7 +2938,7 @@ select new {
 // is 5 minutes per custom delegates plus 3 minutes per method
 // using such custom delegate.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types with disposable instance fields must be disposable</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types with disposable instance fields must be disposable</Name>
         
 warnif count > 0
 
@@ -3087,7 +3087,7 @@ select new {
 //
 // You can then refactor this code query to adapt it to your needs and transform it into a code rule.
 //</Description>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Classes that are candidate to be turned into structures</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Classes that are candidate to be turned into structures</Name>
 
 warnif count > 0 from t in JustMyCode.Types where 
   t.IsClass &&
@@ -3223,7 +3223,7 @@ select new {
 // To fix a violation of this rule, try to combine namespaces 
 // that contain just a few types into a single namespace.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
 warnif count > 0 from t in JustMyCode.Types where 
   t.IsNested && 
  !t.IsGeneratedByCompiler &&
@@ -3327,7 +3327,7 @@ select new {
 //<HowToFix>
 // Remove matched empty *static constructors*.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instances size shouldn't be too big</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instances size shouldn't be too big</Name>
 warnif count > 0 from t in JustMyCode.Types where 
   t.SizeOfInst > 64 
   orderby t.SizeOfInst descending
@@ -3446,7 +3446,7 @@ select new {
 // To fix a violation of this rule, seal the attribute 
 // type or make it abstract.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't use obsolete types, methods or fields</Name>   
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't use obsolete types, methods or fields</Name>   
 warnif count > 0
 let obsoleteTypes =   Types.Where(t => t.IsObsolete)
 let obsoleteMethods = Methods.Where(m => m.IsObsolete).ToHashSet()
@@ -3775,7 +3775,7 @@ select new {
 // blue and black cells.**
 //</HowToFix>
       ]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid namespaces dependency cycles</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid namespaces dependency cycles</Name>
 warnif count > 0
 
 // Optimization: restraint application assemblies set
@@ -4045,7 +4045,7 @@ select new {
 // http://www.kenneth-truyers.net/2013/05/12/the-n-layer-myth-and-basic-dependency-injection/
 //</HowToFix>
 ]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Assemblies with poor cohesion (RelationalCohesion)</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Assemblies with poor cohesion (RelationalCohesion)</Name>
 warnif count > 0 from a in Application.Assemblies 
 
 // Build the types list on which we want to check cohesion
@@ -4113,7 +4113,7 @@ select new {
 // **Code Smells** default rules will necessarily increase 
 // the *Relational Cohesion* scores.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Namespaces with poor cohesion (RelationalCohesion)</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Namespaces with poor cohesion (RelationalCohesion)</Name>
 warnif count > 0 from n in Application.Namespaces 
 
 // Build the types list on which we want to check cohesion
@@ -5444,7 +5444,7 @@ select new {
 //</Description>]]></Query>
     </Group>
     <Group Name="Dead Code" Active="True" ShownInReport="True">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Potentially Dead Types</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Potentially Dead Types</Name>
         
 warnif count > 0
 // Filter procedure for types that should'nt be considered as dead
@@ -5528,7 +5528,7 @@ select new {
 // fix such issue, is proportional to the type #lines of code, because
 // the bigger the type is, the more it slows down maintenance.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Potentially Dead Methods</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Potentially Dead Methods</Name>
         
 warnif count > 0
 // Filter procedure for methods that should'nt be considered as dead
