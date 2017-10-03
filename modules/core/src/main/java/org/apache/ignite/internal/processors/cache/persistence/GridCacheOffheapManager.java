@@ -1319,7 +1319,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
+        @Override public List<T2<Object, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 

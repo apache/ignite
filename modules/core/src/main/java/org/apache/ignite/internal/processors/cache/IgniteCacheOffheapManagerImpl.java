@@ -441,12 +441,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public List<T2<CacheObject, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
+    @Override public List<T2<Object, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(cctx, key);
 
         return dataStore != null ? dataStore.mvccFindAllVersions(cctx, key) :
-            Collections.<T2<CacheObject,MvccCounter>>emptyList();
+            Collections.<T2<Object, MvccCounter>>emptyList();
     }
 
     /**
@@ -1665,7 +1665,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(
+        @Override public List<T2<Object, MvccCounter>> mvccFindAllVersions(
             GridCacheContext cctx,
             KeyCacheObject key)
             throws IgniteCheckedException
@@ -1680,14 +1680,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 new MvccSearchRow(cacheId, key, Long.MAX_VALUE, Long.MAX_VALUE),
                 new MvccSearchRow(cacheId, key, 1, 1));
 
-            List<T2<CacheObject, MvccCounter>> res = new ArrayList<>();
+            List<T2<Object, MvccCounter>> res = new ArrayList<>();
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
                 MvccCounter mvccCntr = new MvccCounter(row.mvccCoordinatorVersion(), row.mvccCounter());
 
-                res.add(new T2<>(row.value(), mvccCntr));
+                CacheObject val = row.value();
+
+                Object val0 = val != null ? val.value(cctx.cacheObjectContext(), false) : null;
+
+                res.add(new T2<>(val0, mvccCntr));
             }
 
             return res;

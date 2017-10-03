@@ -178,11 +178,14 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * @param cctx
-     * @param key
-     * @return
+     * For testing only.
+     *
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return All stored versions for given key.
+     * @throws IgniteCheckedException If failed.
      */
-    public List<T2<CacheObject, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
+    public List<T2<Object, MvccCounter>> mvccAllVersions(GridCacheContext cctx, KeyCacheObject key)
         throws IgniteCheckedException;
 
     /**
@@ -544,7 +547,7 @@ public interface IgniteCacheOffheapManager {
          * @return All stored versions for given key.
          * @throws IgniteCheckedException If failed.
          */
-        List<T2<CacheObject, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
+        List<T2<Object, MvccCounter>> mvccFindAllVersions(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException;
 
         /**
