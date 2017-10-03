@@ -32,7 +32,7 @@ public class PdsFolderSettings {
      * DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent store
      * configuration. <br>
      * Note WAL storage may be configured outside this path.<br>
-     * This value may be null if persistence is not enabled
+     * This value may be null if persistence is not enabled.
      */
     @Nullable private final File persistentStoreRootPath;
 
@@ -50,19 +50,19 @@ public class PdsFolderSettings {
     @Nullable private final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder;
 
     /**
-     * Indicates if compatible mode is enabled, in that case all subfolders are generated from consistent ID without
+     * Indicates if compatible mode is enabled, in that case all sub folders are generated from consistent ID without
      * 'node' and node index prefix. In compatible mode there is no overriding for consistent ID is done.
      */
     private final boolean compatible;
 
     /**
-     * Creates settings in for new PST(DB) folder mode
+     * Creates settings in for new PST(DB) folder mode.
      *
-     * @param persistentStoreRootPath Persistent store root path or null if non PDS mode
+     * @param persistentStoreRootPath Persistent store root path or null if non PDS mode.
      * @param folderName Sub folder name containing consistent ID and optionally node index.
      * @param consistentId Consistent id.
      * @param fileLockHolder File lock holder with prelocked db directory.
-     * @param compatible Compatible mode flag
+     * @param compatible Compatible mode flag.
      */
     public PdsFolderSettings(@Nullable final File persistentStoreRootPath,
         final String folderName,
@@ -78,10 +78,10 @@ public class PdsFolderSettings {
     }
 
     /**
-     * Creates settings for compatible mode. Folder name is consistent ID (masked), no node prefix is added
+     * Creates settings for compatible mode. Folder name is consistent ID (masked), no node prefix is added.
      *
-     * @param persistentStoreRootPath root DB path
-     * @param consistentId node consistent ID
+     * @param persistentStoreRootPath root DB path.
+     * @param consistentId node consistent ID.
      */
     public PdsFolderSettings(
         @Nullable final File persistentStoreRootPath,
@@ -95,23 +95,24 @@ public class PdsFolderSettings {
     }
 
     /**
-     * @return subfolders name based on consistent ID. In compatible mode this is escaped consistent ID, in new mode
-     * this is UUID based folder name
+     * @return sub folders name based on consistent ID. In compatible mode this is escaped consistent ID, in new mode
+     * this is UUID based folder name.
      */
     public String folderName() {
         return folderName;
     }
 
     /**
-     * @return Consistent id to be set to local node
+     * @return Consistent id to be set to local node.
      */
     public Serializable consistentId() {
         return consistentId;
     }
 
     /**
-     * @return flag indicating if compatible mode is enabled, in that case all subfolders are generated from consistent
-     * ID without 'node' and node index prefix. In compatible mode there is no overriding for consistent ID is done.
+     * @return flag indicating if compatible mode is enabled for folder generation. In that case all sub folders names are
+     * generated from consistent ID without 'node' and node index prefix. In compatible mode there is no overriding for
+     * consistent ID is done for cluster node. Locking files is independent to compatibility mode.
      */
     public boolean isCompatible() {
         return compatible;
@@ -119,9 +120,9 @@ public class PdsFolderSettings {
 
     /**
      * Returns already locked file lock holder to lock file in {@link #persistentStoreRootPath}. Unlock and close this
-     * lock is not required
+     * lock is not required.
      *
-     * @return File lock holder with prelocked db directory
+     * @return File lock holder with prelocked db directory.
      */
     @Nullable public GridCacheDatabaseSharedManager.FileLockHolder getLockedFileLockHolder() {
         return fileLockHolder;
@@ -129,7 +130,7 @@ public class PdsFolderSettings {
 
     /**
      * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
-     * store configuration. Note WAL storage may be configured outside this path. May return null for non pds mode
+     * store configuration. Note WAL storage may be configured outside this path. May return null for non pds mode.
      */
     @Nullable public File persistentStoreRootPath() {
         return persistentStoreRootPath;

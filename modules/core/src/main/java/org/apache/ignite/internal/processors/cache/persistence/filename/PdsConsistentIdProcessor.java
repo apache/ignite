@@ -135,8 +135,13 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (settings == null) {
             settings = prepareNewSettings();
 
-            if (!settings.isCompatible())
+            if (!settings.isCompatible()) {
+                if (log.isInfoEnabled())
+                    log.info("Consistent ID used for local node is [" + settings.consistentId() + "] " +
+                        "according to persistence data storage folders");
+
                 ctx.discovery().consistentId(settings.consistentId());
+            }
         }
         return settings;
     }
@@ -163,8 +168,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             // compatible mode from configuration is used fot this case, no locking, no consistent id change
             return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
         }
-        // The node scans the work directory and checks if there is a folder matching the consistent ID. If such a folder exists, we start up with this ID (compatibility mode)
-
+        // The node scans the work directory and checks if there is a folder matching the consistent ID.
+        // If such a folder exists, we start up with this ID (compatibility mode)
         final String subFolder = U.maskForFileName(consistentId.toString());
 
         final GridCacheDatabaseSharedManager.FileLockHolder oldStyleFolderLockHolder = tryLock(new File(pstStoreBasePath, subFolder));
@@ -174,14 +179,15 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 subFolder,
                 consistentId,
                 oldStyleFolderLockHolder,
-                false);
+                true);
 
         final File[] oldStyleFolders = pstStoreBasePath.listFiles(DB_SUBFOLDERS_OLD_STYLE_FILTER);
 
         if (oldStyleFolders != null && oldStyleFolders.length != 0) {
             for (File folder : oldStyleFolders) {
-                String path = getPathDisplayableInfo(folder);
-                log.warning("There is other non-empty storage folder under storage base directory [" + path + "]");
+                final String path = getPathDisplayableInfo(folder);
+
+                U.warn(log, "There is other non-empty storage folder under storage base directory [" + path + "]");
             }
         }
 
@@ -189,7 +195,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(next.subFolderFile());
 
             if (fileLockHolder != null) {
-                log.info("Successfully locked DB folder [" + next.subFolderFile() + "]");
+                if (log.isInfoEnabled())
+                    log.info("Successfully locked persistence storage folder [" + next.subFolderFile() + "]");
 
                 return new PdsFolderSettings(pstStoreBasePath,
                     next.subFolderFile().getName(),
@@ -216,6 +223,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
     /**
      * Calculate overall folder size.
+     *
      * @param dir directory to scan.
      * @return total size in bytes.
      */
@@ -267,8 +275,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
     /**
      * Returns the canonical pathname string of this abstract pathname.
-     * @param file path to convert
-     * @return canonical pathname or at leas absolute if convert to canonical failed
+     *
+     * @param file path to convert.
+     * @return canonical pathname or at leas absolute if convert to canonical failed.
      */
     @NotNull private String getCanonicalPath(final File file) {
         try {
@@ -304,12 +313,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     }
 
     /**
-     * Creates new DB storage folder
+     * Creates new DB storage folder.
      *
-     * @param pstStoreBasePath DB root path
-     * @param nodeIdx next node index to use in folder name
-     * @return new settings to be used in this node
-     * @throws IgniteCheckedException if failed
+     * @param pstStoreBasePath DB root path.
+     * @param nodeIdx next node index to use in folder name.
+     * @return new settings to be used in this node.
+     * @throws IgniteCheckedException if failed.
      */
     @NotNull private PdsFolderSettings generateAndLockNewDbStorage(final File pstStoreBasePath,
         final int nodeIdx) throws IgniteCheckedException {
@@ -320,7 +329,9 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(newRandomFolder);
 
         if (fileLockHolder != null) {
-            log.info("Successfully created new DB folder [" + newRandomFolder + "]");
+            if (log.isInfoEnabled())
+                log.info("Successfully created new persistent storage folder [" + newRandomFolder + "]");
+
             return new PdsFolderSettings(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
         }
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
@@ -417,7 +428,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
         catch (IgniteCheckedException e) {
             U.closeQuiet(fileLockHolder);
-            log.info("Unable to acquire lock to file [" + path + "], reason: " + e.getMessage());
+
+            if (log.isInfoEnabled())
+                log.info("Unable to acquire lock to file [" + path + "], reason: " + e.getMessage());
+
             return null;
         }
     }
@@ -476,7 +490,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return new FolderCandidate(subFolderFile, idx, uuid);
         }
         catch (Exception e) {
-            log.warning("Unable to parse new style file format: " + e);
+            U.warn(log, "Unable to parse new style file format from [" + subFolderFile.getAbsolutePath() + "]: " + e);
 
             return null;
         }
@@ -518,7 +532,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         private final UUID uuid;
 
         /**
-         * @param subFolderFile  Absolute file path pointing to DB subfolder.
+         * @param subFolderFile Absolute file path pointing to DB subfolder.
          * @param nodeIdx Node index.
          * @param uuid Uuid.
          */
