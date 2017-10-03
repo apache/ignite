@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <NDepend AppName="Apache.Ignite" Platform="DotNet" FileWrittenByProductVersion="2017.2.2.8962">
   <OutputDir KeepXmlFiles="False">c:\w\incubator-ignite\modules\platforms\dotnet\NDependOut</OutputDir>
   <Assemblies>
@@ -81,7 +81,8 @@
       <High2Critical_SeverityThreshold>72000000000</High2Critical_SeverityThreshold>
       <Critical2Blocker_SeverityThreshold>360000000000</Critical2Blocker_SeverityThreshold>
     </DebtSettings>
-  </ProjectDebtSettings><Queries>
+  </ProjectDebtSettings>
+  <Queries>
     <Group Name="Quality Gates" Active="True" ShownInReport="True">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quality Gates Evolution</Name>
 from qg in QualityGates
@@ -3545,7 +3546,7 @@ select new {
 // **Medium**, because often the fix consists in  throwing 
 // another exception type, like **InvalidOperationException**.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Override equals and operator equals on value types</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Override equals and operator equals on value types</Name>
 warnif count > 0
 from t in JustMyCode.Types where
   t.IsStructure &&
@@ -6315,7 +6316,7 @@ select new {
 //</Description>]]></Query>
     </Group>
     <Group Name="Immutability" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields should be marked as ReadOnly when possible</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Fields should be marked as ReadOnly when possible</Name>
 warnif count > 0 
 from f in JustMyCode.Fields where 
    f.IsImmutable && 
@@ -6407,7 +6408,7 @@ select new {
 // occur to ensure that this  state is hold through an instance 
 // field.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid static fields with a mutable field type</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid static fields with a mutable field type</Name>
 warnif count > 0
 from f in Application.Fields
 where f.IsStatic && 
@@ -6451,7 +6452,7 @@ select new {
 // opposition to mutable object hold by a static field that 
 // makes it modifiable from a bit everywhere in the program. 
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Structures should be immutable</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Structures should be immutable</Name>
 warnif count > 0 from t in JustMyCode.Types where 
    t.IsStructure && 
   !t.IsImmutable
@@ -6493,7 +6494,7 @@ select new {
 // a value, you have to consciously do it by creating a new instance 
 // of the structure with the modified data.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Property Getters should be immutable</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Property Getters should be immutable</Name>
 warnif count > 0 from m in Application.Methods where
  !m.IsGeneratedByCompiler &&
   m.IsPropertyGetter &&
@@ -6541,7 +6542,7 @@ select new {
 // is equal to 2 minutes plus 5 minutes per field assigned and
 // 5 minutes per other method assigning such field.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>A field must not be assigned from outside its parent hierarchy types</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>A field must not be assigned from outside its parent hierarchy types</Name>
         
 warnif count > 0
 from f in JustMyCode.Fields.Where(f => 
@@ -6593,7 +6594,7 @@ select new {
 // is equal to 5 minutes per method outside the parent hierarchy
 // that assigns the matched field.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't assign a field from many methods</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't assign a field from many methods</Name>
                 
 warnif count > 0 
 from f in JustMyCode.Fields where 
@@ -6665,7 +6666,7 @@ select new {
 // is equal to 4 minutes plus 5 minutes per method assigning the instance field
 // or 10 minutes per method assigning the static field.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Do not declare read only mutable reference types</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Do not declare read only mutable reference types</Name>
 warnif count > 0 
 from f in JustMyCode.Fields where 
    f.IsInitOnly && 
@@ -6955,7 +6956,7 @@ select new {
 //</Description>]]></Query>
     </Group>
     <Group Name="Naming Conventions" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instance fields naming convention</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instance fields naming convention</Name>
 warnif count > 0 from f in JustMyCode.Fields where 
   !( 
     // Instance field name starting with a lower-case letter
@@ -7016,7 +7017,7 @@ select new {
 // Once the rule has been adapted to your own naming convention
 // make sure to name all matched instance fields adequately.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Static fields naming convention</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Static fields naming convention</Name>
 warnif count > 0 from f in Application.Fields where 
   !( 
     // Static field name starting with an upper-case letter
@@ -7105,7 +7106,7 @@ select new {
 // Make sure that matched interfaces names are prefixed with
 // an upper **I**.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Abstract base class should be suffixed with 'Base'</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Abstract base class should be suffixed with 'Base'</Name>
         
 warnif count > 0 from t in Application.Types where 
   t.IsAbstract && 
@@ -7340,7 +7341,7 @@ select new {
 // that equally conveys the behavior of the method.
 // Or eventually split the method into several smaller methods.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid fields with name too long</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid fields with name too long</Name>
 warnif count > 0 from f in JustMyCode.Fields where
  !f.IsGeneratedByCompiler &&
   f.Name.Length > 40
@@ -7463,7 +7464,7 @@ select new {
 //<HowToFix>
 // To fix a violation of this rule, remove the prefix from the type name.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid naming types and namespaces with the same identifier</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid naming types and namespaces with the same identifier</Name>
 warnif count > 0
 let hashsetShortNames = Namespaces.Where(n => n.Name.Length > 0).Select(n => n.SimpleName).ToHashSet()
 
@@ -7515,7 +7516,7 @@ select new {
 // or rename the *Dispose()* method with another identifier like:
 // *Close() Terminate() Finish() Quit() Exit() Unlock() ShutDown()*…
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods prefixed with 'Try' should return a boolean</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods prefixed with 'Try' should return a boolean</Name>
 warnif count > 0
 from m in Application.Methods where
   m.SimpleNameLike("^Try") &&
@@ -7661,7 +7662,7 @@ select new {
 //<HowToFix>
 // To fix a violation of this rule, prefer sharing types through DLLs.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid defining multiple types in a source file</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid defining multiple types in a source file</Name>
 warnif count > 0 
 
 // Build a lookup indexed by source files, values being a sequence of types defined in the source file.
@@ -8085,7 +8086,7 @@ select new {
 // To fix a violation of this rule, specify targets for the attribute by using 
 // *AttributeUsageAttribute* with the proper *AttributeTargets* values.
 //</HowToFix>]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Remove calls to GC.Collect()</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Remove calls to GC.Collect()</Name>
 warnif count > 0 
 
 let gcCollectMethods = ThirdParty.Methods.WithFullNameWildcardMatch(
@@ -8113,7 +8114,7 @@ select new {
 //<HowToFix>
 // Remove matched calls to *GC.Collect()*.
 //</HowToFix>]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't call GC.Collect() without calling GC.WaitForPendingFinalizers()</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't call GC.Collect() without calling GC.WaitForPendingFinalizers()</Name>
 warnif count > 0 
 
 let gcCollectMethods = ThirdParty.Methods.WithFullNameWildcardMatch(
@@ -8156,7 +8157,7 @@ select new {
 // need to call *GC.Collect()*, make sure to call
 // *GC.WaitForPendingFinalizers()* properly.
 //</HowToFix>]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Enum Storage should be Int32</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Enum Storage should be Int32</Name>
 warnif count > 0 from f in JustMyCode.Fields where 
    f.ParentType.IsEnumeration &&
    f.Name == @"value__" && 
@@ -8414,7 +8415,7 @@ select new {
 }]]></Query>
       </Group>
       <Group Name="System.Collection" Active="True" ShownInReport="False">
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Collection properties should be read only</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Collection properties should be read only</Name>
 warnif count > 0
 
 // First find collectionTypes 
@@ -8588,7 +8589,7 @@ select new {
 //</Description>]]></Query>
       </Group>
       <Group Name="System.Runtime.InteropServices" Active="True" ShownInReport="False">
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>P/Invokes should be static and not be publicly visible</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>P/Invokes should be static and not be publicly visible</Name>
 warnif count > 0 from m in Application.Methods where
   !m.IsThirdParty &&
   (m.HasAttribute ("System.Runtime.InteropServices.DllImportAttribute".AllowNoMatch())) &&
@@ -8619,7 +8620,7 @@ select new {
 // To fix a violation of this rule, change the access level of the method
 // and/or declare it as static.
 //</HowToFix>]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Move P/Invokes to NativeMethods class</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Move P/Invokes to NativeMethods class</Name>
 warnif count > 0 from m in Application.Methods where
    m.HasAttribute ("System.Runtime.InteropServices.DllImportAttribute".AllowNoMatch()) &&
    m.ParentType.SimpleName != "NativeMethods"
@@ -11132,5 +11133,7 @@ select new {
 //</HowToFix>]]></Query>
       </Group>
     </Group>
-  </Queries><WarnFilter>
-  </WarnFilter></NDepend>
+  </Queries>
+  <WarnFilter>
+  </WarnFilter>
+</NDepend>
