@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Database schema object.
@@ -29,10 +29,10 @@ public class H2Schema {
     private final String schemaName;
 
     /** */
-    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
