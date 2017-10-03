@@ -1011,7 +1011,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
             IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
 
