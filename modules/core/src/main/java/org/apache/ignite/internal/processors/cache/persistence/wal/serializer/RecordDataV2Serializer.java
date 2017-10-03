@@ -90,8 +90,6 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case DATA_RECORD:
                 DataRecord dataRec = (DataRecord)record;
 
-                dataRec.initTimestamp();
-
                 buf.putInt(dataRec.writeEntries().size());
                 buf.putLong(dataRec.timestamp());
 

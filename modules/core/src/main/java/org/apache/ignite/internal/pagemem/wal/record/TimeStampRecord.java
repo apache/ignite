@@ -31,7 +31,7 @@ public abstract class TimeStampRecord extends WALRecord {
      *
      */
     protected TimeStampRecord() {
-        // No-op, used from builder methods.
+        timestamp = U.currentTimeMillis();
     }
 
     /**
@@ -39,14 +39,6 @@ public abstract class TimeStampRecord extends WALRecord {
      */
     protected TimeStampRecord(long timestamp) {
         this.timestamp = timestamp;
-    }
-
-    /**
-     * Initialize timeStamp.
-     */
-    public void initTimestamp() {
-        timestamp = U.currentTimeMillis();
-
     }
 
     /**

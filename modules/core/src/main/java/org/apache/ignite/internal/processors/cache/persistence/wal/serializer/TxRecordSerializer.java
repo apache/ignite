@@ -61,8 +61,6 @@ public class TxRecordSerializer {
      * @throws IgniteCheckedException In case of fail.
      */
     public void writeTxRecord(TxRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        record.initTimestamp();
-
         buf.put((byte) record.state().ordinal());
         RecordV1Serializer.putVersion(buf, record.nearXidVersion(), true);
         RecordV1Serializer.putVersion(buf, record.writeVersion(), true);
