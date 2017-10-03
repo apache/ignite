@@ -7714,7 +7714,7 @@ select new {
 // By default issues of this rule have an **Low** severity
 // because they reflect more an advice than a problem.
 //</HowToFix>]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Namespace name should correspond to file location</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Namespace name should correspond to file location</Name>
 warnif count > 0
 from n in Application.Namespaces 
 
