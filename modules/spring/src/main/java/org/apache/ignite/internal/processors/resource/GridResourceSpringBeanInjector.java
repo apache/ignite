@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.resource;
 
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.resources.SpringResource;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.StringUtils;
 
@@ -126,7 +128,7 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
         }
         else {
             try {
-                vbean = springCtx.getBean(beanCls);
+                bean = springCtx.getBean(beanCls);
             } catch(NoSuchBeanDefinitionException ne) {
                 if(annotation.required())
                     throw ne;	
