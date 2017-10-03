@@ -72,9 +72,9 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      */
     public void testClosureFieldByResourceNameWithRequired() throws Exception {
         grid.compute().call(new IgniteCallable<Object>() {
-			private static final long serialVersionUID = 1L;
+            private static final long serialVersionUID = 1L;
 			
-			@SpringResource(resourceName = "dummyNullResourceBean", required = false)
+            @SpringResource(resourceName = "dummyNullResourceBean", required = false)
             private transient DummyResourceBean dummyRsrcBean;
 
             @Override public Object call() throws Exception {
@@ -106,9 +106,9 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      */
     public void testClosureFieldByResourceClassWithRequired() throws Exception {
         grid.compute().call(new IgniteCallable<Object>() {
-			private static final long serialVersionUID = 1L;
+            private static final long serialVersionUID = 1L;
 			
-			@SpringResource(resourceClass = DummyNullResourceBean.class, required = false)
+            @SpringResource(resourceClass = DummyNullResourceBean.class, required = false)
             private transient DummyResourceBean dummyRsrcBean;
 
             @Override public Object call() throws Exception {
