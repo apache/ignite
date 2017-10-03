@@ -17,43 +17,48 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 /**
  * Key for types lookup.
  */
-class TypeKey {
-    /**
-     * Cache name.
-     */
+public class H2TypeKey {
+    /** Cache name. */
     private final String cacheName;
 
-    /**
-     * Type name.
-     */
+    /** Type name. */
     private final String typeName;
 
     /**
+     * Constructor.
+     *
      * @param cacheName Cache name.
      * @param typeName Type name.
      */
-    TypeKey(String cacheName, String typeName) {
+    H2TypeKey(String cacheName, String typeName) {
         this.cacheName = cacheName;
         this.typeName = typeName;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
 
-        TypeKey typeKey = (TypeKey) o;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        return cacheName.equals(typeKey.cacheName) && typeName.equals(typeKey.typeName);
+        H2TypeKey other = (H2TypeKey)o;
+
+        return F.eq(typeName, other.typeName) && F.eq(cacheName, other.cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = cacheName.hashCode();
+
         res = 31 * res + typeName.hashCode();
+
         return res;
     }
 }
