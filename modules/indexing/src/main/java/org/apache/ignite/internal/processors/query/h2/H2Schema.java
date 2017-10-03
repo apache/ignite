@@ -117,5 +117,4 @@ public class H2Schema {
 
         typeToTbl.clear();
     }
-
 }
