@@ -46,6 +46,7 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -172,7 +173,7 @@ public class BinaryClassDescriptor {
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         // But if class represents the Externalizable, then we have to use BinaryMarshaller.
         if ((serializer == null || isGeometryClass(cls)) && !AffinityKey.class.isAssignableFrom(cls)) {
-            useCustomSerialization = Externalizable.class.isAssignableFrom(cls);
+            useCustomSerialization = Externalizable.class.isAssignableFrom(cls) && !GridCacheSetHeaderKey.class.isAssignableFrom(cls);
             useOptMarshaller = !useCustomSerialization || !ctx.isExternalizableBinary();
         }
         else {
