@@ -813,13 +813,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * Creates and fills cache with data.
      *
      * @param ig Ignite instance.
+     * @param mode Cache Atomicity Mode.
      */
-    private void createCache2(Ignite ig) {
+    private void createCache2(Ignite ig, CacheAtomicityMode mode) {
         if (log.isInfoEnabled())
             log.info("Populating the cache...");
 
         final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cfg.setAtomicityMode(mode);
         final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
 
         try (Transaction tx = ig.transactions().txStart()) {
@@ -839,16 +840,35 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test if DELETE operation can be found after mixed cache operations including remove().
+     * Test if DELETE operation can be found for transactional cache after mixed cache operations including remove().
      *
      * @throws Exception if failed.
      */
     public void testRemoveOperationPresentedForDataEntry() throws Exception {
+        runRemoveOperationTest(CacheAtomicityMode.TRANSACTIONAL);
+    }
 
+    /**
+     * Test if DELETE operation can be found for atomic cache after mixed cache operations including remove().
+     *
+     * @throws Exception if failed.
+     */
+    public void testRemoveOperationPresentedForDataEntryForAtomic() throws Exception {
+        runRemoveOperationTest(CacheAtomicityMode.ATOMIC);
+    }
+
+
+    /**
+     * Test if DELETE operation can be found after mixed cache operations including remove().
+     *
+     * @throws Exception if failed.
+     * @param mode Cache Atomicity Mode.
+     */
+    private void runRemoveOperationTest(CacheAtomicityMode mode) throws Exception {
         final Ignite ignite = startGrid("node0");
 
         ignite.active(true);
-        createCache2(ignite);
+        createCache2(ignite, mode);
         ignite.active(false);
 
         final String subfolderName = genDbSubfolderName(ignite, 0);
@@ -877,6 +897,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                         builder.append(entry1.op()).append(" for ").append(entry1.unwrappedKey());
                         final GridCacheVersion ver = entry.nearXidVersion();
+
                         builder.append(", ");
 
                         if (ver != null)
