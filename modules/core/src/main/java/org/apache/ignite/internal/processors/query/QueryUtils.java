@@ -1214,10 +1214,6 @@ public class QueryUtils {
         if (cfg.isReadThrough())
             throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.readThrough " +
                 "is enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        if (cfg.getInterceptor() != null)
-            throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.interceptor " +
-                "is set.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

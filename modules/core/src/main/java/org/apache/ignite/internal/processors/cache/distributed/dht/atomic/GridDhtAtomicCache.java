@@ -1851,8 +1851,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = expiryPolicy(req.expiry());
 
-        GridCacheReturn retVal = null;
-
         DhtAtomicUpdateResult updRes;
 
         if (req.size() > 1 &&                    // Several keys ...
@@ -1873,18 +1871,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 expiry,
                 sndPrevVal);
-
-            dhtFut = updRes.dhtFuture();
-
-            if (req.operation() == TRANSFORM)
-                retVal = updRes.returnValue();
-
-            if (!F.isEmpty(res.failedKeys())) {
-                if (retVal == null)
-                    retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, false);
-                else
-                    retVal.success(false);
-            }
         }
         else {
             updRes = updateSingle(node,
@@ -1898,14 +1884,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 expiry,
                 sndPrevVal);
-
-            retVal = updRes.returnValue();
-
-            if (!F.isEmpty(res.failedKeys()))
-                retVal.success(false);
-
-            dhtFut = updRes.dhtFuture();
         }
+
+        dhtFut = updRes.dhtFuture();
+
+        GridCacheReturn retVal = updRes.returnValue();
 
         if (retVal == null)
             retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, true);
@@ -2283,6 +2266,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filtered.add(entry);
             }
             catch (IgniteCheckedException e) {
+                if (invokeRes == null)
+                    invokeRes = new GridCacheReturn(node.isLocal(), false);
+                else
+                    invokeRes.success(false);
+
                 res.addFailedKey(entry.key(), e);
             }
         }
@@ -2569,6 +2557,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             }
             catch (IgniteCheckedException e) {
+                if (retVal == null)
+                    retVal = new GridCacheReturn(ctx, nearNode.isLocal(), req.keepBinary(), null, false);
+                else
+                    retVal.success(false);
+
                 res.addFailedKey(k, e);
             }
         }
