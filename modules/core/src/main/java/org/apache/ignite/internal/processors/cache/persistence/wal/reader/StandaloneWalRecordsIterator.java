@@ -335,12 +335,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (dataEntry instanceof LazyDataEntry) {
             final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),
                 lazyDataEntry.getKeyBytes());
-            val = processor.toCacheObject(fakeCacheObjCtx,
-                lazyDataEntry.getValType(),
-                lazyDataEntry.getValBytes());
+
+            final byte type = lazyDataEntry.getValType();
+
+            val = type == 0 ? null :
+                processor.toCacheObject(fakeCacheObjCtx,
+                    type,
+                    lazyDataEntry.getValBytes());
         }
         else {
             key = dataEntry.key();

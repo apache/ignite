@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -74,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -806,6 +809,94 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, null);
     }
 
+    /**
+     * Creates and fills cache with data.
+     *
+     * @param ig Ignite instance.
+     */
+    private void createCache2(Ignite ig) {
+        if (log.isInfoEnabled())
+            log.info("Populating the cache...");
+
+        final CacheConfiguration<Integer, Organization> cfg = new CacheConfiguration<>("Org" + "11");
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        final IgniteCache<Integer, Organization> cache = ig.getOrCreateCache(cfg).withKeepBinary();
+
+        try (Transaction tx = ig.transactions().txStart()) {
+            for (int i = 0; i < 10; i++) {
+
+                cache.put(i, new Organization(i, "Organization-" + i));
+
+                if (i % 2 == 0)
+                    cache.put(i, new Organization(i, "Organization-updated-" + i));
+
+                if (i % 5 == 0)
+                    cache.remove(i);
+            }
+            tx.commit();
+        }
+
+    }
+
+    /**
+     * Test if DELETE operation can be found after mixed cache operations including remove().
+     *
+     * @throws Exception if failed.
+     */
+    public void testRemoveOperationPresentedForDataEntry() throws Exception {
+
+        final Ignite ignite = startGrid("node0");
+
+        ignite.active(true);
+        createCache2(ignite);
+        ignite.active(false);
+
+        final String subfolderName = genDbSubfolderName(ignite, 0);
+
+        stopGrid("node0");
+
+        final String workDir = U.defaultWorkDirectory();
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+
+        final StringBuilder builder = new StringBuilder();
+        final Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
+
+        scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, new Consumer<DataRecord>() {
+            @Override public void accept(DataRecord dataRecord) {
+                final List<DataEntry> entries = dataRecord.writeEntries();
+
+                builder.append("{");
+                for (DataEntry entry : entries) {
+                    final GridCacheOperation op = entry.op();
+                    final Integer cnt = operationsFound.get(op);
+
+                    operationsFound.put(op, cnt == null ? 1 : (cnt + 1));
+
+                    if (entry instanceof UnwrapDataEntry) {
+                        final UnwrapDataEntry entry1 = (UnwrapDataEntry)entry;
+
+                        builder.append(entry1.op()).append(" for ").append(entry1.unwrappedKey());
+                        final GridCacheVersion ver = entry.nearXidVersion();
+                        builder.append(", ");
+
+                        if (ver != null)
+                            builder.append("tx=").append(ver).append(", ");
+                    }
+                }
+
+                builder.append("}\n");
+            }
+        });
+
+        final Integer deletesFound = operationsFound.get(DELETE);
+
+        if (log.isInfoEnabled())
+            log.info(builder.toString());
+
+        assertTrue("Delete operations should be found in log: " + operationsFound,
+            deletesFound != null && deletesFound > 0);
+    }
+
     @NotNull private IgniteWalIteratorFactory createWalIteratorFactory(String subfolderName,
         String workDir) throws IgniteCheckedException {
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
@@ -1087,6 +1178,31 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return "TestStringContainerToBePrinted{" +
                 "data='" + data + '\'' +
+                '}';
+        }
+    }
+
+    /** Test class for storing in ignite */
+    private static class Organization {
+        /** Key. */
+        private final int key;
+        /** Name. */
+        private final String name;
+
+        /**
+         * @param key Key.
+         * @param name Name.
+         */
+        public Organization(int key, String name) {
+            this.key = key;
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Organization{" +
+                "key=" + key +
+                ", name='" + name + '\'' +
                 '}';
         }
     }
