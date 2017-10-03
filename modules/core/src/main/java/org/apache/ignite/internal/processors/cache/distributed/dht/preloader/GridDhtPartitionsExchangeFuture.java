@@ -1102,8 +1102,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             if (discoEvt.type() == EVT_NODE_LEFT ||
-                discoEvt.type() == EVT_NODE_FAILED ||
-                discoEvt.type() == EVT_NODE_JOINED)
+                discoEvt.type() == EVT_NODE_FAILED)
                 detectLostPartitions();
 
             Map<Integer, Boolean> m = null;
@@ -1440,9 +1439,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
                 }
             }
-
-            if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED)
-                detectLostPartitions();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (!cacheCtx.isLocal())
