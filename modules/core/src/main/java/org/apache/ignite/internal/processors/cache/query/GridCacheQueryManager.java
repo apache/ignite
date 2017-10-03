@@ -2355,6 +2355,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Cache metadata with not null field.
      */
     private static class CacheSqlMetadataV2 extends CacheSqlMetadata {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Not null fields. */
         private Map<String, Set<String>> notNullFields;
         /**
          * Required by {@link Externalizable}.
