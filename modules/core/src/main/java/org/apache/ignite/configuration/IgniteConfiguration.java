@@ -510,7 +510,7 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        memCfg = cfg.getMemoryConfiguration();
+        memCfg = cfg.getDataStorageConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
@@ -2157,34 +2157,43 @@ public class IgniteConfiguration {
      *
      * @return Memory configuration.
      */
-    public DataStorageConfiguration getMemoryConfiguration() {
+    public DataStorageConfiguration getDataStorageConfiguration() {
         return memCfg;
     }
+    // TODO IGNITE-6030 deprecated memory configuration
 
     /**
-     * Sets page memory configuration.
+     * Sets durable memory configuration.
      *
-     * @param memCfg Memory configuration.
+     * @param dsCfg Data storage configuration.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setMemoryConfiguration(DataStorageConfiguration memCfg) {
-        this.memCfg = memCfg;
+    public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
+        this.memCfg = dsCfg;
 
         return this;
     }
+    // TODO IGNITE-6030 deprecated memory configuration
 
     /**
      * Gets persistence configuration used by Apache Ignite Persistent Store.
      *
      * @return Persistence configuration.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public DataStorageConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
     /**
      * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     *
+     * @deprecated Part of old API. Use {@link DataRegionConfiguration#isPersistenceEnabled()} to enable persistence
+     * in data region.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
@@ -2194,7 +2203,10 @@ public class IgniteConfiguration {
      *
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public IgniteConfiguration setPersistentStoreConfiguration(DataStorageConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 

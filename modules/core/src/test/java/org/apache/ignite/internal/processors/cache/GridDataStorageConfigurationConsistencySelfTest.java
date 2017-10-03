@@ -48,7 +48,7 @@ public class GridDataStorageConfigurationConsistencySelfTest extends GridCommonA
         // Nodes will have different page size.
         memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE * (1 + getTestIgniteInstanceIndex(gridName)));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

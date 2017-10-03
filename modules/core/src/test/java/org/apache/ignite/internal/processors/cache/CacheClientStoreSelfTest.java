@@ -75,7 +75,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
         cfg.setClientMode(client);
 
         if (client)
-            cfg.setMemoryConfiguration(new DataStorageConfiguration());
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

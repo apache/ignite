@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -59,7 +58,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         memCfg.setPageSize(1024);
         memCfg.setDefaultDataRegionSize(10 * 1024 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 

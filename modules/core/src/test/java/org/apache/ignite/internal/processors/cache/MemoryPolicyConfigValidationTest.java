@@ -108,7 +108,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
         memCfg.setDataRegions(plcs);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

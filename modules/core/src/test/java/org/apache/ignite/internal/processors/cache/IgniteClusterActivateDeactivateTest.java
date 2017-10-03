@@ -119,7 +119,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         memCfg.setPageSize(1024);
         memCfg.setDefaultDataRegionSize(10 * 1024 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (persistenceEnabled()) {
             DataStorageConfiguration pCfg = new DataStorageConfiguration();

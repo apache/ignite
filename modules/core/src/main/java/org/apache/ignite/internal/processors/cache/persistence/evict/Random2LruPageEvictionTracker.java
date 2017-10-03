@@ -60,7 +60,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     ) {
         super(pageMem, plcCfg, sharedCtx);
 
-        DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
         assert plcCfg.getMaxSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 

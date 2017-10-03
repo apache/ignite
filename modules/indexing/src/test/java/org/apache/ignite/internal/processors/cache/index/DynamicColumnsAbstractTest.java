@@ -268,7 +268,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                     .setInitialSize(128 * 1024 * 1024L)
             );
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return optimize(cfg);
     }

@@ -59,7 +59,6 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
@@ -700,7 +699,7 @@ public class PlatformConfigurationUtils {
         }
 
         if (in.readBoolean())
-            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
+            cfg.setDataStorageConfiguration(readMemoryConfiguration(in));
 
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
@@ -1181,7 +1180,7 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
-        writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
+        writeMemoryConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 

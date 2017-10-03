@@ -71,7 +71,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         memCfg.setDefaultDataRegionName("dfltPlc");
         memCfg.setDataRegions(plc);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg0 = ccfg == null ? new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL) : ccfg;

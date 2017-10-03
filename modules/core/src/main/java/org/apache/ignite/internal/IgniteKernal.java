@@ -1603,7 +1603,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         // Save database configuration.
-        add(ATTR_MEMORY_CONFIG, cfg.getMemoryConfiguration());
+        add(ATTR_MEMORY_CONFIG, cfg.getDataStorageConfiguration());
 
         // Save transactions configuration.
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
@@ -2507,7 +2507,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      */
     private void ackMemoryConfiguration() {
-        DataStorageConfiguration memCfg = cfg.getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
         if (memCfg == null)
             return;
@@ -2537,8 +2537,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (CU.isSystemCache(cacheName))
                     memPlcName = "sysMemPlc";
-                else if (memPlcName == null && cfg.getMemoryConfiguration() != null)
-                    memPlcName = cfg.getMemoryConfiguration().getDefaultDataRegionName();
+                else if (memPlcName == null && cfg.getDataStorageConfiguration() != null)
+                    memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());

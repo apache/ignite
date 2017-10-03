@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -91,7 +90,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         memCfg.setDataRegions(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 

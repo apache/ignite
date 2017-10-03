@@ -153,8 +153,8 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
         txCfg = new VisorTransactionConfiguration(c.getTransactionConfiguration());
 
-        if (c.getMemoryConfiguration() != null)
-            memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
+        if (c.getDataStorageConfiguration() != null)
+            memCfg = new VisorMemoryConfiguration(c.getDataStorageConfiguration());
 
         if (c.getPersistentStoreConfiguration() != null)
             psCfg = new VisorPersistentStoreConfiguration(c.getPersistentStoreConfiguration());

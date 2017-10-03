@@ -46,7 +46,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -136,7 +135,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         dbCfg.setDataRegions(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         final DataStorageConfiguration pCfg = new DataStorageConfiguration();
         pCfg.setWalHistorySize(1);

@@ -106,7 +106,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             c.setClientMode(true);
 
             // Not allowed to have local cache on client without memory config
-            c.setMemoryConfiguration(new DataStorageConfiguration());
+            c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         return c;

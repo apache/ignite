@@ -1524,7 +1524,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if(ctx.config().isClientMode())
             return 0;
 
-        DataStorageConfiguration memCfg = ctx.config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
         assert memCfg != null;
 

@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -71,7 +70,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
 
-        cfg.setMemoryConfiguration(createDbConfig());
+        cfg.setDataStorageConfiguration(createDbConfig());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
 

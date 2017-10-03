@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -157,12 +156,12 @@ public class IgniteNode implements BenchmarkServer {
         c.setCommunicationSpi(commSpi);
 
         if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
-            DataStorageConfiguration memCfg = c.getMemoryConfiguration();
+            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
 
             if (memCfg == null) {
                 memCfg = new DataStorageConfiguration();
 
-                c.setMemoryConfiguration(memCfg);
+                c.setDataStorageConfiguration(memCfg);
             }
 
             memCfg.setPageSize(args.getPageSize());

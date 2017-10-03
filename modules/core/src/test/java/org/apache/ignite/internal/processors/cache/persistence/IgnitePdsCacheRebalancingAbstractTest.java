@@ -39,7 +39,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -128,7 +127,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         memCfg.setDataRegions(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setPersistentStoreConfiguration(
             new DataStorageConfiguration()

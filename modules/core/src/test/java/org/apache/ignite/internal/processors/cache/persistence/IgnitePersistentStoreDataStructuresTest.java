@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -61,7 +60,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
         dbCfg.setDataRegions(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
 

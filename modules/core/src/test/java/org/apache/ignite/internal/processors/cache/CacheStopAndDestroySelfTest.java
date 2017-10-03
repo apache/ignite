@@ -97,7 +97,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
             iCfg.setClientMode(true);
 
-            iCfg.setMemoryConfiguration(memCfg);
+            iCfg.setDataStorageConfiguration(memCfg);
         }
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);

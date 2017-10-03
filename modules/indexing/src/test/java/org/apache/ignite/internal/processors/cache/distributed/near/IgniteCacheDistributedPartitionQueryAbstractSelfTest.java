@@ -138,7 +138,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionSize(20 * 1024 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);

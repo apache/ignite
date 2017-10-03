@@ -54,7 +54,7 @@ public class IgniteCacheLargeValueExpireTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
         dbCfg.setPageSize(1024);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         return cfg;
     }

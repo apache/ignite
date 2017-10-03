@@ -186,7 +186,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         cfg1.setDefaultDataRegionSize(150 * 1024 * 1024L);
 
-        cfg.setMemoryConfiguration(cfg1);
+        cfg.setDataStorageConfiguration(cfg1);
 
         cfg.setClientMode(client);
 

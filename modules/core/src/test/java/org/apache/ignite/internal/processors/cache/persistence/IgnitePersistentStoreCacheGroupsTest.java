@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -89,7 +88,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         memCfg.setPageSize(1024);
         memCfg.setDefaultDataRegionSize(100 * 1024 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
 

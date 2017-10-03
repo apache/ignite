@@ -50,7 +50,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         dbCfg.setDefaultDataRegionName("dfltPlc");
         dbCfg.setDataRegions(plc);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         if (gridName.equals("client"))
             cfg.setClientMode(true);

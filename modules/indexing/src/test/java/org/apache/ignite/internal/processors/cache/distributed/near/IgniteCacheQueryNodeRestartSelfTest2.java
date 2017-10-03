@@ -92,7 +92,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionSize(50 * 1024 * 1024);
 
-        c.setMemoryConfiguration(memCfg);
+        c.setDataStorageConfiguration(memCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

@@ -66,7 +66,6 @@ import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -419,7 +418,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (res == 0L) {
             res = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
 
-            DataStorageConfiguration memCfg = cfg.getMemoryConfiguration();
+            DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
             assert memCfg != null;
 

@@ -150,7 +150,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
                     .setInitialSize(128 * 1024 * 1024L)
         );
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return optimize(cfg);
     }

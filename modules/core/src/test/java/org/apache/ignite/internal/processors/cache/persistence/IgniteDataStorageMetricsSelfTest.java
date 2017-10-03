@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -86,7 +85,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         memCfg.setDataRegions(memPlc);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setPersistentStoreConfiguration(new DataStorageConfiguration()
             .setMetricsEnabled(true).setWalMode(WALMode.LOG_ONLY));

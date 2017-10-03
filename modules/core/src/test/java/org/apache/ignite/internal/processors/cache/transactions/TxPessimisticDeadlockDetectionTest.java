@@ -99,7 +99,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
         memCfg.setDefaultDataRegionName("dfltPlc");
         memCfg.setDataRegions(plc);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setClientMode(client);
 

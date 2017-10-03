@@ -84,7 +84,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
         dbCfg.setPageSize(16 * 1024);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         return cfg;
     }

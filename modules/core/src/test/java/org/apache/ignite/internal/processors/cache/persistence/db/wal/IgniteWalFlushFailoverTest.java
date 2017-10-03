@@ -26,7 +26,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
@@ -91,7 +90,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 .setDataRegions(memPlcCfg)
                 .setDefaultDataRegionName(memPlcCfg.getName());
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         DataStorageConfiguration storeCfg = new DataStorageConfiguration()
                 .setFileIOFactory(new FailingFileIOFactory())

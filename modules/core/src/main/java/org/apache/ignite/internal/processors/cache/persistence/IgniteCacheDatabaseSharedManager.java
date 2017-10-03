@@ -101,10 +101,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
+        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
 
@@ -1001,10 +1001,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
+        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
 

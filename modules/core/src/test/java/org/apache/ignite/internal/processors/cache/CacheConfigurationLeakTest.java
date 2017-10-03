@@ -53,7 +53,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         memCfg.setDefaultDataRegionName("dfltPlc");
         memCfg.setDataRegions(plc);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

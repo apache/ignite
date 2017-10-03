@@ -77,7 +77,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         configure(dbCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

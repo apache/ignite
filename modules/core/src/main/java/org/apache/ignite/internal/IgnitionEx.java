@@ -2183,12 +2183,12 @@ public class IgnitionEx {
                 myCfg.setExecutorConfiguration(clone);
             }
 
-            if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
+            if (!myCfg.isClientMode() && myCfg.getDataStorageConfiguration() == null) {
                 DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
                 memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-                myCfg.setMemoryConfiguration(memCfg);
+                myCfg.setDataStorageConfiguration(memCfg);
             }
 
             return myCfg;

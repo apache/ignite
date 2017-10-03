@@ -350,7 +350,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code true} if cache is starting on client node and this node is affinity node for the cache.
      */
     private boolean storesLocallyOnClient(IgniteConfiguration c, CacheConfiguration cc) {
-        if (c.isClientMode() && c.getMemoryConfiguration() == null) {
+        if (c.isClientMode() && c.getDataStorageConfiguration() == null) {
             if (cc.getCacheMode() == LOCAL)
                 return true;
 
@@ -1115,8 +1115,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String memPlcName = cfg.getDataRegionName();
 
         if (memPlcName == null
-            && ctx.config().getMemoryConfiguration() != null)
-            memPlcName = ctx.config().getMemoryConfiguration().getDefaultDataRegionName();
+            && ctx.config().getDataStorageConfiguration() != null)
+            memPlcName = ctx.config().getDataStorageConfiguration().getDefaultDataRegionName();
 
 
         if (log.isInfoEnabled()) {
@@ -3065,7 +3065,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DataStorageConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
 
         if (memCfg != null) {
-            DataStorageConfiguration locMemCfg = ctx.config().getMemoryConfiguration();
+            DataStorageConfiguration locMemCfg = ctx.config().getDataStorageConfiguration();
 
             if (memCfg.getPageSize() != locMemCfg.getPageSize()) {
                 throw new IgniteCheckedException("Memory configuration mismatch (fix configuration or set -D" +

@@ -100,7 +100,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         memCfg.setPageSize(1024);
         memCfg.setDefaultDataRegionSize(50 * 1024 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setClientMode(client);
 

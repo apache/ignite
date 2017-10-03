@@ -47,7 +47,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (memCfg != null)
-            cfg.setMemoryConfiguration(memCfg);
+            cfg.setDataStorageConfiguration(memCfg);
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);

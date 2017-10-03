@@ -93,7 +93,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(16 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
