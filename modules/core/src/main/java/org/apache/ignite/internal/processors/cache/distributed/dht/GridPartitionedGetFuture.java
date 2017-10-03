@@ -675,17 +675,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         return Collections.emptyMap();
     }
 
-    /**
-     * @param curTopVer Current topology version.
-     * @return Future to wait for before remapping.
-     */
-    private IgniteInternalFuture<AffinityTopologyVersion> waitRemapFuture(AffinityTopologyVersion curTopVer) {
-        AffinityTopologyVersion updTopVer =
-            new AffinityTopologyVersion(Math.max(curTopVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
-
-        return cctx.affinity().affinityReadyFuture(updTopVer);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
