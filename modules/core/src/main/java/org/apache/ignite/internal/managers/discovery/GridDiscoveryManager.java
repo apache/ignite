@@ -555,7 +555,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (locNode instanceof TcpDiscoveryNode) {
                     final TcpDiscoveryNode node = (TcpDiscoveryNode)locNode;
 
-                    node.setConsistentId(consistentId);
+                    if (consistentId != null)
+                        node.setConsistentId(consistentId);
                 }
             }
 
