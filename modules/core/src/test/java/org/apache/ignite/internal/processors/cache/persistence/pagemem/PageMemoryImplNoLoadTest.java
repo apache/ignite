@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -88,7 +88,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            new MemoryMetricsImpl(new DataRegionConfiguration()),
             false
         );
     }

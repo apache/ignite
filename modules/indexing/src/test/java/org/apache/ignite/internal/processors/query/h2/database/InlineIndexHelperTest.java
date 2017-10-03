@@ -25,7 +25,7 @@ import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.Charsets;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -181,7 +181,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private int putAndCompare(String v1, String v2, int maxSize) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
@@ -279,7 +279,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     public void testStringTruncate() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
@@ -330,7 +330,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     public void testBytes() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),
@@ -449,7 +449,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** */
     private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration().setInitialSize(1024 * MB)
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration().setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(log(),

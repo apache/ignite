@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -1795,7 +1795,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Page memory.
      */
     protected PageMemory createPageMemory() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
             .setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 

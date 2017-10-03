@@ -31,10 +31,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -76,14 +76,14 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        dbCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
+        dbCfg.setDataRegions(new DataRegionConfiguration()
             .setMaxSize(400 * 1024 * 1024)
             .setName("dfltMemPlc")
             .setMetricsEnabled(true));
 
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
@@ -97,7 +97,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg1);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalMode(WALMode.BACKGROUND)
                 .setCheckpointingFrequency(20_000)
                 .setCheckpointingPageBufferSize(200 * 1000 * 1000)

@@ -31,8 +31,8 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,7 +64,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         cfg.setClientMode(clientMode);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 

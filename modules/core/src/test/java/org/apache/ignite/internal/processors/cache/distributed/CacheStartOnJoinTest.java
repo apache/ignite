@@ -32,8 +32,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -96,9 +96,9 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(testSpi);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(50 * 1024 * 1024);
+        memCfg.setDefaultDataRegionSize(50 * 1024 * 1024);
 
         cfg.setMemoryConfiguration(memCfg);
 

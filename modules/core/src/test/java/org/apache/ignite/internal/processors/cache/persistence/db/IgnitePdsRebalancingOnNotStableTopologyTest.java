@@ -28,10 +28,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -168,20 +168,20 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
         );
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(memCfg);
 

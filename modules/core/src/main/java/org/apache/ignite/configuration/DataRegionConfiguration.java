@@ -17,73 +17,75 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
 /**
- * This class allows defining custom memory policies' configurations with various parameters for Apache Ignite
- * page memory (see {@link MemoryConfiguration}. For each configured memory policy Apache Ignite instantiates
+ * This class allows defining custom data regions' configurations with various parameters for Apache Ignite
+ * page memory (see {@link DataStorageConfiguration}. For each configured data region Apache Ignite instantiates
  * respective memory regions with different parameters like maximum size, eviction policy, swapping options, etc.
- * An Apache Ignite cache can be mapped to a particular policy using
- * {@link CacheConfiguration#setMemoryPolicyName(String)} method.
- * <p>Sample configuration below shows how to configure several memory policies:</p>
+ * An Apache Ignite cache can be mapped to a particular region using
+ * {@link CacheConfiguration#setDataRegionName(String)} method.
+ * <p>Sample configuration below shows how to configure several data regions:</p>
  * <pre>
  *     {@code
  *     <property name="memoryConfiguration">
- *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="defaultMemoryPolicyName" value="Default_Region"/>
+ *         <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+ *             <property name="defaultRegionConfiguration">
+ *                 <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+ *                     <property name="name" value="Default_Region"/>
+ *                     <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                     <property name="maxSize" value="#{5 * 1024 * 102 * 1024}"/>
+ *                 </bean>
+ *             </property>
+ *
  *             <property name="pageSize" value="4096"/>
  *
- *             <property name="memoryPolicies">
+ *             <property name="dataRegions">
  *                 <list>
- *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
- *                          <property name="name" value="Default_Region"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
- *                      </bean>
- *
- *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                      <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
  *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
- *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                      <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
  *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
  *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
- *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
+ *                          <property name="swapFilePath" value="dataRegionExampleSwap"/>
  *                      </bean>
  *                  </list>
  *              </property>
  *     }
  * </pre>
  */
-public final class MemoryPolicyConfiguration implements Serializable {
+public final class DataRegionConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Default metrics enabled flag. */
     public static final boolean DFLT_METRICS_ENABLED = false;
 
-    /** Default amount of sub intervals to calculate {@link MemoryMetrics#getAllocationRate()} metric. */
+    /** Default amount of sub intervals to calculate {@link DataRegionMetrics#getAllocationRate()} metric. */
     public static final int DFLT_SUB_INTERVALS = 5;
 
-    /** Default length of interval over which {@link MemoryMetrics#getAllocationRate()} metric is calculated. */
+    /** Default length of interval over which {@link DataRegionMetrics#getAllocationRate()} metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
-    /** Memory policy name. */
-    private String name = DFLT_MEM_PLC_DEFAULT_NAME;
+    /** Data region name. */
+    private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
-    /** Memory policy start size. */
+    /** Data region start size. */
     private long initialSize;
 
-    /** Memory policy maximum size. */
-    private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
+    /** Data region maximum size. */
+    private long maxSize = DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 
-    /** An optional path to a memory mapped file for this memory policy. */
+    /** An optional path to a memory mapped file for this data region. */
     private String swapFilePath;
 
     /** An algorithm for memory pages eviction. */
@@ -91,7 +93,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
-     * memory will start the eviction only after 90% memory region (defined by this policy) is occupied.
+     * memory will start the eviction only after 90% data region is occupied.
      */
     private double evictionThreshold = 0.9;
 
@@ -99,23 +101,23 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private int emptyPagesPoolSize = 100;
 
     /**
-     * Flag to enable the memory metrics collection for this memory policy.
+     * Flag to enable the memory metrics collection for this data region.
      */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
-     * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * {@link DataRegionMetrics#getAllocationRate()} and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
-     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * {@link DataRegionMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
      * calculation overhead. */
     private int subIntervals = DFLT_SUB_INTERVALS;
 
     /**
-     * Time interval (in milliseconds) for {@link MemoryMetrics#getAllocationRate()}
-     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * Time interval (in milliseconds) for {@link DataRegionMetrics#getAllocationRate()}
+     * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
      * <p>
-     * For instance, after setting the interval to 60_000 milliseconds, subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * For instance, after setting the interval to 60_000 milliseconds, subsequent calls to {@link DataRegionMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      */
     private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
@@ -126,30 +128,30 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private boolean persistenceEnabled = true;
 
     /**
-     * Gets memory policy name.
+     * Gets data region name.
      *
-     * @return Memory policy name.
+     * @return Data region name.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Sets memory policy name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
+     * Sets data region name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
      *
-     * If not specified, {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} value is used.
+     * If not specified, {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} value is used.
      *
-     * @param name Memory policy name.
+     * @param name Data region name.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setName(String name) {
+    public DataRegionConfiguration setName(String name) {
         this.name = name;
 
         return this;
     }
 
     /**
-     * Maximum memory region size defined by this memory policy. If the whole data can not fit into the memory region
+     * Maximum memory region size defined by this data region. If the whole data can not fit into the memory region
      * an out of memory exception will be thrown.
      *
      * @return Size in bytes.
@@ -159,47 +161,47 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Sets maximum memory region size defined by this memory policy. The total size should not be less than 10 MB
+     * Sets maximum memory region size defined by this data region. The total size should not be less than 10 MB
      * due to the internal data structures overhead.
      *
-     * @param maxSize Maximum memory policy size in bytes.
+     * @param maxSize Maximum data region size in bytes.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setMaxSize(long maxSize) {
+    public DataRegionConfiguration setMaxSize(long maxSize) {
         this.maxSize = maxSize;
 
         return this;
     }
 
     /**
-     * Gets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * Gets initial memory region size defined by this data region. When the used memory size exceeds this value,
      * new chunks of memory will be allocated.
      *
-     * @return Memory policy start size.
+     * @return Data region start size.
      */
     public long getInitialSize() {
         return initialSize;
     }
 
     /**
-     * Sets initial memory region size defined by this memory policy. When the used memory size exceeds this value,
+     * Sets initial memory region size defined by this data region. When the used memory size exceeds this value,
      * new chunks of memory will be allocated.
      *
-     * @param initialSize Memory policy initial size.
+     * @param initialSize Data region initial size.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setInitialSize(long initialSize) {
+    public DataRegionConfiguration setInitialSize(long initialSize) {
         this.initialSize = initialSize;
 
         return this;
     }
 
     /**
-     * A path to the memory-mapped files the memory region defined by this memory policy will be mapped to. Having
+     * A path to the memory-mapped files the memory region defined by this data region will be mapped to. Having
      * the path set, allows relying on swapping capabilities of an underlying operating system for the memory region.
      *
      * @return A path to the memory-mapped files or {@code null} if this feature is not used for the memory region
-     *         defined by this memory policy.
+     *         defined by this data region.
      */
     public String getSwapFilePath() {
         return swapFilePath;
@@ -211,7 +213,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * @param swapFilePath A Path to the memory mapped file.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setSwapFilePath(String swapFilePath) {
+    public DataRegionConfiguration setSwapFilePath(String swapFilePath) {
         this.swapFilePath = swapFilePath;
 
         return this;
@@ -219,7 +221,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets memory pages eviction mode. If {@link DataPageEvictionMode#DISABLED} is used (default) then an out of
-     * memory exception will be thrown if the memory region usage, defined by this memory policy, goes beyond its
+     * memory exception will be thrown if the memory region usage, defined by this data region, goes beyond its
      * capacity which is {@link #getMaxSize()}.
      *
      * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
@@ -234,7 +236,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * @param evictionMode Eviction mode.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
+    public DataRegionConfiguration setPageEvictionMode(DataPageEvictionMode evictionMode) {
         pageEvictionMode = evictionMode;
 
         return this;
@@ -242,7 +244,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets a threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the
-     * page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.
+     * page memory will start the eviction only after 90% of the data region is occupied.
      *
      * @return Memory pages eviction threshold.
      */
@@ -256,14 +258,14 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * @param evictionThreshold Eviction threshold.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setEvictionThreshold(double evictionThreshold) {
+    public DataRegionConfiguration setEvictionThreshold(double evictionThreshold) {
         this.evictionThreshold = evictionThreshold;
 
         return this;
     }
 
     /**
-     * Specifies the minimal number of empty pages to be present in reuse lists for this memory policy.
+     * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
      * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
@@ -277,7 +279,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Specifies the minimal number of empty pages to be present in reuse lists for this memory policy.
+     * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
      * Increase this parameter if cache can contain very big entries (total size of pages in this pool should be enough
@@ -287,7 +289,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * @param emptyPagesPoolSize Empty pages pool size.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
+    public DataRegionConfiguration setEmptyPagesPoolSize(int emptyPagesPoolSize) {
         this.emptyPagesPoolSize = emptyPagesPoolSize;
 
         return this;
@@ -295,7 +297,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @return Metrics enabled flag.
      */
@@ -305,19 +307,19 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setMetricsEnabled(boolean metricsEnabled) {
+    public DataRegionConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 
         return this;
     }
 
     /**
-     * Gets whether Ignite Native Persistence is enabled for this memory policy.
+     * Gets whether Ignite Native Persistence is enabled for this data region.
      *
      * @return Persistence enabled flag.
      */
@@ -335,11 +337,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Gets time interval for {@link MemoryMetrics#getAllocationRate()}
-     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * Gets time interval for {@link DataRegionMetrics#getAllocationRate()}
+     * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
      * <p>
      * For instance, after setting the interval to 60_000 milliseconds,
-     * subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * subsequent calls to {@link DataRegionMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @return Time interval over which allocation rate is calculated.
@@ -349,17 +351,17 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Sets time interval for {@link MemoryMetrics#getAllocationRate()}
-     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * Sets time interval for {@link DataRegionMetrics#getAllocationRate()}
+     * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
      * <p>
      * For instance, after setting the interval to 60 seconds,
-     * subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * subsequent calls to {@link DataRegionMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setRateTimeInterval(long rateTimeInterval) {
+    public DataRegionConfiguration setRateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
         return this;
@@ -367,11 +369,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets a number of sub-intervals the whole {@link #setRateTimeInterval(long)}
-     * will be split into to calculate {@link MemoryMetrics#getAllocationRate()}
-     * and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * will be split into to calculate {@link DataRegionMetrics#getAllocationRate()}
+     * and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
-     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * {@link DataRegionMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      *
      * @return number of sub intervals.
@@ -382,16 +384,16 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets a number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
-     * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * {@link DataRegionMetrics#getAllocationRate()} and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
-     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * {@link DataRegionMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      *
      * @param subIntervals A number of sub-intervals.
      * @return {@code this} for chaining.
      */
-    public MemoryPolicyConfiguration setSubIntervals(int subIntervals) {
+    public DataRegionConfiguration setSubIntervals(int subIntervals) {
         this.subIntervals = subIntervals;
 
         return this;

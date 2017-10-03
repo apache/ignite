@@ -49,10 +49,10 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
@@ -386,7 +386,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (storesLocallyOnClient(c, cc))
             throw new IgniteCheckedException("MemoryPolicy for client caches must be explicitly configured " +
-                "on client node startup. Use MemoryConfiguration to configure MemoryPolicy.");
+                "on client node startup. Use DataStorageConfiguration to configure MemoryPolicy.");
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
@@ -679,8 +679,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheType cacheType = cacheType(cacheName);
 
-            if (cacheType != CacheType.USER && cfg.getMemoryPolicyName() == null)
-                cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
+            if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
+                cfg.setDataRegionName(sharedCtx.database().systemMemoryPolicyName());
 
             if (!cacheType.userCache())
                 stopSeq.addLast(cacheName);
@@ -1112,11 +1112,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.onStarted();
 
-        String memPlcName = cfg.getMemoryPolicyName();
+        String memPlcName = cfg.getDataRegionName();
 
         if (memPlcName == null
             && ctx.config().getMemoryConfiguration() != null)
-            memPlcName = ctx.config().getMemoryConfiguration().getDefaultMemoryPolicyName();
+            memPlcName = ctx.config().getMemoryConfiguration().getDefaultDataRegionName();
 
 
         if (log.isInfoEnabled()) {
@@ -1841,7 +1841,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         CacheConfiguration cfg = new CacheConfiguration(desc.config());
 
-        String memPlcName = cfg.getMemoryPolicyName();
+        String memPlcName = cfg.getDataRegionName();
 
         MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
@@ -3062,10 +3062,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isClientMode() || locNode.isDaemon() || rmt.isClient() || rmt.isDaemon())
             return;
 
-        MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
+        DataStorageConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
 
         if (memCfg != null) {
-            MemoryConfiguration locMemCfg = ctx.config().getMemoryConfiguration();
+            DataStorageConfiguration locMemCfg = ctx.config().getMemoryConfiguration();
 
             if (memCfg.getPageSize() != locMemCfg.getPageSize()) {
                 throw new IgniteCheckedException("Memory configuration mismatch (fix configuration or set -D" +

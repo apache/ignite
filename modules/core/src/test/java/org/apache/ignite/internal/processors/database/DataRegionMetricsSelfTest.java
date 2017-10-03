@@ -17,8 +17,8 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -28,7 +28,7 @@ import static java.lang.Thread.sleep;
 /**
  *
  */
-public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
+public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private MemoryMetricsImpl memMetrics;
 
@@ -49,7 +49,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration();
 
         memMetrics = new MemoryMetricsImpl(plcCfg);
 
@@ -305,7 +305,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch startLatch;
 
         /** */
-        private final MemoryMetrics memMetrics;
+        private final DataRegionMetrics memMetrics;
 
         /** */
         private final int delay;
@@ -315,7 +315,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
          * @param memMetrics Mem metrics.
          * @param delay Delay.
          */
-        private AllocationRateWatcher(CountDownLatch startLatch, MemoryMetrics memMetrics, int delay) {
+        private AllocationRateWatcher(CountDownLatch startLatch, DataRegionMetrics memMetrics, int delay) {
             this.startLatch = startLatch;
             this.memMetrics = memMetrics;
             this.delay = delay;

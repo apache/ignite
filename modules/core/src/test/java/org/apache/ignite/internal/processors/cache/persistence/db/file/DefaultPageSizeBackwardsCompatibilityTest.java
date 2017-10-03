@@ -23,10 +23,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -58,18 +58,18 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(IP_FINDER);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         if (set2kPageSize)
             memCfg.setPageSize(2048);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setMaxSize(100 * 1000 * 1000);
 
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(memCfg);
 
@@ -82,7 +82,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setCheckpointingFrequency(3_000));
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6().setCheckpointingFrequency(3_000));
 
         cfg.setConsistentId(gridName);
 

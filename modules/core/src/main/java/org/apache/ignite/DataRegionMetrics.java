@@ -17,36 +17,36 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
  * This interface provides page memory related metrics of a specific Apache Ignite node. The overall page memory
- * architecture is covered in {@link MemoryConfiguration}.
+ * architecture is covered in {@link DataStorageConfiguration}.
  * <p>
- * Since there are can be several memory regions configured with {@link MemoryPolicyConfiguration} on an individual
+ * Since there are can be several memory regions configured with {@link DataRegionConfiguration} on an individual
  * Apache Ignite node, the metrics for every region will be collected and obtained separately.
  * <p>
  * There are two ways to get the metrics of an Apache Ignite node.
  * <ol>
  *     <li>
- *       First, a collection of the metrics can be obtained through {@link Ignite#memoryMetrics()} method. Note that
- *       the method returns memory metrics snapshots rather than just in time memory state.
+ *       First, a collection of the metrics can be obtained through {@link Ignite#dataRegionMetrics()} method. Note that
+ *       the method returns data region metrics snapshots rather than just in time memory state.
  *     </li>
  *     <li>
- *       Second, all {@link MemoryMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
- *       {@link MemoryMetricsMXBean} for more details.
+ *       Second, all {@link DataRegionMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
+ *       {@link DataRegionMetricsMXBean} for more details.
  *     </li>
  * </ol>
  * </p>
  * <p>
- * Memory metrics collection is not a free operation and might affect performance of an application. This is the reason
+ * Data region metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
- * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
- * {@link MemoryMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
+ * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
  */
-public interface MemoryMetrics {
+public interface DataRegionMetrics {
     /**
      * A name of a memory region the metrics are collected for.
      *

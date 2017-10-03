@@ -49,6 +49,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -74,8 +76,6 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -86,7 +86,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -2507,14 +2507,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      */
     private void ackMemoryConfiguration() {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cfg.getMemoryConfiguration();
 
         if (memCfg == null)
             return;
 
         U.log(log, "System cache's MemoryPolicy size is configured to " +
             (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
-            "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
+            "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
     /**
@@ -2533,12 +2533,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             for (CacheConfiguration c : cacheCfgs) {
                 String cacheName = U.maskName(c.getName());
 
-                String memPlcName = c.getMemoryPolicyName();
+                String memPlcName = c.getDataRegionName();
 
                 if (CU.isSystemCache(cacheName))
                     memPlcName = "sysMemPlc";
                 else if (memPlcName == null && cfg.getMemoryConfiguration() != null)
-                    memPlcName = cfg.getMemoryConfiguration().getDefaultMemoryPolicyName();
+                    memPlcName = cfg.getMemoryConfiguration().getDefaultDataRegionName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
@@ -3507,7 +3507,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         guard();
 
         try {
@@ -3519,7 +3519,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
         guard();
 
         try {
@@ -3531,7 +3531,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics dataStorageMetrics() {
         guard();
 
         try {

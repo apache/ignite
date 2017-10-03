@@ -27,10 +27,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -57,18 +57,18 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         long memSize = 200L * 1024L * 1024L;
 
-        memCfg.setMemoryPolicies(
-            new MemoryPolicyConfiguration()
+        memCfg.setDataRegions(
+            new DataRegionConfiguration()
                 .setInitialSize(memSize)
                 .setMaxSize(memSize)
                 .setName("dfltMemPlc")
         );
 
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(memCfg);
 
@@ -82,7 +82,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6());
 
         return cfg;
     }

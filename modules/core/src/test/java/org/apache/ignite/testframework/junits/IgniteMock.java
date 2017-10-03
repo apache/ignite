@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -45,8 +47,6 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -469,17 +469,17 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics dataStorageMetrics() {
         return null;
     }
 

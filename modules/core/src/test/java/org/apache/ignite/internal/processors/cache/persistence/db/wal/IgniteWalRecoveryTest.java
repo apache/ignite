@@ -47,10 +47,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -134,22 +134,22 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(4 * 1024);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
         pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 

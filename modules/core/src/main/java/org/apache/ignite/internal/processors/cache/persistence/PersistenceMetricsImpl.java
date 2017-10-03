@@ -18,12 +18,12 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
-import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
+import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 
 /**
  *
  */
-public class PersistenceMetricsImpl implements PersistenceMetricsMXBean {
+public class PersistenceMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private volatile HitRateMetrics walLoggingRate;
 

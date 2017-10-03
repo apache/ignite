@@ -28,10 +28,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,22 +46,22 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
         dbCfg.setPageSize(1024);
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 

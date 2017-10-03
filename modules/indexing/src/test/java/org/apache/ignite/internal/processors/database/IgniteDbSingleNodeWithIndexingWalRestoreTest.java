@@ -27,8 +27,8 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -111,7 +111,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         cfg.setCacheConfiguration(indexedCacheCfg);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6());
 
         cfg.setConsistentId(gridName);
 

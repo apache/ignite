@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PersistenceMetricsSnapshot implements PersistenceMetrics {
+public class PersistenceMetricsSnapshot implements DataStorageMetrics {
     /** */
     private float walLoggingRate;
 
@@ -62,7 +62,7 @@ public class PersistenceMetricsSnapshot implements PersistenceMetrics {
     /**
      * @param metrics Metrics.
      */
-    public PersistenceMetricsSnapshot(PersistenceMetrics metrics) {
+    public PersistenceMetricsSnapshot(DataStorageMetrics metrics) {
         walLoggingRate = metrics.getWalLoggingRate();
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();

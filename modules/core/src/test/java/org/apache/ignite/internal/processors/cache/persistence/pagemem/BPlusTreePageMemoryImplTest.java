@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -82,7 +82,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            new MemoryMetricsImpl(new DataRegionConfiguration()),
             false
         );
 

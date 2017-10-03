@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Configures Apache Ignite Persistent store.
  */
-public class PersistentStoreConfiguration implements Serializable {
+public class DataStorageConfiguration6 implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -182,7 +182,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param persistenceStorePath Persistence store path.
      */
-    public PersistentStoreConfiguration setPersistentStorePath(String persistenceStorePath) {
+    public DataStorageConfiguration6 setPersistentStorePath(String persistenceStorePath) {
         this.persistenceStorePath = persistenceStorePath;
 
         return this;
@@ -204,7 +204,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param checkpointingFreq checkpointing frequency in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointingFrequency(long checkpointingFreq) {
+    public DataStorageConfiguration6 setCheckpointingFrequency(long checkpointingFreq) {
         this.checkpointingFreq = checkpointingFreq;
 
         return this;
@@ -229,7 +229,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *      choose the buffer size automatically.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
+    public DataStorageConfiguration6 setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
         this.checkpointingPageBufSize = checkpointingPageBufSize;
 
         return this;
@@ -251,7 +251,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setCheckpointingThreads(int checkpointingThreads) {
+    public DataStorageConfiguration6 setCheckpointingThreads(int checkpointingThreads) {
         this.checkpointingThreads = checkpointingThreads;
 
         return this;
@@ -274,7 +274,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param lockWaitTime Lock wait time in milliseconds.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setLockWaitTime(long lockWaitTime) {
+    public DataStorageConfiguration6 setLockWaitTime(long lockWaitTime) {
         this.lockWaitTime = lockWaitTime;
 
         return this;
@@ -295,7 +295,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walHistSize Number of checkpoints to keep after a checkpoint is finished.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setWalHistorySize(int walHistSize) {
+    public DataStorageConfiguration6 setWalHistorySize(int walHistSize) {
         this.walHistSize = walHistSize;
 
         return this;
@@ -317,7 +317,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walSegments Number of WAL segments.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setWalSegments(int walSegments) {
+    public DataStorageConfiguration6 setWalSegments(int walSegments) {
         this.walSegments = walSegments;
 
         return this;
@@ -338,7 +338,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walSegmentSize WAL segment size. 64 MB is used by default.  Maximum value is 2Gb
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setWalSegmentSize(int walSegmentSize) {
+    public DataStorageConfiguration6 setWalSegmentSize(int walSegmentSize) {
         this.walSegmentSize = walSegmentSize;
 
         return this;
@@ -360,7 +360,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walStorePath WAL persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setWalStorePath(String walStorePath) {
+    public DataStorageConfiguration6 setWalStorePath(String walStorePath) {
         this.walStorePath = walStorePath;
 
         return this;
@@ -382,7 +382,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * @param walArchivePath WAL archive directory.
      * @return {@code this} for chaining.
      */
-    public PersistentStoreConfiguration setWalArchivePath(String walArchivePath) {
+    public DataStorageConfiguration6 setWalArchivePath(String walArchivePath) {
         this.walArchivePath = walArchivePath;
 
         return this;
@@ -403,7 +403,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param metricsEnabled Metrics enabled flag.
      */
-    public PersistentStoreConfiguration setMetricsEnabled(boolean metricsEnabled) {
+    public DataStorageConfiguration6 setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 
         return this;
@@ -421,7 +421,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param writeThrottlingEnabled Write throttling enabled flag.
      */
-    public PersistentStoreConfiguration setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
+    public DataStorageConfiguration6 setWriteThrottlingEnabled(boolean writeThrottlingEnabled) {
         this.writeThrottlingEnabled = writeThrottlingEnabled;
 
         return this;
@@ -443,7 +443,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param rateTimeInterval Time interval in milliseconds.
      */
-    public PersistentStoreConfiguration setRateTimeInterval(long rateTimeInterval) {
+    public DataStorageConfiguration6 setRateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
         return this;
@@ -464,7 +464,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param subIntervals The number of sub-intervals for history tracking.
      */
-    public PersistentStoreConfiguration setSubIntervals(int subIntervals) {
+    public DataStorageConfiguration6 setSubIntervals(int subIntervals) {
         this.subIntervals = subIntervals;
 
         return this;
@@ -483,7 +483,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param walMode Wal mode.
      */
-    public PersistentStoreConfiguration setWalMode(WALMode walMode) {
+    public DataStorageConfiguration6 setWalMode(WALMode walMode) {
         this.walMode = walMode;
 
         return this;
@@ -502,7 +502,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param tlbSize Tlb size.
      */
-    public PersistentStoreConfiguration setTlbSize(int tlbSize) {
+    public DataStorageConfiguration6 setTlbSize(int tlbSize) {
         this.tlbSize = tlbSize;
 
         return this;
@@ -524,7 +524,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param walFlushFreq WAL flush frequency, in milliseconds.
      */
-    public PersistentStoreConfiguration setWalFlushFrequency(long walFlushFreq) {
+    public DataStorageConfiguration6 setWalFlushFrequency(long walFlushFreq) {
         this.walFlushFreq = walFlushFreq;
 
         return this;
@@ -540,7 +540,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
      */
-    public PersistentStoreConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
+    public DataStorageConfiguration6 setWalFsyncDelayNanos(long walFsyncDelayNanos) {
         walFsyncDelay = walFsyncDelayNanos;
 
         return this;
@@ -559,7 +559,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param walRecordIterBuffSize Wal record iterator buffer size.
      */
-    public PersistentStoreConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
+    public DataStorageConfiguration6 setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
         this.walRecordIterBuffSize = walRecordIterBuffSize;
 
         return this;
@@ -575,7 +575,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param alwaysWriteFullPages Always write full pages.
      */
-    public PersistentStoreConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
+    public DataStorageConfiguration6 setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;
 
         return this;
@@ -594,7 +594,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /**
      * @param fileIOFactory File I/O factory
      */
-    public PersistentStoreConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
+    public DataStorageConfiguration6 setFileIOFactory(FileIOFactory fileIOFactory) {
         this.fileIOFactory = fileIOFactory;
 
         return this;
@@ -609,7 +609,7 @@ public class PersistentStoreConfiguration implements Serializable {
      * negative  value disables auto archiving.
      * @return current configuration instance for chaining
      */
-    public PersistentStoreConfiguration setWalAutoArchiveAfterInactivity(long walAutoArchiveAfterInactivity) {
+    public DataStorageConfiguration6 setWalAutoArchiveAfterInactivity(long walAutoArchiveAfterInactivity) {
         this.walAutoArchiveAfterInactivity = walAutoArchiveAfterInactivity;
 
         return this;
@@ -636,7 +636,7 @@ public class PersistentStoreConfiguration implements Serializable {
      *
      * @param checkpointWriteOrder Checkpoint write order.
      */
-    public PersistentStoreConfiguration setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
+    public DataStorageConfiguration6 setCheckpointWriteOrder(CheckpointWriteOrder checkpointWriteOrder) {
         this.checkpointWriteOrder = checkpointWriteOrder;
 
         return this;
@@ -644,6 +644,6 @@ public class PersistentStoreConfiguration implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PersistentStoreConfiguration.class, this);
+        return S.toString(DataStorageConfiguration6.class, this);
     }
 }

@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -49,8 +50,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -742,17 +742,17 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics dataStorageMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

@@ -24,10 +24,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
@@ -83,17 +83,17 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration()
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration()
                 .setName("dfltMemPlc")
                 .setInitialSize(2 * 1024L * 1024L * 1024L);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-                .setMemoryPolicies(memPlcCfg)
-                .setDefaultMemoryPolicyName(memPlcCfg.getName());
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+                .setDataRegions(memPlcCfg)
+                .setDefaultDataRegionName(memPlcCfg.getName());
 
         cfg.setMemoryConfiguration(memCfg);
 
-        PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
+        DataStorageConfiguration6 storeCfg = new DataStorageConfiguration6()
                 .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
                 // Setting WAL Segment size to high values forces flushing by timeout.

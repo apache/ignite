@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -315,7 +315,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize, MemoryPolicyConfiguration plcCfg) throws Exception {
+    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) throws Exception {
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),
             null,
@@ -335,7 +335,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected FreeList createFreeList(int pageSize) throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
             .setInitialSize(1024 * MB)
             .setMaxSize(1024 * MB);
 

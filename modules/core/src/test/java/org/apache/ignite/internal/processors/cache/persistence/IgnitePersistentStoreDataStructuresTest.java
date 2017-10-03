@@ -26,10 +26,10 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -50,20 +50,20 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6().setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
     }

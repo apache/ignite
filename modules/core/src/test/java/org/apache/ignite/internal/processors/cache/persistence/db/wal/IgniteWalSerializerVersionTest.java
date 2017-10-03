@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
@@ -48,7 +48,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6());
 
         return cfg;
     }

@@ -38,9 +38,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -107,13 +107,13 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(pageSize);
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
         pCfg.setWalHistorySize(WAL_HIST_SIZE);
 

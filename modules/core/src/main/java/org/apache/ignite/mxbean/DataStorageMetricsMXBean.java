@@ -17,13 +17,13 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.PersistenceMetrics;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 
 /**
  * An MX bean allowing to monitor and tune persistence metrics.
  */
-public interface PersistenceMetricsMXBean extends PersistenceMetrics {
+public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Average number of WAL records per second written during the last time interval.")
     @Override float getWalLoggingRate();
@@ -86,7 +86,7 @@ public interface PersistenceMetricsMXBean extends PersistenceMetrics {
 
     /**
      * Sets time interval for rate-based metrics. Identical to setting
-     * {@link PersistentStoreConfiguration#setRateTimeInterval(long)} configuration property.
+     * {@link DataStorageConfiguration6#setRateTimeInterval(long)} configuration property.
      *
      * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
      */
@@ -103,7 +103,7 @@ public interface PersistenceMetricsMXBean extends PersistenceMetrics {
 
     /**
      * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
-     * rate-based metrics. Identical to setting {@link PersistentStoreConfiguration#setSubIntervals(int)} configuration
+     * rate-based metrics. Identical to setting {@link DataStorageConfiguration6#setSubIntervals(int)} configuration
      * property.
      *
      * @param subInts A number of sub-intervals.

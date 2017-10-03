@@ -27,9 +27,9 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -676,30 +676,33 @@ public interface Ignite extends AutoCloseable {
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
-     * Returns a collection of {@link MemoryMetrics} that reflects page memory usage on this Apache Ignite node
+     * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
      * Returns the collection that contains the latest snapshots for each memory region
-     * configured with {@link MemoryPolicyConfiguration configuration} on this Ignite node instance.
+     * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
-     * @return Collection of {@link MemoryMetrics} snapshots.
+     * @return Collection of {@link DataRegionMetrics} snapshots.
      */
-    public Collection<MemoryMetrics> memoryMetrics();
+    public Collection<DataRegionMetrics> dataRegionMetrics();
+    // TODO IGNITE-6030 deprecated memory metrics
 
     /**
-     * Returns the latest {@link MemoryMetrics} snapshot for the memory region of the given name.
+     * Returns the latest {@link DataRegionMetrics} snapshot for the memory region of the given name.
      *
      * To get the metrics for the default memory region use
-     * {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} as the name
+     * {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} as the name
      * or a custom name if the default memory region has been renamed.
      *
-     * @param memPlcName Name of memory region configured with {@link MemoryPolicyConfiguration config}.
-     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     * @param memPlcName Name of memory region configured with {@link DataRegionConfiguration config}.
+     * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
-    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+    @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
+    // TODO IGNITE-6030 deprecated memory metrics
 
     /**
      *
-     * @return {@link PersistenceMetrics} snapshot.
+     * @return {@link DataStorageMetrics} snapshot.
      */
-    public PersistenceMetrics persistentStoreMetrics();
+    public DataStorageMetrics dataStorageMetrics();
+    // TODO IGNITE-6030 deprecated persistent store metrics
 }

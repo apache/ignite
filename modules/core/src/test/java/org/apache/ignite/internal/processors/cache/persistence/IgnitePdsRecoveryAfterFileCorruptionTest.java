@@ -26,10 +26,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -82,21 +82,21 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName(policyName);
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName(policyName);
+        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDefaultDataRegionName(policyName);
 
         cfg.setMemoryConfiguration(dbCfg);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setCheckpointingFrequency(500)
                 .setAlwaysWriteFullPages(true)
         );

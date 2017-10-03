@@ -32,10 +32,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -80,16 +80,16 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setMaxSize(400 * 1024 * 1024);
         memPlcCfg.setInitialSize(400 * 1024 * 1024);
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(memCfg);
 
@@ -104,7 +104,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg1);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalMode(WALMode.LOG_ONLY)
                 .setCheckpointingFrequency(checkpointDelay)
         );

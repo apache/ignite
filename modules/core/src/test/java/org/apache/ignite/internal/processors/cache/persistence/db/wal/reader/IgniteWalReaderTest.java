@@ -43,10 +43,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -123,22 +123,22 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
 
-        final MemoryConfiguration dbCfg = new MemoryConfiguration();
+        final DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(PAGE_SIZE);
 
-        final MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        final DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        final PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        final DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
         pCfg.setWalHistorySize(1);
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);

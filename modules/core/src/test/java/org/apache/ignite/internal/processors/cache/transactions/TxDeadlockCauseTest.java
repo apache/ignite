@@ -21,11 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -63,15 +61,15 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+        DataRegionConfiguration plc = new DataRegionConfiguration();
 
         plc.setName("dfltPlc");
         plc.setMaxSize(100L * 1024 * 1024);
 
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
-        memCfg.setMemoryPolicies(plc);
+        memCfg.setDefaultDataRegionName("dfltPlc");
+        memCfg.setDataRegions(plc);
 
         cfg.setMemoryConfiguration(memCfg);
 

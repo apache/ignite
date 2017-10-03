@@ -1799,7 +1799,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 pageEvictWarned = true;
 
                 U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
-                    "MemoryConfiguration#setPageCacheSize).");
+                    "DataStorageConfiguration#setPageCacheSize).");
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();

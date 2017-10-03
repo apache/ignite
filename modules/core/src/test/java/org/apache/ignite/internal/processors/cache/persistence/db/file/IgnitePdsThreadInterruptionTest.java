@@ -21,10 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,8 +71,8 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /**
      * @return Store config.
      */
-    private PersistentStoreConfiguration storeConfiguration() {
-        PersistentStoreConfiguration cfg = new PersistentStoreConfiguration();
+    private DataStorageConfiguration6 storeConfiguration() {
+        DataStorageConfiguration6 cfg = new DataStorageConfiguration6();
 
         cfg.setWalMode(WALMode.LOG_ONLY);
 
@@ -86,17 +86,17 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /**
      * @return Memory config.
      */
-    private MemoryConfiguration memoryConfiguration() {
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+    private DataStorageConfiguration memoryConfiguration() {
+        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         // memPlcCfg.setPageEvictionMode(RANDOM_LRU); TODO Fix NPE on start.
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(1);
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         return memCfg;
     }

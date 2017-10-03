@@ -22,8 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -33,12 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test verifies correct construction of swap file path {@link MemoryPolicyConfiguration#setSwapFilePath(String)}
+ * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapFilePath(String)}
  * when absolute or relative paths are provided via configuration.
  */
 public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     /** */
-    private MemoryConfiguration memCfg;
+    private DataStorageConfiguration memCfg;
 
     /** */
     private static final String RELATIVE_SWAP_PATH = "relSwapPath";
@@ -130,10 +130,10 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     /**
      * @param isRelativePath flag is set to {@code true} if relative path should be used for memory policy configuration.
      */
-    private MemoryConfiguration createMemoryConfiguration(boolean isRelativePath) {
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+    private DataStorageConfiguration createMemoryConfiguration(boolean isRelativePath) {
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("default");
         memPlcCfg.setMaxSize(20 * 1024 * 1024);
@@ -143,7 +143,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         else
             memPlcCfg.setSwapFilePath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
 
-        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDataRegions(memPlcCfg);
 
         return memCfg;
     }

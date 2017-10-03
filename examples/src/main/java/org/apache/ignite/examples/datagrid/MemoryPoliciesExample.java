@@ -24,14 +24,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * This example demonstrates how to tweak particular settings of Apache Ignite page memory using
- * {@link MemoryConfiguration} and set up several memory policies for different caches with
- * {@link MemoryPolicyConfiguration}.
+ * {@link DataStorageConfiguration} and set up several memory policies for different caches with
+ * {@link DataRegionConfiguration}.
  * <p>
  * Additional remote nodes can be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} example-memory-policies.xml'}.
@@ -66,12 +66,12 @@ public class MemoryPoliciesExample {
              */
             CacheConfiguration<Integer, Integer> firstCacheCfg = new CacheConfiguration<>("firstCache");
 
-            firstCacheCfg.setMemoryPolicyName(POLICY_40MB_EVICTION);
+            firstCacheCfg.setDataRegionName(POLICY_40MB_EVICTION);
             firstCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             firstCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
             CacheConfiguration<Integer, Integer> secondCacheCfg = new CacheConfiguration<>("secondCache");
-            secondCacheCfg.setMemoryPolicyName(POLICY_40MB_EVICTION);
+            secondCacheCfg.setDataRegionName(POLICY_40MB_EVICTION);
             secondCacheCfg.setCacheMode(CacheMode.REPLICATED);
             secondCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
@@ -86,7 +86,7 @@ public class MemoryPoliciesExample {
              */
             CacheConfiguration<Integer, Integer> thirdCacheCfg = new CacheConfiguration<>("thirdCache");
 
-            thirdCacheCfg.setMemoryPolicyName(POLICY_30MB_MEMORY_MAPPED_FILE);
+            thirdCacheCfg.setDataRegionName(POLICY_30MB_MEMORY_MAPPED_FILE);
 
             IgniteCache<Integer, Integer> thirdCache = ignite.createCache(thirdCacheCfg);
 

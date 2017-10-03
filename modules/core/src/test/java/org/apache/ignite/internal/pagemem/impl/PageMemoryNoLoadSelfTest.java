@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
@@ -309,7 +309,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
     protected PageMemory memory() throws Exception {
         File memDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "pagemem", false);
 
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
             .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);

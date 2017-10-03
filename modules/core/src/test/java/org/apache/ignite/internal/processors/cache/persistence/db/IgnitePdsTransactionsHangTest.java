@@ -32,10 +32,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -124,21 +124,21 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         cfg.setTransactionConfiguration(txCfg);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalHistorySize(1)
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
         );
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
         memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE * 1024);
 

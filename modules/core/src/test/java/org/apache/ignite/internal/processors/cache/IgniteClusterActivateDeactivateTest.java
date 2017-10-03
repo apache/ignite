@@ -29,9 +29,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -116,14 +116,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             ccfgs = null;
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        memCfg.setDefaultDataRegionSize(10 * 1024 * 1024);
 
         cfg.setMemoryConfiguration(memCfg);
 
         if (persistenceEnabled()) {
-            PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+            DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
             pCfg.setWalMode(WALMode.LOG_ONLY);
 

@@ -19,14 +19,14 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * DTO object for {@link PersistentStoreConfiguration}.
+ * DTO object for {@link DataStorageConfiguration6}.
  */
 public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /** */
@@ -99,7 +99,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * @param cfg Persistent store configuration.
      */
-    public VisorPersistentStoreConfiguration(PersistentStoreConfiguration cfg) {
+    public VisorPersistentStoreConfiguration(DataStorageConfiguration6 cfg) {
         persistenceStorePath = cfg.getPersistentStorePath();
         checkpointingFreq = cfg.getCheckpointingFrequency();
         lockWaitTime = cfg.getLockWaitTime();

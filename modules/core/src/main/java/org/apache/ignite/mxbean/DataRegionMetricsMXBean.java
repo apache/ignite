@@ -16,20 +16,20 @@
  */
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 
 /**
- * This interface defines a JMX view on {@link MemoryMetrics}.
+ * This interface defines a JMX view on {@link DataRegionMetrics}.
  */
-@MXBeanDescription("MBean that provides access to MemoryMetrics of a local Apache Ignite node.")
-public interface MemoryMetricsMXBean extends MemoryMetrics {
+@MXBeanDescription("MBean that provides access to DataRegionMetrics of a local Apache Ignite node.")
+public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("A name of a memory region the metrics are collected for.")
     @Override public String getName();
 
     /**
-     * Gets initial memory region size defined by its {@link MemoryPolicyConfiguration}.
+     * Gets initial memory region size defined by its {@link DataRegionConfiguration}.
      *
      * @return Initial size in MB.
      */
@@ -37,7 +37,7 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     public int getInitialSize();
 
     /**
-     * Maximum memory region size defined by its {@link MemoryPolicyConfiguration}.
+     * Maximum memory region size defined by its {@link DataRegionConfiguration}.
      *
      * @return Maximum size in MB.
      */
@@ -45,7 +45,7 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     public int getMaxSize();
 
     /**
-     * A path to the memory-mapped files the memory region defined by {@link MemoryPolicyConfiguration} will be
+     * A path to the memory-mapped files the memory region defined by {@link DataRegionConfiguration} will be
      * mapped to.
      *
      * @return Path to the memory-mapped files.

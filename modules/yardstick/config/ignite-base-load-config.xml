@@ -40,10 +40,10 @@
         </property>
 
         <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="defaultMemoryPolicyName" value="default"/>
                 <property name="memoryPolicies">
-                    <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="name" value="default"/>
                         <property name="size" value="#{8L * 1024 * 1024 * 1024}"/>
                     </bean>

@@ -22,9 +22,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -63,9 +63,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @return Configuration with given eviction mode set.
      */
     static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
-        MemoryPolicyConfiguration[] policies = configuration.getMemoryConfiguration().getMemoryPolicies();
+        DataRegionConfiguration[] policies = configuration.getMemoryConfiguration().getDataRegions();
 
-        for (MemoryPolicyConfiguration plcCfg : policies)
+        for (DataRegionConfiguration plcCfg : policies)
             plcCfg.setPageEvictionMode(mode);
 
         return configuration;
@@ -84,9 +84,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+        DataRegionConfiguration plc = new DataRegionConfiguration();
 
         // This will test additional segment allocation.
         plc.setInitialSize(SIZE / 2);
@@ -95,9 +95,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
         plc.setName(DEFAULT_POLICY_NAME);
 
-        dbCfg.setMemoryPolicies(plc);
+        dbCfg.setDataRegions(plc);
         dbCfg.setPageSize(PAGE_SIZE);
-        dbCfg.setDefaultMemoryPolicyName(DEFAULT_POLICY_NAME);
+        dbCfg.setDefaultDataRegionName(DEFAULT_POLICY_NAME);
 
         cfg.setMemoryConfiguration(dbCfg);
 
@@ -124,7 +124,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setCacheMode(cacheMode)
             .setAtomicityMode(atomicityMode)
-            .setMemoryPolicyName(memoryPlcName)
+            .setDataRegionName(memoryPlcName)
             .setWriteSynchronizationMode(writeSynchronizationMode);
 
         if (cacheMode == CacheMode.PARTITIONED)

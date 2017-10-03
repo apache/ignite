@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -126,7 +126,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final DirectMemoryProvider directMemoryProvider;
 
     /** Name of MemoryPolicy this PageMemory is associated with. */
-    private final MemoryPolicyConfiguration memoryPolicyCfg;
+    private final DataRegionConfiguration memoryPolicyCfg;
 
     /** Object to collect memory usage metrics. */
     private final MemoryMetricsImpl memMetrics;
@@ -172,7 +172,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
-        MemoryPolicyConfiguration memPlcCfg,
+        DataRegionConfiguration memPlcCfg,
         MemoryMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {

@@ -57,17 +57,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.management.ObjectName;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -137,7 +137,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
+import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
@@ -227,7 +227,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     };
 
     /** */
-    private static final String MBEAN_NAME = "PersistenceMetrics";
+    private static final String MBEAN_NAME = "DataStorageMetrics";
 
     /** */
     private static final String MBEAN_GROUP = "Persistent Store";
@@ -260,7 +260,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile boolean printCheckpointStats = true;
 
     /** Database configuration. */
-    private final PersistentStoreConfiguration persistenceCfg;
+    private final DataStorageConfiguration6 persistenceCfg;
 
     /** */
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
@@ -409,7 +409,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Checkpoint buffer size.
      */
     public static long checkpointBufferSize(IgniteConfiguration cfg) {
-        PersistentStoreConfiguration persistenceCfg = cfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration6 persistenceCfg = cfg.getPersistentStoreConfiguration();
 
         if (persistenceCfg == null)
             return 0L;
@@ -419,16 +419,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (res == 0L) {
             res = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
 
-            MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+            DataStorageConfiguration memCfg = cfg.getMemoryConfiguration();
 
             assert memCfg != null;
 
             long totalSize = memCfg.getSystemCacheMaxSize();
 
-            if (memCfg.getMemoryPolicies() == null)
-                totalSize += MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
+            if (memCfg.getDataRegions() == null)
+                totalSize += DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
             else {
-                for (MemoryPolicyConfiguration memPlc : memCfg.getMemoryPolicies()) {
+                for (DataRegionConfiguration memPlc : memCfg.getDataRegions()) {
                     if (Long.MAX_VALUE - memPlc.getMaxSize() > totalSize)
                         totalSize += memPlc.getMaxSize();
                     else {
@@ -503,7 +503,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 MBEAN_GROUP,
                 MBEAN_NAME,
                 persStoreMetrics,
-                PersistenceMetricsMXBean.class);
+                DataStorageMetricsMXBean.class);
         }
         catch (Throwable e) {
             throw new IgniteCheckedException("Failed to register " + MBEAN_NAME + " MBean.", e);
@@ -655,8 +655,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        MemoryConfiguration memCfg,
-        MemoryPolicyConfiguration plcCfg,
+        DataStorageConfiguration memCfg,
+        DataRegionConfiguration plcCfg,
         MemoryMetricsImpl memMetrics
     ) {
         if (!plcCfg.isPersistenceEnabled())
@@ -721,7 +721,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
+    @Override protected void checkPolicyEvictionProperties(DataRegionConfiguration plcCfg, DataStorageConfiguration dbCfg)
         throws IgniteCheckedException {
         if (!plcCfg.isPersistenceEnabled())
             super.checkPolicyEvictionProperties(plcCfg, dbCfg);
@@ -732,7 +732,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkPageSize(MemoryConfiguration memCfg) {
+    @Override protected void checkPageSize(DataStorageConfiguration memCfg) {
         if (memCfg.getPageSize() == 0) {
             try {
                 assert cctx.pageStore() instanceof FilePageStoreManager :
@@ -750,10 +750,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             catch (IgniteCheckedException | IOException | IllegalArgumentException e) {
                 U.quietAndWarn(log, "Attempt to resolve pageSize from store files failed: " + e.getMessage());
 
-                U.quietAndWarn(log, "Default page size will be used: " + MemoryConfiguration.DFLT_PAGE_SIZE + " bytes");
+                U.quietAndWarn(log, "Default page size will be used: " + DataStorageConfiguration.DFLT_PAGE_SIZE + " bytes");
             }
 
-            memCfg.setPageSize(MemoryConfiguration.DFLT_PAGE_SIZE);
+            memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE);
         }
     }
 
@@ -783,7 +783,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             int pageSize = hdr.getInt();
 
             if (pageSize == 2048) {
-                U.quietAndWarn(log, "You are currently using persistent store with 2K pages (MemoryConfiguration#" +
+                U.quietAndWarn(log, "You are currently using persistent store with 2K pages (DataStorageConfiguration#" +
                     "pageSize). If you use SSD disk, consider migrating to 4K pages for better IO performance.");
             }
 
@@ -1596,7 +1596,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (desc == null)
             throw new IgniteCheckedException("Failed to find cache group descriptor [grpId=" + grpId + ']');
 
-        String memPlcName = desc.config().getMemoryPolicyName();
+        String memPlcName = desc.config().getDataRegionName();
 
         return (PageMemoryEx)sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
     }
@@ -2492,8 +2492,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Reorders list of checkpoint pages and splits them into needed number of sublists according to
-     * {@link PersistentStoreConfiguration#getCheckpointingThreads()} and
-     * {@link PersistentStoreConfiguration#getCheckpointWriteOrder()}.
+     * {@link DataStorageConfiguration6#getCheckpointingThreads()} and
+     * {@link DataStorageConfiguration6#getCheckpointWriteOrder()}.
      *
      * @param cpPagesTuple Checkpoint pages tuple.
      */
@@ -3310,7 +3310,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics persistentStoreMetrics() {
         return new PersistenceMetricsSnapshot(persStoreMetrics);
     }
 

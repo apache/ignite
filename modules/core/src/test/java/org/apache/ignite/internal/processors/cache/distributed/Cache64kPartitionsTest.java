@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -44,7 +44,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
         cfg.setActiveOnStart(false);
 
         if (persistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+            cfg.setPersistentStoreConfiguration(new DataStorageConfiguration6());
 
         return cfg;
     }

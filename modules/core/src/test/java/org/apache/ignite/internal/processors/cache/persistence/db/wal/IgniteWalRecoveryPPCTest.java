@@ -24,10 +24,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -79,33 +79,33 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
         ccfg2.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg2.setMemoryPolicyName(MEM_PLC_NO_PDS);
+        ccfg2.setDataRegionName(MEM_PLC_NO_PDS);
 
         cfg.setCacheConfiguration(ccfg, ccfg2);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(4 * 1024);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltMemPlc");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        MemoryPolicyConfiguration memPlcCfg2 = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg2 = new DataRegionConfiguration();
 
         memPlcCfg2.setName(MEM_PLC_NO_PDS);
         memPlcCfg2.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg2.setMaxSize(1024 * 1024 * 1024);
         memPlcCfg2.setPersistenceEnabled(false);
 
-        dbCfg.setMemoryPolicies(memPlcCfg, memPlcCfg2);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        dbCfg.setDataRegions(memPlcCfg, memPlcCfg2);
+        dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(dbCfg);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
         pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 

@@ -21,11 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -168,11 +168,11 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
 
             case OP_MEMORY_METRICS: {
-                Collection<MemoryMetrics> metrics = prj.ignite().memoryMetrics();
+                Collection<DataRegionMetrics> metrics = prj.ignite().dataRegionMetrics();
 
                 writer.writeInt(metrics.size());
 
-                for (MemoryMetrics m : metrics) {
+                for (DataRegionMetrics m : metrics) {
                     writeMemoryMetrics(writer, m);
                 }
 
@@ -180,7 +180,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             case OP_PERSISTENT_STORE_METRICS: {
-                PersistenceMetrics metrics = prj.ignite().persistentStoreMetrics();
+                DataStorageMetrics metrics = prj.ignite().dataStorageMetrics();
 
                 writePersistentStoreMetrics(writer, metrics);
 
@@ -274,7 +274,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             case OP_MEMORY_METRICS_BY_NAME: {
                 String plcName = reader.readString();
 
-                MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
+                DataRegionMetrics metrics = platformCtx.kernalContext().grid().dataRegionMetrics(plcName);
 
                 if (metrics != null) {
                     writer.writeBoolean(true);
@@ -479,7 +479,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param metrics Metrics.
      */
-    private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
+    private static void writeMemoryMetrics(BinaryRawWriter writer, DataRegionMetrics metrics) {
         assert writer != null;
         assert metrics != null;
 
@@ -497,7 +497,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param metrics Metrics
      */
-    private void writePersistentStoreMetrics(BinaryRawWriter writer, PersistenceMetrics metrics) {
+    private void writePersistentStoreMetrics(BinaryRawWriter writer, DataStorageMetrics metrics) {
         assert writer != null;
         assert metrics != null;
 

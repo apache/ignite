@@ -1560,7 +1560,7 @@ class ClusterCachesInfo {
             attr1.nodeFilterClassName(), attr2.nodeFilterClassName(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "memoryPolicyName", "Memory policy",
-            cfg.getMemoryPolicyName(), startCfg.getMemoryPolicyName(), true);
+            cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
             attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);

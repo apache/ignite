@@ -57,11 +57,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -184,7 +184,7 @@ public class PlatformConfigurationUtils {
         String memoryPolicyName = in.readString();
 
         if (memoryPolicyName != null)
-            ccfg.setMemoryPolicyName(memoryPolicyName);
+            ccfg.setDataRegionName(memoryPolicyName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
         ccfg.setGroupName(in.readString());
@@ -870,7 +870,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
-        writer.writeString(ccfg.getMemoryPolicyName());
+        writer.writeString(ccfg.getDataRegionName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
         writer.writeString(ccfg.getGroupName());
 
@@ -1400,22 +1400,22 @@ public class PlatformConfigurationUtils {
      * @param in Reader
      * @return Config.
      */
-    private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
-        MemoryConfiguration res = new MemoryConfiguration();
+    private static DataStorageConfiguration readMemoryConfiguration(BinaryRawReader in) {
+        DataStorageConfiguration res = new DataStorageConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
                 .setSystemCacheMaxSize(in.readLong())
                 .setPageSize(in.readInt())
                 .setConcurrencyLevel(in.readInt())
-                .setDefaultMemoryPolicyName(in.readString());
+                .setDefaultDataRegionName(in.readString());
 
         int cnt = in.readInt();
 
         if (cnt > 0) {
-            MemoryPolicyConfiguration[] plcs = new MemoryPolicyConfiguration[cnt];
+            DataRegionConfiguration[] plcs = new DataRegionConfiguration[cnt];
 
             for (int i = 0; i < cnt; i++) {
-                MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
+                DataRegionConfiguration cfg = new DataRegionConfiguration();
 
                 cfg.setName(in.readString())
                         .setInitialSize(in.readLong())
@@ -1431,7 +1431,7 @@ public class PlatformConfigurationUtils {
                 plcs[i] = cfg;
             }
 
-            res.setMemoryPolicies(plcs);
+            res.setDataRegions(plcs);
         }
 
         return res;
@@ -1443,7 +1443,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Config.
      */
-    private static void writeMemoryConfiguration(BinaryRawWriter w, MemoryConfiguration cfg) {
+    private static void writeMemoryConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
         if (cfg == null) {
             w.writeBoolean(false);
             return;
@@ -1455,14 +1455,14 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getSystemCacheMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
-        w.writeString(cfg.getDefaultMemoryPolicyName());
+        w.writeString(cfg.getDefaultDataRegionName());
 
-        MemoryPolicyConfiguration[] plcs = cfg.getMemoryPolicies();
+        DataRegionConfiguration[] plcs = cfg.getDataRegions();
 
         if (plcs != null) {
             w.writeInt(plcs.length);
 
-            for (MemoryPolicyConfiguration plc : plcs) {
+            for (DataRegionConfiguration plc : plcs) {
                 w.writeString(plc.getName());
                 w.writeLong(plc.getInitialSize());
                 w.writeLong(plc.getMaxSize());
@@ -1572,8 +1572,8 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
-    private static PersistentStoreConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
-        return new PersistentStoreConfiguration()
+    private static DataStorageConfiguration6 readPersistentStoreConfiguration(BinaryRawReader in) {
+        return new DataStorageConfiguration6()
                 .setPersistentStorePath(in.readString())
                 .setCheckpointingFrequency(in.readLong())
                 .setCheckpointingPageBufferSize(in.readLong())
@@ -1602,7 +1602,7 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
-    private static void writePersistentStoreConfiguration(BinaryRawWriter w, PersistentStoreConfiguration cfg) {
+    private static void writePersistentStoreConfiguration(BinaryRawWriter w, DataStorageConfiguration6 cfg) {
         assert w != null;
 
         if (cfg != null) {

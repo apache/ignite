@@ -25,8 +25,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -71,7 +71,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
 
         cfg.setPublicThreadPoolSize(THREAD_COUNT);
 
-        MemoryConfiguration mem = new MemoryConfiguration();
+        DataStorageConfiguration mem = new DataStorageConfiguration();
 
         mem.setPageSize(PAGE_SIZE);
 

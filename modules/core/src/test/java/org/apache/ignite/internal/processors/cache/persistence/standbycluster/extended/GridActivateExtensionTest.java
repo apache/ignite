@@ -21,11 +21,11 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyMultiNodeFullApiSelfTest;
@@ -61,7 +61,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         cfg.setConsistentId("ConsId" + (condId++));
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(primaryIpFinder);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
         pCfg.setPersistentStorePath(testName + "/db");
         pCfg.setWalArchivePath(testName + "/db/wal/archive");
@@ -69,18 +69,18 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         cfg.setPersistentStoreConfiguration(pCfg);
 
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDataRegions(memPlcCfg);
 
-        memCfg.setDefaultMemoryPolicyName(memPlcCfg.getName());
+        memCfg.setDefaultDataRegionName(memPlcCfg.getName());
 
         memCfg.setPageSize(1024);
         memCfg.setConcurrencyLevel(64);

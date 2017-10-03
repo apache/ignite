@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -340,7 +340,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration6 pCfg = new DataStorageConfiguration6();
 
         pCfg.setPersistentStorePath(testName() + "/db");
         pCfg.setWalArchivePath(testName() + "/db/wal/archive");
@@ -348,18 +348,18 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         cfg.setPersistentStoreConfiguration(pCfg);
 
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         memCfg.setPageSize(1024);
         memCfg.setConcurrencyLevel(64);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setMemoryConfiguration(memCfg);
 

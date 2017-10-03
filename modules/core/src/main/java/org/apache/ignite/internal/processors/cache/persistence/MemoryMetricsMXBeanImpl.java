@@ -16,26 +16,26 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
- * MBean to expose {@link MemoryMetrics} through JMX interface.
+ * MBean to expose {@link DataRegionMetrics} through JMX interface.
  */
-class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
+class MemoryMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
     private final MemoryMetricsImpl memMetrics;
 
     /** */
-    private final MemoryPolicyConfiguration memPlcCfg;
+    private final DataRegionConfiguration memPlcCfg;
 
     /**
-     * @param memMetrics MemoryMetrics instance to expose through JMX interface.
+     * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
      * @param memPlcCfg configuration of memory policy this MX Bean is created for.
      */
     MemoryMetricsMXBeanImpl(MemoryMetricsImpl memMetrics,
-        MemoryPolicyConfiguration memPlcCfg
+        DataRegionConfiguration memPlcCfg
     ) {
         this.memMetrics = memMetrics;
         this.memPlcCfg = memPlcCfg;

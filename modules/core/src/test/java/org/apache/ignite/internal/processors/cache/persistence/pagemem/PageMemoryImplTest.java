@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -110,7 +110,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
+            new MemoryMetricsImpl(new DataRegionConfiguration()),
             false
         );
 

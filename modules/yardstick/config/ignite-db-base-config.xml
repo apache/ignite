@@ -30,7 +30,7 @@
         <property name="metricsLogFrequency" value="5000"/>
 
         <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 <property name="pageCacheSize" value="#{400L * 1024L * 1024L}"/>
             </bean>
         </property>

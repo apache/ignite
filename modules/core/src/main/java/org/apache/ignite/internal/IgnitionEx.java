@@ -61,7 +61,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -2184,7 +2184,7 @@ public class IgnitionEx {
             }
 
             if (!myCfg.isClientMode() && myCfg.getMemoryConfiguration() == null) {
-                MemoryConfiguration memCfg = new MemoryConfiguration();
+                DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
                 memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 

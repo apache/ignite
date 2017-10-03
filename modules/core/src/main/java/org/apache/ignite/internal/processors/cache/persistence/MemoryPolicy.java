@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 
 /**
- * Memory policy provides access to objects configured with {@link MemoryPolicyConfiguration} configuration.
+ * Memory policy provides access to objects configured with {@link DataRegionConfiguration} configuration.
  */
 public class MemoryPolicy {
     /** */
@@ -31,20 +31,20 @@ public class MemoryPolicy {
     private final MemoryMetricsImpl memMetrics;
 
     /** */
-    private final MemoryPolicyConfiguration cfg;
+    private final DataRegionConfiguration cfg;
 
     /** */
     private final PageEvictionTracker evictionTracker;
 
     /**
      * @param pageMem PageMemory instance.
-     * @param memMetrics MemoryMetrics instance.
+     * @param memMetrics DataRegionMetrics instance.
      * @param cfg Configuration of given MemoryPolicy.
      * @param evictionTracker Eviction tracker.
      */
     public MemoryPolicy(
         PageMemory pageMem,
-        MemoryPolicyConfiguration cfg,
+        DataRegionConfiguration cfg,
         MemoryMetricsImpl memMetrics,
         PageEvictionTracker evictionTracker
     ) {
@@ -64,7 +64,7 @@ public class MemoryPolicy {
     /**
      * @return Config.
      */
-    public MemoryPolicyConfiguration config() {
+    public DataRegionConfiguration config() {
         return cfg;
     }
 

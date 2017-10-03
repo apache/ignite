@@ -25,14 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -60,19 +60,19 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
-import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /**
  *
  */
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
-    /** MemoryPolicyConfiguration name reserved for internal caches. */
+    /** DataRegionConfiguration name reserved for internal caches. */
     static final String SYSTEM_MEMORY_POLICY_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
@@ -85,7 +85,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected Map<String, MemoryPolicy> memPlcMap;
 
     /** */
-    protected Map<String, MemoryMetrics> memMetricsMap;
+    protected Map<String, DataRegionMetrics> memMetricsMap;
 
     /** */
     protected MemoryPolicy dfltMemPlc;
@@ -104,7 +104,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
             return;
 
-        MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
         assert memCfg != null;
 
@@ -114,7 +114,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Registers MBeans for all MemoryMetrics configured in this instance.
+     * Registers MBeans for all DataRegionMetrics configured in this instance.
      */
     private void registerMetricsMBeans() {
         if(U.IGNITE_MBEANS_DISABLED)
@@ -122,8 +122,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        for (MemoryMetrics memMetrics : memMetricsMap.values()) {
-            MemoryPolicyConfiguration memPlcCfg = memPlcMap.get(memMetrics.getName()).config();
+        for (DataRegionMetrics memMetrics : memMetricsMap.values()) {
+            DataRegionConfiguration memPlcCfg = memPlcMap.get(memMetrics.getName()).config();
 
             registerMetricsMBean((MemoryMetricsImpl)memMetrics, memPlcCfg, cfg);
         }
@@ -136,7 +136,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void registerMetricsMBean(
         MemoryMetricsImpl memMetrics,
-        MemoryPolicyConfiguration memPlcCfg,
+        DataRegionConfiguration memPlcCfg,
         IgniteConfiguration cfg
     ) {
         assert !U.IGNITE_MBEANS_DISABLED;
@@ -145,13 +145,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
-                "MemoryMetrics",
+                "DataRegionMetrics",
                 memPlcCfg.getName(),
                 new MemoryMetricsMXBeanImpl(memMetrics, memPlcCfg),
-                MemoryMetricsMXBean.class);
+                DataRegionMetricsMXBean.class);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'", e);
+            U.error(log, "Failed to register MBean for DataRegionMetrics with name: '" + memMetrics.getName() + "'", e);
         }
     }
 
@@ -159,13 +159,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database config.
      * @throws IgniteCheckedException If failed.
      */
-    protected void initPageMemoryDataStructures(MemoryConfiguration dbCfg) throws IgniteCheckedException {
+    protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(memPlcMap.size());
 
-        String dfltMemPlcName = dbCfg.getDefaultMemoryPolicyName();
+        String dfltMemPlcName = dbCfg.getDefaultDataRegionName();
 
         for (MemoryPolicy memPlc : memPlcMap.values()) {
-            MemoryPolicyConfiguration memPlcCfg = memPlc.config();
+            DataRegionConfiguration memPlcCfg = memPlc.config();
 
             MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
 
@@ -209,8 +209,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Database config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    protected void initPageMemoryPolicies(MemoryConfiguration memCfg) throws IgniteCheckedException {
-        MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
+    protected void initPageMemoryPolicies(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        DataRegionConfiguration[] memPlcsCfgs = memCfg.getDataRegions();
 
         if (memPlcsCfgs == null) {
             //reserve place for default and system memory policies
@@ -219,24 +219,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             addMemoryPolicy(
                 memCfg,
-                memCfg.createDefaultPolicyConfig(),
-                DFLT_MEM_PLC_DEFAULT_NAME
+                memCfg.createDefaultRegionConfig(),
+                DFLT_DATA_REG_DEFAULT_NAME
             );
 
             U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
         }
         else {
-            String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+            String dfltMemPlcName = memCfg.getDefaultDataRegionName();
 
-            if (DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltMemPlcName) && !hasCustomDefaultMemoryPolicy(memPlcsCfgs)) {
+            if (DFLT_DATA_REG_DEFAULT_NAME.equals(dfltMemPlcName) && !hasCustomDefaultMemoryPolicy(memPlcsCfgs)) {
                 //reserve additional place for default and system memory policies
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
                 memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
 
                 addMemoryPolicy(
                     memCfg,
-                    memCfg.createDefaultPolicyConfig(),
-                    DFLT_MEM_PLC_DEFAULT_NAME
+                    memCfg.createDefaultRegionConfig(),
+                    DFLT_DATA_REG_DEFAULT_NAME
                 );
 
                 U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
@@ -247,7 +247,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
             }
 
-            for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs)
+            for (DataRegionConfiguration memPlcCfg : memPlcsCfgs)
                 addMemoryPolicy(memCfg, memPlcCfg, memPlcCfg.getName());
         }
 
@@ -268,14 +268,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     private void addMemoryPolicy(
-        MemoryConfiguration memCfg,
-        MemoryPolicyConfiguration memPlcCfg,
+        DataStorageConfiguration memCfg,
+        DataRegionConfiguration memPlcCfg,
         String memPlcName
     ) throws IgniteCheckedException {
-        String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
+        String dfltMemPlcName = memCfg.getDefaultDataRegionName();
 
         if (dfltMemPlcName == null)
-            dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
+            dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
         MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg, fillFactorProvider(memPlcName));
 
@@ -287,7 +287,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (memPlcName.equals(dfltMemPlcName))
             dfltMemPlc = memPlc;
-        else if (memPlcName.equals(DFLT_MEM_PLC_DEFAULT_NAME))
+        else if (memPlcName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Memory Policy with name 'default' isn't used as a default. " +
                     "Please check Memory Policies configuration.");
     }
@@ -325,9 +325,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memPlcsCfgs User-defined memory policy configurations.
      */
-    private boolean hasCustomDefaultMemoryPolicy(MemoryPolicyConfiguration[] memPlcsCfgs) {
-        for (MemoryPolicyConfiguration memPlcsCfg : memPlcsCfgs) {
-            if (DFLT_MEM_PLC_DEFAULT_NAME.equals(memPlcsCfg.getName()))
+    private boolean hasCustomDefaultMemoryPolicy(DataRegionConfiguration[] memPlcsCfgs) {
+        for (DataRegionConfiguration memPlcsCfg : memPlcsCfgs) {
+            if (DFLT_DATA_REG_DEFAULT_NAME.equals(memPlcsCfg.getName()))
                 return true;
         }
 
@@ -338,10 +338,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param sysCacheInitSize Initial size of PageMemory to be created for system cache.
      * @param sysCacheMaxSize Maximum size of PageMemory to be created for system cache.
      *
-     * @return {@link MemoryPolicyConfiguration configuration} of MemoryPolicy for system cache.
+     * @return {@link DataRegionConfiguration configuration} of MemoryPolicy for system cache.
      */
-    private MemoryPolicyConfiguration createSystemMemoryPolicy(long sysCacheInitSize, long sysCacheMaxSize) {
-        MemoryPolicyConfiguration res = new MemoryPolicyConfiguration();
+    private DataRegionConfiguration createSystemMemoryPolicy(long sysCacheInitSize, long sysCacheMaxSize) {
+        DataRegionConfiguration res = new DataRegionConfiguration();
 
         res.setName(SYSTEM_MEMORY_POLICY_NAME);
         res.setInitialSize(sysCacheInitSize);
@@ -353,10 +353,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memCfg configuration to validate.
      */
-    private void validateConfiguration(MemoryConfiguration memCfg) throws IgniteCheckedException {
+    private void validateConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         checkPageSize(memCfg);
 
-        MemoryPolicyConfiguration[] plcCfgs = memCfg.getMemoryPolicies();
+        DataRegionConfiguration[] plcCfgs = memCfg.getDataRegions();
 
         Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
 
@@ -366,7 +366,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         );
 
         if (plcCfgs != null) {
-            for (MemoryPolicyConfiguration plcCfg : plcCfgs) {
+            for (DataRegionConfiguration plcCfg : plcCfgs) {
                 assert plcCfg != null;
 
                 checkPolicyName(plcCfg.getName(), plcNames);
@@ -380,8 +380,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDefaultPolicyConfiguration(
-            memCfg.getDefaultMemoryPolicyName(),
-            memCfg.getDefaultMemoryPolicySize(),
+            memCfg.getDefaultDataRegionName(),
+            memCfg.getDefaultDataRegionSize(),
             plcNames
         );
     }
@@ -389,7 +389,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memCfg Memory config.
      */
-    protected void checkPageSize(MemoryConfiguration memCfg) {
+    protected void checkPageSize(DataStorageConfiguration memCfg) {
         if (memCfg.getPageSize() == 0)
             memCfg.setPageSize(DFLT_PAGE_SIZE);
     }
@@ -399,23 +399,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException if validation of memory metrics properties fails.
      */
-    private static void checkMetricsProperties(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
+    private static void checkMetricsProperties(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getRateTimeInterval() <= 0)
             throw new IgniteCheckedException("Rate time interval must be greater than zero " +
-                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
+                "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
                 "[name=" + plcCfg.getName() +
                 ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]"
             );
         if (plcCfg.getSubIntervals() <= 0)
             throw new IgniteCheckedException("Sub intervals must be greater than zero " +
-                "(use MemoryPolicyConfiguration.subIntervals property to adjust the sub intervals) " +
+                "(use DataRegionConfiguration.subIntervals property to adjust the sub intervals) " +
                 "[name=" + plcCfg.getName() +
                 ", subIntervals=" + plcCfg.getSubIntervals() + "]"
             );
 
         if (plcCfg.getRateTimeInterval() < 1_000)
             throw new IgniteCheckedException("Rate time interval must be longer that 1 second (1_000 milliseconds) " +
-                "(use MemoryPolicyConfiguration.rateTimeInterval property to adjust the interval) " +
+                "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
                 "[name=" + plcCfg.getName() +
                 ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]");
     }
@@ -432,13 +432,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) throws IgniteCheckedException {
         if (sysCacheInitSize < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("Initial size for system cache must have size more than 10MB (use " +
-                "MemoryConfiguration.systemCacheInitialSize property to set correct size in bytes) " +
+                "DataStorageConfiguration.systemCacheInitialSize property to set correct size in bytes) " +
                 "[size=" + U.readableSize(sysCacheInitSize, true) + ']'
             );
 
         if (U.jvm32Bit() && sysCacheInitSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
             throw new IgniteCheckedException("Initial size for system cache exceeds 2GB on 32-bit JVM (use " +
-                "MemoryPolicyConfiguration.systemCacheInitialSize property to set correct size in bytes " +
+                "DataRegionConfiguration.systemCacheInitialSize property to set correct size in bytes " +
                 "or use 64-bit JVM) [size=" + U.readableSize(sysCacheInitSize, true) + ']'
             );
 
@@ -446,7 +446,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             throw new IgniteCheckedException("MaxSize of system cache must not be smaller than " +
                 "initialSize [initSize=" + U.readableSize(sysCacheInitSize, true) +
                 ", maxSize=" + U.readableSize(sysCacheMaxSize, true) + "]. " +
-                "Use MemoryConfiguration.systemCacheInitialSize/MemoryConfiguration.systemCacheMaxSize " +
+                "Use DataStorageConfiguration.systemCacheInitialSize/DataStorageConfiguration.systemCacheMaxSize " +
                 "properties to set correct sizes in bytes."
             );
     }
@@ -462,25 +462,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         long dfltPlcSize,
         Collection<String> plcNames
     ) throws IgniteCheckedException {
-        if (dfltPlcSize != MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE) {
-            if (!F.eq(dfltPlcName, MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME))
+        if (dfltPlcSize != DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE) {
+            if (!F.eq(dfltPlcName, DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME))
                 throw new IgniteCheckedException("User-defined MemoryPolicy configuration " +
                     "and defaultMemoryPolicySize properties are set at the same time. " +
-                    "Delete either MemoryConfiguration.defaultMemoryPolicySize property " +
+                    "Delete either DataStorageConfiguration.defaultMemoryPolicySize property " +
                     "or user-defined default MemoryPolicy configuration");
 
             if (dfltPlcSize < MIN_PAGE_MEMORY_SIZE)
                 throw new IgniteCheckedException("User-defined default MemoryPolicy size is less than 1MB. " +
-                        "Use MemoryConfiguration.defaultMemoryPolicySize property to set correct size.");
+                        "Use DataStorageConfiguration.defaultMemoryPolicySize property to set correct size.");
 
             if (U.jvm32Bit() && dfltPlcSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
                 throw new IgniteCheckedException("User-defined default MemoryPolicy size exceeds 2GB on 32-bit JVM " +
-                    "(use MemoryConfiguration.defaultMemoryPolicySize property to set correct size in bytes " +
+                    "(use DataStorageConfiguration.defaultMemoryPolicySize property to set correct size in bytes " +
                     "or use 64-bit JVM) [size=" + U.readableSize(dfltPlcSize, true) + ']'
                 );
         }
 
-        if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltPlcName)) {
+        if (!DFLT_DATA_REG_DEFAULT_NAME.equals(dfltPlcName)) {
             if (dfltPlcName.isEmpty())
                 throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
 
@@ -491,21 +491,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param plcCfg MemoryPolicyConfiguration to validate.
+     * @param plcCfg DataRegionConfiguration to validate.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private void checkPolicySize(MemoryPolicyConfiguration plcCfg) throws IgniteCheckedException {
+    private void checkPolicySize(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
         boolean dfltInitSize = false;
 
         if (plcCfg.getInitialSize() == 0) {
-            plcCfg.setInitialSize(DFLT_MEMORY_POLICY_INITIAL_SIZE);
+            plcCfg.setInitialSize(DFLT_DATA_REGION_INITIAL_SIZE);
 
             dfltInitSize = true;
         }
 
         if (plcCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("MemoryPolicy must have size more than 10MB (use " +
-                "MemoryPolicyConfiguration.initialSize property to set correct size in bytes) " +
+                "DataRegionConfiguration.initialSize property to set correct size in bytes) " +
                 "[name=" + plcCfg.getName() + ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]"
             );
 
@@ -516,7 +516,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
                 LT.warn(log, "MemoryPolicy maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
                     " is smaller than defaultInitialSize=" +
-                    U.readableSize(MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE, true) +
+                    U.readableSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE, true) +
                     ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
             }
             else {
@@ -529,17 +529,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (U.jvm32Bit() && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
             throw new IgniteCheckedException("MemoryPolicy initialSize exceeds 2GB on 32-bit JVM (use " +
-                "MemoryPolicyConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
+                "DataRegionConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
                 "[name=" + plcCfg.getName() +
                 ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]");
     }
 
     /**
-     * @param plcCfg MemoryPolicyConfiguration to validate.
+     * @param plcCfg DataRegionConfiguration to validate.
      * @param dbCfg Memory configuration.
      * @throws IgniteCheckedException If config is invalid.
      */
-    protected void checkPolicyEvictionProperties(MemoryPolicyConfiguration plcCfg, MemoryConfiguration dbCfg)
+    protected void checkPolicyEvictionProperties(DataRegionConfiguration plcCfg, DataStorageConfiguration dbCfg)
         throws IgniteCheckedException {
         if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return;
@@ -568,7 +568,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static void checkPolicyName(String plcName, Collection<String> observedNames)
         throws IgniteCheckedException {
         if (plcName == null || plcName.isEmpty())
-            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and " +
+            throw new IgniteCheckedException("User-defined DataRegionConfiguration must have non-null and " +
                 "non-empty name.");
 
         if (observedNames.contains(plcName))
@@ -598,14 +598,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return MemoryMetrics for all MemoryPolicies configured in Ignite instance.
+     * @return DataRegionMetrics for all MemoryPolicies configured in Ignite instance.
      */
-    public Collection<MemoryMetrics> memoryMetrics() {
+    public Collection<DataRegionMetrics> memoryMetrics() {
         if (!F.isEmpty(memMetricsMap)) {
             // Intentionally return a collection copy to make it explicitly serializable.
-            Collection<MemoryMetrics> res = new ArrayList<>(memMetricsMap.size());
+            Collection<DataRegionMetrics> res = new ArrayList<>(memMetricsMap.size());
 
-            for (MemoryMetrics metrics : memMetricsMap.values())
+            for (DataRegionMetrics metrics : memMetricsMap.values())
                 res.add(new MemoryMetricsSnapshot(metrics));
 
             return res;
@@ -615,9 +615,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return PersistenceMetrics if persistence is enabled or {@code null} otherwise.
+     * @return DataStorageMetrics if persistence is enabled or {@code null} otherwise.
      */
-    public PersistenceMetrics persistentStoreMetrics() {
+    public DataStorageMetrics persistentStoreMetrics() {
         return null;
     }
 
@@ -630,13 +630,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName Name of {@link MemoryPolicy} to obtain {@link MemoryMetrics} for.
-     * @return {@link MemoryMetrics} snapshot for specified {@link MemoryPolicy} or {@code null} if
+     * @param memPlcName Name of {@link MemoryPolicy} to obtain {@link DataRegionMetrics} for.
+     * @return {@link DataRegionMetrics} snapshot for specified {@link MemoryPolicy} or {@code null} if
      * no {@link MemoryPolicy} is configured for specified name.
      */
-    @Nullable public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable public DataRegionMetrics memoryMetrics(String memPlcName) {
         if (!F.isEmpty(memMetricsMap)) {
-            MemoryMetrics memMetrics = memMetricsMap.get(memPlcName);
+            DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
 
             if (memMetrics == null)
                 return null;
@@ -649,7 +649,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param memPlcName Memory policy name.
-     * @return {@link MemoryPolicy} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @return {@link MemoryPolicy} instance associated with a given {@link DataRegionConfiguration}.
      * @throws IgniteCheckedException in case of request for unknown MemoryPolicy.
      */
     public MemoryPolicy memoryPolicy(String memPlcName) throws IgniteCheckedException {
@@ -668,8 +668,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName MemoryPolicyConfiguration name.
-     * @return {@link FreeList} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @param memPlcName DataRegionConfiguration name.
+     * @return {@link FreeList} instance associated with a given {@link DataRegionConfiguration}.
      */
     public FreeList freeList(String memPlcName) {
         if (memPlcName == null)
@@ -679,8 +679,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName MemoryPolicyConfiguration name.
-     * @return {@link ReuseList} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @param memPlcName DataRegionConfiguration name.
+     * @return {@link ReuseList} instance associated with a given {@link DataRegionConfiguration}.
      */
     public ReuseList reuseList(String memPlcName) {
         if (memPlcName == null)
@@ -720,7 +720,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             cfg.getMBeanServer().unregisterMBean(
                 U.makeMBeanName(
                     cfg.getIgniteInstanceName(),
-                    "MemoryMetrics", name
+                    "DataRegionMetrics", name
                     ));
         }
         catch (Throwable e) {
@@ -856,7 +856,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlc == null)
             return;
 
-        MemoryPolicyConfiguration plcCfg = memPlc.config();
+        DataRegionConfiguration plcCfg = memPlc.config();
 
         if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return;
@@ -887,14 +887,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memCfg memory configuration with common parameters.
      * @param plcCfg memory policy with PageMemory specific parameters.
-     * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
+     * @param memMetrics {@link DataRegionMetrics} object to collect memory usage metrics.
      * @return Memory policy instance.
      *
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     private MemoryPolicy initMemory(
-        MemoryConfiguration memCfg,
-        MemoryPolicyConfiguration plcCfg,
+        DataStorageConfiguration memCfg,
+        DataRegionConfiguration plcCfg,
         MemoryMetricsImpl memMetrics
     ) throws IgniteCheckedException {
         File allocPath = buildAllocPath(plcCfg);
@@ -914,7 +914,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc Memory Policy Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+    private PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || cctx.gridConfig().isPersistentStoreEnabled())
             return new NoOpPageEvictionTracker();
 
@@ -938,11 +938,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Builds allocation path for memory mapped file to be used with PageMemory.
      *
-     * @param plc MemoryPolicyConfiguration.
+     * @param plc DataRegionConfiguration.
      *
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
-    @Nullable protected File buildAllocPath(MemoryPolicyConfiguration plc) throws IgniteCheckedException {
+    @Nullable protected File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
         String path = plc.getSwapFilePath();
 
         if (path == null)
@@ -961,13 +961,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memProvider Memory provider.
      * @param memCfg Memory configuartion.
      * @param memPlcCfg Memory policy configuration.
-     * @param memMetrics MemoryMetrics to collect memory usage metrics.
+     * @param memMetrics DataRegionMetrics to collect memory usage metrics.
      * @return PageMemory instance.
      */
     protected PageMemory createPageMemory(
         DirectMemoryProvider memProvider,
-        MemoryConfiguration memCfg,
-        MemoryPolicyConfiguration memPlcCfg,
+        DataStorageConfiguration memCfg,
+        DataRegionConfiguration memPlcCfg,
         MemoryMetricsImpl memMetrics
     ) {
         memMetrics.persistenceEnabled(false);
@@ -1004,7 +1004,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getMemoryConfiguration() == null)
             return;
 
-        MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
         assert memCfg != null;
 
@@ -1023,7 +1023,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return Name of MemoryPolicyConfiguration for internal caches.
+     * @return Name of DataRegionConfiguration for internal caches.
      */
     public String systemMemoryPolicyName() {
         return SYSTEM_MEMORY_POLICY_NAME;

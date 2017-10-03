@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -38,8 +39,7 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -584,21 +584,21 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         throwUnsupported();
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
         throwUnsupported();
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics dataStorageMetrics() {
         throwUnsupported();
 
         return null;

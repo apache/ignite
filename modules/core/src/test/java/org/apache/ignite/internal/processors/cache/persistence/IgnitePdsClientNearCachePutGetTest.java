@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.configuration.DataStorageConfiguration6;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +34,7 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCacheP
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+            new DataStorageConfiguration6()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 
