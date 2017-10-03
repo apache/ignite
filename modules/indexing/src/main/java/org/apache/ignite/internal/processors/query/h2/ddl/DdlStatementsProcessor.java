@@ -229,6 +229,8 @@ public class DdlStatementsProcessor {
                 else {
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
+                    boolean allFieldsNullable = true;
+
                     for (GridSqlColumn col : cmd.columns()) {
                         if (tbl.doesColumnExist(col.columnName())) {
                             if ((!cmd.ifNotExists() || cmd.columns().length != 1)) {
@@ -242,13 +244,20 @@ public class DdlStatementsProcessor {
                             }
                         }
 
-                        cols.add(new QueryField(col.columnName(),
+                        QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable()));
+                            col.column().isNullable());
+
+                        cols.add(field);
+
+                        allFieldsNullable &= field.isNullable();
                     }
 
                     if (cols != null) {
                         assert tbl.rowDescriptor() != null;
+
+                        if (!allFieldsNullable)
+                            QueryUtils.checkNotNullAllowed(tbl.cache().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
@@ -276,7 +285,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DLL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
         }
     }
 
