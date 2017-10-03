@@ -504,20 +504,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     txEntry.oldValue(oldVal);
                 }
 
-                if (tx.hasInterceptor() &&
+                Object newVal = txEntry.hasValue() ? txEntry.value() : val;
+
+                if (tx.hasInterceptor() && newVal != null &&
                     (txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM)) {
-                    Object newVal = txEntry.hasValue() ? txEntry.value() : val;
-
-                    //CacheObject cacheVal = (val instanceof CacheObject) ? val : cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
-
-                    CacheLazyEntry lazyEntry = new CacheLazyEntry(cacheCtx, txEntry.key(), oldVal, txEntry.keepBinary());
+                    CacheLazyEntry lazyEntry = new CacheLazyEntry(cacheCtx, txEntry.key(), oldVal,
+                        txEntry.keepBinary());
 
                     Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(lazyEntry,
                         cacheCtx.unwrapBinaryIfNeeded(newVal, txEntry.keepBinary(), false));
 
-                    if (interceptorVal != null) {
-
-                        interceptorVal =  cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
+                    if (interceptorVal == null) {
+                        txEntry.op(GridCacheOperation.NOOP);
+                    }
+                    else if (interceptorVal != newVal) {
+                        interceptorVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
 
                         try {
                             cacheCtx.validateKeyAndValue(txEntry.key(), (CacheObject)interceptorVal);
@@ -525,19 +526,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         catch (Exception e) {
                             err = e;
 
-                            if (txEntry.op() == TRANSFORM) {
-                                txEntry.entryProcessorCalculatedValue(new T2<>(GridCacheOperation.NOOP, (CacheObject)null));
-
-                                ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, null, e, txEntry.keepBinary());
-                            }
-
                             txEntry.op(GridCacheOperation.NOOP);
+
                             ret.success(false);
-
-                            if (filterFailedKeys == null)
-                                filterFailedKeys = new ArrayList<>();
-
-                            filterFailedKeys.add(cached.txKey());
 
                             onDone(e);
 

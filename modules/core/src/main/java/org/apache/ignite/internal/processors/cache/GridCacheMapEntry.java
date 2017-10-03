@@ -959,7 +959,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 val = cctx.toCacheObject(val0);
 
-                cctx.validateKeyAndValue(key, val);
+                if (tx == null)
+                    cctx.validateKeyAndValue(key, val);
             }
 
             // Determine new ttl and expire time.
