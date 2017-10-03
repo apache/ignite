@@ -2360,6 +2360,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** Not null fields. */
         private Map<String, Set<String>> notNullFields;
+
         /**
          * Required by {@link Externalizable}.
          */
