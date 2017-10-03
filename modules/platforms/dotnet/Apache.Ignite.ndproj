@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <NDepend AppName="Apache.Ignite" Platform="DotNet" FileWrittenByProductVersion="2017.2.2.8962">
   <OutputDir KeepXmlFiles="False">c:\w\incubator-ignite\modules\platforms\dotnet\NDependOut</OutputDir>
   <Assemblies>
@@ -15,7 +15,7 @@
   <Dirs>
     <Dir>C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319</Dir>
     <Dir>C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\WPF</Dir>
-    <Dir>C:\w\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Core\bin\Debug</Dir>
+    <Dir>$(NdProjectDir)\Apache.Ignite.Core\bin\Debug</Dir>
   </Dirs>
   <MergeCodeGeneratedByCompiler>True</MergeCodeGeneratedByCompiler>
   <Report Kind="0" SectionsEnabled="110591" XslPath="" Flags="261120" />
@@ -81,8 +81,7 @@
       <High2Critical_SeverityThreshold>72000000000</High2Critical_SeverityThreshold>
       <Critical2Blocker_SeverityThreshold>360000000000</Critical2Blocker_SeverityThreshold>
     </DebtSettings>
-  </ProjectDebtSettings>
-  <Queries>
+  </ProjectDebtSettings><Queries>
     <Group Name="Quality Gates" Active="True" ShownInReport="True">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quality Gates Evolution</Name>
 from qg in QualityGates
@@ -11133,7 +11132,5 @@ select new {
 //</HowToFix>]]></Query>
       </Group>
     </Group>
-  </Queries>
-  <WarnFilter>
-  </WarnFilter>
-</NDepend>
+  </Queries><WarnFilter>
+  </WarnFilter></NDepend>
