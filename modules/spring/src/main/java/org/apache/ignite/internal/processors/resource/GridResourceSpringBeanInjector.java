@@ -114,13 +114,24 @@ public class GridResourceSpringBeanInjector implements GridResourceInjector {
                 "but not both");
         }
 
-        Object bean;
+        Object bean = null;
 
-        if (!StringUtils.isEmpty(beanName))
-            bean = springCtx.getBean(beanName);
-        else
-            bean = springCtx.getBean(beanCls);
-
+        if (!StringUtils.isEmpty(beanName)) {
+            try {
+                bean = springCtx.getBean(beanName);
+            } catch(NoSuchBeanDefinitionException ne) {
+                if(annotation.required())
+                    throw ne;   
+            }
+        }
+        else {
+            try {
+                vbean = springCtx.getBean(beanCls);
+            } catch(NoSuchBeanDefinitionException ne) {
+                if(annotation.required())
+                    throw ne;	
+            }
+        }
         return bean;
     }
 }

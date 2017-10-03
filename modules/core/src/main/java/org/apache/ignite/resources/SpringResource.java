@@ -106,6 +106,13 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface SpringResource {
+	
+    /**
+     * Declares whether the annotated dependency is required.
+     * <p>Defaults to {@code true}.
+     */
+    boolean required() default true;
+	
     /**
      * Resource bean name in provided {@code ApplicationContext} to look up
      * a Spring bean.
