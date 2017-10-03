@@ -69,7 +69,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -108,6 +110,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     private int archiveIncompleteSegmentAfterInactivityMs;
 
+    /** Custom wal mode. */
+    private WALMode customWalMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -142,7 +147,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         pCfg.setWalHistorySize(1);
         pCfg.setWalSegmentSize(1024 * 1024);
         pCfg.setWalSegments(WAL_SEGMENTS);
-        pCfg.setWalMode(WALMode.BACKGROUND);
+        pCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
@@ -304,7 +309,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final IgniteEvents evts = ignite.events();
 
         if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
-            return; //nothing to test
+            assertTrue("nothing to test", false);
 
         evts.localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event e) {
@@ -337,6 +342,22 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             cache0.put(i, new IndexedObject(i));
     }
 
+    /**
+     * Puts provided number of records to fill WAL
+     *
+     * @param ignite ignite instance
+     * @param recordsToWrite count
+     */
+    private void putAllDummyRecords(Ignite ignite, int recordsToWrite) {
+        IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
+
+        Map<Object, Object> values = new HashMap<>();
+
+        for (int i = 0; i < recordsToWrite; i++)
+            values.put(i, new IndexedObject(i));
+
+        cache0.putAll(values);
+    }
     /**
      * Puts provided number of records to fill WAL under transactions
      *
@@ -714,6 +735,103 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests archive completed event is fired
+     *
+     * @throws Exception if failed
+     */
+    public void testFillWalForExactSegmentsCount() throws Exception {
+        customWalMode = WALMode.DEFAULT;
+
+        final CountDownLatch reqSegments = new CountDownLatch(15);
+        final Ignite ignite = startGrid("node0");
+
+        ignite.active(true);
+
+        final IgniteEvents evts = ignite.events();
+
+        if (!evts.isEnabled(EVT_WAL_SEGMENT_ARCHIVED))
+            assertTrue("nothing to test", false);
+
+        evts.localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
+                WalSegmentArchivedEvent archComplEvt = (WalSegmentArchivedEvent)e;
+                long idx = archComplEvt.getAbsWalSegmentIdx();
+                log.info("Finished archive for segment [" + idx + ", " +
+                    archComplEvt.getArchiveFile() + "]: [" + e + "]");
+
+                reqSegments.countDown();
+                return true;
+            }
+        }, EVT_WAL_SEGMENT_ARCHIVED);
+
+
+        int totalEntries = 0;
+        while (reqSegments.getCount() > 0) {
+            final int write = 500;
+            putAllDummyRecords(ignite, write);
+            totalEntries += write;
+            Assert.assertTrue("Too much entries generated, but segments was not become available",
+                totalEntries < 10000);
+        }
+        final String subfolderName = genDbSubfolderName(ignite, 0);
+
+        stopGrid("node0");
+
+        final String workDir = U.defaultWorkDirectory();
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+
+        scanIterateAndCount(factory, workDir, subfolderName, totalEntries, 0, null, null);
+    }
+
+    /**
+     * Tests reading of empty WAL from non filled cluster
+     *
+     * @throws Exception if failed.
+     */
+    public void testReadEmptyWal() throws Exception {
+        customWalMode = WALMode.DEFAULT;
+
+        final Ignite ignite = startGrid("node0");
+
+        ignite.active(true);
+        ignite.active(false);
+
+        final String subfolderName = genDbSubfolderName(ignite, 0);
+
+        stopGrid("node0");
+
+        final String workDir = U.defaultWorkDirectory();
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+
+        scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, null);
+    }
+
+    @NotNull private IgniteWalIteratorFactory createWalIteratorFactory(String subfolderName,
+        String workDir) throws IgniteCheckedException {
+        final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
+        final File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
+        final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
+
+        return new IgniteWalIteratorFactory(log,
+            PAGE_SIZE,
+            binaryMetaWithConsId,
+            marshallerMapping);
+    }
+
+    /**
+     * Generates DB subfolder name for provided node index (local) and UUID (consistent ID)
+     *
+     * @param ignite ignite instance.
+     * @param nodeIdx node index.
+     * @return folder file name
+     */
+    @NotNull private String genDbSubfolderName(Ignite ignite, int nodeIdx) {
+        //todo use PdsConsistentIdProcessor for this
+        return U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
+    }
+
+
+    /**
      * @param values collection with numbers
      * @return sum of numbers
      */
@@ -781,7 +899,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             "; Key: " + unwrappedKeyObj +
                             "; Value: " + unwrappedValObj);
 
-                        if (cacheObjHnd != null && unwrappedKeyObj != null || unwrappedValObj != null)
+                        if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
                             cacheObjHnd.accept(unwrappedKeyObj, unwrappedValObj);
 
                         final Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
