@@ -113,6 +113,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -144,6 +145,9 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maximum number of query detail metrics to evict at once. */
     private static final int QRY_DETAIL_METRICS_EVICTION_LIMIT = 10_000;
+
+    /** Support 'not null' field constraint since v 2.3.0. */
+    private static final IgniteProductVersion NOT_NULLS_SUPPORT_VER = IgniteProductVersion.fromString("2.3.0");
 
     /** Comparator for priority queue with query detail metrics with priority to new metrics. */
     private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_NEW_CMP =
@@ -1863,17 +1867,39 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
 
-            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFutNew = null;
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFutOld = null;
 
             // Get metadata from remote nodes.
-            if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
+            if (!nodes.isEmpty()) {
+                Collection<ClusterNode> oldNodes = new ArrayList<>();
+                Collection<ClusterNode> newNodes = new ArrayList<>();
+
+                for (ClusterNode n : nodes) {
+                    if (n.version().compareTo(NOT_NULLS_SUPPORT_VER) < 0)
+                        oldNodes.add(n);
+                    else
+                        newNodes.add(n);
+                }
+
+                rmtFutNew = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), newNodes, true, 0);
+
+                if (!oldNodes.isEmpty()) {
+                    Callable<Collection<CacheSqlMetadata>> jobOld = new MetadataJob();
+
+                    rmtFutOld = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(jobOld),
+                        oldNodes, true, 0);
+                }
+            }
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
-            if (rmtFut != null)
-                res.addAll(rmtFut.get());
+            if (rmtFutNew != null)
+                res.addAll(rmtFutNew.get());
+
+            if (rmtFutOld != null)
+                res.addAll(rmtFutOld.get());
 
             res.add(locFut.get());
 
