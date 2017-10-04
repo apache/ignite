@@ -378,10 +378,8 @@ public class BinaryContext {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
         if (desc == null) {
-            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
-                return false;
-
-            if (Externalizable.class.isAssignableFrom(cls) && isExternalizableBinary())
+            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class) ||
+                Externalizable.class.isAssignableFrom(cls) && isExternalizableBinary())
                 return false;
 
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
