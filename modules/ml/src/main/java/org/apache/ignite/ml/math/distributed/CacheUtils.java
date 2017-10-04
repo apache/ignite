@@ -101,7 +101,7 @@ public class CacheUtils {
      * @param <K> Key type.
      * @return Cluster group for given key.
      */
-    public static <K> ClusterGroup groupForKey(String cacheName, K k) {
+    public static <K> ClusterGroup getClusterGroupForGivenKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
     }
 
