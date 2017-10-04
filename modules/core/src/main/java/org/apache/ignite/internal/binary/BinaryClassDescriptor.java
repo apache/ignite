@@ -112,6 +112,9 @@ public class BinaryClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
+    private final Method hashCodeMtd;
+
+    /** */
     private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
@@ -369,10 +372,13 @@ public class BinaryClassDescriptor {
             readResolveMtd = U.getNonPublicMethod(cls, "readResolve");
 
             writeReplaceMthd = U.getNonPublicMethod(cls, "writeReplace");
+
+            hashCodeMtd = U.getNonPublicMethod(cls, "hashCode");
         }
         else {
             readResolveMtd = null;
             writeReplaceMthd = null;
+            hashCodeMtd = null;
         }
 
         if (writeReplaceMthd != null && writeReplacer0 == null)
@@ -828,8 +834,12 @@ public class BinaryClassDescriptor {
                         }
 
                         postWrite(writer);
-                        //postWriteHashCode(writer, obj);
-                        writer.postWriteHashCode(obj.hashCode());
+
+                        if (hashCodeMtd != null)
+                            writer.postWriteHashCode(obj.hashCode());
+                        else
+                            postWriteHashCode(writer, obj);
+
                     }
                     finally {
                         writer.popSchema();
