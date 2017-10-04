@@ -905,10 +905,11 @@ public class BinaryClassDescriptor {
 
                     short checksum = reader.readShort();
 
-                    if (checksum != this.checksum)
+                    if (checksum != this.checksum) {
                         throw new ClassNotFoundException("Binary stream class checksum mismatch " +
                             "(is same version of marshalled class present on all nodes?) " +
                             "[expected=" + this.checksum + ", actual=" + checksum + ", cls=" + cls + ']');
+                    }
 
                     ((Externalizable)res).readExternal(reader);
 
