@@ -82,7 +82,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     private static final String ATTR_FILTERED = "FILTERED";
 
     /** SQL statement to create test table accompanied by template specification. */
-    private static final String CREATE_SQL_WITH_TEMPLATE = CREATE_SQL + " WITH \"template=TPL\"";
+    private final String createSql;
 
     /** Latches to block certain index operations. */
     private static final ConcurrentHashMap<UUID, T3<CountDownLatch, AtomicBoolean, CountDownLatch>> BLOCKS =
@@ -94,15 +94,20 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /** Atomicity mode. */
     private final CacheAtomicityMode atomicityMode;
 
+    /** Whether keys should be wrapped into a {@link BinaryObject}. */
+    private final boolean wrapKey;
+
     /**
      * Constructor.
-     *
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
+     * @param wrapKey Whether keys should be wrapped into a {@link BinaryObject}.
      */
-    DynamicColumnsAbstractConcurrentSelfTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+    DynamicColumnsAbstractConcurrentSelfTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, boolean wrapKey) {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
+        this.wrapKey = wrapKey;
+        createSql =  CREATE_SQL + " WITH \"template=TPL\",\"wrap_key=" + wrapKey + '"';
     }
 
     /** {@inheritDoc} */
@@ -158,7 +163,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(cli);
 
-        run(cli, CREATE_SQL_WITH_TEMPLATE);
+        run(cli, createSql);
 
         // Test migration between normal servers.
         CountDownLatch idxLatch = blockIndexing(srv1Id);
@@ -210,7 +215,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(srv1);
 
-        run(srv1, CREATE_SQL_WITH_TEMPLATE);
+        run(srv1, createSql);
 
         CountDownLatch idxLatch = blockIndexing(srv1);
 
@@ -253,7 +258,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(srv1);
 
-        run(srv1, CREATE_SQL_WITH_TEMPLATE);
+        run(srv1, createSql);
 
         CountDownLatch idxLatch = blockIndexing(srv1);
 
@@ -296,7 +301,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(srv1);
 
-        run(srv1, CREATE_SQL_WITH_TEMPLATE);
+        run(srv1, createSql);
 
         // Start data change operations from several threads.
         final AtomicBoolean stopped = new AtomicBoolean();
@@ -309,7 +314,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                     int key = ThreadLocalRandom.current().nextInt(0, LARGE_CACHE_SIZE);
                     int val = ThreadLocalRandom.current().nextInt();
 
-                    IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME);
+                    IgniteCache<Object, BinaryObject> cache = node.cache(CACHE_NAME);
 
                     if (ThreadLocalRandom.current().nextBoolean())
                         cache.put(key(node, key), val(node, val));
@@ -342,15 +347,15 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Get expected values.
         Set<Integer> expKeys = new HashSet<>();
 
-        IgniteCache<BinaryObject, BinaryObject> cache = srv1.cache(CACHE_NAME).withKeepBinary();
+        IgniteCache<Object, BinaryObject> cache = srv1.cache(CACHE_NAME).withKeepBinary();
 
         for (int i = 0; i < LARGE_CACHE_SIZE; i++) {
-            BinaryObject key = key(srv1, i);
+            Object key = key(srv1, i);
 
             BinaryObject val = cache.get(key);
 
             if (val != null) {
-                int id = key.field("ID");
+                int id = wrapKey ? (int)((BinaryObject)key).field("ID") : (Integer)key;
 
                 assertEquals(i, id);
 
@@ -363,17 +368,17 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         // Validate query result.
         for (Ignite node : Ignition.allGrids()) {
-            IgniteCache<BinaryObject, BinaryObject> nodeCache = node.cache(CACHE_NAME).withKeepBinary();
+            IgniteCache<Object, BinaryObject> nodeCache = node.cache(CACHE_NAME).withKeepBinary();
 
             SqlQuery qry = new SqlQuery(valTypeName, "from " + TBL_NAME + " where mod(id, 2) <> 0");
 
-            List<Cache.Entry<BinaryObject, BinaryObject>> res = nodeCache.query(qry).getAll();
+            List<Cache.Entry<Object, BinaryObject>> res = nodeCache.query(qry).getAll();
 
             assertEquals("Cache size mismatch [exp=" + expKeys.size() + ", actual=" + res.size() + ']',
                 expKeys.size(), res.size());
 
-            for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-                int key = entry.getKey().field("ID");
+            for (Cache.Entry<Object, BinaryObject> entry : res) {
+                int key = wrapKey ? (int)((BinaryObject) entry.getKey()).field("ID") : (Integer)entry.getKey();
                 int v = entry.getValue().field("v");
 
                 String name = entry.getValue().field("NAME");
@@ -399,13 +404,16 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
     /**
      * @param node Node.
-     * @param key Value for ID field.
-     * @return PERSON cache key.
+     * @param id Key.
+     * @return PERSON cache key (int or {@link BinaryObject}).
      */
-    private BinaryObject key(Ignite node, int key) {
+    private Object key(Ignite node, int id) {
+        if (!wrapKey)
+            return id;
+
         String keyTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME).iterator().next().keyTypeName();
 
-        return node.binary().builder(keyTypeName).setField("ID", key).build();
+        return node.binary().builder(keyTypeName).setField("ID", id).build();
     }
 
     /**
@@ -420,7 +428,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(srv1);
 
-        run(srv1, CREATE_SQL_WITH_TEMPLATE);
+        run(srv1, createSql);
 
         awaitPartitionMapExchange();
 
@@ -481,7 +489,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Start cache and populate it with data.
         createSqlCache(cli);
 
-        run(cli, CREATE_SQL_WITH_TEMPLATE);
+        run(cli, createSql);
 
         put(cli, 0, LARGE_CACHE_SIZE);
 
@@ -526,7 +534,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(cli);
 
-        run(cli, CREATE_SQL_WITH_TEMPLATE);
+        run(cli, createSql);
 
         put(cli, 0, 5000);
 
@@ -539,8 +547,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" + dynColCnt.getAndIncrement(),
-                        Integer.class.getName()));
+                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" +
+                        dynColCnt.getAndIncrement(), Integer.class.getName()));
 
                     try {
                         fut.get();
@@ -641,7 +649,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         if (dynamicCache) {
             createSqlCache(cli);
 
-            run(cli, CREATE_SQL_WITH_TEMPLATE);
+            run(cli, createSql);
         }
 
         final String schemaName = dynamicCache ? QueryUtils.DFLT_SCHEMA : "idx";
@@ -677,7 +685,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                     if (dynamicCache) {
                         DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, DROP_SQL);
 
-                        DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, CREATE_SQL_WITH_TEMPLATE);
+                        DynamicColumnsAbstractConcurrentSelfTest.this.run(srvNode, createSql);
                     }
                     else {
                         srvNode.destroyCache("idx");
@@ -724,7 +732,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         createSqlCache(cli);
 
-        run(cli, CREATE_SQL_WITH_TEMPLATE);
+        run(cli, createSql);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -783,8 +791,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" + dynColCnt.getAndIncrement(),
-                        Integer.class.getName()));
+                    IgniteInternalFuture fut = addCols(node, QueryUtils.DFLT_SCHEMA, c("newCol" +
+                        dynColCnt.getAndIncrement(), Integer.class.getName()));
 
                     try {
                         fut.get();

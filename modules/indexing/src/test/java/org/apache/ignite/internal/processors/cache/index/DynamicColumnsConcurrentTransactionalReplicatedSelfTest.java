@@ -28,6 +28,6 @@ public class DynamicColumnsConcurrentTransactionalReplicatedSelfTest extends Dyn
      * Constructor.
      */
     public DynamicColumnsConcurrentTransactionalReplicatedSelfTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
+        super(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, true);
     }
 }

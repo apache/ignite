@@ -28,6 +28,6 @@ public class DynamicColumnsConcurrentAtomicPartitionedSelfTest extends DynamicCo
      * Constructor.
      */
     public DynamicColumnsConcurrentAtomicPartitionedSelfTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, true);
     }
 }

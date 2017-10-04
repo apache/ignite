@@ -302,6 +302,42 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * 
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testA() {
+        CacheConfiguration c =
+            new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            grid(nodeIndex()).getOrCreateCache(c);
+
+            doTestX("INTEGER");
+        }
+        finally {
+            grid(nodeIndex()).destroyCache("ints");
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testB() {
+        try {
+            run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
+
+            doTestX("TEST");
+        }
+        finally {
+            run("DROP TABLE TEST");
+        }
+    }
+
+    private void doTestX(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
+            "ADD COLUMN is not supported for tables that have an SQL type as expected cache value type.");
+    }
+
+    /**
      * @return Node index to run queries on.
      */
     protected abstract int nodeIndex();

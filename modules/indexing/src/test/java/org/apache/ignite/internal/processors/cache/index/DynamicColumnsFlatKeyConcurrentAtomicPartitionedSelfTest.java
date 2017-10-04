@@ -21,13 +21,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
 /**
- * Test to check concurrent operations on dynamic columns on ATOMIC REPLICATED cache.
+ * Test to check concurrent operations on dynamic columns on ATOMIC PARTITIONED cache with flat key.
  */
-public class DynamicColumnsConcurrentAtomicReplicatedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
+public class DynamicColumnsFlatKeyConcurrentAtomicPartitionedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
     /**
      * Constructor.
      */
-    public DynamicColumnsConcurrentAtomicReplicatedSelfTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, true);
+    public DynamicColumnsFlatKeyConcurrentAtomicPartitionedSelfTest() {
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, false);
     }
 }

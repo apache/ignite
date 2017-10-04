@@ -227,6 +227,10 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
+                    if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
+                        throw new SchemaOperationException("ADD COLUMN is not supported for tables that have " +
+                            "an SQL type as expected cache value type.");
+
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
                     boolean allFieldsNullable = true;

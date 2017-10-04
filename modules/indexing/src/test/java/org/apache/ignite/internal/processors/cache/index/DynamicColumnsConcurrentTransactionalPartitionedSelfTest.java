@@ -28,6 +28,6 @@ public class DynamicColumnsConcurrentTransactionalPartitionedSelfTest extends Dy
      * Constructor.
      */
     public DynamicColumnsConcurrentTransactionalPartitionedSelfTest() {
-        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
+        super(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true);
     }
 }
