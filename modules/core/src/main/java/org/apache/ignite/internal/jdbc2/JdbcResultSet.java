@@ -1604,17 +1604,17 @@ public class JdbcResultSet implements ResultSet {
             return -1;
 
         if (rows.size() != 1)
-            throw new SQLException("Expected fetch size of 1 for update operation");
+            throw new SQLException("Expected fetch size of 1 for update operation.");
 
         List<?> row = rows.get(0);
 
         if (row.size() != 1)
-            throw new SQLException("Expected row size of 1 for update operation");
+            throw new SQLException("Expected row size of 1 for update operation.");
 
         Object objRes = row.get(0);
 
         if (!(objRes instanceof Long))
-            throw new SQLException("Unexpected update result type");
+            throw new SQLException("Unexpected update result type.");
 
         return (Long)objRes;
     }

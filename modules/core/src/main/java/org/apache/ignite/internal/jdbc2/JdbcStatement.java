@@ -457,6 +457,7 @@ public class JdbcStatement implements Statement {
             long updateCnt = F.isEmpty(res)? -1 : res[res.length - 1];
 
             results = Collections.singletonList(new JdbcResultSet(this, updateCnt));
+
             curRes = 0;
 
             return res;
@@ -659,6 +660,7 @@ public class JdbcStatement implements Statement {
 
     /**
      * Close results.
+     *
      * @throws SQLException On error.
      */
     private void closeResults() throws SQLException {

@@ -63,6 +63,7 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
         JdbcResultSet rs = new JdbcResultSet(this, updCnt);
 
         results = Collections.singletonList(rs);
+
         curRes = 0;
     }
 }
