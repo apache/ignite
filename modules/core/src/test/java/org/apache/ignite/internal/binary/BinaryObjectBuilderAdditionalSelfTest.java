@@ -1559,13 +1559,16 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
     /**
      * Deserialize each element of binary objects array.
+     *
+     * @param array Array of binary objects.
      */
-    private Object[] deserializeBinaryObjectArray(Object[] arr){
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = ((BinaryObject)arr[i]).deserialize();
+    private Object[] deserializeBinaryObjectArray(Object[] array){
+        Object[] objArr = new Object[array.length];
+        for (int i = 0; i < objArr.length; i++) {
+            objArr[i] = ((BinaryObject)array[i]).deserialize();
         }
 
-        return arr;
+        return objArr;
     }
 
     /**

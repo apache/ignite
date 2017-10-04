@@ -599,7 +599,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         SimpleExternalizable obj = marshalUnmarshal(exp);
 
-        assertEquals(obj.field, exp.field);
+        assertEquals(exp.field, obj.field);
     }
 
     /**
@@ -645,7 +645,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         ObjectInsideExternalizable obj = marshalUnmarshal(exp);
 
-        assertEquals(obj.field, exp.field);
+        assertEquals(exp.field, obj.field);
     }
 
     /**
