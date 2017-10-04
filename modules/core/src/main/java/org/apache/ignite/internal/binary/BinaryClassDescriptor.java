@@ -172,8 +172,8 @@ public class BinaryClassDescriptor {
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         // But if class represents the Externalizable, then we have to use BinaryMarshaller.
-        if ((serializer == null || isGeometryClass(cls)) && !AffinityKey.class.isAssignableFrom(cls)) {
-            useCustomSerialization = Externalizable.class.isAssignableFrom(cls) && !GridCacheSetHeaderKey.class.isAssignableFrom(cls);
+        if (serializer == null || isGeometryClass(cls)) {
+            useCustomSerialization = Externalizable.class.isAssignableFrom(cls);
             useOptMarshaller = !useCustomSerialization || !ctx.isExternalizableBinary();
         }
         else {
