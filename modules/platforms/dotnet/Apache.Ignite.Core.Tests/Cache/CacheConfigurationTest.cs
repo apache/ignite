@@ -573,7 +573,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
                 CacheStoreFactory = new CacheStoreFactoryTest(),
-                ReadThrough = true,
+                ReadThrough = false,
                 WriteThrough = true,
                 WriteBehindCoalescing = false,
                 GroupName = "someGroup",
