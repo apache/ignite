@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
@@ -162,7 +163,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder) */
     private File walArchiveDir;
 
-    /** Serializer of latest version. */
+    /** Serializer of latest version, used to read header record and for write records */
     private RecordSerializer serializer;
 
     /** Serializer latest version to use. */
@@ -258,25 +259,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode()) {
-            String consId = consistentId();
-
-            A.notNullOrEmpty(consId, "consistentId");
-
-            consId = U.maskForFileName(consId);
+            final PdsFolderSettings resolveFolders = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
             checkWalConfiguration();
 
             walWorkDir = initDirectory(
                 psCfg.getWalStorePath(),
                 DataStorageConfiguration.DFLT_WAL_STORE_PATH,
-                consId,
+                resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
             walArchiveDir = initDirectory(
                 psCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
-                consId,
+                resolveFolders.folderName(),
                 "write ahead log archive directory"
             );
 
@@ -315,13 +312,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", walArchivePath = " + psCfg.getWalArchivePath() + "]"
             );
         }
-    }
-
-    /**
-     * @return Consistent ID.
-     */
-    protected String consistentId() {
-        return cctx.discovery().consistentId().toString();
     }
 
     /** {@inheritDoc} */
