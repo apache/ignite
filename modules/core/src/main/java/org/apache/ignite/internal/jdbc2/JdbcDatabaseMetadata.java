@@ -1447,7 +1447,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
             IgniteCache cache = ignite.cache(cacheName);
 
-            return ((IgniteCacheProxy)cache).context().queries().sqlMetadata();
+            return ((IgniteCacheProxy)cache).context().queries().sqlMetadataV2();
         }
     }
 

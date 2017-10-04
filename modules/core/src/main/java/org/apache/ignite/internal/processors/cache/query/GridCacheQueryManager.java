@@ -1860,6 +1860,68 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
         try {
+            Callable<Collection<CacheSqlMetadata>> job = new MetadataJob();
+
+            // Remote nodes that have current cache.
+            Collection<ClusterNode> nodes = CU.affinityNodes(cctx, AffinityTopologyVersion.NONE);
+
+            Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
+
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+
+            // Get metadata from remote nodes.
+            if (!nodes.isEmpty())
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
+
+            // Get local metadata.
+            IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+
+            if (rmtFut != null)
+                res.addAll(rmtFut.get());
+
+            res.add(locFut.get());
+
+            Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
+
+            for (Collection<CacheSqlMetadata> col : res) {
+                for (CacheSqlMetadata meta : col) {
+                    String name = meta.cacheName();
+
+                    Collection<CacheSqlMetadata> cacheMetas = map.get(name);
+
+                    if (cacheMetas == null)
+                        map.put(name, cacheMetas = new LinkedList<>());
+
+                    cacheMetas.add(meta);
+                }
+            }
+
+            Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
+
+            // Metadata for current cache must be first in list.
+            col.add(new CacheSqlMetadata(map.remove(cacheName)));
+
+            for (Collection<CacheSqlMetadata> metas : map.values())
+                col.add(new CacheSqlMetadata(metas));
+
+            return col;
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Gets SQL metadata with not nulls fields.
+     *
+     * @return SQL metadata.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public Collection<GridCacheSqlMetadata> sqlMetadataV2() throws IgniteCheckedException {
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to get metadata (grid is stopping).");
+
+        try {
             Callable<Collection<CacheSqlMetadata>> job = new MetadataJobV2();
 
             // Remote nodes that have current cache.
@@ -1867,39 +1929,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
 
-            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFutNew = null;
-            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFutOld = null;
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty()) {
-                Collection<ClusterNode> oldNodes = new ArrayList<>();
-                Collection<ClusterNode> newNodes = new ArrayList<>();
+                boolean allNodesNew = true;
 
                 for (ClusterNode n : nodes) {
                     if (n.version().compareTo(NOT_NULLS_SUPPORT_VER) < 0)
-                        oldNodes.add(n);
-                    else
-                        newNodes.add(n);
+                        allNodesNew = false;
                 }
 
-                rmtFutNew = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), newNodes, true, 0);
+                if (!allNodesNew)
+                    return sqlMetadata();
 
-                if (!oldNodes.isEmpty()) {
-                    Callable<Collection<CacheSqlMetadata>> jobOld = new MetadataJob();
-
-                    rmtFutOld = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(jobOld),
-                        oldNodes, true, 0);
-                }
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
             }
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
-            if (rmtFutNew != null)
-                res.addAll(rmtFutNew.get());
-
-            if (rmtFutOld != null)
-                res.addAll(rmtFutOld.get());
+            if (rmtFut != null)
+                res.addAll(rmtFut.get());
 
             res.add(locFut.get());
 
@@ -1924,7 +1975,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             col.add(new CacheSqlMetadataV2(map.remove(cacheName)));
 
             for (Collection<CacheSqlMetadata> metas : map.values())
-                col.add(new CacheSqlMetadata(metas));
+                col.add(new CacheSqlMetadataV2(metas));
 
             return col;
         }
