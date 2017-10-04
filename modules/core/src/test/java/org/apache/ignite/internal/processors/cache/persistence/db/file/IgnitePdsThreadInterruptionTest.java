@@ -58,7 +58,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(storeConfiguration());
+        cfg.setDataStorageConfiguration(storeConfiguration());
 
         cfg.setDataStorageConfiguration(memoryConfiguration());
 

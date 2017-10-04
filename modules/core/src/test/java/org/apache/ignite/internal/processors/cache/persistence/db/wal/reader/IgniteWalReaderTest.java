@@ -146,7 +146,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(pCfg);
         return cfg;
     }
 

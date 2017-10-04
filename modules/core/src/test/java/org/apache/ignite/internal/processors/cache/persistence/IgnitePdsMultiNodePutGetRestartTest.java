@@ -96,7 +96,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

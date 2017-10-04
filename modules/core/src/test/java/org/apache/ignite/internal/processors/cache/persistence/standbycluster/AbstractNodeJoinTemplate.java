@@ -308,7 +308,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     protected IgniteConfiguration persistentCfg(IgniteConfiguration cfg) throws Exception {
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }

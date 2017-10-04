@@ -63,7 +63,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cfg.setClientMode(clientMode);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );

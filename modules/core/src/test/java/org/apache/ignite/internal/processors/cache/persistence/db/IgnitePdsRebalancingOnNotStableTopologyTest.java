@@ -166,7 +166,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
         );

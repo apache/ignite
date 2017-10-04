@@ -77,7 +77,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
         );

@@ -44,7 +44,7 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPersistentStoreConfiguration(new DataStorageConfiguration())
+            .setDataStorageConfiguration(new DataStorageConfiguration())
             .setCacheConfiguration(new <String, Person>CacheConfiguration("cache")
                 .setQueryEntities(getIndexCfg())
                 .setAffinity(new RendezvousAffinityFunction(false, 16)));

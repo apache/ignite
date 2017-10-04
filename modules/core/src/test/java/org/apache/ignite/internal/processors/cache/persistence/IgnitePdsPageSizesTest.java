@@ -63,7 +63,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );

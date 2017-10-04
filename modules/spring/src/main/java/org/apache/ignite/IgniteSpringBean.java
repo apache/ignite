@@ -294,6 +294,24 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         checkIgnite();
 

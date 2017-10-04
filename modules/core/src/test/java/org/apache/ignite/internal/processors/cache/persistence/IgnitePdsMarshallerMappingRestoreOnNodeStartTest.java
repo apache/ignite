@@ -41,7 +41,7 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIndex).toString());
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
         );
 

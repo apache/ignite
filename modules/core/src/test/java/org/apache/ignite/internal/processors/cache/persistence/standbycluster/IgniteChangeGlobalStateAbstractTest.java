@@ -345,7 +345,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         pCfg.setWalArchivePath(testName() + "/db/wal/archive");
         pCfg.setWalStorePath(testName() + "/db/wal");
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(pCfg);
 
         final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 

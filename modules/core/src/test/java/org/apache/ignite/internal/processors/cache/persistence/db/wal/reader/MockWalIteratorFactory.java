@@ -87,7 +87,7 @@ public class MockWalIteratorFactory {
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);
 
-        when(cfg.getPersistentStoreConfiguration()).thenReturn(persistentCfg1);
+        when(cfg.getDataStorageConfiguration()).thenReturn(persistentCfg1);
 
         final GridKernalContext ctx = Mockito.mock(GridKernalContext.class);
 

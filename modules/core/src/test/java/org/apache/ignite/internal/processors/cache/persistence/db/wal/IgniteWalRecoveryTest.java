@@ -160,7 +160,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         if (walSegmentSize != 0)
             pCfg.setWalSegmentSize(walSegmentSize);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(pCfg);
 
         cfg.setMarshaller(null);
 

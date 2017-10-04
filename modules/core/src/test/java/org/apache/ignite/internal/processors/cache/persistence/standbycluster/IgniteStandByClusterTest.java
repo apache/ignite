@@ -68,7 +68,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         cfg.setConsistentId(igniteInstanceName);
 
         return cfg;

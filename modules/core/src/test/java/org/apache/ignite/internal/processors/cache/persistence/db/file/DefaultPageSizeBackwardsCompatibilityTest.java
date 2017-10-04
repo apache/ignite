@@ -81,7 +81,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setCheckpointingFrequency(3_000));
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setCheckpointingFrequency(3_000));
 
         cfg.setConsistentId(gridName);
 

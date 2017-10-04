@@ -81,7 +81,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }

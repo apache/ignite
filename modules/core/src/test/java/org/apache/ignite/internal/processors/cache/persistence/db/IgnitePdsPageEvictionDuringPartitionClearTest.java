@@ -75,7 +75,7 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );

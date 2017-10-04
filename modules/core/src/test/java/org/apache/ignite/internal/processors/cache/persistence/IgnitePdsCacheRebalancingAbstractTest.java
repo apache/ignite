@@ -129,7 +129,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );

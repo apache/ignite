@@ -102,7 +102,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
                 .setCheckpointingFrequency(checkpointDelay)

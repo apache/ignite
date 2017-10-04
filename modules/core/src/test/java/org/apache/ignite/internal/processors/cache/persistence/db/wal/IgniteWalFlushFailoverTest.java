@@ -98,7 +98,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
                 // Setting WAL Segment size to high values forces flushing by timeout.
                 .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
-        cfg.setPersistentStoreConfiguration(storeCfg);
+        cfg.setDataStorageConfiguration(storeCfg);
 
         return cfg;
     }

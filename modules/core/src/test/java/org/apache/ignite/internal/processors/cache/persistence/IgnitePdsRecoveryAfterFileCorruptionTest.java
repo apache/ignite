@@ -94,7 +94,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointingFrequency(500)
                 .setAlwaysWriteFullPages(true)

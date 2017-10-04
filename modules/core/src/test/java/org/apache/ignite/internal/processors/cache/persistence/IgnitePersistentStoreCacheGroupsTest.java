@@ -90,7 +90,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

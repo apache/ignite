@@ -48,7 +48,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }

@@ -40,7 +40,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }
@@ -102,7 +102,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
     }
 }

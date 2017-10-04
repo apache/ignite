@@ -76,6 +76,8 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -3540,6 +3542,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        // TODO IGNITE-6030: convert new metrics into old
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -111,7 +111,7 @@ public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbst
 
         cfg.setCacheConfiguration(indexedCacheCfg);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         cfg.setConsistentId(gridName);
 

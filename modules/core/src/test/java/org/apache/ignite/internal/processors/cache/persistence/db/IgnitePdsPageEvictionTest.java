@@ -83,7 +83,7 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()

@@ -64,7 +64,7 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
 
         pCfg.setWalMode(WALMode.LOG_ONLY);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(pCfg);
 
         return cfg;
     }

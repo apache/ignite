@@ -64,7 +64,7 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalSegmentSize(4 * 1024 * 1024)
                 .setWalHistorySize(2)

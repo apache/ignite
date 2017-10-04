@@ -62,7 +62,7 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
     }

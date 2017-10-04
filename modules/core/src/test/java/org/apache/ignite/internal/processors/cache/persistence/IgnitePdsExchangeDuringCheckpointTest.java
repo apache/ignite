@@ -111,7 +111,7 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
             .setCheckpointingFrequency(1)
             .setWalMode(WALMode.LOG_ONLY);
 
-        cfg.setPersistentStoreConfiguration(psiCfg);
+        cfg.setDataStorageConfiguration(psiCfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

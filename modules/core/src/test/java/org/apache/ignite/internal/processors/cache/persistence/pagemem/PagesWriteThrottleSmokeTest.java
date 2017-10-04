@@ -95,7 +95,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.BACKGROUND)
                 .setCheckpointingFrequency(20_000)

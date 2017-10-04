@@ -77,7 +77,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         dbCfg.setDataRegions(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );

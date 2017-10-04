@@ -882,7 +882,7 @@ public class CacheGroupContext {
      * @return Persistence enabled flag.
      */
     public boolean persistenceEnabled() {
-        return ctx.kernalContext().config().getPersistentStoreConfiguration() != null &&
+        return ctx.kernalContext().config().getDataStorageConfiguration() != null &&
             memPlc.config().isPersistenceEnabled();
     }
 

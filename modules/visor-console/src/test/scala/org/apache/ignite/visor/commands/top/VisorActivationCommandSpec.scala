@@ -34,7 +34,7 @@ class VisorActivationCommandSpec extends VisorRuntimeBaseSpec(2) {
         memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024)
 
         cfg.setMemoryConfiguration(memCfg)
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration)
+        cfg.setDataStorageConfiguration(new PersistentStoreConfiguration)
 
         cfg
     }

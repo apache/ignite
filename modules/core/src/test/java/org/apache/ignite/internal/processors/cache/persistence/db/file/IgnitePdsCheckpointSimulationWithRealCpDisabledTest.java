@@ -109,7 +109,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointingFrequency(500)
                 .setWalMode(WALMode.LOG_ONLY)

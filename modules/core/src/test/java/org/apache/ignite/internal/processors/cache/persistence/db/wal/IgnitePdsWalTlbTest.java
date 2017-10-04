@@ -64,7 +64,7 @@ public class IgnitePdsWalTlbTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointingPageBufferSize(DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE + 1)
                 .setTlbSize(640000000)

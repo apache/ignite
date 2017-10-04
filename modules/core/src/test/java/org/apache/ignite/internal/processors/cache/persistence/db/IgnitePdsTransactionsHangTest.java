@@ -122,7 +122,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         cfg.setTransactionConfiguration(txCfg);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalHistorySize(1)
                 .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)

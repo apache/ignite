@@ -238,7 +238,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
         igCfg = ctx.config();
 
-        DataStorageConfiguration psCfg = igCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration psCfg = igCfg.getDataStorageConfiguration();
 
         assert psCfg != null : "WAL should not be created if persistence is disabled.";
 

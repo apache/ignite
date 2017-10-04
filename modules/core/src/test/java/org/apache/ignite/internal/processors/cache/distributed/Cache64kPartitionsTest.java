@@ -44,7 +44,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
         cfg.setActiveOnStart(false);
 
         if (persistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }

@@ -457,10 +457,15 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
-    private DataStorageConfiguration memCfg;
+    @Deprecated
+    private MemoryConfiguration memCfg;
 
     /** Persistence store configuration. */
-    private DataStorageConfiguration pstCfg;
+    @Deprecated
+    private PersistentStoreConfiguration pstCfg;
+
+    /** Page memory configuration. */
+    private DataStorageConfiguration dsCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -510,7 +515,7 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        memCfg = cfg.getDataStorageConfiguration();
+        dsCfg = cfg.getDataStorageConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
@@ -2158,9 +2163,8 @@ public class IgniteConfiguration {
      * @return Memory configuration.
      */
     public DataStorageConfiguration getDataStorageConfiguration() {
-        return memCfg;
+        return dsCfg;
     }
-    // TODO IGNITE-6030 deprecated memory configuration
 
     /**
      * Sets durable memory configuration.
@@ -2169,11 +2173,35 @@ public class IgniteConfiguration {
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
-        this.memCfg = dsCfg;
+        this.dsCfg = dsCfg;
 
         return this;
     }
-    // TODO IGNITE-6030 deprecated memory configuration
+
+    /**
+     * Gets page memory configuration.
+     *
+     * @return Memory configuration.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
+    public MemoryConfiguration getMemoryConfiguration() {
+        return memCfg;
+    }
+
+    /**
+     * Sets page memory configuration.
+     *
+     * @param memCfg Memory configuration.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
+    public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
+        this.memCfg = memCfg;
+
+        return this;
+    }
 
     /**
      * Gets persistence configuration used by Apache Ignite Persistent Store.
@@ -2183,7 +2211,7 @@ public class IgniteConfiguration {
      * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
     @Deprecated
-    public DataStorageConfiguration getPersistentStoreConfiguration() {
+    public PersistentStoreConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
@@ -2195,6 +2223,7 @@ public class IgniteConfiguration {
      */
     @Deprecated
     public boolean isPersistentStoreEnabled() {
+        // TODO IGNITE-6030 should we deprecate it? if no, reimplement this method
         return pstCfg != null;
     }
 
@@ -2207,7 +2236,7 @@ public class IgniteConfiguration {
      * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
     @Deprecated
-    public IgniteConfiguration setPersistentStoreConfiguration(DataStorageConfiguration pstCfg) {
+    public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
         return this;

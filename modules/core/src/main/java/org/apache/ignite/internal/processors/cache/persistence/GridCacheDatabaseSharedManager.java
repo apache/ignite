@@ -312,7 +312,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public GridCacheDatabaseSharedManager(GridKernalContext ctx) {
         IgniteConfiguration cfg = ctx.config();
 
-        persistenceCfg = cfg.getPersistentStoreConfiguration();
+        persistenceCfg = cfg.getDataStorageConfiguration();
 
         assert persistenceCfg != null : "PageStore should not be created if persistence is disabled.";
 
@@ -408,7 +408,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Checkpoint buffer size.
      */
     public static long checkpointBufferSize(IgniteConfiguration cfg) {
-        DataStorageConfiguration persistenceCfg = cfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration persistenceCfg = cfg.getDataStorageConfiguration();
 
         if (persistenceCfg == null)
             return 0L;

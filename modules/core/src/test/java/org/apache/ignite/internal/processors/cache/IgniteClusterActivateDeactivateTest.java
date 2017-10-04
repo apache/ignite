@@ -126,7 +126,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             pCfg.setWalMode(WALMode.LOG_ONLY);
 
-            cfg.setPersistentStoreConfiguration(pCfg);
+            cfg.setDataStorageConfiguration(pCfg);
         }
 
         if (testSpi) {

@@ -109,7 +109,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientIpFinder));
         }
 
-        cfg.setPersistentStoreConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         cfg.setConsistentId(name);
 
         return cfg;

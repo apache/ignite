@@ -75,7 +75,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         pCfg.setCheckpointingFrequency(1000);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(pCfg);
 
         cfg.setActiveOnStart(true);
 

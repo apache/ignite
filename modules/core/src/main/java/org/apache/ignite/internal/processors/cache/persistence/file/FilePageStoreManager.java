@@ -108,7 +108,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        DataStorageConfiguration pstCfg = igniteCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration pstCfg = igniteCfg.getDataStorageConfiguration();
 
         assert pstCfg != null : "WAL should not be created if persistence is disabled.";
 

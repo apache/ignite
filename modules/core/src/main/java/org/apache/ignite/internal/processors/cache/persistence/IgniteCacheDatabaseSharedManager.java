@@ -169,7 +169,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
 
-            boolean persistenceEnabled = cctx.kernalContext().config().getPersistentStoreConfiguration() != null &&
+            boolean persistenceEnabled = cctx.kernalContext().config().getDataStorageConfiguration() != null &&
                 memPlcCfg.isPersistenceEnabled();
 
             FreeListImpl freeList = new FreeListImpl(0,

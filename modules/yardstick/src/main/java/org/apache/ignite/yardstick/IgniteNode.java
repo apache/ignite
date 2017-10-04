@@ -172,7 +172,7 @@ public class IgniteNode implements BenchmarkServer {
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-            c.setPersistentStoreConfiguration(pcCfg);
+            c.setDataStorageConfiguration(pcCfg);
         }
 
         ignite = IgniteSpring.start(c, appCtx);

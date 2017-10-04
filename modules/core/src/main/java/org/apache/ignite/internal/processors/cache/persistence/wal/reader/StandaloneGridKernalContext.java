@@ -174,7 +174,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         cfg.setMarshaller(marshaller);
 
         DataStorageConfiguration pstCfg = new DataStorageConfiguration();
-        cfg.setPersistentStoreConfiguration(pstCfg);
+        cfg.setDataStorageConfiguration(pstCfg);
 
         marshaller.setContext(marshallerContext);
 

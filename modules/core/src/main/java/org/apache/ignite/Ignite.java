@@ -676,6 +676,25 @@ public interface Ignite extends AutoCloseable {
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
+     * @return Collection of {@link MemoryMetrics} snapshots.
+     * @deprecated Use {@link #dataRegionMetrics()} instead.
+     */
+    public Collection<MemoryMetrics> memoryMetrics();
+
+    /**
+     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
+     */
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+
+    /**
+     * @return {@link PersistenceMetrics} snapshot.
+     * @deprecated Use {@link #dataStorageMetrics()} instead.
+     */
+    @Deprecated
+    public PersistenceMetrics persistentStoreMetrics();
+
+    /**
      * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
      * Returns the collection that contains the latest snapshots for each memory region
@@ -684,7 +703,6 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of {@link DataRegionMetrics} snapshots.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
-    // TODO IGNITE-6030 deprecated memory metrics
 
     /**
      * Returns the latest {@link DataRegionMetrics} snapshot for the memory region of the given name.
@@ -697,12 +715,9 @@ public interface Ignite extends AutoCloseable {
      * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      */
     @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
-    // TODO IGNITE-6030 deprecated memory metrics
 
     /**
-     *
      * @return {@link DataStorageMetrics} snapshot.
      */
     public DataStorageMetrics dataStorageMetrics();
-    // TODO IGNITE-6030 deprecated persistent store metrics
 }

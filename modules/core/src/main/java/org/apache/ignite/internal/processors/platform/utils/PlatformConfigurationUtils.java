@@ -711,7 +711,7 @@ public class PlatformConfigurationUtils {
             cfg.setClientConnectorConfiguration(null);
 
         if (in.readBoolean())
-            cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
+            cfg.setDataStorageConfiguration(readPersistentStoreConfiguration(in));
 
         readPluginConfiguration(cfg, in);
 
@@ -1188,7 +1188,7 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
 
-        writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
+        writePersistentStoreConfiguration(w, cfg.getDataStorageConfiguration());
 
         w.writeString(cfg.getIgniteHome());
 

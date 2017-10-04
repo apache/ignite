@@ -33,7 +33,7 @@ public class IgnitePdsSingleNodePutGetPersistenceTest extends IgniteDbSingleNode
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(
+        cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
         );
