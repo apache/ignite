@@ -71,9 +71,6 @@ public class MatrixUtil {
      * @return Like matrix.
      */
     public static Matrix like(Matrix matrix, int rows, int cols) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
-            return new DenseLocalOnHeapMatrix(rows, cols);
-        else
             return matrix.like(rows, cols);
     }
 
