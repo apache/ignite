@@ -102,8 +102,8 @@ public class DistributedRegressionExample {
                     6.699999809, 109, 388, 8.899999619, 94
                 };
 
-                final int nobs = 53;
-                final int nvars = 4;
+                final int amountOfObservations = 53;
+                final int amountOfAttributes = 4;
 
                 System.out.println(">>> Create new SparseDistributedMatrix inside IgniteThread.");
                 // Create SparseDistributedMatrix, new cache will be created automagically.
@@ -112,7 +112,7 @@ public class DistributedRegressionExample {
 
                 System.out.println(">>> Create new linear regression object");
                 OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-                regression.newSampleData(data, nobs, nvars, distributedMatrix);
+                regression.newSampleData(data, amountOfObservations, amountOfAttributes, distributedMatrix);
                 System.out.println();
 
                 System.out.println(">>> Estimates the regression parameters b:");
