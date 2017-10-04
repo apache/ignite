@@ -4489,6 +4489,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null)
                 updateCntr0 = updateCntr;
 
+            entry.logUpdate(op, null, newVer, 0, updateCntr0);
+
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();
 
