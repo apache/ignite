@@ -19,8 +19,9 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -129,11 +131,14 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
             assertNotNull(stmt);
             assertFalse(stmt.isClosed());
 
-            stmt.execute("select t._key, t._val from \"cache1\".Integer t");
+            Throwable throwable = GridTestUtils.assertThrows(null, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    stmt.execute("select t._key, t._val from \"cache1\".Integer t");
+                    return null;
+                }
+            }, SQLException.class, "Failed to query Ignite.");
 
-            ResultSet rs = stmt.getResultSet();
-
-            assert rs.next();
+            assertEquals(throwable.getCause().getMessage(), "Ouch! Argument is invalid: Cache name must not be null or empty.");
         }
     }
 }

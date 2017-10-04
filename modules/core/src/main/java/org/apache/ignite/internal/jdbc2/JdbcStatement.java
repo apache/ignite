@@ -300,61 +300,6 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql) throws SQLException {
-//        if (!conn.isDmlSupported()) {
-//            // We attempt to run a query without any checks as long as server does not support DML anyway,
-//            // so it simply will throw an exception when given a DML statement instead of a query.
-//            rs = executeQuery(sql);
-//
-//            return true;
-//        }
-//
-//        ensureNotClosed();
-//
-//        rs = null;
-//
-//        updateCnt = -1;
-//
-//        if (F.isEmpty(sql))
-//            throw new SQLException("SQL query is empty");
-//
-//        Ignite ignite = conn.ignite();
-//
-//        UUID nodeId = conn.nodeId();
-//
-//        UUID uuid = UUID.randomUUID();
-//
-//        boolean loc = nodeId == null;
-//
-//        JdbcQueryTask qryTask = JdbcQueryTaskV2.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
-//            sql, null, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-//            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
-//
-//        try {
-//            JdbcQueryTask.QueryResult res =
-//                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-//
-//            if (res.isQuery()) {
-//                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(),
-//                    res.getTypes(), res.getRows(), res.isFinished());
-//
-//                rs.setFetchSize(fetchSize);
-//
-//                resSets.add(rs);
-//
-//                this.rs = rs;
-//            }
-//            else
-//                updateCnt = updateCounterFromQueryResult(res.getRows());
-//
-//            return res.isQuery();
-//        }
-//        catch (IgniteSQLException e) {
-//            throw e.toJdbcException();
-//        }
-//        catch (Exception e) {
-//            throw new SQLException("Failed to query Ignite.", e);
-//        }
-
         execute0(sql, null);
 
         return results.get(0).isQuery();

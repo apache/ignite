@@ -152,6 +152,9 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
                 JdbcQueryTask.Cursor jdbcCur = new JdbcQueryTask.Cursor(cur, cur.iterator());
 
                 JdbcQueryTask.addCursor(qryId, jdbcCur);
+
+                if (!loc)
+                    JdbcQueryTask.scheduleRemoval(qryId);
             }
 
             ResultInfo resInfo = new ResultInfo(cur.isQuery(), qryId, updCnt);

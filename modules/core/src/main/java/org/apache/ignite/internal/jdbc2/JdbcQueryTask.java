@@ -210,7 +210,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             remove(uuid, cursor);
         else if (first) {
             if (!loc)
-                scheduleRemoval(uuid, RMV_DELAY);
+                scheduleRemoval(uuid);
         }
         else if (!loc && !CURSORS.replace(uuid, cursor, new Cursor(cursor.cursor, cursor.iter)))
             assert !CURSORS.containsKey(uuid) : "Concurrent cursor modification.";
@@ -245,11 +245,18 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * Schedules removal of stored cursor in case of remote query execution.
      *
      * @param uuid Cursor UUID.
+     */
+    static void scheduleRemoval(final UUID uuid) {
+        scheduleRemoval(uuid, RMV_DELAY);
+    }
+
+    /**
+     * Schedules removal of stored cursor in case of remote query execution.
+     *
+     * @param uuid Cursor UUID.
      * @param delay Delay in milliseconds.
      */
-    private void scheduleRemoval(final UUID uuid, long delay) {
-        assert !loc;
-
+    private static void scheduleRemoval(final UUID uuid, long delay) {
         SCHEDULER.schedule(new CAX() {
             @Override public void applyx() {
                 while (true) {
