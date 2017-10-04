@@ -74,6 +74,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean lazy;
 
+    /** Whether server side DML should be enabled. */
+    private boolean updateOnServer;
+
     /** Partitions for query */
     private int[] parts;
 
@@ -94,6 +97,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         distributedJoins = qry.distributedJoins;
         replicatedOnly = qry.replicatedOnly;
         lazy = qry.lazy;
+        updateOnServer = qry.updateOnServer;
         parts = qry.parts;
         schema = qry.schema;
     }
@@ -320,6 +324,42 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public boolean isLazy() {
         return lazy;
+    }
+
+    /**
+     * Sets server side update flag.
+     * <p>
+     * By default, when processing DML command, Ignite first fetches all affected intermediate rows for analysis to the
+     * node which initiated the query and only then forms batches of updated values to be send to remote nodes.
+     * For simple DML commands (that however affect great deal of rows) such approach may be an overkill in terms of
+     * network delays and memory usage on initiating node. Use this flag as hint for Ignite to do all intermediate rows
+     * analysis and updates in place on corresponding remote data nodes.
+     * <p>
+     * There are limitations to what DML command can be optimized this way. The command containing LIMIT, OFFSET,
+     * DISTINCT, ORDER BY, GROUP BY, sub-query or UNION will be processed the usual way despite this flag setting.
+     * <p>
+     * Defaults to {@code false}, meaning that intermediate results will be fetched to initiating node first.
+     * Only affects DML commands. Ignored when {@link #isLocal()} is {@code true}.
+     * Note that when set to {@code true}, the query may fail in the case of even single node failure.
+     *
+     * @param updateOnServer
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setUpdateOnServer(boolean updateOnServer) {
+        this.updateOnServer = updateOnServer;
+
+        return this;
+    }
+
+    /**
+     * Gets server side update flag.
+     * <p>
+     * See {@link #setUpdateOnServer(boolean)} for more information.
+     *
+     * @return Server side update flag.
+     */
+    public boolean isUpdateOnServer() {
+        return updateOnServer;
     }
 
     /**

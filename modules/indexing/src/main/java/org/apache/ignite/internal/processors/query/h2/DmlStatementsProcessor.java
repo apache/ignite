@@ -413,7 +413,7 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed && !loc && !fieldsQry.isLocal()) {
+        if (plan.distributed && !loc && !fieldsQry.isLocal() && fieldsQry.isUpdateOnServer()) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
             // null is returned in case not all nodes support distributed DML.
@@ -512,7 +512,7 @@ public class DmlStatementsProcessor {
 
         res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
 
-        if (!loc && !F.isEmpty(res.selectQry))
+        if (fieldsQry.isUpdateOnServer() && !loc && !F.isEmpty(res.selectQry))
             checkPlanCanBeDistributed(fieldsQry, conn, res);
 
         // Don't cache re-runs
