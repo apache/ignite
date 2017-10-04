@@ -15,16 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
-
-import java.io.Serializable;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * Wal snapshot record.
  */
-public interface WALPointer extends Serializable {
+public class SnapshotRecord extends WALRecord {
+    /** Snapshot id. */
+    private long snapshotId;
+
+    /** Full snapshot or incremental. */
+    private boolean full;
+
     /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     *
      */
-    public WALPointer next();
+    public SnapshotRecord(long snapshotId, boolean full) {
+        this.snapshotId = snapshotId;
+        this.full = full;
+    }
+
+    /**
+     *
+     */
+    public long getSnapshotId() {
+        return snapshotId;
+    }
+
+    /**
+     *
+     */
+    public boolean isFull() {
+        return full;
+    }
+
+    /**
+     *
+     */
+    @Override public RecordType type() {
+        return RecordType.SNAPSHOT;
+    }
 }
