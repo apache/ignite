@@ -19,7 +19,6 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteJdbcDriver;
 
 /**
  * Task for fetch results of multi-statement query.
@@ -44,7 +43,7 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce joins order falg.
+     * @param enforceJoinOrder Enforce joins order flag.
      * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
      */
@@ -75,7 +74,7 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce joins order falg.
+     * @param enforceJoinOrder Enforce joins order flag.
      * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
      * @return Appropriate task JdbcQueryTask or JdbcQueryTaskV2.
