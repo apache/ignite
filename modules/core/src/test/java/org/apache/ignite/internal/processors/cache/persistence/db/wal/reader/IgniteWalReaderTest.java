@@ -98,17 +98,17 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache0";
 
-    /** additional cache for testing different combinations of types in WAL */
+    /** additional cache for testing different combinations of types in WAL. */
     private static final String CACHE_ADDL_NAME = "cache1";
 
-    /** Dump records to logger. Should be false for non local run */
+    /** Dump records to logger. Should be false for non local run. */
     private static final boolean dumpRecords = false;
 
-    /** Page size to set */
+    /** Page size to set. */
     public static final int PAGE_SIZE = 4 * 1024;
 
     /**
-     * Field for transferring setting from test to getConfig method
+     * Field for transferring setting from test to getConfig method.
      * Archive incomplete segment after inactivity milliseconds.
      */
     private int archiveIncompleteSegmentAfterInactivityMs;
@@ -116,7 +116,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Custom wal mode. */
     private WALMode customWalMode;
 
-    /** Clear properties in afterTest method() */
+    /** Clear properties in afterTest() method. */
     private boolean clearProperties;
 
     /** {@inheritDoc} */
@@ -237,23 +237,23 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Iterates on records and closes iterator
+     * Iterates on records and closes iterator.
      *
-     * @param walIter iterator to count, will be closed
-     * @return count of records
-     * @throws IgniteCheckedException if failed to iterate
+     * @param walIter iterator to count, will be closed.
+     * @return count of records.
+     * @throws IgniteCheckedException if failed to iterate.
      */
     private int iterateAndCount(WALIterator walIter) throws IgniteCheckedException {
         return iterateAndCount(walIter, true);
     }
 
     /**
-     * Iterates on records and closes iterator
+     * Iterates on records and closes iterator.
      *
-     * @param walIter iterator to count, will be closed
-     * @param touchEntries access data within entries
-     * @return count of records
-     * @throws IgniteCheckedException if failed to iterate
+     * @param walIter iterator to count, will be closed.
+     * @param touchEntries access data within entries.
+     * @return count of records.
+     * @throws IgniteCheckedException if failed to iterate.
      */
     private int iterateAndCount(WALIterator walIter, boolean touchEntries) throws IgniteCheckedException {
         int cnt = 0;
@@ -280,9 +280,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests archive completed event is fired
+     * Tests archive completed event is fired.
      *
-     * @throws Exception if failed
+     * @throws Exception if failed.
      */
     public void testArchiveCompletedEventFired() throws Exception {
         final AtomicBoolean evtRecorded = new AtomicBoolean();
@@ -315,10 +315,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Puts provided number of records to fill WAL
+     * Puts provided number of records to fill WAL.
      *
-     * @param ignite ignite instance
-     * @param recordsToWrite count
+     * @param ignite ignite instance.
+     * @param recordsToWrite count.
      */
     private void putDummyRecords(Ignite ignite, int recordsToWrite) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
@@ -328,10 +328,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Puts provided number of records to fill WAL
+     * Puts provided number of records to fill WAL.
      *
-     * @param ignite ignite instance
-     * @param recordsToWrite count
+     * @param ignite ignite instance.
+     * @param recordsToWrite count.
      */
     private void putAllDummyRecords(Ignite ignite, int recordsToWrite) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
@@ -345,11 +345,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Puts provided number of records to fill WAL under transactions
+     * Puts provided number of records to fill WAL under transactions.
      *
-     * @param ignite ignite instance
-     * @param recordsToWrite count
-     * @param txCnt transactions to run. If number is less then records count, txCnt records will be written
+     * @param ignite ignite instance.
+     * @param recordsToWrite count.
+     * @param txCnt transactions to run. If number is less then records count, txCnt records will be written.
      */
     private IgniteCache<Object, Object> txPutDummyRecords(Ignite ignite, int recordsToWrite, int txCnt) {
         IgniteCache<Object, Object> cache0 = ignite.cache(CACHE_NAME);
@@ -368,9 +368,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests time out based WAL segment archiving
+     * Tests time out based WAL segment archiving.
      *
-     * @throws Exception if failure occurs
+     * @throws Exception if failure occurs.
      */
     public void testArchiveIncompleteSegmentAfterInactivity() throws Exception {
         final AtomicBoolean waitingForEvt = new AtomicBoolean();
@@ -410,12 +410,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Removes entry by key and value from map (java 8 map method copy)
+     * Removes entry by key and value from map (java 8 map method copy).
      *
      * @param m map to remove from.
      * @param key key to remove.
      * @param val value to remove.
-     * @return true if remove was successful
+     * @return true if remove was successful.
      */
     private boolean remove(Map m, Object key, Object val) {
         Object curVal = m.get(key);
@@ -427,7 +427,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Places records under transaction, checks its value using WAL
+     * Places records under transaction, checks its value using WAL.
      *
      * @throws Exception if failed.
      */
@@ -481,11 +481,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Generates DB subfolder name for provided node index (local) and UUID (consistent ID)
+     * Generates DB subfolder name for provided node index (local) and UUID (consistent ID).
      *
      * @param ignite ignite instance.
      * @param nodeIdx node index.
-     * @return folder file name
+     * @return folder file name.
      */
     @NotNull private String genDbSubfolderName(Ignite ignite, int nodeIdx) {
         return genNewStyleSubfolderName(nodeIdx, (UUID)ignite.cluster().localNode().consistentId());
@@ -500,7 +500,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @param minCntEntries minimum expected entries count to find.
      * @param minTxCnt minimum expected transaction count to find.
      * @param objConsumer object handler, called for each object found in logical data records.
-     * @param dataRecordHnd data handler record
+     * @param dataRecordHnd data handler record.
      * @throws IgniteCheckedException if failed.
      */
     private void scanIterateAndCount(
@@ -600,9 +600,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             ctrlMap.put(next.getKey(), next.getValue());
         }
 
-            for (Cache.Entry<Object, Object> next : addlCache) {
-                ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
-            }
+        for (Cache.Entry<Object, Object> next : addlCache) {
+            ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
+        }
 
         final String subfolderName = genDbSubfolderName(ignite0, 0);
 
@@ -724,9 +724,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests archive completed event is fired
+     * Tests archive completed event is fired.
      *
-     * @throws Exception if failed
+     * @throws Exception if failed.
      */
     public void testFillWalForExactSegmentsCount() throws Exception {
         customWalMode = WALMode.DEFAULT;
@@ -762,7 +762,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             Assert.assertTrue("Too much entries generated, but segments was not become available",
                 totalEntries < 10000);
         }
-        final String subfolderName = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
+        final String subfolderName = genDbSubfolderName(ignite, 0);
 
         stopGrid("node0");
 
@@ -773,7 +773,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests reading of empty WAL from non filled cluster
+     * Tests reading of empty WAL from non filled cluster.
      *
      * @throws Exception if failed.
      */
@@ -785,7 +785,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ignite.active(true);
         ignite.active(false);
 
-        final String subfolderName = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
+        final String subfolderName = genDbSubfolderName(ignite, 0);
 
         stopGrid("node0");
 
@@ -1033,8 +1033,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param values collection with numbers
-     * @return sum of numbers
+     * @param values collection with numbers.
+     * @return sum of numbers.
      */
     private int valuesSum(Iterable<Integer> values) {
         int sum = 0;
@@ -1046,11 +1046,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Iterates over data records, checks each DataRecord and its entries, finds out all transactions in WAL
+     * Iterates over data records, checks each DataRecord and its entries, finds out all transactions in WAL.
      *
-     * @param walIter iterator to use
-     * @return count of data records observed for each global TX ID. Contains null for non tx updates
-     * @throws IgniteCheckedException if failure
+     * @param walIter iterator to use.
+     * @return count of data records observed for each global TX ID. Contains null for non tx updates.
+     * @throws IgniteCheckedException if failure.
      */
     private Map<GridCacheVersion, Integer> iterateAndCountDataRecord(
         final WALIterator walIter,
@@ -1119,12 +1119,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         return entriesUnderTxFound;
     }
 
-    /** Enum for cover binaryObject enum save/load */
+    /** Enum for cover binaryObject enum save/load. */
     enum TestEnum {
         /** */A, /** */B, /** */C
     }
 
-    /** Special class to test WAL reader resistance to Serializable interface */
+    /** Special class to test WAL reader resistance to Serializable interface. */
     static class TestSerializable implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1133,7 +1133,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         private int iVal;
 
         /**
-         * Creates test object
+         * Creates test object.
          *
          * @param iVal I value.
          */
@@ -1166,7 +1166,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Special class to test WAL reader resistance to Serializable interface */
+    /** Special class to test WAL reader resistance to Serializable interface. */
     static class TestExternalizable implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1180,7 +1180,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
 
         /**
-         * Creates test object with provided value
+         * Creates test object with provided value.
          *
          * @param iVal I value.
          */
@@ -1223,7 +1223,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Container class to test toString of data records */
+    /** Container class to test toString of data records. */
     static class TestStringContainerToBePrinted {
         /** */
         private String data;
@@ -1262,7 +1262,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test class for storing in ignite */
+    /** Test class for storing in ignite. */
     private static class Organization {
         /** Key. */
         private final int key;
