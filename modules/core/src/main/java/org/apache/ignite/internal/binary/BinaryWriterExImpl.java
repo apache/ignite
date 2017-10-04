@@ -325,6 +325,27 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafePosition(retPos);
     }
 
+
+    /**
+     * @param hash hash.
+     */
+    public void postWriteHashCode(int hash) {
+        if (out.hasArray()) {
+            // Heap.
+            byte[] data = out.array();
+
+            BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, hash);
+        }
+        else {
+            // Offheap.
+            long ptr = out.rawOffheapPointer();
+
+            assert ptr != 0;
+
+            BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, hash);
+        }
+    }
+
     /**
      * Perform post-write hash code update if necessary.
      *
