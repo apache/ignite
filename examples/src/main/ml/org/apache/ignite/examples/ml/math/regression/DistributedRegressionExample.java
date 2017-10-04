@@ -24,6 +24,7 @@ import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.regressions.DistributedOLSMultipleLinearRegression;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -111,7 +112,7 @@ public class DistributedRegressionExample {
                     StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
                 System.out.println(">>> Create new linear regression object");
-                OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+                DistributedOLSMultipleLinearRegression regression = new DistributedOLSMultipleLinearRegression();
                 regression.newSampleData(data, amountOfObservations, amountOfAttributes, distributedMatrix);
                 System.out.println();
 
@@ -129,12 +130,12 @@ public class DistributedRegressionExample {
 
                 System.out.println(">>> Estimates the standard error of the regression:");
                 System.out.println(regression.estimateRegressionStandardError());
-
+/*
                 System.out.println(">>> R-Squared statistic:");
                 System.out.println(regression.calculateRSquared());
 
                 System.out.println(">>> Adjusted R-squared statistic:");
-                System.out.println(regression.calculateAdjustedRSquared());
+                System.out.println(regression.calculateAdjustedRSquared());*/
 
                 System.out.println(">>> Returns the variance of the regressand, ie Var(y):");
                 System.out.println(regression.estimateErrorVariance());
