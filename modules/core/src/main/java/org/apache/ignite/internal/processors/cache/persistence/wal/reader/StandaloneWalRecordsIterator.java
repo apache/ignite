@@ -311,7 +311,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             postProcessedEntries.add(postProcessedEntry);
         }
-        return new DataRecord(postProcessedEntries);
+        return new DataRecord(postProcessedEntries, dataRec.timestamp());
     }
 
     /**

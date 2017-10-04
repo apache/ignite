@@ -163,8 +163,10 @@ public abstract class WALRecord {
         BTREE_META_PAGE_INIT_ROOT2,
 
         /** Partition destroy. */
-        PARTITION_DESTROY
-        ;
+        PARTITION_DESTROY,
+
+        /** Snapshot record. */
+        SNAPSHOT;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
