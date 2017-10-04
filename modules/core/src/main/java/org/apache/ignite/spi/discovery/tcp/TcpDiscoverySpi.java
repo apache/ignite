@@ -966,10 +966,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             initAddresses();
 
-            Serializable cfgId = ignite.configuration().getConsistentId();
+            final Serializable cfgId = ignite.configuration().getConsistentId();
 
             if (cfgId == null) {
-                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
                 Collections.sort(sortedAddrs);
 
