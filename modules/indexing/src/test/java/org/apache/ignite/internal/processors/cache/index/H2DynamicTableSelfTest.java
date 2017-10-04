@@ -31,6 +31,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -42,6 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -52,7 +54,9 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 
@@ -100,6 +104,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Override protected void afterTest() throws Exception {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
 
         super.afterTest();
     }
@@ -121,7 +126,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that {@code CREATE TABLE} actually creates new cache from template, H2 table and type descriptor on all nodes.
+     * Test that {@code CREATE TABLE} actually creates new cache from template,
+     * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
      */
     public void testCreateTableWithWriteSyncMode() throws Exception {
@@ -207,6 +213,141 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     public void testFullAsyncWriteMode() throws Exception {
         doTestCreateTable(null, null, null, CacheWriteSynchronizationMode.FULL_ASYNC,
             "write_synchronization_mode=full_async");
+    }
+
+    /**
+     * Test behavior only in case of cache name override.
+     */
+    public void testCustomCacheName() {
+        doTestCustomNames("cname", null, null);
+    }
+
+    /**
+     * Test behavior only in case of key type name override.
+     */
+    public void testCustomKeyTypeName() {
+        doTestCustomNames(null, "keytype", null);
+    }
+
+    /**
+     * Test behavior only in case of value type name override.
+     */
+    public void testCustomValueTypeName() {
+        doTestCustomNames(null, null, "valtype");
+    }
+
+    /**
+     * Test behavior only in case of cache and key type name override.
+     */
+    public void testCustomCacheAndKeyTypeName() {
+        doTestCustomNames("cname", "keytype", null);
+    }
+
+    /**
+     * Test behavior only in case of cache and value type name override.
+     */
+    public void testCustomCacheAndValueTypeName() {
+        doTestCustomNames("cname", null, "valtype");
+    }
+
+    /**
+     * Test behavior only in case of key and value type name override.
+     */
+    public void testCustomKeyAndValueTypeName() {
+        doTestCustomNames(null, "keytype", "valtype");
+    }
+
+    /**
+     * Test behavior only in case of cache, key, and value type name override.
+     */
+    public void testCustomCacheAndKeyAndValueTypeName() {
+        doTestCustomNames("cname", "keytype", "valtype");
+    }
+
+    /**
+     * Test that attempting to create a cache with a pre-existing name yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testDuplicateCustomCacheName() throws Exception {
+        client().getOrCreateCache("new");
+
+        try {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    doTestCustomNames("new", null, null);return null;
+                }
+            }, IgniteSQLException.class, "Table already exists: NameTest");
+        }
+        finally {
+            client().destroyCache("new");
+        }
+    }
+
+    /**
+     * Test that appending supplied arguments to {@code CREATE TABLE} results in creating new cache that has settings
+     * as expected
+     * @param cacheName Cache name, or {@code null} if the name generated by default should be used.
+     * @param keyTypeName Key type name, or {@code null} if the name generated by default should be used.
+     * @param valTypeName Value type name, or {@code null} if the name generated by default should be used.
+     */
+    private void doTestCustomNames(String cacheName, String keyTypeName, String valTypeName) {
+        GridStringBuilder b = new GridStringBuilder("CREATE TABLE \"NameTest\" (id int primary key, x varchar) WITH ");
+
+        assert !F.isEmpty(cacheName) || !F.isEmpty(keyTypeName) || !F.isEmpty(valTypeName);
+
+        if (!F.isEmpty(cacheName))
+            b.a("\"cache_name=").a(cacheName).a('"').a(',');
+
+        if (!F.isEmpty(keyTypeName))
+            b.a("\"key_type=").a(keyTypeName).a('"').a(',');
+
+        if (!F.isEmpty(valTypeName))
+            b.a("\"value_type=").a(valTypeName).a('"');
+
+        String res = b.toString();
+
+        if (res.endsWith(","))
+            res = res.substring(0, res.length() - 1);
+
+        execute(client(), res);
+
+        String resCacheName = U.firstNotNull(cacheName, QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA,
+            "NameTest"));
+
+        IgniteInternalCache<BinaryObject, BinaryObject> cache = client().cachex(resCacheName);
+
+        assertNotNull(cache);
+
+        CacheConfiguration ccfg = cache.configuration();
+
+        assertEquals(1, ccfg.getQueryEntities().size());
+
+        QueryEntity e = (QueryEntity)ccfg.getQueryEntities().iterator().next();
+
+        if (!F.isEmpty(keyTypeName))
+            assertEquals(keyTypeName, e.getKeyType());
+        else
+            assertTrue(e.getKeyType().startsWith("SQL_PUBLIC"));
+
+        if (!F.isEmpty(valTypeName))
+            assertEquals(valTypeName, e.getValueType());
+        else
+            assertTrue(e.getValueType().startsWith("SQL_PUBLIC"));
+
+        execute(client(), "INSERT INTO \"NameTest\" (id, x) values (1, 'a')");
+
+        List<List<?>> qres = execute(client(), "SELECT id, x from \"NameTest\"");
+
+        assertEqualsCollections(Collections.singletonList(Arrays.asList(1, "a")), qres);
+
+        BinaryObject key = client().binary().builder(e.getKeyType()).setField("ID", 1).build();
+
+        BinaryObject val = (BinaryObject)client().cache(resCacheName).withKeepBinary().get(key);
+
+        BinaryObject exVal = client().binary().builder(e.getValueType()).setField("X", "a").build();
+
+        assertEquals(exVal, val);
     }
 
     /**
@@ -600,7 +741,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setKeyType("CityKey");
                 e.setValueType("City");
 
-                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null,
+                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null,
                     null, CacheAtomicityMode.ATOMIC, null, 10, false);
 
                 return null;
@@ -1015,8 +1156,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param node Node.
      * @param sql Statement.
      */
-    private void execute(Ignite node, String sql) {
-        queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true);
+    private List<List<?>> execute(Ignite node, String sql) {
+        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**

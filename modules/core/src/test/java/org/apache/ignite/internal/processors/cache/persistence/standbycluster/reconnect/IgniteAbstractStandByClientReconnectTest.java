@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -322,7 +323,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
     }
 
     @Override protected void afterTest() throws Exception {
@@ -330,7 +331,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
     }
 
 }

@@ -33,6 +33,8 @@ import org.jsr166.ThreadLocalRandom8;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  * Test what interruptions of writing threads do not affect PDS.
  */
@@ -41,7 +43,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     private static final int PAGE_SIZE = 1 << 12; // 4096
 
     /** */
-    public static final int THREADS_CNT = 1;
+    public static final int THREADS_CNT = 10;
 
     /**
      * Cache name.
@@ -200,6 +202,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

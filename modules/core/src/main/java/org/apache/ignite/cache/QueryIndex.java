@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+
+import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -252,16 +255,38 @@ public class QueryIndex implements Serializable {
     }
 
     /**
-     * Gets inline size.
+     * Gets index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus increasing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
      *
-     * @return inline size.
+     * @return Index inline size in bytes.
      */
     public int getInlineSize() {
         return inlineSize;
     }
 
     /**
-     * Sets inline size.
+     * Sets index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus increasing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
      *
      * @param inlineSize Inline size.
      * @return {@code this} for chaining.

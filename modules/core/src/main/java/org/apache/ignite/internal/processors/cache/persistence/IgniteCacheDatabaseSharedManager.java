@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvi
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -939,17 +940,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
-    @Nullable protected File buildAllocPath(MemoryPolicyConfiguration plc) throws IgniteCheckedException {
+    @Nullable private File buildAllocPath(MemoryPolicyConfiguration plc) throws IgniteCheckedException {
         String path = plc.getSwapFilePath();
 
         if (path == null)
             return null;
 
-        String consId = String.valueOf(cctx.discovery().consistentId());
+        final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+        final String folderName;
 
-        consId = consId.replaceAll("[:,\\.]", "_");
+        if(folderSettings.isCompatible())
+            folderName = String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_");
+        else
+            folderName = folderSettings.folderName();
 
-        return buildPath(path, consId);
+        return buildPath(path, folderName);
     }
 
     /**
