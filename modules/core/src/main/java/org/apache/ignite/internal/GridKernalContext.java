@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -649,4 +650,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cache mvcc coordinator processor.
      */
     public CacheCoordinatorsProcessor coordinators();
+
+    /**
+     * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used
+     */
+    public PdsFoldersResolver pdsFolderResolver();
 }
