@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,8 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -79,6 +82,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -106,7 +110,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
 
     /** Marshaller context implementation. */
-    private MarshallerContextImpl marshallerContext;
+    private MarshallerContextImpl marshallerCtx;
 
     /**
      * @param log Logger.
@@ -130,13 +134,13 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerContext = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null);
         this.cfg = prepareIgniteConfiguration();
         this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 
         if (marshallerMappingFileStoreDir != null) {
-            marshallerContext.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
-            marshallerContext.onMarshallerProcessorStarted(this, null);
+            marshallerCtx.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+            marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
     }
 
@@ -176,7 +180,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
         cfg.setPersistentStoreConfiguration(pstCfg);
 
-        marshaller.setContext(marshallerContext);
+        marshaller.setContext(marshallerCtx);
 
         return cfg;
     }
@@ -392,11 +396,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
-            @Override public Object consistentId() {
-                return ""; // some non null value is required
-            }
-        };
+        return new GridDiscoveryManager(this);
     }
 
     /** {@inheritDoc} */
@@ -579,7 +579,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
-        return marshallerContext;
+        return marshallerCtx;
     }
 
     /** {@inheritDoc} */
@@ -595,6 +595,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PdsFoldersResolver pdsFolderResolver() {
+        return new PdsFoldersResolver() {
+            /** {@inheritDoc} */
+            @Override public PdsFolderSettings resolveFolders() {
+                return new PdsFolderSettings(new File("."), U.maskForFileName(""));
+            }
+        };
     }
 
     /** {@inheritDoc} */
