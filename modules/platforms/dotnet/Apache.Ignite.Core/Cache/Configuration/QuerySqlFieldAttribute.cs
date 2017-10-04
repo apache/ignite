@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -28,6 +29,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class QuerySqlFieldAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QuerySqlFieldAttribute"/> class.
+        /// </summary>
+        public QuerySqlFieldAttribute()
+        {
+            IndexInlineSize = QueryIndex.DefaultInlineSize;
+        }
+
         /// <summary>
         /// Gets or sets the sql field name.
         /// If not provided, property or field name will be used.
@@ -56,5 +65,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index inline size, see <see cref="QueryIndex.InlineSize"/>.
+        /// </summary>
+        [DefaultValue(QueryIndex.DefaultInlineSize)]
+        public int IndexInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether null values are allowed for this field.
+        /// </summary>
+        public bool NotNull { get; set; }
     }
 }

@@ -365,7 +365,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 taskName,
                 expiryPlc,
                 skipVals,
-                /*can remap*/true,
                 recovery);
         }
         else {
@@ -391,7 +390,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                /*can remap*/true,
                                 recovery);
 
                         fut0.listen(createGetFutureListener());

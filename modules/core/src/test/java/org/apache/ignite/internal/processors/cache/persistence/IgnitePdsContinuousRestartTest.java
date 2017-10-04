@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  *
  */
@@ -53,6 +56,25 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CACHE_NAME = "cache1";
+
+    /** Checkpoint delay. */
+    private volatile int checkpointDelay = -1;
+
+    /** */
+    private boolean cancel = false;
+
+    /**
+     * Default constructor.
+     */
+    public IgnitePdsContinuousRestartTest() {
+    }
+
+    /**
+     * @param cancel Cancel.
+     */
+    public IgnitePdsContinuousRestartTest(boolean cancel) {
+        this.cancel = cancel;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -84,6 +106,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         cfg.setPersistentStoreConfiguration(
             new PersistentStoreConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
+                .setCheckpointingFrequency(checkpointDelay)
         );
 
         return cfg;
@@ -107,7 +130,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -195,6 +218,27 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
+        checkRebalancingDuringLoad(10, 10, 1, 1);
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
+        checkRebalancingDuringLoad(10, 500, 8, 16);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TimeUnit.MINUTES.toMillis(3);
+    }
+
+    /**
      * @throws Exception if failed.
      */
     private void checkRebalancingDuringLoad(
@@ -203,6 +247,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         int threads,
         final int batch
     ) throws Exception {
+        this.checkpointDelay = checkpointDelay;
 
         startGrids(GRID_CNT);
 
@@ -245,7 +290,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         while (System.currentTimeMillis() < end) {
             int idx = rnd.nextInt(GRID_CNT - 1) + 1;
 
-            stopGrid(idx);
+            stopGrid(idx, cancel);
 
             U.sleep(restartDelay);
 

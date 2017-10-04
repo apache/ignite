@@ -133,7 +133,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
-     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      */
@@ -148,7 +147,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery
@@ -162,6 +160,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             canRemap = false;
         }
+        else
+            canRemap = true;
 
         this.cctx = cctx;
         this.key = key;
@@ -172,7 +172,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
-        this.canRemap = canRemap;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
@@ -704,16 +703,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return false;
 
         if (canRemap) {
-            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
+            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
                 Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
             cctx.affinity().affinityReadyFuture(updTopVer).listen(
                 new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            fut.get();
-
-                            remap(updTopVer);
+                            remap(fut.get());
                         }
                         catch (IgniteCheckedException e) {
                             onDone(e);

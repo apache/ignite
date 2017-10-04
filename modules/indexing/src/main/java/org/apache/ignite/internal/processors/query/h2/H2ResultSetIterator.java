@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -39,7 +38,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** */
     private static final Field RESULT_FIELD;
 
-    /**
+    /*
      * Initialize.
      */
     static {

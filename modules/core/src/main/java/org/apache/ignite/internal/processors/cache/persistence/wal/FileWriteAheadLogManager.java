@@ -42,6 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -62,8 +64,12 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV2Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -78,6 +84,11 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 
 /**
  * File WAL manager.
@@ -111,6 +122,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return !file.isDirectory() && WAL_TEMP_NAME_PATTERN.matcher(file.getName()).matches();
         }
     };
+
+    /** Latest serializer version to use. */
+    public static final int LATEST_SERIALIZER_VERSION = 1;
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -148,8 +162,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** WAL archive directory (including consistent ID as subfolder) */
     private File walArchiveDir;
 
-    /** Serializer of current version, used to read header record and for write records */
+    /** Serializer of latest version. */
     private RecordSerializer serializer;
+
+    /** Serializer latest version to use. */
+    private final int serializerVersion =
+        IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
 
     /** */
     private volatile long oldestArchiveSegmentIdx;
@@ -262,7 +280,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            serializer = new RecordV1Serializer(cctx);
+            serializer = forVersion(cctx, serializerVersion);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
@@ -276,10 +294,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             archiver = new FileArchiver(tup == null ? -1 : tup.get2());
 
-            if (mode != WALMode.DEFAULT) {
+            if (mode != WALMode.NONE) {
                 if (log.isInfoEnabled())
                     log.info("Started write-ahead log manager [mode=" + mode + ']');
             }
+            else
+                U.quietAndWarn(log, "Started write-ahead log manager in NONE mode, persisted data may be lost in " +
+                    "a case of unexpected node failure. Make sure to deactivate the cluster before shutdown.");
         }
     }
 
@@ -814,10 +835,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileIO fileIO = ioFactory.create(curFile);
 
             try {
-                // readSerializerVersion will change the channel position.
-                // This is fine because the FileWriteHandle consitructor will move it
-                // to offset + len anyways.
-                int serVer = readSerializerVersion(fileIO, curFile, absIdx);
+                int serVer = serializerVersion;
+
+                // If we have existing segment, try to read version from it.
+                if (lastReadPtr != null) {
+                    try {
+                        serVer = readSerializerVersion(fileIO);
+                    }
+                    catch (SegmentEofException | EOFException ignore) {
+                        serVer = serializerVersion;
+                    }
+                }
 
                 RecordSerializer ser = forVersion(cctx, serVer);
 
@@ -833,13 +861,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     maxWalSegmentSize,
                     ser);
 
-                if (lastReadPtr == null) {
-                    HeaderRecord header = new HeaderRecord(serializer.version());
-
-                    header.size(serializer.size(header));
-
-                    hnd.addRecord(header);
-                }
+                // For new handle write serializer version to it.
+                if (lastReadPtr == null)
+                    hnd.writeSerializerVersion();
 
                 archiver.currentWalIndex(absIdx);
 
@@ -883,11 +907,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 maxWalSegmentSize,
                 serializer);
 
-            HeaderRecord header = new HeaderRecord(serializer.version());
-
-            header.size(serializer.size(header));
-
-            hnd.addRecord(header);
+            hnd.writeSerializerVersion();
 
             return hnd;
         }
@@ -940,7 +960,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
-        try (FileIO fileIO = ioFactory.create(file, "rw")) {
+        try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = psCfg.getWalSegmentSize();
 
             if (mode == WALMode.DEFAULT) {
@@ -1006,10 +1026,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @param cctx Shared context.
      * @param ver Serializer version.
      * @return Entry serializer.
      */
-    static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
+    public static RecordSerializer forVersion(GridCacheSharedContext cctx, int ver) throws IgniteCheckedException {
         return forVersion(cctx, ver, false);
     }
 
@@ -1023,7 +1044,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         switch (ver) {
             case 1:
-                return new RecordV1Serializer(cctx, writePointer);
+                return new RecordV1Serializer(new RecordDataV1Serializer(cctx), writePointer);
+
+            case 2:
+                RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(new RecordDataV1Serializer(cctx));
+
+                return new RecordV2Serializer(dataV2Serializer, writePointer);
 
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
@@ -1365,7 +1391,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
                 if (mode == WALMode.DEFAULT) {
-                    try (FileIO f0 = ioFactory.create(dstFile, "rw")) {
+                    try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
                 }
@@ -1430,29 +1456,103 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * Reads record serializer version from provided {@code io}.
+     * NOTE: Method mutates position of {@code io}.
+     *
      * @param io I/O interface for file.
-     * @param file File object.
-     * @param idx File index to read.
      * @return Serializer version stored in the file.
-     * @throws IOException If failed to read serializer version.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    private int readSerializerVersion(FileIO io, File file, long idx)
-        throws IOException, IgniteCheckedException {
-        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())){
+    public static int readSerializerVersion(FileIO io)
+            throws IgniteCheckedException, IOException {
+        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
             FileInput in = new FileInput(io, buf);
 
-            // Header record must be agnostic to the serializer version.
-            WALRecord rec = serializer.readRecord(in, new FileWALPointer(idx, 0, 0));
+            in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
 
-            if (rec.type() != WALRecord.RecordType.HEADER_RECORD)
-                throw new IOException("Missing file header record: " + file.getAbsoluteFile());
+            int recordType = in.readUnsignedByte();
 
-            return ((HeaderRecord)rec).version();
+            if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
+                throw new SegmentEofException("Reached logical end of the segment", null);
+
+            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
+
+            if (type != WALRecord.RecordType.HEADER_RECORD)
+                throw new IOException("Can't read serializer version", null);
+
+            // Read file pointer.
+            FileWALPointer ptr = RecordV1Serializer.readPosition(in);
+
+            assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
+
+            long headerMagicNumber = in.readLong();
+
+            if (headerMagicNumber != HeaderRecord.MAGIC)
+                throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.MAGIC) +
+                        ", actual=" + U.hexLong(headerMagicNumber) + ']');
+
+            // Read serializer version.
+            int version = in.readInt();
+
+            // Read and skip CRC.
+            in.readInt();
+
+            return version;
         }
-        catch (SegmentEofException | EOFException ignore) {
-            return serializer.version();
+    }
+
+    /**
+     * Writes record serializer version to provided {@code io}.
+     * NOTE: Method mutates position of {@code io}.
+     *
+     * @param io I/O interface for file.
+     * @param idx Segment index.
+     * @param version Serializer version.
+     * @return I/O position after write version.
+     * @throws IOException If failed to write serializer version.
+     */
+    public static long writeSerializerVersion(FileIO io, long idx, int version) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
+        buffer.order(ByteOrder.nativeOrder());
+
+        // Write record type.
+        buffer.put((byte) (WALRecord.RecordType.HEADER_RECORD.ordinal() + 1));
+
+        // Write position.
+        RecordV1Serializer.putPosition(buffer, new FileWALPointer(idx, 0, 0));
+
+        // Place magic number.
+        buffer.putLong(HeaderRecord.MAGIC);
+
+        // Place serializer version.
+        buffer.putInt(version);
+
+        // Place CRC if needed.
+        if (!RecordV1Serializer.SKIP_CRC) {
+            int curPos = buffer.position();
+
+            buffer.position(0);
+
+            // This call will move buffer position to the end of the record again.
+            int crcVal = PureJavaCrc32.calcCrc32(buffer, curPos);
+
+            buffer.putInt(crcVal);
         }
+        else
+            buffer.putInt(0);
+
+        // Write header record through io.
+        buffer.position(0);
+
+        do {
+            io.write(buffer);
+        }
+        while (buffer.hasRemaining());
+
+        // Flush
+        io.force();
+
+        return io.position();
     }
 
     /**
@@ -1711,6 +1811,27 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
+         * Write serializer version to current handle.
+         * NOTE: Method mutates {@code fileIO} position, written and lastFsyncPos fields.
+         *
+         * @throws IgniteCheckedException If fail to write serializer version.
+         */
+        public void writeSerializerVersion() throws IgniteCheckedException {
+            try {
+                assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " + fileIO.position();
+
+                long updatedPosition = FileWriteAheadLogManager.writeSerializerVersion(fileIO, idx, serializer.version());
+
+                written = updatedPosition;
+                lastFsyncPos = updatedPosition;
+                head.set(new FakeRecord(new FileWALPointer(idx, (int)updatedPosition, 0), false));
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Unable to write serializer version for segment " + idx, e);
+            }
+        }
+
+        /**
          * Checks if current head is a close fake record and returns {@code true} if so.
          *
          * @return {@code true} if current head is close record.
@@ -1824,7 +1945,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (written < expWritten && envFailed == null)
-                    U.await(writeComplete);
+                    U.awaitQuiet(writeComplete);
             }
             finally {
                 lock.unlock();
@@ -2076,15 +2197,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     assert stopped() : "Segment is not closed after close flush: " + head.get();
 
                     try {
-                        int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE;
+                        int switchSegmentRecSize = RecordV1Serializer.REC_TYPE_SIZE + RecordV1Serializer.FILE_WAL_POINTER_SIZE + RecordV1Serializer.CRC_SIZE;
 
-                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
-                            //it is expected there is sufficient space for this record because rollover should run early
-                            final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
-                            buf.put((byte)(WALRecord.RecordType.SWITCH_SEGMENT_RECORD.ordinal() + 1));
+                    if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                        RecordV1Serializer backwardSerializer =
+                            new RecordV1Serializer(new RecordDataV1Serializer(cctx), true);
 
-                            final FileWALPointer pointer = new FileWALPointer(idx, (int)fileIO.position(), -1);
-                            RecordV1Serializer.putPosition(buf, pointer);
+                        final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
+
+                        SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
+                        segmentRecord.position( new FileWALPointer(idx, (int)written, -1));
+                        backwardSerializer.writeRecord(segmentRecord,buf);
 
                             buf.rewind();
 
@@ -2159,7 +2282,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (fileIO != null)
-                    U.await(nextSegment);
+                    U.awaitQuiet(nextSegment);
             }
             finally {
                 lock.unlock();
