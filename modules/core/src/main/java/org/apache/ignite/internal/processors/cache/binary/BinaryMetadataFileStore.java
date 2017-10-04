@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * which may lead to segmentation of nodes from cluster.
  */
 class BinaryMetadataFileStore {
-    /** */
+    /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
 
     /** */
@@ -68,14 +68,14 @@ class BinaryMetadataFileStore {
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
         else {
-            String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
+            final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
 
             workDir = new File(U.resolveWorkDirectory(
                 ctx.config().getWorkDirectory(),
                 "binary_meta",
                 false
             ),
-                consId);
+                subFolder);
         }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
