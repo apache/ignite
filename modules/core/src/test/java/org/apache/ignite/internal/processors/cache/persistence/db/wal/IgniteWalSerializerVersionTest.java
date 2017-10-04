@@ -284,12 +284,16 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        stopAllGrids();
+
         deleteWorkFiles();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        stopAllGrids();
 
         deleteWorkFiles();
     }
