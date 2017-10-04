@@ -89,6 +89,8 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
             }
         }
 
+        U.sleep(500); // Wait for GridNearLockRequests and TimeoutObjects to be processed.
+
         assertDoesNotContainLockTimeoutObjects();
 
         logTimeoutObjectsFrequency();
@@ -120,9 +122,15 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
 
         info("Tx2 stopped");
 
-        // Check that that changes committed.
-        for (int i = 0; i < PUT_CNT; i++)
-            assertEquals(cache0.get(i).intValue(), i);
+        // Assertions should be into a transaction because of near cache.
+        try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+
+            // Check that changes committed.
+            for (int i = 0; i < PUT_CNT; i++)
+                assertEquals(cache0.get(i).intValue(), i);
+
+            tx.commit();
+        }
     }
 
     /**
