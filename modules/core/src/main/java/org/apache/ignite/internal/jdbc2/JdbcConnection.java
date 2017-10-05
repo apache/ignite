@@ -165,7 +165,7 @@ public class JdbcConnection implements Connection {
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
 
-    /** Allow multiple query with multiple statements. */
+    /** Allow queries with multiple statements. */
     private final boolean multipleStmts;
 
     /** Statements. */
@@ -847,7 +847,7 @@ public class JdbcConnection implements Connection {
     }
 
     /**
-     * @return {@code true} if target node has DML support, {@code false} otherwise.
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
      */
     boolean isMultipleStatementsAllowed() {
         return multipleStmts;
