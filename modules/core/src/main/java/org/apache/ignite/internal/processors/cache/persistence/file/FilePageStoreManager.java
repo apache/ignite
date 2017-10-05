@@ -92,7 +92,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final IgniteConfiguration igniteCfg;
 
     /** */
-    private DataStorageConfiguration pstCfg;
+    private DataStorageConfiguration dsCfg;
 
     /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
@@ -109,11 +109,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        DataStorageConfiguration pstCfg = igniteCfg.getDataStorageConfiguration();
+        DataStorageConfiguration dsCfg = igniteCfg.getDataStorageConfiguration();
 
-        assert pstCfg != null : "WAL should not be created if persistence is disabled.";
+        assert dsCfg != null;
 
-        this.pstCfg = pstCfg;
+        this.dsCfg = dsCfg;
     }
 
     /** {@inheritDoc} */
@@ -352,7 +352,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             grpsWithoutIdx.add(grpDesc.groupId());
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
-            pstCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
+            dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 

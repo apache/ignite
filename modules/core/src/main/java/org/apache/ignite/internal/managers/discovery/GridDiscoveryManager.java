@@ -1540,18 +1540,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         long res = memCfg.getSystemCacheMaxSize();
 
         // Add memory policies.
-        DataRegionConfiguration[] memPlcCfgs = memCfg.getDataRegions();
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegions();
 
-        if (memPlcCfgs != null) {
+        if (dataRegions != null) {
             String dfltMemPlcName = memCfg.getDefaultDataRegionName();
 
             boolean customDflt = false;
 
-            for (DataRegionConfiguration memPlcCfg : memPlcCfgs) {
-                if(F.eq(dfltMemPlcName, memPlcCfg.getName()))
+            for (DataRegionConfiguration dataReg : dataRegions) {
+                if(F.eq(dfltMemPlcName, dataReg.getName()))
                     customDflt = true;
 
-                res += memPlcCfg.getMaxSize();
+                res += dataReg.getMaxSize();
             }
 
             if(!customDflt)

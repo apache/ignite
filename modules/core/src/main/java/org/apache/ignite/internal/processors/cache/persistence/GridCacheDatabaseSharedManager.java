@@ -319,7 +319,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         persistenceCfg = cfg.getDataStorageConfiguration();
 
-        assert persistenceCfg != null : "PageStore should not be created if persistence is disabled.";
+        assert persistenceCfg != null;
 
         checkpointFreq = persistenceCfg.getCheckpointingFrequency();
 

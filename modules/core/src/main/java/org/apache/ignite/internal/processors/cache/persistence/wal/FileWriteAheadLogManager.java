@@ -145,7 +145,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final long fsyncDelay;
 
     /** */
-    private final DataStorageConfiguration psCfg;
+    private final DataStorageConfiguration dsCfg;
 
     /** Events service */
     private final GridEventStorageManager evt;
@@ -238,20 +238,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public FileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
         igCfg = ctx.config();
 
-        DataStorageConfiguration psCfg = igCfg.getDataStorageConfiguration();
+        DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
 
-        assert psCfg != null : "WAL should not be created if persistence is disabled.";
+        assert dsCfg != null;
 
-        this.psCfg = psCfg;
+        this.dsCfg = dsCfg;
 
-        maxWalSegmentSize = psCfg.getWalSegmentSize();
-        mode = psCfg.getWalMode();
-        tlbSize = psCfg.getTlbSize();
-        flushFreq = psCfg.getWalFlushFrequency();
-        fsyncDelay = psCfg.getWalFsyncDelayNanos();
-        alwaysWriteFullPages = psCfg.isAlwaysWriteFullPages();
-        ioFactory = psCfg.getFileIOFactory();
-        walAutoArchiveAfterInactivity = psCfg.getWalAutoArchiveAfterInactivity();
+        maxWalSegmentSize = dsCfg.getWalSegmentSize();
+        mode = dsCfg.getWalMode();
+        tlbSize = dsCfg.getTlbSize();
+        flushFreq = dsCfg.getWalFlushFrequency();
+        fsyncDelay = dsCfg.getWalFsyncDelayNanos();
+        alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
+        ioFactory = dsCfg.getFileIOFactory();
+        walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
     }
 
@@ -263,14 +263,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             checkWalConfiguration();
 
             walWorkDir = initDirectory(
-                psCfg.getWalStorePath(),
+                dsCfg.getWalStorePath(),
                 DataStorageConfiguration.DFLT_WAL_STORE_PATH,
                 resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
             walArchiveDir = initDirectory(
-                psCfg.getWalArchivePath(),
+                dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
                 "write ahead log archive directory"
@@ -304,11 +304,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException if WAL store path is configured and archive path isn't (or vice versa)
      */
     private void checkWalConfiguration() throws IgniteCheckedException {
-        if (psCfg.getWalStorePath() == null ^ psCfg.getWalArchivePath() == null) {
+        if (dsCfg.getWalStorePath() == null ^ dsCfg.getWalArchivePath() == null) {
             throw new IgniteCheckedException(
                 "Properties should be either both specified or both null " +
-                    "[walStorePath = " + psCfg.getWalStorePath() +
-                    ", walArchivePath = " + psCfg.getWalArchivePath() + "]"
+                    "[walStorePath = " + dsCfg.getWalStorePath() +
+                    ", walArchivePath = " + dsCfg.getWalArchivePath() + "]"
             );
         }
     }
@@ -574,7 +574,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             walArchiveDir,
             (FileWALPointer)start,
             end,
-            psCfg,
+            dsCfg,
             serializer,
             ioFactory,
             archiver,
@@ -820,7 +820,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(FileWALPointer lastReadPtr) throws IgniteCheckedException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
-        long segNo = absIdx % psCfg.getWalSegments();
+        long segNo = absIdx % dsCfg.getWalSegments();
 
         File curFile = new File(walWorkDir, FileDescriptor.fileName(segNo));
 
@@ -933,9 +933,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         File[] allFiles = walWorkDir.listFiles(WAL_SEGMENT_FILE_FILTER);
 
-        if (allFiles.length != 0 && allFiles.length > psCfg.getWalSegments())
+        if (allFiles.length != 0 && allFiles.length > dsCfg.getWalSegments())
             throw new IgniteCheckedException("Failed to initialize wal (work directory contains " +
-                "incorrect number of segments) [cur=" + allFiles.length + ", expected=" + psCfg.getWalSegments() + ']');
+                "incorrect number of segments) [cur=" + allFiles.length + ", expected=" + dsCfg.getWalSegments() + ']');
 
         // Allocate the first segment synchronously. All other segments will be allocated by archiver in background.
         if (allFiles.length == 0) {
@@ -957,7 +957,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = psCfg.getWalSegmentSize();
+            int left = dsCfg.getWalSegmentSize();
 
             if (mode == WALMode.DEFAULT) {
                 while (left > 0) {
@@ -1016,7 +1016,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver.nextAbsoluteSegmentIndex(curIdx);
 
-        long segmentIdx = absNextIdx % psCfg.getWalSegments();
+        long segmentIdx = absNextIdx % dsCfg.getWalSegments();
 
         return new File(walWorkDir, FileDescriptor.fileName(segmentIdx));
     }
@@ -1084,7 +1084,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate
-     * the work WAL segment: S(N) = N % psCfg.walSegments.
+     * the work WAL segment: S(N) = N % dsCfg.walSegments.
      * When a work segment is finished, it is given to the archiver. If the absolute index of last archived segment
      * is denoted by A and the absolute index of next segment we want to write is denoted by W, then we can allow
      * write to S(W) if W - A <= walSegments. <br>
@@ -1295,7 +1295,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     // Notify archiver thread.
                     notifyAll();
 
-                    while (curAbsWalIdx - lastAbsArchivedIdx > psCfg.getWalSegments() && cleanException == null)
+                    while (curAbsWalIdx - lastAbsArchivedIdx > dsCfg.getWalSegments() && cleanException == null)
                         wait();
 
                     return curAbsWalIdx;
@@ -1365,7 +1365,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param absIdx Absolute index to archive.
          */
         private SegmentArchiveResult archiveSegment(long absIdx) throws IgniteCheckedException {
-            long segIdx = absIdx % psCfg.getWalSegments();
+            long segIdx = absIdx % dsCfg.getWalSegments();
 
             File origFile = new File(walWorkDir, FileDescriptor.fileName(segIdx));
 
@@ -1435,14 +1435,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException if validation or create file fail.
      */
     private void checkFiles(int startWith, boolean create, IgnitePredicate<Integer> p) throws IgniteCheckedException {
-        for (int i = startWith; i < psCfg.getWalSegments() && (p == null || (p != null && p.apply(i))); i++) {
+        for (int i = startWith; i < dsCfg.getWalSegments() && (p == null || (p != null && p.apply(i))); i++) {
             File checkFile = new File(walWorkDir, FileDescriptor.fileName(i));
 
             if (checkFile.exists()) {
                 if (checkFile.isDirectory())
                     throw new IgniteCheckedException("Failed to initialize WAL log segment (a directory with " +
                         "the same name already exists): " + checkFile.getAbsolutePath());
-                else if (checkFile.length() != psCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
+                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
                     throw new IgniteCheckedException("Failed to initialize WAL log segment " +
                         "(WAL segment size change is not supported):" + checkFile.getAbsolutePath());
             }

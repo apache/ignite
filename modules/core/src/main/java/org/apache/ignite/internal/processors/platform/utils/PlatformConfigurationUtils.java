@@ -699,7 +699,7 @@ public class PlatformConfigurationUtils {
         }
 
         if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readMemoryConfiguration(in));
+            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
 
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
@@ -709,9 +709,6 @@ public class PlatformConfigurationUtils {
 
         if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
             cfg.setClientConnectorConfiguration(null);
-
-        if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readPersistentStoreConfiguration(in));
 
         readPluginConfiguration(cfg, in);
 
@@ -1180,15 +1177,13 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
-        writeMemoryConfiguration(w, cfg.getDataStorageConfiguration());
+        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
         w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
-
-        writePersistentStoreConfiguration(w, cfg.getDataStorageConfiguration());
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1394,19 +1389,40 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the memory configuration.
+     * Reads the data storage configuration.
      *
      * @param in Reader
      * @return Config.
      */
-    private static DataStorageConfiguration readMemoryConfiguration(BinaryRawReader in) {
+    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
         DataStorageConfiguration res = new DataStorageConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
-                .setSystemCacheMaxSize(in.readLong())
-                .setPageSize(in.readInt())
-                .setConcurrencyLevel(in.readInt())
-                .setDefaultDataRegionName(in.readString());
+            .setSystemCacheMaxSize(in.readLong())
+            .setPageSize(in.readInt())
+            .setConcurrencyLevel(in.readInt())
+            .setDefaultDataRegionName(in.readString())
+            .setPersistentStorePath(in.readString())
+            .setCheckpointingFrequency(in.readLong())
+            .setCheckpointingPageBufferSize(in.readLong())
+            .setCheckpointingThreads(in.readInt())
+            .setLockWaitTime((int)in.readLong())
+            .setWalHistorySize(in.readInt())
+            .setWalSegments(in.readInt())
+            .setWalSegmentSize(in.readInt())
+            .setWalStorePath(in.readString())
+            .setWalArchivePath(in.readString())
+            .setWalMode(WALMode.fromOrdinal(in.readInt()))
+            .setTlbSize(in.readInt())
+            .setWalFlushFrequency((int)in.readLong())
+            .setWalFsyncDelayNanos(in.readLong())
+            .setWalRecordIteratorBufferSize(in.readInt())
+            .setAlwaysWriteFullPages(in.readBoolean())
+            .setMetricsEnabled(in.readBoolean())
+            .setSubIntervals(in.readInt())
+            .setRateTimeInterval(in.readLong())
+            .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+            .setWriteThrottlingEnabled(in.readBoolean());
 
         int cnt = in.readInt();
 
@@ -1437,12 +1453,12 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Writes the memory configuration.
+     * Writes the data storage configuration.
      *
      * @param w Writer.
      * @param cfg Config.
      */
-    private static void writeMemoryConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
+    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
         if (cfg == null) {
             w.writeBoolean(false);
             return;
@@ -1455,6 +1471,27 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
         w.writeString(cfg.getDefaultDataRegionName());
+        w.writeString(cfg.getPersistentStorePath());
+        w.writeLong(cfg.getCheckpointingFrequency());
+        w.writeLong(cfg.getCheckpointingPageBufferSize());
+        w.writeInt(cfg.getCheckpointingThreads());
+        w.writeLong(cfg.getLockWaitTime());
+        w.writeInt(cfg.getWalHistorySize());
+        w.writeInt(cfg.getWalSegments());
+        w.writeInt(cfg.getWalSegmentSize());
+        w.writeString(cfg.getWalStorePath());
+        w.writeString(cfg.getWalArchivePath());
+        w.writeInt(cfg.getWalMode().ordinal());
+        w.writeInt(cfg.getTlbSize());
+        w.writeLong(cfg.getWalFlushFrequency());
+        w.writeLong(cfg.getWalFsyncDelayNanos());
+        w.writeInt(cfg.getWalRecordIteratorBufferSize());
+        w.writeBoolean(cfg.isAlwaysWriteFullPages());
+        w.writeBoolean(cfg.isMetricsEnabled());
+        w.writeInt(cfg.getSubIntervals());
+        w.writeLong(cfg.getRateTimeInterval());
+        w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
+        w.writeBoolean(cfg.isWriteThrottlingEnabled());
 
         DataRegionConfiguration[] plcs = cfg.getDataRegions();
 
@@ -1560,75 +1597,6 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isTcpNoDelay());
             w.writeInt(cfg.getMaxOpenCursorsPerConnection());
             w.writeInt(cfg.getThreadPoolSize());
-        } else {
-            w.writeBoolean(false);
-        }
-    }
-
-    /**
-     * Reads the persistence store connector configuration.
-     *
-     * @param in Reader.
-     * @return Config.
-     */
-    private static DataStorageConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
-        return new DataStorageConfiguration()
-                .setPersistentStorePath(in.readString())
-                .setCheckpointingFrequency(in.readLong())
-                .setCheckpointingPageBufferSize(in.readLong())
-                .setCheckpointingThreads(in.readInt())
-                .setLockWaitTime((int) in.readLong())
-                .setWalHistorySize(in.readInt())
-                .setWalSegments(in.readInt())
-                .setWalSegmentSize(in.readInt())
-                .setWalStorePath(in.readString())
-                .setWalArchivePath(in.readString())
-                .setWalMode(WALMode.fromOrdinal(in.readInt()))
-                .setTlbSize(in.readInt())
-                .setWalFlushFrequency((int) in.readLong())
-                .setWalFsyncDelayNanos(in.readLong())
-                .setWalRecordIteratorBufferSize(in.readInt())
-                .setAlwaysWriteFullPages(in.readBoolean())
-                .setMetricsEnabled(in.readBoolean())
-                .setSubIntervals(in.readInt())
-                .setRateTimeInterval(in.readLong())
-                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-                .setWriteThrottlingEnabled(in.readBoolean());
-    }
-
-    /**
-     * Writes the persistent store configuration.
-     *
-     * @param w Writer.
-     */
-    private static void writePersistentStoreConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
-        assert w != null;
-
-        if (cfg != null) {
-            w.writeBoolean(true);
-
-            w.writeString(cfg.getPersistentStorePath());
-            w.writeLong(cfg.getCheckpointingFrequency());
-            w.writeLong(cfg.getCheckpointingPageBufferSize());
-            w.writeInt(cfg.getCheckpointingThreads());
-            w.writeLong(cfg.getLockWaitTime());
-            w.writeInt(cfg.getWalHistorySize());
-            w.writeInt(cfg.getWalSegments());
-            w.writeInt(cfg.getWalSegmentSize());
-            w.writeString(cfg.getWalStorePath());
-            w.writeString(cfg.getWalArchivePath());
-            w.writeInt(cfg.getWalMode().ordinal());
-            w.writeInt(cfg.getTlbSize());
-            w.writeLong(cfg.getWalFlushFrequency());
-            w.writeLong(cfg.getWalFsyncDelayNanos());
-            w.writeInt(cfg.getWalRecordIteratorBufferSize());
-            w.writeBoolean(cfg.isAlwaysWriteFullPages());
-            w.writeBoolean(cfg.isMetricsEnabled());
-            w.writeInt(cfg.getSubIntervals());
-            w.writeLong(cfg.getRateTimeInterval());
-            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
-            w.writeBoolean(cfg.isWriteThrottlingEnabled());
-
         } else {
             w.writeBoolean(false);
         }
