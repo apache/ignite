@@ -263,15 +263,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
-        if (cfgs != null) {
-            for (ServiceConfiguration c : cfgs) {
-                // Deploy only on server nodes by default.
-                if (c.getNodeFilter() == null)
-                    c.setNodeFilter(ctx.cluster().get().forServers().predicate());
-            }
-
+        if (cfgs != null)
             deployAll(Arrays.asList(cfgs)).get();
-        }
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -465,9 +458,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         cfg.setService(svc);
         cfg.setTotalCount(totalCnt);
         cfg.setMaxPerNodeCount(maxPerNodeCnt);
-        cfg.setNodeFilter(F.<ClusterNode>alwaysTrue() == prj.predicate() ? null : prj.predicate());
 
-        return deploy(cfg);
+        return deployAll(prj, Collections.singleton(cfg));
     }
 
     /**
@@ -490,14 +482,15 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         cfg.setTotalCount(1);
         cfg.setMaxPerNodeCount(1);
 
-        return deploy(cfg);
+        return deployAll(Collections.singleton(cfg));
     }
 
     /**
+     * @param prj Grid projection.
      * @param cfgs Service configurations.
      * @return Configurations to deploy.
      */
-    private PreparedConfigurations prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs) {
+    private PreparedConfigurations prepareServiceConfigurations(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         Marshaller marsh = ctx.config().getMarshaller();
@@ -506,6 +499,15 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         for (ServiceConfiguration cfg : cfgs) {
             Exception err = null;
+
+            // Deploy to projection node by default
+            // or only on server nodes if no projection .
+            if (cfg.getNodeFilter() == null) {
+                if (prj == null)
+                    cfg.setNodeFilter(ctx.cluster().get().forServers().predicate());
+                else if (F.<ClusterNode>alwaysTrue() != prj.predicate())
+                    cfg.setNodeFilter(prj.predicate());
+            }
 
             try {
                 validate(cfg);
@@ -563,9 +565,18 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Future for deployment.
      */
     public IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs) {
+        return deployAll(null, cfgs);
+    }
+
+    /**
+     * @param prj Grid projection.
+     * @param cfgs Service configurations.
+     * @return Future for deployment.
+     */
+    public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
         assert cfgs != null;
 
-        PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs);
+        PreparedConfigurations srvCfg = prepareServiceConfigurations(prj, cfgs);
 
         List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
@@ -721,16 +732,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             throw e;
         }
-    }
-
-    /**
-     * @param cfg Service configuration.
-     * @return Future for deployment.
-     */
-    public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
-        A.notNull(cfg, "cfg");
-
-        return deployAll(Collections.singleton(cfg));
     }
 
     /**
