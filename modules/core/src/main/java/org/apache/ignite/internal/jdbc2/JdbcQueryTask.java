@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +49,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
  */
-class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
+class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -132,7 +131,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcQueryTask.QueryResult call() throws Exception {
+    @Override public JdbcQueryTaskResult call() throws Exception {
         Cursor cursor = CURSORS.get(uuid);
 
         List<String> tbls = null;
@@ -217,7 +216,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
         assert isQry != null : "Query flag must be set prior to returning result";
 
-        return new QueryResult(uuid, finished, isQry, rows, cols, tbls, types);
+        return new JdbcQueryTaskResult(uuid, finished, isQry, rows, cols, tbls, types);
     }
 
     /**
@@ -312,104 +311,6 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
 
         if (c != null)
             c.cursor.close();
-    }
-
-    /**
-     * Result of query execution.
-     */
-    static class QueryResult implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Uuid. */
-        private final UUID uuid;
-
-        /** Finished. */
-        private final boolean finished;
-
-        /** Result type - query or update. */
-        private final boolean isQry;
-
-        /** Rows. */
-        private final List<List<?>> rows;
-
-        /** Tables. */
-        private final List<String> tbls;
-
-        /** Columns. */
-        private final List<String> cols;
-
-        /** Types. */
-        private final List<String> types;
-
-        /**
-         * @param uuid UUID..
-         * @param finished Finished.
-         * @param isQry Is query flag.
-         * @param rows Rows.
-         * @param cols Columns.
-         * @param tbls Tables.
-         * @param types Types.
-         */
-        public QueryResult(UUID uuid, boolean finished, boolean isQry, List<List<?>> rows, List<String> cols,
-            List<String> tbls, List<String> types) {
-            this.isQry = isQry;
-            this.cols = cols;
-            this.uuid = uuid;
-            this.finished = finished;
-            this.rows = rows;
-            this.tbls = tbls;
-            this.types = types;
-        }
-
-        /**
-         * @return Query result rows.
-         */
-        public List<List<?>> getRows() {
-            return rows;
-        }
-
-        /**
-         * @return Tables metadata.
-         */
-        public List<String> getTbls() {
-            return tbls;
-        }
-
-        /**
-         * @return Columns metadata.
-         */
-        public List<String> getCols() {
-            return cols;
-        }
-
-        /**
-         * @return Types metadata.
-         */
-        public List<String> getTypes() {
-            return types;
-        }
-
-        /**
-         * @return Query UUID.
-         */
-        public UUID getUuid() {
-            return uuid;
-        }
-
-        /**
-         * @return {@code True} if it is finished query.
-         */
-        public boolean isFinished() {
-            return finished;
-        }
-
-        /**
-         * @return {@code true} if it is result of a query operation, not update; {@code false} otherwise.
-         */
-        public boolean isQuery() {
-            return isQry;
-        }
     }
 
     /**

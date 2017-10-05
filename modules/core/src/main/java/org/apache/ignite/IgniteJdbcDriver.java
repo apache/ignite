@@ -332,7 +332,7 @@ public class IgniteJdbcDriver implements Driver {
     private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
 
     /** Allow queries with multiple statements. */
-    private static final String PARAM_MULTIPLE_STMTS = "multipleStatements";
+    private static final String PARAM_MULTIPLE_STMTS = "multipleStatementsAllowed";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";

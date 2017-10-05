@@ -208,7 +208,7 @@ public class JdbcResultSet implements ResultSet {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata);
 
         try {
-            JdbcQueryTask.QueryResult res =
+            JdbcQueryTaskResult res =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             finished = res.isFinished();

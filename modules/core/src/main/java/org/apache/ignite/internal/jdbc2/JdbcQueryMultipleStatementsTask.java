@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +35,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
  * The query can contains several SQL statements.
  */
-class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipleStatementsTask.QueryResult> {
+class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStatementResultInfo>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -109,7 +108,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
     }
 
     /** {@inheritDoc} */
-    @Override public QueryResult call() throws Exception {
+    @Override public List<JdbcStatementResultInfo> call() throws Exception {
         SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
             .setArgs(args);
 
@@ -125,7 +124,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
 
         List<FieldsQueryCursor<List<?>>> curs = ctx.query().querySqlFieldsNoCache(qry, true, false);
 
-        List<ResultInfo> resultsInfo = new ArrayList<>(curs.size());
+        List<JdbcStatementResultInfo> resultsInfo = new ArrayList<>(curs.size());
 
         for (FieldsQueryCursor<List<?>> cur0 : curs) {
             QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)cur0;
@@ -157,88 +156,12 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<JdbcQueryMultipl
                     JdbcQueryTask.scheduleRemoval(qryId);
             }
 
-            ResultInfo resInfo = new ResultInfo(cur.isQuery(), qryId, updCnt);
+            JdbcStatementResultInfo resInfo = new JdbcStatementResultInfo(cur.isQuery(), qryId, updCnt);
 
             resultsInfo.add(resInfo);
         }
 
-        return new QueryResult(resultsInfo);
+        return resultsInfo;
     }
 
-    /**
-     * Result of query execution.
-     */
-    static class QueryResult implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Uuid. */
-        private final List<ResultInfo> results;
-
-        /**
-         * @param results Results info list.
-         */
-        public QueryResult(List<ResultInfo> results) {
-            this.results = results;
-        }
-
-        /**
-         * @return Results info list.
-         */
-         public List<ResultInfo> results() {
-            return results;
-        }
-    }
-
-    /**
-     * JDBC statement result information. Keeps statement type (SELECT or UPDATE) and
-     * queryId or update count (depends on statement type).
-     */
-    public class ResultInfo {
-        /** Query flag. */
-        private boolean isQuery;
-
-        /** Update count. */
-        private long updCnt;
-
-        /** Query ID. */
-        private UUID qryId;
-
-        /**
-         * @param isQuery Query flag.
-         * @param qryId Query ID.
-         * @param updCnt Update count.
-         */
-        public ResultInfo(boolean isQuery, UUID qryId, long updCnt) {
-            this.isQuery = isQuery;
-            this.updCnt = updCnt;
-            this.qryId = qryId;
-        }
-
-        /**
-         * @return Query flag.
-         */
-        public boolean isQuery() {
-            return isQuery;
-        }
-
-        /**
-         * @return Query ID.
-         */
-        public UUID queryId() {
-            return qryId;
-        }
-
-        /**
-         * @return Update count.
-         */
-        public long updateCount() {
-            return updCnt;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ResultInfo.class, this);
-        }
-    }
 }

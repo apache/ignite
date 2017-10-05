@@ -122,12 +122,12 @@ public class JdbcStatement implements Statement {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
 
         try {
-            JdbcQueryMultipleStatementsTask.QueryResult res =
+            List<JdbcStatementResultInfo> rsInfos =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            results = new ArrayList<>(res.results().size());
+            results = new ArrayList<>(rsInfos.size());
 
-            for (JdbcQueryMultipleStatementsTask.ResultInfo rsInfo : res.results()) {
+            for (JdbcStatementResultInfo rsInfo : rsInfos) {
                 if (rsInfo.isQuery())
                     results.add(new JdbcResultSet(true, rsInfo.queryId(), this, null, null, null, null, false));
                 else
@@ -166,7 +166,7 @@ public class JdbcStatement implements Statement {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
 
         try {
-            JdbcQueryTask.QueryResult qryRes =
+            JdbcQueryTaskResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             JdbcResultSet rs = new JdbcResultSet(qryRes.isQuery(), uuid, this, qryRes.getTbls(), qryRes.getCols(),
