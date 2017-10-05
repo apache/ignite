@@ -1922,7 +1922,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
         try {
-            Callable<Collection<CacheSqlMetadata>> job = new GridCacheQueryMetadataJobV2();
+            Callable<Collection<CacheSqlMetadata>> job = new GridCacheQuerySqlMetadataJobV2();
 
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = CU.affinityNodes(cctx, AffinityTopologyVersion.NONE);

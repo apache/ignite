@@ -45,7 +45,7 @@ import java.util.Set;
  * Metadata job.
  */
 @GridInternal
-class GridCacheQueryMetadataJobV2 implements IgniteCallable<Collection<GridCacheQueryManager.CacheSqlMetadata>> {
+class GridCacheQuerySqlMetadataJobV2 implements IgniteCallable<Collection<GridCacheQueryManager.CacheSqlMetadata>> {
     /** */
     private static final long serialVersionUID = 0L;
 
