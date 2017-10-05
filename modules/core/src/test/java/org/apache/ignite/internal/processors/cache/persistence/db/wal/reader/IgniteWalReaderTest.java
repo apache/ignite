@@ -344,6 +344,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cache0.putAll(values);
     }
+
     /**
      * Puts provided number of records to fill WAL under transactions
      *
@@ -758,7 +759,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             Assert.assertTrue("Too much entries generated, but segments was not become available",
                 totalEntries < 10000);
         }
-        final String subfolderName = genDbSubfolderName(ignite, 0);
+        final String subfolderName = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
 
         stopGrid("node0");
 
@@ -781,7 +782,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ignite.active(true);
         ignite.active(false);
 
-        final String subfolderName = genDbSubfolderName(ignite, 0);
+        final String subfolderName = U.maskForFileName(ignite.cluster().localNode().consistentId().toString());
 
         stopGrid("node0");
 
@@ -900,8 +901,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             deletesFound != null && deletesFound > 0);
     }
 
-    @NotNull private IgniteWalIteratorFactory createWalIteratorFactory(String subfolderName,
-        String workDir) throws IgniteCheckedException {
+    /**
+     * @param subfolderName Subfolder name.
+     * @param workDir Work directory.
+     * @return WAL iterator factory.
+     * @throws IgniteCheckedException If failed.
+     */
+    @NotNull private IgniteWalIteratorFactory createWalIteratorFactory(
+        String subfolderName,
+        String workDir
+    ) throws IgniteCheckedException {
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
         final File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
         final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
@@ -911,7 +920,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             binaryMetaWithConsId,
             marshallerMapping);
     }
-
 
     /**
      * @param values collection with numbers
