@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     private final JdbcConnection conn;
 
     /** Metadata. */
-    private Map<String, Map<String, Map<String, String>>> meta;
+    private Map<String, Map<String, Map<String, ColumnInfo>>> meta;
 
     /** Index info. */
     private Collection<List<Object>> indexes;
@@ -714,7 +715,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = new LinkedList<>();
 
         if (validCatalogPattern(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
                     for (String tbl : schema.getValue().keySet()) {
                         if (matches(tbl, tblNamePtrn))
@@ -796,14 +797,14 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         int cnt = 0;
 
         if (validCatalogPattern(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, String>> tbl : schema.getValue().entrySet()) {
+                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
                         if (matches(tbl.getKey(), tblNamePtrn)) {
-                            for (Map.Entry<String, String> col : tbl.getValue().entrySet()) {
+                            for (Map.Entry<String, ColumnInfo> col : tbl.getValue().entrySet()) {
                                 rows.add(columnRow(schema.getKey(), tbl.getKey(), col.getKey(),
-                                    JdbcUtils.type(col.getValue()), JdbcUtils.typeName(col.getValue()),
-                                    JdbcUtils.nullable(col.getKey(), col.getValue()), ++cnt));
+                                    JdbcUtils.type(col.getValue().typeName()), JdbcUtils.typeName(col.getValue().typeName()),
+                                    !col.getValue().isNotNull(), ++cnt));
                             }
                         }
                     }
@@ -925,9 +926,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         List<List<?>> rows = new LinkedList<>();
 
         if (validCatalogPattern(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet()) {
+            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
                 if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, String>> tbl : schema.getValue().entrySet()) {
+                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
                         if (matches(tbl.getKey(), tblNamePtrn))
                             rows.add(Arrays.<Object>asList(null, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
                     }
@@ -1361,10 +1362,21 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
                 Collection<String> types = m.types();
 
-                Map<String, Map<String, String>> typesMap = U.newHashMap(types.size());
+                Map<String, Map<String, ColumnInfo>> typesMap = U.newHashMap(types.size());
 
                 for (String type : types) {
-                    typesMap.put(type.toUpperCase(), m.fields(type));
+                    Collection<String> notNullFields = m.notNullFields(type);
+
+                    Map<String, ColumnInfo> fields = new LinkedHashMap<>();
+
+                    for (Map.Entry<String, String> fld : m.fields(type).entrySet()) {
+                        ColumnInfo colInfo = new ColumnInfo(fld.getValue(),
+                            notNullFields == null ? false : notNullFields.contains(fld.getKey()));
+
+                        fields.put(fld.getKey(), colInfo);
+                    }
+
+                    typesMap.put(type.toUpperCase(), fields);
 
                     for (GridCacheSqlIndexMetadata idx : m.indexes(type)) {
                         int cnt = 0;
@@ -1435,7 +1447,41 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         @Override public Collection<GridCacheSqlMetadata> call() throws Exception {
             IgniteCache cache = ignite.cache(cacheName);
 
-            return ((IgniteCacheProxy)cache).context().queries().sqlMetadata();
+            return ((IgniteCacheProxy)cache).context().queries().sqlMetadataV2();
+        }
+    }
+
+    /**
+     * Column info.
+     */
+    private static class ColumnInfo {
+        /** Class name. */
+        private final String typeName;
+
+        /** Not null flag. */
+        private final boolean notNull;
+
+        /**
+         * @param typeName Type name.
+         * @param notNull Not null flag.
+         */
+        private ColumnInfo(String typeName, boolean notNull) {
+            this.typeName = typeName;
+            this.notNull = notNull;
+        }
+
+        /**
+         * @return Type name.
+         */
+        public String typeName() {
+            return typeName;
+        }
+
+        /**
+         * @return Not null flag.
+         */
+        public boolean isNotNull() {
+            return notNull;
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
@@ -291,7 +294,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setSchema(schemaName);
 
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
-                protocolVer.compareTo(JdbcConnectionContext.VER_2_3_1) < 0);
+                protocolVer.compareTo(VER_2_3_0) < 0);
 
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
@@ -559,9 +562,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new HashSet<>();
+            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -572,11 +576,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                        if (!matches(field.getKey(), req.columnName()))
+                        String colName = field.getKey();
+
+                        if (!matches(colName, req.columnName()))
                             continue;
 
-                        JdbcColumnMeta columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue());
+                        JdbcColumnMeta columnMeta;
+
+                        if (protocolVer.compareTo(VER_2_3_0) >= 0) {
+                            GridQueryProperty prop = table.property(colName);
+
+                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue(), !prop.notNull());
+                        }
+                        else
+                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -584,7 +599,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            JdbcMetaColumnsResult res = new JdbcMetaColumnsResult(meta);
+            JdbcMetaColumnsResult res;
+
+            if (protocolVer.compareTo(VER_2_3_0) >= 0)
+                res = new JdbcMetaColumnsResultV2(meta);
+            else
+                res = new JdbcMetaColumnsResult(meta);
 
             return new JdbcResponse(res);
         }
