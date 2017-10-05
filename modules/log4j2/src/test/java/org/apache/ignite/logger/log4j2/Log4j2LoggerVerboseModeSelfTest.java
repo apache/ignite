@@ -69,6 +69,12 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
                 ignite.log().debug(testMsg + Level.DEBUG);
                 ignite.log().trace(testMsg + Level.TRACE);
 
+                System.out.flush();
+                System.err.flush();
+
+                testOut.flush();
+                testErr.flush();
+
                 String consoleOut = testOut.toString();
                 String consoleErr = testErr.toString();
 
