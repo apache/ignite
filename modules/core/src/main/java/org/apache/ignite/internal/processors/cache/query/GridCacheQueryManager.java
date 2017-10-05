@@ -1922,7 +1922,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
         try {
-            Callable<Collection<CacheSqlMetadata>> job = new MetadataJobV2();
+            Callable<Collection<CacheSqlMetadata>> job = new GridCacheQueryMetadataJobV2();
 
             // Remote nodes that have current cache.
             Collection<ClusterNode> nodes = CU.affinityNodes(cctx, AffinityTopologyVersion.NONE);
@@ -1972,10 +1972,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
 
             // Metadata for current cache must be first in list.
-            col.add(new CacheSqlMetadataV2(map.remove(cacheName)));
+            col.add(new GridCacheQuerySqlMetadataV2(map.remove(cacheName)));
 
             for (Collection<CacheSqlMetadata> metas : map.values())
-                col.add(new CacheSqlMetadataV2(metas));
+                col.add(new GridCacheQuerySqlMetadataV2(metas));
 
             return col;
         }
@@ -2154,122 +2154,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Metadata job.
-     */
-    @GridInternal
-    private static class MetadataJobV2 implements IgniteCallable<Collection<CacheSqlMetadata>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Number of fields to report when no fields defined. Includes _key and _val columns.
-         */
-        private static final int NO_FIELDS_COLUMNS_COUNT = 2;
-
-        /** Grid */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** {@inheritDoc} */
-        @Override public Collection<CacheSqlMetadata> call() {
-            final GridKernalContext ctx = ((IgniteKernal)ignite).context();
-
-            Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                new C1<IgniteInternalCache<?, ?>, String>() {
-                    @Override public String apply(IgniteInternalCache<?, ?> c) {
-                        return c.name();
-                    }
-                },
-                new P1<IgniteInternalCache<?, ?>>() {
-                    @Override public boolean apply(IgniteInternalCache<?, ?> c) {
-                        return !CU.isSystemCache(c.name()) && !DataStructuresProcessor.isDataStructureCache(c.name());
-                    }
-                }
-            );
-
-            return F.transform(cacheNames, new C1<String, CacheSqlMetadata>() {
-                @Override public CacheSqlMetadata apply(String cacheName) {
-                    Collection<GridQueryTypeDescriptor> types = ctx.query().types(cacheName);
-
-                    Collection<String> names = U.newHashSet(types.size());
-                    Map<String, String> keyClasses = U.newHashMap(types.size());
-                    Map<String, String> valClasses = U.newHashMap(types.size());
-                    Map<String, Map<String, String>> fields = U.newHashMap(types.size());
-                    Map<String, Collection<GridCacheSqlIndexMetadata>> indexes = U.newHashMap(types.size());
-                    Map<String, Set<String>> notNullFields = U.newHashMap(types.size());
-
-                    for (GridQueryTypeDescriptor type : types) {
-                        // Filter internal types (e.g., data structures).
-                        if (type.name().startsWith("GridCache"))
-                            continue;
-
-                        names.add(type.name());
-
-                        keyClasses.put(type.name(), type.keyClass().getName());
-                        valClasses.put(type.name(), type.valueClass().getName());
-
-                        int size = type.fields().isEmpty() ? NO_FIELDS_COLUMNS_COUNT : type.fields().size();
-
-                        Map<String, String> fieldsMap = U.newLinkedHashMap(size);
-                        HashSet<String> notNullFieldsSet = U.newHashSet(1);
-
-                        // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        if (type.fields().isEmpty()) {
-                            fieldsMap.put("_KEY", type.keyClass().getName());
-                            fieldsMap.put("_VAL", type.valueClass().getName());
-                        }
-
-                        for (Map.Entry<String, Class<?>> e : type.fields().entrySet()) {
-                            String fieldName = e.getKey();
-
-                            fieldsMap.put(fieldName.toUpperCase(), e.getValue().getName());
-
-                            if (type.property(fieldName).notNull())
-                                notNullFieldsSet.add(fieldName.toUpperCase());
-                        }
-
-                        fields.put(type.name(), fieldsMap);
-                        notNullFields.put(type.name(), notNullFieldsSet);
-
-                        Map<String, GridQueryIndexDescriptor> idxs = type.indexes();
-
-                        Collection<GridCacheSqlIndexMetadata> indexesCol = new ArrayList<>(idxs.size());
-
-                        for (Map.Entry<String, GridQueryIndexDescriptor> e : idxs.entrySet()) {
-                            GridQueryIndexDescriptor desc = e.getValue();
-
-                            // Add only SQL indexes.
-                            if (desc.type() == QueryIndexType.SORTED) {
-                                Collection<String> idxFields = new LinkedList<>();
-                                Collection<String> descendings = new LinkedList<>();
-
-                                for (String idxField : e.getValue().fields()) {
-                                    String idxFieldUpper = idxField.toUpperCase();
-
-                                    idxFields.add(idxFieldUpper);
-
-                                    if (desc.descending(idxField))
-                                        descendings.add(idxFieldUpper);
-                                }
-
-                                indexesCol.add(new CacheSqlIndexMetadata(e.getKey().toUpperCase(),
-                                    idxFields, descendings, false));
-                            }
-                        }
-
-                        indexes.put(type.name(), indexesCol);
-                    }
-
-                    return new CacheSqlMetadataV2(cacheName, names, keyClasses, valClasses, fields, indexes, notNullFields);
-                }
-            });
-        }
-    }
-
-    /**
      * Cache metadata.
      */
-    private static class CacheSqlMetadata implements GridCacheSqlMetadata {
+    public static class CacheSqlMetadata implements GridCacheSqlMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2429,81 +2316,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Cache metadata with not null field.
-     */
-    private static class CacheSqlMetadataV2 extends CacheSqlMetadata {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Not null fields. */
-        private Map<String, Set<String>> notNullFields;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public CacheSqlMetadataV2() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param types Types.
-         * @param keyClasses Key classes map.
-         * @param valClasses Value classes map.
-         * @param fields Fields maps.
-         * @param indexes Indexes.
-         * @param notNullFields Not null fields.
-         */
-        CacheSqlMetadataV2(@Nullable String cacheName, Collection<String> types, Map<String, String> keyClasses,
-            Map<String, String> valClasses, Map<String, Map<String, String>> fields,
-            Map<String, Collection<GridCacheSqlIndexMetadata>> indexes, Map<String, Set<String>> notNullFields) {
-            super(cacheName, types, keyClasses, valClasses, fields, indexes);
-
-            this.notNullFields = notNullFields;
-        }
-
-        /**
-         * @param metas Meta data instances from different nodes.
-         */
-        CacheSqlMetadataV2(Iterable<CacheSqlMetadata> metas) {
-            super(metas);
-
-            notNullFields = new HashMap<>();
-
-            for (CacheSqlMetadata meta : metas) {
-                if (meta instanceof CacheSqlMetadataV2) {
-                    CacheSqlMetadataV2 metaV2 = (CacheSqlMetadataV2)meta;
-
-                    notNullFields.putAll(metaV2.notNullFields);
-                }
-            }
-        }
-
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> notNullFields(String type) {
-            return notNullFields.get(type);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-
-            U.writeMap(out, notNullFields);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-
-            notNullFields = U.readHashMap(in);
-        }
-    }
-
-    /**
      * Cache metadata index.
      */
-    private static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
+    public static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 
