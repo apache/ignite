@@ -15,27 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Compatibility tests basic test suite.
+ * JDBC columns metadata result.
  */
-public class IgniteCompatibilityBasicTestSuite {
+public class JdbcMetaColumnsResultV2 extends JdbcMetaColumnsResult {
     /**
-     * @return Test suite.
-     * @throws Exception In case of an error.
+     * Default constructor is used for deserialization.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
+    JdbcMetaColumnsResultV2() {
+        super(META_COLUMNS_V2);
+    }
 
-        suite.addTestSuite(DummyPersistenceCompatibilityTest.class);
+    /**
+     * @param meta Columns metadata.
+     */
+    JdbcMetaColumnsResultV2(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V2, meta);
+    }
 
-        suite.addTestSuite(FoldersReuseCompatibilityTest.class);
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV2();
+    }
 
-        return suite;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV2.class, this);
     }
 }

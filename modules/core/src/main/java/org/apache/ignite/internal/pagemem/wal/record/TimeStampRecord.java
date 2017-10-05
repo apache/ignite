@@ -15,27 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testsuites;
+package org.apache.ignite.internal.pagemem.wal.record;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Compatibility tests basic test suite.
+ * Base class for records with timeStamp.
+ * All records which support timeStamp should be inherited from {@code TimeStampRecord}.
  */
-public class IgniteCompatibilityBasicTestSuite {
+public abstract class TimeStampRecord extends WALRecord {
+    /** Timestamp. */
+    protected long timestamp;
+
     /**
-     * @return Test suite.
-     * @throws Exception In case of an error.
+     *
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
+    protected TimeStampRecord() {
+        timestamp = U.currentTimeMillis();
+    }
 
-        suite.addTestSuite(DummyPersistenceCompatibilityTest.class);
+    /**
+     * @param timestamp TimeStamp.
+     */
+    protected TimeStampRecord(long timestamp) {
+        this.timestamp = timestamp;
+    }
 
-        suite.addTestSuite(FoldersReuseCompatibilityTest.class);
+    /**
+     * @param timestamp TimeStamp.
+     */
+    public void timestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 
-        return suite;
+    /**
+     * @return TimeStamp.
+     */
+    public long timestamp() {
+        return timestamp;
     }
 }
