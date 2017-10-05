@@ -30,8 +30,6 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="localHost" value="127.0.0.1"/>
-
         <property name="marshaller">
             <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
@@ -43,7 +41,7 @@
                         <property name="addresses">
                             <list>
                                 <value>172.25.1.19:47500..47549</value>
-                                <value>172.25.1.20:47500..47549</value>
+                                <value>172.25.1.30:47500..47549</value>
                             </list>
                         </property>
                     </bean>
