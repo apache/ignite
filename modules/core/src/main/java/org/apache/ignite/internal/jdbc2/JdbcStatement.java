@@ -103,7 +103,7 @@ public class JdbcStatement implements Statement {
      * @param isQuery Expected type of statements are contained in the query.
      * @throws SQLException On error.
      */
-    private void executeMultipleStmt(String sql, Boolean isQuery) throws SQLException {
+    private void executeMultipleStatement(String sql, Boolean isQuery) throws SQLException {
         ensureNotClosed();
 
         closeResults();
@@ -190,7 +190,7 @@ public class JdbcStatement implements Statement {
      */
     protected void execute0(String sql, Boolean isQuery) throws SQLException {
         if (conn.isMultipleStatementsAllowed())
-            executeMultipleStmt(sql, isQuery);
+            executeMultipleStatement(sql, isQuery);
         else
             executeSingle(sql, isQuery);
     }
