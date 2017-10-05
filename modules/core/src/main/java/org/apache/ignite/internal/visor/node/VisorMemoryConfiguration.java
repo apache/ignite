@@ -48,10 +48,10 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     /** Concurrency level. */
     private int concLvl;
 
-    /** Name of MemoryPolicy to be used as default. */
+    /** Name of DataRegion to be used as default. */
     private String dfltMemPlcName;
 
-    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    /** Size of memory (in bytes) to use for default DataRegion. */
     private long dfltMemPlcSize;
 
     /** Memory policies. */
@@ -118,7 +118,7 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Name of MemoryPolicy to be used as default.
+     * @return Name of DataRegion to be used as default.
      */
     public String getDefaultMemoryPolicyName() {
         return dfltMemPlcName;

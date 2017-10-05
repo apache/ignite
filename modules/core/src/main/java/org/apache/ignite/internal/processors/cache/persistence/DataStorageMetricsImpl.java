@@ -23,7 +23,7 @@ import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 /**
  *
  */
-public class PersistenceMetricsImpl implements DataStorageMetricsMXBean {
+public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private volatile HitRateMetrics walLoggingRate;
 
@@ -77,7 +77,7 @@ public class PersistenceMetricsImpl implements DataStorageMetricsMXBean {
      * @param rateTimeInterval Rate time interval.
      * @param subInts Number of sub-intervals.
      */
-    public PersistenceMetricsImpl(
+    public DataStorageMetricsImpl(
         boolean metricsEnabled,
         long rateTimeInterval,
         int subInts

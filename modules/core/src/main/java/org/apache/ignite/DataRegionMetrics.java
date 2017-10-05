@@ -55,7 +55,7 @@ public interface DataRegionMetrics {
     public String getName();
 
     /**
-     * Gets a total number of allocated pages related to the memory policy. When persistence is disabled, this
+     * Gets a total number of allocated pages related to the data region. When persistence is disabled, this
      * metric shows the total number of pages in memory. When persistence is enabled, this metric shows the
      * total number of pages in memory and on disk.
      *

@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -385,8 +385,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (storesLocallyOnClient(c, cc))
-            throw new IgniteCheckedException("MemoryPolicy for client caches must be explicitly configured " +
-                "on client node startup. Use DataStorageConfiguration to configure MemoryPolicy.");
+            throw new IgniteCheckedException("DataRegion for client caches must be explicitly configured " +
+                "on client node startup. Use DataStorageConfiguration to configure DataRegion.");
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
@@ -680,7 +680,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheType cacheType = cacheType(cacheName);
 
             if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
-                cfg.setDataRegionName(sharedCtx.database().systemMemoryPolicyName());
+                cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
             if (!cacheType.userCache())
                 stopSeq.addLast(cacheName);
@@ -1843,7 +1843,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
+        DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 

@@ -62,7 +62,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
@@ -301,7 +300,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private IgniteCacheSnapshotManager snapshotMgr;
 
     /** */
-    private PersistenceMetricsImpl persStoreMetrics;
+    private DataStorageMetricsImpl persStoreMetrics;
 
     /** */
     private ObjectName persistenceMetricsMbeanName;
@@ -326,7 +325,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
-        persStoreMetrics = new PersistenceMetricsImpl(
+        persStoreMetrics = new DataStorageMetricsImpl(
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getRateTimeInterval(),
             persistenceCfg.getSubIntervals()
@@ -552,7 +551,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 long totalSize = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                    if (!grpCtx.memoryPolicy().config().getName().equals(memPlcName))
+                    if (!grpCtx.dataRegion().config().getName().equals(memPlcName))
                         continue;
 
                     assert grpCtx.offheap() instanceof GridCacheOffheapManager;
@@ -676,7 +675,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
-        MemoryMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics
     ) {
         if (!plcCfg.isPersistenceEnabled())
             return super.createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
@@ -927,7 +926,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.onCacheGroupStop(gctx);
 
-            PageMemoryEx pageMem = (PageMemoryEx)gctx.memoryPolicy().pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)gctx.dataRegion().pageMemory();
 
             Collection<Integer> grpIds = destroyed.get(pageMem);
 
@@ -1026,12 +1025,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return {@code true} if all PageMemory instances are safe to update.
      */
     private boolean safeToUpdatePageMemories() {
-        Collection<MemoryPolicy> memPlcs = context().database().memoryPolicies();
+        Collection<DataRegion> memPlcs = context().database().memoryPolicies();
 
         if (memPlcs == null)
             return true;
 
-        for (MemoryPolicy memPlc : memPlcs) {
+        for (DataRegion memPlc : memPlcs) {
             if (!memPlc.config().isPersistenceEnabled())
                 continue;
 
@@ -1054,10 +1053,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointLock.readLock().unlock();
 
         if (checkpointer != null) {
-            Collection<MemoryPolicy> memPlcs = context().database().memoryPolicies();
+            Collection<DataRegion> memPlcs = context().database().memoryPolicies();
 
             if (memPlcs != null) {
-                for (MemoryPolicy memPlc : memPlcs) {
+                for (DataRegion memPlc : memPlcs) {
                     if (!memPlc.config().isPersistenceEnabled())
                         continue;
 
@@ -1603,7 +1602,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param grpId Cache group id.
      * @return PageMemoryEx instance.
-     * @throws IgniteCheckedException if no MemoryPolicy is configured for a name obtained from cache descriptor.
+     * @throws IgniteCheckedException if no DataRegion is configured for a name obtained from cache descriptor.
      */
     private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
         // TODO IGNITE-5075: cache descriptor can be removed.
@@ -1616,7 +1615,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         String memPlcName = desc.config().getDataRegionName();
 
-        return (PageMemoryEx)sharedCtx.database().memoryPolicy(memPlcName).pageMemory();
+        return (PageMemoryEx)sharedCtx.database().dataRegion(memPlcName).pageMemory();
     }
 
     /**
@@ -1695,12 +1694,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
             }
 
-            if (!grp.memoryPolicy().config().isPersistenceEnabled())
+            if (!grp.dataRegion().config().isPersistenceEnabled())
                 continue;
 
             int grpId = grp.groupId();
 
-            PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
             for (int i = 0; i < grp.affinity().partitions(); i++) {
                 if (storeMgr.exists(grpId, i)) {
@@ -1833,11 +1832,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = System.currentTimeMillis();
 
-        Collection<MemoryPolicy> memPolicies = context().database().memoryPolicies();
+        Collection<DataRegion> memPolicies = context().database().memoryPolicies();
 
         List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
 
-        for (MemoryPolicy memPlc : memPolicies) {
+        for (DataRegion memPlc : memPolicies) {
             PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
             cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(pageMem,
                 (pageMem).beginCheckpoint()));
@@ -2438,7 +2437,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             int pagesNum = 0;
 
-            for (MemoryPolicy memPlc : memoryPolicies()) {
+            for (DataRegion memPlc : memoryPolicies()) {
                 if (!memPlc.config().isPersistenceEnabled())
                     continue;
 
@@ -2457,7 +2456,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
             synchronized (this) {
-                for (MemoryPolicy memPlc : memoryPolicies()) {
+                for (DataRegion memPlc : memoryPolicies()) {
                     if (!memPlc.config().isPersistenceEnabled())
                         continue;
 
@@ -2621,10 +2620,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp == null)
                         continue;
 
-                    if (!grp.memoryPolicy().config().isPersistenceEnabled())
+                    if (!grp.dataRegion().config().isPersistenceEnabled())
                         continue;
 
-                    PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     Integer tag = pageMem.getForCheckpoint(
                         fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
@@ -3332,13 +3331,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public DataStorageMetrics persistentStoreMetrics() {
-        return new PersistenceMetricsSnapshot(persStoreMetrics);
+        return new DataStorageMetricsSnapshot(persStoreMetrics);
     }
 
     /**
      *
      */
-    public PersistenceMetricsImpl persistentStoreMetricsImpl() {
+    public DataStorageMetricsImpl persistentStoreMetricsImpl() {
         return persStoreMetrics;
     }
 }

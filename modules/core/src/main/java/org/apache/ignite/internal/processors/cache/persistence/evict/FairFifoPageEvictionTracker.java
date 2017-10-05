@@ -34,7 +34,7 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /**
      * @param pageMem Page memory.
-     * @param plcCfg Memory policy configuration.
+     * @param plcCfg Data region configuration.
      * @param sharedCtx Shared context.
      */
     public FairFifoPageEvictionTracker(

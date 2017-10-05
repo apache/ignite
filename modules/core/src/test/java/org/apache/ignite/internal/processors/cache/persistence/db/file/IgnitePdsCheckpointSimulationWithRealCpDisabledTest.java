@@ -162,7 +162,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Otherwise we will violate page store integrity rules.
         ig.cache(cacheName).put(0, 0);
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         IgniteBiTuple<Map<FullPageId, Integer>, WALPointer> res;
 
@@ -191,7 +191,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         dbMgr.enableCheckpoints(false).get();
 
-        mem = shared.database().memoryPolicy(null).pageMemory();
+        mem = shared.database().dataRegion(null).pageMemory();
 
         verifyReads(res.get1(), mem, res.get2(), shared.wal());
     }
@@ -213,7 +213,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false);
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         IgniteWriteAheadLogManager wal = shared.wal();
 
@@ -414,7 +414,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
-        PageMemory pageMem = sharedCtx.database().memoryPolicy(null).pageMemory();
+        PageMemory pageMem = sharedCtx.database().dataRegion(null).pageMemory();
         IgniteWriteAheadLogManager wal = sharedCtx.wal();
 
         db.enableCheckpoints(false).get();
@@ -519,7 +519,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false);
 
-        PageMemoryEx mem = (PageMemoryEx) dbMgr.memoryPolicy(null).pageMemory();
+        PageMemoryEx mem = (PageMemoryEx) dbMgr.dataRegion(null).pageMemory();
 
         ig.context().cache().context().database().checkpointReadLock();
 

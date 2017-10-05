@@ -55,7 +55,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         super(name,
             grp.groupId(),
             pageMem,
-            grp.memoryPolicy().config().isPersistenceEnabled() ? grp.shared().wal() : null,
+            grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
             metaPageId,
             reuseList,

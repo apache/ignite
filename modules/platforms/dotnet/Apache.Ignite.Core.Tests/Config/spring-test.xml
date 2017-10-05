@@ -44,12 +44,12 @@
         </property>
 
         <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
                 <property name="defaultMemoryPolicyName" value="dfltPlc"/>
 
                 <property name="memoryPolicies">
                     <list>
-                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="dfltPlc"/>
                         </bean>
                     </list>
@@ -58,7 +58,7 @@
         </property>
 
         <property name="persistentStoreConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
+            <bean class="org.apache.ignite.configuration.PersistentStoreConfiguration"/>
         </property>
     </bean>
 </beans>

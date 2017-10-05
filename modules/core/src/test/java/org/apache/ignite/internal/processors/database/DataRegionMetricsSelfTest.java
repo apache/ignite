@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -30,7 +30,7 @@ import static java.lang.Thread.sleep;
  */
 public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     /** */
-    private MemoryMetricsImpl memMetrics;
+    private DataRegionMetricsImpl memMetrics;
 
     /** */
     private int threadsCnt = 1;
@@ -51,7 +51,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         DataRegionConfiguration plcCfg = new DataRegionConfiguration();
 
-        memMetrics = new MemoryMetricsImpl(plcCfg);
+        memMetrics = new DataRegionMetricsImpl(plcCfg);
 
         memMetrics.enableMetrics();
     }
@@ -253,7 +253,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch startLatch;
 
         /** */
-        private final MemoryMetricsImpl memMetrics;
+        private final DataRegionMetricsImpl memMetrics;
 
         /** */
         private final int iterationsCnt;
@@ -267,7 +267,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
          * @param iterationsCnt Iterations count.
          * @param delay Delay.
          */
-        private AllocationsIncrementer(CountDownLatch startLatch, MemoryMetricsImpl memMetrics, int iterationsCnt, int delay) {
+        private AllocationsIncrementer(CountDownLatch startLatch, DataRegionMetricsImpl memMetrics, int iterationsCnt, int delay) {
             this.startLatch = startLatch;
             this.memMetrics = memMetrics;
             this.iterationsCnt = iterationsCnt;

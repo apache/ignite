@@ -116,7 +116,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -1247,10 +1247,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
+                            Collection<DataRegion> policies = ctx.cache().context().database().memoryPolicies();
 
                             if (!F.isEmpty(policies)) {
-                                for (MemoryPolicy memPlc : policies)
+                                for (DataRegion memPlc : policies)
                                     loadedPages += memPlc.pageMemory().loadedPages();
                             }
 
@@ -1426,7 +1426,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (total > safeToUse) {
                 U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
-                    "lead to significant slowdown due to swapping (please decrease JVM heap size, memory policy " +
+                    "lead to significant slowdown due to swapping (please decrease JVM heap size, data region " +
                     "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
                     (ram >> 20) + "MB]");
             }
@@ -2516,7 +2516,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (memCfg == null)
             return;
 
-        U.log(log, "System cache's MemoryPolicy size is configured to " +
+        U.log(log, "System cache's DataRegion size is configured to " +
             (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
             "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
@@ -2553,7 +2553,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             for (Map.Entry<String, ArrayList<String>> e : memPlcNamesMapping.entrySet()) {
-                sb.a("in '").a(e.getKey()).a("' memoryPolicy: [");
+                sb.a("in '").a(e.getKey()).a("' dataRegion: [");
 
                 for (String s : e.getValue())
                     sb.a("'").a(s).a("', ");

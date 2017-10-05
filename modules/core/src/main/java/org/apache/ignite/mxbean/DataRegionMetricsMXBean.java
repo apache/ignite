@@ -33,7 +33,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      *
      * @return Initial size in MB.
      */
-    @MXBeanDescription("Initial memory region size defined by its memory policy.")
+    @MXBeanDescription("Initial memory region size defined by its data region.")
     public int getInitialSize();
 
     /**
@@ -41,7 +41,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      *
      * @return Maximum size in MB.
      */
-    @MXBeanDescription("Maximum memory region size defined by its memory policy.")
+    @MXBeanDescription("Maximum memory region size defined by its data region.")
     public int getMaxSize();
 
     /**

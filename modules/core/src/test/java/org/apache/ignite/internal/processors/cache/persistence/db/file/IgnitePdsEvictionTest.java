@@ -289,7 +289,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         final IgniteCacheDatabaseSharedManager db = sharedCtx.database();
 
-        return db.memoryPolicy(null).pageMemory();
+        return db.dataRegion(null).pageMemory();
     }
 
     /**

@@ -54,7 +54,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /**
      * @param pageMem Page memory.
-     * @param plcCfg Memory policy configuration.
+     * @param plcCfg Data region configuration.
      * @param sharedCtx Shared context.
      */
     PageAbstractEvictionTracker(

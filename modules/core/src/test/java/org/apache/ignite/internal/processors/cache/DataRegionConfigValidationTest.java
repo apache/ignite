@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
+public class DataRegionConfigValidationTest extends GridCommonAbstractTest {
     /** */
     private static final String VALID_DEFAULT_MEM_PLC_NAME = "valid_dlft_mem_plc";
 
@@ -52,8 +52,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
 
                 break;
 
-            case SYSTEM_MEMORY_POLICY_NAME_MISUSE:
-                plcs = createPlcWithReservedNameMisuseCfg();
+            case SYSTEM_DATA_REGION_NAME_MISUSE:
+                plcs = createRegionWithReservedNameMisuseCfg();
 
                 break;
 
@@ -119,7 +119,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createSubIntervalsIsNegative() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createDataRegion(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
         res[0].setSubIntervals(-10);
 
         return res;
@@ -131,7 +131,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createRateTimeIntervalIsNegative() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createDataRegion(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
         res[0].setRateTimeInterval(-10);
 
         return res;
@@ -143,7 +143,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createValidUserDefault() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
+        res[0] = createDataRegion(VALID_DEFAULT_MEM_PLC_NAME, 100 * 1024 * 1024, 100 * 1024 * 1024);
 
         return res;
     }
@@ -154,7 +154,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createMissingUserDefinedDefault() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createDataRegion(VALID_USER_MEM_PLC_NAME, 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -165,7 +165,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createPlcWithNullName() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(null, 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createDataRegion(null, 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -176,7 +176,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createTooSmallMemoryCfg() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy(VALID_DEFAULT_MEM_PLC_NAME, 10, 10);
+        res[0] = createDataRegion(VALID_DEFAULT_MEM_PLC_NAME, 10, 10);
 
         return res;
     }
@@ -184,10 +184,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private DataRegionConfiguration[] createPlcWithReservedNameMisuseCfg() {
+    private DataRegionConfiguration[] createRegionWithReservedNameMisuseCfg() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy("sysMemPlc", 1024 * 1024, 1024 * 1024);
+        res[0] = createDataRegion("sysMemPlc", 1024 * 1024, 1024 * 1024);
 
         return res;
     }
@@ -198,8 +198,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createPlcsWithNamesConflictCfg() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[2];
 
-        res[0] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
-        res[1] = createMemoryPolicy("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createDataRegion("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[1] = createDataRegion("cflt0", 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -210,7 +210,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createMaxSizeSmallerThanInitialSize() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createMemoryPolicy("invalidSize", 100 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createDataRegion("invalidSize", 100 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }
@@ -227,7 +227,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      * @param initialSize Initial size of DataRegionConfiguration in bytes.
      * @param maxSize Max size of DataRegionConfiguration in bytes.
      */
-    private DataRegionConfiguration createMemoryPolicy(String name, long initialSize, long maxSize) {
+    private DataRegionConfiguration createDataRegion(String name, long initialSize, long maxSize) {
         DataRegionConfiguration plc = new DataRegionConfiguration();
 
         plc.setName(name);
@@ -240,8 +240,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * 'sysMemPlc' name is reserved for DataRegionConfiguration for system caches.
      */
-    public void testReservedMemoryPolicyMisuse() throws Exception {
-        violationType = ValidationViolationType.SYSTEM_MEMORY_POLICY_NAME_MISUSE;
+    public void testReservedDataRegionMisuse() throws Exception {
+        violationType = ValidationViolationType.SYSTEM_DATA_REGION_NAME_MISUSE;
 
         doTest(violationType);
     }
@@ -274,7 +274,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * MemoryPolicy must be configured with size of at least 1MB.
+     * DataRegion must be configured with size of at least 1MB.
      */
     public void testMemoryTooSmall() throws Exception {
         violationType = ValidationViolationType.TOO_SMALL_MEMORY_SIZE;
@@ -283,7 +283,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * MemoryPolicy must be configured with size of at least 1MB.
+     * DataRegion must be configured with size of at least 1MB.
      */
     public void testMaxSizeSmallerThanInitialSize() throws Exception {
         violationType = ValidationViolationType.MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE;
@@ -292,7 +292,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * User-defined size of default MemoryPolicy must be at least 1MB.
+     * User-defined size of default DataRegion must be at least 1MB.
      */
     public void testUserDefinedDefaultMemoryTooSmall() throws Exception {
         violationType = ValidationViolationType.TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE;
@@ -301,7 +301,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Defining size of default MemoryPolicy twice with and through <b>defaultMemoryPolicySize</b> property
+     * Defining size of default DataRegion twice with and through <b>defaultMemoryPolicySize</b> property
      * and using <b>DataRegionConfiguration</b> description is prohibited.
      */
     public void testDefaultMemoryPolicySizeDefinedTwice() throws Exception {
@@ -357,25 +357,25 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         NAMES_CONFLICT("Two MemoryPolicies have the same name: "),
 
         /** */
-        SYSTEM_MEMORY_POLICY_NAME_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
+        SYSTEM_DATA_REGION_NAME_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
 
         /** */
-        TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 10MB "),
+        TOO_SMALL_MEMORY_SIZE("DataRegion must have size more than 10MB "),
 
         /** */
         NULL_NAME_ON_USER_DEFINED_POLICY("User-defined DataRegionConfiguration must have non-null and non-empty name."),
 
         /** */
-        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: "),
+        MISSING_USER_DEFINED_DEFAULT("User-defined default DataRegion name must be presented among configured MemoryPolices: "),
 
         /** */
-        DEFAULT_SIZE_IS_DEFINED_TWICE("User-defined MemoryPolicy configuration and defaultMemoryPolicySize properties are set at the same time."),
+        DEFAULT_SIZE_IS_DEFINED_TWICE("User-defined DataRegion configuration and defaultMemoryPolicySize properties are set at the same time."),
 
         /** */
-        TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default MemoryPolicy size is less than 1MB."),
+        TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE("User-defined default DataRegion size is less than 1MB."),
 
         /** */
-        MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE("MemoryPolicy maxSize must not be smaller than initialSize"),
+        MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE("DataRegion maxSize must not be smaller than initialSize"),
 
         /** Case when rateTimeInterval property of DataRegionConfiguration is less than or equals zero. */
         LTE_ZERO_RATE_TIME_INTERVAL("Rate time interval must be greater than zero " +

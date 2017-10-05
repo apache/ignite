@@ -31,7 +31,7 @@ public enum DataPageEvictionMode {
     /**
      * Random-LRU algorithm.
      * <ul>
-     * <li>Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
+     * <li>Once a memory region defined by a data region is configured, an off-heap array is allocated to track
      * last usage timestamp for every individual data page. The size of the array is calculated this way - size =
      * ({@link DataRegionConfiguration#getMaxSize()} / {@link DataStorageConfiguration#pageSize})</li>
      * <li>When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the

@@ -169,7 +169,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         try {
                             cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
-                                .memoryPolicy("dfltMemPlc").pageMemory()).checkpointBufferPagesCount();
+                                .dataRegion("dfltMemPlc").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();

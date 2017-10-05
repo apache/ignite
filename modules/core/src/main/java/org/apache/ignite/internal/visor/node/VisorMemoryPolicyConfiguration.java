@@ -33,7 +33,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unique name of MemoryPolicy. */
+    /** Unique name of DataRegion. */
     private String name;
 
     /** Maximum memory region size defined by this memory policy. */
@@ -82,7 +82,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Unique name of MemoryPolicy.
+     * Unique name of DataRegion.
      */
     public String getName() {
         return name;

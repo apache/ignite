@@ -234,7 +234,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @throws Exception If failed.
      */
     protected final void check(IgniteCache cache) throws Exception {
-        long pagesActual = ((IgniteCacheProxy)cache).context().memoryPolicy().pageMemory().loadedPages();
+        long pagesActual = ((IgniteCacheProxy)cache).context().dataRegion().pageMemory().loadedPages();
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;

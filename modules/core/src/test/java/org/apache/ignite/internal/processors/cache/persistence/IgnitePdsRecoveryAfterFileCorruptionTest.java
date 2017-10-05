@@ -146,7 +146,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         // Disable integrated checkpoint thread.
         psMgr.enableCheckpoints(false).get();
 
-        PageMemory mem = sharedCtx.database().memoryPolicy(policyName).pageMemory();
+        PageMemory mem = sharedCtx.database().dataRegion(policyName).pageMemory();
 
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
@@ -211,7 +211,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
 
         dbMgr.enableCheckpoints(false).get();
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         for (FullPageId fullId : pages) {
             long page = mem.acquirePage(fullId.groupId(), fullId.pageId());

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -118,7 +118,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private String extractDefaultPageMemoryAllocPath(GridKernalContext context) {
         IgniteCacheDatabaseSharedManager dbMgr = context.cache().context().database();
 
-        Map<String, MemoryPolicy> memPlcMap = U.field(dbMgr, "memPlcMap");
+        Map<String, DataRegion> memPlcMap = U.field(dbMgr, "memPlcMap");
 
         PageMemory pageMem = memPlcMap.get("default").pageMemory();
 
@@ -128,7 +128,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param isRelativePath flag is set to {@code true} if relative path should be used for memory policy configuration.
+     * @param isRelativePath flag is set to {@code true} if relative path should be used for data region configuration.
      */
     private DataStorageConfiguration createMemoryConfiguration(boolean isRelativePath) {
         DataStorageConfiguration memCfg = new DataStorageConfiguration();

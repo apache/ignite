@@ -55,9 +55,9 @@ public class RowStore {
 
         ctx = grp.shared();
         coctx = grp.cacheObjectContext();
-        pageMem = grp.memoryPolicy().pageMemory();
+        pageMem = grp.dataRegion().pageMemory();
 
-        persistenceEnabled = grp.memoryPolicy().config().isPersistenceEnabled();
+        persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
     }
 
     /**

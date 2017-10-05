@@ -28,7 +28,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class MemoryMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final IgniteOutClosure<Float> fillFactorProvider;
 
@@ -70,14 +70,14 @@ public class MemoryMetricsImpl implements DataRegionMetrics {
     /**
      * @param memPlcCfg DataRegionConfiguration.
     */
-    public MemoryMetricsImpl(DataRegionConfiguration memPlcCfg) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this(memPlcCfg, null);
     }
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
      */
-    public MemoryMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
         this.memPlcCfg = memPlcCfg;
         this.fillFactorProvider = fillFactorProvider;
 

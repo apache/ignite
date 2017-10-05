@@ -64,8 +64,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     ) throws IgniteCheckedException {
         super(name,
             grp.groupId(),
-            grp.memoryPolicy().pageMemory(),
-            grp.memoryPolicy().config().isPersistenceEnabled() ? grp.shared().wal() : null,
+            grp.dataRegion().pageMemory(),
+            grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
             metaPageId,
             reuseList,

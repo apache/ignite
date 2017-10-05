@@ -61,9 +61,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that proper exception is thrown when MemoryPolicy is misconfigured for cache.
+     * Verifies that proper exception is thrown when DataRegion is misconfigured for cache.
      */
-    public void testMissingMemoryPolicy() throws Exception {
+    public void testMissingDataRegion() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setDataRegionName("nonExistingMemPlc");
@@ -74,18 +74,18 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             String msg = e.getMessage();
 
-            assertTrue("Not expected exception was thrown: " + e, msg.contains("Requested MemoryPolicy is not configured"));
+            assertTrue("Not expected exception was thrown: " + e, msg.contains("Requested DataRegion is not configured"));
 
             return;
         }
 
-        fail("Expected exception was not thrown: missing MemoryPolicy");
+        fail("Expected exception was not thrown: missing DataRegion");
     }
 
     /**
-     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
+     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small DataRegion.
      */
-    public void testTooSmallMemoryPolicy() throws Exception {
+    public void testTooSmallDataRegion() throws Exception {
         memCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
@@ -166,7 +166,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
                 cache.put(i, "abc");
         }
         catch (Exception e) {
-            fail("With properly sized MemoryPolicy no exceptions are expected to be thrown.");
+            fail("With properly sized DataRegion no exceptions are expected to be thrown.");
         }
     }
 }

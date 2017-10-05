@@ -975,7 +975,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                         delta.applyDelta(sharedCtx
                                 .database()
-                                .memoryPolicy(null)
+                                .dataRegion(null)
                                 .pageMemory(),
 
                                 ((DirectBuffer)buf1).address());
@@ -989,7 +989,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             info("Done apply...");
 
-            PageMemoryEx pageMem = (PageMemoryEx)db.memoryPolicy(null).pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)db.dataRegion(null).pageMemory();
 
             for (Map.Entry<FullPageId, byte[]> entry : rolledPages.entrySet()) {
                 FullPageId fullId = entry.getKey();

@@ -22,7 +22,7 @@ import org.apache.ignite.DataRegionMetrics;
 /**
  *
  */
-public class MemoryMetricsSnapshot implements DataRegionMetrics {
+public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private String name;
 
@@ -53,7 +53,7 @@ public class MemoryMetricsSnapshot implements DataRegionMetrics {
     /**
      * @param metrics Metrics instance to take a copy.
      */
-    public MemoryMetricsSnapshot(DataRegionMetrics metrics) {
+    public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
         allocationRate = metrics.getAllocationRate();

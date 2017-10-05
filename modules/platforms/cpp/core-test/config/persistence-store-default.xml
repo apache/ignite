@@ -30,7 +30,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="persistentStoreConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
+            <bean class="org.apache.ignite.configuration.PersistentStoreConfiguration"/>
         </property>
     </bean>
 </beans>

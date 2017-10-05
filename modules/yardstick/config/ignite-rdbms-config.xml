@@ -29,13 +29,13 @@
         <property name="clientMode" value="true"/>
 
         <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
 
                 <!-- Set page memory size to 8 GB. -->
                 <property name="defaultMemoryPolicyName" value="default"/>
                 <property name="memoryPolicies">
                     <list>
-                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
                             <property name="name" value="default"/>
                             <property name="initialSize" value="#{1L * 1024 * 1024 * 1024}"/>
                             <property name="maxSize" value="#{8L * 1024 * 1024 * 1024}"/>

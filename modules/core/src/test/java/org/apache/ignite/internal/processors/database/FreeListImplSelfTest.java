@@ -40,8 +40,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
@@ -321,7 +321,7 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
             null,
             pageSize,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(plcCfg),
             true);
 
         pageMem.start();
@@ -343,9 +343,9 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        MemoryMetricsImpl metrics = new MemoryMetricsImpl(plcCfg);
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(plcCfg);
 
-        MemoryPolicy memPlc = new MemoryPolicy(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
+        DataRegion memPlc = new DataRegion(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
 
         return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
     }

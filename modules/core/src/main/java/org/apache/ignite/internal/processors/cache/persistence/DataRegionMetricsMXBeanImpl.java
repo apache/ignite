@@ -23,9 +23,9 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
  */
-class MemoryMetricsMXBeanImpl implements DataRegionMetricsMXBean {
+class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private final DataRegionConfiguration memPlcCfg;
@@ -34,7 +34,7 @@ class MemoryMetricsMXBeanImpl implements DataRegionMetricsMXBean {
      * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
      * @param memPlcCfg configuration of memory policy this MX Bean is created for.
      */
-    MemoryMetricsMXBeanImpl(MemoryMetricsImpl memMetrics,
+    DataRegionMetricsMXBeanImpl(DataRegionMetricsImpl memMetrics,
         DataRegionConfiguration memPlcCfg
     ) {
         this.memMetrics = memMetrics;

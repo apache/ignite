@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-public class PersistenceMetricsSnapshot implements DataStorageMetrics {
+public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private float walLoggingRate;
 
@@ -62,7 +62,7 @@ public class PersistenceMetricsSnapshot implements DataStorageMetrics {
     /**
      * @param metrics Metrics.
      */
-    public PersistenceMetricsSnapshot(DataStorageMetrics metrics) {
+    public DataStorageMetricsSnapshot(DataStorageMetrics metrics) {
         walLoggingRate = metrics.getWalLoggingRate();
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();
@@ -139,6 +139,6 @@ public class PersistenceMetricsSnapshot implements DataStorageMetrics {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PersistenceMetricsSnapshot.class, this);
+        return S.toString(DataStorageMetricsSnapshot.class, this);
     }
 }

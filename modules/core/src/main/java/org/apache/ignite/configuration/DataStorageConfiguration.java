@@ -407,7 +407,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return Default data region size overridden by user or {@link #DFLT_DATA_REGION_MAX_SIZE} if nothing was specified.
      * @deprecated Use {@link #getDefaultRegionConfiguration()} instead.
      */
-    @Deprecated
+    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public long getDefaultDataRegionSize() {
         return dfltDataRegSize;
     }
@@ -424,7 +424,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param dfltMemPlcSize Size of default data region overridden by user.
      * @deprecated Use {@link #setDefaultRegionConfiguration(DataRegionConfiguration)} for configuring default region.
      */
-    @Deprecated
+    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public DataStorageConfiguration setDefaultDataRegionSize(long dfltMemPlcSize) {
         this.dfltDataRegSize = dfltMemPlcSize;
 
@@ -438,7 +438,7 @@ public class DataStorageConfiguration implements Serializable {
      *         default region is used.
      * @deprecated Use {@link #getDefaultRegionConfiguration()} instead.
      */
-    @Deprecated
+    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public String getDefaultDataRegionName() {
         return dfltDataRegName;
     }
@@ -454,7 +454,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param dfltMemRegName Name of a data region to be used as default one.
      * @deprecated Use {@link #setDefaultRegionConfiguration(DataRegionConfiguration)} for configuring default region.
      */
-    @Deprecated
+    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public DataStorageConfiguration setDefaultDataRegionName(String dfltMemRegName) {
         this.dfltDataRegName = dfltMemRegName;
 
