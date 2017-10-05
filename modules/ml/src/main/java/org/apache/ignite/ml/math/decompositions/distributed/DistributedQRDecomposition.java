@@ -33,12 +33,12 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.like;
  */
 public class DistributedQRDecomposition implements Destroyable {
     /** */
-    private final Matrix q;
+    private final Matrix q; //TODO: change to SDM
     /** */
-    private final Matrix r;
+    private final Matrix r; //TODO: change to SDM
 
     /** */
-    private final Matrix mType;
+    private final Matrix mType; //TODO: change to SDM
     /** */
     private final boolean fullRank;
 
@@ -84,7 +84,7 @@ public class DistributedQRDecomposition implements Destroyable {
 
         mType = like(mtx, 1, 1);
 
-        Matrix qTmp = copy(mtx); // TODO: distribute it
+        Matrix qTmp = copy(mtx); // TODO: distribute it: add like + assign
 
         boolean fullRank = true;
 
