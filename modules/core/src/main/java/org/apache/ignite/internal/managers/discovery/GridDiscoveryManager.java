@@ -1543,22 +1543,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         DataRegionConfiguration[] dataRegions = memCfg.getDataRegions();
 
         if (dataRegions != null) {
-            String dfltMemPlcName = memCfg.getDefaultDataRegionName();
-
-            boolean customDflt = false;
-
-            for (DataRegionConfiguration dataReg : dataRegions) {
-                if(F.eq(dfltMemPlcName, dataReg.getName()))
-                    customDflt = true;
-
+            for (DataRegionConfiguration dataReg : dataRegions)
                 res += dataReg.getMaxSize();
-            }
-
-            if(!customDflt)
-                res += memCfg.getDefaultDataRegionSize();
         }
-        else
-            res += memCfg.getDefaultDataRegionSize();
+
+        res += memCfg.getDefaultRegionConfiguration().getMaxSize();
 
         // Add persistence (if any).
         res += GridCacheDatabaseSharedManager.checkpointBufferSize(ctx.config());

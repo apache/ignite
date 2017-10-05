@@ -163,7 +163,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(memPlcMap.size());
 
-        String dfltMemPlcName = dbCfg.getDefaultDataRegionName();
+        String dfltMemPlcName = dbCfg.getDefaultRegionConfiguration().getName();
 
         for (DataRegion memPlc : memPlcMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
@@ -209,47 +209,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memCfg Database config.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    protected void initPageMemoryPolicies(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+    protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegions();
 
-        if (dataRegionCfgs == null) {
-            //reserve place for default and system memory policies
-            memPlcMap = U.newHashMap(2);
-            memMetricsMap = U.newHashMap(2);
+        int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
 
-            addDataRegion(
-                memCfg,
-                memCfg.createDefaultRegionConfig(),
-                DFLT_DATA_REG_DEFAULT_NAME
-            );
+        memPlcMap = U.newHashMap(2 + dataRegions);
+        memMetricsMap = U.newHashMap(2 + dataRegions);
 
-            U.warn(log, "No user-defined default DataRegion found; system default of 1GB size will be used.");
-        }
-        else {
-            String dfltDataRegName = memCfg.getDefaultDataRegionName();
-
-            if (DFLT_DATA_REG_DEFAULT_NAME.equals(dfltDataRegName) && !hasCustomDefaultDataRegion(dataRegionCfgs)) {
-                //reserve additional place for default and system memory policies
-                memPlcMap = U.newHashMap(dataRegionCfgs.length + 2);
-                memMetricsMap = U.newHashMap(dataRegionCfgs.length + 2);
-
-                addDataRegion(
-                    memCfg,
-                    memCfg.createDefaultRegionConfig(),
-                    DFLT_DATA_REG_DEFAULT_NAME
-                );
-
-                U.warn(log, "No user-defined default DataRegion found; system default of 1GB size will be used.");
-            }
-            else {
-                //reserve additional space for system data region only
-                memPlcMap = U.newHashMap(dataRegionCfgs.length + 1);
-                memMetricsMap = U.newHashMap(dataRegionCfgs.length + 1);
-            }
-
+        if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
                 addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.getName());
         }
+
+        addDataRegion(
+            memCfg,
+            memCfg.getDefaultRegionConfiguration(),
+            memCfg.getDefaultRegionConfiguration().getName()
+        );
 
         addDataRegion(
             memCfg,
@@ -272,7 +249,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration dataRegionCfg,
         String dataRegionName
     ) throws IgniteCheckedException {
-        String dfltMemPlcName = dataStorageCfg.getDefaultDataRegionName();
+        String dfltMemPlcName = dataStorageCfg.getDefaultRegionConfiguration().getName();
 
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
@@ -360,6 +337,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
 
+        // TODO IGNITE-6030 convert old conf to new here
+
         checkSystemDataRegionSizeConfiguration(
             memCfg.getSystemCacheInitialSize(),
             memCfg.getSystemCacheMaxSize()
@@ -380,8 +359,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDefaultPolicyConfiguration(
-            memCfg.getDefaultDataRegionName(),
-            memCfg.getDefaultDataRegionSize(),
+            memCfg.getDefaultRegionConfiguration().getName(),
+            memCfg.getDefaultRegionConfiguration().getMaxSize(),
             plcNames
         );
     }
@@ -1013,7 +992,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert memCfg != null;
 
-        initPageMemoryPolicies(memCfg);
+        initDataRegions(memCfg);
 
         registerMetricsMBeans();
 

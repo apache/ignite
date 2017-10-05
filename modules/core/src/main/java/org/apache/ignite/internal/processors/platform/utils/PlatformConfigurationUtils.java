@@ -1401,7 +1401,6 @@ public class PlatformConfigurationUtils {
             .setSystemCacheMaxSize(in.readLong())
             .setPageSize(in.readInt())
             .setConcurrencyLevel(in.readInt())
-            .setDefaultDataRegionName(in.readString())
             .setPersistentStorePath(in.readString())
             .setCheckpointingFrequency(in.readLong())
             .setCheckpointingPageBufferSize(in.readLong())
@@ -1429,19 +1428,10 @@ public class PlatformConfigurationUtils {
         if (cnt > 0) {
             DataRegionConfiguration[] plcs = new DataRegionConfiguration[cnt];
 
-            for (int i = 0; i < cnt; i++) {
-                DataRegionConfiguration cfg = new DataRegionConfiguration();
+            res.setDefaultRegionConfiguration(readDataRegionConfiguration(in));
 
-                cfg.setName(in.readString())
-                        .setInitialSize(in.readLong())
-                        .setMaxSize(in.readLong())
-                        .setSwapFilePath(in.readString())
-                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
-                        .setEvictionThreshold(in.readDouble())
-                        .setEmptyPagesPoolSize(in.readInt())
-                        .setMetricsEnabled(in.readBoolean())
-                        .setSubIntervals(in.readInt())
-                        .setRateTimeInterval(in.readLong());
+            for (int i = 0; i < cnt; i++) {
+                DataRegionConfiguration cfg = readDataRegionConfiguration(in);
 
                 plcs[i] = cfg;
             }
@@ -1450,6 +1440,26 @@ public class PlatformConfigurationUtils {
         }
 
         return res;
+    }
+
+    /**
+     * @param in BinaryRawReader.
+     */
+    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader in) {
+        DataRegionConfiguration cfg = new DataRegionConfiguration();
+
+        cfg.setName(in.readString())
+            .setInitialSize(in.readLong())
+            .setMaxSize(in.readLong())
+            .setSwapFilePath(in.readString())
+            .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
+            .setEvictionThreshold(in.readDouble())
+            .setEmptyPagesPoolSize(in.readInt())
+            .setMetricsEnabled(in.readBoolean())
+            .setSubIntervals(in.readInt())
+            .setRateTimeInterval(in.readLong());
+
+        return cfg;
     }
 
     /**
@@ -1470,7 +1480,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getSystemCacheMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
-        w.writeString(cfg.getDefaultDataRegionName());
         w.writeString(cfg.getPersistentStorePath());
         w.writeLong(cfg.getCheckpointingFrequency());
         w.writeLong(cfg.getCheckpointingPageBufferSize());
@@ -1498,22 +1507,31 @@ public class PlatformConfigurationUtils {
         if (plcs != null) {
             w.writeInt(plcs.length);
 
-            for (DataRegionConfiguration plc : plcs) {
-                w.writeString(plc.getName());
-                w.writeLong(plc.getInitialSize());
-                w.writeLong(plc.getMaxSize());
-                w.writeString(plc.getSwapFilePath());
-                w.writeInt(plc.getPageEvictionMode().ordinal());
-                w.writeDouble(plc.getEvictionThreshold());
-                w.writeInt(plc.getEmptyPagesPoolSize());
-                w.writeBoolean(plc.isMetricsEnabled());
-                w.writeInt(plc.getSubIntervals());
-                w.writeLong(plc.getRateTimeInterval());
-            }
+            writeDataRegionConfiguration(w, cfg.getDefaultRegionConfiguration());
+
+            for (DataRegionConfiguration plc : plcs)
+                writeDataRegionConfiguration(w, plc);
         }
         else {
             w.writeInt(0);
         }
+    }
+
+    /**
+     * @param w BinaryRawWriter.
+     * @param plc DataRegionConfiguration.
+     */
+    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration plc) {
+        w.writeString(plc.getName());
+        w.writeLong(plc.getInitialSize());
+        w.writeLong(plc.getMaxSize());
+        w.writeString(plc.getSwapFilePath());
+        w.writeInt(plc.getPageEvictionMode().ordinal());
+        w.writeDouble(plc.getEvictionThreshold());
+        w.writeInt(plc.getEmptyPagesPoolSize());
+        w.writeBoolean(plc.isMetricsEnabled());
+        w.writeInt(plc.getSubIntervals());
+        w.writeLong(plc.getRateTimeInterval());
     }
 
     /**
