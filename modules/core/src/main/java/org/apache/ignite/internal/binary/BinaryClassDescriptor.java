@@ -368,12 +368,19 @@ public class BinaryClassDescriptor {
 
         Method writeReplaceMthd;
 
-        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT || mode == BinaryWriteMode.EXTERNALIZABLE) {
+        if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
             readResolveMtd = U.getNonPublicMethod(cls, "readResolve");
 
             writeReplaceMthd = U.getNonPublicMethod(cls, "writeReplace");
 
-            hashCodeMtd = U.getNonPublicMethod(cls, "hashCode");
+            hashCodeMtd = null;
+        }
+        else if (mode == BinaryWriteMode.EXTERNALIZABLE) {
+            readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
+
+            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
+
+            hashCodeMtd = U.findNonPublicMethod(cls, "hashCode");
         }
         else {
             readResolveMtd = null;
