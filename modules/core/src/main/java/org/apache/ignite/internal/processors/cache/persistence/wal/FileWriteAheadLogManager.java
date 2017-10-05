@@ -451,6 +451,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @return Latest serializer version.
+     */
+    public int serializerVersion() {
+        return serializerVersion;
+    }
+
+    /**
      * Checks if there was elapsed significant period of inactivity.
      * If WAL auto-archive is enabled using {@link #walAutoArchiveAfterInactivity} > 0 this method will activate
      * roll over by timeout<br>

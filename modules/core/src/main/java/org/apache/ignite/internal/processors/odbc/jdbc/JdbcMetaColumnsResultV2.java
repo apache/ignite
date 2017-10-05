@@ -15,16 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.Serializable;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * JDBC columns metadata result.
  */
-public interface WALPointer extends Serializable {
+public class JdbcMetaColumnsResultV2 extends JdbcMetaColumnsResult {
     /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     * Default constructor is used for deserialization.
      */
-    public WALPointer next();
+    JdbcMetaColumnsResultV2() {
+        super(META_COLUMNS_V2);
+    }
+
+    /**
+     * @param meta Columns metadata.
+     */
+    JdbcMetaColumnsResultV2(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V2, meta);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV2();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV2.class, this);
+    }
 }
