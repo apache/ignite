@@ -362,7 +362,7 @@ public class CacheUtils {
             else if (key instanceof RowColMatrixKey)
                 return ((RowColMatrixKey)key).matrixId().equals(matrixUuid);
             else
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException(); // TODO: handle my poor doubles
         };
     }
 
@@ -542,5 +542,26 @@ public class CacheUtils {
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
+    }
+
+    /**
+     * @param vectorUuid Matrix UUID.
+     * @param mapper Mapping {@link IgniteFunction}.
+     */
+    @SuppressWarnings("unchecked")
+    public static <K, V> void sparseMapForVector(IgniteUuid vectorUuid, IgniteDoubleFunction<V> mapper, String cacheName) {
+        A.notNull(vectorUuid, "vectorUuid");
+        A.notNull(cacheName, "cacheName");
+        A.notNull(mapper, "mapper");
+
+        foreach(cacheName, (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
+
+            V v = ce.entry().getValue();
+
+            V mappingResult = mapper.apply((Double)v);
+
+            ce.cache().put(k, mappingResult);
+        }, sparseKeyFilter(vectorUuid));
     }
 }
