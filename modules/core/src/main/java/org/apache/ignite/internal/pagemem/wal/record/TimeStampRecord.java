@@ -15,16 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Base class for records with timeStamp.
+ * All records which support timeStamp should be inherited from {@code TimeStampRecord}.
  */
-public interface WALPointer extends Serializable {
+public abstract class TimeStampRecord extends WALRecord {
+    /** Timestamp. */
+    protected long timestamp;
+
     /**
-     * Pointer to the next record. Can be used only for original pointers obtained from WAL manager.
+     *
      */
-    public WALPointer next();
+    protected TimeStampRecord() {
+        timestamp = U.currentTimeMillis();
+    }
+
+    /**
+     * @param timestamp TimeStamp.
+     */
+    protected TimeStampRecord(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    /**
+     * @param timestamp TimeStamp.
+     */
+    public void timestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    /**
+     * @return TimeStamp.
+     */
+    public long timestamp() {
+        return timestamp;
+    }
 }
