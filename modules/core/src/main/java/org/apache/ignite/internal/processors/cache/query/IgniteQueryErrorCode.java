@@ -91,7 +91,7 @@ public final class IgniteQueryErrorCode {
     /** Attempt to INSERT or MERGE {@code null} key. */
     public final static int NULL_KEY = 4003;
 
-    /** Attempt to INSERT or MERGE {@code null} value. */
+    /** Attempt to INSERT or MERGE {@code null} value, or to to set {@code null} to a {@code NOT NULL} column. */
     public final static int NULL_VALUE = 4004;
 
     /** {@link EntryProcessor} has thrown an exception during {@link IgniteCache#invokeAll}. */
@@ -99,9 +99,6 @@ public final class IgniteQueryErrorCode {
 
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
-
-    /** Attempt to set {@code null} to a column which explicitly forbids that. */
-    public final static int NULL_COLUMN_VALUE = 4007;
 
     /** */
     private IgniteQueryErrorCode() {
@@ -133,7 +130,6 @@ public final class IgniteQueryErrorCode {
 
             case NULL_KEY:
             case NULL_VALUE:
-            case NULL_COLUMN_VALUE:
                 return SqlStateCode.NULL_VALUE;
 
             case UNSUPPORTED_OPERATION:

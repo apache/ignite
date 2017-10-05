@@ -511,7 +511,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             else {
                 propVal = prop.value(key, val);
 
-                errCode = IgniteQueryErrorCode.NULL_COLUMN_VALUE;
+                errCode = IgniteQueryErrorCode.NULL_VALUE;
             }
 
             if (propVal == null)

@@ -302,10 +302,10 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
-     * 
+     * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
      */
     @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
-    public void testA() {
+    public void testTestAlterTableOnFlatValueNonDynamicTable() {
         CacheConfiguration c =
             new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
                 .setSqlSchema(QueryUtils.DFLT_SCHEMA);
@@ -313,28 +313,36 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         try {
             grid(nodeIndex()).getOrCreateCache(c);
 
-            doTestX("INTEGER");
+            doTestAlterTableOnFlatValue("INTEGER");
         }
         finally {
             grid(nodeIndex()).destroyCache("ints");
         }
     }
 
+    /**
+     * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
+     */
     @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
-    public void testB() {
+    public void testTestAlterTableOnFlatValueDynamicTable() {
         try {
             run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
 
-            doTestX("TEST");
+            doTestAlterTableOnFlatValue("TEST");
         }
         finally {
             run("DROP TABLE TEST");
         }
     }
 
-    private void doTestX(String tblName) {
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have flat value.
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
         assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
-            "ADD COLUMN is not supported for tables that have an SQL type as expected cache value type.");
+            "ADD COLUMN is not supported for tables created with wrap_value=false param. " +
+                "(To enable ADD COLUMN, create table with wrap_value=true param).");
     }
 
     /**

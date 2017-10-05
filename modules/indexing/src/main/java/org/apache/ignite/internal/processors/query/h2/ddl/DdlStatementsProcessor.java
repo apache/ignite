@@ -228,8 +228,8 @@ public class DdlStatementsProcessor {
                 }
                 else {
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
-                        throw new SchemaOperationException("ADD COLUMN is not supported for tables that have " +
-                            "an SQL type as expected cache value type.");
+                        throw new SchemaOperationException("ADD COLUMN is not supported for tables created with " +
+                            "wrap_value=false param. (To enable ADD COLUMN, create table with wrap_value=true param).");
 
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
