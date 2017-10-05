@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
@@ -51,6 +52,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinde
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSetAddressesWarningTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -74,6 +76,9 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryJdbcIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryMulticastIpFinderSelfTest.class));
+
+        if(U.isWindows())
+        suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSetAddressesWarningTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiSelfTest.class));
