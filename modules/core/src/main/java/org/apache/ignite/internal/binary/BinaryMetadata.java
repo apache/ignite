@@ -304,8 +304,10 @@ public class BinaryMetadata implements Externalizable {
 
         int schemasSize = in.readInt();
 
-        if (schemasSize == -1)
+        if (schemasSize == -1) {
             schemas = null;
+            schemaIds = Collections.emptySet();
+        }
         else {
             schemas = new ArrayList<>();
 
