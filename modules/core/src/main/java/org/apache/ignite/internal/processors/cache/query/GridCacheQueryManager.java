@@ -113,6 +113,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -144,6 +145,9 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** Maximum number of query detail metrics to evict at once. */
     private static final int QRY_DETAIL_METRICS_EVICTION_LIMIT = 10_000;
+
+    /** Support 'not null' field constraint since v 2.3.0. */
+    private static final IgniteProductVersion NOT_NULLS_SUPPORT_VER = IgniteProductVersion.fromString("2.3.0");
 
     /** Comparator for priority queue with query detail metrics with priority to new metrics. */
     private static final Comparator<GridCacheQueryDetailMetricsAdapter> QRY_DETAIL_METRICS_PRIORITY_NEW_CMP =
@@ -1908,6 +1912,79 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Gets SQL metadata with not nulls fields.
+     *
+     * @return SQL metadata.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public Collection<GridCacheSqlMetadata> sqlMetadataV2() throws IgniteCheckedException {
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to get metadata (grid is stopping).");
+
+        try {
+            Callable<Collection<CacheSqlMetadata>> job = new GridCacheQuerySqlMetadataJobV2();
+
+            // Remote nodes that have current cache.
+            Collection<ClusterNode> nodes = CU.affinityNodes(cctx, AffinityTopologyVersion.NONE);
+
+            Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
+
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+
+            // Get metadata from remote nodes.
+            if (!nodes.isEmpty()) {
+                boolean allNodesNew = true;
+
+                for (ClusterNode n : nodes) {
+                    if (n.version().compareTo(NOT_NULLS_SUPPORT_VER) < 0)
+                        allNodesNew = false;
+                }
+
+                if (!allNodesNew)
+                    return sqlMetadata();
+
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true, 0);
+            }
+
+            // Get local metadata.
+            IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+
+            if (rmtFut != null)
+                res.addAll(rmtFut.get());
+
+            res.add(locFut.get());
+
+            Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
+
+            for (Collection<CacheSqlMetadata> col : res) {
+                for (CacheSqlMetadata meta : col) {
+                    String name = meta.cacheName();
+
+                    Collection<CacheSqlMetadata> cacheMetas = map.get(name);
+
+                    if (cacheMetas == null)
+                        map.put(name, cacheMetas = new LinkedList<>());
+
+                    cacheMetas.add(meta);
+                }
+            }
+
+            Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
+
+            // Metadata for current cache must be first in list.
+            col.add(new GridCacheQuerySqlMetadataV2(map.remove(cacheName)));
+
+            for (Collection<CacheSqlMetadata> metas : map.values())
+                col.add(new GridCacheQuerySqlMetadataV2(metas));
+
+            return col;
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
      * @param <K> Key type.
      * @param <V> Value type.
      * @param includeBackups Include backups.
@@ -2079,7 +2156,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cache metadata.
      */
-    private static class CacheSqlMetadata implements GridCacheSqlMetadata {
+    public static class CacheSqlMetadata implements GridCacheSqlMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2183,6 +2260,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
+        @Override public Collection<String> notNullFields(String type) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Map<String, String> keyClasses() {
             return keyClasses;
         }
@@ -2236,7 +2318,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Cache metadata index.
      */
-    private static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
+    public static class CacheSqlIndexMetadata implements GridCacheSqlIndexMetadata {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2371,6 +2453,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          * @return Metadata.
+         * @throws IgniteCheckedException On error.
          */
         public List<GridQueryFieldMetadata> metaData() throws IgniteCheckedException {
             get(); // Ensure that result is ready.

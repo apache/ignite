@@ -15,27 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.compatibility.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- * Compatibility tests basic test suite.
+ * Wal snapshot record.
  */
-public class IgniteCompatibilityBasicTestSuite {
+public class SnapshotRecord extends WALRecord {
+    /** Snapshot id. */
+    private long snapshotId;
+
+    /** Full snapshot or incremental. */
+    private boolean full;
+
     /**
-     * @return Test suite.
-     * @throws Exception In case of an error.
+     *
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
+    public SnapshotRecord(long snapshotId, boolean full) {
+        this.snapshotId = snapshotId;
+        this.full = full;
+    }
 
-        suite.addTestSuite(DummyPersistenceCompatibilityTest.class);
+    /**
+     *
+     */
+    public long getSnapshotId() {
+        return snapshotId;
+    }
 
-        suite.addTestSuite(FoldersReuseCompatibilityTest.class);
+    /**
+     *
+     */
+    public boolean isFull() {
+        return full;
+    }
 
-        return suite;
+    /**
+     *
+     */
+    @Override public RecordType type() {
+        return RecordType.SNAPSHOT;
     }
 }
