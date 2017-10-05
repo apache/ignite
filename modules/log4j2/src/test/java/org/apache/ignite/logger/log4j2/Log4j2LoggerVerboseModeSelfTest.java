@@ -54,6 +54,9 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
         final ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         final ByteArrayOutputStream testErr = new ByteArrayOutputStream();
 
+        String consoleOut = "Empty";
+        String consoleErr = "Empty";
+
         try {
             System.setOut(new PrintStream(testOut));
             System.setErr(new PrintStream(testErr));
@@ -75,8 +78,8 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
                 testOut.flush();
                 testErr.flush();
 
-                String consoleOut = testOut.toString();
-                String consoleErr = testErr.toString();
+                consoleOut = testOut.toString();
+                consoleErr = testErr.toString();
 
                 assertTrue(consoleOut.contains(testMsg + Level.INFO));
                 assertTrue(consoleOut.contains(testMsg + Level.DEBUG));
@@ -98,10 +101,10 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
             System.setErr(backupSysErr);
 
             System.out.println("**************** Out Console content ***************");
-            System.out.println(testOut.toString());
+            System.out.println(consoleOut);
 
             System.err.println("**************** Err Console content ***************");
-            System.err.println(testErr.toString());
+            System.err.println(consoleErr);
         }
     }
 
