@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  * Logical data record indented for transaction (tx) related actions.<br>
  * This record is marker of begin, prepare, commit, and rollback transactions.
  */
-public class TxRecord extends WALRecord {
+public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
     private TransactionState state;
 
@@ -49,28 +49,51 @@ public class TxRecord extends WALRecord {
     /** If transaction is remote, primary node for this backup node. */
     @Nullable private Object primaryNode;
 
-    /** Timestamp of Tx state change. */
-    private long timestamp;
-
     /**
      *
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
      * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param primaryNode Primary node.
      */
-    public TxRecord(TransactionState state,
-                    GridCacheVersion nearXidVer,
-                    GridCacheVersion writeVer,
-                    @Nullable Map<Object, Collection<Object>> participatingNodes,
-                    @Nullable Object primaryNode,
-                    long timestamp) {
+    public TxRecord(
+        TransactionState state,
+        GridCacheVersion nearXidVer,
+        GridCacheVersion writeVer,
+        @Nullable Map<Object, Collection<Object>> participatingNodes,
+        @Nullable Object primaryNode
+    ) {
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
         this.participatingNodes = participatingNodes;
         this.primaryNode = primaryNode;
-        this.timestamp = timestamp;
+    }
+
+    /**
+     * @param state Transaction state.
+     * @param nearXidVer Transaction id.
+     * @param writeVer Transaction entries write topology version.
+     * @param participatingNodes Primary -> Backup nodes participating in transaction.
+     * @param primaryNode Primary node.
+     * @param timestamp TimeStamp.
+     */
+    public TxRecord(
+        TransactionState state,
+        GridCacheVersion nearXidVer,
+        GridCacheVersion writeVer,
+        @Nullable Map<Object, Collection<Object>> participatingNodes,
+        @Nullable Object primaryNode,
+        long timestamp
+    ) {
+        super(timestamp);
+
+        this.state = state;
+        this.nearXidVer = nearXidVer;
+        this.writeVer = writeVer;
+        this.participatingNodes = participatingNodes;
+        this.primaryNode = primaryNode;
     }
 
     /** {@inheritDoc} */
@@ -146,13 +169,6 @@ public class TxRecord extends WALRecord {
      */
     @Nullable public Object primaryNode() {
         return primaryNode;
-    }
-
-    /**
-     * @return Timestamp of Tx state change in millis.
-     */
-    public long timestamp() {
-        return timestamp;
     }
 
     /** {@inheritDoc} */
