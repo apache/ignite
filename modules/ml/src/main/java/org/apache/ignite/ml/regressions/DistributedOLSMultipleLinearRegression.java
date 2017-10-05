@@ -5,6 +5,8 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.decompositions.QRDecomposition;
 import org.apache.ignite.ml.math.decompositions.distributed.DistributedQRDecomposition;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
+import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
+import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 
@@ -41,7 +43,7 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      */
     @Override public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         super.newSampleData(data, nobs, nvars, like); // DEBUG:  it has distributed Matrix support
-        qr = new DistributedQRDecomposition(getX(), threshold); // DEBUG: it should be distributed
+        qr = new DistributedQRDecomposition(getX(), threshold); // TODO: it should be distributed
     }
 
     /**
@@ -73,26 +75,123 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
         int n = augI.columnSize();
         int p = qr.getR().columnSize();
 
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++) // DEBUG: can be parallelized in n Ignite threads?
             for (int j = 0; j < n; j++)
                 if (i == j && i < p)
-                    augI.setX(i, j, 1d);
+                    augI.setX(i, j, 1d); // DEBUG: it's distributed
                 else
-                    augI.setX(i, j, 0d);
+                    augI.setX(i, j, 0d); // DEBUG: it's distributed
 
         // Compute and return Hat matrix
         // No DME advertised - args valid if we get here
-        return q.times(augI).times(q.transpose());
+        return q.times(augI).times(q.transpose()); // DEBUG: it's distributed
+    }
+
+    /**
+     * <p>Returns the sum of squared deviations of Y from its mean.</p>
+     *
+     * <p>If the model has no intercept term, <code>0</code> is used for the
+     * mean of Y - i.e., what is returned is the sum of the squared Y values.</p>
+     *
+     * <p>The value returned by this method is the SSTO value used in
+     * the {@link #calculateRSquared() R-squared} computation.</p>
+     *
+     * @return SSTO - the total sum of squares
+     * @throws NullPointerException if the sample has not been set
+     * @see #isNoIntercept()
+     */
+    public double calculateTotalSumOfSquares() {
+        if (isNoIntercept())
+            return getY().foldMap(Functions.PLUS, Functions.SQUARE, 0.0); // TODO: should be distributed vector and distributed operation foldMap there
+        else {
+            // TODO: IGNITE-5826, think about incremental update formula.
+            final double mean = getY().sum() / getY().size(); // TODO: it should be cache vector, for example or distributed sparce vector
+            return getY().foldMap(Functions.PLUS, x -> (mean - x) * (mean - x), 0.0); // TODO: implement foldMap for cachedVector
+        }
+    }
+
+    /**
+     * Returns the sum of squared residuals.
+     *
+     * @return residual sum of squares
+     * @throws SingularMatrixException if the design matrix is singular
+     * @throws NullPointerException if the data for the model have not been loaded
+     */
+    public double calculateResidualSumOfSquares() {
+        final Vector residuals = calculateResiduals(); // TODO: should be distributed
+        // No advertised DME, args are valid
+        return residuals.dot(residuals); //TODO: should be distributed
+    }
+
+    /**
+     * Returns the R-Squared statistic, defined by the formula <pre>
+     * R<sup>2</sup> = 1 - SSR / SSTO
+     * </pre>
+     * where SSR is the {@link #calculateResidualSumOfSquares() sum of squared residuals}
+     * and SSTO is the {@link #calculateTotalSumOfSquares() total sum of squares}
+     *
+     * <p>If there is no variance in y, i.e., SSTO = 0, NaN is returned.</p>
+     *
+     * @return R-square statistic
+     * @throws NullPointerException if the sample has not been set
+     * @throws SingularMatrixException if the design matrix is singular
+     */
+    public double calculateRSquared() {
+        return 1 - calculateResidualSumOfSquares() / calculateTotalSumOfSquares(); // DEBUG: it will be distributed due to distribution of two called methods
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>This implementation computes and caches the QR decomposition of the X matrix
+     * once it is successfully loaded.</p>
+     */
+    @Override protected void newXSampleData(Matrix x) {
+        super.newXSampleData(x); // TODO: distribute it
+        qr = new DistributedQRDecomposition(getX()); // TODO: distribute it
     }
 
 
-    @Override
-    protected Vector calculateBeta() {
-        return null;
+
+    /**
+     * Calculates the regression coefficients using OLS.
+     *
+     * <p>Data for the model must have been successfully loaded using one of
+     * the {@code newSampleData} methods before invoking this method; otherwise
+     * a {@code NullPointerException} will be thrown.</p>
+     *
+     * @return beta
+     * @throws SingularMatrixException if the design matrix is singular
+     * @throws NullPointerException if the data for the model have not been loaded
+     */
+    @Override protected Vector calculateBeta() {
+        return qr.solve(getY()); // TODO: distribute it
     }
 
-    @Override
-    protected Matrix calculateBetaVariance() {
-        return null;
+    /**
+     * <p>Calculates the variance-covariance matrix of the regression parameters.
+     * </p>
+     * <p>Var(b) = (X<sup>T</sup>X)<sup>-1</sup>
+     * </p>
+     * <p>Uses QR decomposition to reduce (X<sup>T</sup>X)<sup>-1</sup>
+     * to (R<sup>T</sup>R)<sup>-1</sup>, with only the top p rows of
+     * R included, where p = the length of the beta vector.</p>
+     *
+     * <p>Data for the model must have been successfully loaded using one of
+     * the {@code newSampleData} methods before invoking this method; otherwise
+     * a {@code NullPointerException} will be thrown.</p>
+     *
+     * @return The beta variance-covariance matrix
+     * @throws SingularMatrixException if the design matrix is singular
+     * @throws NullPointerException if the data for the model have not been loaded
+     */
+    @Override protected Matrix calculateBetaVariance() {
+        int p = getX().columnSize();
+
+        Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p)); //TODO: distribute it
+        Matrix rInv = rAug.inverse(); // TODO: distribute it
+
+        return rInv.times(rInv.transpose()); //TODO: distribute it
     }
+
+
 }
