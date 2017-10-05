@@ -81,7 +81,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * For {@link Externalizable}.
      */
     public BinaryObjectImpl() {
-        ctx = GridBinaryMarshaller.threadLocalContext();
+        // No-op.
     }
 
     /**
