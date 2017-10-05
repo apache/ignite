@@ -17,11 +17,14 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
+import java.util.Collections;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -29,7 +32,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * Tests that several grids log to files with correct names.
  */
 @GridCommonTest(group = "Logger")
+@Deprecated()
 public class GridLog4j2CorrectFileNameTest extends TestCase {
+    /**
+     * @throws Exception If failed.
+     */
+    @Override protected void setUp() throws Exception {
+        Log4J2Logger.cleanup();
+    }
 
     /**
      * Tests correct behaviour in case 2 local nodes are started.
@@ -86,8 +96,14 @@ public class GridLog4j2CorrectFileNameTest extends TestCase {
         assert xml != null;
         assert xml.exists() == true;
 
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        discoverySpi.setIpFinder(new TcpDiscoveryVmIpFinder(false) {{
+            setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
+        }});
+
         cfg.setGridLogger(new Log4J2Logger(xml));
         cfg.setConnectorConfiguration(null);
+        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
     }

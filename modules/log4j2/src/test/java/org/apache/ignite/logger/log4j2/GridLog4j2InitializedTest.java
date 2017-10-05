@@ -24,19 +24,21 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Log4j initialized test.
  */
 @GridCommonTest(group = "Logger")
+@Deprecated()
 public class GridLog4j2InitializedTest extends TestCase {
 
     /**
      * @throws Exception If failed.
      */
     @Override protected void setUp() throws Exception {
-
+        Log4J2Logger.cleanup();
     }
 
     /** */
@@ -45,7 +47,7 @@ public class GridLog4j2InitializedTest extends TestCase {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setIgniteInstanceName("grid" + 1);
-        cfg.setNodeId(new UUID(1, 1));
+        //cfg.setNodeId(new UUID(1, 1));
         // cfg.setIgniteHome("/home/glutters/Documenti/apache-ignite/ignite-master/ignite/");
 
         URL xml = U.resolveIgniteUrl("config/ignite-log4j2.xml");
@@ -53,6 +55,7 @@ public class GridLog4j2InitializedTest extends TestCase {
         try {
 
             log = new Log4J2Logger(xml);
+            ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
             // log.isQuiet();
             cfg.setGridLogger(log);
         } catch (IgniteCheckedException e) {
@@ -70,7 +73,8 @@ public class GridLog4j2InitializedTest extends TestCase {
         log.warning("This is 'warning' message.", new Exception(
                 "It's a test warning exception"));
         log.error("This is 'error' message.");
-
+        log.error("This is 'error' message.", new Exception(
+            "It's a test error exception"));
         assert log.getLogger(GridLog4j2InitializedTest.class.getName()) instanceof Log4J2Logger;
     }
 

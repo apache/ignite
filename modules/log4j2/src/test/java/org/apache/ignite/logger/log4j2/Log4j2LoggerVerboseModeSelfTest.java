@@ -36,7 +36,14 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
     public static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
 
     /**
-     * Test does not work after another tests. Can be run from IDE as separate test.
+     * @throws Exception If failed.
+     */
+    @Override protected void setUp() throws Exception {
+        Log4J2Logger.cleanup();
+    }
+
+    /**
+     * Test works fine after other tests. Please do not forget to call Log4J2Logger.cleanup()
      *
      * @throws Exception If failed.
      */

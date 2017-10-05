@@ -117,7 +117,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      * Creates new logger with given implementation.
      *
      * @param impl Log4j implementation to use.
-     * @param consoleLog Cosole logger (optional).
+     * @param consoleLog Console logger (optional).
      */
     private Log4J2Logger(final Logger impl, @Nullable final Logger consoleLog) {
         assert impl != null;
@@ -130,17 +130,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     /**
      * Creates new logger with given configuration {@code path}.
      *
-     * @param path Path to log4j configuration XML file.
+     * @param path Path to log4j2 configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4J2Logger(String path) throws IgniteCheckedException {
         if (path == null)
-            throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
+            throw new IgniteCheckedException("Configuration XML file for Log4j2 must be specified.");
 
         final URL cfgUrl = U.resolveIgniteUrl(path);
 
         if (cfgUrl == null)
-            throw new IgniteCheckedException("Log4j configuration path was not found: " + path);
+            throw new IgniteCheckedException("Log4j2 configuration path was not found: " + path);
 
         addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -201,6 +201,21 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+    }
+
+    /**
+     * Cleans up the logger configuration. Should be used in unit tests only for sequential tests run with
+     * different configurations
+     *
+     */
+    static void cleanup() {
+        synchronized (mux) {
+            if (inited) {
+                LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
+                ctx.terminate();
+            }
+            inited = false;
+        }
     }
 
     /**
@@ -377,7 +392,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         AppenderRef[] refs = {ref};
 
-        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, null, null);
+        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, cfg, null);
 
         logCfg.addAppender(consoleApp, null, null);
         cfg.addAppender(consoleApp);

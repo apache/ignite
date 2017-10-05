@@ -28,13 +28,14 @@ import org.junit.Test;
 /**
  * Grid Log4j SPI test.
  */
+@Deprecated
 public class GridLog4j2LoggingFileTest extends TestCase {
     /** */
     private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        
+        Log4J2Logger.cleanup();
 
         File xml = GridTestUtils
                 .resolveIgnitePath("modules/core/src/test/config/log4j2-test.xml");
@@ -52,7 +53,7 @@ public class GridLog4j2LoggingFileTest extends TestCase {
      */
     @Test
     public void testLog() {
-        assert log.isDebugEnabled() == true;
+        assert !log.isDebugEnabled();
         assert log.isInfoEnabled() == true;
 
         log.debug("This is 'debug' message.");
