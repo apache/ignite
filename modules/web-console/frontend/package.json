@@ -18,7 +18,9 @@
     }
   ],
   "license": "Apache-2.0",
-  "keywords": "grid",
+  "keywords": [
+    "Apache Ignite Web console"
+  ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
     "npm": "3.x.x",
@@ -47,7 +49,7 @@
     "angular-touch": "1.5.11",
     "angular-translate": "2.15.2",
     "angular-tree-control": "0.2.28",
-    "angular-ui-grid": "4.0.6",
+    "angular-ui-grid": "4.0.7",
     "@uirouter/angularjs": "1.0.5",
     "babel-core": "6.25.0",
     "babel-eslint": "7.2.3",
@@ -76,6 +78,7 @@
     "html-webpack-plugin": "2.29.0",
     "jquery": "3.2.1",
     "json-loader": "0.5.7",
+    "json-bigint": "0.2.3",
     "jszip": "3.1.4",
     "lodash": "4.17.4",
     "node-sass": "4.5.3",
