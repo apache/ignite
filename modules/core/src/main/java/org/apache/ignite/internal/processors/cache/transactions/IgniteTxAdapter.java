@@ -1780,7 +1780,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        throw new RuntimeException("[txs]readResolve()");
+        return new TxShadow(
+            xidVer.asGridUuid(),
+            nodeId,
+            threadId,
+            startTime,
+            isolation,
+            concurrency,
+            invalidate,
+            implicit,
+            timeout,
+            state(),
+            isRollbackOnly()
+        );
     }
 
     /** {@inheritDoc} */
