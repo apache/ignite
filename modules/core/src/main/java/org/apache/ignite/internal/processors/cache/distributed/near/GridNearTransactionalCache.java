@@ -571,8 +571,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             if (rmv != null) {
                                 if (!rmv.reentry()) {
                                     if (ver != null && !ver.equals(rmv.version()))
-                                        throw new IgniteCheckedException("Failed to unlock (if keys were locked separately, " +
-                                            "then they need to be unlocked separately): " + keys);
+                                        throw new RuntimeException("HATE!!!");
 
                                     if (!primary.isLocal()) {
                                         assert req != null;
