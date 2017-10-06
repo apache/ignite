@@ -24,24 +24,26 @@ self_name=$(basename $0)
 
 function print_help()
 {
-    echo "Script for Apache Ignite database starting."
+    echo "Script for connecting to cluster via sqlline."
     echo "Usage: $self_name options..."
     echo
 }
 
-# Defaults:
+function edit_params()
+{
+    if [[ $params != "" ]]; then
+        param_delimiter="&"
+    else
+        param_delimiter="?"
+    fi
+
+    if [ $1 != "" ]; then
+         params="${params}${param_delimiter}$2=$1"
+    fi
+}
+
+# Default host:
 HOST="127.0.0.1"
-PORT="10800"
-SCHEMA=""
-distributedJoins="false"
-enforceJoinOrder="false"
-collocated="false"
-replicatedOnly="false"
-autoCloseServerCursor="false"
-socketSendBuffer="0"
-socketReceiveBuffer="0"
-tcpNoDelay="true"
-lazy="false"
 
 for i in "$@"
 do
@@ -58,56 +60,62 @@ do
         # Port to connect. By default 10800.
         -p=*|--port=*)
             PORT="${i#*=}"
+            if [ $PORT != "" ]; then
+                port_delimiter=":";
+            fi
             shift # get value after "="
         ;;
         # Schema.
         -s=*|--schema=*)
-            SCHEMA="/${i#*=}"
+            SCHEMA="${i#*=}"
+            if [ $SCHEMA != "" ]; then
+                schema_delimiter="/";
+            fi
             shift # get value after "="
         ;;
         # Distributed joins flag.
         -dj=*|--distributedJoins=*)
-            distributedJoins="${i#*=}"
+            edit_params "${i#*=}" "distributedJoins"
             shift # get value after "="
         ;;
         # Enforce join order flag.
         -ej=*|--enforceJoinOrder=*)
-            enforceJoinOrder="${i#*=}"
+            edit_params "${i#*=}" "enforceJoinOrder"
             shift # get value after "="
         ;;
         # Collocated flag.
         -c=*|--collocated=*)
-            collocated="${i#*=}"
+            edit_params "${i#*=}" "collocated"
             shift # get value after "="
         ;;
         # Replicated only flag.
         -r=*|--replicatedOnly=*)
-            replicatedOnly="${i#*=}"
+            edit_params "${i#*=}" "replicatedOnly"
             shift # get value after "="
         ;;
         # Auto close server cursor flag.
         -ac=*|--autoCloseServerCursor=*)
-            autoCloseServerCursor="${i#*=}"
+            edit_params "${i#*=}" "autoCloseServerCursor"
             shift # get value after "="
         ;;
         # Socket send buffer.
         -ssb=*|--socketSendBuffer=*)
-            socketSendBuffer="${i#*=}"
+            edit_params "${i#*=}" "socketSendBuffer"
             shift # get value after "="
         ;;
         # Socket receive buffer.
         -srb=*|--socketReceiveBuffer=*)
-            socketReceiveBuffer="${i#*=}"
+            edit_params "${i#*=}" "socketReceiveBuffer"
             shift # get value after "="
         ;;
         # TCP no delay flag.
         -tnd=*|--tcpNoDelay=*)
-            SYNC_MODE="${i#*=}"
+            edit_params "${i#*=}" "tcpNoDelay"
             shift # get value after "="
         ;;
         # Lazy flag.
         -l=*|--lazy=*)
-            lazy="${i#*=}"
+            edit_params "${i#*=}" "lazy"
             shift # get value after "="
         ;;
 
@@ -116,7 +124,7 @@ do
     esac
 done
 
-params="jdbc:ignite:thin://${HOST}:${PORT}${SCHEMA}?distributedJoins=${distributedJoins}&enforceJoinOrder=${enforceJoinOrder}&collocated=${collocated}&replicatedOnly=${replicatedOnly}&autoCloseServerCursor=${autoCloseServerCursor}&socketSendBuffer=${socketSendBuffer}&socketReceiveBuffer=${socketReceiveBuffer}&tcpNoDelay=${tcpNoDelay}&lazy=${lazy}"
+jdbclink="jdbc:ignite:thin://${HOST}${port_delimiter}${PORT}${schema_delimiter}${SCHEMA}${params}"
 
 #
 # Import common functions.
@@ -148,4 +156,4 @@ CP="${IGNITE_LIBS}"
 
 CP=${CP}:${IGNITE_HOME_TMP}/bin/include/sqlline/*
 
-java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${params}
+java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${jdbclink}
