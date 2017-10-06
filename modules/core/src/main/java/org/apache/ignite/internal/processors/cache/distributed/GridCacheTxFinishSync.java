@@ -25,8 +25,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,8 +44,6 @@ public class GridCacheTxFinishSync<K, V> {
     private IgniteLogger log;
 
     /** Nodes map. */
-    private ConcurrentMap<GridCacheVersion, ThreadFinishSync> idMap = new ConcurrentHashMap8<>();
-
     private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap8<>();
 
     /**
@@ -62,18 +58,14 @@ public class GridCacheTxFinishSync<K, V> {
     /**
      * Callback invoked before finish request is sent to remote node.
      *
-     * @param threadId Thread ID started transaction.
      * @param nodeId Node ID request being sent to.
-     * @param version */
-    public void onFinishSend(UUID nodeId, GridNearTxLocal tx) {
-        ThreadFinishSync threadSync = idMap.get(tx.xidVersion());
+     * @param threadId Thread ID started transaction.
+     */
+    public void onFinishSend(UUID nodeId, long threadId) {
+        ThreadFinishSync threadSync = threadMap.get(threadId);
 
-        if (threadSync == null) {
-            ThreadFinishSync val = new ThreadFinishSync(tx.xidVersion(), tx.threadId());
-
-            threadMap.putIfAbsent(tx.threadId(), val);
-            threadSync = idMap.putIfAbsent(tx.xidVersion(), val);
-        }
+        if (threadSync == null)
+            threadSync = F.addIfAbsent(threadMap, threadId, new ThreadFinishSync(threadId));
 
         threadSync.onSend(nodeId);
     }
@@ -96,20 +88,20 @@ public class GridCacheTxFinishSync<K, V> {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut) {
-       for (ThreadFinishSync threadSync : idMap.values())
+       for (ThreadFinishSync threadSync : threadMap.values())
             threadSync.onDisconnected(reconnectFut);
 
-        idMap.clear();
         threadMap.clear();
     }
 
     /**
      * Callback invoked when finish response is received from remote node.
-     *  @param nodeId Node ID response was received from.
+     *
+     * @param nodeId Node ID response was received from.
      * @param threadId Thread ID started transaction.
      */
-    public void onAckReceived(UUID nodeId, GridCacheVersion ver) {
-        ThreadFinishSync threadSync = idMap.get(ver);
+    public void onAckReceived(UUID nodeId, long threadId) {
+        ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync != null)
             threadSync.onReceive(nodeId);
@@ -121,7 +113,7 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Left node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        for (ThreadFinishSync threadSync : idMap.values())
+        for (ThreadFinishSync threadSync : threadMap.values())
             threadSync.onNodeLeft(nodeId);
     }
 
@@ -130,17 +122,16 @@ public class GridCacheTxFinishSync<K, V> {
      */
     private class ThreadFinishSync {
         /** Thread ID. */
-        private GridCacheVersion version;
+        private long threadId;
 
         /** Thread map. */
         private final Map<UUID, TxFinishSync> nodeMap = new ConcurrentHashMap8<>();
 
         /**
          * @param threadId Thread ID.
-         * @param l
          */
-        private ThreadFinishSync(GridCacheVersion version, long l) {
-            this.version = version;
+        private ThreadFinishSync(long threadId) {
+            this.threadId = threadId;
         }
 
         /**
@@ -150,7 +141,7 @@ public class GridCacheTxFinishSync<K, V> {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null) {
-                sync = new TxFinishSync(nodeId);
+                sync = new TxFinishSync(nodeId, threadId);
 
                 TxFinishSync old = nodeMap.put(nodeId, sync);
 
@@ -225,6 +216,9 @@ public class GridCacheTxFinishSync<K, V> {
         /** Node ID. */
         private final UUID nodeId;
 
+        /** Thread ID. */
+        private final long threadId;
+
         /** Number of awaiting messages. */
         private int cnt;
 
@@ -238,8 +232,9 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Sync node ID. Used to construct correct error message.
          * @param threadId Thread ID.
          */
-        private TxFinishSync(UUID nodeId) {
+        private TxFinishSync(UUID nodeId, long threadId) {
             this.nodeId = nodeId;
+            this.threadId = threadId;
         }
 
         /**
@@ -249,7 +244,8 @@ public class GridCacheTxFinishSync<K, V> {
         public void onSend() {
             synchronized (this) {
                 if (log.isTraceEnabled())
-                    log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId + ']');
+                    log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
+                        ", threadId=" + threadId + ']');
 
                 assert cnt == 0 || nodeLeft;
 
@@ -277,7 +273,8 @@ public class GridCacheTxFinishSync<K, V> {
 
                 if (pendingFut == null) {
                     if (log.isTraceEnabled())
-                        log.trace("Creating transaction synchronizer future [nodeId=" + nodeId + ']');
+                        log.trace("Creating transaction synchronizer future [nodeId=" + nodeId +
+                            ", threadId=" + threadId + ']');
 
                     pendingFut = new GridFutureAdapter<>();
                 }
@@ -292,7 +289,8 @@ public class GridCacheTxFinishSync<K, V> {
         public void onReceive() {
             synchronized (this) {
                 if (log.isTraceEnabled())
-                    log.trace("Moving transaction synchronizer to completed state [nodeId=" + nodeId + ']');
+                    log.trace("Moving transaction synchronizer to completed state [nodeId=" + nodeId +
+                        ", threadId=" + threadId + ']');
 
                 cnt = 0;
 

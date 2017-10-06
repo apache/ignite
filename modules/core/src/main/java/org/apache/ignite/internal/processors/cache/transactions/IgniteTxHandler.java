@@ -665,7 +665,7 @@ public class IgniteTxHandler {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
 
-        ctx.tm().onFinishedRemote(nodeId, res.xid());
+        ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
         GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
@@ -882,6 +882,7 @@ public class IgniteTxHandler {
             GridCacheMessage res = new GridNearTxFinishResponse(
                 req.partition(),
                 req.version(),
+                req.threadId(),
                 req.futureId(),
                 req.miniId(),
                 new IgniteCheckedException("Transaction has been already completed."));
