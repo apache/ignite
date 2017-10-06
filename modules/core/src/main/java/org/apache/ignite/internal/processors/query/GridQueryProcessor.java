@@ -2026,7 +2026,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
+                        return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary, mainCacheId);
                     }
                 }, true);
         }
@@ -2070,10 +2070,10 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
-                            return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
+                            return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary, mainCacheId);
                         }
                         else
-                            return idx.queryLocalSql(schemaName, qry, idx.backupFilter(requestTopVer.get(),
+                            return idx.queryLocalSql(schemaName, cctx.name(), qry, idx.backupFilter(requestTopVer.get(),
                                 qry.getPartitions()), keepBinary);
                     }
                 }, true);
@@ -2326,7 +2326,7 @@ private IgniteInternalFuture<Object> rebuildIndexesFromHash(@Nullable final Stri
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
                     }
                 }, true);
         }
