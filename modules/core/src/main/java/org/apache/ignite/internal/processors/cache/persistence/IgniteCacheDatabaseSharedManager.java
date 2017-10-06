@@ -51,8 +51,9 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictio
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,10 +93,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected MemoryPolicy dfltMemPlc;
 
     /** */
-    private Map<String, FreeListImpl> freeListMap;
+    private Map<String, CacheFreeListImpl> freeListMap;
 
     /** */
-    private FreeListImpl dfltFreeList;
+    private CacheFreeListImpl dfltFreeList;
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
@@ -170,7 +171,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
 
-            FreeListImpl freeList = new FreeListImpl(0,
+            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
                     cctx.igniteInstanceName(),
                     memMetrics,
                     memPlc,
@@ -211,9 +212,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         MemoryPolicyConfiguration[] memPlcsCfgs = memCfg.getMemoryPolicies();
 
         if (memPlcsCfgs == null) {
-            //reserve place for default and system memory policies
-            memPlcMap = U.newHashMap(2);
-            memMetricsMap = U.newHashMap(2);
+            //reserve place for default, system and store memory policies
+            memPlcMap = U.newHashMap(3);
+            memMetricsMap = U.newHashMap(3);
 
             addMemoryPolicy(
                 memCfg,
@@ -228,8 +229,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             if (DFLT_MEM_PLC_DEFAULT_NAME.equals(dfltMemPlcName) && !hasCustomDefaultMemoryPolicy(memPlcsCfgs)) {
                 //reserve additional place for default and system memory policies
-                memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 3);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 3);
 
                 addMemoryPolicy(
                     memCfg,
@@ -240,9 +241,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 U.warn(log, "No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
             }
             else {
-                //reserve additional space for system memory policy only
-                memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
-                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
+                //reserve additional space for system and store memory policies
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
             }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs)
@@ -265,7 +266,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlcName Memory policy name.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
-    private void addMemoryPolicy(
+    protected void addMemoryPolicy(
         MemoryConfiguration memCfg,
         MemoryPolicyConfiguration memPlcCfg,
         String memPlcName
@@ -298,11 +299,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
         return new IgniteOutClosure<Float>() {
-            private FreeListImpl freeList;
+            private CacheFreeListImpl freeList;
 
             @Override public Float apply() {
                 if (freeList == null) {
-                    FreeListImpl freeList0 = freeListMap.get(memPlcName);
+                    CacheFreeListImpl freeList0 = freeListMap.get(memPlcName);
 
                     if (freeList0 == null)
                         return (float) 0;
@@ -583,7 +584,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void dumpStatistics(IgniteLogger log) {
         if (freeListMap != null) {
-            for (FreeListImpl freeList : freeListMap.values())
+            for (CacheFreeListImpl freeList : freeListMap.values())
                 freeList.dumpStatistics(log);
         }
     }
@@ -865,7 +866,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int sysPageSize = pageMem.systemPageSize();
 
-        FreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
+        CacheFreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
 
         for (;;) {
             long allocatedPagesCnt = pageMem.loadedPages();
@@ -912,7 +913,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc Memory Policy Configuration.
      * @param pageMem Page memory.
      */
-    private PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+    protected PageEvictionTracker createPageEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || cctx.gridConfig().isPersistentStoreEnabled())
             return new NoOpPageEvictionTracker();
 
@@ -940,7 +941,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
-    @Nullable private File buildAllocPath(MemoryPolicyConfiguration plc) throws IgniteCheckedException {
+    @Nullable File buildAllocPath(MemoryPolicyConfiguration plc) throws IgniteCheckedException {
         String path = plc.getSwapFilePath();
 
         if (path == null)
@@ -1037,5 +1038,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    /**
+     * @return MetaStorage
+     */
+    public MetaStorage metaStorage() {
+        return null;
     }
 }

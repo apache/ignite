@@ -17,41 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-
 /**
- * Cache data row.
+ * Simple interface for data, store in some RowStore.
  */
-public interface CacheDataRow extends CacheSearchRow, Storable {
-    /**
-     * @return Cache value.
-     */
-    public CacheObject value();
-
-    /**
-     * @return Cache entry version.
-     */
-    public GridCacheVersion version();
-
-    /**
-     * @return Expire time.
-     */
-    public long expireTime();
-
-    /**
-     * @return Partition for this key.
-     */
-    @Override public int partition();
-
+public interface Storable {
     /**
      * @param link Link for this row.
      */
-    @Override public void link(long link);
+    public void link(long link);
 
     /**
-     * @param key Key.
+     * @return Link for this row.
      */
-    public void key(KeyCacheObject key);
+    public long link();
+
+    /**
+     * @return Partition.
+     */
+    public int partition();
 }

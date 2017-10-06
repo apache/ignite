@@ -77,6 +77,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
+import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -108,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -148,6 +151,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
  *
@@ -156,6 +160,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
+
+    /** MemoryPolicyConfiguration name reserved for meta store. */
+    private static final String METASTORE_MEMORY_POLICY_NAME = "metastoreMemPlc";
 
     /** Default checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024;
@@ -312,6 +319,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Number of pages in current checkpoint. */
     private volatile int currCheckpointPagesCnt;
 
+    /** */
+    private MetaStorage metaStorage;
+
     /**
      * @param ctx Kernal context.
      */
@@ -356,6 +366,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override protected void initPageMemoryPolicies(MemoryConfiguration memCfg) throws IgniteCheckedException {
+        super.initPageMemoryPolicies(memCfg);
+
+        addMemoryPolicy(
+            memCfg,
+            createStoreMemoryPolicy(memCfg),
+            METASTORE_MEMORY_POLICY_NAME
+        );
+    }
+
+    /**
+     * @param memCfg Memory configuration.
+     * @return Memoty polict configuration.
+     */
+    private MemoryPolicyConfiguration createStoreMemoryPolicy(MemoryConfiguration memCfg) {
+        MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
+
+        cfg.setName(METASTORE_MEMORY_POLICY_NAME);
+        cfg.setInitialSize(memCfg.getSystemCacheInitialSize());
+        cfg.setMaxSize(memCfg.getSystemCacheMaxSize());
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
@@ -393,6 +428,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log);
 
             persStoreMetrics.wal(cctx.wal());
+
+            // Here we can get data from metastorage
         }
     }
 
@@ -484,6 +521,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         super.onActivate(ctx);
+
+        if (!cctx.localNode().isClient()) {
+            cctx.pageStore().initializeForMetastorage();
+
+            metaStorage = new MetaStorage(cctx.wal(), memPlcMap.get(METASTORE_MEMORY_POLICY_NAME),
+                (MemoryMetricsImpl)memMetricsMap.get(METASTORE_MEMORY_POLICY_NAME));
+        }
     }
 
     /** {@inheritDoc} */
@@ -594,6 +638,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status);
 
+            metaStorage.init(this);
+
             cctx.wal().resumeLogging(restore);
 
             cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
@@ -603,6 +649,50 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void getMetastoreData() throws IgniteCheckedException {
+        try {
+            MemoryConfiguration memCfg = cctx.kernalContext().config().getMemoryConfiguration();
+
+            MemoryPolicyConfiguration plcCfg = createStoreMemoryPolicy(memCfg);
+
+            File allocPath = buildAllocPath(plcCfg);
+
+            DirectMemoryProvider memProvider = allocPath == null ?
+                new UnsafeMemoryProvider(log) :
+                new MappedFileMemoryProvider(
+                    log,
+                    allocPath);
+
+            MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(plcCfg);
+
+            PageMemoryEx storePageMem = (PageMemoryEx)createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
+
+            MemoryPolicy storeMemPlc = new MemoryPolicy(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
+
+            CheckpointStatus status = readCheckpointStatus();
+
+            cctx.pageStore().initializeForMetastorage();
+
+            restoreMemory(status, true, storePageMem);
+
+            metaStorage = new MetaStorage(cctx.wal(), storeMemPlc, memMetrics, true);
+
+            metaStorage.init(this);
+
+            // here get some data
+
+            metaStorage = null;
+
+            storePageMem.stop();
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -1447,6 +1537,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param status Checkpoint status.
      */
     private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
+        return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
+    }
+
+    /**
+     * @param status Checkpoint status.
+     * @param storeOnly If {@code True} restores Metastorage only.
+     */
+    private WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
+        PageMemoryEx storePageMem) throws IgniteCheckedException {
+        assert !storeOnly || storePageMem != null;
+
         if (log.isInfoEnabled())
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
@@ -1496,9 +1597,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
                             int grpId = pageRec.fullPageId().groupId();
+
+                            if (storeOnly && grpId != METASTORAGE_CACHE_ID)
+                                continue;
+
                             long pageId = pageRec.fullPageId().pageId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
                             long page = pageMem.acquirePage(grpId, pageId, true);
 
@@ -1526,9 +1631,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
 
                             final int gId = destroyRec.groupId();
+
+                            if (storeOnly && gId != METASTORAGE_CACHE_ID)
+                                continue;
+
                             final int pId = destroyRec.partitionId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(gId);
+                            PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
 
                             pageMem.clearAsync(new P3<Integer, Long, Integer>() {
                                 @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
@@ -1544,9 +1653,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             PageDeltaRecord r = (PageDeltaRecord)rec;
 
                             int grpId = r.groupId();
+
+                            if (storeOnly && grpId != METASTORAGE_CACHE_ID)
+                                continue;
+
                             long pageId = r.pageId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
+                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
                             // Here we do not require tag check because we may be applying memory changes after
                             // several repetitive restarts and the same pages may have changed several times.
@@ -1571,6 +1684,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
+
+        if (storeOnly)
+            return null;
 
         if (status.needRestoreMemory()) {
             if (apply)
@@ -2601,12 +2717,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     int grpId = fullId.groupId();
 
-                    CacheGroupContext grp = context().cache().cacheGroup(grpId);
+                    PageMemoryEx pageMem;
 
-                    if (grp == null)
-                        continue;
+                    if (grpId != MetaStorage.METASTORAGE_CACHE_ID) {
+                        CacheGroupContext grp = context().cache().cacheGroup(grpId);
 
-                    PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+                        if (grp == null)
+                            continue;
+
+                        pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+                    }
+                    else
+                        pageMem = (PageMemoryEx)metaStorage.pageMemory();
+
 
                     Integer tag = pageMem.getForCheckpoint(
                         fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
@@ -3322,5 +3445,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public PersistenceMetricsImpl persistentStoreMetricsImpl() {
         return persStoreMetrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MetaStorage metaStorage() {
+        return metaStorage;
     }
 }
