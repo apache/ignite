@@ -653,9 +653,6 @@ public final class GridCacheMvcc {
             if (locs != null || rmts != null) {
                 GridCacheMvccCandidate owner = localOwner();
 
-                if (owner != null)
-                    throw new RuntimeException("Adding lock if timeout is negative");
-
                 // Only proceed if this is a re-entry.
                 if (owner == null || owner.threadId() != threadId)
                     return null;
