@@ -863,9 +863,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         return cachesAcc;
                     }, []), 'label');
 
-                    if (_.isEmpty($scope.caches))
-                        return;
-
                     // Reset to first cache in case of stopped selected.
                     const cacheNames = _.map($scope.caches, (cache) => cache.value);
 
@@ -1313,6 +1310,9 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
          * @return {String} Nid
          */
         const _chooseNode = (name, local) => {
+            if (_.isEmpty(name))
+                return Promise.resolve(null);
+
             const nodes = cacheNodes(name);
 
             if (local) {
@@ -1386,7 +1386,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
 
-            $scope.actionAvailable(paragraph, true) && _chooseNode(paragraph.cacheName, local)
+            $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1444,7 +1444,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.explain = (paragraph) => {
-            if (!$scope.actionAvailable(paragraph, true))
+            if (!$scope.queryAvailable(paragraph))
                 return;
 
             Notebook.save($scope.notebook)
@@ -1483,7 +1483,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
+            $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1689,18 +1689,32 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             _chartApplySettings(paragraph, true);
         };
 
-        $scope.actionAvailable = function(paragraph, needQuery) {
-            return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
+        $scope.queryAvailable = function(paragraph) {
+            return paragraph.query && !paragraph.loading;
         };
 
-        $scope.actionTooltip = function(paragraph, action, needQuery) {
-            if ($scope.actionAvailable(paragraph, needQuery))
+        $scope.queryTooltip = function(paragraph, action) {
+            if ($scope.queryAvailable(paragraph))
                 return;
 
             if (paragraph.loading)
                 return 'Waiting for server response';
 
-            return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
+            return 'Input text to ' + action;
+        };
+
+        $scope.scanAvailable = function(paragraph) {
+            return $scope.caches.length && !paragraph.loading;
+        };
+
+        $scope.scanTooltip = function(paragraph) {
+            if ($scope.scanAvailable(paragraph))
+                return;
+
+            if (paragraph.loading)
+                return 'Waiting for server response';
+
+            return 'Select cache to export scan results';
         };
 
         $scope.clickableMetadata = function(node) {
