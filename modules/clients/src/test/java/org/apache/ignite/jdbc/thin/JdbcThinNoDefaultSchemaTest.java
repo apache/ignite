@@ -219,9 +219,12 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
                 }
             }, SQLException.class, "Failed to parse query");
 
-            conn.setSchema("cache1");
+            conn.setSchema("\"cache1\"");
 
             Statement stmt = conn.createStatement();
+
+            //Must not affects previous created statements.
+            conn.setSchema("invalid_schema");
 
             stmt.execute("select t._key, t._val from Integer t");
 
