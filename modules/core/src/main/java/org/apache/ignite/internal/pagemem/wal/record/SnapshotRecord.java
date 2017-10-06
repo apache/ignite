@@ -15,24 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffheapSnapTreeSelfTest;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- * Indexing SPI tests.
+ * Wal snapshot record.
  */
-public class IgniteSpiIndexingSelfTestSuite extends TestSuite {
+public class SnapshotRecord extends WALRecord {
+    /** Snapshot id. */
+    private long snapshotId;
+
+    /** Full snapshot or incremental. */
+    private boolean full;
+
     /**
-     * @return Failover SPI tests suite.
-     * @throws Exception If failed.
+     *
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Indexing SPI Test Suite");
+    public SnapshotRecord(long snapshotId, boolean full) {
+        this.snapshotId = snapshotId;
+        this.full = full;
+    }
 
-        suite.addTest(new TestSuite(GridOffheapSnapTreeSelfTest.class));
+    /**
+     *
+     */
+    public long getSnapshotId() {
+        return snapshotId;
+    }
 
-        return suite;
+    /**
+     *
+     */
+    public boolean isFull() {
+        return full;
+    }
+
+    /**
+     *
+     */
+    @Override public RecordType type() {
+        return RecordType.SNAPSHOT;
     }
 }

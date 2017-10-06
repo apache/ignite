@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.cache.persistence.wal;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Compound memory object. Contains one or more memory regions.
+ * An exception is thrown when we reached tail of WAL segment cyclic buffer
+ * during reading from WAL.
  */
-public interface GridUnsafeCompoundMemory {
-    /**
-     * Deallocates this compound memory object.
-     */
-    public void deallocate();
+public class WalSegmentTailReachedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Merges another compound memory object with this one.
      *
-     * @param compound Compound memory.
      */
-    public void merge(GridUnsafeCompoundMemory compound);
+    public WalSegmentTailReachedException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
+    }
 }

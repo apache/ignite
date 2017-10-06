@@ -15,24 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.odbc.jdbc;
+
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Smart pointer with reference counting.
+ * JDBC columns metadata result.
  */
-public interface GridOffHeapSmartPointer {
+public class JdbcMetaColumnsResultV2 extends JdbcMetaColumnsResult {
     /**
-     * @return Pointer address.
+     * Default constructor is used for deserialization.
      */
-    public long pointer();
+    JdbcMetaColumnsResultV2() {
+        super(META_COLUMNS_V2);
+    }
 
     /**
-     * Increment reference count.
+     * @param meta Columns metadata.
      */
-    public void incrementRefCount();
+    JdbcMetaColumnsResultV2(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V2, meta);
+    }
 
-    /**
-     * Decrement reference count.
-     */
-    public void decrementRefCount();
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV2();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV2.class, this);
+    }
 }

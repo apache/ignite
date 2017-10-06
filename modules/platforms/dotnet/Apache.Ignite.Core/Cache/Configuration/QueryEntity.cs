@@ -51,6 +51,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private Dictionary<string, string> _aliasMap;
 
+        /** */
         private ICollection<QueryAlias> _aliases;
 
         /// <summary>
@@ -241,9 +242,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             var count = reader.ReadInt();
             Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x =>
-                    new QueryField(reader.ReadString(), reader.ReadString()) {IsKeyField = reader.ReadBoolean()})
-                    .ToList();
+                : Enumerable.Range(0, count).Select(x => new QueryField(reader)).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -271,9 +270,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 foreach (var field in Fields)
                 {
-                    writer.WriteString(field.Name);
-                    writer.WriteString(field.FieldTypeName);
-                    writer.WriteBoolean(field.IsKeyField);
+                    field.Write(writer);
                 }
             }
             else
@@ -330,6 +327,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 foreach (var field in fields)
                     field.Validate(log, logInfo);
+            }
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(QueryEntity entity)
+        {
+            Debug.Assert(entity != null);
+
+            if (entity._keyType != null)
+            {
+                _keyType = entity._keyType;
+            }
+
+            if (entity._valueType != null)
+            {
+                _valueType = entity._valueType;
+            }
+
+            if (Fields != null && entity.Fields != null)
+            {
+                var fields = entity.Fields.Where(x => x != null).ToDictionary(x => "_" + x.Name, x => x);
+
+                foreach (var field in Fields)
+                {
+                    QueryField src;
+
+                    if (fields.TryGetValue("_" + field.Name, out src))
+                    {
+                        field.CopyLocalProperties(src);
+                    }
+                }
             }
         }
 
@@ -421,10 +451,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (attr.IsIndexed)
                     {
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
-                            attr.IndexGroups));
+                            attr.IndexGroups)
+                        {
+                            InlineSize = attr.IndexInlineSize,
+                        });
                     }
 
-                    fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
+                    fields.Add(new QueryField(columnName, memberInfo.Value)
+                    {
+                        IsKeyField = isKey,
+                        NotNull = attr.NotNull
+                    });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
                 }

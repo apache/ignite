@@ -37,9 +37,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -63,7 +61,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * H2 Table implementation.
@@ -415,36 +413,15 @@ public class GridH2Table extends TableBase {
         row.link = link;
 
         if (!rmv)
-            ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);
+            ((GridH2KeyValueRowOnheap)row).valuesCache(new Value[getColumns().length]);
 
         try {
             return doUpdate(row, rmv);
         }
         finally {
             if (!rmv)
-                ((GridH2AbstractKeyValueRow)row).valuesCache(null);
+                ((GridH2KeyValueRowOnheap)row).valuesCache(null);
         }
-    }
-
-    /**
-     * @param key Key to read.
-     * @return Read value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        int partId
-    ) throws IgniteCheckedException {
-        assert desc != null;
-
-        GridH2Row row = desc.createRow(key, partId, null, null, 0);
-
-        GridH2IndexBase primaryIdx = pk();
-
-        GridH2Row res = primaryIdx.findOne(row);
-
-        return res != null ? F.t(res.val, res.ver) : null;
     }
 
     /**
@@ -478,12 +455,7 @@ public class GridH2Table extends TableBase {
     boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
-        GridUnsafeMemory mem = desc == null ? null : desc.memory();
-
         lock(false);
-
-        if (mem != null)
-            desc.guard().begin();
 
         try {
             ensureNotDestroyed();
@@ -543,9 +515,6 @@ public class GridH2Table extends TableBase {
         }
         finally {
             unlock(false);
-
-            if (mem != null)
-                desc.guard().end();
         }
     }
 
@@ -827,13 +796,6 @@ public class GridH2Table extends TableBase {
         idxs.add(this.idxs.get(0));
         idxs.add(this.idxs.get(1));
 
-        return idxs;
-    }
-
-    /**
-     * @return All indexes, even marked for rebuild.
-     */
-    public ArrayList<Index> getAllIndexes() {
         return idxs;
     }
 

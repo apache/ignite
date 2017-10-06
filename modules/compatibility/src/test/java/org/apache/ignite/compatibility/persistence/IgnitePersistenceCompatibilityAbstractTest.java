@@ -25,10 +25,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  * Super class for all persistence compatibility tests.
  */
-public class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
+public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibilityAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -43,6 +45,9 @@ public class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibil
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        //protection if test failed to finish, e.g. by error
+        stopAllGrids();
+
         assert deleteDefaultDBWorkDirectory() : "Couldn't delete DB work directory.";
     }
 
@@ -55,7 +60,7 @@ public class IgnitePersistenceCompatibilityAbstractTest extends IgniteCompatibil
      * @see #isDefaultDBWorkDirectoryEmpty()
      */
     protected Path getDefaultDbWorkPath() throws IgniteCheckedException {
-        return Paths.get(U.defaultWorkDirectory() + File.separator + "db");
+        return Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR);
     }
 
     /**

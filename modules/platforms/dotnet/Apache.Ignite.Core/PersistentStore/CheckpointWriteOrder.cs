@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.opt;
+namespace Apache.Ignite.Core.PersistentStore
+{
+    /// <summary>
+    /// Defines checkpoint pages order on disk.
+    /// </summary>
+    public enum CheckpointWriteOrder
+    {
+        /// <summary>
+        /// Pages are written in order provided by checkpoint pages collection iterator
+        /// (which is basically a hashtable).
+        /// </summary>
+        Random,
 
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointer;
-import org.h2.result.SearchRow;
-
-/**
- * Search row which supports pointer operations.
- */
-public interface GridSearchRowPointer extends SearchRow, GridOffHeapSmartPointer {
-    // No-op.
+        /// <summary>
+        /// All checkpoint pages are collected into single list and sorted by page index.
+        /// Provides almost sequential disk writes, which can be much faster on some SSD models.
+        /// </summary>
+        Sequential
+    }
 }
