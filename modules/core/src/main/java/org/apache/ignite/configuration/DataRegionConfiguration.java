@@ -331,9 +331,12 @@ public final class DataRegionConfiguration implements Serializable {
      * Sets persistence enabled flag.
      *
      * @param persistenceEnabled Persistence enabled flag.
+     * @return {@code this} for chaining.
      */
-    public void setPersistenceEnabled(boolean persistenceEnabled) {
+    public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
         this.persistenceEnabled = persistenceEnabled;
+
+        return this;
     }
 
     /**

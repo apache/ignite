@@ -555,7 +555,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + plcName);
 
         if (SYSTEM_DATA_REGION_NAME.equals(plcName))
-            throw new IgniteCheckedException("'sysMemPlc' policy name is reserved for internal use.");
+            throw new IgniteCheckedException("'" + SYSTEM_DATA_REGION_NAME + "' policy name is reserved for internal use.");
 
         observedNames.add(plcName);
     }
