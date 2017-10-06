@@ -78,7 +78,15 @@ export default class IgniteVersion {
         this.supportedVersions = [
             {
                 label: 'Ignite 2.x',
+                ignite: '2.3.0'
+            },
+            {
+                label: 'Ignite 2.2',
                 ignite: '2.2.0'
+            },
+            {
+                label: 'Ignite 2.1',
+                ignite: '2.1.0'
             },
             {
                 label: 'Ignite 2.0',
@@ -117,6 +125,22 @@ export default class IgniteVersion {
                 }
             }
         });
+    }
+
+    _restore() {
+        _.head(this.supportedVersions);
+
+        try {
+            const ignite = localStorage.configurationVersion;
+
+            const restored = _.find(this.supportedVersions, {ignite});
+
+            if (restored)
+                this.current = restored;
+        }
+        catch (ignored) {
+            // No-op.
+        }
     }
 
     /**
