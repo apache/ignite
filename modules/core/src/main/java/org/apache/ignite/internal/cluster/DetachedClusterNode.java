@@ -30,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
  * Representation of cluster node that isn't currently present in cluster.
  */
 public class DetachedClusterNode implements ClusterNode {
+    /** */
+    private final UUID uuid = UUID.randomUUID();
+
     /** Consistent ID. */
     private final Object consistentId;
 
@@ -47,7 +50,7 @@ public class DetachedClusterNode implements ClusterNode {
 
     /** {@inheritDoc} */
     @Override public UUID id() {
-        throw new UnsupportedOperationException("Not implemented");
+        return uuid;
     }
 
     /** {@inheritDoc} */
