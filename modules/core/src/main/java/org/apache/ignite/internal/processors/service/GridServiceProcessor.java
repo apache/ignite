@@ -492,8 +492,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @param dfltNodeFilter Default NodeFilter.
      * @return Configurations to deploy.
      */
-    private PreparedConfigurations prepareServiceConfigurations(IgnitePredicate<ClusterNode> dfltNodeFilter,
-        Collection<ServiceConfiguration> cfgs) {
+    private PreparedConfigurations prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
+        IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         Marshaller marsh = ctx.config().getMarshaller();
@@ -583,7 +583,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs, IgnitePredicate<ClusterNode> dfltNodeFilter) {
         assert cfgs != null;
 
-        PreparedConfigurations srvCfg = prepareServiceConfigurations(dfltNodeFilter, cfgs);
+        PreparedConfigurations srvCfg = prepareServiceConfigurations(cfgs, dfltNodeFilter);
 
         List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
