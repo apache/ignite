@@ -22,8 +22,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster;
+     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -34,6 +33,11 @@ namespace Apache.Ignite.Core.Impl.Services
     /// </summary>
     internal sealed class Services : PlatformTargetAdapter, IServices
     {
+        /*
+         * Please keep the following constants in sync with
+         * \modules\core\src\main\java\org\apache\ignite\internal\processors\platform\services\PlatformServices.java
+         */
+
         /** */
         private const int OpDeploy = 1;
         
@@ -72,6 +76,12 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /** */
         private const int OpCancelAllAsync = 14;
+
+        /** */
+        private const int OpDeployAll = 15;
+
+        /** */
+        private const int OpDeployAllAsync = 16;
 
         /** */
         private readonly IClusterGroup _clusterGroup;
@@ -231,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutInOp(OpDeploy, w => WriteServiceConfiguration(configuration, w), ReadDeploymentResult);
+            DoOutInOp(OpDeploy, w => configuration.Serialize(w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -239,7 +249,24 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w), 
+            return DoOutOpAsync(OpDeployAsync, w => configuration.Serialize(w), 
+                _keepBinary, ReadDeploymentResult);
+        }
+
+        /** <inheritDoc /> */
+        public void DeployAll(ICollection<ServiceConfiguration> configurations)
+        {
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+
+            DoOutInOp(OpDeployAll, w => ServiceConfiguration.Serialize(configurations, w), ReadDeploymentResult);
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAllAsync(ICollection<ServiceConfiguration> configurations)
+        {
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+
+            return DoOutOpAsync(OpDeployAllAsync, w => ServiceConfiguration.Serialize(configurations, w),
                 _keepBinary, ReadDeploymentResult);
         }
 
@@ -378,27 +405,6 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
                 (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), 
                 proxy);
-        }
-
-        /// <summary>
-        /// Writes the service configuration.
-        /// </summary>
-        private static void WriteServiceConfiguration(ServiceConfiguration configuration, IBinaryRawWriter w)
-        {
-            Debug.Assert(configuration != null);
-            Debug.Assert(w != null);
-
-            w.WriteString(configuration.Name);
-            w.WriteObject(configuration.Service);
-            w.WriteInt(configuration.TotalCount);
-            w.WriteInt(configuration.MaxPerNodeCount);
-            w.WriteString(configuration.CacheName);
-            w.WriteObject(configuration.AffinityKey);
-
-            if (configuration.NodeFilter != null)
-                w.WriteObject(configuration.NodeFilter);
-            else
-                w.WriteObject<object>(null);
         }
 
         /// <summary>

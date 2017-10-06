@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             try
             {
-                Services.Cancel(SvcName);
+                Services.CancelAll();
 
                 TestUtils.AssertHandleRegistryIsEmpty(1000, Grid1, Grid2, Grid3);
             }
@@ -120,6 +120,35 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.Deploy(cfg);
 
             CheckServiceStarted(Grid1, 3);
+        }
+
+        /// <summary>
+        /// Tests several services deployment via DeployAll() method.
+        /// </summary>
+        [Test]
+        public void TestDeployAll([Values(true, false)] bool binarizable)
+        {
+            const int num = 10;
+
+            var cfgs = new List<ServiceConfiguration>();
+            for (var i = 0; i < num; i++)
+            {
+                cfgs.Add(new ServiceConfiguration
+                {
+                    Name = MakeServiceName(i),
+                    MaxPerNodeCount = 3,
+                    TotalCount = 3,
+                    NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                    Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
+                });
+            }
+
+            Services.DeployAll(cfgs);
+
+            for (var i = 0; i < num; i++)
+            {
+                CheckServiceStarted(Grid1, 3, MakeServiceName(i));
+            }
         }
 
         /// <summary>
@@ -705,10 +734,10 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Checks that service has started on specified grid.
         /// </summary>
-        private static void CheckServiceStarted(IIgnite grid, int count = 1)
+        private static void CheckServiceStarted(IIgnite grid, int count = 1, string svcName = SvcName)
         {
             Func<ICollection<TestIgniteServiceSerializable>> getServices = () =>
-                grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
+                grid.GetServices().GetServices<TestIgniteServiceSerializable>(svcName);
 
             Assert.IsTrue(TestUtils.WaitForCondition(() => count == getServices().Count, 5000));
 
@@ -1144,6 +1173,17 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** */
             public int Field { get; set; }
+        }
+
+        /// <summary>
+        /// Makes Service1-{i} names for services
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns></returns>
+        private string MakeServiceName(int i)
+        {
+            // Please note that CheckContext() validates Name.StartsWith(SvcName)
+            return string.Format("{0}-{1}", SvcName, i);
         }
     }
 }

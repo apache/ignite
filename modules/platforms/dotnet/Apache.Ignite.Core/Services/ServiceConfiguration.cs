@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Services
 {
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
 
     /// <summary>
@@ -57,6 +60,46 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
-        public IClusterNodeFilter NodeFilter { get; set; } 
+        public IClusterNodeFilter NodeFilter { get; set; }
+
+        /// <summary>
+        /// Serializes the Service configuration using IBinaryRawWriter
+        /// </summary>
+        /// <param name="w">IBinaryRawWriter</param>
+        public void Serialize(IBinaryRawWriter w)
+        {
+            Debug.Assert(w != null);
+
+            w.WriteString(Name);
+            w.WriteObject(Service);
+            w.WriteInt(TotalCount);
+            w.WriteInt(MaxPerNodeCount);
+            w.WriteString(CacheName);
+            w.WriteObject(AffinityKey);
+
+            if (NodeFilter != null)
+                w.WriteObject(NodeFilter);
+            else
+                w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Serializes a collection of Service configurations using IBinaryRawWriter
+        /// </summary>
+        /// <param name="cfgs">collection of ServiceConfiguration</param>
+        /// <param name="w">IBinaryRawWriter</param>
+        public static void Serialize(ICollection<ServiceConfiguration> cfgs, IBinaryRawWriter w)
+        {
+            Debug.Assert(cfgs != null);
+            Debug.Assert(w != null);
+
+            // TODO: think if we can use WriteEnumerable here
+            w.WriteInt(cfgs.Count);
+
+            foreach (var cfg in cfgs)
+            {
+                cfg.Serialize(w);
+            }
+        }
     }
 }

@@ -156,6 +156,18 @@ namespace Apache.Ignite.Core.Services
         Task DeployAsync(ServiceConfiguration configuration);
 
         /// <summary>
+        /// Deploys instances of several services in the Ignite according to the provided configurations.
+        /// </summary>
+        /// <param name="configurations">Service configuration.</param>
+        void DeployAll(ICollection<ServiceConfiguration> configurations);
+
+        /// <summary>
+        /// Deploys instances of several services in the Ignite according to the provided configurations.
+        /// </summary>
+        /// <param name="configurations">Service configuration.</param>
+        Task DeployAllAsync(ICollection<ServiceConfiguration> configurations);
+
+        /// <summary>
         /// Cancels service deployment. If a service with specified name was deployed on the grid,
         /// then <see cref="IService.Cancel"/> method will be called on it.
         /// <para/>

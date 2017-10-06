@@ -96,6 +96,12 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_CANCEL_ALL_ASYNC = 14;
 
     /** */
+    private static final int OP_DOTNET_DEPLOY_ALL = 15;
+
+    /** */
+    private static final int OP_DOTNET_DEPLOY_ALL_ASYNC = 16;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -178,6 +184,12 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            case OP_DOTNET_DEPLOY_ALL_ASYNC: {
+                readAndListenFuture(reader, dotnetDeployAllAsync(reader, services), RESULT_WRITER);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -222,6 +234,19 @@ public class PlatformServices extends PlatformAbstractTarget {
             case OP_DOTNET_DEPLOY_MULTIPLE: {
                 try {
                     dotnetDeployMultiple(reader);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_ALL: {
+                try {
+                    dotnetDeployAll(reader, services);
 
                     PlatformUtils.writeInvocationResult(writer, null, null);
                 }
@@ -421,6 +446,31 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
+     * Deploys a collection of dotnet services.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     */
+    private void dotnetDeployAll(BinaryRawReaderEx reader, IgniteServices services) {
+        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+
+        services.deployAll(cfgs);
+    }
+
+    /**
+     * Deploys a collection of dotnet services asynchronously.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     * @return Future of the operation.
+     */
+    private IgniteFuture<Void> dotnetDeployAllAsync(BinaryRawReaderEx reader, IgniteServices services) {
+        Collection<ServiceConfiguration> cfgs = dotnetConfigurations(reader);
+
+        return services.deployAllAsync(cfgs);
+    }
+
+    /**
      * Read the dotnet service configuration.
      *
      * @param reader Binary reader,
@@ -442,6 +492,24 @@ public class PlatformServices extends PlatformAbstractTarget {
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
         return cfg;
+    }
+
+    /**
+     * Reads the collection of dotnet service configurations.
+     *
+     * @param reader Binary reader,
+     * @return Service configuration.
+     */
+    @NotNull private Collection<ServiceConfiguration> dotnetConfigurations(BinaryRawReaderEx reader) {
+        int numServices = reader.readInt();
+
+        List<ServiceConfiguration> cfgs = new ArrayList<>(numServices);
+
+        for (int i = 0; i < numServices; i++) {
+            cfgs.add(dotnetConfiguration(reader));
+        }
+
+        return cfgs;
     }
 
     /**
