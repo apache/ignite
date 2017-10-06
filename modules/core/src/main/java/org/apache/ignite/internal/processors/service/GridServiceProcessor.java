@@ -265,7 +265,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
         if (cfgs != null)
-            deployAll(/* No projection. */null, Arrays.asList(cfgs)).get();
+            deployAll(Arrays.asList(cfgs), ctx.cluster().get().forServers().predicate()).get();
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -565,10 +565,14 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Future for deployment.
      */
     public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
-        IgnitePredicate<ClusterNode> dfltNodeFilter = (prj == null) ? ctx.cluster().get().forServers().predicate() :
-            ((prj.predicate() == F.<ClusterNode>alwaysTrue()) ? null : prj.predicate());
-
-        return deployAll(cfgs, dfltNodeFilter);
+        if (prj == null)
+            // Deploy to servers by default if no projection specified.
+            return deployAll(cfgs,  ctx.cluster().get().forServers().predicate());
+        else if (prj.predicate() == F.<ClusterNode>alwaysTrue())
+            return deployAll(cfgs,  null);
+        else
+            // Deploy to predicate nodes by default.
+            return deployAll(cfgs,  prj.predicate());
     }
 
     /**
@@ -576,7 +580,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @param dfltNodeFilter Default NodeFilter.
      * @return Future for deployment.
      */
-    public IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs, IgnitePredicate<ClusterNode> dfltNodeFilter) {
+    private IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs, IgnitePredicate<ClusterNode> dfltNodeFilter) {
         assert cfgs != null;
 
         PreparedConfigurations srvCfg = prepareServiceConfigurations(dfltNodeFilter, cfgs);
