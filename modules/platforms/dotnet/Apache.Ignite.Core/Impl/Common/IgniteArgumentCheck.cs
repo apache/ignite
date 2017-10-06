@@ -73,5 +73,25 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
                     "'{0}' argument is invalid: {1}", argName, message), argName);
         }
+
+        /// <summary>
+        /// Throws an ArgumentException if specified IEnumerable arg is null or any of its element is null.
+        /// </summary>
+        /// <param name="arg">Some IEnumerable.</param>
+        /// <param name="argName">Name of the argument.</param>
+        public static void NotNullAll<T>(IEnumerable<T> arg, string argName)
+        {
+            if (arg == null)
+                throw new ArgumentNullException(argName);
+
+            var i = 0;
+            foreach (var item in arg)
+            {
+                if (item == null)
+                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
+                        "'{0}[{1}]' should not be null.", argName, i), argName);
+                i++;
+            }
+        }
     }
 }

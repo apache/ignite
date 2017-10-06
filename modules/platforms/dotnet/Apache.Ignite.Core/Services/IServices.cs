@@ -156,16 +156,34 @@ namespace Apache.Ignite.Core.Services
         Task DeployAsync(ServiceConfiguration configuration);
 
         /// <summary>
-        /// Deploys instances of several services in the Ignite according to the provided configurations.
+        /// Deploys multiple services described by provided configurations. Depending on specified parameters, 
+        /// multiple instances of the same service may be deployed. Whenever topology changes,
+        /// Ignite will automatically rebalance the deployed services within cluster to make sure that each node
+        /// will end up with about equal number of deployed instances whenever possible.
+        /// <para/>
+        /// If deployment of some of the provided services fails, then <see cref="ServiceDeploymentException"/> 
+        /// containing a list of failed service configurations (<see cref="ServiceDeploymentException.FailedConfigurations"/>)
+        /// will be thrown. It is guaranteed that all services  that were provided to this method and are not present
+        /// in the list of failed services are successfully deployed by the moment of the exception being thrown.
+        /// Note that if exception is thrown, then partial deployment may have occurred.
         /// </summary>
-        /// <param name="configurations">Service configuration.</param>
-        void DeployAll(ICollection<ServiceConfiguration> configurations);
+        /// <param name="configurations">Collection of service configurations to be deployed.</param>
+        void DeployAll(IEnumerable<ServiceConfiguration> configurations);
 
         /// <summary>
-        /// Deploys instances of several services in the Ignite according to the provided configurations.
+        /// Asynchronously deploys multiple services described by provided configurations. Depending on specified parameters,
+        /// multiple instances of the same service may be deployed (<see cref="ServiceConfiguration"/>). Whenever topology
+        /// changes, Ignite will automatically rebalance the deployed services within cluster to make sure that each node
+        /// will end up with about equal number of deployed instances whenever possible.
+        /// <para/>
+        /// If deployment of some of the provided services fails, then <see cref="ServiceDeploymentException"/> 
+        /// containing a list of failed service configurations (<see cref="ServiceDeploymentException.FailedConfigurations"/>)
+        /// will be thrown. It is guaranteed that all services, that were provided to this method and are not present
+        /// in the list of failed services, are successfully deployed by the moment of the exception being thrown. Note 
+        /// that if exception is thrown, then partial deployment may have occurred.
         /// </summary>
         /// <param name="configurations">Service configuration.</param>
-        Task DeployAllAsync(ICollection<ServiceConfiguration> configurations);
+        Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations);
 
         /// <summary>
         /// Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -266,3 +284,4 @@ namespace Apache.Ignite.Core.Services
         IServices WithServerKeepBinary();
     }
 }
+ 

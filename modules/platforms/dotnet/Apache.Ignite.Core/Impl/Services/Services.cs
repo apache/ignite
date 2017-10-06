@@ -254,19 +254,20 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
-        public void DeployAll(ICollection<ServiceConfiguration> configurations)
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
         {
-            IgniteArgumentCheck.NotNull(configurations, "configurations");
+            IgniteArgumentCheck.NotNullAll(configurations, "configurations");
 
-            DoOutInOp(OpDeployAll, w => ServiceConfiguration.Serialize(configurations, w), ReadDeploymentResult);
-        }
+            DoOutInOp(OpDeployAll, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize), 
+                ReadDeploymentResult);
+         }
 
         /** <inheritDoc /> */
-        public Task DeployAllAsync(ICollection<ServiceConfiguration> configurations)
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
         {
-            IgniteArgumentCheck.NotNull(configurations, "configurations");
-
-            return DoOutOpAsync(OpDeployAllAsync, w => ServiceConfiguration.Serialize(configurations, w),
+            IgniteArgumentCheck.NotNullAll(configurations, "configurations");
+ 
+            return DoOutOpAsync(OpDeployAllAsync, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize),
                 _keepBinary, ReadDeploymentResult);
         }
 

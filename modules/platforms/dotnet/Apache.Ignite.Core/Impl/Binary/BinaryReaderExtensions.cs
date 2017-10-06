@@ -97,5 +97,30 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return obj is T ? (T) obj : ((ObjectInfoHolder) obj).CreateInstance<T>();
         }
+
+        /// <summary>
+        /// Reads the platform nullable collection produced by Java PlatformUtils.writeNullableCollection()
+        /// from org.apache.ignite.internal.processors.platform.utils package
+        /// </summary>
+        /// <typeparam name="T">Type of list element.</typeparam>
+        /// <param name="reader">The reader.</param>
+        /// <param name="factoryMethod">factory method delegate for T instance creation</param>
+        /// <returns>Resulting generic list.</returns>
+        public static List<T> ReadPlatformNullableCollection<T>(this BinaryReader reader, Func<BinaryReader, T> factoryMethod)
+        {
+            var hasVal = reader.ReadBoolean();
+
+            if (!hasVal)
+                return new List<T>();
+
+            var count = reader.ReadInt();
+
+            var res = new List<T>(count);
+
+            for (var i = 0; i < count; i++)
+                res.Add(factoryMethod(reader));
+
+            return res;
+        }
     }
 }

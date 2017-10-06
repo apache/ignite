@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
@@ -34,6 +35,9 @@ namespace Apache.Ignite.Core.Services
 
         /** Cause. */
         private readonly IBinaryObject _binaryCause;
+
+        /** Configurations of services that failed to deploy */
+        private readonly IList<ServiceConfiguration> _failedCfgs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceDeploymentException"/> class.
@@ -63,14 +67,27 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ServiceDeploymentException"/> class with failed configurations.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        /// <param name="failedCfgs">List of failed configurations</param>
+        public ServiceDeploymentException(string message, Exception cause, IList<ServiceConfiguration> failedCfgs) : base(message, cause)
+        {
+            _failedCfgs = failedCfgs;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ServiceDeploymentException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="binaryCause">The binary cause.</param>
-        public ServiceDeploymentException(string message, IBinaryObject binaryCause)
+        /// <param name="failedCfgs">List of failed configurations</param>
+        public ServiceDeploymentException(string message, IBinaryObject binaryCause, IList<ServiceConfiguration> failedCfgs)
             : base(message)
         {
             _binaryCause = binaryCause;
+            _failedCfgs = failedCfgs;
         }
 
         /// <summary>
@@ -106,6 +123,14 @@ namespace Apache.Ignite.Core.Services
             info.AddValue(KeyBinaryCause, _binaryCause);
 
             base.GetObjectData(info, context);
+        }
+
+        /// <summary>
+        /// Configurations of services that failed to deploy
+        /// </summary>
+        public IList<ServiceConfiguration> FailedConfigurations
+        {
+            get { return _failedCfgs ?? new List<ServiceConfiguration>(); }
         }
     }
 }

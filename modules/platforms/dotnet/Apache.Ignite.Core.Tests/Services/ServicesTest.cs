@@ -484,6 +484,55 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests ServiceDeploymentException result via DeployAll() method.
+        /// </summary>
+        [Test]
+        public void TestDeployAllException([Values(true, false)] bool binarizable)
+        {
+            const int num = 10;
+            const int firstFailedIdx = 1;
+            const int secondFailedIdx = 9;
+
+            var cfgs = new List<ServiceConfiguration>();
+            for (var i = 0; i < num; i++)
+            {
+                var throwInit = (i == firstFailedIdx || i == secondFailedIdx);
+                cfgs.Add(new ServiceConfiguration
+                {
+                    Name = MakeServiceName(i),
+                    MaxPerNodeCount = 2,
+                    TotalCount = 2,
+                    NodeFilter = new NodeFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
+                    Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit } 
+                        : new TestIgniteServiceSerializable { TestProperty = i, ThrowInit = throwInit }
+                });
+            } 
+
+            var deploymentException = Assert.Throws<ServiceDeploymentException>(() => Services.DeployAll(cfgs));
+
+            var failedCfgs = deploymentException.FailedConfigurations;
+            Assert.IsNotNull(failedCfgs);
+            Assert.AreEqual(2, failedCfgs.Count);
+
+            var firstFailedSvc = binarizable ? failedCfgs[0].Service as TestIgniteServiceBinarizable : failedCfgs[0].Service as TestIgniteServiceSerializable;
+            var secondFailedSvc = binarizable ? failedCfgs[1].Service as TestIgniteServiceBinarizable : failedCfgs[1].Service as TestIgniteServiceSerializable;
+
+            Assert.IsNotNull(firstFailedSvc);
+            Assert.IsNotNull(secondFailedSvc);
+
+            Assert.AreEqual(firstFailedIdx, firstFailedSvc.TestProperty);
+            Assert.AreEqual(secondFailedIdx, secondFailedSvc.TestProperty);
+
+            for (var i = 0; i < num; i++)
+            {
+                if (i != firstFailedIdx && i != secondFailedIdx)
+                {
+                    CheckServiceStarted(Grid1, 2, MakeServiceName(i));
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies the deployment exception.
         /// </summary>
         private void VerifyDeploymentException(Action<IServices, IService> deploy, bool keepBinary)
@@ -988,11 +1037,13 @@ namespace Apache.Ignite.Core.Tests.Services
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
+                writer.WriteBoolean("ThrowInit", ThrowInit);
             }
 
             /** <inheritdoc /> */
             public void ReadBinary(IBinaryReader reader)
             {
+                ThrowInit = reader.ReadBoolean("ThrowInit");
                 TestProperty = reader.ReadInt("TestProp");
             }
         }
