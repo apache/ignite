@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -264,7 +265,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
         if (cfgs != null)
-            deployAll(null, Arrays.asList(cfgs)).get();
+            deployAll(/* No projection. */null, Arrays.asList(cfgs)).get();
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -482,15 +483,17 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         cfg.setTotalCount(1);
         cfg.setMaxPerNodeCount(1);
 
-        return deployAll(null, Collections.singleton(cfg));
+        // Ignore projection here.
+        return deployAll(Collections.singleton(cfg), null);
     }
 
     /**
-     * @param prj Grid projection.
      * @param cfgs Service configurations.
+     * @param dfltNodeFilter Default NodeFilter.
      * @return Configurations to deploy.
      */
-    private PreparedConfigurations prepareServiceConfigurations(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
+    private PreparedConfigurations prepareServiceConfigurations(IgnitePredicate<ClusterNode> dfltNodeFilter,
+        Collection<ServiceConfiguration> cfgs) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
 
         Marshaller marsh = ctx.config().getMarshaller();
@@ -502,12 +505,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             // Deploy to projection node by default
             // or only on server nodes if no projection .
-            if (cfg.getNodeFilter() == null) {
-                if (prj == null)
-                    cfg.setNodeFilter(ctx.cluster().get().forServers().predicate());
-                else if (F.<ClusterNode>alwaysTrue() != prj.predicate())
-                    cfg.setNodeFilter(prj.predicate());
-            }
+            if (cfg.getNodeFilter() == null && dfltNodeFilter != null)
+                cfg.setNodeFilter(dfltNodeFilter);
 
             try {
                 validate(cfg);
@@ -566,9 +565,21 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
      * @return Future for deployment.
      */
     public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
+        IgnitePredicate<ClusterNode> dfltNodeFilter = (prj == null) ? ctx.cluster().get().forServers().predicate() :
+            ((prj.predicate() == F.<ClusterNode>alwaysTrue()) ? null : prj.predicate());
+
+        return deployAll(cfgs, dfltNodeFilter);
+    }
+
+    /**
+     * @param cfgs Service configurations.
+     * @param dfltNodeFilter Default NodeFilter.
+     * @return Future for deployment.
+     */
+    public IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs, IgnitePredicate<ClusterNode> dfltNodeFilter) {
         assert cfgs != null;
 
-        PreparedConfigurations srvCfg = prepareServiceConfigurations(prj, cfgs);
+        PreparedConfigurations srvCfg = prepareServiceConfigurations(dfltNodeFilter, cfgs);
 
         List<ServiceConfiguration> cfgsCp = srvCfg.cfgs;
 
