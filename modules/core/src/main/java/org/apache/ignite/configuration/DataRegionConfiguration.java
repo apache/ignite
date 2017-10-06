@@ -79,11 +79,11 @@ public final class DataRegionConfiguration implements Serializable {
     /** Data region name. */
     private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
-    /** Data region start size. */
-    private long initialSize;
-
     /** Data region maximum size. */
     private long maxSize = DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
+
+    /** Data region start size. */
+    private long initSize = Math.min(maxSize, DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
     /** An optional path to a memory mapped file for this data region. */
     private String swapFilePath;
@@ -180,18 +180,18 @@ public final class DataRegionConfiguration implements Serializable {
      * @return Data region start size.
      */
     public long getInitialSize() {
-        return initialSize;
+        return initSize;
     }
 
     /**
      * Sets initial memory region size defined by this data region. When the used memory size exceeds this value,
      * new chunks of memory will be allocated.
      *
-     * @param initialSize Data region initial size.
+     * @param initSize Data region initial size.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setInitialSize(long initialSize) {
-        this.initialSize = initialSize;
+    public DataRegionConfiguration setInitialSize(long initSize) {
+        this.initSize = initSize;
 
         return this;
     }

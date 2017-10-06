@@ -31,9 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * (see {@link DataStorageConfiguration#getPageSize()}. An individual page can store one or many cache key-value entries
  * that allows reusing the memory in the most efficient way and avoid memory fragmentation issues.
  * <p>
- * By default, the page memory allocates a single expandable data region using settings of
- * {@link DataStorageConfiguration#createDefaultRegionConfig()}. All the caches that will be configured in an application
- * will be mapped to this data region by default, thus, all the cache data will reside in that data region.
+ * By default, the page memory allocates a single expandable data region with default settings. All the caches that
+ * will be configured in an application will be mapped to this data region by default, thus, all the cache data will
+ * reside in that data region.
  * <p>
  * If initial size of the default data region doesn't satisfy requirements or it's required to have multiple data
  * regions with different properties then {@link DataRegionConfiguration} can be used for both scenarios.
@@ -44,18 +44,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * <p>Sample configuration below shows how to make 5 GB data regions the default one for Apache Ignite:</p>
  * <pre>
  *     {@code
+ *
  *     <property name="dataStorageConfiguration">
  *         <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
  *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
- *             <property name="defaultDataRegionName" value="default_data_region"/>
  *
- *             <property name="dataRegions">
- *                 <list>
- *                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
- *                         <property name="name" value="default_data_region"/>
- *                         <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
- *                     </bean>
- *                 </list>
+ *             <property name="defaultRegionConfiguration">
+ *                 <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+ *                     <property name="name" value="default_data_region"/>
+ *                     <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                 </bean>
  *             </property>
  *         </bean>
  *     </property>
@@ -168,7 +166,7 @@ public class DataStorageConfiguration implements Serializable {
     private long dfltDataRegSize = DFLT_DATA_REGION_MAX_SIZE;
 
     /** Configuration of default data region. */
-    private DataRegionConfiguration dfltDataRegConf;
+    private DataRegionConfiguration dfltDataRegConf = new DataRegionConfiguration();
 
     /** Data regions. */
     private DataRegionConfiguration[] dataRegions;
@@ -355,34 +353,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Creates a configuration for the default data region that will instantiate the default data region.
-     * To override settings of the default data region in order to create the default data region with different
-     * parameters, create own data region first, pass it to
-     * {@link DataStorageConfiguration#setDataRegions(DataRegionConfiguration...)} method and change the name of the
-     * default data region with {@link DataStorageConfiguration#setDefaultDataRegionName(String)}.
-     *
-     * @return default Data region configuration.
-     */
-    @Deprecated
-    public DataRegionConfiguration createDefaultRegionConfig() {
-        // TODO IGNITE-6030: get rid of this method
-        DataRegionConfiguration memPlc = new DataRegionConfiguration();
-
-        long maxSize = dfltDataRegSize;
-
-        if (maxSize < DFLT_DATA_REGION_INITIAL_SIZE)
-            memPlc.setInitialSize(maxSize);
-        else
-            memPlc.setInitialSize(DFLT_DATA_REGION_INITIAL_SIZE);
-
-        memPlc.setMaxSize(maxSize);
-
-        return memPlc;
-    }
-
-    /**
      * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
-     * to the number of available CPUs multiplied by 4.
+     * to the number of available CPUs.
      *
      * @return Mapping table concurrency level.
      */
@@ -402,17 +374,6 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets a size for default data region overridden by user.
-     *
-     * @return Default data region size overridden by user or {@link #DFLT_DATA_REGION_MAX_SIZE} if nothing was specified.
-     * @deprecated Use {@link #getDefaultRegionConfiguration()} instead.
-     */
-    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
-    public long getDefaultDataRegionSize() {
-        return dfltDataRegSize;
-    }
-
-    /**
      * Overrides size of default data region which is created automatically.
      *
      * If user doesn't specify any data region configuration, a default one with default size
@@ -429,18 +390,6 @@ public class DataStorageConfiguration implements Serializable {
         this.dfltDataRegSize = dfltMemPlcSize;
 
         return this;
-    }
-
-    /**
-     * Gets a name of default data region.
-     *
-     * @return A name of a custom data region configured with {@code DataStorageConfiguration} or {@code null} of the
-     *         default region is used.
-     * @deprecated Use {@link #getDefaultRegionConfiguration()} instead.
-     */
-    @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
-    public String getDefaultDataRegionName() {
-        return dfltDataRegName;
     }
 
     /**
@@ -466,7 +415,6 @@ public class DataStorageConfiguration implements Serializable {
      * For assigning a custom data region to cache group, use {@link CacheConfiguration#setDataRegionName(String)}.
      */
     public DataRegionConfiguration getDefaultRegionConfiguration() {
-        // TODO IGNITE-6030: use this method for initialization project-wise
         return dfltDataRegConf;
     }
 

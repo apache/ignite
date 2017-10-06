@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -2183,15 +2184,42 @@ public class IgnitionEx {
                 myCfg.setExecutorConfiguration(clone);
             }
 
-            if (!myCfg.isClientMode() && myCfg.getDataStorageConfiguration() == null) {
-                DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-                memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-                myCfg.setDataStorageConfiguration(memCfg);
-            }
+            initializeDataStorageConfiguration(myCfg);
 
             return myCfg;
+        }
+
+        /**
+         * @param cfg Ignite configuration.
+         */
+        private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+            if (cfg.getDataStorageConfiguration() != null &&
+                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
+                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                    "but not both.");
+            }
+
+            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null) {
+                boolean persistenceEnabled = cfg.getPersistentStoreConfiguration() != null;
+
+                DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+                MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
+                    cfg.getMemoryConfiguration() : new MemoryConfiguration();
+
+                dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
+                dsCfg.setPageSize(memCfg.getPageSize());
+                // TODO IGNITE-6030
+
+
+
+
+
+
+
+            } else
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         /**

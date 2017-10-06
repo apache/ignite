@@ -76,8 +76,8 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
         sysCacheMaxSize = memCfg.getSystemCacheMaxSize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
-        dfltMemPlcName = memCfg.getDefaultDataRegionName();
-        dfltMemPlcSize = memCfg.getDefaultDataRegionSize();
+//        dfltMemPlcName = memCfg.getDefaultDataRegionName();
+        //dfltMemPlcSize = memCfg.getDefaultDataRegionSize();
 
         DataRegionConfiguration[] plcs = memCfg.getDataRegions();
 
