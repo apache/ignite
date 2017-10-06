@@ -46,6 +46,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         {
             var strings = GetSecondPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
 
+            CheckFunc(x => x.PadLeft(20), strings);
+            CheckFunc(x => x.PadLeft(20, 'l'), strings);
+            CheckFunc(x => x.PadRight(20), strings);
+            CheckFunc(x => x.PadRight(20, 'r'), strings);
+
             CheckFunc(x => x.ToLower(), strings);
             CheckFunc(x => x.ToUpper(), strings);
             CheckFunc(x => x.StartsWith("Person_9"), strings);
