@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
                 "insert into foo(_key, name) values (?, ?)", 1, "bar")).GetAll());
 
-            Assert.AreEqual("Null value is not allowed for field 'ID'", ex.Message);
+            Assert.AreEqual("Null value is not allowed for column 'ID'", ex.Message);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var ex = Assert.Throws<IgniteException>(() => cache.QueryFields(new SqlFieldsQuery(
                 "insert into foo(_key, id) values (?, ?)", 1, 2)).GetAll());
 
-            Assert.AreEqual("Null value is not allowed for field 'NAME'", ex.Message);
+            Assert.AreEqual("Null value is not allowed for column 'NAME'", ex.Message);
         }
 
         /// <summary>

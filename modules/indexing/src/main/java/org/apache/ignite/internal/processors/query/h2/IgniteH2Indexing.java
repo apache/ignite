@@ -548,7 +548,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridCacheVersion ver,
         long expirationTime,
         long link) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, type.name());
 
         if (tbl == null)
             return; // Type was rejected.
@@ -572,7 +572,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
-        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), type.name());
+        H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, type.name());
 
         if (tbl == null)
             return;
@@ -777,10 +777,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String qry,
-        String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
-        H2TableDescriptor tbl = tableDescriptor(schemaName, typeName);
+    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
+        String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
+        H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, schemaName,
@@ -1098,7 +1099,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName,
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName,
         final SqlQuery qry, final IndexingQueryFilter filter, final boolean keepBinary) throws IgniteCheckedException {
         String type = qry.getType();
         String sqlQry = qry.getSql();
@@ -1107,7 +1108,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridQueryCancel cancel = new GridQueryCancel();
 
-        final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(schemaName, sqlQry, alias,
+        final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(schemaName, cacheName, sqlQry, alias,
             F.asList(params), type, filter, cancel);
 
         return new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
@@ -1142,19 +1143,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Executes regular query.
      *
      * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param qry Query.
      * @param alias Table alias.
      * @param params Query parameters.
      * @param type Query return type.
-     * @param filter Cache name and key filter.
-     * @return Queried rows.
+     * @param filter Cache name and key filter.      @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String schemaName,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(String schemaName, String cacheName,
         final String qry, String alias, @Nullable final Collection<Object> params, String type,
         final IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
-        final H2TableDescriptor tbl = tableDescriptor(schemaName, type);
+        final H2TableDescriptor tbl = tableDescriptor(schemaName, cacheName, type);
 
         if (tbl == null)
             throw new IgniteSQLException("Failed to find SQL table for type: " + type,
@@ -1216,11 +1217,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
-        boolean keepBinary, int mainCacheId) {
+    @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
+        SqlQuery qry, boolean keepBinary, int mainCacheId) {
         String type = qry.getType();
 
-        H2TableDescriptor tblDesc = tableDescriptor(schemaName, type);
+        H2TableDescriptor tblDesc = tableDescriptor(schemaName, cacheName, type);
 
         if (tblDesc == null)
             throw new IgniteSQLException("Failed to find SQL table for type: " + type,
@@ -1829,13 +1830,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param type Type name.
      * @return Descriptor.
      */
-    @Nullable private H2TableDescriptor tableDescriptor(String schemaName, String type) {
+    @Nullable private H2TableDescriptor tableDescriptor(String schemaName, String cacheName, String type) {
         H2Schema schema = schemas.get(schemaName);
 
         if (schema == null)
             return null;
 
-        return schema.tableByTypeName(type);
+        return schema.tableByTypeName(cacheName, type);
     }
 
     /** {@inheritDoc} */
