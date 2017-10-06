@@ -34,10 +34,6 @@ import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurren
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsFlatKeyConcurrentAtomicPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsFlatKeyConcurrentAtomicReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsFlatKeyConcurrentTransactionalPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.index.DynamicColumnsFlatKeyConcurrentTransactionalReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedAtomicConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedTransactionalConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
@@ -70,11 +66,6 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
         suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
         suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
-
-        suite.addTestSuite(DynamicColumnsFlatKeyConcurrentAtomicPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsFlatKeyConcurrentTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsFlatKeyConcurrentAtomicReplicatedSelfTest.class);
-        suite.addTestSuite(DynamicColumnsFlatKeyConcurrentTransactionalReplicatedSelfTest.class);
 
         // Other tests.
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);

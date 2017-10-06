@@ -94,20 +94,16 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     /** Atomicity mode. */
     private final CacheAtomicityMode atomicityMode;
 
-    /** Whether keys should be wrapped into a {@link BinaryObject}. */
-    private final boolean wrapKey;
-
     /**
      * Constructor.
+     *
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
-     * @param wrapKey Whether keys should be wrapped into a {@link BinaryObject}.
      */
-    DynamicColumnsAbstractConcurrentSelfTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode, boolean wrapKey) {
+    DynamicColumnsAbstractConcurrentSelfTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
-        this.wrapKey = wrapKey;
-        createSql =  CREATE_SQL + " WITH \"template=TPL\",\"wrap_key=" + wrapKey + '"';
+        createSql =  CREATE_SQL + " WITH \"template=TPL\"";
     }
 
     /** {@inheritDoc} */
@@ -355,7 +351,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             BinaryObject val = cache.get(key);
 
             if (val != null) {
-                int id = wrapKey ? (int)((BinaryObject)key).field("ID") : (Integer)key;
+                int id = (Integer)key;
 
                 assertEquals(i, id);
 
@@ -378,7 +374,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                 expKeys.size(), res.size());
 
             for (Cache.Entry<Object, BinaryObject> entry : res) {
-                int key = wrapKey ? (int)((BinaryObject) entry.getKey()).field("ID") : (Integer)entry.getKey();
+                int key = (Integer)entry.getKey();
                 int v = entry.getValue().field("v");
 
                 String name = entry.getValue().field("NAME");
@@ -408,12 +404,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      * @return PERSON cache key (int or {@link BinaryObject}).
      */
     private Object key(Ignite node, int id) {
-        if (!wrapKey)
-            return id;
-
-        String keyTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME).iterator().next().keyTypeName();
-
-        return node.binary().builder(keyTypeName).setField("ID", id).build();
+        return id;
     }
 
     /**
