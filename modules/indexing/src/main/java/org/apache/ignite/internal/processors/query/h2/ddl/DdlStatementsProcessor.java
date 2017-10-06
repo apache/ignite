@@ -62,6 +62,7 @@ import org.h2.table.Column;
 import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
  * DDL statements processor.<p>
@@ -228,8 +229,8 @@ public class DdlStatementsProcessor {
                 }
                 else {
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
-                        throw new SchemaOperationException("ADD COLUMN is not supported for tables created with " +
-                            "wrap_value=false param. (To enable ADD COLUMN, create table with wrap_value=true param).");
+                        throw new SchemaOperationException("Cannot add column(s) because table was created " +
+                            "with " + PARAM_WRAP_VALUE + "=false option.");
 
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 

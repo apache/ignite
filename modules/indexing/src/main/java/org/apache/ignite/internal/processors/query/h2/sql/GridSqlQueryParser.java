@@ -478,7 +478,7 @@ public class GridSqlQueryParser {
     private static final String PARAM_WRAP_KEY = "WRAP_KEY";
 
     /** */
-    private static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
+    public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
 
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
