@@ -56,6 +56,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
         String consoleOut = "Empty";
         String consoleErr = "Empty";
+        String testMsg = "******* Hello Tester! ******* ";
 
         try {
             System.setOut(new PrintStream(testOut));
@@ -64,34 +65,12 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
             System.setProperty("IGNITE_QUIET", "false");
 
             try (Ignite ignite = G.start(getConfiguration("verboseLogGrid", LOG_PATH_VERBOSE_TEST))) {
-                String testMsg = "******* Hello Tester! ******* ";
 
                 ignite.log().error(testMsg + Level.ERROR);
                 ignite.log().warning(testMsg + Level.WARN);
                 ignite.log().info(testMsg + Level.INFO);
                 ignite.log().debug(testMsg + Level.DEBUG);
                 ignite.log().trace(testMsg + Level.TRACE);
-
-                System.out.flush();
-                System.err.flush();
-
-                testOut.flush();
-                testErr.flush();
-
-                consoleOut = testOut.toString();
-                consoleErr = testErr.toString();
-
-                assertTrue(consoleOut.contains(testMsg + Level.INFO));
-                assertTrue(consoleOut.contains(testMsg + Level.DEBUG));
-                assertTrue(consoleOut.contains(testMsg + Level.TRACE));
-                assertTrue(consoleOut.contains(testMsg + Level.ERROR));
-                assertTrue(consoleOut.contains(testMsg + Level.WARN));
-
-                assertTrue(consoleErr.contains(testMsg + Level.ERROR));
-                assertTrue(consoleErr.contains(testMsg + Level.WARN));
-                assertTrue(!consoleErr.contains(testMsg + Level.INFO));
-                assertTrue(consoleErr.contains(testMsg + Level.DEBUG));
-                assertTrue(consoleErr.contains(testMsg + Level.TRACE));
             }
         }
         finally {
@@ -99,13 +78,31 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
             System.setOut(backupSysOut);
             System.setErr(backupSysErr);
-
-            System.out.println("**************** Out Console content ***************");
-            System.out.println(consoleOut);
-
-            System.err.println("**************** Err Console content ***************");
-            System.err.println(consoleErr);
         }
+
+        testOut.flush();
+        testErr.flush();
+
+        consoleOut = testOut.toString();
+        consoleErr = testErr.toString();
+
+        System.out.println("**************** Out Console content ***************");
+        System.out.println(consoleOut);
+
+        System.out.println("**************** Err Console content ***************");
+        System.out.println(consoleErr);
+
+        assertTrue(consoleOut.contains(testMsg + Level.INFO));
+        assertTrue(consoleOut.contains(testMsg + Level.DEBUG));
+        assertTrue(consoleOut.contains(testMsg + Level.TRACE));
+        assertTrue(consoleOut.contains(testMsg + Level.ERROR));
+        assertTrue(consoleOut.contains(testMsg + Level.WARN));
+
+        assertTrue(consoleErr.contains(testMsg + Level.ERROR));
+        assertTrue(consoleErr.contains(testMsg + Level.WARN));
+        assertTrue(!consoleErr.contains(testMsg + Level.INFO));
+        assertTrue(consoleErr.contains(testMsg + Level.DEBUG));
+        assertTrue(consoleErr.contains(testMsg + Level.TRACE));
     }
 
     /**
