@@ -433,7 +433,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             assert memCfg != null;
 
-            long totalSize = memCfg.getSystemCacheMaxSize();
+            long totalSize = memCfg.getSystemRegionMaxSize();
 
             if (memCfg.getDataRegions() == null)
                 totalSize += DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;

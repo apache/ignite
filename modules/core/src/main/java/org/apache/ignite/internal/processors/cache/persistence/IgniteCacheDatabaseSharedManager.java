@@ -231,8 +231,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         addDataRegion(
             memCfg,
             createSystemDataRegion(
-                memCfg.getSystemCacheInitialSize(),
-                memCfg.getSystemCacheMaxSize()
+                memCfg.getSystemRegionInitialSize(),
+                memCfg.getSystemRegionMaxSize()
             ),
             SYSTEM_DATA_REGION_NAME
         );
@@ -340,8 +340,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // TODO IGNITE-6030 convert old conf to new here
 
         checkSystemDataRegionSizeConfiguration(
-            memCfg.getSystemCacheInitialSize(),
-            memCfg.getSystemCacheMaxSize()
+            memCfg.getSystemRegionInitialSize(),
+            memCfg.getSystemRegionMaxSize()
         );
 
         if (plcCfgs != null) {

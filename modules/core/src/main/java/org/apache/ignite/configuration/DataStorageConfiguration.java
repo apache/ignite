@@ -146,7 +146,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
     /** Size of a memory chunk reserved for system cache initially. */
-    private long sysCacheInitSize = DFLT_SYS_CACHE_INIT_SIZE;
+    private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
 
     /** Maximum size of system cache. */
     private long sysCacheMaxSize = DFLT_SYS_CACHE_MAX_SIZE;
@@ -258,8 +258,8 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheInitialSize() {
-        return sysCacheInitSize;
+    public long getSystemRegionInitialSize() {
+        return sysRegionInitSize;
     }
 
     /**
@@ -267,14 +267,14 @@ public class DataStorageConfiguration implements Serializable {
      *
      * Default value is {@link #DFLT_SYS_CACHE_INIT_SIZE}
      *
-     * @param sysCacheInitSize Size in bytes.
+     * @param sysRegionInitSize Size in bytes.
      *
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
-        A.ensure(sysCacheMaxSize > 0, "System cache initial size can not be less zero.");
+    public DataStorageConfiguration setSystemRegionInitialSize(long sysRegionInitSize) {
+        A.ensure(sysCacheMaxSize > 0, "System region initial size can not be less zero.");
 
-        this.sysCacheInitSize = sysCacheInitSize;
+        this.sysRegionInitSize = sysRegionInitSize;
 
         return this;
     }
@@ -284,7 +284,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheMaxSize() {
+    public long getSystemRegionMaxSize() {
         return sysCacheMaxSize;
     }
 
@@ -296,7 +296,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setSystemCacheMaxSize(long sysCacheMaxSize) {
+    public DataStorageConfiguration setSystemRegionMaxSize(long sysCacheMaxSize) {
         A.ensure(sysCacheMaxSize > 0, "System cache max size can not be less zero.");
 
         this.sysCacheMaxSize = sysCacheMaxSize;

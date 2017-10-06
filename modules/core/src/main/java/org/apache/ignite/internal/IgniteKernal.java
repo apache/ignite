@@ -2517,7 +2517,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         U.log(log, "System cache's DataRegion size is configured to " +
-            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
             "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
 

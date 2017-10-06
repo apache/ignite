@@ -1400,8 +1400,8 @@ public class PlatformConfigurationUtils {
     private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
         DataStorageConfiguration res = new DataStorageConfiguration();
 
-        res.setSystemCacheInitialSize(in.readLong())
-            .setSystemCacheMaxSize(in.readLong())
+        res.setSystemRegionInitialSize(in.readLong())
+            .setSystemRegionMaxSize(in.readLong())
             .setPageSize(in.readInt())
             .setConcurrencyLevel(in.readInt())
             .setPersistentStorePath(in.readString())
@@ -1479,8 +1479,8 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
 
-        w.writeLong(cfg.getSystemCacheInitialSize());
-        w.writeLong(cfg.getSystemCacheMaxSize());
+        w.writeLong(cfg.getSystemRegionInitialSize());
+        w.writeLong(cfg.getSystemRegionMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
         w.writeString(cfg.getPersistentStorePath());
