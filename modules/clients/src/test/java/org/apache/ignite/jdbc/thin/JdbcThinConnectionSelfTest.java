@@ -1633,6 +1633,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.setSchema(schema);
 
+            assertEquals(schema.toUpperCase(), conn.getSchema());
+
+            conn.setSchema('"' + schema + '"');
+
             assertEquals(schema, conn.getSchema());
 
             conn.close();
