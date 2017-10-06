@@ -267,8 +267,8 @@ public class GridAffinityAssignmentCache {
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt,
-        DiscoCache discoCache) {
+    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, @Nullable DiscoveryEvent discoEvt,
+        @Nullable DiscoCache discoCache) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -286,9 +286,14 @@ public class GridAffinityAssignmentCache {
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
 
-        boolean hasBaseline = discoCache.state().baselineTopology() != null;
-        boolean changedBaseline = !hasBaseline ? baselineTopology != null :
-            !discoCache.state().baselineTopology().equals(baselineTopology);
+        boolean hasBaseline = false;
+        boolean changedBaseline = false;
+
+        if (discoCache != null) {
+            hasBaseline = discoCache.state().baselineTopology() != null;
+            changedBaseline = !hasBaseline ? baselineTopology != null :
+                !discoCache.state().baselineTopology().equals(baselineTopology);
+        }
 
         List<List<ClusterNode>> assignment;
 
