@@ -734,7 +734,7 @@ public class BinaryContext {
         if (marshCtx.isSystemType(clsName)) {
             BinarySerializer serializer = null;
 
-            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
+            if (BINARYLIZABLE_SYS_CLSS.contains(clsName) || AffinityKey.class.isAssignableFrom(cls))
                 serializer = new BinaryReflectiveSerializer();
 
             desc = new BinaryClassDescriptor(this,
