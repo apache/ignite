@@ -98,6 +98,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Configuration utils.
+ *
+ * WARNING: DO NOT MODIFY THIS FILE without updating corresponding platform code!
+ * Each read/write method has a counterpart in .NET platform (see IgniteConfiguration.cs, CacheConfiguration.cs, etc).
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
