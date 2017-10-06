@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -1078,7 +1079,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
             String cacheName = null;
-            IgniteInternalCache<?, ?> cache;
+
+            if (!ignite.active())
+                return Collections.emptyList();
+
+            IgniteInternalCache<?, ?> cache = null;
 
             if (!F.isEmpty(arguments())) {
                 cacheName = argument(0);
@@ -1088,7 +1093,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 assert cache != null;
             }
             else {
-                cache = F.first(ignite.context().cache().publicCaches()).internalProxy();
+                IgniteCacheProxy<?, ?> pubCache = F.first(ignite.context().cache().publicCaches());
+
+                if (pubCache != null)
+                    cache = pubCache.internalProxy();
 
                 if (cache == null)
                     return Collections.emptyList();
