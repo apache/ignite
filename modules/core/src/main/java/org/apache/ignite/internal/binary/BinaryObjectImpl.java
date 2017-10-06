@@ -81,7 +81,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * For {@link Externalizable}.
      */
     public BinaryObjectImpl() {
-        // No-op.
+        ctx = GridBinaryMarshaller.threadLocalContext();
     }
 
     /**
@@ -691,14 +691,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ctx = GridBinaryMarshaller.threadLocalContext();
-
         arr = new byte[in.readInt()];
 
         in.readFully(arr);
 
         start = in.readInt();
     }
+    
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
