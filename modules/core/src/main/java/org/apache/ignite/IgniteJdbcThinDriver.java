@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -130,6 +131,16 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
+    /** Driver instance. */
+    private static final Driver INSTANCE = new IgniteJdbcThinDriver();
+
+    /** Registered flag. */
+    private static volatile boolean registered;
+
+    static {
+        register();
+    }
+
     /*
      * Static initializer.
      */
@@ -220,7 +231,7 @@ public class IgniteJdbcThinDriver implements Driver {
      * @return Scheme name. {@code null} in case the schema isn't specified in the url.
      * @throws SQLException On error.
      */
-    private String parseUrl(String url, Properties props) throws SQLException {
+    private static String parseUrl(String url, Properties props) throws SQLException {
         if (F.isEmpty(url))
             throw new SQLException("URL cannot be null or empty.");
 
@@ -268,7 +279,7 @@ public class IgniteJdbcThinDriver implements Driver {
      * @param props Properties.
      * @throws SQLException If failed.
      */
-    private void parseParameters(String str, Properties props) throws SQLException {
+    private static void parseParameters(String str, Properties props) throws SQLException {
         String[] params = str.split("&");
 
         for (String param : params) {
@@ -286,5 +297,23 @@ public class IgniteJdbcThinDriver implements Driver {
 
             props.setProperty(JdbcThinUtils.PROP_PREFIX + key, val);
         }
+    }
+
+    /**
+     * @return Driver instance.
+     */
+    static synchronized Driver register() {
+        try {
+            if (!registered) {
+                registered = true;
+                DriverManager.registerDriver(INSTANCE);
+            }
+        } catch (SQLException e) {
+            PrintWriter writer = DriverManager.getLogWriter();
+
+            if (writer != null)
+                e.printStackTrace(writer);
+        }
+        return INSTANCE;
     }
 }
