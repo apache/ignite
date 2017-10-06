@@ -264,7 +264,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         ServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
         if (cfgs != null)
-            deployAll(Arrays.asList(cfgs)).get();
+            deployAll(null, Arrays.asList(cfgs)).get();
 
         if (log.isDebugEnabled())
             log.debug("Started service processor.");
@@ -482,7 +482,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         cfg.setTotalCount(1);
         cfg.setMaxPerNodeCount(1);
 
-        return deployAll(Collections.singleton(cfg));
+        return deployAll(null, Collections.singleton(cfg));
     }
 
     /**
@@ -558,14 +558,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         }
 
         return new PreparedConfigurations(cfgsCp, failedFuts);
-    }
-
-    /**
-     * @param cfgs Service configurations.
-     * @return Future for deployment.
-     */
-    public IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs) {
-        return deployAll(null, cfgs);
     }
 
     /**
