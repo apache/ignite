@@ -77,7 +77,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     private static String TABLE_PERSON = "\"" + CACHE_PERSON +  "\".\"PERSON\"";
 
     /** Expected error message. */
-    private static String ERR_MSG = "Null value is not allowed for field 'NAME'";
+    private static String ERR_MSG = "Null value is not allowed for column 'NAME'";
 
     /** OK value. */
     private final Person okValue = new Person("Name", 18);
