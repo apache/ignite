@@ -153,7 +153,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            saveOrGet(ctx.service().deploy(cfg));
+            saveOrGet(ctx.service().deploy(prj, cfg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

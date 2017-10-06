@@ -90,6 +90,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -296,13 +297,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfgs != null) {
             Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-            for (ServiceConfiguration c : cfgs) {
-                // Deploy only on server nodes by default.
-                if (c.getNodeFilter() == null)
-                    c.setNodeFilter(ctx.cluster().get().forServers().predicate());
-
-                futs.add(deploy(c));
-            }
+            // Deploy only on server nodes by default.
+            for (ServiceConfiguration c : cfgs)
+                futs.add(deploy(c, ctx.cluster().get().forServers().predicate()));
 
             // Await for services to deploy.
             for (IgniteInternalFuture<?> f : futs)
@@ -459,16 +456,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfg.setService(svc);
         cfg.setTotalCount(totalCnt);
         cfg.setMaxPerNodeCount(maxPerNodeCnt);
-        cfg.setNodeFilter(F.<ClusterNode>alwaysTrue() == prj.predicate() ? null : prj.predicate());
 
-        return deploy(cfg);
+        return deploy(prj, cfg);
     }
 
     /**
      * @param name Service name.
      * @param svc Service.
      * @param cacheName Cache name.
-     * @param  affKey Affinity key.
+     * @param affKey Affinity key.
      * @return Future.
      */
     public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName, Object affKey) {
@@ -483,14 +479,31 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cfg.setTotalCount(1);
         cfg.setMaxPerNodeCount(1);
 
-        return deploy(cfg);
+        // Ignore projection here.
+        return deploy(cfg, null);
+    }
+
+    /**
+     * @param prj Grid projection.
+     * @param cfg Service configuration.
+     * @return Future for deployment.
+     */
+    public IgniteInternalFuture<?> deploy(ClusterGroup prj, ServiceConfiguration cfg) {
+        if (prj == null)
+            // Deploy to servers by default if no projection specified.
+            return deploy(cfg, ctx.cluster().get().forServers().predicate());
+        else if (prj.predicate() == F.<ClusterNode>alwaysTrue())
+            return deploy(cfg, null);
+        else
+            // Deploy to predicate nodes by default.
+            return deploy(cfg, prj.predicate());
     }
 
     /**
      * @param cfg Service configuration.
      * @return Future for deployment.
      */
-    public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
+    public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg, IgnitePredicate<ClusterNode> dfltNodeFilter) {
         A.notNull(cfg, "cfg");
 
         if (!busyLock.enterBusy()) {
@@ -501,6 +514,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
 
         try {
+            if (cfg.getNodeFilter() == null && dfltNodeFilter != null)
+                cfg.setNodeFilter(dfltNodeFilter);
 
             ServicesCompatibilityState state = markCompatibilityStateAsUsed();
 
@@ -910,7 +925,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
-             ctxs = locSvcs.get(name);
+            ctxs = locSvcs.get(name);
         }
 
         if (ctxs == null)
@@ -1561,15 +1576,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         try {
             AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer)){
-                    if (log.isInfoEnabled())
-                        log.info("Will calculate new service deployment assignment (new service has been deployed) [" +
-                            "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');reassign(dep, topVer);}
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer)) {
+                if (log.isInfoEnabled())
+                    log.info("Will calculate new service deployment assignment (new service has been deployed) [" +
+                        "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
+                reassign(dep, topVer);
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
             AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
@@ -1842,7 +1859,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             undeploy(e.getKey().name());
     }
 
-
     /**
      * @param name Name.
      */
@@ -1855,12 +1871,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ctxs = locSvcs.remove(name);
         }
 
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    if (log.isInfoEnabled())
-                        log.info("Undeploying services [svc=" + name +
-                            ", ctxs=" + ctxs + ']');cancel(ctxs, ctxs.size());
+        if (ctxs != null) {
+            synchronized (ctxs) {
+                if (log.isInfoEnabled())
+                    log.info("Undeploying services [svc=" + name + ", ctxs=" + ctxs + ']');
 
+                cancel(ctxs, ctxs.size());
             }
         }
     }
