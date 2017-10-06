@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
 
@@ -181,6 +182,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             writer.Stream.WriteInt(pos, cnt);
+        }
+
+        /// <summary>
+        /// Writes a collection with specific element writer 
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <param name="writeAction">A custom write action to apply to each element.</param>
+        public static void WriteCollection<T>(this IBinaryRawWriter writer, ICollection<T> vals, Action<T, IBinaryRawWriter> writeAction)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(vals != null);
+            Debug.Assert(writeAction != null);
+
+            writer.WriteInt(vals.Count);
+
+            foreach (var val in vals)
+            {
+                writeAction(val, writer);
+            }
         }
     }
 }

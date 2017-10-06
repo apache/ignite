@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public void DeployAll(ICollection<ServiceConfiguration> configurations)
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /** <inheritDoc /> */
-        public Task DeployAllAsync(ICollection<ServiceConfiguration> configurations)
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
         {
             return _services.DeployAllAsync(configurations);
         }

@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Services
 {
-    using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -25,7 +24,7 @@ namespace Apache.Ignite.Core.Services
     /// <summary>
     /// Service configuration.
     /// </summary>
-    public class ServiceConfiguration
+    public class ServiceConfiguration 
     {
         /// <summary>
         /// Gets or sets the service name.
@@ -66,7 +65,7 @@ namespace Apache.Ignite.Core.Services
         /// Serializes the Service configuration using IBinaryRawWriter
         /// </summary>
         /// <param name="w">IBinaryRawWriter</param>
-        public void Serialize(IBinaryRawWriter w)
+        internal void Serialize(IBinaryRawWriter w)
         {
             Debug.Assert(w != null);
 
@@ -84,22 +83,13 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// Serializes a collection of Service configurations using IBinaryRawWriter
+        /// Serializes the Service configuration using IBinaryRawWriter
         /// </summary>
-        /// <param name="cfgs">collection of ServiceConfiguration</param>
+        /// <param name="cfg">instance of ServiceConfiguration</param>
         /// <param name="w">IBinaryRawWriter</param>
-        public static void Serialize(ICollection<ServiceConfiguration> cfgs, IBinaryRawWriter w)
+        internal static void Serialize(ServiceConfiguration cfg, IBinaryRawWriter w)
         {
-            Debug.Assert(cfgs != null);
-            Debug.Assert(w != null);
-
-            // TODO: think if we can use WriteEnumerable here
-            w.WriteInt(cfgs.Count);
-
-            foreach (var cfg in cfgs)
-            {
-                cfg.Serialize(w);
-            }
+            cfg.Serialize(w);
         }
     }
 }
