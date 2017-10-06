@@ -107,10 +107,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override protected void beforeTestsStarted() throws Exception {
-        assert nodeCount() >= 1;
-
-        for (int i = 0; i < nodeCount(); i++)
-            startGrid(i);
+        startGridsMultiThreaded(nodeCount());
     }
 
     /** {@inheritDoc} */
