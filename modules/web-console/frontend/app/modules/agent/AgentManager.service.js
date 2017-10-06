@@ -377,11 +377,10 @@ export default class IgniteAgentManager {
     }
 
     /**
-     * @param {String} [cacheName] Cache name.
      * @returns {Promise}
      */
-    metadata(cacheName) {
-        return this._rest('node:rest', {cmd: 'metadata', cacheName: maskNull(cacheName)})
+    metadata() {
+        return this._rest('node:rest', {cmd: 'metadata'})
             .then((caches) => {
                 let types = [];
 
@@ -590,7 +589,7 @@ export default class IgniteAgentManager {
                 nid + '=' + queryId);
         }
 
-        return this.visorTask('queryClose', nid, queryId);
+        return this.visorTask('queryClose', nid, nid, queryId);
     }
 
     /**
