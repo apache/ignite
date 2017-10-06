@@ -2509,8 +2509,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param grpDesc Group description.
          */
         private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
-            saveCacheConfiguration(grpDesc.config());
-
             return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
