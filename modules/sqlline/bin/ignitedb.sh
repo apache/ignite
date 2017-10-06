@@ -17,7 +17,7 @@
 #
 
 #
-# Grid command line loader.
+# Ignite database launcher.
 #
 
 #
@@ -55,4 +55,13 @@ CP="${IGNITE_LIBS}"
 
 CP=${CP}:${IGNITE_HOME_TMP}/bin/include/sqlline/*
 
-java -cp ${CP} sqlline.SqlLine ${@}
+if [ $# -eq 0 ]
+then
+
+    java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u jdbc:ignite:thin://127.0.0.1/
+
+else
+
+    java -cp ${CP} sqlline.SqlLine ${@}
+
+fi
