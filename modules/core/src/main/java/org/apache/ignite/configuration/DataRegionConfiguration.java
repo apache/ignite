@@ -125,7 +125,7 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Flag to enable Ignite Native Persistence.
      */
-    private boolean persistenceEnabled = true;
+    private boolean persistenceEnabled = false;
 
     /**
      * Gets data region name.
