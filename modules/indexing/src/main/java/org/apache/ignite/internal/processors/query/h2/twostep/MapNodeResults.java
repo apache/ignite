@@ -125,7 +125,11 @@ class MapNodeResults {
      * @return Cancel state.
      */
     public GridQueryCancel putUpdate(long reqId) {
-        return updCancels.put(reqId, new GridQueryCancel());
+        GridQueryCancel cancel = new GridQueryCancel();
+
+        updCancels.put(reqId, cancel);
+
+        return cancel;
     }
 
     /**

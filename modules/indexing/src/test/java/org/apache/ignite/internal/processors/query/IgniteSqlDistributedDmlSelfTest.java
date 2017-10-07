@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -77,9 +77,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     private static String CACHE_PERSON = "person";
 
     /** */
-    private static String CACHE_PERSON2 = "person-2";
-
-    /** */
     private static String CACHE_POSITION = "pos";
 
     /** */
@@ -104,9 +101,9 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         ccfgs.add(buildCacheConfiguration(CACHE_PERSON));
         ccfgs.add(buildCacheConfiguration(CACHE_POSITION));
 
-        ccfgs.add(buildCacheConfiguration(CACHE_PERSON).setName(CACHE_PERSON2));
-
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
+
+        c.setLongQueryWarningTimeout(10000);
 
         if (gridName.equals(NODE_CLIENT))
             c.setClientMode(true);
@@ -185,7 +182,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Ignite client = grid(NODE_CLIENT);
+        super.afterTest();
 
         // Stop additional node that is started in one of the test.
         stopGrid(NODE_COUNT + 1);
@@ -193,234 +190,8 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         client.cache(CACHE_PERSON).clear();
-        client.cache(CACHE_PERSON2).clear();
         client.cache(CACHE_ORG).clear();
         client.cache(CACHE_POSITION).clear();
-    }
-
-    // PARTITIONED Integer -> Organization (name, int rate, updated)
-    // PARTITIONED PersonKey(orgId, id) -> Person (name, int position, amount, updated)
-    // REPLICATED Position (id, name, int rate)
-    /** */
-    public void testUpdate() throws Exception {
-        fillCaches();
-
-        String text = "UPDATE \"person\".Person SET amount = amount * 2 WHERE amount > 0";
-
-        checkUpdate(new SqlFieldsQuery(text), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testUpdateFastKey() throws Exception {
-        fillCaches();
-
-        String text = "UPDATE \"person\".Person SET amount = ? WHERE orgId = ? and id = ?";
-
-        checkUpdate(new SqlFieldsQuery(text).setArgs(100, 1, 1), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testUpdateLimit() throws Exception {
-        fillCaches();
-
-        // UPDATE LIMIT can't produce stable/repeatable results (and UPDATE ORDER BY is ignored by H2)
-        // So we must first get the count and use it later as limit
-        List<List<?>> r = grid(NODE_CLIENT).context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("SELECT COUNT(*) FROM \"person\".Person WHERE position = ?").setArgs(1), false).getAll();
-
-        int count = ((Number)r.get(0).get(0)).intValue();
-
-        String text = "UPDATE \"person\".Person SET amount = amount * 2  WHERE position = ? LIMIT ?";
-
-        checkUpdate(new SqlFieldsQuery(text).setArgs(1, count), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testUpdateWhereSubquery() throws Exception {
-        fillCaches();
-
-        String text = "UPDATE \"person\".Person SET amount = amount * 2 " +
-            "WHERE amount > 0 AND position IN (SELECT p._key FROM \"pos\".Position p WHERE rate > 3)";
-
-        checkUpdate(new SqlFieldsQuery(text), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testUpdateSetSubquery() throws Exception {
-        fillCaches();
-
-        String text = "UPDATE \"person\".Person p SET amount = " +
-            "(SELECT o.rate FROM \"pos\".Position o WHERE p.position = o._key)";
-
-        checkUpdate(new SqlFieldsQuery(text), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testUpdateSetTableSubquery() throws Exception {
-        fillCaches();
-
-        String text = "UPDATE \"person\".Person p SET (amount, updated) = " +
-            "(SELECT o.rate, CURDATE() FROM \"pos\".Position o WHERE p.position = o._key)";
-
-        checkUpdate(new SqlFieldsQuery(text), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    // PARTITIONED Integer -> Organization (name, int rate, updated)
-    // PARTITIONED PersonKey(orgId, id) -> Person (name, int position, amount, updated)
-    // REPLICATED Position (id, name, int rate)
-    //
-    /** */
-    public void testInsertValues() throws Exception {
-        String sqlText = "INSERT INTO \"person\".Person () VALUES ()";
-    }
-
-    /** */
-    public void testInsertFromSelect() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT
-    }
-
-    /** */
-    public void testInsertFromSelectJoin() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT JOIN
-    }
-
-    /** */
-    public void testInsertFromSelectOrderBy() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT ORDER BY
-    }
-
-    /** */
-    public void testInsertFromSelectGroupBy() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT GROUP BY
-    }
-
-    /** */
-    public void testInsertFromSelectSubquery() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT WHERE SUB-QUERY
-    }
-
-    /** */
-    public void testInsertFromSelectLimitOffset() throws Exception {
-        // TODO: OFFSET/LIMIT can't provide stable/repeatable results
-        // INSERT INTO tblName (fields..) SELECT OFFSET LIMIT
-    }
-
-    /** */
-    public void testInsertFromSelectDistinct() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT DISTINCT
-    }
-
-    /** */
-    public void testInsertFromSelectUnion() throws Exception {
-        // INSERT INTO tblName (fields..) SELECT UNION SELECT
-    }
-
-    /** */
-    public void testInsertSetField() throws Exception {
-        // INSERT INTO tblName (fields..) SET field = ?, field2 = ?
-    }
-
-    /** */
-    public void testInsertSetFieldSubquery() throws Exception {
-        // INSERT INTO tblName (fields..) SET field = (SUB-QUERY), field2 = (SUB-QUERY)
-    }
-
-    // PARTITIONED Integer -> Organization (name, int rate, updated)
-    // PARTITIONED PersonKey(orgId, id) -> Person (name, int position, amount, updated)
-    // REPLICATED Position (id, name, int rate)
-    /** */
-    public void testMergeValues() throws Exception {
-        // MERGE INTO tblName (fields..) VALUES (vals..)
-    }
-
-    /** */
-    public void testMergeFromSelectJoin() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT JOIN
-    }
-
-    /** */
-    public void testMergeFromSelectOrderBy() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT ORDER BY
-    }
-
-    /** */
-    public void testMergeFromSelectGroupBy() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT GROUP BY
-    }
-
-    /** */
-    public void testMergeFromSelectDistinct() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT DISTINCT
-    }
-
-    /** */
-    public void testMergeFromSelectLimitOffset() throws Exception {
-        // TODO: OFFSET/LIMIT can't provide stable/repeatable results
-        // MERGE INTO tblName (fields..) SELECT OFFSET LIMIT
-    }
-
-    /** */
-    public void testMergeFromSelectUnion() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT UNION SELECT
-    }
-
-    /** */
-    public void testMergeFromSelectSubquery() throws Exception {
-        // MERGE INTO tblName (fields..) SELECT WHERE SUBQUERY
-    }
-
-    // PARTITIONED Integer -> Organization (name, int rate, updated)
-    // PARTITIONED PersonKey(orgId, id) -> Person (name, int position, amount, updated)
-    // REPLICATED Position (id, name, int rate)
-    /** */
-    public void testDelete() throws Exception {
-        fillCaches();
-
-        String text = "DELETE FROM \"person\".Person WHERE position = ?";
-
-        checkUpdate(new SqlFieldsQuery(text).setArgs(1), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testDeleteTop() throws Exception {
-        fillCaches();
-        // TOP/LIMIT can't provide stable/repeatable results, so we need to get count first to use it as limit
-        List<List<?>> r = grid(NODE_CLIENT).context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("SELECT COUNT(*) FROM \"person\".Person WHERE position = ?").setArgs(1), false).getAll();
-
-        int count = ((Number)r.get(0).get(0)).intValue();
-
-        String text = "DELETE TOP ? FROM \"person\".Person WHERE position = ?";
-
-        checkUpdate(new SqlFieldsQuery(text).setArgs(count, 1), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
-    }
-
-    /** */
-    public void testDeleteWhereSubquery() throws Exception {
-        fillCaches();
-
-        String text = "DELETE FROM \"person\".Person " +
-            "WHERE position IN (SELECT o._key FROM \"pos\".Position o WHERE rate > 3)";
-
-        checkUpdate(new SqlFieldsQuery(text), CACHE_PERSON, CACHE_PERSON2);
-
-        compareTablesContent(CACHE_PERSON, CACHE_PERSON2, "Person");
     }
 
     /** */
@@ -568,6 +339,8 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
     /** */
     public void testCancel() throws Exception {
+        latch = new CountDownLatch(NODE_COUNT + 1);
+
         fillCaches();
 
         final IgniteCache<Integer, Organization> cache = grid(NODE_CLIENT).cache(CACHE_ORG);
@@ -594,6 +367,8 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
+        latch.await(5000, MILLISECONDS);
+
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
                 return fut.get();
@@ -609,18 +384,26 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         fillCaches();
 
-        latch = new CountDownLatch(NODE_COUNT + 1);
+        latch = new CountDownLatch(NODE_COUNT + 1 + 1);
 
         final IgniteCache<Integer, Organization> cache = grid(NODE_CLIENT).cache(CACHE_ORG);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new SqlFieldsQuery("UPDATE Organization SET name = COUNTANDWAIT(name)")
+                return cache.query(new SqlFieldsQuery("UPDATE Organization SET name = WAIT(name)")
                     .setUpdateOnServer(true));
             }
         });
 
-        assertTrue(latch.await(5000, MILLISECONDS));
+        final CountDownLatch finalLatch = latch;
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return finalLatch.getCount() == 1;
+            }
+        }, 5000));
+
+        latch.countDown();
 
         stopGrid(NODE_COUNT + 1);
 
@@ -759,7 +542,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         String[] names = new String[] {"Mary", "John", "William", "Tom", "Basil", "Ann", "Peter"};
 
         IgniteCache<PersonKey, Person> personCache = client.cache(CACHE_PERSON);
-        IgniteCache<PersonKey, Person> personCache2 = client.cache(CACHE_PERSON2);
 
         IgniteCache<Integer, Organization> orgCache = client.cache(CACHE_ORG);
 
@@ -789,7 +571,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
                 Person person = new Person(name, positions[positionId].id, org.rate * positions[positionId].rate);
 
                 personCache.put(pKey, person);
-                personCache2.put(pKey, person);
             }
         }
     }
@@ -817,9 +598,11 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         String name;
 
+        /** */
         @QuerySqlField
         int rate;
 
+        /** */
         @QuerySqlField
         Date updated;
 
@@ -862,12 +645,14 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         String name;
 
+        /** */
         @QuerySqlField
         int position;
 
+        /** */
         @QuerySqlField
         int amount;
-
+        /** */
         @QuerySqlField
         Date updated;
 
@@ -876,13 +661,16 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             this.name = name;
             this.position = position;
             this.amount = amount;
+
             this.updated = new Date(System.currentTimeMillis());
         }
 
+        /** */
         @Override public int hashCode() {
             return (name==null? 0: name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
         }
 
+        /** */
         @Override public boolean equals(Object obj) {
             if (obj == null)
                 return false;
@@ -895,7 +683,6 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             return F.eq(name, other.name) && position == other.position &&
                 amount == other.amount && F.eq(updated, other.updated);
         }
-
     }
 
     /** */
@@ -930,21 +717,13 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
     @QuerySqlFunction
     public static String Wait(String param) {
         try {
-            Thread.sleep(3000);
-        }
-        catch (InterruptedException ignore) {
-            // No-op
-        }
-        return param;
-    }
+            if (latch.getCount() > 0) {
+                latch.countDown();
 
-    /** */
-    @QuerySqlFunction
-    public static String CountAndWait(String param) {
-        try {
-            latch.countDown();
-
-            Thread.sleep(3000);
+                latch.await(5000, MILLISECONDS);
+            }
+            else
+                Thread.sleep(100);
         }
         catch (InterruptedException ignore) {
             // No-op

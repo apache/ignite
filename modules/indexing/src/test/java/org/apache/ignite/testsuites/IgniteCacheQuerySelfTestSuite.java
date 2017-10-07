@@ -123,6 +123,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlDistributedDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
@@ -245,6 +246,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheUpdateSqlQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheDeleteSqlQuerySelfTest.class);
         suite.addTestSuite(IgniteSqlDistributedDmlSelfTest.class);
+        suite.addTestSuite(IgniteSqlDistributedDmlFlagSelfTest.class);
 
         suite.addTestSuite(IgniteBinaryObjectQueryArgumentsTest.class);
         suite.addTestSuite(IgniteBinaryObjectLocalQueryArgumentsTest.class);
