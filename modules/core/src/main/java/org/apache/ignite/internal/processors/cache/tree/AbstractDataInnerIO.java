@@ -76,8 +76,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         long link = getLink(pageAddr, idx);
 
         if (storeMvccVersion()) {
-            long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
-            long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
+            long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = getMvccCounter(pageAddr, idx);
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
@@ -119,8 +119,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            long mvccTopVer = rowIo.getMvccUpdateTopologyVersion(srcPageAddr, srcIdx);
-            long mvcCntr = rowIo.getMvccUpdateCounter(srcPageAddr, srcIdx);
+            long mvccTopVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvcCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
 
             assert mvccTopVer > 0 : mvccTopVer;
             assert mvcCntr != CacheCoordinatorsProcessor.COUNTER_NA;

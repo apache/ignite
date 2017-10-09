@@ -42,7 +42,17 @@ public interface RowLinkIO {
      */
     public int getCacheId(long pageAddr, int idx);
 
-    public long getMvccUpdateTopologyVersion(long pageAddr, int idx);
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    public long getMvccCoordinatorVersion(long pageAddr, int idx);
 
-    public long getMvccUpdateCounter(long pageAddr, int idx);
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    public long getMvccCounter(long pageAddr, int idx);
 }

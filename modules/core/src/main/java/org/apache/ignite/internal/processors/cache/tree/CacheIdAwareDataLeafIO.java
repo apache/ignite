@@ -53,12 +53,12 @@ public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccUpdateTopologyVersion(long pageAddr, int idx) {
+    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
+    @Override public long getMvccCounter(long pageAddr, int idx) {
         return CacheCoordinatorsProcessor.COUNTER_NA;
     }
 }

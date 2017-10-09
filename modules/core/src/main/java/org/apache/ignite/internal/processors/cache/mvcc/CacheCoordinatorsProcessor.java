@@ -614,8 +614,14 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         // TODO IGNITE-3478 sorted? + change GridLongList.writeTo?
         MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 
-        for (Long txVer : activeTxs.keySet())
+        long minActive = Long.MAX_VALUE;
+
+        for (Long txVer : activeTxs.keySet()) {
+            if (txVer < minActive)
+                minActive = txVer;
+
             res.addTx(txVer);
+        }
 
         Object old = activeTxs.put(nextCtr, txId);
 
@@ -624,7 +630,9 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         long cleanupVer;
 
         if (prevCrdQueries.previousQueriesDone()) {
-            cleanupVer = committedCntr.get() - 1;
+            cleanupVer = Math.min(minActive, committedCntr.get());
+
+            cleanupVer--;
 
             Long qryVer = activeQueries.minimalQueryCounter();
 

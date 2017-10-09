@@ -53,12 +53,12 @@ public final class MvccDataInnerIO extends AbstractDataInnerIO {
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccUpdateTopologyVersion(long pageAddr, int idx) {
+    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 12);
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccUpdateCounter(long pageAddr, int idx) {
+    @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 20);
     }
 }

@@ -114,7 +114,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
-        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != 0;// || row.getClass() == SearchRow.class;
+        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != 0 : row;
 
         RowLinkIO io = (RowLinkIO)iox;
 
@@ -158,14 +158,14 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         if (cmp != 0 || !grp.mvccEnabled())
             return 0;
 
-        long mvccCrdVer = io.getMvccUpdateTopologyVersion(pageAddr, idx);
+        long mvccCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
 
         cmp = Long.compare(row.mvccCoordinatorVersion(), mvccCrdVer);
 
         if (cmp != 0)
             return cmp;
 
-        long mvccCntr = io.getMvccUpdateCounter(pageAddr, idx);
+        long mvccCntr = io.getMvccCounter(pageAddr, idx);
 
         assert row.mvccCounter() != CacheCoordinatorsProcessor.COUNTER_NA;
 
@@ -188,8 +188,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             CacheDataRowAdapter.RowData.FULL;
 
         if (grp.mvccEnabled()) {
-            long mvccTopVer = rowIo.getMvccUpdateTopologyVersion(pageAddr, idx);
-            long mvccCntr = rowIo.getMvccUpdateCounter(pageAddr, idx);
+            long mvccTopVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = rowIo.getMvccCounter(pageAddr, idx);
 
             return rowStore.mvccRow(cacheId, hash, link, x, mvccTopVer, mvccCntr);
         }

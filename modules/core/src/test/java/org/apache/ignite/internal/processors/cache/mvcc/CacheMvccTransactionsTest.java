@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
@@ -47,16 +48,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.TestCacheNodeExcludingFilter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -2534,6 +2539,7 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param restartCrd If {@code true} dedicated coordinator node is restarted during test.
      * @param srvs Number of server nodes.
      * @param clients Number of client nodes.
      * @param cacheBackups Number of cache backups.
@@ -2679,6 +2685,149 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
         finally {
             stop.set(true);
         }
+    }
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSize() throws Exception {
+        Ignite node = startGrid(0);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
+
+        assertEquals(cache.size(), 0);
+
+        final int KEYS = 10;
+
+        for (int i = 0; i < KEYS; i++) {
+            final Integer key = i;
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key, i);
+
+                tx.commit();
+            }
+
+            assertEquals(i + 1, cache.size());
+        }
+
+        for (int i = 0; i < KEYS; i++) {
+            final Integer key = i;
+
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(key, i);
+
+                tx.commit();
+            }
+
+            assertEquals(KEYS, cache.size());
+        }
+
+        // TODO IGNITE-3478: test removes.
+    }
+
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testInternalApi() throws Exception {
+        Ignite node = startGrid(0);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, 1));
+
+        GridCacheContext cctx =
+            ((IgniteKernal)node).context().cache().context().cacheContext(CU.cacheId(cache.getName()));
+
+        CacheCoordinatorsProcessor crd = cctx.kernalContext().coordinators();
+
+        // Start query to prevent cleanup.
+        IgniteInternalFuture<MvccCoordinatorVersion> fut = crd.requestQueryCounter(crd.currentCoordinator());
+
+        fut.get();
+
+        final int KEYS = 1000;
+
+        for (int i = 0; i < 10; i++) {
+            for (int k = 0; k < KEYS; k++) {
+                final Integer key = k;
+
+                try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.put(key, i);
+
+                    tx.commit();
+                }
+            }
+        }
+
+        for (int k = 0; k < KEYS; k++) {
+            final Integer key = k;
+
+            KeyCacheObject key0 = cctx.toCacheKeyObject(key);
+
+            List<T2<Object, MvccCounter>> vers = cctx.offheap().mvccAllVersions(cctx, key0);
+
+            assertEquals(10, vers.size());
+
+            CacheDataRow row = cctx.offheap().read(cctx, key0);
+
+            checkRow(cctx, row, key0, vers.get(0).get1());
+
+            for (T2<Object, MvccCounter> ver : vers) {
+                MvccCounter cntr = ver.get2();
+
+                MvccCoordinatorVersion readVer =
+                    new MvccCoordinatorVersionResponse(cntr.coordinatorVersion(), cntr.counter(), 0);
+
+                row = cctx.offheap().mvccRead(cctx, key0, readVer);
+
+                checkRow(cctx, row, key0, ver.get1());
+            }
+
+            checkRow(cctx,
+                cctx.offheap().mvccRead(cctx, key0, version(vers.get(0).get2().coordinatorVersion() + 1, 1)),
+                key0,
+                vers.get(0).get1());
+
+            checkRow(cctx,
+                cctx.offheap().mvccRead(cctx, key0, version(vers.get(0).get2().coordinatorVersion(), vers.get(0).get2().counter() + 1)),
+                key0,
+                vers.get(0).get1());
+
+            MvccCoordinatorVersionResponse ver = version(crd.currentCoordinator().coordinatorVersion(), 100000);
+
+            for (int v = 0; v < vers.size(); v++) {
+                MvccCounter cntr = vers.get(v).get2();
+
+                ver.addTx(cntr.counter());
+
+                row = cctx.offheap().mvccRead(cctx, key0, ver);
+
+                if (v == vers.size() - 1)
+                    assertNull(row);
+                else
+                    checkRow(cctx, row, key0, vers.get(v + 1).get1());
+            }
+        }
+    }
+
+    /**
+     * @param cctx Context.
+     * @param row Row.
+     * @param expKey Expected row key.
+     * @param expVal Expected row value.
+     */
+    private void checkRow(GridCacheContext cctx, CacheDataRow row, KeyCacheObject expKey, Object expVal) {
+        assertNotNull(row);
+        assertEquals(expKey, row.key());
+        assertEquals(expVal, row.value().value(cctx.cacheObjectContext(), false));
+    }
+
+    /**
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     * @return Version.
+     */
+    private MvccCoordinatorVersionResponse version(long crdVer, long cntr) {
+        return new MvccCoordinatorVersionResponse(crdVer, cntr, 0);
     }
 
     /**

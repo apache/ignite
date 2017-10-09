@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -570,6 +571,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertNoLocks();
 
             assertEquals(x, tree.findOne(x).longValue());
+            checkIterate(tree, x, x, x, true);
 
             assertNoLocks();
 
@@ -584,12 +586,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         assertNull(tree.findOne(-1L));
 
-        for (long x = 0; x < cnt; x++)
+        for (long x = 0; x < cnt; x++) {
             assertEquals(x, tree.findOne(x).longValue());
+            checkIterate(tree, x, x, x, true);
+        }
 
         assertNoLocks();
 
         assertNull(tree.findOne(cnt));
+        checkIterate(tree, cnt, cnt, null, false);
 
         for (long x = RMV_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += RMV_INC) {
             X.println(" -- " + x);
@@ -603,6 +608,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertNoLocks();
 
             assertNull(tree.findOne(x));
+            checkIterate(tree, x, x, null, false);
 
             assertNoLocks();
 
@@ -616,6 +622,32 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals(0, tree.rootLevel());
 
         assertNoLocks();
+    }
+
+    /**
+     * @param tree
+     * @param lower
+     * @param upper
+     * @param exp
+     * @param expFound
+     * @throws IgniteCheckedException
+     */
+    private void checkIterate(TestTree tree, long lower, long upper, Long exp, boolean expFound)
+        throws IgniteCheckedException {
+        TestTreeRowClosure c = new TestTreeRowClosure(exp);
+
+        tree.iterate(lower, upper, c);
+
+        assertEquals(expFound, c.found);
+    }
+
+    private void checkIterateC(TestTree tree, long lower, long upper, TestTreeRowClosure c, boolean expFound)
+        throws IgniteCheckedException {
+        c.found = false;
+
+        tree.iterate(lower, upper, c);
+
+        assertEquals(expFound, c.found);
     }
 
     /**
@@ -1242,6 +1274,206 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testIterate() throws Exception {
+        MAX_PER_PAGE = 5;
+
+        TestTree tree = createTestTree(true);
+
+        checkIterate(tree, 0L, 100L, null, false);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            tree.put(idx);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            checkIterate(tree, idx, 100L, idx, true);
+
+        checkIterate(tree, 0L, 100L, 1L, true);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            checkIterate(tree, idx, 100L, 10L, true);
+
+        checkIterate(tree, 0L, 100L, 100L, false);
+
+        for (long idx = 1L; idx <= 10L; ++idx)
+            checkIterate(tree, 0L, 100L, idx, true);
+
+        for (long idx = 0L; idx <= 10L; ++idx)
+            checkIterate(tree, idx, 11L, -1L, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterateConcurrentPutRemove() throws Exception {
+        findOneBoundedConcurrentPutRemove();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterateConcurrentPutRemove_1() throws Exception {
+        MAX_PER_PAGE = 1;
+
+        findOneBoundedConcurrentPutRemove();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterateConcurrentPutRemove_5() throws Exception {
+        MAX_PER_PAGE = 5;
+
+        findOneBoundedConcurrentPutRemove();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratePutRemove_10() throws Exception {
+        MAX_PER_PAGE = 10;
+
+        findOneBoundedConcurrentPutRemove();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void findOneBoundedConcurrentPutRemove() throws Exception {
+        final TestTree tree = createTestTree(true);
+
+        final int KEYS = 10_000;
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 10; i++) {
+            for (long idx = 0L; idx < KEYS; ++idx)
+                tree.put(idx);
+
+            final Long findKey;
+
+            if (MAX_PER_PAGE > 0) {
+                switch (i) {
+                    case 0:
+                        findKey = 1L;
+
+                        break;
+
+                    case 1:
+                        findKey = (long)MAX_PER_PAGE;
+
+                        break;
+
+                    case 2:
+                        findKey = (long)MAX_PER_PAGE - 1;
+
+                        break;
+
+                    case 3:
+                        findKey = (long)MAX_PER_PAGE + 1;
+
+                        break;
+
+                    case 4:
+                        findKey = (long)(KEYS / MAX_PER_PAGE / 2) * MAX_PER_PAGE;
+
+                        break;
+
+                    case 5:
+                        findKey = (long)(KEYS / MAX_PER_PAGE / 2) * MAX_PER_PAGE - 1;
+
+                        break;
+
+                    case 6:
+                        findKey = (long)(KEYS / MAX_PER_PAGE / 2) * MAX_PER_PAGE + 1;
+
+                        break;
+
+                    case 7:
+                        findKey = (long)KEYS - 1;
+
+                        break;
+
+                    default:
+                        findKey = rnd.nextLong(KEYS);
+                }
+            }
+            else
+                findKey = rnd.nextLong(KEYS);
+
+            info("Iteration [iter=" + i + ", key=" + findKey + ']');
+
+            assertEquals(findKey, tree.findOne(findKey));
+            checkIterate(tree, findKey, findKey, findKey, true);
+
+            IgniteInternalFuture getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    TestTreeRowClosure p = new TestTreeRowClosure(findKey);
+
+                    TestTreeRowClosure falseP = new TestTreeRowClosure(-1L);
+
+                    int cnt = 0;
+
+                    while (!stop.get()) {
+                        int shift = MAX_PER_PAGE > 0 ? rnd.nextInt(MAX_PER_PAGE * 2) : rnd.nextInt(100);
+
+                        checkIterateC(tree, findKey, findKey, p, true);
+
+                        checkIterateC(tree, findKey - shift, findKey, p, true);
+
+                        checkIterateC(tree, findKey - shift, findKey + shift, p, true);
+
+                        checkIterateC(tree, findKey, findKey + shift, p, true);
+
+                        checkIterateC(tree, -100L, KEYS + 100L, falseP, false);
+
+                        cnt++;
+                    }
+
+                    info("Done, read count: " + cnt);
+
+                    return null;
+                }
+            }, 10, "find");
+
+            asyncRunFut = new GridCompoundFuture<>();
+
+            asyncRunFut.add(getFut);
+
+            asyncRunFut.markInitialized();
+
+            try {
+                U.sleep(100);
+
+                for (int j = 0; j < 20; j++) {
+                    for (long idx = 0L; idx < KEYS / 2; ++idx) {
+                        long toRmv = rnd.nextLong(KEYS);
+
+                        if (toRmv != findKey)
+                            tree.remove(toRmv);
+                    }
+
+                    for (long idx = 0L; idx < KEYS / 2; ++idx) {
+                        long put = rnd.nextLong(KEYS);
+
+                        tree.put(put);
+                    }
+                }
+            }
+            finally {
+                stop.set(true);
+            }
+
+            asyncRunFut.get();
+
+            stop.set(false);
+        }
+    }
+
+    /**
      *
      */
     public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
@@ -1448,6 +1680,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                             assertTrue(low + " <= " + last + " < " + c.get() + " <= " + high, c.get() > last);
 
                         last = c.get();
+                    }
+
+                    TestTreeFindFirstClosure cl = new TestTreeFindFirstClosure();
+
+                    tree.iterate((long)low, (long)high, cl);
+
+                    last = cl.val;
+
+                    if (last != null) {
+                        assertTrue(low + " <= " + last + " <= " + high, last >= low);
+                        assertTrue(low + " <= " + last + " <= " + high, last <= high);
                     }
                 }
 
@@ -1851,6 +2094,52 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestTreeRowClosure implements BPlusTree.TreeRowClosure<Long, Long> {
+        /** */
+        private final Long expVal;
+
+        /** */
+        private boolean found;
+
+        /**
+         * @param expVal Value to find or {@code null} to find first.
+         */
+        TestTreeRowClosure(Long expVal) {
+            this.expVal = expVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+            throws IgniteCheckedException {
+            assert !found;
+
+            found = expVal == null || io.getLookupRow(tree, pageAddr, idx).equals(expVal);
+
+            return !found;
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestTreeFindFirstClosure implements BPlusTree.TreeRowClosure<Long, Long> {
+        /** */
+        private Long val;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+            throws IgniteCheckedException {
+            assert val == null;
+
+            val = io.getLookupRow(tree, pageAddr, idx);
+
+            return false;
         }
     }
 }

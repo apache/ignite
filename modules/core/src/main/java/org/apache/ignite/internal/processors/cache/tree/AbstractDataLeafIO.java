@@ -94,8 +94,8 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         }
 
         if (storeMvccVersion()) {
-            long mvccUpdateTopVer = ((RowLinkIO)srcIo).getMvccUpdateTopologyVersion(srcPageAddr, srcIdx);
-            long mvccUpdateCntr = ((RowLinkIO)srcIo).getMvccUpdateCounter(srcPageAddr, srcIdx);
+            long mvccUpdateTopVer = ((RowLinkIO)srcIo).getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvccUpdateCntr = ((RowLinkIO)srcIo).getMvccCounter(srcPageAddr, srcIdx);
 
             assert mvccUpdateTopVer >=0 : mvccUpdateCntr;
             assert mvccUpdateCntr != CacheCoordinatorsProcessor.COUNTER_NA;
@@ -114,8 +114,8 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         long link = getLink(pageAddr, idx);
 
         if (storeMvccVersion()) {
-            long mvccTopVer = getMvccUpdateTopologyVersion(pageAddr, idx);
-            long mvccCntr = getMvccUpdateCounter(pageAddr, idx);
+            long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = getMvccCounter(pageAddr, idx);
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
