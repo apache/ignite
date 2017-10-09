@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache replace request.
  */
-public class ClientCacheReplace2Request extends ClientCacheKeyValRequest {
+public class ClientCacheReplace2Request extends ClientCacheKeyValueRequest {
     /** New value. */
     private final Object newVal;
 

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache get and replace request.
  */
-public class ClientCacheGetAndReplaceRequest extends ClientCacheKeyValRequest {
+public class ClientCacheGetAndReplaceRequest extends ClientCacheKeyValueRequest {
     /**
      * Ctor.
      *

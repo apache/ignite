@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache put if absent request.
  */
-public class ClientCachePutIfAbsentRequest extends ClientCacheKeyValRequest {
+public class ClientCachePutIfAbsentRequest extends ClientCacheKeyValueRequest {
     /**
      * Ctor.
      *

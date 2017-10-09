@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache remove request with value.
  */
-public class ClientCacheRemove2Request extends ClientCacheKeyValRequest {
+public class ClientCacheRemove2Request extends ClientCacheKeyValueRequest {
     /**
      * Ctor.
      *

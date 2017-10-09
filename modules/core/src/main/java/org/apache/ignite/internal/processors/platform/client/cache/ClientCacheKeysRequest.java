@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -57,7 +58,7 @@ public class ClientCacheKeysRequest extends ClientCacheRequest {
      */
     private static Set<Object> readSet(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
-        Set<Object> keys = new HashSet<>(cnt);
+        Set<Object> keys = new LinkedHashSet<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
             keys.add(reader.readObjectDetached());
