@@ -1036,6 +1036,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
+            useAsDefaultSchema: Boolean,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
