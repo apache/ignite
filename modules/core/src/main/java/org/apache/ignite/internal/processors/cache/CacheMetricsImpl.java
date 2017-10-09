@@ -808,6 +808,16 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
+        return getEstimateRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimateRebalancingFinishTime() {
         long rate = rebalancingKeysRate.getRate();
 
         return rate <= 0 ? -1L :
@@ -815,7 +825,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long rebalancingStartTime() {
+    @Override public long getRebalancingStartTime() {
         return rebalanceStartTime.get();
     }
 
