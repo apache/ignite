@@ -139,7 +139,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Statement stmt = conn.createStatement();
 
             stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
-            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50))");
+            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
         }

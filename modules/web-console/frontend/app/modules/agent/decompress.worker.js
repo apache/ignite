@@ -17,6 +17,7 @@
 
 import _ from 'lodash';
 import pako from 'pako';
+import bigIntJSON from 'json-bigint';
 
 /** This worker decode & decompress BASE64/Zipped data and parse to JSON. */
 // eslint-disable-next-line no-undef
@@ -27,7 +28,7 @@ onmessage = function(e) {
 
     const unzipped = pako.inflate(binaryString, {to: 'string'});
 
-    const res = JSON.parse(unzipped);
+    const res = bigIntJSON({storeAsString: true}).parse(unzipped);
 
     postMessage(_.get(res, 'result', res));
 };
