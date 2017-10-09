@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,8 +19,9 @@
 
 function print_help()
 {
+    echo
     echo "Script for connecting to cluster via sqlline."
-    echo "Usage: $self_name -ch=<ip_address> <options>"
+    echo "Usage: ${SELF_NAME} -ch=<ip_address> <options>"
     echo
     echo "Mandatory parameter:"
     echo "-ch= | --connectionHost= : Host to connect. Make sure an Ignite node is running on that host."
@@ -134,8 +135,11 @@ function parse_arguments()
             edit_params "${i#*=}" "lazy"
             shift # get value after "="
         ;;
-
+        # Unknown argument
         *)
+            echo "Error: unknown argument: ${i}."
+            print_help
+            exit 1;
         ;;
         esac
     done

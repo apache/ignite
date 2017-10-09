@@ -20,7 +20,7 @@
 # Ignite database launcher.
 #
 
-self_name=$(basename $0)
+SELF_NAME=$(basename $0)
 
 #
 # Import common functions.
@@ -57,6 +57,6 @@ JDBCLINK="jdbc:ignite:thin://${HOST}${PORT_DELIMITER}${PORT}${SCHEMA_DELIMITER}$
 
 CP="${IGNITE_LIBS}"
 
-CP=${CP}:${IGNITE_HOME_TMP}/bin/include/sqlline/*
+CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
 java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${JDBCLINK}
