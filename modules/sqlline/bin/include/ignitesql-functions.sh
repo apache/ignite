@@ -21,8 +21,10 @@ function print_help()
 {
     echo "Script for connecting to cluster via sqlline."
     echo "Usage: $self_name -ch=<ip_address> <options>"
+    echo
     echo "Mandatory parameter:"
-    echo "-ch= | --connectionHost= : Host to connect."
+    echo "-ch= | --connectionHost= : Host to connect. Make sure an Ignite node is running on that host."
+    echo
     echo "Non mandatory options:"
     echo "-p= | --port= : Port to connect."
     echo "-s= | --schema= : Schema."
@@ -35,6 +37,10 @@ function print_help()
     echo "-srb= | --socketReceiveBuffer= : Socket receive buffer size."
     echo "-tnd= |--tcpNoDelay= : TCP no delay flag."
     echo "-l= |--lazy= : Lazy flag."
+    echo
+    echo "More information about these options:"
+    echo "https://apacheignite-sql.readme.io/docs/jdbc-driver"
+    echo
     echo "Example:"
     echo "ignitesql.sh -ch=127.0.0.1 -p=10800 -s=MySchema -dj=true -ej=true -ssb=0"
 }
