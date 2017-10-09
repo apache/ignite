@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -40,7 +41,7 @@ public class ClientCachePutAllRequest extends ClientCacheRequest {
         super(reader);
 
         int cnt = reader.readInt();
-        map = new HashMap<>(cnt);
+        map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
             map.put(reader.readObjectDetached(), reader.readObjectDetached());
