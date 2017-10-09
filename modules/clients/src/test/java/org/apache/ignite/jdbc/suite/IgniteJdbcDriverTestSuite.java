@@ -58,6 +58,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinComplexDmlDdlUpdateOnServerSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinInsertStatementUpdateOnServerSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinMergeStatementUpdateOnServerSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinUpdateStatementUpdateOnServerSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -151,6 +155,13 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSelfTest.class));
 
         suite.addTest(new TestSuite(JdbcThinSelectAfterAlterTable.class));
+
+        // Update on server
+        suite.addTest(new TestSuite(JdbcThinInsertStatementUpdateOnServerSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinUpdateStatementUpdateOnServerSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMergeStatementUpdateOnServerSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlUpdateOnServerSelfTest.class));
+
 
         return suite;
     }

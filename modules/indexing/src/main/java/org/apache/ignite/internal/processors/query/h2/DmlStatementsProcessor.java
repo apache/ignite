@@ -50,6 +50,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -412,7 +413,8 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed && !loc && !fieldsQry.isLocal() && fieldsQry.isUpdateOnServer()) {
+        if (plan.distributed && !loc && !fieldsQry.isLocal() &&
+            fieldsQry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)fieldsQry).isUpdateOnServer()) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
             // null is returned in case not all nodes support distributed DML.
@@ -511,7 +513,8 @@ public class DmlStatementsProcessor {
 
         res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
 
-        if (fieldsQry.isUpdateOnServer() && !loc && !F.isEmpty(res.selectQry))
+        if (fieldsQry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)fieldsQry).isUpdateOnServer()
+            && !loc && !F.isEmpty(res.selectQry))
             checkPlanCanBeDistributed(fieldsQry, conn, res);
 
         // Don't cache re-runs
@@ -523,6 +526,7 @@ public class DmlStatementsProcessor {
 
     /**
      * Perform single cache operation based on given args.
+     * @param plan Update plan.
      * @param args Query parameters.
      * @return 1 if an item was affected, 0 otherwise.
      * @throws IgniteCheckedException if failed.

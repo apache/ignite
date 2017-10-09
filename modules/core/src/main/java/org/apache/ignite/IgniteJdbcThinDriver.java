@@ -186,7 +186,8 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
             new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
-            new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),"")
+            new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),""),
+            new JdbcDriverPropertyInfo("Execute update query on server", info.getProperty(JdbcThinUtils.PROP_UPDATE_ON_SERVER),"")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);

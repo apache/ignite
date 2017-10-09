@@ -103,6 +103,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Lazy query execution flag. */
     private final boolean lazy;
 
+    /** Update on server flag. */
+    private final boolean updateOnServer;
+
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -121,11 +124,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param updateOnServer Server side update flag.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, ClientListenerProtocolVersion protocolVer) {
+        boolean autoCloseCursors, boolean lazy, boolean updateOnServer, ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -135,6 +139,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.updateOnServer = updateOnServer;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -271,6 +276,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
 
                     qry = new JdbcSqlFieldsQuery(sql, false);
+
+                    if (updateOnServer)
+                        ((JdbcSqlFieldsQuery)qry).setUpdateOnServer(true);
             }
 
             qry.setArgs(req.arguments());

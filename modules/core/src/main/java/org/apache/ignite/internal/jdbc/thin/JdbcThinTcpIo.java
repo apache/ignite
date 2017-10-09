@@ -100,6 +100,9 @@ public class JdbcThinTcpIo {
     /** Flag to automatically close server cursor. */
     private final boolean autoCloseServerCursor;
 
+    /** Executes update queries on server nodes distributedly. */
+    private final boolean updateOnServer;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -138,10 +141,11 @@ public class JdbcThinTcpIo {
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
+     * @param updateOnServer Executes update queries on ignite server nodes distributedly.
      */
     JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
         boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
-        boolean tcpNoDelay) {
+        boolean tcpNoDelay, boolean updateOnServer) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
@@ -153,6 +157,7 @@ public class JdbcThinTcpIo {
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
+        this.updateOnServer = updateOnServer;
     }
 
     /**
@@ -211,6 +216,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(replicatedOnly);
         writer.writeBoolean(autoCloseServerCursor);
         writer.writeBoolean(lazy);
+        writer.writeBoolean(updateOnServer);
 
         send(writer.array());
 
@@ -490,5 +496,12 @@ public class JdbcThinTcpIo {
      */
     public boolean lazy() {
         return lazy;
+    }
+
+    /**
+     * @return Server side update flag.
+     */
+    public boolean updateOnServer() {
+        return updateOnServer;
     }
 }

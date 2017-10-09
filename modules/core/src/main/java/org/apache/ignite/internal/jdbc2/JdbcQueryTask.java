@@ -241,6 +241,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
     }
 
     /**
+     * @return Flag to update enable server side updates.
+     */
+    protected boolean updateOnServer() {
+        return false;
+    }
+
+    /**
      * Schedules removal of stored cursor in case of remote query execution.
      *
      * @param uuid Cursor UUID.
