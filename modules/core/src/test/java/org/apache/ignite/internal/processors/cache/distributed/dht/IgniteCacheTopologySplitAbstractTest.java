@@ -145,7 +145,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             boolean b = isBlocked(getLocalPort(), rmtPort);
 
             if (b && log.isDebugEnabled())
-                log.debug("Blocking cross-segment communication [locPort=" + getLocalPort() + ", rmtPort=" + rmtPort + ']');
+                log.debug("Block cross-segment communication [locPort=" + getLocalPort() + ", rmtPort=" + rmtPort + ']');
 
             return b;
         }
@@ -176,7 +176,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             return super.openSocket(sock, remAddr, timeoutHelper);
         }
 
-        /**  */
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
             TcpDiscoveryAbstractMessage msg,
@@ -188,7 +188,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             super.writeToSocket(sock, msg, data, timeout);
         }
 
-        /**  */
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock,
             OutputStream out,
             TcpDiscoveryAbstractMessage msg,
@@ -198,7 +198,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             super.writeToSocket(sock, out, msg, timeout);
         }
 
-        /**  */
+        /** {@inheritDoc} */
         @Override protected void writeToSocket(
             Socket sock,
             TcpDiscoveryAbstractMessage msg,
@@ -207,6 +207,14 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
             super.writeToSocket(sock, msg, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
+            long timeout) throws IOException {
+            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
+
+            super.writeToSocket(msg, sock, res, timeout);
         }
     }
 

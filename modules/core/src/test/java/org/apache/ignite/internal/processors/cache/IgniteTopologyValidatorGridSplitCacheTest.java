@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
@@ -82,7 +83,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
     /** {@inheritDoc} */
     @Override protected boolean isBlocked(int locPort, int rmtPort) {
-        return isDiscoPort(rmtPort) && segment(locPort) != segment(rmtPort);
+        return isDiscoPort(locPort) && isDiscoPort(rmtPort) && segment(locPort) != segment(rmtPort);
     }
 
     /**  */
@@ -119,6 +120,9 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 cfg.setActiveOnStart(false);
         }
         cfg.setUserAttributes(userAttrs);
+
+        cfg.setMemoryConfiguration(new MemoryConfiguration().
+            setDefaultMemoryPolicySize((100L << 20) * CACHES_CNT / GRID_CNT));
 
         return cfg;
     }
@@ -392,12 +396,14 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                         assertEquals(1, cache.localSize());
 
                         if (ex != null)
-                            throw new AssertionError("Partial results (put count > 0)", ex);
+                            throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx +
+                                ", cacheName=" + cacheName + ']', ex);
 
                         putCnt++;
                     }
                     catch (Throwable t) {
-                        IgniteException e = new IgniteException("Failed to put entry: [cache=" + cacheName + ", key=" + k + ']', t);
+                        IgniteException e = new IgniteException("Failed to put entry: [cache=" + cacheName + ", key=" +
+                            k + ']', t);
 
                         log.error(e.getMessage(), e.getCause());
 
@@ -433,7 +439,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                     putCnt += tryPut(idx);
 
                     if (ex != null)
-                        throw new AssertionError("Partial result (put count > 0)", ex);
+                        throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx + ']', ex);
                 }
                 catch (Exception e) {
                     if (ex == null)
