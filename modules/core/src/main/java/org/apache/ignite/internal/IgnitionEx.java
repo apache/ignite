@@ -2794,27 +2794,27 @@ public class IgnitionEx {
 
         if (memCfg.getMemoryPolicies() != null) {
             for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
-                DataRegionConfiguration dfltRegion = new DataRegionConfiguration();
+                DataRegionConfiguration region = new DataRegionConfiguration();
 
-                dfltRegion.setPersistenceEnabled(persistenceEnabled);
+                region.setPersistenceEnabled(persistenceEnabled);
 
-                dfltRegion.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
-                dfltRegion.setEvictionThreshold(mpc.getEvictionThreshold());
-                dfltRegion.setInitialSize(mpc.getInitialSize());
-                dfltRegion.setMaxSize(mpc.getMaxSize());
-                dfltRegion.setName(mpc.getName());
-                dfltRegion.setPageEvictionMode(mpc.getPageEvictionMode());
-                dfltRegion.setRateTimeInterval(mpc.getRateTimeInterval());
-                dfltRegion.setSubIntervals(mpc.getSubIntervals());
-                dfltRegion.setSwapFilePath(mpc.getSwapFilePath());
-                dfltRegion.setMetricsEnabled(mpc.isMetricsEnabled());
+                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
+                region.setEvictionThreshold(mpc.getEvictionThreshold());
+                region.setInitialSize(mpc.getInitialSize());
+                region.setMaxSize(mpc.getMaxSize());
+                region.setName(mpc.getName());
+                region.setPageEvictionMode(mpc.getPageEvictionMode());
+                region.setRateTimeInterval(mpc.getRateTimeInterval());
+                region.setSubIntervals(mpc.getSubIntervals());
+                region.setSwapFilePath(mpc.getSwapFilePath());
+                region.setMetricsEnabled(mpc.isMetricsEnabled());
 
                 if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
                     customDfltPlc = true;
 
-                    dsCfg.setDefaultDataRegionConfiguration(dfltRegion);
+                    dsCfg.setDefaultDataRegionConfiguration(region);
                 } else
-                    optionalDataRegions.add(dfltRegion);
+                    optionalDataRegions.add(region);
             }
         }
 
@@ -2855,5 +2855,7 @@ public class IgnitionEx {
             dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
             dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
         }
+
+        cfg.setDataStorageConfiguration(dsCfg);
     }
 }

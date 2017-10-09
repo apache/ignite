@@ -317,13 +317,13 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Changes the page size.
      *
-     * Default value is {@link #DFLT_PAGE_SIZE}
-     *
-     * @param pageSize Page size in bytes.
+     * @param pageSize Page size in bytes. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} will be used.
      */
     public DataStorageConfiguration setPageSize(int pageSize) {
-        A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
-        A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
+        if (pageSize != 0) {
+            A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+            A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
+        }
 
         this.pageSize = pageSize;
 

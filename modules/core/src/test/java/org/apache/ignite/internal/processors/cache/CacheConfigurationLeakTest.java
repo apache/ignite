@@ -50,8 +50,7 @@ public class CacheConfigurationLeakTest extends GridCommonAbstractTest {
         plc.setName("dfltPlc");
         plc.setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10);
 
-        memCfg.setDefaultDataRegionName("dfltPlc");
-        memCfg.setDataRegionConfigurations(plc);
+        memCfg.setDefaultDataRegionConfiguration(plc);
 
         cfg.setDataStorageConfiguration(memCfg);
 
