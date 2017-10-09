@@ -23,16 +23,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -69,9 +70,6 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi());
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
         cfg.setConsistentId(gridName);
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
@@ -100,8 +98,8 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
     }
 
     /** {@inheritDoc} */
-    @Override protected int segment(Ignite ignite) {
-        return ignite == grid(0) ? 0 : 1;
+    @Override protected int segment(ClusterNode node) {
+        return F.eqNodes(node, grid(0).localNode()) ? 0 : 1;
     }
 
     /**

@@ -2,15 +2,24 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -19,31 +28,55 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Abstract class for tests over split in two half topology.
  */
 public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbstractTest {
+
     /** Segmentation state. */
     private volatile boolean segmented;
 
     /**
-     * Trigger segmentation and wait for results.
-     * Should be called on stable topology.
+     * {@inheritDoc}
+     */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setFailureDetectionTimeout(5_000L);
+
+        cfg.setDiscoverySpi(new SplitTcpDiscoverySpi());
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        return cfg;
+    }
+
+    /**
+     * Trigger segmentation and wait for results. Should be called on stable topology.
      *
      * @throws InterruptedException If interrupted while waiting.
      * @throws IgniteCheckedException On error.
      */
     protected void splitAndWait() throws InterruptedException, IgniteCheckedException {
+        U.warn(log, ">>> Simulating split");
+
         long topVer = grid(0).cluster().topologyVersion();
 
         // Trigger segmentation.
         segmented = true;
 
+        for (Ignite ignite : G.allGrids()) {
+            TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)
+                ignite.configuration().getCommunicationSpi();
+
+            comm.blockMessages(new SegmentBlocker(ignite.cluster().localNode()));
+        }
+
         Collection<Ignite> seg0 = F.view(G.allGrids(), new IgnitePredicate<Ignite>() {
             @Override public boolean apply(Ignite ignite) {
-                return segment(ignite) == 0;
+                return segment(ignite.cluster().localNode()) == 0;
             }
         });
 
         Collection<Ignite> seg1 = F.view(G.allGrids(), new IgnitePredicate<Ignite>() {
             @Override public boolean apply(Ignite ignite) {
-                return segment(ignite) == 1;
+                return segment(ignite.cluster().localNode()) == 1;
             }
         });
 
@@ -56,6 +89,24 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         // awaitPartitionMapExchange won't work because coordinator is wrong for second segment.
         for (Ignite grid : G.allGrids())
             ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
+
+        U.warn(log, ">>> Finished waiting for split");
+    }
+
+    /**
+     * Restore initial state
+     */
+    protected void unsplit() {
+        U.warn(log, ">>> Restoring from split");
+
+        segmented = false;
+
+        for (Ignite ignite : G.allGrids()) {
+            TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)
+                ignite.configuration().getCommunicationSpi();
+
+            comm.stopBlock();
+        }
     }
 
     /**
@@ -70,25 +121,52 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     /**
      * Defines instance segment: 0 or 1.
      *
-     * @param ignite Ignite.
+     * @param node Node.
      * @return Index of instance segment.
      */
-    protected abstract int segment(Ignite ignite);
+    protected abstract int segment(ClusterNode node);
 
     /**
      * Discovery SPI which can simulate network split.
      */
     protected class SplitTcpDiscoverySpi extends TcpDiscoverySpi {
+
         /**
-         * @param socket Socket.
+         * @param sockAddr Remote socket address.
          */
-        protected boolean segmented(Socket socket) {
+        protected boolean segmented(InetSocketAddress sockAddr) {
             if (!segmented)
                 return false;
 
-            int rmtPort = socket.getPort();
+            int rmtPort = sockAddr.getPort();
 
             return isBlocked(getLocalPort(), rmtPort);
+        }
+
+        /**
+         * @param sockAddr Socket address.
+         * @param timeout Socket timeout.
+         */
+        protected void checkSegmented(InetSocketAddress sockAddr, long timeout) throws SocketTimeoutException {
+            if (segmented(sockAddr)) {
+                if (timeout > 0)
+                    try {
+                        Thread.sleep(timeout);
+                    }
+                    catch (InterruptedException e) {
+                        // No-op.
+                    }
+
+                throw new SocketTimeoutException("Fake socket timeout.");
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+            checkSegmented(remAddr, timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
+
+            return super.openSocket(sock, remAddr, timeoutHelper);
         }
 
         /**  */
@@ -98,17 +176,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             byte[] data,
             long timeout
         ) throws IOException {
-            if (segmented(sock)) {
-                try {
-                    Thread.sleep(timeout);
-                } catch (InterruptedException e) {
-                    // No-op.
-                }
+            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-                throw new SocketTimeoutException("Fake socket timeout.");
-            }
-            else
-                super.writeToSocket(sock, msg, data, timeout);
+            super.writeToSocket(sock, msg, data, timeout);
         }
 
         /**  */
@@ -116,17 +186,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             OutputStream out,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (segmented(sock)) {
-                try {
-                    Thread.sleep(timeout);
-                } catch (InterruptedException e) {
-                    // No-op.
-                }
+            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-                throw new SocketTimeoutException("Fake socket timeout.");
-            }
-            else
-                super.writeToSocket(sock, out, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
         }
 
         /**  */
@@ -135,17 +197,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (segmented(sock)) {
-                try {
-                    Thread.sleep(timeout);
-                } catch (InterruptedException e) {
-                    // No-op.
-                }
+            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-                throw new SocketTimeoutException("Fake socket timeout.");
-            }
-            else
-                super.writeToSocket(sock, msg, timeout);
+            super.writeToSocket(sock, msg, timeout);
         }
 
         /**  */
@@ -155,17 +209,26 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             int res,
             long timeout
         ) throws IOException {
-            if (segmented(sock)) {
-                try {
-                    Thread.sleep(timeout);
-                } catch (InterruptedException e) {
-                    // No-op.
-                }
+            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
 
-                throw new SocketTimeoutException("Fake socket timeout.");
-            }
-            else
-                super.writeToSocket(msg, sock, res, timeout);
+            super.writeToSocket(msg, sock, res, timeout);
+        }
+    }
+
+    /**  */
+    protected class SegmentBlocker implements IgniteBiPredicate<ClusterNode, Message> {
+
+        /**  */
+        private final ClusterNode locNode;
+
+        /**  */
+        public SegmentBlocker(ClusterNode locNode) {
+            this.locNode = locNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node, Message message) {
+            return segment(locNode) != segment(node);
         }
     }
 }

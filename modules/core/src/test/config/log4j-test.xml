@@ -64,12 +64,10 @@
     <!--
         Logs all output to specified file.
     -->
-    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
+    <appender name="FILE" class="org.apache.log4j.FileAppender">
         <param name="Threshold" value="DEBUG"/>
         <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
-        <param name="Append" value="true"/>
-        <param name="MaxFileSize" value="10MB"/>
-        <param name="MaxBackupIndex" value="10"/>
+        <param name="Append" value="false"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>

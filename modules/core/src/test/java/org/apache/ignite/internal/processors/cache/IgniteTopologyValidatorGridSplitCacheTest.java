@@ -21,18 +21,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -42,7 +44,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * #DC_NODE_ATTR}. If only nodes from single DC are left in topology, grid is moved into inoperative state until special
  * activator node'll enter a topology, enabling grid operations.
  */
-public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstractTest {
+public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopologySplitAbstractTest {
+
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
@@ -62,7 +65,27 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     private static final int CONFIGLESS_GRID_IDX = GRID_CNT + 1;
 
     /** */
-    private boolean useCacheGrp = false;
+    private boolean useCacheGrp;
+
+    /**  */
+    private int getDiscoPort(int gridIdx) {
+        return TcpDiscoverySpi.DFLT_PORT + gridIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isBlocked(int locPort, int rmtPort) {
+        return segment(locPort) != segment(rmtPort);
+    }
+
+    /**  */
+    private int segment(int discoPort) {
+        return (discoPort - TcpDiscoverySpi.DFLT_PORT) % 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int segment(ClusterNode node) {
+        return node.attribute(DC_NODE_ATTR);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -71,6 +94,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         int idx = getTestIgniteInstanceIndex(gridName);
 
         cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
+
+        TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+        disco.setLocalPort(getDiscoPort(idx));
 
         if (idx != CONFIGLESS_GRID_IDX) {
             if (idx == RESOLVER_GRID_IDX) {
@@ -129,6 +156,12 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         stopAllGrids();
     }
 
+    /**  */
+    protected void stopGrids(int... grids) {
+        for (int idx : grids)
+            stopGrid(idx);
+    }
+
     /**
      * Tests topology split scenario.
      *
@@ -149,8 +182,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
     /**
      * Tests topology split scenario.
-     * @param useCacheGrp Use cache group.
      *
+     * @param useCacheGrp Use cache group.
      * @throws Exception If failed.
      */
     private void testTopologyValidator0(boolean useCacheGrp) throws Exception {
@@ -161,31 +194,26 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         grid.getOrCreateCaches(getCacheConfigurations());
 
         // Init grid index arrays
-        int[] dc1 = new int[GRID_CNT / 2];
+        int[] seg1 = new int[GRID_CNT / 2];
 
-        for (int i = 0; i < dc1.length; ++i)
-            dc1[i] = i * 2 + 1;
+        for (int i = 0; i < seg1.length; ++i)
+            seg1[i] = i * 2 + 1;
 
-        int[] dc0 = new int[GRID_CNT - dc1.length];
+        int[] seg0 = new int[GRID_CNT - seg1.length];
 
-        for (int i = 0; i < dc0.length; ++i)
-            dc0[i] = i * 2;
+        for (int i = 0; i < seg0.length; ++i)
+            seg0[i] = i * 2;
 
         // Tests what each node is able to do puts.
-        tryPut(dc0);
-
-        tryPut(dc1);
+        tryPut(seg0, seg1);
 
         clearAll();
 
         // Force segmentation.
-        for (int idx : dc1)
-            stopGrid(idx);
-
-        awaitPartitionMapExchange();
+        splitAndWait();
 
         try {
-            tryPut(dc0);
+            tryPut(seg0, seg1);
 
             fail();
         }
@@ -196,16 +224,31 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         // Repair split by adding activator node in topology.
         resolveSplit();
 
-        tryPut(dc0);
+        tryPut(seg0);
 
         clearAll();
 
+        try {
+            tryPut(seg1);
+
+            fail();
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
         // Fix split by adding node from second DC.
+        unsplit();
+
         startGrid(CONFIGLESS_GRID_IDX);
 
         awaitPartitionMapExchange();
 
+        tryPut(seg0);
+
         tryPut(CONFIGLESS_GRID_IDX);
+
+        clearAll();
 
         // Force split by removing last node from second DC.
         stopGrid(CONFIGLESS_GRID_IDX);
@@ -213,7 +256,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         try {
-            tryPut(dc0);
+            tryPut(seg0);
 
             fail();
         }
@@ -227,7 +270,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         // Repair split by adding activator node in topology.
         resolveSplit();
 
-        tryPut(dc0);
+        tryPut(seg0);
 
         clearAll();
 
@@ -236,9 +279,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < dc0.length; i++) {
-            int idx = dc0[i];
-
+        for (int idx : seg0) {
             if (idx == 0)
                 continue;
 
@@ -252,7 +293,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        assertEquals("Expecting put count", CACHES_CNT * dc0.length, tryPut(dc0));
+        assertEquals("Expecting put count", CACHES_CNT * seg0.length, tryPut(seg0));
     }
 
     /**
@@ -283,7 +324,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
      * Resolves split by client node join with server node join race simulation.
      *
      * @param srvNode server node index to simulate join race
-     *
      * @throws Exception If failed.
      */
     private void resolveSplitWithRace(int srvNode) throws Exception {
@@ -304,8 +344,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         try {
             tryPut(0);
 
-            clearAll();
-
             fail();
         }
         catch (Exception e) {
@@ -316,39 +354,84 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     }
 
     /**
-     * @param grids Grids to test.
+     * @param idx Grid to test.
+     * @return number of successful puts to caches
+     * @throws IgniteException If all tries to put was failed.
+     * @throws AssertionError If some of tries to put was failed.
      */
-    private int tryPut(int... grids) {
+    private int tryPut(int idx) {
+        IgniteEx g = grid(idx);
+
         int putCnt = 0;
 
-        for (int i = 0; i < grids.length; i++) {
-            IgniteEx g = grid(grids[i]);
-            for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
-                String cacheName = testCacheName(cnt);
+        IgniteException ex = null;
 
-                for (int k = 0; k < 100; k++) {
-                    if (g.affinity(cacheName).isPrimary(g.localNode(), k)) {
-                        IgniteCache<Object, Object> cache = g.cache(cacheName);
+        for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
+            String cacheName = testCacheName(cnt);
 
-                        try {
-                            cache.put(k, k);
-                        }
-                        catch (Throwable t) {
-                            log.error("Failed to put entry: [cache=" + cacheName + ", key=" + k + ", nodeId=" +
-                                g.name() + ']', t);
+            for (int k = 0; k < 100; k++) {
+                if (g.affinity(cacheName).isPrimary(g.cluster().localNode(), k)) {
+                    IgniteCache<Object, Object> cache = g.cache(cacheName);
 
-                            throw t;
-                        }
+                    try {
+                        cache.put(k, k);
 
                         assertEquals(1, cache.localSize());
 
-                        putCnt++;
+                        if (ex != null)
+                            throw new AssertionError("Partial results (put count > 0)", ex);
 
-                        break;
+                        putCnt++;
                     }
+                    catch (Throwable t) {
+                        IgniteException e = new IgniteException("Failed to put entry: [cache=" + cacheName + ", key=" + k + ']', t);
+
+                        log.error(e.getMessage(), e.getCause());
+
+                        if (ex == null)
+                            ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');
+
+                        ex.addSuppressed(t);
+                    }
+                    break;
                 }
             }
         }
+        if (ex != null)
+            throw ex;
+
+        return putCnt;
+    }
+
+    /**
+     * @param grids Grids to test.
+     * @return number of successful puts to caches
+     * @throws IgniteException If all tries to put was failed.
+     * @throws AssertionError If some of tries to put was failed.
+     */
+    private int tryPut(int[]... grids) {
+        int putCnt = 0;
+
+        IgniteException ex = null;
+
+        for (int[] idxs : grids) {
+            for (int idx : idxs) {
+                try {
+                    putCnt += tryPut(idx);
+
+                    if (ex != null)
+                        throw new AssertionError("Partial result (put count > 0)", ex);
+                }
+                catch (Exception e) {
+                    if (ex == null)
+                        ex = new IgniteException("Failed to put entry");
+
+                    ex.addSuppressed(e);
+                }
+            }
+        }
+        if (ex != null)
+            throw ex;
 
         return putCnt;
     }
@@ -357,6 +440,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
      * Prevents cache from performing any operation if only nodes from single data center are left in topology.
      */
     private static class SplitAwareTopologyValidator implements TopologyValidator {
+
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -461,7 +545,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             // Search for activator node in history on start.
             long topVer = evtNode(nodes).order();
 
-            while(topVer > 0) {
+            while (topVer > 0) {
                 Collection<ClusterNode> top = ignite.cluster().topology(topVer--);
 
                 // Stop on reaching history limit.
