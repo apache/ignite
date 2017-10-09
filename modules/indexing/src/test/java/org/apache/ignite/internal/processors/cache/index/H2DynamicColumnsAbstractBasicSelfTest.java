@@ -341,8 +341,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      */
     private void doTestAlterTableOnFlatValue(String tblName) {
         assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
-            "ADD COLUMN is not supported for tables created with wrap_value=false param. " +
-                "(To enable ADD COLUMN, create table with wrap_value=true param).");
+            "Cannot add column(s) because table was created with WRAP_VALUE=false option.");
     }
 
     /**
