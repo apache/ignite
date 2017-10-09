@@ -57,11 +57,11 @@ public class ClientCacheKeysRequest extends ClientCacheRequest {
      */
     private static Set<Object> readSet(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
+
         Set<Object> keys = new LinkedHashSet<>(cnt);
 
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             keys.add(reader.readObjectDetached());
-        }
 
         return keys;
     }

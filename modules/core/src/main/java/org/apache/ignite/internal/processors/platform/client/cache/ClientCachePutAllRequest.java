@@ -40,11 +40,11 @@ public class ClientCachePutAllRequest extends ClientCacheRequest {
         super(reader);
 
         int cnt = reader.readInt();
+
         map = new LinkedHashMap<>(cnt);
 
-        for (int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++)
             map.put(reader.readObjectDetached(), reader.readObjectDetached());
-        }
     }
 
     /** {@inheritDoc} */
