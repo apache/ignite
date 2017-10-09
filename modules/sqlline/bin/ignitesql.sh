@@ -36,10 +36,7 @@ fi
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
-source "${SCRIPTS_HOME}"/include/ignitedb-functions.sh
-
-# Default host:
-HOST="127.0.0.1"
+source "${SCRIPTS_HOME}"/include/ignitesql-functions.sh
 
 #
 # Parse arguments.

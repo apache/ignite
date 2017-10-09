@@ -20,20 +20,35 @@
 function print_help()
 {
     echo "Script for connecting to cluster via sqlline."
-    echo "Usage: $self_name options..."
-    echo
+    echo "Usage: $self_name -ch=<ip_address> <options>"
+    echo "Mandatory parameter:"
+    echo "-ch= | --connectionHost= : Host to connect."
+    echo "Non mandatory options:"
+    echo "-p= | --port= : Port to connect."
+    echo "-s= | --schema= : Schema."
+    echo "-dj= | --distributedJoins= : Distributed joins flag."
+    echo "-ej= | --enforceJoinOrder= : Enforce join order flag."
+    echo "-c= | --collocated= : Collocated flag."
+    echo "-r= | --replicatedOnly= : Replicated only flag."
+    echo "-ac= | --autoCloseServerCursor= : Auto close server cursor flag."
+    echo "-ssb= | --socketSendBuffer= : Socket send buffer size."
+    echo "-srb= | --socketReceiveBuffer= : Socket receive buffer size."
+    echo "-tnd= |--tcpNoDelay= : TCP no delay flag."
+    echo "-l= |--lazy= : Lazy flag."
+    echo "Example:"
+    echo "ignitesql.sh -ch=127.0.0.1 -p=10800 -s=MySchema -dj=true -ej=true -ssb=0"
 }
 
 function edit_params()
 {
     if [[ $PARAMS != "" ]]; then
-        param_delimiter="&"
+        PARAM_DELIMITER="&"
     else
-        param_delimiter="?"
+        PARAM_DELIMITER="?"
     fi
 
     if [ $1 != "" ]; then
-         PARAMS="${PARAMS}${param_delimiter}$2=$1"
+         PARAMS="${PARAMS}${PARAM_DELIMITER}$2=$1"
     fi
 }
 
@@ -45,9 +60,10 @@ function parse_arguments()
            # Print help
            -h|--help)
             print_help
+            exit 0;
         ;;
-           # Host to connect. By default 127.0.0.1.
-           -h=*|--host=*)
+           # Host to connect.
+           -ch=*|--connectionHost=*)
             HOST="${i#*=}"
             shift # get value after "="
         ;;
@@ -115,7 +131,13 @@ function parse_arguments()
 
         *)
         ;;
-    esac
-done
+        esac
+    done
 
+    if [[ $HOST == "" ]]; then
+        echo "Error. You need to specify host to connect:"
+        echo "ignitesql.sh -ch=127.0.0.1"
+        echo "Use -h or --help to read help."
+        exit 1
+    fi
 }
