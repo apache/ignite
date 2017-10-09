@@ -679,12 +679,14 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of {@link MemoryMetrics} snapshots.
      * @deprecated Use {@link #dataRegionMetrics()} instead.
      */
+    @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
      * @deprecated Use {@link #dataRegionMetrics(String)} instead.
      */
+    @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**

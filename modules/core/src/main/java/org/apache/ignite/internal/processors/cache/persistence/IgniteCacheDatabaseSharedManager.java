@@ -64,7 +64,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
@@ -74,7 +73,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
-    static final String SYSTEM_DATA_REGION_NAME = "sysDataReg"; // TODO IGNITE-6030 rename field
+    static final String SYSTEM_DATA_REGION_NAME = "sysDataReg";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
@@ -333,34 +332,39 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private void validateConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         checkPageSize(memCfg);
 
-        DataRegionConfiguration[] plcCfgs = memCfg.getDataRegionConfigurations();
+        DataRegionConfiguration[] regCfgs = memCfg.getDataRegionConfigurations();
 
-        Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
+        Set<String> regNames = (regCfgs != null) ? U.<String>newHashSet(regCfgs.length) : new HashSet<String>(0);
 
         checkSystemDataRegionSizeConfiguration(
             memCfg.getSystemRegionInitialSize(),
             memCfg.getSystemRegionMaxSize()
         );
 
-        if (plcCfgs != null) {
-            for (DataRegionConfiguration plcCfg : plcCfgs) {
-                assert plcCfg != null;
-
-                checkPolicyName(plcCfg.getName(), plcNames);
-
-                checkPolicySize(plcCfg);
-
-                checkMetricsProperties(plcCfg);
-
-                checkPolicyEvictionProperties(plcCfg, memCfg);
-            }
+        if (regCfgs != null) {
+            for (DataRegionConfiguration regCfg : regCfgs)
+                checkDataRegionConfiguration(memCfg, regNames, regCfg);
         }
 
-        checkDefaultPolicyConfiguration(
-            memCfg.getDefaultDataRegionConfiguration().getName(),
-            memCfg.getDefaultDataRegionConfiguration().getMaxSize(),
-            plcNames
-        );
+        checkDataRegionConfiguration(memCfg, regNames, memCfg.getDefaultDataRegionConfiguration());
+    }
+
+    /**
+     * @param memCfg Mem config.
+     * @param regNames Region names.
+     * @param regCfg Reg config.
+     */
+    private void checkDataRegionConfiguration(DataStorageConfiguration memCfg, Set<String> regNames,
+        DataRegionConfiguration regCfg) throws IgniteCheckedException {
+        assert regCfg != null;
+
+        checkDataRegionName(regCfg.getName(), regNames);
+
+        checkDataRegionSize(regCfg);
+
+        checkMetricsProperties(regCfg);
+
+        checkRegionEvictionProperties(regCfg, memCfg);
     }
 
     /**
@@ -372,29 +376,29 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param plcCfg data region config.
+     * @param regCfg data region config.
      *
      * @throws IgniteCheckedException if validation of memory metrics properties fails.
      */
-    private static void checkMetricsProperties(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
-        if (plcCfg.getRateTimeInterval() <= 0)
+    private static void checkMetricsProperties(DataRegionConfiguration regCfg) throws IgniteCheckedException {
+        if (regCfg.getRateTimeInterval() <= 0)
             throw new IgniteCheckedException("Rate time interval must be greater than zero " +
                 "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
-                "[name=" + plcCfg.getName() +
-                ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]"
+                "[name=" + regCfg.getName() +
+                ", rateTimeInterval=" + regCfg.getRateTimeInterval() + "]"
             );
-        if (plcCfg.getSubIntervals() <= 0)
+        if (regCfg.getSubIntervals() <= 0)
             throw new IgniteCheckedException("Sub intervals must be greater than zero " +
                 "(use DataRegionConfiguration.subIntervals property to adjust the sub intervals) " +
-                "[name=" + plcCfg.getName() +
-                ", subIntervals=" + plcCfg.getSubIntervals() + "]"
+                "[name=" + regCfg.getName() +
+                ", subIntervals=" + regCfg.getSubIntervals() + "]"
             );
 
-        if (plcCfg.getRateTimeInterval() < 1_000)
+        if (regCfg.getRateTimeInterval() < 1_000)
             throw new IgniteCheckedException("Rate time interval must be longer that 1 second (1_000 milliseconds) " +
                 "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
-                "[name=" + plcCfg.getName() +
-                ", rateTimeInterval=" + plcCfg.getRateTimeInterval() + "]");
+                "[name=" + regCfg.getName() +
+                ", rateTimeInterval=" + regCfg.getRateTimeInterval() + "]");
     }
 
     /**
@@ -429,58 +433,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param dfltPlcName Default DataRegion name.
-     * @param dfltPlcSize Default size of DataRegion overridden by user (equals to -1 if wasn't specified by user).
-     * @param plcNames All DataRegion names.
-     * @throws IgniteCheckedException In case of validation violation.
-     */
-    private static void checkDefaultPolicyConfiguration(
-        String dfltPlcName,
-        long dfltPlcSize,
-        Collection<String> plcNames
-    ) throws IgniteCheckedException {
-        // TODO IGNITE-6030 rework this method
-        if (dfltPlcSize != DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE) {
-            if (!F.eq(dfltPlcName, DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME))
-                throw new IgniteCheckedException("User-defined DataRegion configuration " +
-                    "and defaultMemoryPolicySize properties are set at the same time. " +
-                    "Delete either DataStorageConfiguration.defaultMemoryPolicySize property " +
-                    "or user-defined default DataRegion configuration");
-
-            if (dfltPlcSize < MIN_PAGE_MEMORY_SIZE)
-                throw new IgniteCheckedException("User-defined default DataRegion size is less than 1MB. " +
-                        "Use DataStorageConfiguration.defaultMemoryPolicySize property to set correct size.");
-
-            if (U.jvm32Bit() && dfltPlcSize > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
-                throw new IgniteCheckedException("User-defined default DataRegion size exceeds 2GB on 32-bit JVM " +
-                    "(use DataStorageConfiguration.defaultMemoryPolicySize property to set correct size in bytes " +
-                    "or use 64-bit JVM) [size=" + U.readableSize(dfltPlcSize, true) + ']'
-                );
-        }
-
-        if (!DFLT_DATA_REG_DEFAULT_NAME.equals(dfltPlcName)) {
-            if (dfltPlcName.isEmpty())
-                throw new IgniteCheckedException("User-defined default DataRegion name must be non-empty");
-
-            if (!plcNames.contains(dfltPlcName))
-                throw new IgniteCheckedException("User-defined default DataRegion name " +
-                    "must be presented among configured MemoryPolices: " + dfltPlcName);
-        }
-    }
-
-    /**
      * @param plcCfg DataRegionConfiguration to validate.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private void checkPolicySize(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
-        boolean dfltInitSize = false;
-
-        if (plcCfg.getInitialSize() == 0) {
-            plcCfg.setInitialSize(DFLT_DATA_REGION_INITIAL_SIZE);
-
-            dfltInitSize = true;
-        }
-
+    private void checkDataRegionSize(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
         if (plcCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("DataRegion must have size more than 10MB (use " +
                 "DataRegionConfiguration.initialSize property to set correct size in bytes) " +
@@ -488,21 +444,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             );
 
         if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
-            // If initial size was not set, use the max size.
-            if (dfltInitSize) {
-                plcCfg.setInitialSize(plcCfg.getMaxSize());
+            plcCfg.setInitialSize(plcCfg.getMaxSize());
 
-                LT.warn(log, "DataRegion maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
-                    " is smaller than defaultInitialSize=" +
-                    U.readableSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE, true) +
-                    ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
-            }
-            else {
-                throw new IgniteCheckedException("DataRegion maxSize must not be smaller than " +
-                    "initialSize [name=" + plcCfg.getName() +
-                    ", initSize=" + U.readableSize(plcCfg.getInitialSize(), true) +
-                    ", maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) + ']');
-            }
+            LT.warn(log, "DataRegion maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
+                " is smaller than defaultInitialSize=" +
+                U.readableSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE, true) +
+                ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
         }
 
         if (U.jvm32Bit() && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
@@ -513,49 +460,49 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param plcCfg DataRegionConfiguration to validate.
+     * @param regCfg DataRegionConfiguration to validate.
      * @param dbCfg Memory configuration.
      * @throws IgniteCheckedException If config is invalid.
      */
-    protected void checkPolicyEvictionProperties(DataRegionConfiguration plcCfg, DataStorageConfiguration dbCfg)
+    protected void checkRegionEvictionProperties(DataRegionConfiguration regCfg, DataStorageConfiguration dbCfg)
         throws IgniteCheckedException {
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+        if (regCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return;
 
-        if (plcCfg.getEvictionThreshold() < 0.5 || plcCfg.getEvictionThreshold() > 0.999) {
+        if (regCfg.getEvictionThreshold() < 0.5 || regCfg.getEvictionThreshold() > 0.999) {
             throw new IgniteCheckedException("Page eviction threshold must be between 0.5 and 0.999: " +
-                plcCfg.getName());
+                regCfg.getName());
         }
 
-        if (plcCfg.getEmptyPagesPoolSize() <= 10)
-            throw new IgniteCheckedException("Evicted pages pool size should be greater than 10: " + plcCfg.getName());
+        if (regCfg.getEmptyPagesPoolSize() <= 10)
+            throw new IgniteCheckedException("Evicted pages pool size should be greater than 10: " + regCfg.getName());
 
-        long maxPoolSize = plcCfg.getMaxSize() / dbCfg.getPageSize() / 10;
+        long maxPoolSize = regCfg.getMaxSize() / dbCfg.getPageSize() / 10;
 
-        if (plcCfg.getEmptyPagesPoolSize() >= maxPoolSize) {
+        if (regCfg.getEmptyPagesPoolSize() >= maxPoolSize) {
             throw new IgniteCheckedException("Evicted pages pool size should be lesser than " + maxPoolSize +
-                ": " + plcCfg.getName());
+                ": " + regCfg.getName());
         }
     }
 
     /**
-     * @param plcName DataRegion name to validate.
+     * @param regName DataRegion name to validate.
      * @param observedNames Names of MemoryPolicies observed before.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private static void checkPolicyName(String plcName, Collection<String> observedNames)
+    private static void checkDataRegionName(String regName, Collection<String> observedNames)
         throws IgniteCheckedException {
-        if (plcName == null || plcName.isEmpty())
+        if (regName == null || regName.isEmpty())
             throw new IgniteCheckedException("User-defined DataRegionConfiguration must have non-null and " +
                 "non-empty name.");
 
-        if (observedNames.contains(plcName))
-            throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + plcName);
+        if (observedNames.contains(regName))
+            throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + regName);
 
-        if (SYSTEM_DATA_REGION_NAME.equals(plcName))
+        if (SYSTEM_DATA_REGION_NAME.equals(regName))
             throw new IgniteCheckedException("'" + SYSTEM_DATA_REGION_NAME + "' policy name is reserved for internal use.");
 
-        observedNames.add(plcName);
+        observedNames.add(regName);
     }
 
     /**
