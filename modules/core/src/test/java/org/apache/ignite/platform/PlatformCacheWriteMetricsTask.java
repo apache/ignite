@@ -445,7 +445,7 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
-        @Override public long getEstimateRebalancingFinishTime() {
+        @Override public long getEstimatedRebalancingFinishTime() {
             return 62;
         }
 

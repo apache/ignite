@@ -808,7 +808,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
-        return getEstimateRebalancingFinishTime();
+        return getEstimatedRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */
@@ -817,7 +817,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getEstimateRebalancingFinishTime() {
+    @Override public long getEstimatedRebalancingFinishTime() {
         long rate = rebalancingKeysRate.getRate();
 
         return rate <= 0 ? -1L :

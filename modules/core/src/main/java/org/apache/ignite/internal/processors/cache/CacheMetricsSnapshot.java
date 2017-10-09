@@ -734,7 +734,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getEstimateRebalancingFinishTime() {
+    @Override public long getEstimatedRebalancingFinishTime() {
         return rebalanceFinishTime;
     }
 

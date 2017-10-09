@@ -235,7 +235,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        long finishTime = ig2.cache(CACHE1).localMetrics().getEstimateRebalancingFinishTime();
+        long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
         assertTrue(finishTime > 0);
 

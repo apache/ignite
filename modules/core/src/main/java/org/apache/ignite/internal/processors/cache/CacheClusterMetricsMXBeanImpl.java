@@ -394,8 +394,8 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getEstimateRebalancingFinishTime() {
-        return cache.clusterMetrics().getEstimateRebalancingFinishTime();
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return cache.clusterMetrics().getEstimatedRebalancingFinishTime();
     }
 
     /** {@inheritDoc} */

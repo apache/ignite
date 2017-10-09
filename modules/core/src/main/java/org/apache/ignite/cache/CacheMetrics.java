@@ -508,7 +508,7 @@ public interface CacheMetrics {
     /**
      * This method is deprecated and will be deleted in future major release.
      *
-     * Use {@link #getEstimateRebalancingFinishTime()} instead.
+     * Use {@link #getEstimatedRebalancingFinishTime()} instead.
      *
      * @return Estimated rebalancing finished time.
      */
@@ -528,7 +528,7 @@ public interface CacheMetrics {
     /**
      * @return Estimated rebalancing finish time.
      */
-    public long getEstimateRebalancingFinishTime();
+    public long getEstimatedRebalancingFinishTime();
 
     /**
      * @return Rebalancing start time.
