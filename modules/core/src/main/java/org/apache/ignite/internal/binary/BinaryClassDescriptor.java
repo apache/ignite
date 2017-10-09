@@ -532,14 +532,6 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return {@code true} if {@link BinaryMarshaller} marshal the Externalizable objects
-     * through custom serialization methods.
-     */
-    boolean useCustomSerialization() {
-        return useCustomSerialization;
-    }
-
-    /**
      * Checks whether the class values are explicitly excluded from marshalling.
      *
      * @return {@code true} if excluded, {@code false} otherwise.
