@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * GetAll request.
  */
-public class ClientCacheGetAllRequest extends ClientCacheKeySetRequest {
+public class ClientCacheGetAllRequest extends ClientCacheKeysRequest {
     /**
      * Constructor.
      *

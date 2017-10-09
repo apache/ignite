@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * ContainsKeys request.
  */
-public class ClientCacheContainsKeysRequest extends ClientCacheKeySetRequest {
+public class ClientCacheContainsKeysRequest extends ClientCacheKeysRequest {
     /**
      * Constructor.
      *

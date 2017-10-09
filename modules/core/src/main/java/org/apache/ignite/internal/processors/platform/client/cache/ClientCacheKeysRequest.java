@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  * Key set request.
  */
-public class ClientCacheKeySetRequest extends ClientCacheRequest {
+public class ClientCacheKeysRequest extends ClientCacheRequest {
     /** Keys. */
     private final Set<Object> keys;
 
@@ -34,7 +34,7 @@ public class ClientCacheKeySetRequest extends ClientCacheRequest {
      *
      * @param reader Reader.
      */
-    ClientCacheKeySetRequest(BinaryRawReaderEx reader) {
+    ClientCacheKeysRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         keys = readSet(reader);

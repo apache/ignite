@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Remove keys request.
  */
-public class ClientCacheRemoveKeysRequest extends ClientCacheKeySetRequest {
+public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
     /**
      * Constructor.
      *
