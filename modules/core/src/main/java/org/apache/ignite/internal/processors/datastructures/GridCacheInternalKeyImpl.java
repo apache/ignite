@@ -21,11 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Key is used for caching cache data structures.
@@ -35,7 +33,6 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     private static final long serialVersionUID = 0L;
 
     /** Name of cache data structure. */
-    @AffinityKeyMapped
     private String name;
 
     /** */
@@ -73,11 +70,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = name != null ? name.hashCode() : 0;
-
-        result = 31 * result + (grpName != null ? grpName.hashCode() : 0);
-
-        return result;
+        return name.hashCode();
     }
 
     /** {@inheritDoc} */
