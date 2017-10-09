@@ -29,13 +29,18 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
+import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC result set metadata implementation.
  */
 public class JdbcThinDataSource implements DataSource {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(JdbcThinDataSource.class.getName());
+
     /** Connection URL. */
     private String url;
 
@@ -75,40 +80,58 @@ public class JdbcThinDataSource implements DataSource {
     /** Socket receive buffer size. */
     private int socketRecvBuffer;
 
+    /** Login timeout. */
+    private int loginTimeout;
+
+    /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
-        return null;
+        Properties props = exposeAsProperties();
+
+        return IgniteJdbcThinDriver.register().connect(getUrl(), props);
     }
 
+    /** {@inheritDoc} */
     @Override public Connection getConnection(String username, String password) throws SQLException {
-        return null;
+        return getConnection();
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
-        return null;
+        if (!isWrapperFor(iface))
+            throw new SQLException("DataSource is not a wrapper for " + iface.getName());
+
+        return (T)this;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
-        return false;
+        return iface != null && iface.isAssignableFrom(JdbcThinDataSource.class);
     }
 
+    /** {@inheritDoc} */
     @Override public PrintWriter getLogWriter() throws SQLException {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void setLogWriter(PrintWriter out) throws SQLException {
-
+        // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void setLoginTimeout(int seconds) throws SQLException {
-
+        loginTimeout = seconds;
     }
 
+    /** {@inheritDoc} */
     @Override public int getLoginTimeout() throws SQLException {
-        return 0;
+        return loginTimeout;
     }
 
+    /** {@inheritDoc} */
     @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return null;
+        return Logger.getLogger("org.apache.ignite");
     }
 
     /**
@@ -132,7 +155,22 @@ public class JdbcThinDataSource implements DataSource {
      * @return Connection URL.
      */
     public String getUrl() {
-        return url;
+        if (url != null)
+            return url;
+        else {
+            if (F.isEmpty(host))
+                return null;
+
+            StringBuilder sbUrl = new StringBuilder(host);
+
+            if (port > 0)
+                sbUrl.append(':').append(port);
+
+            if (!F.isEmpty(schema))
+                sbUrl.append('/').append(schema);
+
+            return sbUrl.toString();
+        }
     }
 
     /**
@@ -336,7 +374,6 @@ public class JdbcThinDataSource implements DataSource {
 
         props.setProperty("socketSendBuffer", Integer.toString(socketSendBuffer));
         props.setProperty("socketRecvBuffer", Integer.toString(socketRecvBuffer));
-
 
         return props;
     }

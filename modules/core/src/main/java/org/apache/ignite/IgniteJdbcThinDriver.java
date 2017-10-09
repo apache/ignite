@@ -302,7 +302,7 @@ public class IgniteJdbcThinDriver implements Driver {
     /**
      * @return Driver instance.
      */
-    static synchronized Driver register() {
+    public static synchronized Driver register() {
         try {
             if (!registered) {
                 registered = true;
