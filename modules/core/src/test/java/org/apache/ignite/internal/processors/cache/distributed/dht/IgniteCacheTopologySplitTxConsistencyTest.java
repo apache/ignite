@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -125,7 +126,7 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
         spi0.blockMessages(GridDhtTxPrepareRequest.class, grid1.name());
         spi0.blockMessages(GridDhtTxPrepareRequest.class, grid2.name());
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> splitFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     spi0.waitForBlocked();
@@ -149,9 +150,13 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
 
         int val0 = 1;
 
-        cache.put(key, val0);
+        IgniteFuture<Void> putFut = cache.putAsync(key, val0);
 
-        fut.get();
+        splitFut.get();
+
+        unsplit();
+
+        putFut.get();
 
         assertEquals("Expected topology size segment 1", 1, grid0.cluster().nodes().size());
         assertEquals("Expected topology size segment 2", 2, grid1.cluster().nodes().size());
