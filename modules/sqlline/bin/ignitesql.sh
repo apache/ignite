@@ -53,7 +53,7 @@ setIgniteHome
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 
-JDBCLINK="jdbc:ignite:thin://${HOST}${PORT_DELIMITER}${PORT}${SCHEMA_DELIMITER}${SCHEMA}${PARAMS}"
+JDBCLINK="jdbc:ignite:thin://${HOST_AND_PORT}${SCHEMA_DELIMITER}${SCHEMA}${PARAMS}"
 
 CP="${IGNITE_LIBS}"
 
