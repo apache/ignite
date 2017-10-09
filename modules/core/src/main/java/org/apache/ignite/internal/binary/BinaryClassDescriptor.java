@@ -111,7 +111,7 @@ public class BinaryClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Method hashCodeMtd;
+    private final boolean dfltHashCode;
 
     /** */
     private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
@@ -372,19 +372,19 @@ public class BinaryClassDescriptor {
 
             writeReplaceMthd = U.getNonPublicMethod(cls, "writeReplace");
 
-            hashCodeMtd = null;
+            dfltHashCode = false;
         }
         else if (mode == BinaryWriteMode.EXTERNALIZABLE) {
             readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
 
             writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
 
-            hashCodeMtd = U.findNonPublicMethod(cls, "hashCode");
+            dfltHashCode = U.getNonPublicMethod(cls, "hashCode") == null;
         }
         else {
             readResolveMtd = null;
             writeReplaceMthd = null;
-            hashCodeMtd = null;
+            dfltHashCode = false;
         }
 
         if (writeReplaceMthd != null && writeReplacer0 == null)
@@ -841,7 +841,7 @@ public class BinaryClassDescriptor {
 
                         postWrite(writer);
 
-                        if (hashCodeMtd != null)
+                        if (dfltHashCode)
                             writer.postWriteHashCode(obj.hashCode());
                         else
                             postWriteHashCode(writer, obj);
