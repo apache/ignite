@@ -5,7 +5,10 @@ import java.util.ArrayDeque;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -57,6 +60,38 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         this.log = ctx.logger(getClass());
 
         sync = new GlobalFairSync(ctx.localNodeId(), key, lockView, ctx, log);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        lockView.invokeAsync(key, new EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>, Boolean>() {
+            @Override
+            public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> entry,
+                Object... objects) throws EntryProcessorException {
+
+                assert entry != null;
+
+                if (entry.exists()) {
+                    GridCacheLockState2Base<NodeThread> state = entry.getValue();
+
+                    state.removeNode();
+
+                    return state.canRemove();
+                }
+
+                return false;
+            }
+        }).listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
+            @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
+                try {
+                    if (future.get().get())
+                        ctx.kernalContext().dataStructures().removeReentrantLock(key);
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -150,6 +185,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
     /** {@inheritDoc} */
     @Override public boolean isFair() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override void removeAll(UUID id) {
+        sync.remove(id);
     }
 
     /** */
@@ -273,6 +313,9 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> ctx;
 
         /** */
+        private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>> releaseListener;
+
+        /** */
         GlobalFairSync(UUID nodeId, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
             GridCacheLockState2Base<NodeThread>> lockView,
             GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> ctx,
@@ -289,6 +332,36 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
             this.log = log;
             this.nodeId = nodeId;
             this.ctx = ctx;
+
+            releaseListener = new  IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>>() {
+                @Override public void apply(IgniteInternalFuture<EntryProcessorResult<NodeThread>> future) {
+                    try {
+                        EntryProcessorResult<NodeThread> result = future.get();
+
+                        // invokeAsync return null if EntryProcessor return null too.
+                        if (result != null) {
+                            NodeThread nextOwner = result.get();
+
+                            if (nextOwner != null) {
+                                if (nodeId.equals(nextOwner.nodeId)) {
+                                    // The same node.
+                                    listeners.get(nextOwner.threadId).release();
+                                }
+                                else {
+                                    ctx.io().send(nextOwner.nodeId,
+                                        new ReleasedThreadMessage(ctx.cacheId(), nextOwner.threadId),
+                                        P2P_POOL);
+                                }
+                            }
+                        }
+                    }
+                    catch (IgniteCheckedException e) {
+                        // If release invoke has failed, it means primary node has failed too.
+                        if (log.isDebugEnabled())
+                            log.debug("Invoke has failed: " + e);
+                    }
+                }
+            };
 
             ctx.io().addCacheHandler(ctx.cacheId(), ReleasedThreadMessage.class,
                 new IgniteBiInClosure<UUID, ReleasedThreadMessage>() {
@@ -463,35 +536,12 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
                 releaseProcessor.set(processor);
             }
 
-            lockView.invokeAsync(key, processor).listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>>() {
-                @Override public void apply(IgniteInternalFuture<EntryProcessorResult<NodeThread>> future) {
-                    try {
-                        EntryProcessorResult<NodeThread> result = future.get();
+            lockView.invokeAsync(key, processor).listen(releaseListener);
+        }
 
-                        // invokeAsync return null if EntryProcessor return null too.
-                        if (result != null) {
-                            NodeThread nextOwner = result.get();
-
-                            if (nextOwner != null) {
-                                if (nodeId.equals(nextOwner.nodeId)) {
-                                    // The same node.
-                                    listeners.get(nextOwner.threadId).release();
-                                }
-                                else {
-                                    ctx.io().send(nextOwner.nodeId,
-                                        new ReleasedThreadMessage(ctx.cacheId(), nextOwner.threadId),
-                                        P2P_POOL);
-                                }
-                            }
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        // If release invoke has failed, it means primary node has failed too.
-                        if (log.isDebugEnabled())
-                            log.debug("Invoke has failed: " + e);
-                    }
-                }
-            });
+        /** */
+        final void remove(UUID id) {
+            lockView.invokeAsync(key, new RemoveProcessor(id)).listen(releaseListener);
         }
     }
 }

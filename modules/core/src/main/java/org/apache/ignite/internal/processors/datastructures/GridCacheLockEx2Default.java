@@ -1,12 +1,16 @@
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.lang.IgniteInClosure;
 
 public abstract class GridCacheLockEx2Default implements GridCacheLockEx2 {
     /** {@inheritDoc} */
@@ -73,10 +77,8 @@ public abstract class GridCacheLockEx2Default implements GridCacheLockEx2 {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // No-op.
-    }
+    /** */
+    abstract void removeAll(UUID id);
 
     /** */
     public static class UpdateListener implements GridLocalEventListener {

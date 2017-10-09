@@ -6,6 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
 public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue implements Cloneable {
@@ -18,6 +19,37 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
 
     /** For fast contains. */
     public HashSet<T> nodesSet;
+
+    /** */
+    public int darc;
+
+    /**
+     * Constructor.
+     *
+     * @param gridStartTime Cluster start time.
+     */
+    public GridCacheLockState2Base(long gridStartTime) {
+        nodes = new ArrayDeque<>();
+        nodesSet = new HashSet<>();
+        darc = 0;
+
+        this.gridStartTime = gridStartTime;
+    }
+
+    /** Clone constructor. */
+    protected GridCacheLockState2Base(GridCacheLockState2Base<T> state) {
+        nodes = new ArrayDeque<>(state.nodes);
+        nodesSet = new HashSet<>(state.nodesSet);
+        gridStartTime = state.gridStartTime;
+        darc = state.darc;
+    }
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public GridCacheLockState2Base() {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
@@ -35,32 +67,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         return true;
     }
 
-    /**
-     * Constructor.
-     *
-     * @param gridStartTime Cluster start time.
-     */
-    public GridCacheLockState2Base(long gridStartTime) {
-        nodes = new ArrayDeque<>();
-        nodesSet = new HashSet<>();
-
-        this.gridStartTime = gridStartTime;
-    }
-
-    /** Clone constructor. */
-    protected GridCacheLockState2Base(GridCacheLockState2Base<T> state) {
-        nodes = new ArrayDeque<>(state.nodes);
-        nodesSet = new HashSet<>(state.nodesSet);
-        gridStartTime = state.gridStartTime;
-    }
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridCacheLockState2Base() {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override public DataStructureType type() {
         return DataStructureType.REENTRANT_LOCK2;
@@ -69,6 +75,23 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** {@inheritDoc} */
     @Override public long gridStartTime() {
         return gridStartTime;
+    }
+
+    /** */
+    public void addNode() {
+        darc++;
+    }
+
+    /** */
+    public void removeNode() {
+        darc--;
+    }
+
+    /** */
+    public boolean canRemove() {
+        assert darc >= 0;
+
+        return darc == 0;
     }
 
     /** Will take lock if it is free. */
@@ -180,12 +203,16 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         return nodes.getFirst();
     }
 
+    public abstract T removeAll(UUID id);
+
     /** */
     public abstract void writeItem(ObjectOutput out, T item) throws IOException;
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(gridStartTime);
+
+        out.writeInt(darc);
 
         out.writeBoolean(nodes != null);
 
@@ -205,6 +232,8 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     @Override public void readExternal(ObjectInput in) throws IOException {
         gridStartTime = in.readLong();
 
+        darc = in.readInt();
+
         if (in.readBoolean()) {
             int size = in.readInt();
 
@@ -220,5 +249,4 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
             nodesSet = null;
         }
     }
-
 }

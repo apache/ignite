@@ -4,6 +4,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Iterator;
 import java.util.UUID;
 
 public class GridCacheLockState2Fair extends GridCacheLockState2Base<NodeThread> {
@@ -15,6 +16,32 @@ public class GridCacheLockState2Fair extends GridCacheLockState2Base<NodeThread>
      */
     public GridCacheLockState2Fair() {
         super();
+    }
+
+    /** {@inheritDoc} */
+    @Override public NodeThread removeAll(UUID id) {
+        removeNode();
+
+        if (nodes == null || nodes.isEmpty())
+            return null;
+
+        final boolean lockReleased = nodes.getFirst().nodeId.equals(id);
+
+        Iterator<NodeThread> iter = nodes.iterator();
+
+        NodeThread result = null;
+
+        while (iter.hasNext()) {
+            NodeThread tuple = iter.next();
+
+            if (tuple.nodeId.equals(id)) {
+                nodesSet.remove(tuple);
+                iter.remove();
+            } else if (lockReleased && result == null)
+                result = tuple;
+        }
+
+        return result;
     }
 
     /**

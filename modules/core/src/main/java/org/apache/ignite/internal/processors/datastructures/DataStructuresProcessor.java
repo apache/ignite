@@ -28,6 +28,9 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -484,8 +487,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final DataStructureType type,
         final boolean create,
         Class<? extends T> cls)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         A.notNull(name, "name");
 
         awaitInitialization();
@@ -510,7 +512,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         String cacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache0 = ctx.cache().cache(cacheName);
-
 
         boolean needQuery = true;
 
@@ -577,16 +578,44 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     T2<T, ? extends AtomicDataStructureValue> ret;
 
                     T old;
+
                     try {
                         synchronized (dsMap) {
                             ret = c.get(key, val, cache);
 
                             old = cast(dsMap.putIfAbsent(key, ret.get1()), cls);
+
+                            if (old == null) {
+                                if (type.equals(REENTRANT_LOCK2)) {
+                                    cache.invoke(key,
+                                        new EntryProcessor<GridCacheInternalKey, AtomicDataStructureValue, Object>() {
+                                        @Override public Object process(
+                                            MutableEntry<GridCacheInternalKey, AtomicDataStructureValue> entry,
+                                            Object... objects) throws EntryProcessorException {
+
+                                            assert entry != null;
+
+                                            if (entry.exists()) {
+                                                if (entry.getValue() instanceof GridCacheLockState2Base) {
+                                                    GridCacheLockState2Base val = (GridCacheLockState2Base)entry.getValue();
+
+                                                    val.addNode();
+
+                                                    entry.setValue(val);
+                                                }
+                                            }
+
+                                            return null;
+                                        }
+                                    });
+                                }
+                            }
                         }
 
                         if (old == null) {
                             if (ret.get2() != null)
                                 cache.putIfAbsent(key, ret.get2());
+
                             old = ret.get1();
                         }
                     }
@@ -1226,11 +1255,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     public IgniteLock reentrantLock(final String name, final boolean fair,
         final boolean create) throws IgniteCheckedException {
-        return getAtomic(new AtomicAccessor<GridCacheLockEx2>() {
-            @Override public T2<GridCacheLockEx2, AtomicDataStructureValue> get(GridCacheInternalKey key,
+        return getAtomic(new AtomicAccessor<GridCacheLockEx2Default>() {
+            @Override public T2<GridCacheLockEx2Default, AtomicDataStructureValue> get(GridCacheInternalKey key,
                 AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
                 // Check that reentrant lock hasn't been created in other thread yet.
-                GridCacheLockEx2 reentrantLock = cast(dsMap.get(key), GridCacheLockEx2.class);
+                GridCacheLockEx2Default reentrantLock = cast(dsMap.get(key), GridCacheLockEx2Default.class);
 
                 if (reentrantLock != null) {
                     assert val != null;
@@ -1249,13 +1278,21 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         ) :
                         null);
 
-                GridCacheLockEx2 reentrantLock0 = fair ?
+                GridCacheLockEx2Default reentrantLock0 = fair ?
                     new GridCacheLockImpl2Fair(name, key, cache) :
                     new GridCacheLockImpl2Unfair(name, key, cache);
 
+                ctx.service().deployKeyAffinitySingleton("failover"+key.toString(),
+                    new ReentrantLockFailover(key, name, fair)
+                    , cache.name(), key);
+
                 return new T2<>(reentrantLock0, retVal);
             }
-        }, null, name, REENTRANT_LOCK2, create, GridCacheLockEx2.class);
+        }, null, name, REENTRANT_LOCK2, create, GridCacheLockEx2Default.class);
+    }
+
+    void removeReentrantLock(final GridCacheInternalKey key) {
+        ctx.service().cancel("failover"+key.toString());
     }
 
     /**

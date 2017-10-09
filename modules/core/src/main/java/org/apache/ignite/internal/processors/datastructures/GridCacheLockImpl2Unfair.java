@@ -24,7 +24,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -56,6 +59,12 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
     /** Internal synchronization object. */
     private final LocalSync sync;
 
+    /** */
+    private final GridCacheInternalKey key;
+
+    /** */
+    private final IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView;
+
     /**
      * Constructor.
      *
@@ -71,6 +80,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
         assert lockView != null;
 
         this.name = name;
+        this.key = key;
+        this.lockView = lockView;
         this.ctx = lockView.context();
         this.log = ctx.logger(getClass());
 
@@ -85,6 +96,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
                     listener.release();
                 }
             });
+    }
+
+    @Override void removeAll(UUID id) {
+        sync.globalSync.remove(id);
     }
 
     /** */
@@ -119,6 +134,38 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
         @Override public int lookupIndex() {
             return CACHE_MSG_IDX;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        lockView.invokeAsync(key, new EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, Boolean>() {
+            @Override
+            public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<UUID>> entry,
+                Object... objects) throws EntryProcessorException {
+
+                assert entry != null;
+
+                if (entry.exists()) {
+                    GridCacheLockState2Base<UUID> state = entry.getValue();
+
+                    state.removeNode();
+
+                    return state.canRemove();
+                }
+
+                return false;
+            }
+        }).listen(new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
+            @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
+                try {
+                    if (future.get().get())
+                        ctx.kernalContext().dataStructures().removeReentrantLock(key);
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -254,6 +301,9 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
         private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<UUID>>> releaseListener;
 
         /** */
+        private final UUID nodeId;
+
+        /** */
         GlobalUnfairSync(UUID nodeId, GridCacheInternalKey key,
             IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<UUID>> lockView,
             final UpdateListener listener,
@@ -270,6 +320,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
             this.key = key;
             this.lockView = lockView;
             this.listener = listener;
+            this.nodeId = nodeId;
             this.log = log;
 
             acquireProcessor = new AcquireUnfairProcessor(nodeId);
@@ -303,8 +354,14 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
                         if (result != null) {
                             UUID nextNode = result.get();
 
-                            if (nextNode != null && !nodeId.equals(nextNode))
-                                ctx.io().send(nextNode, new GridCacheLockImpl2Unfair.ReleasedMessage(ctx.cacheId()), P2P_POOL);
+                            if (nextNode != null) {
+                                if (nodeId.equals(nextNode))
+                                    listener.release();
+                                else{
+                                    ctx.io().send(nextNode,
+                                        new GridCacheLockImpl2Unfair.ReleasedMessage(ctx.cacheId()), P2P_POOL);
+                                }
+                            }
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -411,6 +468,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
         /** */
         private final void release() {
             lockView.invokeAsync(key, releaseProcessor).listen(releaseListener);
+        }
+
+        /** */
+        final void remove(UUID id) {
+            lockView.invokeAsync(key, new RemoveProcessor(id)).listen(releaseListener);
         }
     }
 
