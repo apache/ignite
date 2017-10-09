@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
@@ -111,7 +110,12 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         return c;
     }
 
-    /** */
+    /**
+     * Creates cache configuration.
+     *
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(CACHE_ORG)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_ORG);
@@ -194,7 +198,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         client.cache(CACHE_POSITION).clear();
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testSimpleUpdateDistributedReplicated() throws Exception {
         fillCaches();
 
@@ -210,7 +217,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         assertEquals(cache.get(1).name, "A " + p.name);
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testSimpleUpdateDistributedPartitioned() throws Exception {
         fillCaches();
 
@@ -223,7 +233,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         assertEquals((long)cache.size(), r.get(0).get(0));
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testDistributedUpdateFailedKeys() throws Exception {
         // UPDATE can produce failed keys due to concurrent modification
         fillCaches();
@@ -238,7 +251,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }, CacheException.class, "Failed to update some keys because they had been modified concurrently");
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testDistributedUpdateFail() throws Exception {
         fillCaches();
 
@@ -252,7 +268,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }, CacheException.class, "Failed to execute SQL query");
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     @SuppressWarnings("ConstantConditions")
     public void testQueryParallelism() throws Exception {
         String cacheName = CACHE_ORG + "x4";
@@ -272,7 +291,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         assertEquals((long)cache.size(), r.get(0).get(0));
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testEvents() throws Exception {
         final CountDownLatch latch = new CountDownLatch(NODE_COUNT);
 
@@ -307,7 +329,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             grid(idx).events().stopLocalListen(pred);
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testSpecificPartitionsUpdate() throws Exception {
         fillCaches();
 
@@ -337,7 +362,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testCancel() throws Exception {
         latch = new CountDownLatch(NODE_COUNT + 1);
 
@@ -376,7 +404,10 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }, IgniteCheckedException.class, "Future was cancelled");
     }
 
-    /** */
+    /**
+     *
+     * @throws Exception if failed.
+     */
     public void testNodeStopDuringUpdate() throws Exception {
         startGrid(NODE_COUNT + 1);
 
@@ -445,80 +476,9 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    private void checkUpdate(SqlFieldsQuery updQry, String cacheNameA, String cacheNameB) {
-        GridQueryProcessor queryProc = grid(NODE_CLIENT).context().query();
-
-        List<List<?>> r1 = queryProc.querySqlFieldsNoCache(new SqlFieldsQuery(updQry)
-            .setUpdateOnServer(true), true).getAll();
-
-        List<List<?>> r2 = queryProc.querySqlFieldsNoCache(new SqlFieldsQuery(updQry)
-            .setSql(updQry.getSql().replace(cacheNameA, cacheNameB))
-            .setUpdateOnServer(false), true).getAll();
-
-        assertNotNull(r1);
-        assertNotNull(r2);
-
-        assertEquals(1, r1.size());
-        assertEquals(1, r2.size());
-
-        assertEquals(r1.get(0).get(0), r2.get(0).get(0));
-
-        assertTrue(((Number)r1.get(0).get(0)).intValue() > 0);
-    }
-
-    /** */
-    private void compareTablesContent(String cacheNameA, String cacheNameB, String tableName) throws Exception {
-        IgniteEx client = grid(NODE_CLIENT);
-
-        GridQueryProcessor queryProc = client.context().query();
-
-        assertEquals(client.cache(cacheNameA).size(), client.cache(cacheNameB).size());
-
-        int size = client.cache(cacheNameA).size();
-
-        String sqlText = "SELECT COUNT(*) FROM \"" + cacheNameA + "\"." + tableName +
-            " a JOIN \"" + cacheNameB + "\"." + tableName + " b ON a._key = b._key " +
-            "WHERE a._val = b._val";
-
-        List<List<?>> r = queryProc.querySqlFieldsNoCache(new SqlFieldsQuery(sqlText), true).getAll();
-
-        assertNotNull(r);
-
-        assertEquals(1, r.size());
-
-        assertEquals(size, ((Number)r.get(0).get(0)).intValue());
-    }
-
-    /** */
-    private void checkResults(List<List<?>> a, List<List<?>> b) {
-        assertNotNull(a);
-        assertNotNull(b);
-
-        assertEquals(a.size(), b.size());
-
-        assertTrue(a.size() > 0);
-
-        int sz = a.size();
-        for (int i = 0; i < sz; ++i) {
-            List<?> ra = a.get(i);
-            List<?> rb = b.get(i);
-
-            assertNotNull(ra);
-            assertNotNull(rb);
-
-            assertEquals(ra.size(), rb.size());
-
-            assertTrue(ra.size() > 0);
-
-            int rSize = ra.size();
-
-            for (int j = 0; j < rSize; ++j)
-                assertEquals(ra.get(j), rb.get(j));
-        }
-    }
-
-    /** */
+    /**
+     * Fills caches with initial data.
+     */
     private void fillCaches() {
         Ignite client = grid(NODE_CLIENT);
 
@@ -575,7 +535,14 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Produces all possible combinations.
+     *
+     * @param a First array.
+     * @param b Second array.
+     * @param ends Endings array.
+     * @return Result.
+     */
     private List<String> produceCombination(String[] a, String[] b, String[] ends) {
         List<String> res = new ArrayList<>();
 
@@ -606,12 +573,9 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         Date updated;
 
-        /** */
-        public Organization() {
-            // No-op.
-        }
-
         /**
+         * Constructor.
+         *
          * @param name Organization name.
          */
         public Organization(String name, int rate) {
@@ -632,7 +596,12 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         private Integer id;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param orgId Organization id.
+         * @param id Person id.
+         */
         PersonKey(int orgId, int id) {
             this.orgId = orgId;
             this.id = id;
@@ -656,7 +625,13 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         Date updated;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param name Name.
+         * @param position Position.
+         * @param amount Amount.
+         */
         private Person(String name, int position, int amount) {
             this.name = name;
             this.position = position;
@@ -665,12 +640,12 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             this.updated = new Date(System.currentTimeMillis());
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return (name==null? 0: name.hashCode()) ^ position ^ amount ^ (updated == null ? 0 : updated.hashCode());
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
             if (obj == null)
                 return false;
@@ -699,7 +674,13 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         @QuerySqlField
         int rate;
 
-        /** */
+        /**
+         * Constructor.
+         *
+         * @param id Id.
+         * @param name Name.
+         * @param rate Rate.
+         */
         public Position(int id, String name, int rate) {
             this.id = id;
             this.name = name;
@@ -707,13 +688,23 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * SQL function that always fails.
+     *
+     * @param param Arbitrary parameter.
+     * @return Result.
+     */
     @QuerySqlFunction
     public static String Fail(String param) {
         throw new IgniteSQLException("Fail() called");
     }
 
-    /** */
+    /**
+     * SQL function that waits for condition.
+     *
+     * @param param Arbitrary parameter.
+     * @return Result.
+     */
     @QuerySqlFunction
     public static String Wait(String param) {
         try {
@@ -731,7 +722,13 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         return param;
     }
 
-    /** */
+    /**
+     * SQL function that makes a concurrent modification.
+     *
+     * @param id Id.
+     * @param rate Rate.
+     * @return Result.
+     */
     @QuerySqlFunction
     public static int Modify(final int id, final int rate) {
         try {

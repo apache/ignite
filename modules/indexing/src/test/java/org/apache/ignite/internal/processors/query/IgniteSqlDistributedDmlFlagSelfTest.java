@@ -15,12 +15,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** */
+/** Tests for {@link SqlFieldsQuery#updateOnServer} flag. */
 public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -64,7 +63,6 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         ccfgs.add(buildCacheConfiguration(CACHE_ACCOUNT));
         ccfgs.add(buildCacheConfiguration(CACHE_STOCK));
         ccfgs.add(buildCacheConfiguration(CACHE_TRADE));
-
         ccfgs.add(buildCacheConfiguration(CACHE_REPORT));
         ccfgs.add(buildCacheConfiguration(CACHE_LIST));
 
@@ -77,9 +75,10 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Creates a cache configuration.
      *
-     * @param name
-     * @return
+     * @param name Name of the cache.
+     * @return Cache configuration.
      */
     private CacheConfiguration buildCacheConfiguration(String name) {
         if (name.equals(CACHE_ACCOUNT)) {
@@ -138,7 +137,6 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             return ccfg;
         }
 
-
         assert false;
 
         return null;
@@ -185,7 +183,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE depo > 0";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts, new SqlFieldsQuery(text).setArgs(10), null);
+        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts, new SqlFieldsQuery(text).setArgs(10));
     }
 
     /**
@@ -198,7 +196,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE _key = ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text).setArgs(10, 1), null);
+            new SqlFieldsQuery(text).setArgs(10, 1));
     }
 
     /**
@@ -211,7 +209,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE sn >= ? AND sn < ? LIMIT ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text).setArgs(10, 0, 10, 10), null);
+            new SqlFieldsQuery(text).setArgs(10, 0, 10, 10));
     }
 
     /**
@@ -229,7 +227,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "WHERE accountId IN (SELECT p._key FROM \"acc\".Account p WHERE depo < ?)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new SqlFieldsQuery(text).setArgs(0, 0), null);
+            new SqlFieldsQuery(text).setArgs(0, 0));
     }
 
     /**
@@ -246,7 +244,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -263,7 +261,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -275,7 +273,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), null,
-            new SqlFieldsQuery(text).setArgs(1, "John Marry", 11111, 100, 2, "Marry John", 11112, 200), null);
+            new SqlFieldsQuery(text).setArgs(1, "John Marry", 11111, 100, 2, "Marry John", 11112, 200));
     }
 
     /**
@@ -291,7 +289,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT a._key, a._key, ?, a.depo/?, ? FROM \"acc\".Account a";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new SqlFieldsQuery(text).setArgs(1, 10, 10), null);
+            new SqlFieldsQuery(text).setArgs(1, 10, 10));
     }
 
     /**
@@ -308,7 +306,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "ORDER BY a.sn DESC";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new SqlFieldsQuery(text).setArgs(1, 10, 10), null);
+            new SqlFieldsQuery(text).setArgs(1, 10, 10));
     }
 
     /**
@@ -326,7 +324,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT 101 + a2._key, a2._key, 1, a2.depo, 1 FROM \"acc\".Account a2";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -346,7 +344,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "GROUP BY accountId";
 
         checkUpdate(client.<Integer, Report>cache(CACHE_REPORT), null,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -362,7 +360,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT DISTINCT sn, name FROM \"acc\".Account ";
 
         checkUpdate(client.<Integer, String>cache(CACHE_LIST), null,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -381,7 +379,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "FROM \"acc\".Account a JOIN \"stock\".Stock s ON 1=1";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new SqlFieldsQuery(text).setArgs(10, 10), null);
+            new SqlFieldsQuery(text).setArgs(10, 10));
     }
 
     /**
@@ -396,7 +394,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "DELETE FROM \"acc\".Account WHERE sn > ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text).setArgs(10), null);
+            new SqlFieldsQuery(text).setArgs(10));
     }
 
     /**
@@ -411,7 +409,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "DELETE TOP ? FROM \"acc\".Account WHERE sn < ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text).setArgs(10, 10), null);
+            new SqlFieldsQuery(text).setArgs(10, 10));
     }
 
     /**
@@ -429,7 +427,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "WHERE _key IN (SELECT t.accountId FROM \"trade\".Trade t)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
@@ -443,7 +441,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new SqlFieldsQuery(text).setArgs(0, "John Marry", 11111, 100, 1, "Marry John", 11112, 200), null);
+            new SqlFieldsQuery(text).setArgs(0, "John Marry", 11111, 100, 1, "Marry John", 11112, 200));
     }
 
     /**
@@ -466,7 +464,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "FROM \"acc\".Account a JOIN \"stock\".Stock s ON 1=1";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new SqlFieldsQuery(text).setArgs(10, 10), null);
+            new SqlFieldsQuery(text).setArgs(10, 10));
     }
 
     /**
@@ -487,7 +485,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "ORDER BY a.sn DESC";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new SqlFieldsQuery(text).setArgs(1, 10, 10), null);
+            new SqlFieldsQuery(text).setArgs(1, 10, 10));
     }
 
     /**
@@ -511,15 +509,16 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "GROUP BY accountId";
 
         checkUpdate(client.<Integer, Report>cache(CACHE_REPORT), reports,
-            new SqlFieldsQuery(text), null);
+            new SqlFieldsQuery(text));
     }
 
     /**
+     * Constructs multiple Account objects.
      *
-     * @param num
-     * @param numCopy
-     * @param depo
-     * @return
+     * @param num Number of accounts.
+     * @param numCopy Number of copies.
+     * @param depo Deposit amount.
+     * @return Map of accounts.
      */
     private Map<Integer, Account> getAccounts(int num, int numCopy, int depo) {
         Map<Integer, Account> res = new HashMap<>();
@@ -537,9 +536,10 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Constructs multiple Stock objects.
      *
-     * @param num
-     * @return
+     * @param num Number of stocks.
+     * @return Map of Stock objects.
      */
     private Map<Integer, Stock> getStocks(int num) {
         Map<Integer, Stock> res = new HashMap<>();
@@ -551,10 +551,11 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Constructs multiple Trade objects.
      *
-     * @param numAccounts
-     * @param numStocks
-     * @return
+     * @param numAccounts Number of accounts.
+     * @param numStocks Number of stocks.
+     * @return Map of Trade objects.
      */
     private Map<Integer, Trade> getTrades(int numAccounts, int numStocks) {
         Map<Integer, Trade> res = new HashMap<>();
@@ -571,16 +572,15 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Executes provided sql update with updateOnServer flag on and off and checks results are the same.
      *
-     * @param cache
-     * @param initial
-     * @param qry
-     * @param clo
-     * @param <K>
-     * @param <V>
+     * @param cache Cache.
+     * @param initial Initial content of the cache.
+     * @param qry Query to execute.
+     * @param <K> Key type.
+     * @param <V> Value type.
      */
-    private <K, V> void checkUpdate(IgniteCache<K, V> cache, Map<K, V> initial, SqlFieldsQuery qry,
-        IgniteCallable<Cache.Entry<K,V>> clo) {
+    private <K, V> void checkUpdate(IgniteCache<K, V> cache, Map<K, V> initial, SqlFieldsQuery qry) {
         cache.clear();
 
         if (!F.isEmpty(initial))
@@ -625,12 +625,13 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         int depo;
 
         /**
+         * Constructor.
          *
-         * @param name
-         * @param sn
-         * @param depo
+         * @param name Name.
+         * @param sn ID.
+         * @param depo Deposit amount.
          */
-        public Account(String name, int sn, int depo) {
+        Account(String name, int sn, int depo) {
             this.name = name;
             this.sn = sn;
             this.depo = depo;
@@ -666,11 +667,12 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String name;
 
         /**
+         * Constructor.
          *
-         * @param ticker
-         * @param name
+         * @param ticker Short name.
+         * @param name Name.
          */
-        public Stock(String ticker, String name) {
+        Stock(String ticker, String name) {
             this.ticker = ticker;
             this.name = name;
         }
@@ -695,13 +697,14 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         int price;
 
         /**
+         * Constructor.
          *
-         * @param accountId
-         * @param stockId
-         * @param qty
-         * @param price
+         * @param accountId Account id.
+         * @param stockId Stock id.
+         * @param qty Quantity.
+         * @param price Price.
          */
-        public Trade(int accountId, int stockId, int qty, int price) {
+        Trade(int accountId, int stockId, int qty, int price) {
             this.accountId = accountId;
             this.stockId = stockId;
             this.qty = qty;
@@ -744,12 +747,13 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         int count;
 
         /**
+         * Constructor.
          *
-         * @param accountId
-         * @param spends
-         * @param count
+         * @param accountId Account id.
+         * @param spends Spends.
+         * @param count Count.
          */
-        public Report(int accountId, int spends, int count) {
+        Report(int accountId, int spends, int count) {
             this.accountId = accountId;
             this.spends = spends;
             this.count = count;
