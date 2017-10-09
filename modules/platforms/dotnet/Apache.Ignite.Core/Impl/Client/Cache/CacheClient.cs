@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
@@ -323,23 +324,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** <inheritDoc /> */
         public long GetSize(params CachePeekMode[] modes)
         {
-            return DoOutInOp(ClientOp.CacheGetSize, w =>
-                {
-                    if (modes == null)
-                    {
-                        w.WriteInt(0);
-                    }
-                    else
-                    {
-                        w.WriteInt(modes.Length);
-
-                        foreach (var m in modes)
-                        {
-                            w.WriteByte((byte) m);
-                        }
-                    }
-                },
-                s => s.ReadLong());
+            return DoOutInOp(ClientOp.CacheGetSize, w => WritePeekModes(modes, w), s => s.ReadLong());
         }
 
         /// <summary>
@@ -455,6 +440,35 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private static KeyNotFoundException GetKeyNotFoundException()
         {
             return new KeyNotFoundException("The given key was not present in the cache.");
+        }
+
+        /// <summary>
+        /// Writes the peek modes.
+        /// </summary>
+        private static void WritePeekModes(ICollection<CachePeekMode> modes, IBinaryRawWriter w)
+        {
+            if (modes == null)
+            {
+                w.WriteInt(0);
+            }
+            else
+            {
+                w.WriteInt(modes.Count);
+
+                foreach (var m in modes)
+                {
+                    // Convert bit flag to ordinal.
+                    byte val = 0;
+                    var flagVal = (int)m;
+
+                    while ((flagVal = flagVal >> 1) > 0)
+                    {
+                        val++;
+                    }
+
+                    w.WriteByte(val);
+                }
+            }
         }
     }
 }
