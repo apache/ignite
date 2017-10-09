@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return DoOutInOp(ClientOp.CacheReplace2, w =>
+            return DoOutInOp(ClientOp.CacheReplaceIfEquals, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(oldVal);
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheRemove, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOp(ClientOp.CacheRemoveKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheRemove2, w =>
+            return DoOutInOp(ClientOp.CacheRemoveIfEquals, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(val);
