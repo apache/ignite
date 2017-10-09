@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.index;
+import _ from 'lodash';
+import pako from 'pako';
+import bigIntJSON from 'json-bigint';
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+/** This worker decode & decompress BASE64/Zipped data and parse to JSON. */
+// eslint-disable-next-line no-undef
+onmessage = function(e) {
+    const data = e.data;
 
-/**
- * Test to check concurrent operations on dynamic columns on ATOMIC REPLICATED cache with flat key.
- */
-public class DynamicColumnsConcurrentAtomicReplicatedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
-    /**
-     * Constructor.
-     */
-    public DynamicColumnsConcurrentAtomicReplicatedSelfTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
-    }
-}
+    const binaryString = atob(data); // Decode from BASE64
+
+    const unzipped = pako.inflate(binaryString, {to: 'string'});
+
+    const res = bigIntJSON({storeAsString: true}).parse(unzipped);
+
+    postMessage(_.get(res, 'result', res));
+};
