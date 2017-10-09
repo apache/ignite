@@ -18,28 +18,51 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
- * Cache get request.
+ * Key set request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCacheKeysRequest extends ClientCacheRequest {
+    /** Keys. */
+    private final Set<Object> keys;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    ClientCacheKeysRequest(BinaryRawReaderEx reader) {
         super(reader);
+
+        keys = readSet(reader);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+    /**
+     * Gets the set of keys.
+     *
+     * @return Keys.
+     */
+    public Set<Object> keys() {
+        return keys;
+    }
 
-        return new ClientObjectResponse(requestId(), val);
+    /**
+     * Reads a set of objects.
+     *
+     * @param reader Reader.
+     * @return Set of objects.
+     */
+    private static Set<Object> readSet(BinaryRawReaderEx reader) {
+        int cnt = reader.readInt();
+
+        Set<Object> keys = new LinkedHashSet<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            keys.add(reader.readObjectDetached());
+
+        return keys;
     }
 }

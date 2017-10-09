@@ -1681,7 +1681,7 @@ export default class IgniteConfigurationGenerator {
     static domainModelQuery(domain, available, cfg = this.domainConfigurationBean(domain)) {
         if (cfg.valueOf('queryMetadata') === 'Configuration') {
             const fields = _.filter(_.map(domain.fields,
-                (e) => ({name: e.name, className: javaTypes.fullClassName(e.className)})), (field) => {
+                (e) => ({name: e.name, className: javaTypes.stringClassName(e.className)})), (field) => {
                 return field.name !== domain.keyFieldName && field.name !== domain.valueFieldName;
             });
 
@@ -1695,10 +1695,10 @@ export default class IgniteConfigurationGenerator {
                 const valFieldName = cfg.valueOf('valueFieldName');
 
                 if (keyFieldName)
-                    fields.push({name: keyFieldName, className: javaTypes.fullClassName(domain.keyType)});
+                    fields.push({name: keyFieldName, className: javaTypes.stringClassName(domain.keyType)});
 
                 if (valFieldName)
-                    fields.push({name: valFieldName, className: javaTypes.fullClassName(domain.valueType)});
+                    fields.push({name: valFieldName, className: javaTypes.stringClassName(domain.valueType)});
             }
 
             cfg.collectionProperty('keyFields', 'keyFields', domain.queryKeyFields, 'java.lang.String', 'java.util.HashSet')

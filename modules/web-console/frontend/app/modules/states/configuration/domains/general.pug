@@ -44,7 +44,7 @@ include /app/helpers/jade/mixins
                             <li>Configuration via QueryEntity class</li>\
                         </ul>')
                 .settings-row
-                    +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClasses', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
+                    +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClassesBase', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
                 .settings-row
                     +java-class-autofocus-placholder('Value type:', `${model}.valueType`, '"valueType"', 'true', 'true', 'false', '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}', 'Value class used to store value in cache', generatePojo)
 

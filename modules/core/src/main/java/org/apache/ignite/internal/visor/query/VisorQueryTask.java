@@ -99,20 +99,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                     if (c == null)
                         throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
 
-                    try {
-                        qryCursor = c.withKeepBinary().query(qry);
-                    }
-                    catch (CacheException e) {
-                        // Work around for DDL without explicit schema name.
-                        if (X.hasCause(e, IgniteSQLException.class)
-                            && e.getMessage().contains("can only be executed on PUBLIC schema")) {
-                            qry.setSchema("PUBLIC");
-
-                            qryCursor = c.withKeepBinary().query(qry);
-                        }
-                        else
-                            throw e;
-                    }
+                    qryCursor = c.withKeepBinary().query(qry);
                 }
 
                 VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(qryCursor);
