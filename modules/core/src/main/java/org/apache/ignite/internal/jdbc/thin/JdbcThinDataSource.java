@@ -36,13 +36,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
  * JDBC result set metadata implementation.
  */
 public class JdbcThinDataSource implements DataSource {
-    /** Property list. */
-    private static final ArrayList<Field> PROPERTY_LIST = new ArrayList<>();
-
-    /** Property list. */
-    private static final Set<String> EXCLUDE_PROPERTIES = new HashSet<>(Arrays.asList(
-        "url", "schema", "host", "port"));
-
     /** Connection URL. */
     private String url;
 
@@ -73,18 +66,14 @@ public class JdbcThinDataSource implements DataSource {
     /** Flag to automatically close server cursor. */
     private boolean autoCloseServerCursor;
 
-    static {
-        try {
-            Field[] declaredFields = JdbcThinDataSource.class.getDeclaredFields();
+    /** TCP_NODELAY flag. */
+    private boolean tcpNoDelay;
 
-            for (int i = 0; i < declaredFields.length; i++) {
-                if (!EXCLUDE_PROPERTIES.contains(declaredFields[i].getName()))
-                    PROPERTY_LIST.add(declaredFields[i]);
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+    /** Socket send buffer size. */
+    private int socketSendBuffer;
+
+    /** Socket receive buffer size. */
+    private int socketRecvBuffer;
 
     @Override public Connection getConnection() throws SQLException {
         return null;
@@ -291,22 +280,63 @@ public class JdbcThinDataSource implements DataSource {
     }
 
     /**
+     * @return TCP_NODELAY flag.
+     */
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+
+    /**
+     * @param tcpNoDelay TCP_NODELAY flag.
+     */
+    public void setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+    }
+
+    /**
+     * @return Socket send buffer size.
+     */
+    public int getSocketSendBuffer() {
+        return socketSendBuffer;
+    }
+
+    /**
+     * @param socketSendBuffer Socket send buffer size.
+     */
+    public void setSocketSendBuffer(int socketSendBuffer) {
+        this.socketSendBuffer = socketSendBuffer;
+    }
+
+    /**
+     * @return Socket receive buffer size.
+     */
+    public int getSocketReceiveBuffer() {
+        return socketRecvBuffer;
+    }
+
+    /**
+     * @param socketRecvBuffer Socket receive buffer size.
+     */
+    public void setSocketReceiveBuffer(int socketRecvBuffer) {
+        this.socketRecvBuffer = socketRecvBuffer;
+    }
+
+    /**
      * @return Properties
      */
-    private Properties exposeAsProperties() throws SQLException {
+    private Properties exposeAsProperties() {
         Properties props = new Properties();
 
-        for (Field fld : PROPERTY_LIST) {
-            try {
-                Object propValue = fld.get(this);
+        props.setProperty("distributedJoins", Boolean.toString(distributedJoins));
+        props.setProperty("enforceJoinOrder", Boolean.toString(enforceJoinOrder));
+        props.setProperty("collocated", Boolean.toString(collocated));
+        props.setProperty("replicatedOnly", Boolean.toString(replicatedOnly));
+        props.setProperty("lazy", Boolean.toString(autoCloseServerCursor));
+        props.setProperty("tcpNoDelay", Boolean.toString(tcpNoDelay));
 
-                if (propValue != null)
-                    props.setProperty(fld.getName(), propValue.toString());
+        props.setProperty("socketSendBuffer", Integer.toString(socketSendBuffer));
+        props.setProperty("socketRecvBuffer", Integer.toString(socketRecvBuffer));
 
-            } catch (IllegalAccessException iae) {
-                throw new SQLException("Internal properties failure");
-            }
-        }
 
         return props;
     }
