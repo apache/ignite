@@ -53,8 +53,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
      * @throws IgniteCheckedException On error.
      */
     protected void splitAndWait() throws InterruptedException, IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug(">>> Simulating split");
+        if (log.isInfoEnabled())
+            log.info(">>> Simulating split");
 
         long topVer = grid(0).cluster().topologyVersion();
 
@@ -90,16 +90,16 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         for (Ignite grid : G.allGrids())
             ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
 
-        if (log.isDebugEnabled())
-            log.debug(">>> Finished waiting for split");
+        if (log.isInfoEnabled())
+            log.info(">>> Finished waiting for split");
     }
 
     /**
      * Restore initial state
      */
     protected void unsplit() {
-        if (log.isDebugEnabled())
-            log.debug(">>> Restoring from split");
+        if (log.isInfoEnabled())
+            log.info(">>> Restoring from split");
 
         segmented = false;
 

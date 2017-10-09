@@ -459,21 +459,18 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
         /** */
         @CacheNameResource
-        private String cacheName;
+        private transient String cacheName;
 
         /** */
         @IgniteInstanceResource
-        private Ignite ignite;
+        private transient Ignite ignite;
 
         /** */
         @LoggerResource
-        private IgniteLogger log;
+        private transient IgniteLogger log;
 
         /** State. */
         private transient State state;
-
-        /** Activator node order on last repair. */
-        private transient long lastActivatorOrder;
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
@@ -484,8 +481,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                     return !node.isClient() && node.attribute(DC_NODE_ATTR) == null;
                 }
             })) {
-                log.error("Not valid server nodes are detected in topology: [" +
-                    "cacheName=" + cacheName + ", node=" + node + ']');
+                log.error("Not valid server nodes are detected in topology: [cacheName=" + cacheName + ", node=" +
+                    node + ']');
 
                 return false;
             }
@@ -493,7 +490,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             boolean segmented = segmented(nodes);
 
             if (!segmented)
-                state = State.VALID; // Also clears possible REPAIRED state.
+                state = State.VALID; // Also clears possible BEFORE_REPAIRED and REPAIRED states.
             else {
                 if (state == State.REPAIRED) // Any topology change in segmented grid in repaired mode is valid.
                     return true;
@@ -501,23 +498,40 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 // Find discovery event node.
                 ClusterNode evtNode = evtNode(nodes);
 
-                if (activator(evtNode) && evtNode.order() > lastActivatorOrder) {
-                    if (log.isInfoEnabled())
-                        log.info("Grid segmentation is repaired: [cacheName=" + cacheName + ']');
-
-                    repair(evtNode);
-                }
+                if (activator(evtNode))
+                    state = State.BEFORE_REPARED;
                 else {
-                    if (state == State.VALID) {
-                        if (log.isInfoEnabled())
-                            log.info("Grid segmentation is detected: [cacheName=" + cacheName + ']');
-                    }
+                    if (state == State.BEFORE_REPARED) {
+                        boolean activatorLeft = true;
 
-                    state = State.NOTVALID;
+                        // Check if activator is no longer in topology.
+                        for (ClusterNode node : nodes) {
+                            if (node.isClient() && activator(node)) {
+                                activatorLeft = false;
+
+                                break;
+                            }
+                        }
+
+                        if (activatorLeft) {
+                            if (log.isInfoEnabled())
+                                log.info("Grid segmentation is repaired: [cacheName=" + cacheName + ']');
+
+                            state = State.REPAIRED; // Switch to REPAIRED state only when activator leaves.
+                        } // Else stay in BEFORE_REPARED state.
+                    }
+                    else {
+                        if (state == State.VALID) {
+                            if (log.isInfoEnabled())
+                                log.info("Grid segmentation is detected: [cacheName=" + cacheName + ']');
+                        }
+
+                        state = State.NOTVALID;
+                    }
                 }
             }
 
-            return state != State.NOTVALID;
+            return state == State.VALID || state == State.REPAIRED;
         }
 
         /** */
@@ -571,37 +585,18 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 if (!segmented)
                     return;
 
-                ClusterNode activator = null;
-
                 for (ClusterNode node : top) {
-                    if (activator(node) && (activator == null || activator.order() < node.order())) {
-                        activator = node;
+                    if (activator(node)) {
+                        state = State.REPAIRED;
 
-                        break;
+                        return;
                     }
-                }
-
-                if (activator != null) {
-                    repair(activator);
-
-                    return;
                 }
             }
         }
 
         /**
-         * Set REPAIRED state and remember activator order.
-         *
-         * @param activator Activator node.
-         */
-        private void repair(ClusterNode activator) {
-            state = State.REPAIRED;
-
-            lastActivatorOrder = activator.order();
-        }
-
-        /**
-         * Returns node with the biggest order (event topology version).
+         * Returns node with biggest order (event topology version).
          *
          * @param nodes Topology nodes.
          * @return ClusterNode Node.
@@ -623,6 +618,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             VALID,
             /** Topology is not valid */
             NOTVALID,
+            /** Before topology will be repaired (valid) */
+            BEFORE_REPARED,
             /** Topology is repaired (valid) */
             REPAIRED;
         }
