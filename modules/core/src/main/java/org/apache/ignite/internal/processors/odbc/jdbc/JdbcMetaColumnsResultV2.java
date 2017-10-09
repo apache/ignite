@@ -15,19 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.index;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Test to check concurrent operations on dynamic columns on ATOMIC REPLICATED cache with flat key.
+ * JDBC columns metadata result.
  */
-public class DynamicColumnsConcurrentAtomicReplicatedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
+public class JdbcMetaColumnsResultV2 extends JdbcMetaColumnsResult {
     /**
-     * Constructor.
+     * Default constructor is used for deserialization.
      */
-    public DynamicColumnsConcurrentAtomicReplicatedSelfTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
+    JdbcMetaColumnsResultV2() {
+        super(META_COLUMNS_V2);
+    }
+
+    /**
+     * @param meta Columns metadata.
+     */
+    JdbcMetaColumnsResultV2(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V2, meta);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV2();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV2.class, this);
     }
 }
