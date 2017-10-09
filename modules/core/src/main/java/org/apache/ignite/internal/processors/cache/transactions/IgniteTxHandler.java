@@ -878,50 +878,48 @@ public class IgniteTxHandler {
                 ", node=" + nodeId +
                 ", commit=" + req.commit() + ']');
 
-            throw new RuntimeException("[txs]Received finish request for completed transaction");
-
             // Always send finish response.
-//            GridCacheMessage res = new GridNearTxFinishResponse(
-//                req.partition(),
-//                req.version(),
-//                req.threadId(),
-//                req.futureId(),
-//                req.miniId(),
-//                new IgniteCheckedException("Transaction has been already completed."));
+            GridCacheMessage res = new GridNearTxFinishResponse(
+                req.partition(),
+                req.version(),
+                req.threadId(),
+                req.futureId(),
+                req.miniId(),
+                new IgniteCheckedException("Transaction has been already completed."));
 
-//            try {
-//                ctx.io().send(nodeId, res, req.policy());
-//
-//                if (txFinishMsgLog.isDebugEnabled()) {
-//                    txFinishMsgLog.debug("Sent near finish response for completed tx [txId=" + req.version() +
-//                        ", dhtTxId=" + dhtVer +
-//                        ", node=" + nodeId + ']');
-//                }
-//            }
-//            catch (Throwable e) {
-//                // Double-check.
-//                if (ctx.discovery().node(nodeId) == null) {
-//                    if (txFinishMsgLog.isDebugEnabled()) {
-//                        txFinishMsgLog.debug("Failed to send near finish response for completed tx, node failed [" +
-//                            "txId=" + req.version() +
-//                            ", dhtTxId=" + dhtVer +
-//                            ", node=" + nodeId + ']');
-//                    }
-//                }
-//                else {
-//                    U.error(txFinishMsgLog, "Failed to send near finish response for completed tx, node failed [" +
-//                        "txId=" + req.version() +
-//                        ", dhtTxId=" + dhtVer +
-//                        ", node=" + nodeId +
-//                        ", req=" + req +
-//                        ", res=" + res + ']', e);
-//                }
-//
-//                if (e instanceof Error)
-//                    throw (Error)e;
-//            }
-//
-//            return null;
+            try {
+                ctx.io().send(nodeId, res, req.policy());
+
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Sent near finish response for completed tx [txId=" + req.version() +
+                        ", dhtTxId=" + dhtVer +
+                        ", node=" + nodeId + ']');
+                }
+            }
+            catch (Throwable e) {
+                // Double-check.
+                if (ctx.discovery().node(nodeId) == null) {
+                    if (txFinishMsgLog.isDebugEnabled()) {
+                        txFinishMsgLog.debug("Failed to send near finish response for completed tx, node failed [" +
+                            "txId=" + req.version() +
+                            ", dhtTxId=" + dhtVer +
+                            ", node=" + nodeId + ']');
+                    }
+                }
+                else {
+                    U.error(txFinishMsgLog, "Failed to send near finish response for completed tx, node failed [" +
+                        "txId=" + req.version() +
+                        ", dhtTxId=" + dhtVer +
+                        ", node=" + nodeId +
+                        ", req=" + req +
+                        ", res=" + res + ']', e);
+                }
+
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
+
+            return null;
         }
 
         try {
