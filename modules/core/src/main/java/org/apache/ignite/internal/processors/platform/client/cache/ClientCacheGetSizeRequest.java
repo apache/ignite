@@ -17,29 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache get request.
+ * Cache size request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCacheGetSizeRequest extends ClientCacheRequest {
+    /** Peek modes. */
+    private final CachePeekMode[] modes;
+
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    public ClientCacheGetSizeRequest(BinaryRawReader reader) {
         super(reader);
+
+        int cnt = reader.readInt();
+
+        modes = new CachePeekMode[cnt];
+
+        for (int i = 0; i < cnt; i++) {
+            modes[i] = CachePeekMode.fromOrdinal(reader.readByte());
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        long res = cache(ctx).sizeLong(modes);
 
-        return new ClientObjectResponse(requestId(), val);
+        return new ClientLongResponse(requestId(), res);
     }
 }
