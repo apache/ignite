@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +37,9 @@ import org.jetbrains.annotations.Nullable;
 class GridUpdateNotifier {
     /** Default encoding. */
     private static final String CHARSET = "UTF-8";
+
+    /** Version comparator. */
+    private static final VersionComparator VER_COMPARATOR = new VersionComparator();
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
@@ -186,13 +190,16 @@ class GridUpdateNotifier {
 
         downloadUrl = downloadUrl != null ? downloadUrl : IgniteKernal.SITE;
 
-        if (latestVer != null)
-            if (latestVer.equals(ver)) {
+        if (latestVer != null) {
+            int cmp = VER_COMPARATOR.compare(latestVer, ver);
+
+            if (cmp == 0) {
                 if (!reportOnlyNew)
                     throttle(log, false, "Your version is up to date.");
             }
-            else
+            else if (cmp > 0)
                 throttle(log, true, "New version is available at " + downloadUrl + ": " + latestVer);
+        }
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");
@@ -319,6 +326,37 @@ class GridUpdateNotifier {
          */
         @Nullable private String obtainDownloadUrlFrom(String line) {
             return obtainMeta("downloadUrl=", line);
+        }
+    }
+
+    /**
+     * Ignite version comparator.
+     */
+    private static final class VersionComparator implements Comparator<String> {
+        /** Dot pattern. */
+        private static final String DOT_PATTERN = "\\.";
+
+        /** Dash pattern. */
+        private static final String DASH_PATTERN = "-";
+
+        /** {@inheritDoc} */
+        @Override public int compare(String o1, String o2) {
+            if (o1.equals(o2))
+                return 0;
+
+            String[] ver1 = o1.split(DOT_PATTERN, 3);
+            String[] ver2 = o2.split(DOT_PATTERN, 3);
+
+            assert ver1.length == 3;
+            assert ver2.length == 3;
+
+            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0]) &&
+                Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1]) &&
+                Integer.valueOf(ver1[2].split(DASH_PATTERN)[0]) >= Integer.valueOf(ver2[2].split(DASH_PATTERN)[0]))
+
+                return 1;
+            else
+                return -1;
         }
     }
 }

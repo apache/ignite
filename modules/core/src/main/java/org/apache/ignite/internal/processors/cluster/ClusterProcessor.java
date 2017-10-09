@@ -38,7 +38,6 @@ import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -109,8 +108,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default"))));
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
 
         cluster = new IgniteClusterImpl(ctx);
     }
