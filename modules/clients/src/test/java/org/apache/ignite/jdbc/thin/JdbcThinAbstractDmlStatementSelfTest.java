@@ -69,7 +69,7 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
 
         conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
     }
 
     /** {@inheritDoc} */

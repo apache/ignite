@@ -115,7 +115,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
             cache.put(person.id, person);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "select * from Person";
 
@@ -198,7 +198,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      */
     public void testInsert() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "insert into Person (_key, id, name, age) values (?, ?, ?, ?)";
 
@@ -233,7 +233,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         cache.put(1, p);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "update Person set age = age + 1";
 
@@ -258,7 +258,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         cache.put(1, p);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "delete Person where age = ?";
 

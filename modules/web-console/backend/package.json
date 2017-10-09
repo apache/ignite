@@ -17,7 +17,9 @@
     }
   ],
   "license": "Apache-2.0",
-  "keywords": "grid",
+  "keywords": [
+    "Apache Ignite Web console"
+  ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
     "npm": "^3.x.x",

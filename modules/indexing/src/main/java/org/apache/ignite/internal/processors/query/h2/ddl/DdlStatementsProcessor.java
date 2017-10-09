@@ -62,6 +62,7 @@ import org.h2.table.Column;
 import org.h2.value.DataType;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
  * DDL statements processor.<p>
@@ -227,7 +228,13 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
+                    if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
+                        throw new SchemaOperationException("Cannot add column(s) because table was created " +
+                            "with " + PARAM_WRAP_VALUE + "=false option.");
+
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
+
+                    boolean allFieldsNullable = true;
 
                     for (GridSqlColumn col : cmd.columns()) {
                         if (tbl.doesColumnExist(col.columnName())) {
@@ -242,13 +249,20 @@ public class DdlStatementsProcessor {
                             }
                         }
 
-                        cols.add(new QueryField(col.columnName(),
+                        QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable()));
+                            col.column().isNullable());
+
+                        cols.add(field);
+
+                        allFieldsNullable &= field.isNullable();
                     }
 
                     if (cols != null) {
                         assert tbl.rowDescriptor() != null;
+
+                        if (!allFieldsNullable)
+                            QueryUtils.checkNotNullAllowed(tbl.cache().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
@@ -276,7 +290,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DLL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
         }
     }
 
@@ -364,10 +378,37 @@ public class DdlStatementsProcessor {
         if (!F.isEmpty(createTbl.valueTypeName()))
             valTypeName = createTbl.valueTypeName();
 
+        assert createTbl.wrapKey() != null;
+        assert createTbl.wrapValue() != null;
+
+        if (!createTbl.wrapKey()) {
+            GridSqlColumn pkCol = createTbl.columns().get(createTbl.primaryKeyColumns().iterator().next());
+
+            keyTypeName = DataType.getTypeClassName(pkCol.column().getType());
+
+            res.setKeyFieldName(pkCol.columnName());
+        }
+        else
+            res.setKeyFields(createTbl.primaryKeyColumns());
+
+        if (!createTbl.wrapValue()) {
+            GridSqlColumn valCol = null;
+
+            for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
+                if (!createTbl.primaryKeyColumns().contains(e.getKey())) {
+                    valCol = e.getValue();
+
+                    break;
+                }
+            }
+
+            valTypeName = DataType.getTypeClassName(valCol.column().getType());
+
+            res.setValueFieldName(valCol.columnName());
+        }
+
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
-
-        res.setKeyFields(createTbl.primaryKeyColumns());
 
         if (!F.isEmpty(notNullFields)) {
             QueryEntityEx res0 = new QueryEntityEx(res);
