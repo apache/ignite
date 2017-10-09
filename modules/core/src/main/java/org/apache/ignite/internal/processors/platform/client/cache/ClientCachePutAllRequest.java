@@ -21,7 +21,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

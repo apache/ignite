@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
