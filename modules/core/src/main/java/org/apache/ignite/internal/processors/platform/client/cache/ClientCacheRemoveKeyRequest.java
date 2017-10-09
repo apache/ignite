@@ -23,23 +23,23 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache remove request with value.
+ * Remove request.
  */
-public class ClientCacheRemove2Request extends ClientCacheKeyValueRequest {
+public class ClientCacheRemoveKeyRequest extends ClientCacheKeyRequest {
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheRemove2Request(BinaryRawReaderEx reader) {
+    public ClientCacheRemoveKeyRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        boolean res = cache(ctx).remove(key(), val());
+        boolean val = cache(ctx).remove(key());
 
-        return new ClientBooleanResponse(requestId(), res);
+        return new ClientBooleanResponse(requestId(), val);
     }
 }

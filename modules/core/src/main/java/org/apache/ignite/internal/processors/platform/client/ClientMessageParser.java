@@ -47,11 +47,11 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemove2Request;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveIfEqualsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveKeysRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheReplace2Request;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveKeyRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheReplaceIfEqualsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheReplaceRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
@@ -234,7 +234,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheReplaceRequest(reader);
 
             case OP_CACHE_REPLACE2:
-                return new ClientCacheReplace2Request(reader);
+                return new ClientCacheReplaceIfEqualsRequest(reader);
 
             case OP_CACHE_PUT_ALL:
                 return new ClientCachePutAllRequest(reader);
@@ -249,10 +249,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheClearKeysRequest(reader);
 
             case OP_CACHE_REMOVE:
-                return new ClientCacheRemoveRequest(reader);
+                return new ClientCacheRemoveKeyRequest(reader);
 
             case OP_CACHE_REMOVE2:
-                return new ClientCacheRemove2Request(reader);
+                return new ClientCacheRemoveIfEqualsRequest(reader);
 
             case OP_CACHE_GET_SIZE:
                 return new ClientCacheGetSizeRequest(reader);
