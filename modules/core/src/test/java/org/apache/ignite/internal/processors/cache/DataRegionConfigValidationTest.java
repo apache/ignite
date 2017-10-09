@@ -187,7 +187,7 @@ public class DataRegionConfigValidationTest extends GridCommonAbstractTest {
     private DataRegionConfiguration[] createRegionWithReservedNameMisuseCfg() {
         DataRegionConfiguration[] res = new DataRegionConfiguration[1];
 
-        res[0] = createDataRegion("sysMemPlc", 1024 * 1024, 1024 * 1024);
+        res[0] = createDataRegion("sysDataReg", 1024 * 1024, 1024 * 1024);
 
         return res;
     }
@@ -238,7 +238,7 @@ public class DataRegionConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * 'sysMemPlc' name is reserved for DataRegionConfiguration for system caches.
+     * 'sysDataReg' name is reserved for DataRegionConfiguration for system caches.
      */
     public void testReservedDataRegionMisuse() throws Exception {
         violationType = ValidationViolationType.SYSTEM_DATA_REGION_NAME_MISUSE;
@@ -357,7 +357,7 @@ public class DataRegionConfigValidationTest extends GridCommonAbstractTest {
         NAMES_CONFLICT("Two MemoryPolicies have the same name: "),
 
         /** */
-        SYSTEM_DATA_REGION_NAME_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
+        SYSTEM_DATA_REGION_NAME_MISUSE("'sysDataReg' policy name is reserved for internal use."),
 
         /** */
         TOO_SMALL_MEMORY_SIZE("DataRegion must have size more than 10MB "),

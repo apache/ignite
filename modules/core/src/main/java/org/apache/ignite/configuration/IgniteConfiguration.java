@@ -2216,15 +2216,31 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Flag {@code true} if persistent enable, {@code false} if disable.
-     *
-     * @deprecated Part of old API. Use {@link DataRegionConfiguration#isPersistenceEnabled()} to enable persistence
-     * in data region.
+     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
      */
-    @Deprecated
     public boolean isPersistentStoreEnabled() {
-        // TODO IGNITE-6030 should we deprecate it? if no, reimplement this method
-        return pstCfg != null;
+        if (getDataStorageConfiguration() == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+        if (dfltReg == null)
+            return false;
+
+        if (dfltReg.isPersistenceEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = getDataStorageConfiguration().getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration cfg : regCfgs) {
+            if (cfg.isPersistenceEnabled())
+                return true;
+        }
+
+        return false;
     }
 
     /**

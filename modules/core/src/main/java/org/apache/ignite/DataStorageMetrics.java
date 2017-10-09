@@ -17,13 +17,9 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 
 /**
- * Persistence metrics used to obtain statistics on persistence.
- * TODO IGNITE-6030 Change javadoc
- *
- * Use {@link IgniteCacheDatabaseSharedManager#persistentStoreMetrics()} to obtain persistent metrics.
+ * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
  */
 public interface DataStorageMetrics {
     /**
