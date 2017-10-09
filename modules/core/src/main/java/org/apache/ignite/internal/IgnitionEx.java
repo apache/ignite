@@ -2811,17 +2811,17 @@ public class IgnitionEx {
                 if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
                     customDfltPlc = true;
 
-                    dsCfg.setDefaultRegionConfiguration(dfltRegion);
+                    dsCfg.setDefaultDataRegionConfiguration(dfltRegion);
                 } else
                     optionalDataRegions.add(dfltRegion);
             }
         }
 
         if (!optionalDataRegions.isEmpty())
-            dsCfg.setDataRegions(optionalDataRegions.toArray(new DataRegionConfiguration[optionalDataRegions.size()]));
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(new DataRegionConfiguration[optionalDataRegions.size()]));
 
         if (!customDfltPlc) {
-            dsCfg.setDefaultRegionConfiguration(new DataRegionConfiguration()
+            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(memCfg.getDefaultMemoryPolicySize())
                 .setName(memCfg.getDefaultMemoryPolicyName())
                 .setPersistenceEnabled(persistenceEnabled));

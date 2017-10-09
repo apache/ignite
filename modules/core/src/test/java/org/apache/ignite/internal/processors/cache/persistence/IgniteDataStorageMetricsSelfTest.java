@@ -83,7 +83,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         memPlc.setMaxSize(10 * 1024 * 1024);
         memPlc.setMetricsEnabled(true);
 
-        memCfg.setDataRegions(memPlc);
+        memCfg.setDataRegionConfigurations(memPlc);
 
         cfg.setDataStorageConfiguration(memCfg);
 

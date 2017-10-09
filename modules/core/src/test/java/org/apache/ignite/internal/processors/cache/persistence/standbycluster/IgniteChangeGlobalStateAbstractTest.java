@@ -357,7 +357,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(memCfg);

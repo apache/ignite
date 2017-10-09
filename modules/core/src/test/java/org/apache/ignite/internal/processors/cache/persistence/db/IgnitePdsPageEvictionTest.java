@@ -69,7 +69,7 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
         memPlcCfg.setInitialSize(50 * 1024 * 1024);
         memPlcCfg.setMaxSize(50 * 1024 * 1024);
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(memCfg);

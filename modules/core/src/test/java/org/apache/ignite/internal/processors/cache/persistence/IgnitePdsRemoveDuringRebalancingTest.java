@@ -72,7 +72,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
         memPlcCfg.setSwapFilePath(DFLT_STORE_DIR);
 
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(dbCfg);

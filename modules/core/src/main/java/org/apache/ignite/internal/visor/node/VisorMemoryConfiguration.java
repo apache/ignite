@@ -79,7 +79,7 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
 //        dfltMemPlcName = memCfg.getDefaultDataRegionName();
         //dfltMemPlcSize = memCfg.getDefaultDataRegionSize();
 
-        DataRegionConfiguration[] plcs = memCfg.getDataRegions();
+        DataRegionConfiguration[] plcs = memCfg.getDataRegionConfigurations();
 
         if (!F.isEmpty(plcs)) {
             memPlcs = new ArrayList<>(plcs.length);

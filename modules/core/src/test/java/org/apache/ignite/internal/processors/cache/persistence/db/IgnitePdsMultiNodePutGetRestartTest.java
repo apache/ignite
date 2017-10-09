@@ -69,7 +69,7 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
 
         cfg.setDataStorageConfiguration(dbCfg);
 

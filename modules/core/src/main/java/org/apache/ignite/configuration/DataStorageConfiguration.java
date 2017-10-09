@@ -337,7 +337,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Array of configured data regions.
      */
-    public DataRegionConfiguration[] getDataRegions() {
+    public DataRegionConfiguration[] getDataRegionConfigurations() {
         return dataRegions;
     }
 
@@ -346,7 +346,7 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param dataRegionConfigurations Data regions configurations.
      */
-    public DataStorageConfiguration setDataRegions(DataRegionConfiguration... dataRegionConfigurations) {
+    public DataStorageConfiguration setDataRegionConfigurations(DataRegionConfiguration... dataRegionConfigurations) {
         this.dataRegions = dataRegionConfigurations;
 
         return this;
@@ -383,7 +383,7 @@ public class DataStorageConfiguration implements Serializable {
      * without having to use more verbose syntax of DataRegionConfiguration elements.
      *
      * @param dfltMemPlcSize Size of default data region overridden by user.
-     * @deprecated Use {@link #setDefaultRegionConfiguration(DataRegionConfiguration)} for configuring default region.
+     * @deprecated Use {@link #setDefaultDataRegionConfiguration(DataRegionConfiguration)} for configuring default region.
      */
     @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public DataStorageConfiguration setDefaultDataRegionSize(long dfltMemPlcSize) {
@@ -395,13 +395,13 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets the name for the default data region.
      * To set own default data region, create the region first, pass it to
-     * {@link DataStorageConfiguration#setDataRegions(DataRegionConfiguration...)} method and change the name of the
+     * {@link DataStorageConfiguration#setDataRegionConfigurations(DataRegionConfiguration...)} method and change the name of the
      * default data region with {@code DataStorageConfiguration#setDefaultDataRegionName(String)}.
      *
      * If nothing is specified by user, it is set to {@link #DFLT_DATA_REG_DEFAULT_NAME} value.
      *
      * @param dfltMemRegName Name of a data region to be used as default one.
-     * @deprecated Use {@link #setDefaultRegionConfiguration(DataRegionConfiguration)} for configuring default region.
+     * @deprecated Use {@link #setDefaultDataRegionConfiguration(DataRegionConfiguration)} for configuring default region.
      */
     @Deprecated // TODO IGNITE-6030 get rid of usages and delete method
     public DataStorageConfiguration setDefaultDataRegionName(String dfltMemRegName) {
@@ -414,7 +414,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return Configuration of default data region. All cache groups will reside in this data region by default.
      * For assigning a custom data region to cache group, use {@link CacheConfiguration#setDataRegionName(String)}.
      */
-    public DataRegionConfiguration getDefaultRegionConfiguration() {
+    public DataRegionConfiguration getDefaultDataRegionConfiguration() {
         return dfltDataRegConf;
     }
 
@@ -422,7 +422,7 @@ public class DataStorageConfiguration implements Serializable {
      * Overrides configuration of default data region which is created automatically.
      * @param dfltDataRegConf Default data region configuration.
      */
-    public DataStorageConfiguration setDefaultRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
+    public DataStorageConfiguration setDefaultDataRegionConfiguration(DataRegionConfiguration dfltDataRegConf) {
         // TODO IGNITE-6030: use this method in all tests
         this.dfltDataRegConf = dfltDataRegConf;
 

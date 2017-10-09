@@ -77,7 +77,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
 
         memCfg.setDefaultDataRegionName(memPlcCfg.getName());
 

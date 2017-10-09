@@ -106,7 +106,7 @@ public class DataRegionConfigValidationTest extends GridCommonAbstractTest {
                 fail("Violation type was not configured: " + violationType);
         }
 
-        memCfg.setDataRegions(plcs);
+        memCfg.setDataRegionConfigurations(plcs);
 
         cfg.setDataStorageConfiguration(memCfg);
 

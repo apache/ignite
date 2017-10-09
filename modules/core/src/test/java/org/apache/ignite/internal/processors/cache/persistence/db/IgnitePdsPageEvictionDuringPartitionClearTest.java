@@ -69,7 +69,7 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
 
         memCfg.setDefaultDataRegionName(memPlcCfg.getName());
 

@@ -48,7 +48,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(200 * 1024 * 1024);
 
         dbCfg.setDefaultDataRegionName("dfltPlc");
-        dbCfg.setDataRegions(plc);
+        dbCfg.setDataRegionConfigurations(plc);
 
         cfg.setDataStorageConfiguration(dbCfg);
 

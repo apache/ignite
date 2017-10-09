@@ -60,7 +60,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         long memSize = 200L * 1024L * 1024L;
 
-        memCfg.setDataRegions(
+        memCfg.setDataRegionConfigurations(
             new DataRegionConfiguration()
                 .setInitialSize(memSize)
                 .setMaxSize(memSize)

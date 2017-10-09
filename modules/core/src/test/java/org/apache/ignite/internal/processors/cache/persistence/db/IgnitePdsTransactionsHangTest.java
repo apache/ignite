@@ -136,7 +136,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE * 1024);

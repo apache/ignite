@@ -54,7 +54,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
         dbCfg.setPageSize(1024);
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(dbCfg);

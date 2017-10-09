@@ -1540,14 +1540,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         long res = memCfg.getSystemRegionMaxSize();
 
         // Add memory policies.
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegions();
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
 
         if (dataRegions != null) {
             for (DataRegionConfiguration dataReg : dataRegions)
                 res += dataReg.getMaxSize();
         }
 
-        res += memCfg.getDefaultRegionConfiguration().getMaxSize();
+        res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
         // Add persistence (if any).
         res += GridCacheDatabaseSharedManager.checkpointBufferSize(ctx.config());

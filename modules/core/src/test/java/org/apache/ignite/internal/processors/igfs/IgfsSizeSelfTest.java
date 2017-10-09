@@ -396,7 +396,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             @Override public void apply(IgniteConfiguration cfg) {
                 String memPlcName = "igfsDataMemPlc";
 
-                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegions(
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
                     new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
 
                 FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];

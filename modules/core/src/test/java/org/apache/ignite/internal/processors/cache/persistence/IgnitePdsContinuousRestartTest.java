@@ -87,7 +87,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         memPlcCfg.setMaxSize(400 * 1024 * 1024);
         memPlcCfg.setInitialSize(400 * 1024 * 1024);
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(memCfg);

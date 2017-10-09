@@ -163,7 +163,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(memPlcMap.size());
 
-        String dfltMemPlcName = dbCfg.getDefaultRegionConfiguration().getName();
+        String dfltMemPlcName = dbCfg.getDefaultDataRegionConfiguration().getName();
 
         for (DataRegion memPlc : memPlcMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
@@ -210,7 +210,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegions();
+        DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
 
@@ -224,8 +224,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         addDataRegion(
             memCfg,
-            memCfg.getDefaultRegionConfiguration(),
-            memCfg.getDefaultRegionConfiguration().getName()
+            memCfg.getDefaultDataRegionConfiguration(),
+            memCfg.getDefaultDataRegionConfiguration().getName()
         );
 
         addDataRegion(
@@ -249,7 +249,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionConfiguration dataRegionCfg,
         String dataRegionName
     ) throws IgniteCheckedException {
-        String dfltMemPlcName = dataStorageCfg.getDefaultRegionConfiguration().getName();
+        String dfltMemPlcName = dataStorageCfg.getDefaultDataRegionConfiguration().getName();
 
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
@@ -333,7 +333,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private void validateConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         checkPageSize(memCfg);
 
-        DataRegionConfiguration[] plcCfgs = memCfg.getDataRegions();
+        DataRegionConfiguration[] plcCfgs = memCfg.getDataRegionConfigurations();
 
         Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
 
@@ -359,8 +359,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         checkDefaultPolicyConfiguration(
-            memCfg.getDefaultRegionConfiguration().getName(),
-            memCfg.getDefaultRegionConfiguration().getMaxSize(),
+            memCfg.getDefaultDataRegionConfiguration().getName(),
+            memCfg.getDefaultDataRegionConfiguration().getMaxSize(),
             plcNames
         );
     }
