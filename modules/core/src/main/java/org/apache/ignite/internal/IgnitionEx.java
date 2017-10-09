@@ -2205,7 +2205,8 @@ public class IgnitionEx {
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
                 convertLegacyDataStorageConfigurationToNew(cfg);
-            else
+
+            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
