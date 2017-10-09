@@ -9410,7 +9410,7 @@ public abstract class IgniteUtils {
      * @return Method or {@code null}.
      */
     @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
-        while (cls != null && !Object.class.isAssignableFrom(cls)) {
+        while (cls != null && cls != Object.class) {
             Method mtd = getNonPublicMethod(cls, name, paramTypes);
 
             if (mtd != null)
