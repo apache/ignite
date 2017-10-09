@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             DoOutInOp(OpDeployAll, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize), 
                 ReadDeploymentResult);
-         }
+        }
 
         /** <inheritDoc /> */
         public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)

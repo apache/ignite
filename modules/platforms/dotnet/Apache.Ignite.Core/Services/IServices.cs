@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Services
         /// in the list of failed services, are successfully deployed by the moment of the exception being thrown. Note 
         /// that if exception is thrown, then partial deployment may have occurred.
         /// </summary>
-        /// <param name="configurations">Service configuration.</param>
+        /// <param name="configurations">Collection of service configurations to be deployed.</param>
         Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations);
 
         /// <summary>
