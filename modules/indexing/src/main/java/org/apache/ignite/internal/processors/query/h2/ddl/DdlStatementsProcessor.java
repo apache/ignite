@@ -183,9 +183,9 @@ public class DdlStatementsProcessor {
                     if (err != null)
                         throw err;
 
-                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheGroup(),
-                        cmd.affinityKey(), cmd.atomicityMode(), cmd.writeSynchronizationMode(), cmd.backups(),
-                        cmd.ifNotExists());
+                    ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
+                        cmd.cacheGroup(),cmd.affinityKey(), cmd.atomicityMode(),
+                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
@@ -358,6 +358,12 @@ public class DdlStatementsProcessor {
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
+
+        if (!F.isEmpty(createTbl.keyTypeName()))
+            keyTypeName = createTbl.keyTypeName();
+
+        if (!F.isEmpty(createTbl.valueTypeName()))
+            valTypeName = createTbl.valueTypeName();
 
         res.setValueType(valTypeName);
         res.setKeyType(keyTypeName);
