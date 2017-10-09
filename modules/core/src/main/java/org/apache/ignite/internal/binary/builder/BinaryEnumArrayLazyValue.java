@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,7 +79,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
         //skipping component type id
         reader.readInt();
 
-        int size = reader.readInt();
+        int size = BinaryUtils.doReadArrayLength(reader);
 
         BinaryBuilderEnum[] res = new BinaryBuilderEnum[size];
 

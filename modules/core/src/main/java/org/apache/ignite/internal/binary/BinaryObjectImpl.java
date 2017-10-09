@@ -282,9 +282,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             assert arr[off] == GridBinaryMarshaller.STRING : arr[off];
 
-            int len = BinaryPrimitives.readInt(arr, ++off);
+            int strLen = BinaryUtils.doReadArrayLength(arr, ++off, ctx.isUseVarintArrayLength());
 
-            String clsName = new String(arr, off + 4, len, UTF_8);
+            int len = BinaryUtils.sizeOfArrayLengthValue(strLen, ctx.isUseVarintArrayLength());
+
+            String clsName = new String(arr, off + len, strLen, UTF_8);
 
             typeId = ctx.typeId(clsName);
         }
@@ -334,9 +336,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         int typeId = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+            int len = BinaryUtils.doReadArrayLength(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isUseVarintArrayLength());
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isUseVarintArrayLength()) + len;
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -423,9 +425,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isUseVarintArrayLength());
 
-                val = new String(arr, fieldPos + 5, dataLen, UTF_8);
+                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
+
+                val = new String(arr, fieldPos + 1 + len, dataLen, UTF_8);
 
                 break;
             }
@@ -470,9 +474,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
             case GridBinaryMarshaller.DECIMAL: {
                 int scale = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int len = 1 + 4;
 
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
-                byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 9, dataLen);
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + len, ctx.isUseVarintArrayLength());
+                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
+
+                byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + len, dataLen);
 
                 boolean negative = data[0] < 0;
 
@@ -570,9 +577,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 1, ctx.isUseVarintArrayLength());
 
-                totalLen = dataLen + 5;
+                totalLen = 1 + dataLen + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 break;
             }
@@ -588,9 +595,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             case GridBinaryMarshaller.DECIMAL: {
-                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
+                int dataLen = BinaryUtils.doReadArrayLength(arr, fieldPos + 5, ctx.isUseVarintArrayLength());
 
-                totalLen = dataLen + 9;
+                totalLen = dataLen + 5 + BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
 
                 break;
             }

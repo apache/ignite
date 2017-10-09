@@ -28,6 +28,7 @@ import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
+import org.apache.ignite.internal.binary.BinaryMarshallerIntArraysSizeTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
+import org.apache.ignite.internal.binary.BinaryUtilsSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
@@ -89,6 +91,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         suite.addTestSuite(BinaryTreeSelfTest.class);
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
+        suite.addTestSuite(BinaryMarshallerIntArraysSizeTest.class);
+        suite.addTestSuite(BinaryUtilsSelfTest.class);
         suite.addTestSuite(BinaryObjectExceptionSelfTest.class);
 
         suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);

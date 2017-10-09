@@ -98,7 +98,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size), ctx.isUseVarintArrayLength());
 
             typeId = ctx.typeId(clsName);
         }
@@ -228,9 +228,9 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+            int len = BinaryUtils.doReadArrayLength(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1, ctx.isUseVarintArrayLength());
 
-            return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + 1 + len + BinaryUtils.sizeOfArrayLengthValue(len, ctx.isUseVarintArrayLength());
         } else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
@@ -317,8 +317,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
 
             case GridBinaryMarshaller.STRING: {
-                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 1);
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 5, dataLen);
+                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + 1, ctx.isUseVarintArrayLength());
+
+                int len = BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
+
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 1 + len, dataLen);
 
                 val = new String(data, UTF_8);
 
@@ -365,9 +368,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
             case GridBinaryMarshaller.DECIMAL: {
                 int scale = BinaryPrimitives.readInt(ptr, fieldPos + 1);
+                int len = 1 + 4;
 
-                int dataLen = BinaryPrimitives.readInt(ptr, fieldPos + 5);
-                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + 9, dataLen);
+                int dataLen = BinaryUtils.doReadArrayLength(ptr, fieldPos + len, ctx.isUseVarintArrayLength());
+                len += BinaryUtils.sizeOfArrayLengthValue(dataLen, ctx.isUseVarintArrayLength());
+
+                byte[] data = BinaryPrimitives.readByteArray(ptr, fieldPos + len, dataLen);
 
                 boolean negative = data[0] < 0;
 
