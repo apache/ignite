@@ -23,23 +23,23 @@ import org.apache.ignite.internal.processors.platform.client.ClientObjectRespons
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache get request.
+ * Cache get and put if absent request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequest {
     /**
-     * Constructor.
+     * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    public ClientCacheGetAndPutIfAbsentRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        Object res = cache(ctx).getAndPutIfAbsent(key(), val());
 
-        return new ClientObjectResponse(requestId(), val);
+        return new ClientObjectResponse(requestId(), res);
     }
 }
