@@ -66,6 +66,10 @@ namespace Apache.Ignite.Linq.Impl
             GetParameterizedTrimMethod("TrimStart", "ltrim"),
             GetParameterizedTrimMethod("TrimEnd", "rtrim"),
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
+            GetStringMethod("PadLeft", "lpad", typeof (int)),
+            GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
+            GetStringMethod("PadRight", "rpad", typeof (int)),
+            GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
 
             GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
                 GetFunc("regexp_replace")),

@@ -237,6 +237,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private MemoryMetricsImpl memMetrics;
 
+    /** */
+    private volatile boolean closed;
+
     /**
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
@@ -357,6 +360,15 @@ public class PageMemoryImpl implements PageMemoryEx {
             log.debug("Stopping page memory.");
 
         U.shutdownNow(getClass(), asyncRunner, log);
+
+        closed = true;
+
+        for (Segment seg : segments) {
+            // Make sure all threads have left the lock.
+            seg.writeLock().lock();
+
+            seg.writeLock().unlock();
+        }
 
         directMemoryProvider.shutdown();
     }
@@ -1093,6 +1105,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.readLock().lock();
 
                 try {
+                    if (closed)
+                        continue;
+
                     total += seg.loadedPages.size();
                 }
                 finally {
@@ -1114,6 +1129,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().lock();
 
             try {
+                if (closed)
+                    continue;
+
                 total += seg.acquiredPages();
             }
             finally {
