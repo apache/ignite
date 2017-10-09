@@ -22,110 +22,6 @@
 
 self_name=$(basename $0)
 
-function print_help()
-{
-    echo "Script for connecting to cluster via sqlline."
-    echo "Usage: $self_name options..."
-    echo
-}
-
-function edit_params()
-{
-    if [[ $params != "" ]]; then
-        param_delimiter="&"
-    else
-        param_delimiter="?"
-    fi
-
-    if [ $1 != "" ]; then
-         params="${params}${param_delimiter}$2=$1"
-    fi
-}
-
-# Default host:
-HOST="127.0.0.1"
-
-for i in "$@"
-do
-   case $i in
-        # Print help
-        -h|--help)
-            print_help
-        ;;
-        # Host to connect. By default 127.0.0.1.
-        -h=*|--host=*)
-            HOST="${i#*=}"
-            shift # get value after "="
-        ;;
-        # Port to connect. By default 10800.
-        -p=*|--port=*)
-            PORT="${i#*=}"
-            if [ $PORT != "" ]; then
-                port_delimiter=":";
-            fi
-            shift # get value after "="
-        ;;
-        # Schema.
-        -s=*|--schema=*)
-            SCHEMA="${i#*=}"
-            if [ $SCHEMA != "" ]; then
-                schema_delimiter="/";
-            fi
-            shift # get value after "="
-        ;;
-        # Distributed joins flag.
-        -dj=*|--distributedJoins=*)
-            edit_params "${i#*=}" "distributedJoins"
-            shift # get value after "="
-        ;;
-        # Enforce join order flag.
-        -ej=*|--enforceJoinOrder=*)
-            edit_params "${i#*=}" "enforceJoinOrder"
-            shift # get value after "="
-        ;;
-        # Collocated flag.
-        -c=*|--collocated=*)
-            edit_params "${i#*=}" "collocated"
-            shift # get value after "="
-        ;;
-        # Replicated only flag.
-        -r=*|--replicatedOnly=*)
-            edit_params "${i#*=}" "replicatedOnly"
-            shift # get value after "="
-        ;;
-        # Auto close server cursor flag.
-        -ac=*|--autoCloseServerCursor=*)
-            edit_params "${i#*=}" "autoCloseServerCursor"
-            shift # get value after "="
-        ;;
-        # Socket send buffer.
-        -ssb=*|--socketSendBuffer=*)
-            edit_params "${i#*=}" "socketSendBuffer"
-            shift # get value after "="
-        ;;
-        # Socket receive buffer.
-        -srb=*|--socketReceiveBuffer=*)
-            edit_params "${i#*=}" "socketReceiveBuffer"
-            shift # get value after "="
-        ;;
-        # TCP no delay flag.
-        -tnd=*|--tcpNoDelay=*)
-            edit_params "${i#*=}" "tcpNoDelay"
-            shift # get value after "="
-        ;;
-        # Lazy flag.
-        -l=*|--lazy=*)
-            edit_params "${i#*=}" "lazy"
-            shift # get value after "="
-        ;;
-
-        *)
-        ;;
-    esac
-done
-
-jdbclink="jdbc:ignite:thin://${HOST}${port_delimiter}${PORT}${schema_delimiter}${SCHEMA}${params}"
-
 #
 # Import common functions.
 #
@@ -140,20 +36,30 @@ fi
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
+source "${SCRIPTS_HOME}"/include/ignitedb-functions.sh
+
+# Default host:
+HOST="127.0.0.1"
+
+#
+# Parse arguments.
+#
+parse_arguments $@
 
 #
 # Discover IGNITE_HOME environment variable.
 #
 setIgniteHome
 
-
 #
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 
+JDBCLINK="jdbc:ignite:thin://${HOST}${PORT_DELIMITER}${PORT}${SCHEMA_DELIMITER}${SCHEMA}${PARAMS}"
+
 CP="${IGNITE_LIBS}"
 
 CP=${CP}:${IGNITE_HOME_TMP}/bin/include/sqlline/*
 
-java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${jdbclink}
+java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${JDBCLINK}
