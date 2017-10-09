@@ -68,7 +68,7 @@ function parse_arguments()
 {
     if [[ $# -eq 0 ]]; then
         echo "Error. You need to specify host to connect:"
-        echo "ignitesql.sh 127.0.0.1"
+        echo "${SELF_NAME} 127.0.0.1"
         echo "Use -h or --help to read help."
         exit 1
     fi
