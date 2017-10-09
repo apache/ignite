@@ -1572,6 +1572,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
             try {
+                boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+                long start = (statsEnabled)? System.nanoTime() : 0L;
+
                 Map<K, V> locVals = U.newHashMap(keys.size());
 
                 boolean success = true;
@@ -1714,6 +1718,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (success) {
                     sendTtlUpdateRequest(expiry);
+
+                    if (!skipVals && statsEnabled)
+                        metrics0().addGetTimeNanos(System.nanoTime() - start);
 
                     return new GridFinishedFuture<>(locVals);
                 }
@@ -3250,9 +3257,31 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ", node=" + nodeId + ']');
         }
 
+        long start = (ctx.config().isStatisticsEnabled())? System.nanoTime() : 0L;
+
         req.nodeId(ctx.localNodeId());
 
         updateAllAsyncInternal(nodeId, req, updateReplyClos);
+
+        if (ctx.config().isStatisticsEnabled()) {
+            boolean retVal = req.returnValue();
+
+            long duration = System.nanoTime() - start;
+
+            if (req.operation() == UPDATE) {
+                if (retVal)
+                    metrics0().addPutAndGetTimeNanos(duration);
+                else {
+                    metrics0().addPutTimeNanos(duration);
+                }
+            }
+            else if (req.operation() == DELETE) {
+                if (retVal)
+                    metrics0().addRemoveAndGetTimeNanos(duration);
+                else
+                    metrics0().addRemoveTimeNanos(duration);
+            }
+        }
     }
 
     /**

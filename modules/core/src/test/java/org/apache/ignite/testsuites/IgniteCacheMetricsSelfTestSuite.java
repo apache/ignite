@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientServerMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMetricsSelfTest;
@@ -58,6 +59,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
         suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
+        suite.addTestSuite(GridCacheAtomicClientServerMetricsSelfTest.class);
 
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
