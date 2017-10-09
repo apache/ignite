@@ -240,6 +240,16 @@ mixin paragraph-query
                                 td(style='width: 100%')
                                     input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
                                     label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind-html='cache.label')
+                    .settings-row
+                        .row(ng-if='ddlAvailable(paragraph)')
+                            label.tipLabel.use-cache(bs-tooltip data-placement='bottom'
+                                data-title=
+                                    'Use selected cache as default schema name.<br/>\
+                                    This will allow to execute query on specified cache without specify schema name.<br/>\
+                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.'
+                                data-trigger='hover')
+                                input(type='checkbox' ng-model='paragraph.useAsDefaultSchema')
+                                span Use selected cache as default schema name
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')
