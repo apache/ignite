@@ -109,6 +109,10 @@
         <level value="INFO"/>
     </category>
 
+    <category name="org.apache.ignite.spi.discovery.tcp">
+        <level value="DEBUG"/>
+    </category>
+
     <!-- Default settings. -->
     <root>
         <!-- Print at info by default. -->

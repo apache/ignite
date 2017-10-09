@@ -14,7 +14,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,7 +37,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(5_000L);
+        cfg.setFailureDetectionTimeout(3_000L);
 
         cfg.setDiscoverySpi(new SplitTcpDiscoverySpi());
 
@@ -54,7 +53,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
      * @throws IgniteCheckedException On error.
      */
     protected void splitAndWait() throws InterruptedException, IgniteCheckedException {
-        U.warn(log, ">>> Simulating split");
+        if (log.isDebugEnabled())
+            log.debug(">>> Simulating split");
 
         long topVer = grid(0).cluster().topologyVersion();
 
@@ -90,14 +90,16 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         for (Ignite grid : G.allGrids())
             ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
 
-        U.warn(log, ">>> Finished waiting for split");
+        if (log.isDebugEnabled())
+            log.debug(">>> Finished waiting for split");
     }
 
     /**
      * Restore initial state
      */
     protected void unsplit() {
-        U.warn(log, ">>> Restoring from split");
+        if (log.isDebugEnabled())
+            log.debug(">>> Restoring from split");
 
         segmented = false;
 
@@ -140,7 +142,12 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
             int rmtPort = sockAddr.getPort();
 
-            return isBlocked(getLocalPort(), rmtPort);
+            boolean b = isBlocked(getLocalPort(), rmtPort);
+
+            if (b && log.isDebugEnabled())
+                log.debug("Blocking cross-segment communication [locPort=" + getLocalPort() + ", rmtPort=" + rmtPort + ']');
+
+            return b;
         }
 
         /**
@@ -201,18 +208,6 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
             super.writeToSocket(sock, msg, timeout);
         }
-
-        /**  */
-        @Override protected void writeToSocket(
-            TcpDiscoveryAbstractMessage msg,
-            Socket sock,
-            int res,
-            long timeout
-        ) throws IOException {
-            checkSegmented((InetSocketAddress)sock.getRemoteSocketAddress(), timeout);
-
-            super.writeToSocket(msg, sock, res, timeout);
-        }
     }
 
     /**  */
@@ -223,6 +218,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
         /**  */
         public SegmentBlocker(ClusterNode locNode) {
+            assert locNode != null;
+
             this.locNode = locNode;
         }
 

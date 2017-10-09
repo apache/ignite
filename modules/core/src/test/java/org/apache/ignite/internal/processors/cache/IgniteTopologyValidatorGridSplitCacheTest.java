@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -72,9 +74,15 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
         return TcpDiscoverySpi.DFLT_PORT + gridIdx;
     }
 
+    /**  */
+    private boolean isDiscoPort(int port) {
+        return port >= TcpDiscoverySpi.DFLT_PORT &&
+            port <= (TcpDiscoverySpi.DFLT_PORT + TcpDiscoverySpi.DFLT_PORT_RANGE);
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean isBlocked(int locPort, int rmtPort) {
-        return segment(locPort) != segment(rmtPort);
+        return isDiscoPort(rmtPort) && segment(locPort) != segment(rmtPort);
     }
 
     /**  */
@@ -93,7 +101,9 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
         int idx = getTestIgniteInstanceIndex(gridName);
 
-        cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
+        Map<String, Object> userAttrs = new HashMap<>(4);
+
+        userAttrs.put(DC_NODE_ATTR, idx % 2);
 
         TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
@@ -103,11 +113,12 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             if (idx == RESOLVER_GRID_IDX) {
                 cfg.setClientMode(true);
 
-                cfg.setUserAttributes(F.asMap(ACTIVATOR_NODE_ATTR, "true"));
+                userAttrs.put(ACTIVATOR_NODE_ATTR, "true");
             }
             else
                 cfg.setActiveOnStart(false);
         }
+        cfg.setUserAttributes(userAttrs);
 
         return cfg;
     }
@@ -236,6 +247,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
         catch (Exception e) {
             // No-op.
         }
+
+        stopGrids(seg1);
 
         // Fix split by adding node from second DC.
         unsplit();
