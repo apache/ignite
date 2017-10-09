@@ -379,7 +379,7 @@ public class BinaryClassDescriptor {
 
             writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
 
-            dfltHashCode = U.getNonPublicMethod(cls, "hashCode") != null;
+            dfltHashCode = U.findNonPublicMethod(cls, "hashCode") != null;
         }
         else {
             readResolveMtd = null;
