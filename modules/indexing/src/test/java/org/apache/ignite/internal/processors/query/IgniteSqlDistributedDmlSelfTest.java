@@ -42,7 +42,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -210,7 +210,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         Position p = cache.get(1);
 
-        List<List<?>> r = cache.query(new JdbcSqlFieldsQuery("UPDATE Position p SET name = CONCAT('A ', name)", false)
+        List<List<?>> r = cache.query(new SqlFieldsQueryEx("UPDATE Position p SET name = CONCAT('A ', name)", false)
             .setUpdateOnServer(true)).getAll();
 
         assertEquals((long)cache.size(), r.get(0).get(0));
@@ -227,7 +227,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<PersonKey, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
-        List<List<?>> r = cache.query(new JdbcSqlFieldsQuery(
+        List<List<?>> r = cache.query(new SqlFieldsQueryEx(
             "UPDATE Person SET position = CASEWHEN(position = 1, 1, position - 1)", false)
             .setUpdateOnServer(true)).getAll();
 
@@ -246,7 +246,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new JdbcSqlFieldsQuery("UPDATE Organization SET rate = Modify(_key, rate - 1)", false)
+                return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET rate = Modify(_key, rate - 1)", false)
                     .setUpdateOnServer(true));
             }
         }, CacheException.class, "Failed to update some keys because they had been modified concurrently");
@@ -263,7 +263,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new JdbcSqlFieldsQuery("UPDATE Person SET name = Fail(name)", false)
+                return cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
                     .setUpdateOnServer(true));
             }
         }, CacheException.class, "Failed to execute SQL query");
@@ -286,7 +286,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1024; i++)
             cache.put(i, new Organization("Acme Inc #" + i, 0));
 
-        List<List<?>> r = cache.query(new JdbcSqlFieldsQuery("UPDATE \"" + cacheName +
+        List<List<?>> r = cache.query(new SqlFieldsQueryEx("UPDATE \"" + cacheName +
             "\".Organization o SET name = UPPER(name)", false).setUpdateOnServer(true)).getAll();
 
         assertEquals((long)cache.size(), r.get(0).get(0));
@@ -321,7 +321,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1024; i++)
             cache.put(i, new Organization("Acme Inc #" + i, 0));
 
-        cache.query(new JdbcSqlFieldsQuery("UPDATE \"org\".Organization o SET name = UPPER(name)", false)
+        cache.query(new SqlFieldsQueryEx("UPDATE \"org\".Organization o SET name = UPPER(name)", false)
             .setUpdateOnServer(true)).getAll();
 
         assertTrue(latch.await(5000, MILLISECONDS));
@@ -348,7 +348,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         IgniteCache<PersonKey, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
         // UPDATE over even partitions
-        cache.query(new JdbcSqlFieldsQuery("UPDATE Person SET position = 0", false)
+        cache.query(new SqlFieldsQueryEx("UPDATE Person SET position = 0", false)
                 .setUpdateOnServer(true)
                 .setPartitions(parts));
 
@@ -376,7 +376,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new JdbcSqlFieldsQuery("UPDATE Organization SET name = WAIT(name)", false)
+                return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET name = WAIT(name)", false)
                     .setUpdateOnServer(true));
             }
         });
@@ -422,7 +422,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
-                return cache.query(new JdbcSqlFieldsQuery("UPDATE Organization SET name = WAIT(name)", false)
+                return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET name = WAIT(name)", false)
                     .setUpdateOnServer(true));
             }
         });

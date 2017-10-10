@@ -59,7 +59,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -1518,7 +1518,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param isQry {@code true} for select queries, otherwise (DML/DDL queries) {@code false}.
      */
     private void checkQueryType(SqlFieldsQuery qry, boolean isQry) {
-        if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)qry).isQuery() != isQry)
+        if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isQuery() != null &&
+            ((SqlFieldsQueryEx)qry).isQuery() != isQry)
             throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
                 IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
     }

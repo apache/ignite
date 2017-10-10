@@ -35,7 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -268,17 +268,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case SELECT_STATEMENT_TYPE:
-                    qry = new JdbcSqlFieldsQuery(sql, true);
+                    qry = new SqlFieldsQueryEx(sql, true);
 
                     break;
 
                 default:
                     assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
 
-                    qry = new JdbcSqlFieldsQuery(sql, false);
+                    qry = new SqlFieldsQueryEx(sql, false);
 
                     if (updateOnServer)
-                        ((JdbcSqlFieldsQuery)qry).setUpdateOnServer(true);
+                        ((SqlFieldsQueryEx)qry).setUpdateOnServer(true);
             }
 
             qry.setArgs(req.arguments());
@@ -484,7 +484,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (q.sql() != null)
                     sql = q.sql();
 
-                SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, false);
+                SqlFieldsQuery qry = new SqlFieldsQueryEx(sql, false);
 
                 qry.setArgs(q.args());
 

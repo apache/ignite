@@ -34,16 +34,17 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -94,6 +95,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Lazy flag. */
     private final boolean lazy;
 
+    /** Update on server flag. */
+    private final boolean updateOnServer;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -104,10 +108,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
+     * @param updateOnServer Update on server flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-        boolean collocated, boolean lazy) {
+        boolean collocated, boolean lazy, boolean updateOnServer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -116,6 +121,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.collocated = collocated;
         this.lazy = lazy;
+        this.updateOnServer = updateOnServer;
 
         log = ctx.log(getClass());
     }
@@ -196,8 +202,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param args Arguments.
      * @return Query instance.
      */
-    private SqlFieldsQuery makeQuery(String schema, String sql, Object[] args) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args) {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         qry.setArgs(args);
 
@@ -207,6 +213,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setCollocated(collocated);
         qry.setLazy(lazy);
         qry.setSchema(schema);
+        qry.setUpdateOnServer(updateOnServer);
 
         return qry;
     }

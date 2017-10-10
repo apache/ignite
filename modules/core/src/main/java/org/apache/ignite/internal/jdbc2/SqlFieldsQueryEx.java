@@ -24,12 +24,12 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
  * {@link SqlFieldsQuery} with JDBC flavor - it has additional flag indicating whether JDBC driver expects
  * this query to return a result set or an update counter. This class is not intended for use outside JDBC driver.
  */
-public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
+public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Flag set by JDBC driver to enforce checks for correct operation type. */
-    private final boolean isQry;
+    private final Boolean isQry;
 
     /** Whether server side DML should be enabled. */
     private boolean updateOnServer;
@@ -38,7 +38,7 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation.
      */
-    public JdbcSqlFieldsQuery(String sql, boolean isQry) {
+    public SqlFieldsQueryEx(String sql, Boolean isQry) {
         super(sql);
         this.isQry = isQry;
     }
@@ -46,61 +46,61 @@ public final class JdbcSqlFieldsQuery extends SqlFieldsQuery {
     /**
      * @return Flag indicating whether this object denotes a query or an update operation..
      */
-    public boolean isQuery() {
+    public Boolean isQuery() {
         return isQry;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setSql(String sql) {
+    @Override public SqlFieldsQueryEx setSql(String sql) {
         super.setSql(sql);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setArgs(Object... args) {
+    @Override public SqlFieldsQueryEx setArgs(Object... args) {
         super.setArgs(args);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
+    @Override public SqlFieldsQueryEx setTimeout(int timeout, TimeUnit timeUnit) {
         super.setTimeout(timeout, timeUnit);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setCollocated(boolean collocated) {
+    @Override public SqlFieldsQueryEx setCollocated(boolean collocated) {
         super.setCollocated(collocated);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setEnforceJoinOrder(boolean enforceJoinOrder) {
+    @Override public SqlFieldsQueryEx setEnforceJoinOrder(boolean enforceJoinOrder) {
         super.setEnforceJoinOrder(enforceJoinOrder);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setDistributedJoins(boolean distributedJoins) {
+    @Override public SqlFieldsQueryEx setDistributedJoins(boolean distributedJoins) {
         super.setDistributedJoins(distributedJoins);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setPageSize(int pageSize) {
+    @Override public SqlFieldsQueryEx setPageSize(int pageSize) {
         super.setPageSize(pageSize);
 
         return this;
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcSqlFieldsQuery setLocal(boolean loc) {
+    @Override public SqlFieldsQueryEx setLocal(boolean loc) {
         super.setLocal(loc);
 
         return this;

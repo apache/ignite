@@ -13,13 +13,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** Tests for {@link JdbcSqlFieldsQuery#updateOnServer} flag. */
+/** Tests for {@link SqlFieldsQueryEx#updateOnServer} flag. */
 public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -183,7 +183,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE depo > 0";
 
-        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts, new JdbcSqlFieldsQuery(text, false).setArgs(10));
+        checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts, new SqlFieldsQueryEx(text, false).setArgs(10));
     }
 
     /**
@@ -196,7 +196,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE _key = ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10, 1));
+            new SqlFieldsQueryEx(text, false).setArgs(10, 1));
     }
 
     /**
@@ -209,7 +209,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "UPDATE \"acc\".Account SET depo = depo - ? WHERE sn >= ? AND sn < ? LIMIT ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10, 0, 10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(10, 0, 10, 10));
     }
 
     /**
@@ -227,7 +227,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "WHERE accountId IN (SELECT p._key FROM \"acc\".Account p WHERE depo < ?)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new JdbcSqlFieldsQuery(text, false).setArgs(0, 0));
+            new SqlFieldsQueryEx(text, false).setArgs(0, 0));
     }
 
     /**
@@ -244,7 +244,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -261,7 +261,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "(SELECT a.depo/t.price FROM \"acc\".Account a WHERE t.accountId = a._key)";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -273,7 +273,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), null,
-            new JdbcSqlFieldsQuery(text, false).setArgs(1, "John Marry", 11111, 100, 2, "Marry John", 11112, 200));
+            new SqlFieldsQueryEx(text, false).setArgs(1, "John Marry", 11111, 100, 2, "Marry John", 11112, 200));
     }
 
     /**
@@ -289,7 +289,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT a._key, a._key, ?, a.depo/?, ? FROM \"acc\".Account a";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new JdbcSqlFieldsQuery(text, false).setArgs(1, 10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(1, 10, 10));
     }
 
     /**
@@ -306,7 +306,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "ORDER BY a.sn DESC";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new JdbcSqlFieldsQuery(text, false).setArgs(1, 10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(1, 10, 10));
     }
 
     /**
@@ -324,7 +324,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT 101 + a2._key, a2._key, 1, a2.depo, 1 FROM \"acc\".Account a2";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -344,7 +344,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "GROUP BY accountId";
 
         checkUpdate(client.<Integer, Report>cache(CACHE_REPORT), null,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -360,7 +360,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "SELECT DISTINCT sn, name FROM \"acc\".Account ";
 
         checkUpdate(client.<Integer, String>cache(CACHE_LIST), null,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -379,7 +379,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "FROM \"acc\".Account a JOIN \"stock\".Stock s ON 1=1";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), null,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(10, 10));
     }
 
     /**
@@ -394,7 +394,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "DELETE FROM \"acc\".Account WHERE sn > ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10));
+            new SqlFieldsQueryEx(text, false).setArgs(10));
     }
 
     /**
@@ -409,7 +409,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         String text = "DELETE TOP ? FROM \"acc\".Account WHERE sn < ?";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(10, 10));
     }
 
     /**
@@ -427,7 +427,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "WHERE _key IN (SELECT t.accountId FROM \"trade\".Trade t)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -441,7 +441,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
 
         checkUpdate(client.<Integer, Account>cache(CACHE_ACCOUNT), accounts,
-            new JdbcSqlFieldsQuery(text, false).setArgs(0, "John Marry", 11111, 100, 1, "Marry John", 11112, 200));
+            new SqlFieldsQueryEx(text, false).setArgs(0, "John Marry", 11111, 100, 1, "Marry John", 11112, 200));
     }
 
     /**
@@ -464,7 +464,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "FROM \"acc\".Account a JOIN \"stock\".Stock s ON 1=1";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new JdbcSqlFieldsQuery(text, false).setArgs(10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(10, 10));
     }
 
     /**
@@ -485,7 +485,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "ORDER BY a.sn DESC";
 
         checkUpdate(client.<Integer, Trade>cache(CACHE_TRADE), trades,
-            new JdbcSqlFieldsQuery(text, false).setArgs(1, 10, 10));
+            new SqlFieldsQueryEx(text, false).setArgs(1, 10, 10));
     }
 
     /**
@@ -509,7 +509,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
             "GROUP BY accountId";
 
         checkUpdate(client.<Integer, Report>cache(CACHE_REPORT), reports,
-            new JdbcSqlFieldsQuery(text, false));
+            new SqlFieldsQueryEx(text, false));
     }
 
     /**
@@ -580,7 +580,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
      * @param <K> Key type.
      * @param <V> Value type.
      */
-    private <K, V> void checkUpdate(IgniteCache<K, V> cache, Map<K, V> initial, JdbcSqlFieldsQuery qry) {
+    private <K, V> void checkUpdate(IgniteCache<K, V> cache, Map<K, V> initial, SqlFieldsQueryEx qry) {
         cache.clear();
 
         if (!F.isEmpty(initial))

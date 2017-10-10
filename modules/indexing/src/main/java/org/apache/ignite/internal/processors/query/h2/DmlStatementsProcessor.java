@@ -50,7 +50,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.jdbc2.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -414,7 +414,7 @@ public class DmlStatementsProcessor {
         }
 
         if (plan.distributed && !loc && !fieldsQry.isLocal() &&
-            fieldsQry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)fieldsQry).isUpdateOnServer()) {
+            fieldsQry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)fieldsQry).isUpdateOnServer()) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
             // null is returned in case not all nodes support distributed DML.
@@ -513,7 +513,7 @@ public class DmlStatementsProcessor {
 
         res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
 
-        if (fieldsQry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery)fieldsQry).isUpdateOnServer()
+        if (fieldsQry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)fieldsQry).isUpdateOnServer()
             && !loc && !F.isEmpty(res.selectQry))
             checkPlanCanBeDistributed(fieldsQry, conn, res);
 

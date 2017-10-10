@@ -162,7 +162,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
      * @throws SQLException If failed.
      */
     private Integer doSingleUpdate(IgniteCache<?, ?> cache, String sqlText, List<Object> args) throws SQLException {
-        SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sqlText, false);
+        SqlFieldsQuery qry = new SqlFieldsQueryEx(sqlText, false);
 
         qry.setPageSize(fetchSize);
         qry.setLocal(locQry);

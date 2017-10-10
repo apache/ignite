@@ -109,7 +109,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
 
     /** {@inheritDoc} */
     @Override public List<JdbcStatementResultInfo> call() throws Exception {
-        SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+        SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
             .setArgs(args);
 
         qry.setPageSize(fetchSize);
