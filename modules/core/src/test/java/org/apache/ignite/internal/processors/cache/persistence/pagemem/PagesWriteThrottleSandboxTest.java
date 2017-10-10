@@ -65,14 +65,16 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(4000L * 1024 * 1024)
-            .setName("dfltDataRegion")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(4000L * 1024 * 1024)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointingFrequency(20_000)
+            .setCheckpointingPageBufferSize(1000L * 1000 * 1000)
+            .setWriteThrottlingEnabled(true);
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -84,13 +86,6 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(1000L * 1000 * 1000)
-                .setWriteThrottlingEnabled(true));
 
         cfg.setConsistentId(gridName);
 

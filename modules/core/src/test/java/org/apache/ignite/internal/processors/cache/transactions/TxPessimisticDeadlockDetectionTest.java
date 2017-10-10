@@ -89,15 +89,8 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration plc = new DataRegionConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10);
-
-        memCfg.setDefaultDataRegionName("dfltPlc");
-        memCfg.setDataRegionConfigurations(plc);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10));
 
         cfg.setDataStorageConfiguration(memCfg);
 

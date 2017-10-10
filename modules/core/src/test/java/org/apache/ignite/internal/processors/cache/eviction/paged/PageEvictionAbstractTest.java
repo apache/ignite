@@ -95,9 +95,8 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
         plc.setName(DEFAULT_POLICY_NAME);
 
-        dbCfg.setDataRegionConfigurations(plc);
+        dbCfg.setDefaultDataRegionConfiguration(plc);
         dbCfg.setPageSize(PAGE_SIZE);
-        dbCfg.setDefaultDataRegionName(DEFAULT_POLICY_NAME);
 
         cfg.setDataStorageConfiguration(dbCfg);
 

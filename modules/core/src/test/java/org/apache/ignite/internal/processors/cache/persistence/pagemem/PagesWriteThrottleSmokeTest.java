@@ -75,14 +75,18 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(400 * 1024 * 1024)
-            .setName("dfltDataRegion")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(400 * 1024 * 1024)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointingFrequency(20_000)
+            .setCheckpointingPageBufferSize(200 * 1000 * 1000)
+            .setWriteThrottlingEnabled(true)
+            .setCheckpointingThreads(1)
+            .setFileIOFactory(new SlowCheckpointFileIOFactory());
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -94,15 +98,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(200 * 1000 * 1000)
-                .setWriteThrottlingEnabled(true)
-                .setCheckpointingThreads(1)
-                .setFileIOFactory(new SlowCheckpointFileIOFactory()));
 
         cfg.setConsistentId(gridName);
 

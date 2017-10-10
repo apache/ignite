@@ -61,15 +61,8 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration plc = new DataRegionConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(100L * 1024 * 1024);
-
-        memCfg.setDefaultDataRegionName("dfltPlc");
-        memCfg.setDataRegionConfigurations(plc);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 

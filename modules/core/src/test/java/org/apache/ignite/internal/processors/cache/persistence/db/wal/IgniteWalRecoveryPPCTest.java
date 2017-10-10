@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
-
     /** */
     private boolean fork;
 
@@ -83,39 +82,33 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg, ccfg2);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
         dbCfg.setPageSize(4 * 1024);
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        memPlcCfg.setPersistenceEnabled(true);
+
+        dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 
         DataRegionConfiguration memPlcCfg2 = new DataRegionConfiguration();
-
         memPlcCfg2.setName(MEM_PLC_NO_PDS);
         memPlcCfg2.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg2.setMaxSize(1024 * 1024 * 1024);
         memPlcCfg2.setPersistenceEnabled(false);
 
-        dbCfg.setDataRegionConfigurations(memPlcCfg, memPlcCfg2);
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
+        dbCfg.setDataRegionConfigurations(memPlcCfg2);
 
-        cfg.setDataStorageConfiguration(dbCfg);
+        dbCfg.setWalRecordIteratorBufferSize(1024 * 1024);
 
-        DataStorageConfiguration pCfg = new DataStorageConfiguration();
+        dbCfg.setWalHistorySize(2);
 
-        pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
-
-        pCfg.setWalHistorySize(2);
-
-        pCfg.setWalMode(WALMode.LOG_ONLY);
+        dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         if (walSegmentSize != 0)
-            pCfg.setWalSegmentSize(walSegmentSize);
+            dbCfg.setWalSegmentSize(walSegmentSize);
 
-        cfg.setDataStorageConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 

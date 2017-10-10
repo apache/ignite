@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -68,8 +69,6 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
-
         cfg.setDataStorageConfiguration(createDbConfig());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
@@ -88,11 +87,12 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
         memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalMode(WALMode.LOG_ONLY);
 
         return memCfg;
     }

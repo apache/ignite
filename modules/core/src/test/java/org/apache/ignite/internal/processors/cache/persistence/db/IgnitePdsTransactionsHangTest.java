@@ -122,23 +122,18 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         cfg.setTransactionConfiguration(txCfg);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalHistorySize(1)
-                .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
-        );
-
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
         memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setPersistenceEnabled(true);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
-
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalHistorySize(1);
+        memCfg.setCheckpointingFrequency(CHECKPOINT_FREQUENCY);
         memCfg.setPageSize(PAGE_SIZE * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
