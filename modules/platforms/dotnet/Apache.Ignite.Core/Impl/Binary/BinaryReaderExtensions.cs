@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -106,12 +107,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="reader">The reader.</param>
         /// <param name="factoryMethod">factory method delegate for T instance creation</param>
         /// <returns>Resulting generic list.</returns>
-        public static List<T> ReadPlatformNullableCollection<T>(this BinaryReader reader, Func<BinaryReader, T> factoryMethod)
+        public static List<T> ReadPlatformNullableCollection<T>(this BinaryReader reader, 
+            Func<BinaryReader, T> factoryMethod)
         {
+            Debug.Assert(reader != null);
+            Debug.Assert(factoryMethod != null);
+
             var hasVal = reader.ReadBoolean();
 
             if (!hasVal)
-                return new List<T>();
+            {
+                return null;
+            }
 
             var count = reader.ReadInt();
 

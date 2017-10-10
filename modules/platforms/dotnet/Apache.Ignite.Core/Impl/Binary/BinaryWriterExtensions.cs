@@ -190,7 +190,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="writer">Writer.</param>
         /// <param name="vals">Values.</param>
         /// <param name="writeAction">A custom write action to apply to each element.</param>
-        public static void WriteEnumerable<T>(this BinaryWriter writer, IEnumerable<T> vals, Action<T, IBinaryRawWriter> writeAction)
+        public static void WriteEnumerable<T>(this BinaryWriter writer, IEnumerable<T> vals, 
+            Action<T, IBinaryRawWriter> writeAction)
         {
             Debug.Assert(writer != null);
             Debug.Assert(vals != null);

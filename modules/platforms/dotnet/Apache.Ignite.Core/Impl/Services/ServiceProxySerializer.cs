@@ -187,14 +187,16 @@ namespace Apache.Ignite.Core.Impl.Services
             }
 
             // read failed configurations
-            IList<ServiceConfiguration> failedCfgs = null;
+            IList<ServiceConfiguration> failedCfgs;
+
             try
             {
-                failedCfgs = reader.ReadPlatformNullableCollection<ServiceConfiguration>(f => new ServiceConfiguration(f));
+                failedCfgs = reader.ReadPlatformNullableCollection(f => new ServiceConfiguration(f));
             }
             catch (Exception e)
             {
-                throw new ServiceDeploymentException("Service deployment failed. Could not provide failed configurations", e);
+                throw new ServiceDeploymentException(
+                    "Service deployment failed. Could not deserialize failed configurations", e);
             }
 
             var binErr = err as IBinaryObject;
