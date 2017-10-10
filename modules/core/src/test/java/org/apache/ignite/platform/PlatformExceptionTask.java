@@ -41,10 +41,13 @@ import java.util.Map;
 /**
  * Task to test exception mappings.
  */
+@SuppressWarnings("unused")  // Used by .NET ExceptionsTest.
 public class PlatformExceptionTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) {
+        assert arg != null;
+
         switch (arg) {
             case "IllegalArgumentException": throw new IllegalArgumentException(arg);
             case "IllegalStateException": throw new IllegalStateException(arg);
