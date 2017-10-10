@@ -20,33 +20,25 @@
 function print_help()
 {
     echo
-    echo "Script for connecting to cluster via sqlline."
-    echo "Usage: ${SELF_NAME} <ip_address:port> <options>"
+    echo "Usage: ${SELF_NAME} host[:port] [options]"
     echo
-    echo "In the first parameter you have to explicitly specify a host to connect."
-    echo "Make sure an Ignite node is running on that host."
-    echo "For example:"
-    echo "${SELF_NAME} 127.0.0.1"
-    echo "Optionally you can specify a port:"
-    echo "${SELF_NAME} 127.0.0.1:10800"
+    echo "If port is omitted default port 10800 will be used."
     echo
-    echo "Non mandatory options:"
-    echo "-s   | --schema : Schema."
-    echo "-dj  | --distributedJoins : Distributed joins flag."
-    echo "-ej  | --enforceJoinOrder : Enforce join order flag."
-    echo "-c   | --collocated : Collocated flag."
-    echo "-r   | --replicatedOnly : Replicated only flag."
-    echo "-ac  | --autoCloseServerCursor : Auto close server cursor flag."
-    echo "-ssb | --socketSendBuffer : Socket send buffer size."
-    echo "-srb | --socketReceiveBuffer : Socket receive buffer size."
-    echo "-tnd | --tcpNoDelay : TCP no delay flag."
-    echo "-l   | --lazy : Lazy flag."
+    echo "Options:"
+    echo "    -h  |  --help                       Help."
+    echo "    --schema <schema>                   Schema name; defaults to PUBLIC."
+    echo "    --distributedJoins                  Enable distributed joins."
+    echo "    --lazy                              Execute queries in lazy mode."
+    echo "    --collocated                        Collocated flag."
+    echo "    --replicatedOnly                    Replicated only flag"
+    echo "    --enforceJoinOrder                  Enforce join order."
+    echo "    --socketSendBuffer <buf_size>       Socket send buffer size in bytes."
+    echo "    --socketReceiveBuffer <buf_size>    Socket receive buffer size in bytes."
     echo
-    echo "More information about these options:"
-    echo "https://apacheignite-sql.readme.io/docs/jdbc-driver"
+    echo "Examples: ${SELF_NAME} myHost --schema mySchema --distributedJoins"
     echo
-    echo "Example:"
-    echo "${SELF_NAME} 127.0.0.1 -s MySchema -dj true -ej -ssb 0"
+    echo "For more information see https://apacheignite-sql.readme.io/docs/jdbc-driver"
+
 }
 
 function edit_params()
@@ -67,9 +59,7 @@ function edit_params()
 function parse_arguments()
 {
     if [[ $# -eq 0 ]]; then
-        echo "Error. You need to specify host to connect:"
-        echo "${SELF_NAME} 127.0.0.1"
-        echo "Use -h or --help to read help."
+        print_help
         exit 1
     fi
 
@@ -91,7 +81,7 @@ function parse_arguments()
             exit 0
         ;;
         # Schema.
-        -s|--schema)
+        --schema)
             SCHEMA=$2
             if [[ $SCHEMA != "" ]]; then
                 SCHEMA_DELIMITER="/";
@@ -100,7 +90,7 @@ function parse_arguments()
             shift
         ;;
         # Distributed joins flag.
-        -dj|--distributedJoins)
+        --distributedJoins)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "distributedJoins" $2
@@ -112,7 +102,7 @@ function parse_arguments()
             fi
         ;;
         # Enforce join order flag.
-        -ej|--enforceJoinOrder)
+        --enforceJoinOrder)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "enforceJoinOrder" $2
@@ -124,7 +114,7 @@ function parse_arguments()
             fi
         ;;
         # Collocated flag.
-        -c|--collocated)
+        --collocated)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "collocated" $2
@@ -136,7 +126,7 @@ function parse_arguments()
             fi
         ;;
         # Replicated only flag.
-        -r|--replicatedOnly)
+        --replicatedOnly)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "replicatedOnly" $2
@@ -148,7 +138,7 @@ function parse_arguments()
             fi
         ;;
         # Auto close server cursor flag.
-        -ac|--autoCloseServerCursor)
+        --autoCloseServerCursor)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "autoCloseServerCursor" $2
@@ -160,19 +150,19 @@ function parse_arguments()
             fi
         ;;
         # Socket send buffer.
-        -ssb|--socketSendBuffer)
+        --socketSendBuffer)
             edit_params "socketSendBuffer" $2
             shift
             shift
         ;;
         # Socket receive buffer.
-        -srb|--socketReceiveBuffer)
+        --socketReceiveBuffer)
             edit_params "socketReceiveBuffer" $2
             shift
             shift
         ;;
         # TCP no delay flag.
-        -tnd|--tcpNoDelay)
+        --tcpNoDelay)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "tcpNoDelay" $2
@@ -184,7 +174,7 @@ function parse_arguments()
             fi
         ;;
         # Lazy flag.
-        -l|--lazy)
+        --lazy)
             if [[ $2 != -* && $2 != "" ]]; then
                 check_boolean $2 $key
                 edit_params "lazy" $2
@@ -210,7 +200,8 @@ function check_boolean()
     if [[ $1 != "" ]]; then
         if [[ $1 != true && $1 != false ]]; then
             echo "Error: $1 is not a valid value for $2. Value should be 'true' or 'false'."
-            echo "Use ${SELF_NAME} --help to read help."
+            echo "If you use $2 with no value $2 will be set to 'true'."
+            echo "Use ${SELF_NAME} -h or --help to read help."
             exit 1
         fi
     fi
