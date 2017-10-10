@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -117,17 +118,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultDataRegionSize(10 * 1024 * 1024);
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(10 * 1024 * 1024)
+            .setPersistenceEnabled(persistenceEnabled()));
+
+        if (persistenceEnabled())
+            memCfg.setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        if (persistenceEnabled()) {
-            DataStorageConfiguration pCfg = new DataStorageConfiguration();
-
-            pCfg.setWalMode(WALMode.LOG_ONLY);
-
-            cfg.setDataStorageConfiguration(pCfg);
-        }
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
