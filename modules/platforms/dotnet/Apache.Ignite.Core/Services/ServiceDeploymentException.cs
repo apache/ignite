@@ -30,8 +30,11 @@ namespace Apache.Ignite.Core.Services
     [Serializable]
     public class ServiceDeploymentException : IgniteException
     {
-        /** Serializer key. */
+        /** Serializer key for BinaryCause. */
         private const string KeyBinaryCause = "BinaryCause";
+
+        /** Serializer key for Failed Configurations. */
+        private const string KeyFailedConfigurations = "FailedConfigurations";
 
         /** Cause. */
         private readonly IBinaryObject _binaryCause;
@@ -72,7 +75,8 @@ namespace Apache.Ignite.Core.Services
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         /// <param name="failedCfgs">List of failed configurations</param>
-        public ServiceDeploymentException(string message, Exception cause, IList<ServiceConfiguration> failedCfgs) : base(message, cause)
+        public ServiceDeploymentException(string message, Exception cause, IList<ServiceConfiguration> failedCfgs) 
+            : base(message, cause)
         {
             _failedCfgs = failedCfgs;
         }
@@ -83,8 +87,8 @@ namespace Apache.Ignite.Core.Services
         /// <param name="message">The message.</param>
         /// <param name="binaryCause">The binary cause.</param>
         /// <param name="failedCfgs">List of failed configurations</param>
-        public ServiceDeploymentException(string message, IBinaryObject binaryCause, IList<ServiceConfiguration> failedCfgs)
-            : base(message)
+        public ServiceDeploymentException(string message, IBinaryObject binaryCause, 
+            IList<ServiceConfiguration> failedCfgs) : base(message)
         {
             _binaryCause = binaryCause;
             _failedCfgs = failedCfgs;
@@ -99,6 +103,8 @@ namespace Apache.Ignite.Core.Services
             : base(info, ctx)
         {
             _binaryCause = (IBinaryObject)info.GetValue(KeyBinaryCause, typeof(IBinaryObject));
+            _failedCfgs = (IList<ServiceConfiguration>)info.GetValue(KeyFailedConfigurations, 
+                typeof(ServiceConfiguration));
         }
 
         /// <summary>
@@ -121,16 +127,17 @@ namespace Apache.Ignite.Core.Services
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(KeyBinaryCause, _binaryCause);
+            info.AddValue(KeyFailedConfigurations, _failedCfgs);
 
             base.GetObjectData(info, context);
         }
 
         /// <summary>
-        /// Configurations of services that failed to deploy
+        /// Configurations of services that failed to deploy, could be null
         /// </summary>
         public IList<ServiceConfiguration> FailedConfigurations
         {
-            get { return _failedCfgs ?? new List<ServiceConfiguration>(); }
+            get { return _failedCfgs; }
         }
     }
 }

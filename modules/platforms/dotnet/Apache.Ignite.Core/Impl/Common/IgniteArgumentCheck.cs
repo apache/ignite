@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
 
     /// <summary>
@@ -81,8 +83,12 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="argName">Name of the argument.</param>
         /// <param name="validator">custom validator that checks parameters of T for validity</param>
         /// <returns>count of elements in IEnumerable</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static int Ensure<T>(IEnumerable<T> arg, string argName, Action<T, string> validator)
         {
+            Debug.Assert(arg != null);
+            Debug.Assert(validator != null);
+
             var i = 0;
             foreach (var item in arg)
             {

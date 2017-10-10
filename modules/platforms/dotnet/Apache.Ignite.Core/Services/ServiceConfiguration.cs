@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Services
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Service configuration.
@@ -97,11 +97,15 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Default constructor
         /// </summary>
-        public ServiceConfiguration() { }
+        public ServiceConfiguration()
+        {
+            // No-op.
+        }
 
         /// <summary>
         /// Deserialization constructor
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal ServiceConfiguration(IBinaryRawReader r)
         {
             Debug.Assert(r != null);

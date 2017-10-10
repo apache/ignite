@@ -257,10 +257,11 @@ namespace Apache.Ignite.Core.Impl.Services
         public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
         {
             IgniteArgumentCheck.NotNull(configurations, "configurations");
-            var count = IgniteArgumentCheck.Ensure(configurations, "configurations", ValidateConfiguration);
-            IgniteArgumentCheck.Ensure(count > 0, "configurations", "empty collection");
+            var cfgs = configurations.ToArray();
+            IgniteArgumentCheck.Ensure(cfgs, "configurations", ValidateConfiguration);
+            IgniteArgumentCheck.Ensure(cfgs.Length > 0, "configurations", "empty collection");
 
-            DoOutInOp(OpDeployAll, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize), 
+            DoOutInOp(OpDeployAll, w => w.WriteEnumerable(cfgs, ServiceConfiguration.Serialize), 
                 ReadDeploymentResult);
         }
 
@@ -268,10 +269,11 @@ namespace Apache.Ignite.Core.Impl.Services
         public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
         {
             IgniteArgumentCheck.NotNull(configurations, "configurations");
-            var count = IgniteArgumentCheck.Ensure(configurations, "configurations", ValidateConfiguration);
-            IgniteArgumentCheck.Ensure(count > 0, "configurations", "empty collection");
+            var cfgs = configurations.ToArray();
+            IgniteArgumentCheck.Ensure(cfgs, "configurations", ValidateConfiguration);
+            IgniteArgumentCheck.Ensure(cfgs.Length > 0, "configurations", "empty collection");
 
-            return DoOutOpAsync(OpDeployAllAsync, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize),
+            return DoOutOpAsync(OpDeployAllAsync, w => w.WriteEnumerable(cfgs, ServiceConfiguration.Serialize),
                 _keepBinary, ReadDeploymentResult);
         }
 
