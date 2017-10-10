@@ -18,6 +18,7 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.Collections;
 import junit.framework.TestCase;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
 
 /**
@@ -33,7 +35,11 @@ import org.apache.logging.log4j.Level;
  */
 public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
     /** */
-    public static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
+    private static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
+    private static final String LOG_PATH_TEST        = "modules/core/src/test/config/log4j2-test.xml";
+
+    /** */
+    private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
 
     /**
      * @throws Exception If failed.
@@ -102,7 +108,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
         assertTrue(consoleOut.contains(testMsg + Level.INFO));
         assertTrue(consoleOut.contains(testMsg + Level.DEBUG));
         assertTrue(consoleOut.contains(testMsg + Level.TRACE));
-        assertTrue(consoleOut.contains(testMsg + Level.ERROR));
+        assertTrue(!consoleOut.contains(testMsg + Level.ERROR));
         assertTrue(consoleOut.contains(testMsg + Level.WARN));
 
         assertTrue(consoleErr.contains(testMsg + Level.ERROR));
@@ -128,9 +134,11 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
             setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
         }});
 
+        File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
+
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)
-            .setGridLogger(new Log4J2Logger(logPath))
+            .setGridLogger(new Log4J2Logger(xml))
             .setConnectorConfiguration(null)
             .setDiscoverySpi(disco);
     }
