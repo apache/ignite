@@ -102,7 +102,6 @@ function parse_arguments()
         # Distributed joins flag.
         -dj|--distributedJoins)
             if [[ $2 != -* && $2 != "" ]]; then
-                echo "dj"
                 check_boolean $2 $key
                 edit_params "distributedJoins" $2
                 shift
@@ -115,7 +114,6 @@ function parse_arguments()
         # Enforce join order flag.
         -ej|--enforceJoinOrder)
             if [[ $2 != -* && $2 != "" ]]; then
-            echo "ej"
                 check_boolean $2 $key
                 edit_params "enforceJoinOrder" $2
                 shift
