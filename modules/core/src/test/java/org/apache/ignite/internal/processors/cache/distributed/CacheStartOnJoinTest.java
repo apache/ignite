@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -98,7 +99,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(1024);
-        memCfg.setDefaultDataRegionSize(50 * 1024 * 1024);
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 

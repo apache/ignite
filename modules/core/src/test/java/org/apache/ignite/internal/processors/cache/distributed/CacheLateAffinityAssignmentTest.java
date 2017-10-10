@@ -48,6 +48,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -184,7 +185,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration cfg1 = new DataStorageConfiguration();
 
-        cfg1.setDefaultDataRegionSize(150 * 1024 * 1024L);
+        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(150 * 1024 * 1024L));
 
         cfg.setDataStorageConfiguration(cfg1);
 
