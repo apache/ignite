@@ -40,10 +40,10 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Size of a memory chunk reserved for system cache initially. */
-    private long sysCacheInitSize;
+    private long sysRegionInitSize;
 
     /** Size of memory for system cache. */
-    private long sysCacheMaxSize;
+    private long sysRegionMaxSize;
 
     /** Page size. */
     private int pageSize;
@@ -52,10 +52,10 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private int concLvl;
 
     /** Configuration of default data region. */
-    private VisorDataRegionConfiguration dfltDataRegConf;
+    private VisorDataRegionConfiguration dfltDataRegCfg;
 
     /** Memory policies. */
-    private List<VisorDataRegionConfiguration> dataRegions;
+    private List<VisorDataRegionConfiguration> dataRegCfgs;
 
     /** */
     private String persistenceStorePath;
@@ -141,17 +141,17 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     public VisorDataStorageConfiguration(DataStorageConfiguration cfg) {
         assert cfg != null;
 
-        sysCacheInitSize = cfg.getSystemCacheInitialSize();
-        sysCacheMaxSize = cfg.getSystemCacheMaxSize();
+        sysRegionInitSize = cfg.getSystemRegionInitialSize();
+        sysRegionMaxSize = cfg.getSystemRegionMaxSize();
         pageSize = cfg.getPageSize();
         concLvl = cfg.getConcurrencyLevel();
 
-        DataRegionConfiguration dfltRegion = cfg.getDefaultRegionConfiguration();
+        DataRegionConfiguration dfltRegion = cfg.getDefaultDataRegionConfiguration();
 
         if (dfltRegion != null)
-            dfltDataRegConf = new VisorDataRegionConfiguration(cfg.getDefaultRegionConfiguration());
+            dfltDataRegCfg = new VisorDataRegionConfiguration(dfltRegion);
 
-        dataRegions = VisorDataRegionConfiguration.from(cfg.getDataRegions());
+        dataRegCfgs = VisorDataRegionConfiguration.from(cfg.getDataRegionConfigurations());
 
         persistenceStorePath = cfg.getPersistentStorePath();
         checkpointingFreq = cfg.getCheckpointingFrequency();
@@ -183,8 +183,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheInitialSize() {
-        return sysCacheInitSize;
+    public long getSystemRegionInitialSize() {
+        return sysRegionInitSize;
     }
 
     /**
@@ -192,8 +192,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
      *
      * @return Size in bytes.
      */
-    public long getSystemCacheMaxSize() {
-        return sysCacheMaxSize;
+    public long getSystemRegionMaxSize() {
+        return sysRegionMaxSize;
     }
 
     /**
@@ -220,8 +220,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
      * @return Configuration of default data region. All cache groups will reside in this data region by default.
      * For assigning a custom data region to cache group, use {@link CacheConfiguration#setDataRegionName(String)}.
      */
-    public VisorDataRegionConfiguration getDefaultRegionConfiguration() {
-        return dfltDataRegConf;
+    public VisorDataRegionConfiguration getDefaultDataRegionConfiguration() {
+        return dfltDataRegCfg;
     }
 
     /**
@@ -231,8 +231,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
      *
      * @return Array of configured data regions.
      */
-    public List<VisorDataRegionConfiguration> getDataRegions() {
-        return dataRegions;
+    public List<VisorDataRegionConfiguration> getDataRegionConfigurations() {
+        return dataRegCfgs;
     }
 
     /**
@@ -398,11 +398,11 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(sysCacheInitSize);
-        out.writeLong(sysCacheMaxSize);
+        out.writeLong(sysRegionInitSize);
+        out.writeLong(sysRegionMaxSize);
         out.writeInt(pageSize);
         out.writeInt(concLvl);
-        U.writeCollection(out, dataRegions);
+        U.writeCollection(out, dataRegCfgs);
 
         U.writeString(out, persistenceStorePath);
         out.writeLong(checkpointingFreq);
@@ -431,11 +431,11 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        sysCacheInitSize = in.readLong();
-        sysCacheMaxSize = in.readLong();
+        sysRegionInitSize = in.readLong();
+        sysRegionMaxSize = in.readLong();
         pageSize = in.readInt();
         concLvl = in.readInt();
-        dataRegions = U.readList(in);
+        dataRegCfgs = U.readList(in);
 
         persistenceStorePath = U.readString(in);
         checkpointingFreq = in.readLong();

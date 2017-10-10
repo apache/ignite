@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,6 +60,21 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize;
 
+    /** Enable memory metrics collection for this data region. */
+    private boolean metricsEnabled;
+
+    /** Number of sub-intervals. */
+    private int subIntervals;
+
+    /**
+     * Time interval (in milliseconds) for {@link DataRegionMetrics#getAllocationRate()}
+     * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
+     */
+    private long rateTimeInterval;
+
+    /** Enable Ignite Native Persistence. */
+    private boolean persistenceEnabled;
+
     /**
      * Default constructor.
      */
@@ -81,6 +97,10 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         pageEvictionMode = plc.getPageEvictionMode();
         evictionThreshold = plc.getEvictionThreshold();
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
+        metricsEnabled = plc.isMetricsEnabled();
+        subIntervals = plc.getSubIntervals();
+        rateTimeInterval = plc.getRateTimeInterval();
+        persistenceEnabled = plc.isPersistenceEnabled();
     }
 
     public static List<VisorDataRegionConfiguration> from(DataRegionConfiguration[] plcs) {
@@ -143,6 +163,34 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         return emptyPagesPoolSize;
     }
 
+    /**
+     * @return Metrics enabled flag.
+     */
+    public boolean isMetricsEnabled() {
+        return metricsEnabled;
+    }
+
+    /**
+     * @return Number of sub intervals.
+     */
+    public int getSubIntervals() {
+        return subIntervals;
+    }
+
+    /**
+     * @return Time interval over which allocation rate is calculated.
+     */
+    public long getRateTimeInterval() {
+        return rateTimeInterval;
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -152,6 +200,10 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         U.writeEnum(out, pageEvictionMode);
         out.writeDouble(evictionThreshold);
         out.writeInt(emptyPagesPoolSize);
+        out.writeBoolean(metricsEnabled);
+        out.writeInt(subIntervals);
+        out.writeLong(rateTimeInterval);
+        out.writeBoolean(persistenceEnabled);
     }
 
     /** {@inheritDoc} */
@@ -163,6 +215,10 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
         evictionThreshold = in.readDouble();
         emptyPagesPoolSize = in.readInt();
+        metricsEnabled = in.readBoolean();
+        subIntervals = in.readInt();
+        rateTimeInterval = in.readLong();
+        persistenceEnabled = in.readBoolean();
     }
 
     /** {@inheritDoc} */
