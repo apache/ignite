@@ -514,7 +514,7 @@ public class DmlStatementsProcessor {
         res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
 
         if (fieldsQry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)fieldsQry).isUpdateOnServer()
-            && !loc && !F.isEmpty(res.selectQry))
+            && !loc && res.rowsNum == 0 && !F.isEmpty(res.selectQry))
             checkPlanCanBeDistributed(fieldsQry, conn, res);
 
         // Don't cache re-runs

@@ -43,6 +43,22 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     }
 
     /**
+     * @param qry SQL query.
+     */
+    public SqlFieldsQueryEx(SqlFieldsQuery qry) {
+        super(qry);
+
+        if (qry instanceof SqlFieldsQueryEx) {
+            SqlFieldsQueryEx other = (SqlFieldsQueryEx)qry;
+
+            this.isQry = other.isQry;
+            this.updateOnServer = other.updateOnServer;
+        }
+        else
+            this.isQry = null;
+    }
+
+    /**
      * @return Flag indicating whether this object denotes a query or an update operation.
      */
     public Boolean isQuery() {
