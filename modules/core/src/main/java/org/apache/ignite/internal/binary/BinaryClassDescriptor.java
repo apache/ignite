@@ -169,18 +169,12 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // Flag indicating that the Externalizable objects marshal through custom serialization methods.
-        final boolean useCustomSerialization;
+        boolean useCustomSerialization = serializer == null && Externalizable.class.isAssignableFrom(cls);
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         // But if class represents the Externalizable, then we have to use BinaryMarshaller.
-        if (serializer == null || isGeometryClass(cls)) {
-            useCustomSerialization = Externalizable.class.isAssignableFrom(cls);
-            useOptMarshaller = !useCustomSerialization || !ctx.isExternalizableBinary();
-        }
-        else {
-            useOptMarshaller = false;
-            useCustomSerialization = false;
-        }
+        useOptMarshaller = (serializer == null || isGeometryClass(cls)) &&
+            !(useCustomSerialization && ctx.isExternalizableBinary());
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
