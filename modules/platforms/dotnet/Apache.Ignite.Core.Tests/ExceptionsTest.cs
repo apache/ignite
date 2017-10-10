@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -94,6 +95,9 @@ namespace Apache.Ignite.Core.Tests
             CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
             CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
 
+            var svcEx = CheckException<ServiceDeploymentException>(comp, "ServiceDeploymentException");
+            Assert.AreEqual("foo", svcEx.FailedConfigurations.Single().Name);
+
             // Check stopped grid.
             grid.Dispose();
 
@@ -103,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Checks the exception.
         /// </summary>
-        private static void CheckException<T>(ICompute comp, string name) where T : Exception
+        private static T CheckException<T>(ICompute comp, string name) where T : Exception
         {
             var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
 
@@ -139,6 +143,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(javaEx.Source, resJavaEx.Source);
                 Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
             }
+
+            return ex;
         }
 
         /// <summary>
