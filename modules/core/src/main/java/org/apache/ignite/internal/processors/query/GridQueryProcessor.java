@@ -2564,6 +2564,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (desc.schema() != null)
                     data.queryEntities(desc.schema().entities());
 
+                data.sql(desc.sql());
+
                 cctx.pageStore().storeCacheData(data, true);
             }
             catch (IgniteCheckedException e) {
