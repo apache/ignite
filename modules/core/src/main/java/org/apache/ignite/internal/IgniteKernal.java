@@ -3428,9 +3428,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             cctx.gate().writeUnlock();
         }
 
-        ctx.gateway().writeLock();
+        if (!ctx.clientDisconnected()) {
+            ctx.gateway().writeLock();
 
-        ctx.gateway().writeUnlock();
+            ctx.gateway().writeUnlock();
+        }
 
         if (err != null) {
             reconnectFut.onDone(err);
