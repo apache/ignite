@@ -310,17 +310,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 ctxs.addAll(ctxs0);
         }
 
-        for (ServiceContextImpl ctx : ctxs) {
-            ctx.setCancelled(true);
+        for (ServiceContextImpl ctx : ctxs)
+            cancel(ctx);
 
-            Service svc = ctx.service();
-
-            if (svc != null)
-                svc.cancel(ctx);
-
-            ctx.executor().shutdownNow();
-        }
-
+        // Wait for all services stopped.
         for (ServiceContextImpl ctx : ctxs) {
             try {
                 if (log.isInfoEnabled() && !ctxs.isEmpty())
@@ -1408,36 +1401,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         for (Iterator<ServiceContextImpl> it = ctxs.iterator(); it.hasNext(); ) {
             ServiceContextImpl svcCtx = it.next();
 
-            // Flip cancelled flag.
-            svcCtx.setCancelled(true);
-
-            // Notify service about cancellation.
-            Service svc = svcCtx.service();
-
-            if (svc != null) {
-                try {
-                    svc.cancel(svcCtx);
-                }
-                catch (Throwable e) {
-                    log.error("Failed to cancel service (ignoring) [name=" + svcCtx.name() +
-                        ", execId=" + svcCtx.executionId() + ']', e);
-
-                    if (e instanceof Error)
-                        throw e;
-                }
-                finally {
-                    try {
-                        ctx.resource().cleanup(svc);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to clean up service (will ignore): " + svcCtx.name(), e);
-                    }
-                }
-            }
-
-            // Close out executor thread for the service.
-            // This will cause the thread to be interrupted.
-            svcCtx.executor().shutdownNow();
+            cancel(svcCtx);
 
             it.remove();
 
@@ -1448,6 +1412,42 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (--cancelCnt == 0)
                 break;
         }
+    }
+
+    /**
+     * @param ctx Context to cancel.
+     */
+    private void cancel(ServiceContextImpl ctx) {
+        // Flip cancelled flag.
+        ctx.setCancelled(true);
+
+        // Notify service about cancellation.
+        Service svc = ctx.service();
+
+        if (svc != null) {
+            try {
+                svc.cancel(ctx);
+            }
+            catch (Throwable e) {
+                log.error("Failed to cancel service (ignoring) [name=" + ctx.name() +
+                    ", execId=" + ctx.executionId() + ']', e);
+
+                if (e instanceof Error)
+                    throw e;
+            }
+            finally {
+                try {
+                    this.ctx.resource().cleanup(svc);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to clean up service (will ignore): " + ctx.name(), e);
+                }
+            }
+        }
+
+        // Close out executor thread for the service.
+        // This will cause the thread to be interrupted.
+        ctx.executor().shutdownNow();
     }
 
     /**
