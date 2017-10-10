@@ -18,29 +18,21 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Set;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * JDBC result set metadata implementation.
  */
-public class JdbcThinDataSource implements DataSource {
-    /** Logger. */
-    private static final Logger LOG = Logger.getLogger(JdbcThinDataSource.class.getName());
-
+public class JdbcThinDataSource implements DataSource, Serializable {
     /** Connection URL. */
     private String url;
 
@@ -72,13 +64,13 @@ public class JdbcThinDataSource implements DataSource {
     private boolean autoCloseServerCursor;
 
     /** TCP_NODELAY flag. */
-    private boolean tcpNoDelay;
+    private boolean tcpNoDelay = true;
 
     /** Socket send buffer size. */
-    private int socketSendBuffer;
+    private int sockSendBuff;
 
     /** Socket receive buffer size. */
-    private int socketRecvBuffer;
+    private int sockRecvBuff;
 
     /** Login timeout. */
     private int loginTimeout;
@@ -91,7 +83,7 @@ public class JdbcThinDataSource implements DataSource {
     }
 
     /** {@inheritDoc} */
-    @Override public Connection getConnection(String username, String password) throws SQLException {
+    @Override public Connection getConnection(String username, String pwd) throws SQLException {
         return getConnection();
     }
 
@@ -161,7 +153,7 @@ public class JdbcThinDataSource implements DataSource {
             if (F.isEmpty(host))
                 return null;
 
-            StringBuilder sbUrl = new StringBuilder(host);
+            StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX).append(host);
 
             if (port > 0)
                 sbUrl.append(':').append(port);
@@ -335,28 +327,28 @@ public class JdbcThinDataSource implements DataSource {
      * @return Socket send buffer size.
      */
     public int getSocketSendBuffer() {
-        return socketSendBuffer;
+        return sockSendBuff;
     }
 
     /**
-     * @param socketSendBuffer Socket send buffer size.
+     * @param sockSendBuff Socket send buffer size.
      */
-    public void setSocketSendBuffer(int socketSendBuffer) {
-        this.socketSendBuffer = socketSendBuffer;
+    public void setSocketSendBuffer(int sockSendBuff) {
+        this.sockSendBuff = sockSendBuff;
     }
 
     /**
      * @return Socket receive buffer size.
      */
     public int getSocketReceiveBuffer() {
-        return socketRecvBuffer;
+        return sockRecvBuff;
     }
 
     /**
      * @param socketRecvBuffer Socket receive buffer size.
      */
     public void setSocketReceiveBuffer(int socketRecvBuffer) {
-        this.socketRecvBuffer = socketRecvBuffer;
+        this.sockRecvBuff = socketRecvBuffer;
     }
 
     /**
@@ -365,15 +357,16 @@ public class JdbcThinDataSource implements DataSource {
     private Properties exposeAsProperties() {
         Properties props = new Properties();
 
-        props.setProperty("distributedJoins", Boolean.toString(distributedJoins));
-        props.setProperty("enforceJoinOrder", Boolean.toString(enforceJoinOrder));
-        props.setProperty("collocated", Boolean.toString(collocated));
-        props.setProperty("replicatedOnly", Boolean.toString(replicatedOnly));
-        props.setProperty("lazy", Boolean.toString(autoCloseServerCursor));
-        props.setProperty("tcpNoDelay", Boolean.toString(tcpNoDelay));
+        props.setProperty(JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS, Boolean.toString(autoCloseServerCursor));
+        props.setProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS, Boolean.toString(distributedJoins));
+        props.setProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER, Boolean.toString(enforceJoinOrder));
+        props.setProperty(JdbcThinUtils.PROP_COLLOCATED, Boolean.toString(collocated));
+        props.setProperty(JdbcThinUtils.PROP_REPLICATED_ONLY, Boolean.toString(replicatedOnly));
+        props.setProperty(JdbcThinUtils.PROP_LAZY, Boolean.toString(autoCloseServerCursor));
+        props.setProperty(JdbcThinUtils.PROP_TCP_NO_DELAY, Boolean.toString(tcpNoDelay));
 
-        props.setProperty("socketSendBuffer", Integer.toString(socketSendBuffer));
-        props.setProperty("socketRecvBuffer", Integer.toString(socketRecvBuffer));
+        props.setProperty(JdbcThinUtils.PROP_SOCK_SND_BUF, Integer.toString(sockSendBuff));
+        props.setProperty(JdbcThinUtils.PROP_SOCK_RCV_BUF, Integer.toString(sockRecvBuff));
 
         return props;
     }
