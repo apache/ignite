@@ -55,6 +55,10 @@ setIgniteHome
 
 JDBCLINK="jdbc:ignite:thin://${HOST_AND_PORT}${SCHEMA_DELIMITER}${SCHEMA}${PARAMS}"
 
+echo $JDBCLINK
+
+exit 1
+
 CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"

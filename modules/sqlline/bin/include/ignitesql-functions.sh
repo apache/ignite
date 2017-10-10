@@ -101,7 +101,9 @@ function parse_arguments()
         ;;
         # Distributed joins flag.
         -dj|--distributedJoins)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+                echo "dj"
+                check_boolean $2 $key
                 edit_params "distributedJoins" $2
                 shift
                 shift
@@ -112,7 +114,9 @@ function parse_arguments()
         ;;
         # Enforce join order flag.
         -ej|--enforceJoinOrder)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+            echo "ej"
+                check_boolean $2 $key
                 edit_params "enforceJoinOrder" $2
                 shift
                 shift
@@ -123,7 +127,8 @@ function parse_arguments()
         ;;
         # Collocated flag.
         -c|--collocated)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+                check_boolean $2 $key
                 edit_params "collocated" $2
                 shift
                 shift
@@ -134,7 +139,8 @@ function parse_arguments()
         ;;
         # Replicated only flag.
         -r|--replicatedOnly)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+                check_boolean $2 $key
                 edit_params "replicatedOnly" $2
                 shift
                 shift
@@ -145,7 +151,8 @@ function parse_arguments()
         ;;
         # Auto close server cursor flag.
         -ac|--autoCloseServerCursor)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+                check_boolean $2 $key
                 edit_params "autoCloseServerCursor" $2
                 shift
                 shift
@@ -168,8 +175,9 @@ function parse_arguments()
         ;;
         # TCP no delay flag.
         -tnd|--tcpNoDelay)
-            if [[ $2 != -* ]]; then
-            edit_params "tcpNoDelay" $2
+            if [[ $2 != -* && $2 != "" ]]; then
+                check_boolean $2 $key
+                edit_params "tcpNoDelay" $2
                 shift
                 shift
             else
@@ -179,7 +187,8 @@ function parse_arguments()
         ;;
         # Lazy flag.
         -l|--lazy)
-            if [[ $2 != -* ]]; then
+            if [[ $2 != -* && $2 != "" ]]; then
+                check_boolean $2 $key
                 edit_params "lazy" $2
                 shift
                 shift
@@ -196,4 +205,15 @@ function parse_arguments()
         ;;
     esac
 done
+}
+
+function check_boolean()
+{
+    if [[ $1 != "" ]]; then
+        if [[ $1 != true && $1 != false ]]; then
+            echo "Error: $1 is not a valid value for $2. Value should be 'true' or 'false'."
+            echo "Use ${SELF_NAME} --help to read help."
+            exit 1
+        fi
+    fi
 }
