@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.jdbc2;
+package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 
 /**
- * {@link SqlFieldsQuery} with JDBC flavor - it has additional flag indicating whether JDBC driver expects
- * this query to return a result set or an update counter. This class is not intended for use outside JDBC driver.
+ * {@link SqlFieldsQuery} with experimental and internal features.
  */
 public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Flag set by JDBC driver to enforce checks for correct operation type. */
+    /** Flag to enforce checks for correct operation type. */
     private final Boolean isQry;
 
     /** Whether server side DML should be enabled. */
@@ -44,7 +43,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     }
 
     /**
-     * @return Flag indicating whether this object denotes a query or an update operation..
+     * @return Flag indicating whether this object denotes a query or an update operation.
      */
     public Boolean isQuery() {
         return isQry;
