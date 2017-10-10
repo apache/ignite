@@ -97,8 +97,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         bigPlcCfg.setName("bigPlc");
         bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        memCfg.setDataRegions(dfltPlcCfg, bigPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltPlc");
+        memCfg.setDataRegionConfigurations(bigPlcCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -151,8 +151,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         bigPlcCfg.setName("bigPlc");
         bigPlcCfg.setMaxSize(BIG_MEM_PLC_SIZE);
 
-        memCfg.setDataRegions(dfltPlcCfg, bigPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltPlc");
+        memCfg.setDataRegionConfigurations(bigPlcCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setDataRegionName("bigPlc");

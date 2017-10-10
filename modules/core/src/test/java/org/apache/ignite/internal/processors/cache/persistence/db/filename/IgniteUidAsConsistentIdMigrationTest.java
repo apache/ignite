@@ -148,7 +148,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         final DataRegionConfiguration memPolCfg = new DataRegionConfiguration();
 
         memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
-        memCfg.setDataRegions(memPolCfg);
+        memCfg.setDataRegionConfigurations(memPolCfg);
         cfg.setDataStorageConfiguration(memCfg);
 
         if (strLog != null)

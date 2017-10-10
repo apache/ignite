@@ -50,7 +50,9 @@ import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -2517,7 +2519,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
 
         U.log(log, "System cache's DataRegion size is configured to " +
-            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
+            (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
             "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
@@ -2540,9 +2542,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 String memPlcName = c.getDataRegionName();
 
                 if (CU.isSystemCache(cacheName))
-                    memPlcName = "sysMemPlc";
+                    memPlcName = "sysDataReg";
                 else if (memPlcName == null && cfg.getDataStorageConfiguration() != null)
-                    memPlcName = cfg.getDataStorageConfiguration().getDefaultRegionConfiguration().getName();
+                    memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
@@ -3548,20 +3550,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return new DataRegionMetricsAdapter(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return new DataStorageMetricsAdapter(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */

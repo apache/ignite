@@ -74,7 +74,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(

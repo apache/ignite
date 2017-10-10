@@ -89,7 +89,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         memPlcCfg.setInitialSize(500 * 1024 * 1024);
         memPlcCfg.setMaxSize(500 * 1024 * 1024);
 
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(dbCfg);

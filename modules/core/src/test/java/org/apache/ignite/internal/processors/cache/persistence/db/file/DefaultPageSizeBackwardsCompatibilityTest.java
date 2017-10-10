@@ -67,7 +67,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         memPlcCfg.setName("dfltMemPlc");
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         cfg.setDataStorageConfiguration(memCfg);

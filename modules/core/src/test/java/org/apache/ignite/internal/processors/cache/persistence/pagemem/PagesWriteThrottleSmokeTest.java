@@ -77,7 +77,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        dbCfg.setDataRegions(new DataRegionConfiguration()
+        dbCfg.setDataRegionConfigurations(new DataRegionConfiguration()
             .setMaxSize(400 * 1024 * 1024)
             .setName("dfltMemPlc")
             .setMetricsEnabled(true));

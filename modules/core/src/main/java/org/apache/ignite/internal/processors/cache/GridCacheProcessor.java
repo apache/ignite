@@ -1115,7 +1115,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String memPlcName = cfg.getDataRegionName();
 
         if (memPlcName == null && ctx.config().getDataStorageConfiguration() != null)
-            memPlcName = ctx.config().getDataStorageConfiguration().getDefaultRegionConfiguration().getName();
+            memPlcName = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
             log.info("Started cache [name=" + cfg.getName() +

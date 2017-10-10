@@ -89,7 +89,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
         memPlcCfg.setInitialSize(1024 * 1024 * 1024);
         memPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName(policyName);
 
         cfg.setDataStorageConfiguration(dbCfg);

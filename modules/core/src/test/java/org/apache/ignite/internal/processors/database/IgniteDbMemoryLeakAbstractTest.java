@@ -81,7 +81,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
 
-        mCfg.setDefaultDataRegionName("default").setDataRegions(
+        mCfg.setDefaultDataRegionName("default").setDataRegionConfigurations(
             new DataRegionConfiguration().setMaxSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));
     }
 

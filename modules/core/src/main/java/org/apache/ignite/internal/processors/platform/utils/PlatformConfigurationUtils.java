@@ -57,10 +57,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -97,6 +98,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Configuration utils.
+ *
+ * WARNING: DO NOT MODIFY THIS FILE without updating corresponding platform code!
+ * Each read/write method has a counterpart in .NET platform (see IgniteConfiguration.cs, CacheConfiguration.cs, etc).
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
@@ -183,7 +187,7 @@ public class PlatformConfigurationUtils {
         String memoryPolicyName = in.readString();
 
         if (memoryPolicyName != null)
-            ccfg.setDataRegionName(memoryPolicyName);
+            ccfg.setMemoryPolicyName(memoryPolicyName);
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)in.readInt()));
         ccfg.setGroupName(in.readString());
@@ -699,7 +703,7 @@ public class PlatformConfigurationUtils {
         }
 
         if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
+            cfg.setMemoryConfiguration(readMemoryConfiguration(in));
 
         if (in.readBoolean())
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
@@ -709,6 +713,9 @@ public class PlatformConfigurationUtils {
 
         if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
             cfg.setClientConnectorConfiguration(null);
+
+        if (in.readBoolean())
+            cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         readPluginConfiguration(cfg, in);
 
@@ -866,7 +873,7 @@ public class PlatformConfigurationUtils {
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
         writer.writeBoolean(ccfg.isStatisticsEnabled());
-        writer.writeString(ccfg.getDataRegionName());
+        writer.writeString(ccfg.getMemoryPolicyName());
         writer.writeInt(ccfg.getPartitionLossPolicy().ordinal());
         writer.writeString(ccfg.getGroupName());
 
@@ -1177,13 +1184,15 @@ public class PlatformConfigurationUtils {
             w.writeLong(((MemoryEventStorageSpi)evtStorageSpi).getExpireAgeMs());
         }
 
-        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
+        writeMemoryConfiguration(w, cfg.getMemoryConfiguration());
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
         writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
         w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
+
+        writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1389,86 +1398,55 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the data storage configuration.
+     * Reads the memory configuration.
      *
      * @param in Reader
      * @return Config.
      */
-    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
-        DataStorageConfiguration res = new DataStorageConfiguration();
+    private static MemoryConfiguration readMemoryConfiguration(BinaryRawReader in) {
+        MemoryConfiguration res = new MemoryConfiguration();
 
         res.setSystemCacheInitialSize(in.readLong())
-            .setSystemCacheMaxSize(in.readLong())
-            .setPageSize(in.readInt())
-            .setConcurrencyLevel(in.readInt())
-            .setPersistentStorePath(in.readString())
-            .setCheckpointingFrequency(in.readLong())
-            .setCheckpointingPageBufferSize(in.readLong())
-            .setCheckpointingThreads(in.readInt())
-            .setLockWaitTime((int)in.readLong())
-            .setWalHistorySize(in.readInt())
-            .setWalSegments(in.readInt())
-            .setWalSegmentSize(in.readInt())
-            .setWalStorePath(in.readString())
-            .setWalArchivePath(in.readString())
-            .setWalMode(WALMode.fromOrdinal(in.readInt()))
-            .setTlbSize(in.readInt())
-            .setWalFlushFrequency((int)in.readLong())
-            .setWalFsyncDelayNanos(in.readLong())
-            .setWalRecordIteratorBufferSize(in.readInt())
-            .setAlwaysWriteFullPages(in.readBoolean())
-            .setMetricsEnabled(in.readBoolean())
-            .setSubIntervals(in.readInt())
-            .setRateTimeInterval(in.readLong())
-            .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
-            .setWriteThrottlingEnabled(in.readBoolean());
+                .setSystemCacheMaxSize(in.readLong())
+                .setPageSize(in.readInt())
+                .setConcurrencyLevel(in.readInt())
+                .setDefaultMemoryPolicyName(in.readString());
 
         int cnt = in.readInt();
 
         if (cnt > 0) {
-            DataRegionConfiguration[] plcs = new DataRegionConfiguration[cnt];
-
-            res.setDefaultRegionConfiguration(readDataRegionConfiguration(in));
+            MemoryPolicyConfiguration[] plcs = new MemoryPolicyConfiguration[cnt];
 
             for (int i = 0; i < cnt; i++) {
-                DataRegionConfiguration cfg = readDataRegionConfiguration(in);
+                MemoryPolicyConfiguration cfg = new MemoryPolicyConfiguration();
+
+                cfg.setName(in.readString())
+                        .setInitialSize(in.readLong())
+                        .setMaxSize(in.readLong())
+                        .setSwapFilePath(in.readString())
+                        .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
+                        .setEvictionThreshold(in.readDouble())
+                        .setEmptyPagesPoolSize(in.readInt())
+                        .setMetricsEnabled(in.readBoolean())
+                        .setSubIntervals(in.readInt())
+                        .setRateTimeInterval(in.readLong());
 
                 plcs[i] = cfg;
             }
 
-            res.setDataRegions(plcs);
+            res.setMemoryPolicies(plcs);
         }
 
         return res;
     }
 
     /**
-     * @param in BinaryRawReader.
-     */
-    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader in) {
-        DataRegionConfiguration cfg = new DataRegionConfiguration();
-
-        cfg.setName(in.readString())
-            .setInitialSize(in.readLong())
-            .setMaxSize(in.readLong())
-            .setSwapFilePath(in.readString())
-            .setPageEvictionMode(DataPageEvictionMode.values()[in.readInt()])
-            .setEvictionThreshold(in.readDouble())
-            .setEmptyPagesPoolSize(in.readInt())
-            .setMetricsEnabled(in.readBoolean())
-            .setSubIntervals(in.readInt())
-            .setRateTimeInterval(in.readLong());
-
-        return cfg;
-    }
-
-    /**
-     * Writes the data storage configuration.
+     * Writes the memory configuration.
      *
      * @param w Writer.
      * @param cfg Config.
      */
-    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
+    private static void writeMemoryConfiguration(BinaryRawWriter w, MemoryConfiguration cfg) {
         if (cfg == null) {
             w.writeBoolean(false);
             return;
@@ -1480,58 +1458,29 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getSystemCacheMaxSize());
         w.writeInt(cfg.getPageSize());
         w.writeInt(cfg.getConcurrencyLevel());
-        w.writeString(cfg.getPersistentStorePath());
-        w.writeLong(cfg.getCheckpointingFrequency());
-        w.writeLong(cfg.getCheckpointingPageBufferSize());
-        w.writeInt(cfg.getCheckpointingThreads());
-        w.writeLong(cfg.getLockWaitTime());
-        w.writeInt(cfg.getWalHistorySize());
-        w.writeInt(cfg.getWalSegments());
-        w.writeInt(cfg.getWalSegmentSize());
-        w.writeString(cfg.getWalStorePath());
-        w.writeString(cfg.getWalArchivePath());
-        w.writeInt(cfg.getWalMode().ordinal());
-        w.writeInt(cfg.getTlbSize());
-        w.writeLong(cfg.getWalFlushFrequency());
-        w.writeLong(cfg.getWalFsyncDelayNanos());
-        w.writeInt(cfg.getWalRecordIteratorBufferSize());
-        w.writeBoolean(cfg.isAlwaysWriteFullPages());
-        w.writeBoolean(cfg.isMetricsEnabled());
-        w.writeInt(cfg.getSubIntervals());
-        w.writeLong(cfg.getRateTimeInterval());
-        w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
-        w.writeBoolean(cfg.isWriteThrottlingEnabled());
+        w.writeString(cfg.getDefaultMemoryPolicyName());
 
-        DataRegionConfiguration[] plcs = cfg.getDataRegions();
+        MemoryPolicyConfiguration[] plcs = cfg.getMemoryPolicies();
 
         if (plcs != null) {
             w.writeInt(plcs.length);
 
-            writeDataRegionConfiguration(w, cfg.getDefaultRegionConfiguration());
-
-            for (DataRegionConfiguration plc : plcs)
-                writeDataRegionConfiguration(w, plc);
+            for (MemoryPolicyConfiguration plc : plcs) {
+                w.writeString(plc.getName());
+                w.writeLong(plc.getInitialSize());
+                w.writeLong(plc.getMaxSize());
+                w.writeString(plc.getSwapFilePath());
+                w.writeInt(plc.getPageEvictionMode().ordinal());
+                w.writeDouble(plc.getEvictionThreshold());
+                w.writeInt(plc.getEmptyPagesPoolSize());
+                w.writeBoolean(plc.isMetricsEnabled());
+                w.writeInt(plc.getSubIntervals());
+                w.writeLong(plc.getRateTimeInterval());
+            }
         }
         else {
             w.writeInt(0);
         }
-    }
-
-    /**
-     * @param w BinaryRawWriter.
-     * @param plc DataRegionConfiguration.
-     */
-    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration plc) {
-        w.writeString(plc.getName());
-        w.writeLong(plc.getInitialSize());
-        w.writeLong(plc.getMaxSize());
-        w.writeString(plc.getSwapFilePath());
-        w.writeInt(plc.getPageEvictionMode().ordinal());
-        w.writeDouble(plc.getEvictionThreshold());
-        w.writeInt(plc.getEmptyPagesPoolSize());
-        w.writeBoolean(plc.isMetricsEnabled());
-        w.writeInt(plc.getSubIntervals());
-        w.writeLong(plc.getRateTimeInterval());
     }
 
     /**
@@ -1615,6 +1564,75 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isTcpNoDelay());
             w.writeInt(cfg.getMaxOpenCursorsPerConnection());
             w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the persistence store connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static PersistentStoreConfiguration readPersistentStoreConfiguration(BinaryRawReader in) {
+        return new PersistentStoreConfiguration()
+                .setPersistentStorePath(in.readString())
+                .setCheckpointingFrequency(in.readLong())
+                .setCheckpointingPageBufferSize(in.readLong())
+                .setCheckpointingThreads(in.readInt())
+                .setLockWaitTime((int) in.readLong())
+                .setWalHistorySize(in.readInt())
+                .setWalSegments(in.readInt())
+                .setWalSegmentSize(in.readInt())
+                .setWalStorePath(in.readString())
+                .setWalArchivePath(in.readString())
+                .setWalMode(WALMode.fromOrdinal(in.readInt()))
+                .setTlbSize(in.readInt())
+                .setWalFlushFrequency((int) in.readLong())
+                .setWalFsyncDelayNanos(in.readLong())
+                .setWalRecordIteratorBufferSize(in.readInt())
+                .setAlwaysWriteFullPages(in.readBoolean())
+                .setMetricsEnabled(in.readBoolean())
+                .setSubIntervals(in.readInt())
+                .setRateTimeInterval(in.readLong())
+                .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
+                .setWriteThrottlingEnabled(in.readBoolean());
+    }
+
+    /**
+     * Writes the persistent store configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writePersistentStoreConfiguration(BinaryRawWriter w, PersistentStoreConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getPersistentStorePath());
+            w.writeLong(cfg.getCheckpointingFrequency());
+            w.writeLong(cfg.getCheckpointingPageBufferSize());
+            w.writeInt(cfg.getCheckpointingThreads());
+            w.writeLong(cfg.getLockWaitTime());
+            w.writeInt(cfg.getWalHistorySize());
+            w.writeInt(cfg.getWalSegments());
+            w.writeInt(cfg.getWalSegmentSize());
+            w.writeString(cfg.getWalStorePath());
+            w.writeString(cfg.getWalArchivePath());
+            w.writeInt(cfg.getWalMode().ordinal());
+            w.writeInt(cfg.getTlbSize());
+            w.writeLong(cfg.getWalFlushFrequency());
+            w.writeLong(cfg.getWalFsyncDelayNanos());
+            w.writeInt(cfg.getWalRecordIteratorBufferSize());
+            w.writeBoolean(cfg.isAlwaysWriteFullPages());
+            w.writeBoolean(cfg.isMetricsEnabled());
+            w.writeInt(cfg.getSubIntervals());
+            w.writeLong(cfg.getRateTimeInterval());
+            w.writeInt(cfg.getCheckpointWriteOrder().ordinal());
+            w.writeBoolean(cfg.isWriteThrottlingEnabled());
+
         } else {
             w.writeBoolean(false);
         }

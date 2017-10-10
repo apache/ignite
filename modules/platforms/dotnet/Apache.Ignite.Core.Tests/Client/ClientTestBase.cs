@@ -76,6 +76,15 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void TestSetUp()
+        {
+            GetCache<int>().RemoveAll();
+        }
+
+        /// <summary>
         /// Gets the cache.
         /// </summary>
         protected static ICache<int, T> GetCache<T>()

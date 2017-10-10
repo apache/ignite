@@ -91,7 +91,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         return memCfg;

@@ -94,7 +94,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(1);
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         return memCfg;

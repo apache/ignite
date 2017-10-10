@@ -139,7 +139,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Statement stmt = conn.createStatement();
 
             stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
-            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50))");
+            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
         }
@@ -156,7 +156,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     public void testResultSetMetaData() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema("pers");
+        conn.setSchema("\"pers\"");
 
         Statement stmt = conn.createStatement();
 
@@ -528,7 +528,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema("pers");
+            conn.setSchema("\"pers\"");
 
             PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
 

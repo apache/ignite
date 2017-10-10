@@ -57,11 +57,15 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -2183,15 +2187,27 @@ public class IgnitionEx {
                 myCfg.setExecutorConfiguration(clone);
             }
 
-            if (!myCfg.isClientMode() && myCfg.getDataStorageConfiguration() == null) {
-                DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-                memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-                myCfg.setDataStorageConfiguration(memCfg);
-            }
+            initializeDataStorageConfiguration(myCfg);
 
             return myCfg;
+        }
+
+        /**
+         * @param cfg Ignite configuration.
+         */
+        private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+            if (cfg.getDataStorageConfiguration() != null &&
+                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
+                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                    "but not both.");
+            }
+
+            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
+                convertLegacyDataStorageConfigurationToNew(cfg);
+
+            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         /**
@@ -2754,5 +2770,92 @@ public class IgnitionEx {
                 this.cnt = cnt;
             }
         }
+    }
+
+    /**
+     * @param cfg Ignite Configuration with legacy data storage configuration.
+     */
+    private static void convertLegacyDataStorageConfigurationToNew(IgniteConfiguration cfg) {
+        boolean persistenceEnabled = cfg.getPersistentStoreConfiguration() != null;
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
+            cfg.getMemoryConfiguration() : new MemoryConfiguration();
+
+        dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
+        dsCfg.setPageSize(memCfg.getPageSize());
+        dsCfg.setSystemRegionInitialSize(memCfg.getSystemCacheInitialSize());
+        dsCfg.setSystemRegionMaxSize(memCfg.getSystemCacheMaxSize());
+
+        List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
+
+        boolean customDfltPlc = false;
+
+        if (memCfg.getMemoryPolicies() != null) {
+            for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
+                DataRegionConfiguration region = new DataRegionConfiguration();
+
+                region.setPersistenceEnabled(persistenceEnabled);
+
+                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
+                region.setEvictionThreshold(mpc.getEvictionThreshold());
+                region.setInitialSize(mpc.getInitialSize());
+                region.setMaxSize(mpc.getMaxSize());
+                region.setName(mpc.getName());
+                region.setPageEvictionMode(mpc.getPageEvictionMode());
+                region.setRateTimeInterval(mpc.getRateTimeInterval());
+                region.setSubIntervals(mpc.getSubIntervals());
+                region.setSwapFilePath(mpc.getSwapFilePath());
+                region.setMetricsEnabled(mpc.isMetricsEnabled());
+
+                if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
+                    customDfltPlc = true;
+
+                    dsCfg.setDefaultDataRegionConfiguration(region);
+                } else
+                    optionalDataRegions.add(region);
+            }
+        }
+
+        if (!optionalDataRegions.isEmpty())
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(new DataRegionConfiguration[optionalDataRegions.size()]));
+
+        if (!customDfltPlc) {
+            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(memCfg.getDefaultMemoryPolicySize())
+                .setName(memCfg.getDefaultMemoryPolicyName())
+                .setPersistenceEnabled(persistenceEnabled));
+        }
+
+        if (persistenceEnabled) {
+            PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
+
+            dsCfg.setCheckpointingFrequency(psCfg.getCheckpointingFrequency());
+            dsCfg.setCheckpointingPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+            dsCfg.setCheckpointingThreads(psCfg.getCheckpointingThreads());
+            dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
+            dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
+            dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
+            dsCfg.setPersistentStorePath(psCfg.getPersistentStorePath());
+            dsCfg.setRateTimeInterval(psCfg.getRateTimeInterval());
+            dsCfg.setSubIntervals(psCfg.getSubIntervals());
+            dsCfg.setTlbSize(psCfg.getTlbSize());
+            dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
+            dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
+            dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
+            dsCfg.setWalFsyncDelayNanos(psCfg.getWalFsyncDelayNanos());
+            dsCfg.setWalHistorySize(psCfg.getWalHistorySize());
+            dsCfg.setWalMode(psCfg.getWalMode());
+            dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
+            dsCfg.setWalSegments(psCfg.getWalSegments());
+            dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
+            dsCfg.setWalStorePath(psCfg.getWalStorePath());
+            dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
+            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
+            dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
+        }
+
+        cfg.setDataStorageConfiguration(dsCfg);
     }
 }

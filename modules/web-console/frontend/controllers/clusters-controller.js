@@ -680,8 +680,8 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 return ErrorPopover.show('defaultMemoryPolicyName', 'Memory policy with that name should be configured', $scope.ui, 'memoryConfiguration');
 
             return _.isNil(_.find(memory.memoryPolicies, (curPlc, curIx) => {
-                if (curPlc.name === 'sysMemPlc') {
-                    ErrorPopover.show('MemoryPolicyName' + curIx, '"sysMemPlc" policy name is reserved for internal use', $scope.ui, 'memoryConfiguration');
+                if (curPlc.name === 'sysDataReg') {
+                    ErrorPopover.show('MemoryPolicyName' + curIx, '"sysDataReg" policy name is reserved for internal use', $scope.ui, 'memoryConfiguration');
 
                     return true;
                 }

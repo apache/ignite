@@ -143,7 +143,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionName("default")
-            .setDataRegions(
+            .setDataRegionConfigurations(
                 new DataRegionConfiguration()
                     .setName("default")
                     .setMaxSize(128 * 1024 * 1024L)

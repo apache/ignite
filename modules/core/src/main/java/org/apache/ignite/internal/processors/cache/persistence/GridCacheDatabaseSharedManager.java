@@ -433,12 +433,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             assert memCfg != null;
 
-            long totalSize = memCfg.getSystemCacheMaxSize();
+            long totalSize = memCfg.getSystemRegionMaxSize();
 
-            if (memCfg.getDataRegions() == null)
+            if (memCfg.getDataRegionConfigurations() == null)
                 totalSize += DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
             else {
-                for (DataRegionConfiguration memPlc : memCfg.getDataRegions()) {
+                for (DataRegionConfiguration memPlc : memCfg.getDataRegionConfigurations()) {
                     if (Long.MAX_VALUE - memPlc.getMaxSize() > totalSize)
                         totalSize += memPlc.getMaxSize();
                     else {
@@ -534,6 +534,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
+
+            persistenceMetricsMbeanName = null;
         }
         catch (Throwable e) {
             U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
@@ -739,13 +741,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkPolicyEvictionProperties(DataRegionConfiguration plcCfg, DataStorageConfiguration dbCfg)
+    @Override protected void checkRegionEvictionProperties(DataRegionConfiguration regCfg, DataStorageConfiguration dbCfg)
         throws IgniteCheckedException {
-        if (!plcCfg.isPersistenceEnabled())
-            super.checkPolicyEvictionProperties(plcCfg, dbCfg);
+        if (!regCfg.isPersistenceEnabled())
+            super.checkRegionEvictionProperties(regCfg, dbCfg);
 
-        if (plcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
-            U.warn(log, "Page eviction mode for [" + plcCfg.getName() + "] memory region is ignored " +
+        if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+            U.warn(log, "Page eviction mode for [" + regCfg.getName() + "] memory region is ignored " +
                 "because Ignite Native Persistence is enabled");
     }
 

@@ -79,11 +79,11 @@ public final class DataRegionConfiguration implements Serializable {
     /** Data region name. */
     private String name = DFLT_DATA_REG_DEFAULT_NAME;
 
-    /** Data region start size. */
-    private long initialSize;
-
     /** Data region maximum size. */
     private long maxSize = DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
+
+    /** Data region start size. */
+    private long initSize = Math.min(maxSize, DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
     /** An optional path to a memory mapped file for this data region. */
     private String swapFilePath;
@@ -125,7 +125,7 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Flag to enable Ignite Native Persistence.
      */
-    private boolean persistenceEnabled = true;
+    private boolean persistenceEnabled = false;
 
     /**
      * Gets data region name.
@@ -137,7 +137,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Sets data region name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
+     * Sets data region name. The name must be non empty and must not be equal to the reserved 'sysDataReg' one.
      *
      * If not specified, {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} value is used.
      *
@@ -180,18 +180,18 @@ public final class DataRegionConfiguration implements Serializable {
      * @return Data region start size.
      */
     public long getInitialSize() {
-        return initialSize;
+        return initSize;
     }
 
     /**
      * Sets initial memory region size defined by this data region. When the used memory size exceeds this value,
      * new chunks of memory will be allocated.
      *
-     * @param initialSize Data region initial size.
+     * @param initSize Data region initial size.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setInitialSize(long initialSize) {
-        this.initialSize = initialSize;
+    public DataRegionConfiguration setInitialSize(long initSize) {
+        this.initSize = initSize;
 
         return this;
     }
@@ -331,9 +331,12 @@ public final class DataRegionConfiguration implements Serializable {
      * Sets persistence enabled flag.
      *
      * @param persistenceEnabled Persistence enabled flag.
+     * @return {@code this} for chaining.
      */
-    public void setPersistenceEnabled(boolean persistenceEnabled) {
+    public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
         this.persistenceEnabled = persistenceEnabled;
+
+        return this;
     }
 
     /**

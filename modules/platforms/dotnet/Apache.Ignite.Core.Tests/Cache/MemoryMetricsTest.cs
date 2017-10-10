@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
 
             var sysMetrics = metrics[2];
-            Assert.AreEqual("sysMemPlc", sysMetrics.Name);
+            Assert.AreEqual("sysDataReg", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
             // Metrics by name.
@@ -74,8 +74,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
 
-            sysMetrics = ignite.GetMemoryMetrics("sysMemPlc");
-            Assert.AreEqual("sysMemPlc", sysMetrics.Name);
+            sysMetrics = ignite.GetMemoryMetrics("sysDataReg");
+            Assert.AreEqual("sysDataReg", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
             // Invalid name.

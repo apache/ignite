@@ -572,7 +572,7 @@ mixin btn-remove-cond(cond, click, tip)
     i.tipField.fa.fa-remove(ng-show=cond ng-click=click bs-tooltip=tip data-trigger='hover')
 
 //- LEGACY mixin for LEGACY pair values tables.
-mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, focusId, index, divider)
+mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, valueJavaBuiltInClasses, focusId, index, divider)
     -var keyModel = `${tbl}.${prefix}Key`
     -var valModel = `${tbl}.${prefix}Value`
 
@@ -582,10 +582,7 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
     .col-xs-6.col-sm-6.col-md-6
         .fieldSep !{divider}
         .input-tip
-            if keyJavaBuiltInTypes
-                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-escape='tableReset(false)')
-            else
-                input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset(false)')
+            input.form-control(id=keyFocusId ignite-on-enter-focus-move=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder ignite-on-escape='tableReset(false)')
     .col-xs-6.col-sm-6.col-md-6
         -var btnVisible = 'tablePairSaveVisible(' + tbl + ', ' + index + ')'
         -var btnSave = 'tablePairSave(tablePairValid, backupItem, ' + tbl + ', ' + index + ')'
@@ -593,7 +590,7 @@ mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltI
 
         +btn-save(btnVisible, btnSave)
         .input-tip
-            if valueJavaBuiltInTypes
+            if valueJavaBuiltInClasses
                 input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' ignite-retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')
             else
                 input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder ignite-on-enter=btnVisibleAndSave ignite-on-escape='tableReset(false)')

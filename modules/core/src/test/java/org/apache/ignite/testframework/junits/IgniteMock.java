@@ -22,7 +22,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -485,23 +487,19 @@ public class IgniteMock implements Ignite {
         return null;
     }
 
-
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return new DataRegionMetricsAdapter(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        // TODO IGNITE-6030: convert new metrics into old
-        return null;
+        return new DataStorageMetricsAdapter(dataStorageMetrics());
     }
 
     /**

@@ -56,7 +56,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
         memCfg.setDefaultDataRegionName("dfltMemPlc");
 
         memCfg.setPageSize(pageSize);

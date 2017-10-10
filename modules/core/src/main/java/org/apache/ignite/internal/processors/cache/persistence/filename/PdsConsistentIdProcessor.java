@@ -31,8 +31,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -442,12 +442,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @throws IgniteCheckedException if I/O failed.
      */
     @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
-        final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+        final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        if (pstCfg == null)
+        if (dsCfg == null)
             return null;
 
-        final String pstPath = pstCfg.getPersistentStorePath();
+        final String pstPath = dsCfg.getPersistentStorePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),

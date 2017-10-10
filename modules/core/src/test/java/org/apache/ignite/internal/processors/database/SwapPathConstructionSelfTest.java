@@ -143,7 +143,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         else
             memPlcCfg.setSwapFilePath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
 
-        memCfg.setDataRegions(memPlcCfg);
+        memCfg.setDataRegionConfigurations(memPlcCfg);
 
         return memCfg;
     }

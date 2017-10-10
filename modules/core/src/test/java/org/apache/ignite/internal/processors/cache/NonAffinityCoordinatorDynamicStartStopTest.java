@@ -66,7 +66,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
 
         memPlcCfg.setName("dfltMemPlc");
 
-        dbCfg.setDataRegions(memPlcCfg);
+        dbCfg.setDataRegionConfigurations(memPlcCfg);
         dbCfg.setDefaultDataRegionName("dfltMemPlc");
 
         if (gridName.contains(DUMMY_GRID_NAME))

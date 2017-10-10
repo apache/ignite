@@ -231,7 +231,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         memCfg.setDefaultDataRegionName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
 
-        memCfg.setDataRegions(new DataRegionConfiguration()
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE),
@@ -250,7 +250,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     private void prepareCustomConfigWithOverridingDefault() {
         memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegions(new DataRegionConfiguration()
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
             .setName(DFLT_DATA_REG_DEFAULT_NAME)
             .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
             .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE)
@@ -263,7 +263,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     private void prepareCustomConfigWithOverridingDefaultAndCustom() {
         memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegions(new DataRegionConfiguration()
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName(DFLT_DATA_REG_DEFAULT_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE),
@@ -292,7 +292,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     private void prepareCustomNoDefaultConfig() {
         memCfg = new DataStorageConfiguration();
 
-        memCfg.setDataRegions(new DataRegionConfiguration()
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
             .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
             .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
             .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE)

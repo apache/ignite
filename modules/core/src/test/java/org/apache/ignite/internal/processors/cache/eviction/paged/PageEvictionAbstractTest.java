@@ -63,7 +63,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @return Configuration with given eviction mode set.
      */
     static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
-        DataRegionConfiguration[] policies = configuration.getDataStorageConfiguration().getDataRegions();
+        DataRegionConfiguration[] policies = configuration.getDataStorageConfiguration().getDataRegionConfigurations();
 
         for (DataRegionConfiguration plcCfg : policies)
             plcCfg.setPageEvictionMode(mode);
@@ -95,7 +95,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
         plc.setName(DEFAULT_POLICY_NAME);
 
-        dbCfg.setDataRegions(plc);
+        dbCfg.setDataRegionConfigurations(plc);
         dbCfg.setPageSize(PAGE_SIZE);
         dbCfg.setDefaultDataRegionName(DEFAULT_POLICY_NAME);
 

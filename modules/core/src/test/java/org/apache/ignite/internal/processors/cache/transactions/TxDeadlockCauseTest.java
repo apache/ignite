@@ -69,7 +69,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         plc.setMaxSize(100L * 1024 * 1024);
 
         memCfg.setDefaultDataRegionName("dfltPlc");
-        memCfg.setDataRegions(plc);
+        memCfg.setDataRegionConfigurations(plc);
 
         cfg.setDataStorageConfiguration(memCfg);
 
