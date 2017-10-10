@@ -752,7 +752,6 @@ public class PlatformServices extends PlatformAbstractTarget {
      *
      * @param w Writer
      * @param svcCfg Service configuration
-     * @return Service configuration.
      */
     private static void writeFailedConfiguration(BinaryRawWriterEx w, ServiceConfiguration svcCfg) {
         Object dotnetSvc = null;

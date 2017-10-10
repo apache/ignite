@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            ValidateConfiguration(configuration, "configuration");
 
             DoOutInOp(OpDeploy, w => configuration.Serialize(w), ReadDeploymentResult);
         }
@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            ValidateConfiguration(configuration, "configuration");
 
             return DoOutOpAsync(OpDeployAsync, w => configuration.Serialize(w), 
                 _keepBinary, ReadDeploymentResult);
@@ -256,7 +256,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
         {
-            IgniteArgumentCheck.NotNullAll(configurations, "configurations");
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+            var count = IgniteArgumentCheck.Ensure(configurations, "configurations", ValidateConfiguration);
+            IgniteArgumentCheck.Ensure(count > 0, "configurations", "empty collection");
 
             DoOutInOp(OpDeployAll, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize), 
                 ReadDeploymentResult);
@@ -265,8 +267,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
         {
-            IgniteArgumentCheck.NotNullAll(configurations, "configurations");
- 
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+            var count = IgniteArgumentCheck.Ensure(configurations, "configurations", ValidateConfiguration);
+            IgniteArgumentCheck.Ensure(count > 0, "configurations", "empty collection");
+
             return DoOutOpAsync(OpDeployAllAsync, w => w.WriteEnumerable(configurations, ServiceConfiguration.Serialize),
                 _keepBinary, ReadDeploymentResult);
         }
@@ -423,6 +427,18 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
             return null;
+        }
+
+        /// <summary>
+        /// Performs ServiceConfiguration validation.
+        /// </summary>
+        /// <param name="configuration">Service configuration</param>
+        /// <param name="argName">argument name</param>
+        private static void ValidateConfiguration(ServiceConfiguration configuration, string argName)
+        {
+            IgniteArgumentCheck.NotNull(configuration, argName);
+            IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, string.Format("{0}.Name", argName));
+            IgniteArgumentCheck.NotNull(configuration.Service, string.Format("{0}.Service", argName));
         }
     }
 }

@@ -75,23 +75,21 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Throws an ArgumentException if specified IEnumerable arg is null or any of its element is null.
+        /// Iterates through IEnumerable and performs custom argument validation for each element
         /// </summary>
         /// <param name="arg">Some IEnumerable.</param>
         /// <param name="argName">Name of the argument.</param>
-        public static void NotNullAll<T>(IEnumerable<T> arg, string argName)
+        /// <param name="validator">custom validator that checks parameters of T for validity</param>
+        /// <returns>count of elements in IEnumerable</returns>
+        public static int Ensure<T>(IEnumerable<T> arg, string argName, Action<T, string> validator)
         {
-            if (arg == null)
-                throw new ArgumentNullException(argName);
-
             var i = 0;
             foreach (var item in arg)
             {
-                if (item == null)
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
-                        "'{0}[{1}]' should not be null.", argName, i), argName);
+                validator(item, string.Format("{0}[{1}]", argName, i));
                 i++;
             }
+            return i;
         }
     }
 }

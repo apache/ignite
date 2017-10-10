@@ -533,6 +533,40 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests input errors for DeployAll() method.
+        /// </summary>
+        [Test]
+        public void TestDeployAllInputErrors()
+        {
+            var nullException = Assert.Throws<ArgumentNullException>(() => Services.DeployAll(null));
+            Assert.IsTrue(nullException.Message.Contains("configurations"));
+
+            var argException = Assert.Throws<ArgumentException>(() => Services.DeployAll(new List<ServiceConfiguration>()));
+            Assert.IsTrue(argException.Message.Contains("empty collection"));
+
+            nullException = Assert.Throws<ArgumentNullException>(() => Services.DeployAll(new List<ServiceConfiguration> { null }));
+            Assert.IsTrue(nullException.Message.Contains("configurations[0]"));
+
+            nullException = Assert.Throws<ArgumentNullException>(() => Services.DeployAll(new List<ServiceConfiguration>
+            {
+                new ServiceConfiguration { Name = SvcName }
+            }));
+            Assert.IsTrue(nullException.Message.Contains("configurations[0].Service"));
+
+            argException = Assert.Throws<ArgumentException>(() => Services.DeployAll(new List<ServiceConfiguration>
+            {
+                new ServiceConfiguration { Service = new TestIgniteServiceSerializable() }
+            }));
+            Assert.IsTrue(argException.Message.Contains("configurations[0].Name"));
+
+            argException = Assert.Throws<ArgumentException>(() => Services.DeployAll(new List<ServiceConfiguration>
+            {
+                new ServiceConfiguration { Service = new TestIgniteServiceSerializable(), Name = string.Empty }
+            }));
+            Assert.IsTrue(argException.Message.Contains("configurations[0].Name"));
+        }
+
+        /// <summary>
         /// Verifies the deployment exception.
         /// </summary>
         private void VerifyDeploymentException(Action<IServices, IService> deploy, bool keepBinary)
@@ -573,6 +607,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Expected exception", ex.Message);
             Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
                 "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
+
+            var failedCfgs = deploymentException.FailedConfigurations;
+            Assert.IsNotNull(failedCfgs);
+            Assert.AreEqual(1, failedCfgs.Count);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
             Assert.IsNull(svc0);
