@@ -82,13 +82,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
     /** */
-    protected Map<String, DataRegion> memPlcMap;
+    protected Map<String, DataRegion> dataRegionMap;
 
     /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
 
     /** */
-    protected DataRegion dfltMemPlc;
+    protected DataRegion dfltDataRegion;
 
     /** */
     protected Map<String, FreeListImpl> freeListMap;
@@ -123,7 +123,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         IgniteConfiguration cfg = cctx.gridConfig();
 
         for (DataRegionMetrics memMetrics : memMetricsMap.values()) {
-            DataRegionConfiguration memPlcCfg = memPlcMap.get(memMetrics.getName()).config();
+            DataRegionConfiguration memPlcCfg = dataRegionMap.get(memMetrics.getName()).config();
 
             registerMetricsMBean((DataRegionMetricsImpl)memMetrics, memPlcCfg, cfg);
         }
@@ -160,11 +160,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
-        freeListMap = U.newHashMap(memPlcMap.size());
+        freeListMap = U.newHashMap(dataRegionMap.size());
 
         String dfltMemPlcName = dbCfg.getDefaultDataRegionConfiguration().getName();
 
-        for (DataRegion memPlc : memPlcMap.values()) {
+        for (DataRegion memPlc : dataRegionMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
 
             DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
@@ -197,7 +197,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      */
     private void startMemoryPolicies() {
-        for (DataRegion memPlc : memPlcMap.values()) {
+        for (DataRegion memPlc : dataRegionMap.values()) {
             memPlc.pageMemory().start();
 
             memPlc.evictionTracker().start();
@@ -213,7 +213,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
 
-        memPlcMap = U.newHashMap(2 + dataRegions);
+        dataRegionMap = U.newHashMap(2 + dataRegions);
         memMetricsMap = U.newHashMap(2 + dataRegions);
 
         if (dataRegionCfgs != null) {
@@ -257,12 +257,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics);
 
-        memPlcMap.put(dataRegionName, memPlc);
+        dataRegionMap.put(dataRegionName, memPlc);
 
         memMetricsMap.put(dataRegionName, memMetrics);
 
         if (dataRegionName.equals(dfltMemPlcName))
-            dfltMemPlc = memPlc;
+            dfltDataRegion = memPlc;
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please check Memory Policies configuration.");
@@ -433,30 +433,37 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param plcCfg DataRegionConfiguration to validate.
+     * @param regCfg DataRegionConfiguration to validate.
      * @throws IgniteCheckedException If config is invalid.
      */
-    private void checkDataRegionSize(DataRegionConfiguration plcCfg) throws IgniteCheckedException {
-        if (plcCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE)
+    private void checkDataRegionSize(DataRegionConfiguration regCfg) throws IgniteCheckedException {
+        if (regCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE || regCfg.getMaxSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("DataRegion must have size more than 10MB (use " +
-                "DataRegionConfiguration.initialSize property to set correct size in bytes) " +
-                "[name=" + plcCfg.getName() + ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]"
+                "DataRegionConfiguration.initialSize and .maxSize properties to set correct size in bytes) " +
+                "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), true) +
+                ", maxSize=" + U.readableSize(regCfg.getMaxSize(), true) + "]"
             );
 
-        if (plcCfg.getMaxSize() < plcCfg.getInitialSize()) {
-            plcCfg.setInitialSize(plcCfg.getMaxSize());
+        if (regCfg.getMaxSize() < regCfg.getInitialSize()) {
+            if (regCfg.getInitialSize() != Math.min(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE,
+                DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)) {
+                throw new IgniteCheckedException("DataRegion maxSize=" + U.readableSize(regCfg.getMaxSize(), true) +
+                    " must not be smaller than initialSize" + U.readableSize(regCfg.getInitialSize(), true));
+            }
 
-            LT.warn(log, "DataRegion maxSize=" + U.readableSize(plcCfg.getMaxSize(), true) +
+            regCfg.setInitialSize(regCfg.getMaxSize());
+
+            LT.warn(log, "DataRegion maxSize=" + U.readableSize(regCfg.getMaxSize(), true) +
                 " is smaller than defaultInitialSize=" +
                 U.readableSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE, true) +
-                ", setting initialSize to " + U.readableSize(plcCfg.getMaxSize(), true));
+                ", setting initialSize to " + U.readableSize(regCfg.getMaxSize(), true));
         }
 
-        if (U.jvm32Bit() && plcCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
+        if (U.jvm32Bit() && regCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
             throw new IgniteCheckedException("DataRegion initialSize exceeds 2GB on 32-bit JVM (use " +
                 "DataRegionConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
-                "[name=" + plcCfg.getName() +
-                ", size=" + U.readableSize(plcCfg.getInitialSize(), true) + "]");
+                "[name=" + regCfg.getName() +
+                ", size=" + U.readableSize(regCfg.getInitialSize(), true) + "]");
     }
 
     /**
@@ -519,7 +526,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return collection of all configured {@link DataRegion policies}.
      */
     public Collection<DataRegion> memoryPolicies() {
-        return memPlcMap != null ? memPlcMap.values() : null;
+        return dataRegionMap != null ? dataRegionMap.values() : null;
     }
 
     /**
@@ -579,14 +586,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public DataRegion dataRegion(String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
-            return dfltMemPlc;
+            return dfltDataRegion;
 
-        if (memPlcMap == null)
+        if (dataRegionMap == null)
             return null;
 
         DataRegion plc;
 
-        if ((plc = memPlcMap.get(memPlcName)) == null)
+        if ((plc = dataRegionMap.get(memPlcName)) == null)
             throw new IgniteCheckedException("Requested DataRegion is not configured: " + memPlcName);
 
         return plc;
@@ -616,8 +623,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        if (memPlcMap != null) {
-            for (DataRegion memPlc : memPlcMap.values()) {
+        if (dataRegionMap != null) {
+            for (DataRegion memPlc : dataRegionMap.values()) {
                 memPlc.pageMemory().stop();
 
                 memPlc.evictionTracker().stop();
@@ -625,9 +632,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 unregisterMBean(memPlc.memoryMetrics().getName());
             }
 
-            memPlcMap.clear();
+            dataRegionMap.clear();
 
-            memPlcMap = null;
+            dataRegionMap = null;
         }
     }
 

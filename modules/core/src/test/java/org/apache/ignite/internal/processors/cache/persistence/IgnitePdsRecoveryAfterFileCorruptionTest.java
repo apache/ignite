@@ -68,7 +68,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
     private final String cacheName = "cache";
 
     /** Policy name. */
-    private final String policyName = "dfltMemPlc";
+    private final String policyName = "dfltDataRegion";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

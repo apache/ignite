@@ -91,11 +91,11 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setMaxSize(1000 * 1024 * 1024);
 
-        memCfg.setDefaultDataRegionName("dfltMemPlc");
+        memCfg.setDefaultDataRegionName("dfltDataRegion");
         memCfg.setDataRegionConfigurations(memPlcCfg);
 
         cfg.setDataStorageConfiguration(memCfg);

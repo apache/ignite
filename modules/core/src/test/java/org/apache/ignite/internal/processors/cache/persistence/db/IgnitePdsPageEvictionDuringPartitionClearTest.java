@@ -65,7 +65,7 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
         memPlcCfg.setInitialSize(70 * 1024 * 1024);
         memPlcCfg.setMaxSize(70 * 1024 * 1024);
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
 

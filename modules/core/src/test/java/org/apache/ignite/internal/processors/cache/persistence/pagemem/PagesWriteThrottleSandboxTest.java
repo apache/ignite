@@ -69,10 +69,10 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
         dbCfg.setDataRegionConfigurations(new DataRegionConfiguration()
             .setMaxSize(4000L * 1024 * 1024)
-            .setName("dfltMemPlc")
+            .setName("dfltDataRegion")
             .setMetricsEnabled(true));
 
-        dbCfg.setDefaultDataRegionName("dfltMemPlc");
+        dbCfg.setDefaultDataRegionName("dfltDataRegion");
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -155,7 +155,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                         long dirtyPages = 0;
 
                         for (DataRegionMetrics m : ig.dataRegionMetrics())
-                            if (m.getName().equals("dfltMemPlc"))
+                            if (m.getName().equals("dfltDataRegion"))
                                 dirtyPages = m.getDirtyPages();
 
                         long cpBufPages = 0;
@@ -169,7 +169,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         try {
                             cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
-                                .dataRegion("dfltMemPlc").pageMemory()).checkpointBufferPagesCount();
+                                .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();

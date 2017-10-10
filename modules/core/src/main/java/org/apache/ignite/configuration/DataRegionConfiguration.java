@@ -83,7 +83,8 @@ public final class DataRegionConfiguration implements Serializable {
     private long maxSize = DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 
     /** Data region start size. */
-    private long initSize = Math.min(maxSize, DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
+    private long initSize = Math.min(
+        DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE, DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
     /** An optional path to a memory mapped file for this data region. */
     private String swapFilePath;
