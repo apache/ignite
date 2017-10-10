@@ -540,6 +540,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         try {
             cctx.kernalContext().config().getMBeanServer().unregisterMBean(persistenceMetricsMbeanName);
+
+            persistenceMetricsMbeanName = null;
         }
         catch (Throwable e) {
             U.error(log, "Failed to unregister " + MBEAN_NAME + " MBean.", e);
@@ -2383,6 +2385,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return new Checkpoint(cpEntry, cpPages, curr);
             }
             else {
+                if (curr.nextSnapshot)
+                    cctx.wal().fsync(null);
+
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
                         LT.info(log, String.format("Skipping checkpoint (no pages were modified) [" +

@@ -168,7 +168,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -197,7 +197,7 @@ public class JdbcThinConnection implements Connection {
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -592,7 +592,7 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = schema;
+        this.schema = normalizeSchema(schema);
     }
 
     /** {@inheritDoc} */
