@@ -113,6 +113,10 @@
         <level value="DEBUG"/>
     </category>
 
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht">
+        <level value="DEBUG"/>
+    </category>
+
     <!-- Default settings. -->
     <root>
         <!-- Print at info by default. -->

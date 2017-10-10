@@ -34,7 +34,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -132,13 +134,14 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
                     spi0.waitForBlocked();
 
                 } catch (InterruptedException e) {
-                    fail();
+                    fail("waitForBlocked interrupted");
                 }
 
                 try {
                     splitAndWait();
                 }
                 catch (Throwable e) {
+                    U.error(log, "splitAndWait failed", e);
                     fail();
                 }
 
@@ -151,6 +154,11 @@ public class IgniteCacheTopologySplitTxConsistencyTest extends IgniteCacheTopolo
         int val0 = 1;
 
         IgniteFuture<Void> putFut = cache.putAsync(key, val0);
+        putFut.listen(new IgniteInClosure<IgniteFuture<Void>>() {
+            @Override public void apply(IgniteFuture<Void> future) {
+                U.dumpStack(log, "Put done [fut=" + future + ']');
+            }
+        });
 
         splitFut.get();
 
