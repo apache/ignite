@@ -64,11 +64,11 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setMaxSize(100 * 1000 * 1000);
-
         memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setPersistenceEnabled(true);
 
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setCheckpointingFrequency(3_000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -80,8 +80,6 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setCheckpointingFrequency(3_000));
 
         cfg.setConsistentId(gridName);
 
