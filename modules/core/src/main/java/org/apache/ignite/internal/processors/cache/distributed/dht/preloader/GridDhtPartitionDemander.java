@@ -674,15 +674,6 @@ public class GridDhtPartitionDemander {
                         try {
                             // Loop through all received entries and try to preload them.
                             for (GridCacheEntryInfo entry : e.getValue().infos()) {
-                                if (!part.preloadingPermitted(entry.key(), entry.version())) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Preloading is not permitted for entry due to " +
-                                            "evictions [key=" + entry.key() +
-                                            ", ver=" + entry.version() + ']');
-
-                                    continue;
-                                }
-
                                 if (!preloadEntry(node, p, entry, topVer)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Got entries for invalid partition during " +

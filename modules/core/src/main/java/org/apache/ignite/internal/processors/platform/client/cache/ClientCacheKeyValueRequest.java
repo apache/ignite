@@ -18,28 +18,31 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache get request.
+ * Cache request involving key and value.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCacheKeyValueRequest extends ClientCacheKeyRequest {
+    /** Value. */
+    private final Object val;
+
     /**
-     * Constructor.
+     * Ctor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    ClientCacheKeyValueRequest(BinaryRawReaderEx reader) {
         super(reader);
+
+        val = reader.readObjectDetached();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
-
-        return new ClientObjectResponse(requestId(), val);
+    /**
+     * Gets the value.
+     *
+     * @return Value.
+     */
+    public Object val() {
+        return val;
     }
 }

@@ -49,6 +49,9 @@ public class JdbcThinTcpIo {
     /** Version 2.1.0. */
     private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
+    /** Version 2.1.5: added "lazy" flag. */
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
+
     /** Version 2.3.1. */
     private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
@@ -180,22 +183,25 @@ public class JdbcThinTcpIo {
                 SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
-        handshake();
+        handshake(CURRENT_VER);
     }
 
     /**
+     * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
+     *
+     * @param ver JDBC client version.
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    public void handshake() throws IOException, SQLException {
+    public void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
         writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
-        writer.writeShort(CURRENT_VER.major());
-        writer.writeShort(CURRENT_VER.minor());
-        writer.writeShort(CURRENT_VER.maintenance());
+        writer.writeShort(ver.major());
+        writer.writeShort(ver.minor());
+        writer.writeShort(ver.maintenance());
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
@@ -238,7 +244,9 @@ public class JdbcThinTcpIo {
 
             ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_0.equals(srvProtocolVer))
+            if (VER_2_1_5.equals(srvProtocolVer))
+                handshake(VER_2_1_5);
+            else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
