@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * We use dedicated page for tracking pages updates.
@@ -177,11 +181,19 @@ public class TrackingPageIO extends PageIO {
     }
 
     /**
+     * @param addr Address.
+     */
+    long getLastSnapshotTag(long addr) {
+        return GridUnsafe.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
+    }
+
+    /**
      * Check that pageId was marked as changed between previous snapshot finish and current snapshot start.
      *
      * @param buf Buffer.
      * @param pageId Page id.
      * @param curSnapshotTag Snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
     public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
@@ -265,10 +277,12 @@ public class TrackingPageIO extends PageIO {
      * @param buf Buffer.
      * @param start Start.
      * @param curSnapshotTag Snapshot id.
+     * @param lastSuccessfulSnapshotTag  Last successful snapshot id.
      * @param pageSize Page size.
-     * @return set pageId if it was changed or next closest one, if there is no changed page null will be returned
+     * @return set pageId if it was changed or next closest one, if there is no changed page {@code null} will be returned
      */
-    public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+    @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
+        long lastSuccessfulSnapshotTag, int pageSize) {
         validateSnapshotId(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);
@@ -330,5 +344,26 @@ public class TrackingPageIO extends PageIO {
         }
 
         return -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("TrackingPage [\n\tlastSnapshotTag=").a(getLastSnapshotTag(addr))
+            .a(",\n\tleftHalf={")
+            .a("\n\t\tsize=").a(GridUnsafe.getShort(addr + SIZE_FIELD_OFFSET))
+            .a("\n\t\tdata={");
+
+        for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
+            sb.appendHex(GridUnsafe.getShort(addr + BITMAP_OFFSET + i));
+
+        sb.a("}\n\t},\n\trightHalf={")
+            .a("\n\t\tsize=").a(GridUnsafe.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)))
+            .a("\n\t\tdata={");
+
+        for (int i = 0; i < (countOfPageToTrack(pageSize) >> 3); i += 2)
+            sb.appendHex(GridUnsafe.getShort(addr + BITMAP_OFFSET + (countOfPageToTrack(pageSize) >> 3)
+                 + SIZE_FIELD_SIZE + i));
+
+        sb.a("}\n\t}\n]");
     }
 }

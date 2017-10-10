@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -46,10 +47,10 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteConfigurationTest
     {
         /// <summary>
-        /// Fixture setup.
+        /// Fixture tear down.
         /// </summary>
         [TestFixtureSetUp]
-        public void FixtureSetUp()
+        public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
@@ -62,6 +63,8 @@ namespace Apache.Ignite.Core.Tests
         {
             CheckDefaultProperties(new IgniteConfiguration());
             CheckDefaultProperties(new PersistentStoreConfiguration());
+            CheckDefaultProperties(new ClientConnectorConfiguration());
+            CheckDefaultProperties(new SqlConnectorConfiguration());
         }
 
         /// <summary>
@@ -86,7 +89,10 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new MemoryConfiguration());
             CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
             CheckDefaultValueAttributes(new SqlConnectorConfiguration());
+            CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
+            CheckDefaultValueAttributes(new IgniteClientConfiguration());
+            CheckDefaultValueAttributes(new QueryIndex());
         }
 
         /// <summary>
@@ -190,6 +196,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.UtilityCacheThreadPoolSize, resCfg.UtilityCacheThreadPoolSize);
                 Assert.AreEqual(cfg.QueryThreadPoolSize, resCfg.QueryThreadPoolSize);
 
+                Assert.AreEqual(cfg.ConsistentId, resCfg.ConsistentId);
+
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
 
@@ -270,6 +278,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(pers.MetricsEnabled, resPers.MetricsEnabled);
                 Assert.AreEqual(pers.RateTimeInterval, resPers.RateTimeInterval);
                 Assert.AreEqual(pers.SubIntervals, resPers.SubIntervals);
+                Assert.AreEqual(pers.CheckpointWriteOrder, resPers.CheckpointWriteOrder);
+                Assert.AreEqual(pers.WriteThrottlingEnabled, resPers.WriteThrottlingEnabled);
             }
         }
 
@@ -316,6 +326,12 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
+
+                // Check PersistentStoreConfiguration defaults.
+                CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
+
+                // Connector defaults.
+                CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
             }
         }
 
@@ -452,6 +468,31 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the consistent id.
+        /// </summary>
+        [Test]
+        [NUnit.Framework.Category(TestUtils.CategoryIntensive)]
+        public void TestConsistentId()
+        {
+            var ids = new object[]
+            {
+                null, new MyConsistentId {Data = "foo"}, "str", 1, 1.1, DateTime.Now, Guid.NewGuid()
+            };
+
+            var cfg = TestUtils.GetTestConfiguration();
+
+            foreach (var id in ids)
+            {
+                cfg.ConsistentId = id;
+
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests the ip finders.
         /// </summary>
         /// <param name="ipFinder">The ip finder.</param>
@@ -510,6 +551,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, cfg.IsLateAffinityAssignment);
             Assert.AreEqual(IgniteConfiguration.DefaultIsActiveOnStart, cfg.IsActiveOnStart);
+            Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
+                cfg.ClientConnectorConfigurationEnabled);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -532,8 +575,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultTlbSize, cfg.TlbSize);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingFrequency, cfg.CheckpointingFrequency);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingThreads, cfg.CheckpointingThreads);
-            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointingPageBufferSize, 
-                cfg.CheckpointingPageBufferSize);
+            Assert.AreEqual(default(long), cfg.CheckpointingPageBufferSize);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
@@ -546,6 +588,42 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cfg.MetricsEnabled);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultSubIntervals, cfg.SubIntervals);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(ClientConnectorConfiguration cfg)
+        {
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPort, cfg.Port);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPortRange, cfg.PortRange);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultMaxOpenCursorsPerConnection,
+                cfg.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(SqlConnectorConfiguration cfg)
+        {
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPort, cfg.Port);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPortRange, cfg.PortRange);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultMaxOpenCursorsPerConnection,
+                cfg.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
         }
 
         /// <summary>
@@ -590,7 +668,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
+                        Endpoints = new[] {"127.0.0.1:49900", "127.0.0.1:49901"}
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
@@ -672,7 +750,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 // Skip cache check because with persistence the grid is not active by default.
-                PluginConfigurations = new[] { new TestIgnitePluginConfiguration{ SkipCacheCheck = true } },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration {SkipCacheCheck = true}},
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
                     ExpirationTimeout = TimeSpan.FromSeconds(5),
@@ -708,7 +786,7 @@ namespace Apache.Ignite.Core.Tests
                             EmptyPagesPoolSize = 66,
                             SwapFilePath = "somePath2",
                             MetricsEnabled = true
-                        } 
+                        }
                     }
                 },
                 PublicThreadPoolSize = 3,
@@ -751,9 +829,45 @@ namespace Apache.Ignite.Core.Tests
                     WalStorePath = Path.GetTempPath(),
                     MetricsEnabled = true,
                     SubIntervals = 7,
-                    RateTimeInterval = TimeSpan.FromSeconds(9)
-                }
+                    RateTimeInterval = TimeSpan.FromSeconds(9),
+                    CheckpointWriteOrder = CheckpointWriteOrder.Random,
+                    WriteThrottlingEnabled = true
+                },
+                ConsistentId = new MyConsistentId {Data = "abc"}
             };
+        }
+
+        private class MyConsistentId
+        {
+            public string Data { get; set; }
+
+            private bool Equals(MyConsistentId other)
+            {
+                return string.Equals(Data, other.Data);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((MyConsistentId) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return (Data != null ? Data.GetHashCode() : 0);
+            }
+
+            public static bool operator ==(MyConsistentId left, MyConsistentId right)
+            {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(MyConsistentId left, MyConsistentId right)
+            {
+                return !Equals(left, right);
+            }
         }
     }
 }

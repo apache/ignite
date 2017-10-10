@@ -249,6 +249,10 @@ namespace ignite
                  */
                 void ClearArguments()
                 {
+                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    for (iter = args.begin(); iter != args.end(); ++iter)
+                        delete *iter;
+
                     args.clear();
                 }
 

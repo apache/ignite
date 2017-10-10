@@ -225,6 +225,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return consistentId;
     }
 
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Consistent globally unique node ID.
+     */
+    public void setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+
+        final Map<String, Object> map = new HashMap<>(attrs);
+
+        map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
+
+        attrs = Collections.unmodifiableMap(map);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
@@ -648,5 +663,25 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient());
+    }
+
+    /**
+     * IMPORTANT!
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
+     * @param node to copy data from
+     */
+    public TcpDiscoveryNode(
+        ClusterNode node
+    ) {
+        this.id = node.id();
+        this.consistentId = node.consistentId();
+        this.addrs = node.addresses();
+        this.hostNames = node.hostNames();
+        this.order = node.order();
+        this.ver = node.version();
+        this.daemon = node.isDaemon();
+        this.clientRouterNodeId = node.isClient() ? node.id() : null;
+
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }

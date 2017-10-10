@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.events;
 
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
@@ -32,15 +31,16 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Interop events.
  */
+@SuppressWarnings("unchecked")
 public class PlatformEvents extends PlatformAbstractTarget {
     /** */
     private static final int OP_REMOTE_QUERY = 1;
@@ -218,6 +218,19 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 Collection<Event> result = startRemoteQuery(reader, events);
 
                 eventColResWriter.write(writer, result, null);
+
+                break;
+            }
+
+            case OP_STOP_LOCAL_LISTEN: {
+                int id = reader.readInt();
+                int[] types = reader.readIntArray();
+
+                IgnitePredicate lsnr = new PlatformLocalEventListener(id);
+
+                boolean res = events.stopLocalListen(lsnr, types);
+
+                writer.writeBoolean(res);
 
                 break;
             }

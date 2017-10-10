@@ -36,11 +36,27 @@
         BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle)); \
     }
 
+#define ODBC_FAIL_ON_ERROR1(ret, type, handle, msg)                                    \
+    if (!SQL_SUCCEEDED(ret))                                                           \
+    {                                                                                  \
+        Ignition::StopAll(true);                                                       \
+        BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle) + ", msg = " + msg); \
+    }
+
 
 namespace ignite_test
 {
     /** Read buffer size. */
     enum { ODBC_BUFFER_SIZE = 1024 };
+
+    /**
+     * Extract error state.
+     *
+     * @param handleType Type of the handle.
+     * @param handle Handle.
+     * @return Error state.
+     */
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle);
 
     /**
      * Extract error message.

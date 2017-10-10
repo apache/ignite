@@ -18,8 +18,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  *
@@ -129,7 +132,7 @@ public class PagePartitionCountersIO extends PageIO {
             long cacheSize = PageUtils.getLong(pageAddr, off);
             off += 8;
 
-            assert cacheSize > 0 : cacheSize;
+            assert cacheSize >= 0 : cacheSize;
 
             Long old = res.put(cacheId, cacheSize);
 
@@ -139,10 +142,17 @@ public class PagePartitionCountersIO extends PageIO {
         return getLastFlag(pageAddr);
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
     private boolean getLastFlag(long pageAddr) {
         return PageUtils.getByte(pageAddr, LAST_FLAG_OFF) == LAST_FLAG;
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @param last Last.
+     */
     private void setLastFlag(long pageAddr, boolean last) {
         PageUtils.putByte(pageAddr, LAST_FLAG_OFF, last ? LAST_FLAG : ~LAST_FLAG);
     }
@@ -171,5 +181,22 @@ public class PagePartitionCountersIO extends PageIO {
      */
     private int getCapacity(int pageSize) {
         return (pageSize - ITEMS_OFF) / ITEM_SIZE;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("PagePartitionCounters [\n\tcount=").a(getCount(addr))
+            .a(",\n\tlastFlag=").a(getLastFlag(addr))
+            .a(",\n\tnextCountersPageId=").appendHex(getNextCountersPageId(addr))
+            .a(",\n\tsize={");
+
+        Map<Integer, Long> sizes = new HashMap<>();
+
+        readCacheSizes(addr, sizes);
+
+        for (Map.Entry<Integer, Long> e : sizes.entrySet())
+            sb.a("\n\t\t").a(e.getKey()).a("=").a(e.getValue());
+
+        sb.a("\n\t}\n]");
     }
 }

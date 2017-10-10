@@ -20,21 +20,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class QueryCursor<TK, TV> : AbstractQueryCursor<ICacheEntry<TK, TV>>
+    internal class QueryCursor<TK, TV> : PlatformQueryQursorBase<ICacheEntry<TK, TV>>
     {
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
-        public QueryCursor(IUnmanagedTarget target, Marshaller marsh,
-            bool keepBinary) : base(target, marsh, keepBinary)
+        public QueryCursor(IPlatformTargetInternal target, bool keepBinary) : base(target, keepBinary)
         {
             // No-op.
         }

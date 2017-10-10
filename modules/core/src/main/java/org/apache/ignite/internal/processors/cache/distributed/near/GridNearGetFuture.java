@@ -93,7 +93,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
-     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      */
@@ -108,7 +107,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery
@@ -122,7 +120,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             deserializeBinary,
             expiryPlc,
             skipVals,
-            canRemap,
             needVer,
             keepCacheObjects,
             recovery);
@@ -333,7 +330,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             remapKeys.add(key);
                     }
 
-                    AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                    AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                     assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology version did " +
                         "not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -584,7 +581,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         EntryGetResult res = dhtEntry.innerGetVersioned(
                             null,
                             null,
-                            /**update-metrics*/false,
+                            /*update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
                             subjId,
                             null,
@@ -626,7 +623,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     return true;
                 }
                 else {
-                    boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                    boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                     // Entry not found, do not continue search if topology did not change and there is no store.
                     return !cctx.readThroughConfigured() && (topStable || partitionOwned(part));
@@ -920,17 +917,15 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 onDone(Collections.<K, V>emptyMap());
             }
             else {
-                final AffinityTopologyVersion updTopVer =
+                AffinityTopologyVersion updTopVer =
                     new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
                 cctx.affinity().affinityReadyFuture(updTopVer).listen(
                     new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             try {
-                                fut.get();
-
                                 // Remap.
-                                map(keys.keySet(), F.t(node, keys), updTopVer);
+                                map(keys.keySet(), F.t(node, keys), fut.get());
 
                                 onDone(Collections.<K, V>emptyMap());
                             }

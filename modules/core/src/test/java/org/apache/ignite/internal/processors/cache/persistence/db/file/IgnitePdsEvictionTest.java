@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test for page evictions.
@@ -84,6 +87,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
         memPlcCfg.setInitialSize(MEMORY_LIMIT);
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
+        memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         memPlcCfg.setName("dfltMemPlc");
 
         memCfg.setPageSize(PAGE_SIZE);
@@ -93,7 +97,6 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         return memCfg;
     }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -294,6 +297,6 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

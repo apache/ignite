@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -33,6 +34,9 @@ public class VisorCacheStopTaskArg extends VisorDataTransferObject {
 
     /** Cache name. */
     private String cacheName;
+
+    /** Cache names. */
+    private List<String> cacheNames;
 
     /**
      * Default constructor.
@@ -49,20 +53,43 @@ public class VisorCacheStopTaskArg extends VisorDataTransferObject {
     }
 
     /**
+     * @param cacheNames Cache names.
+     */
+    public VisorCacheStopTaskArg(List<String> cacheNames) {
+        this.cacheNames = cacheNames;
+    }
+
+    /**
      * @return Cache name.
      */
     public String getCacheName() {
         return cacheName;
     }
 
+    /**
+     * @return Cache names.
+     */
+    public List<String> getCacheNames() {
+        return cacheNames;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheName);
+        U.writeCollection(out, cacheNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readString(in);
+
+        if (protoVer > V1)
+            cacheNames = U.readList(in);
     }
 
     /** {@inheritDoc} */

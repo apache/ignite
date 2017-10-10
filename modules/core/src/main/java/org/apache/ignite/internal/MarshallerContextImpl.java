@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.AbstractMap;
@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -86,6 +87,12 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private boolean clientNode;
+
+    /**
+     * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
+     * from work directory. Non null value may be used to setup custom directory from outside
+     */
+    @Nullable private File marshallerMappingFileStoreDir;
 
     /**
      * Initializes context.
@@ -197,9 +204,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @throws IOException In case of error.
      */
     private void processResource(URL url) throws IOException {
-        try (InputStream in = url.openStream()) {
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(in));
-
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line;
 
             while ((line = rdr.readLine()) != null) {
@@ -240,7 +245,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         if (mappedName != null) {
             if (!mappedName.className().equals(clsName))
-                throw duplicateIdException(platformId, typeId, mappedName.className(), clsName);
+                throw new DuplicateTypeIdException(platformId, typeId, mappedName.className(), clsName);
             else {
                 if (mappedName.accepted())
                     return true;
@@ -288,28 +293,6 @@ public class MarshallerContextImpl implements MarshallerContext {
             assert res.error() != null;
             throw res.error();
         }
-    }
-
-    /**
-     * @param platformId Platform id.
-     * @param typeId Type id.
-     * @param conflictingClsName Conflicting class name.
-     * @param clsName Class name.
-     */
-    private IgniteCheckedException duplicateIdException(
-            byte platformId,
-            int typeId,
-            String conflictingClsName,
-            String clsName
-    ) {
-        return new IgniteCheckedException("Duplicate ID [platformId="
-            + platformId
-            + ", typeId="
-            + typeId
-            + ", oldCls="
-            + conflictingClsName
-            + ", newCls="
-            + clsName + "]");
     }
 
     /**
@@ -515,10 +498,16 @@ public class MarshallerContextImpl implements MarshallerContext {
         IgniteConfiguration cfg = ctx.config();
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        fileStore = new MarshallerMappingFileStore(workDir, ctx.log(MarshallerMappingFileStore.class));
+        final IgniteLogger fileStoreLog = ctx.log(MarshallerMappingFileStore.class);
+        fileStore = marshallerMappingFileStoreDir == null ?
+            new MarshallerMappingFileStore(workDir, fileStoreLog) :
+            new MarshallerMappingFileStore(fileStoreLog, marshallerMappingFileStoreDir);
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
+
+        if (ctx.config().isPersistentStoreEnabled())
+            fileStore.restoreMappings(this);
     }
 
     /**
@@ -555,6 +544,22 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return res.entrySet().iterator();
+    }
+
+    /**
+     * @return custom marshaller mapping files directory. Used for standalone WAL iteration
+     */
+    @Nullable public File getMarshallerMappingFileStoreDir() {
+        return marshallerMappingFileStoreDir;
+    }
+
+    /**
+     * Sets custom marshaller mapping files directory. Used for standalone WAL iteration
+     *
+     * @param marshallerMappingFileStoreDir directory with type name mappings
+     */
+    public void setMarshallerMappingFileStoreDir(@Nullable final File marshallerMappingFileStoreDir) {
+        this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
     }
 
     /**

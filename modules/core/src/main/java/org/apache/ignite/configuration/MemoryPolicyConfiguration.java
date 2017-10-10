@@ -78,7 +78,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Memory policy start size. */
-    private Long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
+    private long initialSize;
 
     /** Memory policy maximum size. */
     private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
@@ -172,7 +172,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
      *
      * @return Memory policy start size.
      */
-    public Long getInitialSize() {
+    public long getInitialSize() {
         return initialSize;
     }
 

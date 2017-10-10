@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -32,6 +31,9 @@ public class HttpIgniteUpdatesChecker {
     /** Url for request updates. */
     private final String url;
 
+    /** Params. */
+    private final String params;
+
     /** Charset for encoding requests/responses */
     private final String charset;
 
@@ -40,29 +42,25 @@ public class HttpIgniteUpdatesChecker {
      * @param url URL for getting Ignite updates information
      * @param charset Charset for encoding
      */
-    HttpIgniteUpdatesChecker(String url, String charset) {
+    HttpIgniteUpdatesChecker(String url, String params, String charset) {
         this.url = url;
+        this.params = params;
         this.charset = charset;
     }
 
     /**
      * Gets information about Ignite updates via HTTP
-     * @param updateRequest HTTP Request parameters
      * @return Information about Ignite updates separated by line endings
      * @throws IOException If HTTP request was failed
      */
-    public String getUpdates(String updateRequest) throws IOException {
-        URLConnection conn = new URL(url).openConnection();
-        conn.setDoOutput(true);
+    public String getUpdates(boolean first) throws IOException {
+        String addr = first ? url + params : url;
+
+        URLConnection conn = new URL(addr).openConnection();
         conn.setRequestProperty("Accept-Charset", charset);
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + charset);
 
         conn.setConnectTimeout(3000);
         conn.setReadTimeout(3000);
-
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(updateRequest.getBytes(charset));
-        }
 
         try (InputStream in = conn.getInputStream()) {
             if (in == null)
@@ -70,13 +68,12 @@ public class HttpIgniteUpdatesChecker {
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset));
 
-            StringBuilder response = new StringBuilder();
+            StringBuilder res = new StringBuilder();
 
-            for (String line; (line = reader.readLine()) != null; ) {
-                response.append(line).append('\n');
-            }
+            for (String line; (line = reader.readLine()) != null; )
+                res.append(line).append('\n');
 
-            return response.toString();
+            return res.toString();
         }
     }
 }

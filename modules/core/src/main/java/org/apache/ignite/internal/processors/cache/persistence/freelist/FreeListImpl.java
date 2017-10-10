@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -193,7 +194,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[rowSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
@@ -239,7 +240,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
+                // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
                 byte[] payload = new byte[payloadSize];
 
                 DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
@@ -359,8 +360,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
     /**
      * Calculates average fill factor over FreeListImpl instance.
+     *
+     * @return Tuple (numenator, denominator).
      */
-    public float fillFactor() {
+    public T2<Long, Long> fillFactor() {
         long pageSize = pageSize();
 
         long totalSize = 0;
@@ -376,7 +379,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             totalSize += pages * pageSize;
         }
 
-        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
+        return totalSize == 0 ? new T2<>(0L, 0L) : new T2<>(loadSize, totalSize);
     }
 
     /** {@inheritDoc} */
@@ -406,18 +409,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                log.info("Bucket [b=" + b +
-                    ", size=" + size +
-                    ", stripes=" + (stripes != null ? stripes.length : 0) +
-                    ", stripesEmpty=" + empty + ']');
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
+                        ", size=" + size +
+                        ", stripes=" + (stripes != null ? stripes.length : 0) +
+                        ", stripesEmpty=" + empty + ']');
             }
         }
 
         if (dataPages > 0) {
-            log.info("FreeList [name=" + name +
-                ", buckets=" + BUCKETS +
-                ", dataPages=" + dataPages +
-                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
+                    ", buckets=" + BUCKETS +
+                    ", dataPages=" + dataPages +
+                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
         }
     }
 

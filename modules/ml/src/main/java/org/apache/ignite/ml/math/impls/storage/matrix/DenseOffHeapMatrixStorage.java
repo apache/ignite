@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
 
 /**
  * Local, dense off-heap matrix storage.
@@ -33,7 +34,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     private int cols;
     /** */
     private transient long ptr;
-    //TODO: temp solution.
+    //TODO: IGNITE-5535, temp solution.
     /** */
     private int ptrInitHash;
 
@@ -117,12 +118,22 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return StorageConstants.ROW_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public double[][] data() {
+    @Override public double[] data() {
         return null;
     }
 
@@ -199,7 +210,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** */
     private void allocateMemory(int rows, int cols) {
-        ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
+        ptr = GridUnsafe.allocateMemory((long)rows * cols * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

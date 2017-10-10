@@ -26,8 +26,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Data streamer internal interface to get rid of generics.
@@ -45,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
     /// <summary>
     /// Data streamer implementation.
     /// </summary>
-    internal class DataStreamerImpl<TK, TV> : PlatformDisposableTarget, IDataStreamer, IDataStreamer<TK, TV>
+    internal class DataStreamerImpl<TK, TV> : PlatformDisposableTargetAdapter, IDataStreamer, IDataStreamer<TK, TV>
     {
 
 #pragma warning disable 0420
@@ -95,6 +93,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** */
         private const int OpListenTopology = 11;
 
+        /** */
+        private const int OpGetTimeout = 12;
+
+        /** */
+        private const int OpSetTimeout = 13;
+
         /** Cache name. */
         private readonly string _cacheName;
 
@@ -141,8 +145,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
         /// <param name="keepBinary">Binary flag.</param>
-        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepBinary)
-            : base(target, marsh)
+        public DataStreamerImpl(IPlatformTargetInternal target, Marshaller marsh, string cacheName, bool keepBinary)
+            : base(target)
         {
             _cacheName = cacheName;
             _keepBinary = keepBinary;
@@ -358,8 +362,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
-                ThrowIfDisposed();
-
                 return _closeFut.Task;
             }
         }
@@ -547,8 +549,42 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return result;
             }
 
-            return new DataStreamerImpl<TK1, TV1>(UU.ProcessorDataStreamer(Marshaller.Ignite.InteropProcessor,
-                _cacheName, true), Marshaller, _cacheName, true);
+            return Marshaller.Ignite.GetDataStreamer<TK1, TV1>(_cacheName, true);
+        }
+
+        /** <inheritDoc /> */
+        public TimeSpan Timeout
+        {
+            get
+            {
+                _rwLock.EnterReadLock();
+
+                try
+                {
+                    ThrowIfDisposed();
+
+                    return BinaryUtils.LongToTimeSpan(DoOutInOp(OpGetTimeout));
+                }
+                finally
+                {
+                    _rwLock.ExitReadLock();
+                }
+            }
+            set
+            {
+                _rwLock.EnterWriteLock();
+
+                try
+                {
+                    ThrowIfDisposed();
+
+                    DoOutInOp(OpSetTimeout, (long) value.TotalMilliseconds);
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
+            }
         }
 
         /** <inheritDoc /> */
@@ -861,7 +897,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             /// </summary>
             public void RunThread()
             {
-                new Thread(Run).Start();
+                Task.Factory.StartNew(Run);
             }
         }
 

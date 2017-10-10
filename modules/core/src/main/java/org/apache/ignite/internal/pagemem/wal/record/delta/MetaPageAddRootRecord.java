@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * New root in meta page.
@@ -51,7 +52,15 @@ public class MetaPageAddRootRecord extends PageDeltaRecord {
         return RecordType.BTREE_META_PAGE_ADD_ROOT;
     }
 
+    /**
+     *
+     */
     public long rootId() {
         return rootId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageAddRootRecord.class, this, "super", super.toString());
     }
 }

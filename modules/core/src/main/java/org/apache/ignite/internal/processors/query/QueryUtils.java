@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -213,7 +214,7 @@ public class QueryUtils {
             return entity;
         }
 
-        QueryEntity normalEntity = new QueryEntity();
+        QueryEntity normalEntity = entity instanceof QueryEntityEx ? new QueryEntityEx() : new QueryEntity();
 
         // Propagate plain properties.
         normalEntity.setKeyType(entity.getKeyType());
@@ -222,6 +223,7 @@ public class QueryUtils {
         normalEntity.setKeyFields(entity.getKeyFields());
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
+        normalEntity.setNotNullFields(entity.getNotNullFields());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -343,6 +345,7 @@ public class QueryUtils {
      * Create type candidate for query entity.
      *
      * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param cctx Cache context.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
@@ -350,8 +353,8 @@ public class QueryUtils {
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, GridCacheContext cctx, QueryEntity qryEntity,
-        List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
+    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -360,6 +363,8 @@ public class QueryUtils {
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName);
+
+        desc.schemaName(schemaName);
 
         desc.aliases(qryEntity.getAliases());
 
@@ -492,6 +497,7 @@ public class QueryUtils {
     public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
         Set<String> keyFields = qryEntity.getKeyFields();
+        Set<String> notNulls = qryEntity.getNotNullFields();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
@@ -518,8 +524,11 @@ public class QueryUtils {
             else
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
+            boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
+
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true), d.aliases(), isKeyField);
+                U.classForName(entry.getValue(), Object.class, true),
+                d.aliases(), isKeyField, notNull);
 
             d.addProperty(prop, false);
         }
@@ -536,6 +545,8 @@ public class QueryUtils {
      */
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
+        Set<String> notNulls = qryEntity.getNotNullFields();
+
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
             GridQueryProperty prop = buildProperty(
                 d.keyClass(),
@@ -545,6 +556,7 @@ public class QueryUtils {
                 entry.getKey(),
                 U.classForName(entry.getValue(), Object.class),
                 d.aliases(),
+                notNulls != null && notNulls.contains(entry.getKey()),
                 coCtx);
 
             d.addProperty(prop, false);
@@ -658,10 +670,11 @@ public class QueryUtils {
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
+     * @param notNull {@code true} if {@code null} value is not allowed.
      * @return Binary property.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-                                     Map<String, String> aliases, @Nullable Boolean isKeyField) throws IgniteCheckedException {
+        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -677,7 +690,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull);
         }
 
         return res;
@@ -689,21 +702,25 @@ public class QueryUtils {
      * @param pathStr Path string.
      * @param resType Result type.
      * @param aliases Aliases.
+     * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
+        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(
             true,
             keyCls,
             pathStr,
             resType,
             aliases,
+            notNull,
             coCtx);
 
         if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException(propertyInitializationExceptionMessage(keyCls, valCls, pathStr, resType));
@@ -719,11 +736,14 @@ public class QueryUtils {
      * @param pathStr Path string.
      * @param resType Result type.
      * @param aliases Aliases.
+     * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
-    public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName, String valueFieldName, String pathStr,
-                                                  Class<?> resType, Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
+    public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
+        String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
+        CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
 
@@ -735,6 +755,7 @@ public class QueryUtils {
                 pathStr,
                 resType,
                 aliases,
+                notNull,
                 coCtx);
     }
 
@@ -760,11 +781,13 @@ public class QueryUtils {
      * @param pathStr String representing path to the property. May contains dots '.' to identify nested fields.
      * @param resType Expected result type.
      * @param aliases Aliases.
+     * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param coCtx Cache object context.
      * @return Property instance corresponding to the given path.
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, CacheObjectContext coCtx) {
+        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -784,7 +807,7 @@ public class QueryUtils {
             if (accessor == null)
                 return null;
 
-            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, coCtx);
+            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, notNull, coCtx);
 
             tmp.parent(res);
 
@@ -1165,6 +1188,39 @@ public class QueryUtils {
     }
 
     /**
+     * Copy query entity.
+     *
+     * @param entity Query entity.
+     * @return Copied entity.
+     */
+    public static QueryEntity copy(QueryEntity entity) {
+        QueryEntity res;
+
+        if (entity instanceof QueryEntityEx)
+            res = new QueryEntityEx(entity);
+        else
+            res = new QueryEntity(entity);
+
+        return res;
+    }
+
+    /**
+     * Performs checks to forbid cache configurations that are not compatible with NOT NULL query fields.
+     * See {@link QueryEntity#setNotNullFields(Set)}.
+     *
+     * @param cfg Cache configuration.
+     */
+    public static void checkNotNullAllowed(CacheConfiguration cfg) {
+        if (cfg.isReadThrough())
+            throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.readThrough " +
+                "is enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (cfg.getInterceptor() != null)
+            throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.interceptor " +
+                "is set.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {
@@ -1217,6 +1273,11 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public GridQueryProperty parent() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean notNull() {
+            return true;
         }
     }
 }

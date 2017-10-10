@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,6 +26,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,6 +35,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
+import org.apache.ignite.cache.store.jdbc.model.BinaryTest;
+import org.apache.ignite.cache.store.jdbc.model.BinaryTestKey;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -44,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
 
@@ -78,7 +81,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
     @Override protected CacheJdbcPojoStore<Object, Object> store() {
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
 
-        JdbcType[] storeTypes = new JdbcType[6];
+        JdbcType[] storeTypes = new JdbcType[7];
 
         storeTypes[0] = new JdbcType();
         storeTypes[0].setDatabaseSchema("PUBLIC");
@@ -147,6 +150,15 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         storeTypes[5].setValueType("java.util.UUID");
         storeTypes[5].setValueFields(new JdbcTypeField(Types.BINARY, "VAL", UUID.class, null));
 
+        storeTypes[6] = new JdbcType();
+        storeTypes[6].setDatabaseSchema("PUBLIC");
+        storeTypes[6].setDatabaseTable("BINARY_ENTRIES");
+        storeTypes[6].setKeyType("org.apache.ignite.cache.store.jdbc.model.BinaryTestKey");
+        storeTypes[6].setKeyFields(new JdbcTypeField(Types.BINARY, "KEY", Integer.class, "id"));
+
+        storeTypes[6].setValueType("org.apache.ignite.cache.store.jdbc.model.BinaryTest");
+        storeTypes[6].setValueFields(new JdbcTypeField(Types.BINARY, "VAL", byte[].class, "bytes"));
+
         storeFactory.setTypes(storeTypes);
 
         storeFactory.setDialect(new H2Dialect());
@@ -210,11 +222,21 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
             // No-op.
         }
 
+        try {
+            stmt.executeUpdate("delete from Binary_Entries");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "String_Entries (key varchar(100) not null, val varchar(100), PRIMARY KEY(key))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "UUID_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
+
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
+            "Binary_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " +
             "Timestamp_Entries (key timestamp not null, val integer, PRIMARY KEY(key))");
@@ -304,11 +326,31 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         conn.commit();
 
+        U.closeQuiet(prnStmt);
+
+        PreparedStatement binaryStmt = conn.prepareStatement("INSERT INTO Binary_Entries(key, val) VALUES (?, ?)");
+
+        byte[] bytes = new byte[16];
+
+        for (byte i = 0; i < 16; i++)
+            bytes[i] = i;
+
+        binaryStmt.setInt(1, 1);
+        binaryStmt.setBinaryStream(2, new ByteArrayInputStream(bytes));
+
+        binaryStmt.addBatch();
+        binaryStmt.executeBatch();
+
+        U.closeQuiet(binaryStmt);
+
+        conn.commit();
+
         U.closeQuiet(conn);
 
         final Collection<Object> orgKeys = new ConcurrentLinkedQueue<>();
         final Collection<Object> prnKeys = new ConcurrentLinkedQueue<>();
         final Collection<Object> prnComplexKeys = new ConcurrentLinkedQueue<>();
+        final Collection<Object> binaryTestVals = new ConcurrentLinkedQueue<>();
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
@@ -331,12 +373,18 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                         if (PersonComplexKey.class.getName().equals(keyType)
                             && Person.class.getName().equals(valType))
                             prnComplexKeys.add(key);
+
+                        if (BinaryTestKey.class.getName().equals(keyType)
+                            && BinaryTest.class.getName().equals(valType))
+                            binaryTestVals.add(val.field("bytes"));
                     }
                 }else {
                     if (k instanceof OrganizationKey && v instanceof Organization)
                         orgKeys.add(k);
                     else if (k instanceof PersonKey && v instanceof Person)
                         prnKeys.add(k);
+                    else if (k instanceof BinaryTestKey && v instanceof BinaryTest)
+                        binaryTestVals.add(((BinaryTest)v).getBytes());
                     else if (k instanceof PersonComplexKey && v instanceof Person) {
                         PersonComplexKey key = (PersonComplexKey)k;
 
@@ -357,6 +405,8 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
         assertEquals(ORGANIZATION_CNT, orgKeys.size());
         assertEquals(PERSON_CNT, prnKeys.size());
         assertEquals(PERSON_CNT, prnComplexKeys.size());
+        assertEquals(1, binaryTestVals.size());
+        assertTrue(Arrays.equals(bytes, (byte[])binaryTestVals.iterator().next()));
 
         Collection<Object> tmpOrgKeys = new ArrayList<>(orgKeys);
         Collection<Object> tmpPrnKeys = new ArrayList<>(prnKeys);
@@ -545,5 +595,4 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         return obj;
     }
-
 }

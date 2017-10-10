@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -78,6 +79,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     public static final String CACHE_DATA_FILENAME = "cache_data.dat";
 
+    /** */
+    public static final String DFLT_STORE_DIR = "db";
+
     /** Marshaller. */
     private static final Marshaller marshaller = new JdkMarshaller();
 
@@ -90,7 +94,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private PersistentStoreConfiguration pstCfg;
 
-    /** Absolute directory for file page store */
+    /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
 
     /** */
@@ -114,29 +118,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode())
+        final GridKernalContext ctx = cctx.kernalContext();
+        if (ctx.clientNode())
             return;
 
-        String consId = U.maskForFileName(cctx.kernalContext().discovery().consistentId().toString());
+        final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        if (pstCfg.getPersistentStorePath() != null) {
-            File workDir0 = new File(pstCfg.getPersistentStorePath());
-
-            if (!workDir0.isAbsolute())
-                workDir0 = U.resolveWorkDirectory(
-                    igniteCfg.getWorkDirectory(),
-                    pstCfg.getPersistentStorePath(),
-                    false
-                );
-
-            storeWorkDir = new File(workDir0, consId);
-        }
-        else
-            storeWorkDir = new File(U.resolveWorkDirectory(
-                igniteCfg.getWorkDirectory(),
-                "db",
-                false
-            ), consId);
+        storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
     }
@@ -207,10 +195,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void storeCacheData(
-        StoredCacheData cacheData
-    ) throws IgniteCheckedException {
-
+    @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
         File cacheWorkDir = cacheWorkDirectory(cacheData.config());
         File file;
 
@@ -223,10 +208,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
 
-        if (!file.exists() || file.length() == 0) {
+        if (overwrite || !file.exists() || file.length() == 0) {
             try {
                 file.createNewFile();
 
+                // Pre-existing file will be truncated upon stream open.
                 try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
                     marshaller.marshal(cacheData, stream);
                 }
@@ -318,6 +304,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheId Cache ID to write.
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
+     * @param tag Partition tag (growing 1-based partition file version). Used to validate page is not outdated
      * @return PageStore to which the page has been written.
      * @throws IgniteCheckedException If IO error occurred.
      */
@@ -364,21 +351,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (dirExisted && !idxFile.exists())
             grpsWithoutIdx.add(grpDesc.groupId());
 
-        FilePageStore idxStore = new FilePageStore(
-            PageMemory.FLAG_IDX,
-            idxFile,
-            pstCfg.getFileIOFactory(),
-            cctx.kernalContext().config().getMemoryConfiguration());
+        FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+            pstCfg.getFileIOFactory(), igniteCfg.getMemoryConfiguration());
+
+        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
         FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
 
         for (int partId = 0; partId < partStores.length; partId++) {
-            FilePageStore partStore = new FilePageStore(
-                PageMemory.FLAG_DATA,
-                new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
-                pstCfg.getFileIOFactory(),
-                cctx.kernalContext().config().getMemoryConfiguration()
-            );
+            FilePageStore partStore = pageStoreFactory.createPageStore(
+                PageMemory.FLAG_DATA, new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)));
 
             partStores[partId] = partStore;
         }
@@ -386,6 +368,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return new CacheStoreHolder(idxStore, partStores);
     }
 
+    /**
+     * @param cacheWorkDir Cache work directory.
+     */
     private boolean checkAndInitCacheWorkDir(File cacheWorkDir) throws IgniteCheckedException {
         boolean dirExisted = false;
 
@@ -551,7 +536,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return Store work dir.
+     * @return Store work dir. Includes consistent-id based folder
      */
     public File workDir() {
         return storeWorkDir;

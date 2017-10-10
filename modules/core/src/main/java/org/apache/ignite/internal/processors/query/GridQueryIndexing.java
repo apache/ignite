@@ -66,13 +66,13 @@ public interface GridQueryIndexing {
      * Parses SQL query into two step query and executes it.
      *
      * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param mainCacheId Main cache ID.
-     * @return Cursor.
+     * @param mainCacheId Main cache ID.    @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
+    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
         boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
 
     /**
@@ -83,11 +83,14 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.
      * @param cancel Query cancel.
      * @param mainCacheId Main cache ID.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException;
+    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts)
+        throws IgniteCheckedException;
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
@@ -106,12 +109,12 @@ public interface GridQueryIndexing {
      * Executes regular query.
      *
      * @param schemaName Schema name.
-     * @param qry Query.
+     * @param cacheName Cache name.
+     *@param qry Query.
      * @param filter Cache name and key filter.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
+     * @param keepBinary Keep binary flag.    @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, SqlQuery qry,
+    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
         IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
@@ -131,14 +134,14 @@ public interface GridQueryIndexing {
      * Executes text query.
      *
      * @param schemaName Schema name.
+     * @param cacheName Cache name.
      * @param qry Text query.
      * @param typeName Type name.
-     * @param filter Cache name and key filter.
-     * @return Queried rows.
+     * @param filter Cache name and key filter.    @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String qry,
-        String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
+        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -165,6 +168,21 @@ public interface GridQueryIndexing {
     public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException;
 
     /**
+     * Add columns to dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to add.
+     * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @param ifColNotExists Ignore operation if column already exists (instead of throwing an error) - is honored only
+     *     for single column case.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols, boolean ifTblExists,
+        boolean ifColNotExists) throws IgniteCheckedException;
+
+    /**
      * Registers cache.
      *
      * @param cacheName Cache name.
@@ -179,9 +197,10 @@ public interface GridQueryIndexing {
      * Unregisters cache.
      *
      * @param cacheName Cache name.
+     * @param destroy Destroy flag.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(String cacheName) throws IgniteCheckedException;
+    public void unregisterCache(String cacheName, boolean destroy) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.

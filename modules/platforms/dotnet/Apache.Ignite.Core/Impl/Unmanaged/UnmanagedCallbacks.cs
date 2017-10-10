@@ -219,6 +219,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
             AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
             AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventLocalListenerApply, EventLocalListenerApply);
             AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
             AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
             AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
@@ -678,7 +679,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                binaryReceiver.Deserialize<StreamReceiverHolder>();
 
                 if (receiver != null)
-                    receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream, keepBinary);
+                {
+                    var target = new PlatformJniTarget(new UnmanagedNonReleaseableTarget(_ctx, cache), 
+                        _ignite.Marshaller);
+                    receiver.Receive(_ignite, target, stream, keepBinary);
+                }
 
                 return 0;
             }
@@ -894,24 +899,72 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        private long EventLocalListenerApply(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var id = stream.ReadInt();
+
+                var listeners = _ignite.Configuration.LocalEventListenersInternal;
+
+                if (listeners == null || id >= listeners.Length)
+                {
+                    return 0;
+                }
+
+                var listener = listeners[id];
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                var res = listener.Invoke(reader);
+
+                return res ? 1 : 0;
+            }
+        }
+
         #endregion
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                try
+                {
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                bool srvKeepBinary = reader.ReadBoolean();
-                var svc = reader.ReadObject<IService>();
+                    var srvKeepBinary = reader.ReadBoolean();
+                    var svc = reader.ReadObject<IService>();
 
-                ResourceProcessor.Inject(svc, _ignite);
+                    ResourceProcessor.Inject(svc, _ignite);
 
-                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                    svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                return _handleRegistry.Allocate(svc);
+                    stream.Reset();
+
+                    stream.WriteBool(true);  // Success.
+
+                    stream.SynchronizeOutput();
+
+                    return _handleRegistry.Allocate(svc);
+                }
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
+
+                    stream.SynchronizeOutput();
+
+                    return 0;
+                }
             }
         }
 
@@ -1007,7 +1060,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
             IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
 
@@ -1157,6 +1210,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private long AffinityFunctionInit(long memPtr, long unused, long unused1, void* baseFunc)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
@@ -1171,9 +1225,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 if (affBase != null)
                 {
-                    var baseFunc0 = UU.Acquire(_ctx, baseFunc);
+                    var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
 
-                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0, _ignite.Marshaller));
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
                 }
 
                 return _handleRegistry.Allocate(func);

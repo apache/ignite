@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -80,16 +81,6 @@ namespace Apache.Ignite.Core.Impl
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
-
-        /// <summary>
-        /// Initializes the <see cref="IgniteUtils"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
-            Justification = "Readability.")]
-        static IgniteUtils()
-        {
-            TryCleanTempDirectories();
-        }
 
         /// <summary>
         /// Gets thread local random.
@@ -388,10 +379,20 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
         /// </summary>
-        private static void TryCleanTempDirectories()
+        internal static void TryCleanTempDirectories()
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
+            var dt = DateTime.Now;
+
+            foreach (var dir in Directory.EnumerateDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
             {
+                if ((dt - Directory.GetCreationTime(dir)).TotalMinutes < 1)
+                {
+                    // Do not clean up recently created temp directories:
+                    // they may be used by currently starting up nodes.
+                    // This is a workaround for multiple node startup problem, see IGNITE-5730.
+                    continue;
+                }
+
                 try
                 {
                     Directory.Delete(dir, true);
@@ -413,13 +414,13 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>The full path of the temporary directory.</returns>
         internal static string GetTempDirectoryName()
         {
+            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
+
             while (true)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DirIgniteTmp + Path.GetRandomFileName());
-
                 try
                 {
-                    return Directory.CreateDirectory(dir).FullName;
+                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
                 }
                 catch (IOException)
                 {
@@ -506,6 +507,26 @@ namespace Apache.Ignite.Core.Impl
                     if (pred(node))
                         res.Add(node);
                 }
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Encodes the peek modes into a single int value.
+        /// </summary>
+        public static int EncodePeekModes(CachePeekMode[] modes)
+        {
+            var res = 0;
+
+            if (modes == null)
+            {
+                return res;
+            }
+
+            foreach (var mode in modes)
+            {
+                res |= (int)mode;
             }
 
             return res;

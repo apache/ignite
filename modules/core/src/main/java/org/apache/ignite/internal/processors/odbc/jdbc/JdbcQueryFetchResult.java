@@ -21,9 +21,10 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query fetch result.
+ * JDBC query fetch result.
  */
 public class JdbcQueryFetchResult extends JdbcResult {
     /** Query result rows. */
@@ -35,7 +36,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
     /**
      * Default constructor is used for deserialization.
      */
-    public JdbcQueryFetchResult() {
+    JdbcQueryFetchResult() {
         super(QRY_FETCH);
     }
 
@@ -43,7 +44,7 @@ public class JdbcQueryFetchResult extends JdbcResult {
      * @param items Query result rows.
      * @param last Flag indicating the query has no unfetched results.
      */
-    public JdbcQueryFetchResult(List<List<Object>> items, boolean last){
+    JdbcQueryFetchResult(List<List<Object>> items, boolean last){
         super(QRY_FETCH);
 
         this.items = items;
@@ -80,5 +81,10 @@ public class JdbcQueryFetchResult extends JdbcResult {
         last = reader.readBoolean();
 
         items = JdbcUtils.readItems(reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcQueryFetchResult.class, this);
     }
 }
