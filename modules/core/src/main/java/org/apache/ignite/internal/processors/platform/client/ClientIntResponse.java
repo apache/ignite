@@ -15,31 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 /**
- * Cache get request.
+ * Int response.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientIntResponse extends ClientResponse {
+    /** */
+    private final int val;
+
     /**
      * Constructor.
      *
-     * @param reader Reader.
+     * @param reqId Request id.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
-        super(reader);
+    public ClientIntResponse(long reqId, int val) {
+        super(reqId);
+
+        this.val = val;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+    @Override public void encode(BinaryRawWriterEx writer) {
+        super.encode(writer);
 
-        return new ClientObjectResponse(requestId(), val);
+        writer.writeInt(val);
     }
 }
