@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
-public class OptimizedMarshallerUtils {
+class OptimizedMarshallerUtils {
     /** */
     static final long HASH_SET_MAP_OFF;
 
@@ -294,7 +294,7 @@ public class OptimizedMarshallerUtils {
      * @throws IOException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
+    static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
         if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls)) {
             try {
                 Field field = cls.getDeclaredField("serialVersionUID");

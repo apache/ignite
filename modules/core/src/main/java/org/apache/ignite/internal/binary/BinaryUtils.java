@@ -19,15 +19,21 @@ package org.apache.ignite.internal.binary;
 
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -40,6 +46,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -2220,6 +2227,74 @@ public class BinaryUtils {
 
         return false;
     }
+
+    /**
+     * Computes the serial version UID value for the given class. The code is taken from {@link
+     * ObjectStreamClass#computeDefaultSUID(Class)}.
+     *
+     * @param cls A class.
+     * @param fields Fields.
+     * @return A serial version UID.
+     * @throws IOException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
+        if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls)) {
+            try {
+                Field field = cls.getDeclaredField("serialVersionUID");
+
+                if (field.getType() == long.class) {
+                    int mod = field.getModifiers();
+
+                    if (Modifier.isStatic(mod) && Modifier.isFinal(mod)) {
+                        field.setAccessible(true);
+
+                        return (short)field.getLong(null);
+                    }
+                }
+            }
+            catch (NoSuchFieldException ignored) {
+                // No-op.
+            }
+            catch (IllegalAccessException e) {
+                throw new IOException(e);
+            }
+
+            if (false /*USE_DFLT_SUID*/)
+                return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
+        }
+
+        MessageDigest md;
+
+        try {
+            md = MessageDigest.getInstance("SHA");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new IOException("Failed to get digest for SHA.", e);
+        }
+
+        md.update(cls.getName().getBytes(UTF_8));
+
+        if (!F.isEmpty(fields)) {
+            for (int i = 0; i < fields.size(); i++) {
+                Field f = fields.get(i);
+
+                md.update(f.getName().getBytes(UTF_8));
+                md.update(f.getType().getName().getBytes(UTF_8));
+            }
+        }
+
+        byte[] hashBytes = md.digest();
+
+        long hash = 0;
+
+        // Composes a single-long hash from the byte[] hash.
+        for (int i = Math.min(hashBytes.length, 8) - 1; i >= 0; i--)
+            hash = (hash << 8) | (hashBytes[i] & 0xFF);
+
+        return (short)hash;
+    }
+
 
     /**
      * Create qualified field name.

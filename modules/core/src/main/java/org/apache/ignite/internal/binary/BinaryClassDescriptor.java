@@ -54,7 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
+import static org.apache.ignite.internal.binary.BinaryUtils.computeSerialVersionUid;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 
 /**
