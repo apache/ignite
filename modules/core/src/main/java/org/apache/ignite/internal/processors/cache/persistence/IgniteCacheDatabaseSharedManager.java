@@ -447,8 +447,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (regCfg.getMaxSize() < regCfg.getInitialSize()) {
             if (regCfg.getInitialSize() != Math.min(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE,
                 DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)) {
-                throw new IgniteCheckedException("DataRegion maxSize=" + U.readableSize(regCfg.getMaxSize(), true) +
-                    " must not be smaller than initialSize" + U.readableSize(regCfg.getInitialSize(), true));
+                throw new IgniteCheckedException("DataRegion maxSize must not be smaller than initialSize" +
+                    "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), true) +
+                    ", maxSize=" + U.readableSize(regCfg.getMaxSize(), true) + "]");
             }
 
             regCfg.setInitialSize(regCfg.getMaxSize());
