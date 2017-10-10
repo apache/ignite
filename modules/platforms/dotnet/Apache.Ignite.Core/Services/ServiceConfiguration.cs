@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Services
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Service configuration.

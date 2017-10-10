@@ -442,7 +442,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="configurations">a collection of service configurations </param>
         /// <param name="writer">Binary Writer</param>
-        private static void SerializeConfigurations(IEnumerable<ServiceConfiguration> configurations, BinaryWriter writer)
+        private static void SerializeConfigurations(IEnumerable<ServiceConfiguration> configurations, 
+            BinaryWriter writer)
         {
             var pos = writer.Stream.Position;
             writer.WriteInt(0);  // Reserve count.
