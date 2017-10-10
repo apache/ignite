@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Services
         /// Serializes the Service configuration using IBinaryRawWriter
         /// </summary>
         /// <param name="w">IBinaryRawWriter</param>
-        internal void Serialize(IBinaryRawWriter w)
+        internal void Write(IBinaryRawWriter w)
         {
             Debug.Assert(w != null);
 
@@ -82,16 +82,6 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
-        }
-
-        /// <summary>
-        /// Serializes the Service configuration using IBinaryRawWriter
-        /// </summary>
-        /// <param name="cfg">instance of ServiceConfiguration</param>
-        /// <param name="w">IBinaryRawWriter</param>
-        internal static void Serialize(ServiceConfiguration cfg, IBinaryRawWriter w)
-        {
-            cfg.Serialize(w);
         }
 
         /// <summary>

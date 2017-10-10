@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             ValidateConfiguration(configuration, "configuration");
 
-            DoOutInOp(OpDeploy, w => configuration.Serialize(w), ReadDeploymentResult);
+            DoOutInOp(OpDeploy, w => configuration.Write(w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             ValidateConfiguration(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => configuration.Serialize(w), 
+            return DoOutOpAsync(OpDeployAsync, w => configuration.Write(w), 
                 _keepBinary, ReadDeploymentResult);
         }
 
@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Services
             foreach (var cfg in configurations)
             {
                 ValidateConfiguration(cfg, string.Format("configurations[{0}]", cnt));
-                cfg.Serialize(writer);
+                cfg.Write(writer);
                 cnt++;
             }
 
