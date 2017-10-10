@@ -286,4 +286,3 @@ namespace Apache.Ignite.Core.Services
         IServices WithServerKeepBinary();
     }
 }
- 
