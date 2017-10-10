@@ -118,7 +118,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private String extractDefaultPageMemoryAllocPath(GridKernalContext context) {
         IgniteCacheDatabaseSharedManager dbMgr = context.cache().context().database();
 
-        Map<String, DataRegion> memPlcMap = U.field(dbMgr, "memPlcMap");
+        Map<String, DataRegion> memPlcMap = U.field(dbMgr, "dataRegionMap");
 
         PageMemory pageMem = memPlcMap.get("default").pageMemory();
 

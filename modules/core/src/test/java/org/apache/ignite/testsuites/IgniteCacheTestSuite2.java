@@ -138,7 +138,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMultithre
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionInitializationTest;
+import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
 
 /**
@@ -261,7 +261,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));
         suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
         suite.addTest(new TestSuite(MemoryPolicyConfigValidationTest.class));
-        suite.addTest(new TestSuite(DataRegionInitializationTest.class));
+        suite.addTest(new TestSuite(MemoryPolicyInitializationTest.class));
         suite.addTest(new TestSuite(CacheDataRegionConfigurationTest.class));
         suite.addTest(new TestSuite(CacheGroupLocalConfigurationSelfTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));

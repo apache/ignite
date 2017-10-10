@@ -64,10 +64,10 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setMaxSize(200 * 1000 * 1000);
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
 
         dbCfg.setDataRegionConfigurations(memPlcCfg);
-        dbCfg.setDefaultDataRegionName("dfltMemPlc");
+        dbCfg.setDefaultDataRegionName("dfltDataRegion");
 
         if (gridName.contains(DUMMY_GRID_NAME))
             cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, false));

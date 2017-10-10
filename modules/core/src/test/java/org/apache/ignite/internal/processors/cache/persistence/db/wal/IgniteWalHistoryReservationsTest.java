@@ -64,10 +64,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             new DataRegionConfiguration()
                 .setInitialSize(memSize)
                 .setMaxSize(memSize)
-                .setName("dfltMemPlc")
+                .setName("dfltDataRegion")
         );
 
-        memCfg.setDefaultDataRegionName("dfltMemPlc");
+        memCfg.setDefaultDataRegionName("dfltDataRegion");
 
         cfg.setDataStorageConfiguration(memCfg);
 

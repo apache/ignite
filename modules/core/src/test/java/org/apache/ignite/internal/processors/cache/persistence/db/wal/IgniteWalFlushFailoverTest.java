@@ -83,7 +83,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration()
-                .setName("dfltMemPlc")
+                .setName("dfltDataRegion")
                 .setInitialSize(2 * 1024L * 1024L * 1024L);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()

@@ -19,21 +19,21 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
 /**
  *
  */
-public class DataRegionInitializationTest extends GridCommonAbstractTest {
+public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     /** */
     private static final String CUSTOM_NON_DEFAULT_MEM_PLC_NAME = "custom_mem_plc";
 
@@ -44,13 +44,13 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     private static final long USER_DEFAULT_MEM_PLC_SIZE = 99 * 1024 * 1024;
 
     /** */
-    private DataStorageConfiguration memCfg;
+    private MemoryConfiguration memCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(memCfg);
+        cfg.setMemoryConfiguration(memCfg);
 
         return cfg;
     }
@@ -66,7 +66,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that expected memory policies are allocated when used doesn't provide any DataRegionConfiguration.
+     * Verifies that expected memory policies are allocated when used doesn't provide any MemoryPolicyConfiguration.
      */
     public void testNoConfigProvided() throws Exception {
         memCfg = null;
@@ -81,8 +81,8 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that expected memory policies are allocated when used provides DataRegionConfiguration
-     * with non-default custom DataRegion.
+     * Verifies that expected memory policies are allocated when used provides MemoryPolicyConfiguration
+     * with non-default custom MemoryPolicy.
      */
     public void testCustomConfigNoDefault() throws Exception {
         prepareCustomNoDefaultConfig();
@@ -116,7 +116,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
-        DataRegion dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
+        DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
         assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
     }
@@ -140,7 +140,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
-        DataRegion dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
+        DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
         assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
     }
@@ -160,11 +160,11 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         IgniteCache cache1 = ignite.createCache(cache1Cfg);
 
-        verifyCacheMemoryPolicy(cache1, DFLT_DATA_REG_DEFAULT_NAME);
+        verifyCacheMemoryPolicy(cache1, DFLT_MEM_PLC_DEFAULT_NAME);
 
         CacheConfiguration cache2Cfg = new CacheConfiguration()
                 .setName("cache2")
-                .setDataRegionName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
+                .setMemoryPolicyName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
 
         IgniteCache cache2 = ignite.createCache(cache2Cfg);
 
@@ -172,11 +172,11 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         CacheConfiguration cache3Cfg = new CacheConfiguration()
                 .setName("cache3")
-                .setDataRegionName(DFLT_DATA_REG_DEFAULT_NAME);
+                .setMemoryPolicyName(DFLT_MEM_PLC_DEFAULT_NAME);
 
         IgniteCache cache3 = ignite.createCache(cache3Cfg);
 
-        verifyCacheMemoryPolicy(cache3, DFLT_DATA_REG_DEFAULT_NAME);
+        verifyCacheMemoryPolicy(cache3, DFLT_MEM_PLC_DEFAULT_NAME);
     }
 
     /**
@@ -198,7 +198,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         CacheConfiguration cache2Cfg = new CacheConfiguration()
                 .setName("cache2")
-                .setDataRegionName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
+                .setMemoryPolicyName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
 
         IgniteCache cache2 = ignite.createCache(cache2Cfg);
 
@@ -206,11 +206,11 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
 
         CacheConfiguration cache3Cfg = new CacheConfiguration()
                 .setName("cache3")
-                .setDataRegionName(DFLT_DATA_REG_DEFAULT_NAME);
+                .setMemoryPolicyName(DFLT_MEM_PLC_DEFAULT_NAME);
 
         IgniteCache cache3 = ignite.createCache(cache3Cfg);
 
-        verifyCacheMemoryPolicy(cache3, DFLT_DATA_REG_DEFAULT_NAME);
+        verifyCacheMemoryPolicy(cache3, DFLT_MEM_PLC_DEFAULT_NAME);
     }
 
     /**
@@ -227,17 +227,17 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
      *
      */
     private void prepareCustomConfigWithOverriddenDefaultName() {
-        memCfg = new DataStorageConfiguration();
+        memCfg = new MemoryConfiguration();
 
-        memCfg.setDefaultDataRegionName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
+        memCfg.setDefaultMemoryPolicyName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME);
 
-        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE),
 
-            new DataRegionConfiguration()
-                .setName(DFLT_DATA_REG_DEFAULT_NAME)
+            new MemoryPolicyConfiguration()
+                .setName(DFLT_MEM_PLC_DEFAULT_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE)
         );
@@ -248,10 +248,10 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
      *
      */
     private void prepareCustomConfigWithOverridingDefault() {
-        memCfg = new DataStorageConfiguration();
+        memCfg = new MemoryConfiguration();
 
-        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setName(DFLT_DATA_REG_DEFAULT_NAME)
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
+            .setName(DFLT_MEM_PLC_DEFAULT_NAME)
             .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
             .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE)
         );
@@ -261,14 +261,14 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
      *
      */
     private void prepareCustomConfigWithOverridingDefaultAndCustom() {
-        memCfg = new DataStorageConfiguration();
+        memCfg = new MemoryConfiguration();
 
-        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-                .setName(DFLT_DATA_REG_DEFAULT_NAME)
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
+                .setName(DFLT_MEM_PLC_DEFAULT_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_DEFAULT_MEM_PLC_SIZE),
 
-            new DataRegionConfiguration()
+            new MemoryPolicyConfiguration()
                 .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
                 .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
                 .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE)
@@ -280,7 +280,7 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
      */
     private void verifyDefaultAndSystemMemoryPolicies(Collection<DataRegion> allMemPlcs) {
         assertTrue("Default memory policy is not presented",
-                isMemoryPolicyPresented(allMemPlcs, DFLT_DATA_REG_DEFAULT_NAME));
+                isMemoryPolicyPresented(allMemPlcs, DFLT_MEM_PLC_DEFAULT_NAME));
 
         assertTrue("System memory policy is not presented",
                 isMemoryPolicyPresented(allMemPlcs, IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME));
@@ -290,9 +290,9 @@ public class DataRegionInitializationTest extends GridCommonAbstractTest {
      *
      */
     private void prepareCustomNoDefaultConfig() {
-        memCfg = new DataStorageConfiguration();
+        memCfg = new MemoryConfiguration();
 
-        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+        memCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
             .setName(CUSTOM_NON_DEFAULT_MEM_PLC_NAME)
             .setInitialSize(USER_CUSTOM_MEM_PLC_SIZE)
             .setMaxSize(USER_CUSTOM_MEM_PLC_SIZE)

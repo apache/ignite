@@ -75,11 +75,11 @@ public class IgnitePdsMultiNodePutGetRestartTest extends GridCommonAbstractTest 
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
         memPlcCfg.setMaxSize(100 * 1024 * 1024);
 
-        memCfg.setDefaultDataRegionName("dfltMemPlc");
+        memCfg.setDefaultDataRegionName("dfltDataRegion");
         memCfg.setDataRegionConfigurations(memPlcCfg);
 
         cfg.setDataStorageConfiguration(memCfg);

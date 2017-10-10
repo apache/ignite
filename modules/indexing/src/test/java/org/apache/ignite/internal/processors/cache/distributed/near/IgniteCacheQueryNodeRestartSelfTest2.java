@@ -33,6 +33,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -90,7 +91,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionSize(50 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
 
         c.setDataStorageConfiguration(memCfg);
 

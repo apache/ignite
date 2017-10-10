@@ -75,7 +75,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         memPlcCfg.setInitialSize(200 * 1024 * 1024);
         memPlcCfg.setMaxSize(200 * 1024 * 1024);
 
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
 
         memCfg.setDataRegionConfigurations(memPlcCfg);
 

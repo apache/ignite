@@ -1839,9 +1839,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
 
         for (DataRegion memPlc : memPolicies) {
-            PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
-            cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(pageMem,
-                (pageMem).beginCheckpoint()));
+            if (memPlc.config().isPersistenceEnabled()) {
+                PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
+
+                cpEntities.add(new IgniteBiTuple<PageMemory, Collection<FullPageId>>(
+                    pageMem, (pageMem).beginCheckpoint()));
+            }
         }
 
         tmpWriteBuf.order(ByteOrder.nativeOrder());

@@ -90,12 +90,12 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         // memPlcCfg.setPageEvictionMode(RANDOM_LRU); TODO Fix NPE on start.
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(1);
         memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltMemPlc");
+        memCfg.setDefaultDataRegionName("dfltDataRegion");
 
         return memCfg;
     }
