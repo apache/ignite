@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -164,7 +162,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         Object[] errKeys = null;
 
@@ -218,43 +216,6 @@ public class DmlStatementsProcessor {
     }
 
     /**
-     * Checks whether the given update plan can be distributed and updates it accordingly.
-     *
-     * @param fieldsQry Initial update query.
-     * @param conn Connection.
-     * @param plan Update plan.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void checkPlanCanBeDistributed(SqlFieldsQuery fieldsQry, Connection conn, UpdatePlan plan)
-        throws IgniteCheckedException {
-        try {
-            // Get a new prepared statement for derived select query.
-            try (PreparedStatement stmt = conn.prepareStatement(plan.selectQry)) {
-                idx.bindParameters(stmt, F.asList(fieldsQry.getArgs()));
-
-                GridCacheTwoStepQuery qry = GridSqlQuerySplitter.split(conn,
-                    GridSqlQueryParser.prepared(stmt),
-                    fieldsQry.getArgs(),
-                    fieldsQry.isCollocated(),
-                    fieldsQry.isDistributedJoins(),
-                    fieldsQry.isEnforceJoinOrder(), idx);
-
-                plan.distributed = qry.skipMergeTable() &&
-                    qry.mapQueries().size() == 1 &&
-                    !qry.mapQueries().get(0).hasSubQueries();
-
-                if (plan.distributed) {
-                    plan.cacheIds = idx.collectCacheIds(CU.cacheId(plan.tbl.cacheName()), qry);
-                    plan.isReplicatedOnly = qry.isReplicatedOnly();
-                }
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
      * @param schemaName Schema.
      * @param c Connection.
      * @param p Prepared statement.
@@ -265,7 +226,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, Connection c, Prepared p,
-        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
+        SqlFieldsQueryEx fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel);
 
         checkUpdateResult(res);
@@ -292,7 +253,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, Connection conn, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQueryEx fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, conn, GridSqlQueryParser.prepared(stmt), fieldsQry, true,
             filters, cancel);
@@ -319,7 +280,7 @@ public class DmlStatementsProcessor {
 
         assert p != null;
 
-        UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, null);
+        UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
 
         if (!F.eq(streamer.cacheName(), plan.tbl.rowDescriptor().context().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
@@ -399,7 +360,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
+        Prepared prepared, SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         int mainCacheId = CU.cacheId(cctx.name());
 
@@ -413,8 +374,7 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed && !loc && !fieldsQry.isLocal() &&
-            fieldsQry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)fieldsQry).isUpdateOnServer()) {
+        if (plan.distributed != null) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
             // null is returned in case not all nodes support distributed DML.
@@ -502,20 +462,16 @@ public class DmlStatementsProcessor {
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
+    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQueryEx fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL());
+        H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL(), loc, fieldsQry);
 
         UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
 
         if (res != null)
             return res;
 
-        res = UpdatePlanBuilder.planForStatement(p, errKeysPos);
-
-        if (fieldsQry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)fieldsQry).isUpdateOnServer()
-            && !loc && res.rowsNum == 0 && !F.isEmpty(res.selectQry))
-            checkPlanCanBeDistributed(fieldsQry, conn, res);
+        res = UpdatePlanBuilder.planForStatement(p, loc, idx, conn, fieldsQry, errKeysPos);
 
         // Don't cache re-runs
         if (errKeysPos == null)
@@ -574,11 +530,13 @@ public class DmlStatementsProcessor {
      */
     private UpdateResult doDistributedUpdate(String schemaName, SqlFieldsQuery fieldsQry, UpdatePlan plan,
         GridQueryCancel cancel) throws IgniteCheckedException {
+        assert plan.distributed != null;
 
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, plan.isReplicatedOnly, cancel);
+        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.distributed.getCacheIds(),
+            plan.distributed.isReplicatedOnly(), cancel);
     }
 
     /**
@@ -1087,7 +1045,7 @@ public class DmlStatementsProcessor {
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
+    UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQueryEx fldsQry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
         Connection c;
 

@@ -826,7 +826,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
-            SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
+            SqlFieldsQueryEx fldsQry = new SqlFieldsQueryEx(qry, false);
 
             if (params != null)
                 fldsQry.setArgs(params.toArray());
@@ -1580,7 +1580,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQuery fldsQry, IndexingQueryFilter filter,
+    public UpdateResult mapDistributedUpdate(String schemaName, SqlFieldsQueryEx fldsQry, IndexingQueryFilter filter,
         GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
         Connection conn = connectionForSchema(schemaName);
 
