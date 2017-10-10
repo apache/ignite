@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Services
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Service configuration.
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Services
         }
 
         /// <summary>
-        /// Deserialization constructor
+        /// Deserialization constructor. Used to collect FailedConfigurations during ServiceDeploymentException 
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal ServiceConfiguration(IBinaryRawReader r)

@@ -75,27 +75,5 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, 
                     "'{0}' argument is invalid: {1}", argName, message), argName);
         }
-
-        /// <summary>
-        /// Iterates through IEnumerable and performs custom argument validation for each element
-        /// </summary>
-        /// <param name="arg">Some IEnumerable.</param>
-        /// <param name="argName">Name of the argument.</param>
-        /// <param name="validator">custom validator that checks parameters of T for validity</param>
-        /// <returns>count of elements in IEnumerable</returns>
-        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static int Ensure<T>(IEnumerable<T> arg, string argName, Action<T, string> validator)
-        {
-            Debug.Assert(arg != null);
-            Debug.Assert(validator != null);
-
-            var i = 0;
-            foreach (var item in arg)
-            {
-                validator(item, string.Format("{0}[{1}]", argName, i));
-                i++;
-            }
-            return i;
-        }
     }
 }

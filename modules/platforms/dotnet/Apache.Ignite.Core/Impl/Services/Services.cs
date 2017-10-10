@@ -257,23 +257,16 @@ namespace Apache.Ignite.Core.Impl.Services
         public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
         {
             IgniteArgumentCheck.NotNull(configurations, "configurations");
-            var cfgs = configurations.ToArray();
-            IgniteArgumentCheck.Ensure(cfgs, "configurations", ValidateConfiguration);
-            IgniteArgumentCheck.Ensure(cfgs.Length > 0, "configurations", "empty collection");
 
-            DoOutInOp(OpDeployAll, w => w.WriteEnumerable(cfgs, ServiceConfiguration.Serialize), 
-                ReadDeploymentResult);
+            DoOutInOp(OpDeployAll, w => SerializeConfigurations(configurations, w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
         public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
         {
             IgniteArgumentCheck.NotNull(configurations, "configurations");
-            var cfgs = configurations.ToArray();
-            IgniteArgumentCheck.Ensure(cfgs, "configurations", ValidateConfiguration);
-            IgniteArgumentCheck.Ensure(cfgs.Length > 0, "configurations", "empty collection");
-
-            return DoOutOpAsync(OpDeployAllAsync, w => w.WriteEnumerable(cfgs, ServiceConfiguration.Serialize),
+ 
+            return DoOutOpAsync(OpDeployAllAsync, w => SerializeConfigurations(configurations, w),
                 _keepBinary, ReadDeploymentResult);
         }
 
@@ -441,6 +434,31 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNull(configuration, argName);
             IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, string.Format("{0}.Name", argName));
             IgniteArgumentCheck.NotNull(configuration.Service, string.Format("{0}.Service", argName));
+        }
+
+        /// <summary>
+        /// Writes a collection of service configurations using passed BinaryWriter
+        /// Also it performs basic validation of each service configuration and could throw exceptions
+        /// </summary>
+        /// <param name="configurations">a collection of service configurations </param>
+        /// <param name="writer">Binary Writer</param>
+        private static void SerializeConfigurations(IEnumerable<ServiceConfiguration> configurations, BinaryWriter writer)
+        {
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve count.
+
+            var cnt = 0;
+
+            foreach (var cfg in configurations)
+            {
+                ValidateConfiguration(cfg, string.Format("configurations[{0}]", cnt));
+                cfg.Serialize(writer);
+                cnt++;
+            }
+
+            IgniteArgumentCheck.Ensure(cnt > 0, "configurations", "empty collection");
+
+            writer.Stream.WriteInt(pos, cnt);
         }
     }
 }

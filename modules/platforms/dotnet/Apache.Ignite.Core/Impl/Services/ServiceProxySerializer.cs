@@ -191,12 +191,14 @@ namespace Apache.Ignite.Core.Impl.Services
 
             try
             {
+                // switch to BinaryMode.Deserialize mode to avoid IService casting exception
+                reader = marsh.StartUnmarshal(stream, BinaryMode.Deserialize);
                 failedCfgs = reader.ReadPlatformNullableCollection(f => new ServiceConfiguration(f));
             }
             catch (Exception e)
             {
-                throw new ServiceDeploymentException(
-                    "Service deployment failed. Could not deserialize failed configurations", e);
+                throw new ServiceDeploymentException("Service deployment failed with an exception. " +
+                                                     "Examine InnerException for details.", e);
             }
 
             var binErr = err as IBinaryObject;
