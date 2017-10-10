@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Services
         {
             _binaryCause = (IBinaryObject)info.GetValue(KeyBinaryCause, typeof(IBinaryObject));
             _failedCfgs = (IList<ServiceConfiguration>)info.GetValue(KeyFailedConfigurations, 
-                typeof(ServiceConfiguration));
+                typeof(IList<ServiceConfiguration>));
         }
 
         /// <summary>

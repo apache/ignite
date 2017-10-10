@@ -21,7 +21,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
+    using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -564,6 +566,47 @@ namespace Apache.Ignite.Core.Tests.Services
                 new ServiceConfiguration { Service = new TestIgniteServiceSerializable(), Name = string.Empty }
             }));
             Assert.IsTrue(argException.Message.Contains("configurations[0].Name"));
+        }
+
+        /// <summary>
+        /// Tests [Serializable] usage of ServiceDeploymentException.
+        /// </summary>
+        [Test]
+        public void TestDeploymentExceptionSerializable()
+        {
+            var cfg = new ServiceConfiguration
+            {
+                Name = "foo",
+                CacheName = "cacheName",
+                AffinityKey = 1,
+                MaxPerNodeCount = 2,
+                Service = new TestIgniteServiceSerializable(),
+                NodeFilter = new NodeFilter(),
+                TotalCount = 3
+            };
+
+            var ex = new ServiceDeploymentException("msg", new Exception("in"), new[] {cfg});
+
+            var formatter = new BinaryFormatter();
+            var stream = new MemoryStream();
+            formatter.Serialize(stream, ex);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            var res = (ServiceDeploymentException) formatter.Deserialize(stream);
+
+            Assert.AreEqual(ex.Message, res.Message);
+            Assert.IsNotNull(res.InnerException);
+            Assert.AreEqual("in", res.InnerException.Message);
+
+            var resCfg = res.FailedConfigurations.Single();
+
+            Assert.AreEqual(cfg.Name, resCfg.Name);
+            Assert.AreEqual(cfg.CacheName, resCfg.CacheName);
+            Assert.AreEqual(cfg.AffinityKey, resCfg.AffinityKey);
+            Assert.AreEqual(cfg.MaxPerNodeCount, resCfg.MaxPerNodeCount);
+            Assert.AreEqual(cfg.TotalCount, resCfg.TotalCount);
+            Assert.IsInstanceOf<TestIgniteServiceSerializable>(cfg.Service);
+            Assert.IsInstanceOf<NodeFilter>(cfg.NodeFilter);
         }
 
         /// <summary>

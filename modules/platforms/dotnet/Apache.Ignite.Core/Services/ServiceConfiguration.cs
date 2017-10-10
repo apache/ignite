@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Services
     /// <summary>
     /// Service configuration.
     /// </summary>
+    [Serializable]
     public class ServiceConfiguration
     {
         /// <summary>
