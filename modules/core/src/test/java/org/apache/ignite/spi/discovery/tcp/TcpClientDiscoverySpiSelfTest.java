@@ -659,6 +659,53 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testClientReconnectHistoryMissingOnRouter() throws Exception {
+        clientFailureDetectionTimeout = 60000;
+        netTimeout = 60000;
+
+        startServerNodes(2);
+
+        Ignite srv0 = grid("server-0");
+        TcpDiscoveryNode srv0Node = (TcpDiscoveryNode)srv0.cluster().localNode();
+
+        clientIpFinder = new TcpDiscoveryVmIpFinder();
+        clientIpFinder.setAddresses(
+            Collections.singleton("localhost:" + srv0Node.discoveryPort()));
+
+        startClientNodes(1);
+
+        attachListeners(0, 1);
+
+        Ignite client = grid("client-0");
+        TcpDiscoveryNode clientNode = (TcpDiscoveryNode)client.cluster().localNode();
+        TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)client.configuration().getDiscoverySpi();
+        UUID clientNodeId = clientNode.id();
+
+        checkNodes(2, 1);
+
+        clientSpi.pauseAll(true);
+
+        stopGrid(srv0.name());
+
+        startServerNodes(1);
+
+        Ignite srv2 = grid("server-2");
+        TcpDiscoveryNode srv2Node = (TcpDiscoveryNode)srv2.cluster().localNode();
+        clientIpFinder.setAddresses(
+            Collections.singleton("localhost:" + srv2Node.discoveryPort()));
+
+        clientSpi.resumeAll();
+
+        awaitPartitionMapExchange();
+
+        assertEquals("connected", clientSpi.getSpiState());
+        assertEquals(clientNodeId, clientNode.id());
+        assertEquals(srv2Node.id(), clientNode.clientRouterNodeId());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testReconnectAfterPause() throws Exception {
