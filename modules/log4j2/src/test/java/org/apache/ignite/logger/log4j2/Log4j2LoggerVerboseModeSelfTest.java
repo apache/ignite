@@ -44,28 +44,23 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
     /**
      * Test works fine after other tests. Please do not forget to call Log4J2Logger.cleanup()
-     *
+     * Please note that TeamCity intercepts System.out and does not allow to analyze log output to System.out
      * @throws Exception If failed.
      */
     public void testVerboseMode() throws Exception {
-        final PrintStream backupSysOut = System.out;
         final PrintStream backupSysErr = System.err;
 
-        final ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         final ByteArrayOutputStream testErr = new ByteArrayOutputStream();
 
-        String consoleOut = "Empty";
         String consoleErr = "Empty";
         String testMsg = "******* Hello Tester! ******* ";
 
         try {
-            System.setOut(new PrintStream(testOut));
             System.setErr(new PrintStream(testErr));
 
             System.setProperty("IGNITE_QUIET", "false");
 
             try (Ignite ignite = G.start(getConfiguration("verboseLogGrid", LOG_PATH_VERBOSE_TEST))) {
-
                 ignite.log().error(testMsg + Level.ERROR);
                 ignite.log().warning(testMsg + Level.WARN);
                 ignite.log().info(testMsg + Level.INFO);
@@ -76,27 +71,15 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
         finally {
             System.setProperty("IGNITE_QUIET", "true");
 
-            System.setOut(backupSysOut);
             System.setErr(backupSysErr);
         }
 
-        testOut.flush();
         testErr.flush();
 
-        consoleOut = testOut.toString();
         consoleErr = testErr.toString();
-
-        System.out.println("**************** Out Console content ***************");
-        System.out.println(consoleOut);
 
         System.out.println("**************** Err Console content ***************");
         System.out.println(consoleErr);
-
-        assertTrue(consoleOut.contains(testMsg + Level.INFO));
-        assertTrue(consoleOut.contains(testMsg + Level.DEBUG));
-        assertTrue(consoleOut.contains(testMsg + Level.TRACE));
-        assertTrue(consoleOut.contains(testMsg + Level.ERROR));
-        assertTrue(consoleOut.contains(testMsg + Level.WARN));
 
         assertTrue(consoleErr.contains(testMsg + Level.ERROR));
         assertTrue(consoleErr.contains(testMsg + Level.WARN));
