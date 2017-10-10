@@ -128,9 +128,6 @@ public class BinaryClassDescriptor {
     /** */
     private final boolean useOptMarshaller;
 
-    /** Flag indicating that the Externalizable objects marshal through custom serialization methods. */
-    private final boolean useCustomSerialization;
-
     /** */
     private final boolean excluded;
 
@@ -170,6 +167,9 @@ public class BinaryClassDescriptor {
         assert mapper != null;
 
         initialSerializer = serializer;
+
+        // Flag indicating that the Externalizable objects marshal through custom serialization methods.
+        final boolean useCustomSerialization;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
         // But if class represents the Externalizable, then we have to use BinaryMarshaller.
