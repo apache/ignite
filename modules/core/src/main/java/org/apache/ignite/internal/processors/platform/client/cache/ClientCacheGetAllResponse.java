@@ -17,29 +17,41 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import java.util.Map;
+
 /**
- * Cache get request.
+ * GetAll response.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+class ClientCacheGetAllResponse extends ClientResponse {
+    /** Result. */
+    private final Map<Object, Object> res;
+
     /**
-     * Constructor.
+     * Ctor.
      *
-     * @param reader Reader.
+     * @param requestId Request id.
+     * @param res Result.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
-        super(reader);
+    ClientCacheGetAllResponse(long requestId, Map<Object, Object> res) {
+        super(requestId);
+
+        assert res != null;
+
+        this.res = res;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+    @Override public void encode(BinaryRawWriterEx writer) {
+        super.encode(writer);
 
-        return new ClientObjectResponse(requestId(), val);
+        writer.writeInt(res.size());
+
+        for (Map.Entry e : res.entrySet()) {
+            writer.writeObjectDetached(e.getKey());
+            writer.writeObjectDetached(e.getValue());
+        }
     }
 }

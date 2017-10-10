@@ -19,27 +19,26 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Cache get request.
+ * Remove keys request.
  */
-public class ClientCacheGetRequest extends ClientCacheKeyRequest {
+public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheGetRequest(BinaryRawReaderEx reader) {
+    public ClientCacheRemoveKeysRequest(BinaryRawReaderEx reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key());
+        cache(ctx).removeAll(keys());
 
-        return new ClientObjectResponse(requestId(), val);
+        return super.process(ctx);
     }
 }

@@ -652,6 +652,29 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that attempting to execute {@code DROP TABLE} via API of cache being dropped yields an error.
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCacheSelfDrop() throws Exception {
+        execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+            " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
+            "\"template=cache\"");
+
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                client().cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "Person"))
+                    .query(new SqlFieldsQuery("DROP TABLE \"Person\"")).getAll();
+
+                return null;
+            }
+        }, IgniteSQLException.class, "DROP TABLE cannot be called from the same cache that holds the table " +
+            "being dropped");
+
+        execute("DROP TABLE \"Person\"");
+    }
+
+    /**
      * Test that attempting to {@code DROP TABLE} that does not exist does not yield an error if the statement contains
      *     {@code IF EXISTS} clause.
      *
