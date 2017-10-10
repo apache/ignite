@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.F;
  * JDBC result set metadata implementation.
  */
 public class JdbcThinDataSource implements DataSource, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Connection URL. */
     private String url;
 
