@@ -804,26 +804,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected int segmentForRow(SearchRow row) {
         assert row != null;
 
+        if (segmentsCount() == 1 || ctx == null)
+            return 0;
+
         CacheObject key;
 
-        if (ctx != null) {
-            final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(KEY_COL);
 
-            assert keyColValue != null;
+        assert keyColValue != null;
 
-            final Object o = keyColValue.getObject();
+        final Object o = keyColValue.getObject();
 
-            if (o instanceof CacheObject)
-                key = (CacheObject)o;
-            else
-                key = ctx.toCacheKeyObject(o);
+        if (o instanceof CacheObject)
+            key = (CacheObject)o;
+        else
+            key = ctx.toCacheKeyObject(o);
 
-            return segmentForPartition(ctx.affinity().partition(key));
-        }
-
-        assert segmentsCount() == 1;
-
-        return 0;
+        return segmentForPartition(ctx.affinity().partition(key));
     }
 
     /**

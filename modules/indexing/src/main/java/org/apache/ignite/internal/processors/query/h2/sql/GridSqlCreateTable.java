@@ -71,6 +71,12 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Name of the column that represents affinity key. */
     private String affinityKey;
 
+    /** Forcefully turn single column PK into an Object. */
+    private Boolean wrapKey;
+
+    /** Forcefully turn single column value into an Object. */
+    private Boolean wrapVal;
+
     /** Extra WITH-params. */
     private List<String> params;
 
@@ -268,6 +274,34 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
+    }
+
+    /**
+     * @return Forcefully turn single column PK into an Object.
+     */
+    public Boolean wrapKey() {
+        return wrapKey;
+    }
+
+    /**
+     * @param wrapKey Forcefully turn single column PK into an Object.
+     */
+    public void wrapKey(boolean wrapKey) {
+        this.wrapKey = wrapKey;
+    }
+
+    /**
+     * @return Forcefully turn single column value into an Object.
+     */
+    public Boolean wrapValue() {
+        return wrapVal;
+    }
+
+    /**
+     * @param wrapVal Forcefully turn single column value into an Object..
+     */
+    public void wrapValue(boolean wrapVal) {
+        this.wrapVal = wrapVal;
     }
 
     /**
