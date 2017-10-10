@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Services
     /// <summary>
     /// Service configuration.
     /// </summary>
-    public class ServiceConfiguration 
+    public class ServiceConfiguration
     {
         /// <summary>
         /// Gets or sets the service name.

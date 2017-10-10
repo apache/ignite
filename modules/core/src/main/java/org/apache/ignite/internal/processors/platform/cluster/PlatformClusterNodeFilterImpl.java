@@ -79,5 +79,7 @@ public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate imp
     /**
      * @return Filter itself
      */
-    public Object getInternalPredicate() { return pred; }
+    public Object getInternalPredicate() {
+        return pred;
+    }
 }

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
-     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
