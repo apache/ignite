@@ -9410,8 +9410,30 @@ public abstract class IgniteUtils {
      * @return Method or {@code null}.
      */
     @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
-        while (cls != null && cls != Object.class) {
+        while (cls != null) {
             Method mtd = getNonPublicMethod(cls, name, paramTypes);
+
+            if (mtd != null)
+                return mtd;
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds a hashcode method in the class and it parents except for Object class.
+     *
+     * Method.getMethod() does not return non-public method,
+     * Method.getDeclaratedMethod() does not look at parent classes.
+     *
+     * @param cls The class to search,
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method findHashCodeMethod(Class<?> cls) {
+        while (cls != null && cls != Object.class) {
+            Method mtd = getNonPublicMethod(cls, "hashCode");
 
             if (mtd != null)
                 return mtd;
