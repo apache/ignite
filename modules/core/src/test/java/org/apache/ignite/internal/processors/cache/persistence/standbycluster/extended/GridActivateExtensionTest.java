@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearOnlyMultiNodeFullApiSelfTest;
@@ -66,25 +67,15 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         pCfg.setWalArchivePath(testName + "/db/wal/archive");
         pCfg.setWalStorePath(testName + "/db/wal");
 
+        pCfg.setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+
+        pCfg.setWalMode(WALMode.LOG_ONLY);
+
+        pCfg.setPageSize(1024);
+        pCfg.setConcurrencyLevel(64);
+
         cfg.setDataStorageConfiguration(pCfg);
-
-        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-
-        memPlcCfg.setName("dfltDataRegion");
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-
-        memCfg.setDefaultDataRegionName(memPlcCfg.getName());
-
-        memCfg.setPageSize(1024);
-        memCfg.setConcurrencyLevel(64);
-
-        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

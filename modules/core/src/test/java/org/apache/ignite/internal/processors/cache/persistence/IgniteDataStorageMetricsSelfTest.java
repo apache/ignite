@@ -73,22 +73,15 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(1024);
-
-        memCfg.setDefaultDataRegionName("dflt-plc");
-
-        DataRegionConfiguration memPlc = new DataRegionConfiguration();
-        memPlc.setName("dflt-plc");
-        memPlc.setMaxSize(10 * 1024 * 1024);
-        memPlc.setMetricsEnabled(true);
-
-        memCfg.setDataRegionConfigurations(memPlc);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(10 * 1024 * 1024)
+                .setPersistenceEnabled(true)
+                .setMetricsEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setMetricsEnabled(true).setWalMode(WALMode.LOG_ONLY));
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

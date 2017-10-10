@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -345,22 +346,15 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         pCfg.setWalArchivePath(testName() + "/db/wal/archive");
         pCfg.setWalStorePath(testName() + "/db/wal");
 
+        pCfg.setPageSize(1024);
+        pCfg.setConcurrencyLevel(64);
+
+        pCfg.setWalMode(WALMode.LOG_ONLY);
+
+        pCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+
         cfg.setDataStorageConfiguration(pCfg);
-
-        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        memCfg.setPageSize(1024);
-        memCfg.setConcurrencyLevel(64);
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-        memPlcCfg.setName("dfltDataRegion");
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
