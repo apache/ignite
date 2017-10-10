@@ -21,9 +21,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 
 /**
  * Cache get request.

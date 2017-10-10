@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -185,6 +186,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Pending status messages. */
     private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
+
+    /** Current cache that has a query running on it. */
+    private final ThreadLocal<GridCacheContext> curCache = new ThreadLocal<>();
 
     /** Disconnected flag. */
     private boolean disconnected;
@@ -1440,6 +1444,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
+        GridCacheContext currCache = this.curCache.get();
+
+        if (currCache != null && F.eq(currCache.name(), cacheName))
+            throw new IgniteSQLException("DROP TABLE cannot be called from the same cache that holds " +
+                "the table being dropped [cacheName-" + cacheName + ", tblName=" + tblName + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         boolean res = ctx.grid().destroyCache0(cacheName, true);
 
         if (!res && !ifExists)
@@ -1853,6 +1864,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
+        GridCacheContext oldCctx = curCache.get();
+
+        curCache.set(cctx);
+
         try {
             final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
             final int mainCacheId = CU.cacheId(cctx.name());
@@ -1898,6 +1913,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException(e);
         }
         finally {
+            curCache.set(oldCctx);
+
             busyLock.leaveBusy();
         }
     }
@@ -2546,6 +2563,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (desc.schema() != null)
                     data.queryEntities(desc.schema().entities());
+
+                data.sql(desc.sql());
 
                 cctx.pageStore().storeCacheData(data, true);
             }

@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Record V2 serializer.
  * Stores records in following format:
  * <ul>
- * <li>Record type from {@link WALRecord.RecordType#ordinal()} incremented by 1</li>
+ * <li>Record type from {@code WALRecord.RecordType} incremented by 1</li>
  * <li>WAL pointer to double check consistency</li>
  * <li>Record length</li>
  * <li>Data</li>
