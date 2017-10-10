@@ -76,6 +76,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointTaskSelfTest
 import org.apache.ignite.internal.managers.communication.GridCommunicationManagerListenersSelfTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorConfigurationSelfTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorSelfTest;
+import org.apache.ignite.internal.processors.compute.IgniteComputeWithinLockAndPendingTopologyTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
 import org.apache.ignite.internal.util.StripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
@@ -165,6 +166,8 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeCustomExecutorSelfTest.class);
 
         suite.addTestSuite(IgniteComputeJobOneThreadTest.class);
+
+        suite.addTestSuite(IgniteComputeWithinLockAndPendingTopologyTest.class);
 
         return suite;
     }
