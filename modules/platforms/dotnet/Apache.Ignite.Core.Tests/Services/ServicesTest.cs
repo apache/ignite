@@ -893,6 +893,15 @@ namespace Apache.Ignite.Core.Tests.Services
         protected virtual bool CompactFooter { get { return true; } }
 
         /// <summary>
+        /// Makes Service1-{i} names for services.
+        /// </summary>
+        private static string MakeServiceName(int i)
+        {
+            // Please note that CheckContext() validates Name.StartsWith(SvcName).
+            return string.Format("{0}-{1}", SvcName, i);
+        }
+
+        /// <summary>
         /// Test service interface for proxying.
         /// </summary>
         private interface ITestIgniteService
@@ -1262,17 +1271,6 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** */
             public int Field { get; set; }
-        }
-
-        /// <summary>
-        /// Makes Service1-{i} names for services
-        /// </summary>
-        /// <param name="i"></param>
-        /// <returns></returns>
-        private string MakeServiceName(int i)
-        {
-            // Please note that CheckContext() validates Name.StartsWith(SvcName)
-            return string.Format("{0}-{1}", SvcName, i);
         }
     }
 }
