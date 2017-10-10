@@ -717,6 +717,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         changeClusterState(false);
 
         changeClusterState(true);
+
+        initCache();
     }
 
     /**
