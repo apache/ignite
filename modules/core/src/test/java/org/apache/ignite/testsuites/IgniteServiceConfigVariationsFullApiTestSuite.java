@@ -87,6 +87,6 @@ public class IgniteServiceConfigVariationsFullApiTestSuite extends TestSuite {
             .withClients()
             .build());
 
-        return suite;
+        return new TestSuite("Service Deployment New Full API Test Suite");
     }
 }

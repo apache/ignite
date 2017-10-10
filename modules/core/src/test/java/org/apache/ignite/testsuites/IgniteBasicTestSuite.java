@@ -83,6 +83,8 @@ import org.jetbrains.annotations.Nullable;
  * Basic test suite.
  */
 public class IgniteBasicTestSuite extends TestSuite {
+    private TestSuite suite;
+
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

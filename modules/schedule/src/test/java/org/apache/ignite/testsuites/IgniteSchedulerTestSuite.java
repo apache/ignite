@@ -33,6 +33,6 @@ public class IgniteSchedulerTestSuite extends TestSuite {
 
         suite.addTestSuite(GridScheduleSelfTest.class);
 
-        return suite;
+        return new TestSuite("Grid Scheduler Test Suite");
     }
 }
