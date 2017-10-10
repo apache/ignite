@@ -46,7 +46,7 @@ function print_help()
     echo "https://apacheignite-sql.readme.io/docs/jdbc-driver"
     echo
     echo "Example:"
-    echo "ignitesql.sh 127.0.0.1 -s MySchema -dj true -ej -ssb 0"
+    echo "${SELF_NAME} 127.0.0.1 -s MySchema -dj true -ej -ssb 0"
 }
 
 function edit_params()
