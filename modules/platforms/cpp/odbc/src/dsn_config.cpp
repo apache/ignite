@@ -108,6 +108,8 @@ namespace ignite
 
             bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
 
+            bool updateOnServer = ReadDsnBool(dsn, Configuration::Key::updateOnServer, config.IsUpdateOnServer());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
@@ -125,6 +127,7 @@ namespace ignite
             config.SetReplicatedOnly(replicatedOnly);
             config.SetCollocated(collocated);
             config.SetLazy(lazy);
+            config.SetUpdateOnServer(updateOnServer);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }

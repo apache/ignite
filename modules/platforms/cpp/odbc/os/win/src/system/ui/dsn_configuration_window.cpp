@@ -180,6 +180,11 @@ namespace ignite
 
                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
+                    updateOnServerCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Update on server", ChildId::UPDATE_ON_SERVER_CHECK_BOX, config.IsUpdateOnServer());
+
+                    updateOnServerCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
@@ -264,6 +269,13 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::UPDATE_ON_SERVER_CHECK_BOX:
+                                {
+                                    updateOnServerCheckBox->SetChecked(!updateOnServerCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 {
                                     std::string versionStr;
@@ -271,6 +283,7 @@ namespace ignite
 
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+                                    updateOnServerCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
 
                                     break;
                                 }
@@ -309,6 +322,7 @@ namespace ignite
                     bool replicatedOnly;
                     bool collocated;
                     bool lazy;
+                    bool updateOnServer;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
@@ -329,6 +343,7 @@ namespace ignite
                     replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
                     collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
                     lazy = lazyCheckBox->IsEnabled() && lazyCheckBox->IsChecked();
+                    updateOnServer = updateOnServerCheckBox->IsEnabled() && updateOnServerCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
@@ -341,6 +356,7 @@ namespace ignite
                     LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
                     LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
                     LOG_MSG("Lazy:               " << (lazy ? "true" : "false"));
+                    LOG_MSG("Update on server:   " << (updateOnServer ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -355,6 +371,7 @@ namespace ignite
                     cfg.SetReplicatedOnly(replicatedOnly);
                     cfg.SetCollocated(collocated);
                     cfg.SetLazy(lazy);
+                    cfg.SetUpdateOnServer(updateOnServer);
                 }
             }
         }

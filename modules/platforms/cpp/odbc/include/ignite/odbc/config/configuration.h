@@ -82,6 +82,9 @@ namespace ignite
 
                     /** Connection attribute keyword for lazy attribute. */
                     static const std::string lazy;
+
+                    /** Connection attribute keyword for updateOnServer attribute. */
+                    static const std::string updateOnServer;
                 };
 
                 /** Default values for configuration. */
@@ -125,6 +128,9 @@ namespace ignite
 
                     /** Default value for lazy attribute. */
                     static const bool lazy;
+
+                    /** Default value for updateOnServer attribute. */
+                    static const bool updateOnServer;
                 };
 
                 /**
@@ -381,6 +387,26 @@ namespace ignite
                 void SetLazy(bool val)
                 {
                     SetBoolValue(Key::lazy, val);
+                }
+
+                /**
+                 * Check update on server flag.
+                 *
+                 * @return True if update on server.
+                 */
+                bool IsUpdateOnServer() const
+                {
+                    return GetBoolValue(Key::updateOnServer, DefaultValue::updateOnServer);
+                }
+
+                /**
+                 * Set update on server.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetUpdateOnServer(bool val)
+                {
+                    SetBoolValue(Key::updateOnServer, val);
                 }
 
                 /**
