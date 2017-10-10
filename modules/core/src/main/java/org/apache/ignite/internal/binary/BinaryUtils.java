@@ -83,6 +83,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller.USE_DFLT_SUID;
 
 /**
  * Binary utils.
@@ -2260,7 +2261,7 @@ public class BinaryUtils {
                 throw new IOException(e);
             }
 
-            if (false /*USE_DFLT_SUID*/)
+            if (USE_DFLT_SUID)
                 return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
         }
 
