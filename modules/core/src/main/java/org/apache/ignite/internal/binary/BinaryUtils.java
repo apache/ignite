@@ -2295,7 +2295,6 @@ public class BinaryUtils {
         return (short)hash;
     }
 
-
     /**
      * Create qualified field name.
      *
