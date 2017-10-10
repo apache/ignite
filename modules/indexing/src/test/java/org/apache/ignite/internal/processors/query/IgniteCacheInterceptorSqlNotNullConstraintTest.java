@@ -69,7 +69,7 @@ public class IgniteCacheInterceptorSqlNotNullConstraintTest extends GridCommonAb
     private static String CACHE_PREFIX = "person";
 
     /** Expected error message. */
-    private static String ERR_MSG = "Null value is not allowed for field 'NAME'";
+    private static String ERR_MSG = "Null value is not allowed for column 'NAME'";
 
     /** OK value. */
     private final Person okValue = new Person("Name", 18);
