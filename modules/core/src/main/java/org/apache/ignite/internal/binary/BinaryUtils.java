@@ -2260,7 +2260,7 @@ public class BinaryUtils {
                 throw new IOException(e);
             }
 
-            if (false /*USE_DFLT_SUID*/)
+            if (BinaryMarshaller.USE_DFLT_SUID)
                 return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
         }
 

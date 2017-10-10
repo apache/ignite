@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.io.Externalizable;
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -501,6 +503,13 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
+
+    /**
+     * Manages {@link BinaryMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Externalizable} classes.
+     */
+    public static final String IGNITE_BINARY_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_BINARY_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
      * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.

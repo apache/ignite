@@ -18,21 +18,29 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_DEFAULT_SUID;
+
 /**
  * Implementation of {@link org.apache.ignite.marshaller.Marshaller} that lets to serialize and deserialize all objects
  * in the binary format.
  */
 public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
+    /** Use default {@code serialVersionUID} for {@link Externalizable} classes. */
+    public static final boolean USE_DFLT_SUID =
+        IgniteSystemProperties.getBoolean(IGNITE_BINARY_MARSHALLER_USE_DEFAULT_SUID, false);
+
     /** */
     private GridBinaryMarshaller impl;
 
