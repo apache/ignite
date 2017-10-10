@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -2045,8 +2044,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     CacheInvokeResult curInvokeRes = null;
 
-                    boolean validation = false;
-
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
@@ -2058,26 +2055,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (!invokeEntry.modified())
                             continue;
-                        else {
-                            updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                            updated = ctx.toCacheObject(updatedVal);
+                        updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 
-                            validation = true;
-
-                            ctx.validateKeyAndValue(entry.key(), updated);
-                        }
+                        updated = ctx.toCacheObject(updatedVal);
                     }
                     catch (Exception e) {
                         curInvokeRes = CacheInvokeResult.fromError(e);
 
                         updated = old;
-
-                        if (validation) {
-                            res.addSkippedIndex(i);
-
-                            continue;
-                        }
                     }
                     finally {
                         if (curInvokeRes != null) {
@@ -2139,12 +2125,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
                             if (val == null)
-                                continue;
+                                continue; // update shall be considered canceled.
 
                             updated = ctx.toCacheObject(ctx.unwrapTemporary(val));
-
-                            ctx.validateKeyAndValue(entry.key(), updated);
                         }
+
+                        ctx.validateKeyAndValue(entry.key(), updated);
 
                         // Update previous batch.
                         if (rmvKeys != null) {

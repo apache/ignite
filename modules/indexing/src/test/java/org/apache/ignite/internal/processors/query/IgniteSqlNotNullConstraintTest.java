@@ -407,17 +407,15 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     public void testAtomicOrImplicitTxInvokeAll() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {
-                final Map<Integer, EntryProcessorResult<Object>> r = cache.invokeAll(F.asMap(
-                    key1, new TestEntryProcessor(okValue),
-                    key2, new TestEntryProcessor(badValue)));
-
-                assertNotNull(r);
-
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                assertThrows(new Callable<Object>() {
                     @Override public Object call() throws Exception {
+                        Map<Integer, EntryProcessorResult<Object>> r = cache.invokeAll(F.asMap(
+                            key1, new TestEntryProcessor(okValue),
+                            key2, new TestEntryProcessor(badValue)));
+
                         return r.get(key2).get();
                     }
-                }, IgniteCheckedException.class, ERR_MSG);
+                }, IgniteSQLException.class, ERR_MSG);
 
                 assertEquals(1, cache.size());
             }
@@ -1017,6 +1015,19 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         assertNotNull(entity.getNotNullFields());
 
         assertTrue(entity.getNotNullFields().contains(fieldName));
+    }
+
+    /** */
+    private void assertThrows(Callable<?> c, Class<? extends Throwable> cls, String message) {
+        Throwable t = GridTestUtils.assertThrowsWithCause(c, cls);
+
+        t = X.cause(t, cls);
+
+        assertNotNull(t);
+
+        assertTrue("Unexpected error message: " + t.getMessage(), t.getMessage().contains(message));
+
+        log.info("Caught expected exception.");
     }
 
     /** */
