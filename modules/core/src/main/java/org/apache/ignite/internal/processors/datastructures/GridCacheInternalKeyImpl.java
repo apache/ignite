@@ -18,21 +18,20 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Key is used for caching cache data structures.
  */
-public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externalizable, Cloneable {
+public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Serializable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Name of cache data structure. */
+    @AffinityKeyMapped
     private String name;
 
     /** */
@@ -70,7 +69,11 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return name.hashCode();
+        int result = name != null ? name.hashCode() : 0;
+
+        result = 31 * result + (grpName != null ? grpName.hashCode() : 0);
+
+        return result;
     }
 
     /** {@inheritDoc} */
@@ -90,18 +93,6 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeString(out, grpName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException {
-        name = U.readString(in);
-        grpName = U.readString(in);
     }
 
     /** {@inheritDoc} */
