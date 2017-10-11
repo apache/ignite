@@ -48,25 +48,13 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        memCfg.setPageSize(pageSize);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(pageSize);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(cacheName)

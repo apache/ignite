@@ -60,27 +60,17 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
                 .setRebalanceMode(CacheRebalanceMode.SYNC)
         );
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-        dbCfg.setPageSize(1024);
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath(DFLT_STORE_DIR);
-
-        dbCfg.setDataRegionConfigurations(memPlcCfg);
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        cfg.setDataStorageConfiguration(dbCfg);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(100 * 1024 * 1024)
+                    .setPersistenceEnabled(true)
+                    .setSwapFilePath(DFLT_STORE_DIR))
             .setWalMode(WALMode.LOG_ONLY)
-        );
+            .setPageSize(1024)
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()

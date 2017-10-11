@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOF
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -58,8 +57,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDataStorageConfiguration(storeConfiguration());
-
         cfg.setDataStorageConfiguration(memoryConfiguration());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
@@ -68,36 +65,19 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Store config.
-     */
-    private DataStorageConfiguration storeConfiguration() {
-        DataStorageConfiguration cfg = new DataStorageConfiguration();
-
-        cfg.setWalMode(WALMode.LOG_ONLY);
-
-        cfg.setWalFsyncDelayNanos(0);
-
-        cfg.setFileIOFactory(new AsyncFileIOFactory());
-
-        return cfg;
-    }
-
-    /**
      * @return Memory config.
      */
     private DataStorageConfiguration memoryConfiguration() {
-        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        // memPlcCfg.setPageEvictionMode(RANDOM_LRU); TODO Fix NPE on start.
-        memPlcCfg.setName("dfltDataRegion");
-
-        memCfg.setPageSize(PAGE_SIZE);
-        memCfg.setConcurrencyLevel(1);
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        return memCfg;
+        return new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setName("dfltMemPlc")
+                .setPersistenceEnabled(true)
+                /*.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU) TODO: fix NPE on start */)
+            .setPageSize(PAGE_SIZE)
+            .setConcurrencyLevel(1)
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalFsyncDelayNanos(0)
+            .setFileIOFactory(new AsyncFileIOFactory());
     }
 
     /**

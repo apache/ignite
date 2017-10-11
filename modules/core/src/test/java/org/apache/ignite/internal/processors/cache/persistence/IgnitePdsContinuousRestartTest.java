@@ -79,16 +79,11 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setMaxSize(400 * 1024 * 1024);
-        memPlcCfg.setInitialSize(400 * 1024 * 1024);
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(400 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointingFrequency(checkpointDelay);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -101,12 +96,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         ccfg1.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-                .setCheckpointingFrequency(checkpointDelay)
-        );
 
         return cfg;
     }

@@ -49,20 +49,12 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-
-        dbCfg.setDataRegionConfigurations(memPlcCfg);
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        cfg.setDataStorageConfiguration(dbCfg);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

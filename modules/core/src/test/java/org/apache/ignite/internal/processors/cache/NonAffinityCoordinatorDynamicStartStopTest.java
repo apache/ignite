@@ -59,15 +59,10 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
 
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-        memPlcCfg.setMaxSize(200 * 1000 * 1000);
-
-        memPlcCfg.setName("dfltDataRegion");
-
-        dbCfg.setDataRegionConfigurations(memPlcCfg);
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (gridName.contains(DUMMY_GRID_NAME))
             cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, false));

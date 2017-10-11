@@ -39,18 +39,10 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
 
-        DataRegionConfiguration plc = new DataRegionConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setInitialSize(200 * 1024 * 1024);
-        plc.setMaxSize(200 * 1024 * 1024);
-
-        dbCfg.setDefaultDataRegionName("dfltPlc");
-        dbCfg.setDataRegionConfigurations(plc);
-
-        cfg.setDataStorageConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (gridName.equals("client"))
             cfg.setClientMode(true);

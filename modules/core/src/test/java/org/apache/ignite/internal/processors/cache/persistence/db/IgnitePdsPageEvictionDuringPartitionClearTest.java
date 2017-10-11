@@ -59,26 +59,12 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
         cfg.setCacheConfiguration(ccfg);
 
         // Intentionally set small page cache size.
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setInitialSize(70 * 1024 * 1024);
-        memPlcCfg.setMaxSize(70 * 1024 * 1024);
-
-        memPlcCfg.setName("dfltDataRegion");
-
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-
-        memCfg.setDefaultDataRegionName(memPlcCfg.getName());
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(70 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
 
         return cfg;
     }

@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,20 +58,12 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-        memCfg.setPageSize(1024);
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(50 * 1024 * 1024);
-        memPlcCfg.setMaxSize(50 * 1024 * 1024);
-
-        memCfg.setDataRegionConfigurations(memPlcCfg);
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024)
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -82,8 +75,6 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()

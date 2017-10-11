@@ -53,6 +53,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1672,5 +1674,27 @@ public class GridCacheUtils {
 
             cfg.clearQueryEntities().setQueryEntities(normalEntities);
         }
+    }
+
+    /**
+     * Checks if cache descriptor belongs to persistent cache.
+     *
+     * @param desc Cache descriptor.
+     * @param dsCfg Data storage config.
+     */
+    public static boolean isPersistentCache(DynamicCacheDescriptor desc, DataStorageConfiguration dsCfg) {
+        String regName = desc.cacheConfiguration().getDataRegionName();
+
+        if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))
+            return dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();
+
+        if (dsCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                if (regName.equals(drConf.getName()))
+                    return drConf.isPersistenceEnabled();
+            }
+        }
+
+        return false;
     }
 }

@@ -130,31 +130,20 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes(EventType.EVT_WAL_SEGMENT_ARCHIVED);
 
-        final DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        dbCfg.setPageSize(PAGE_SIZE);
-
-        final DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(1024 * 1024 * 1024);
-        memPlcCfg.setMaxSize(1024 * 1024 * 1024);
-
-        dbCfg.setDataRegionConfigurations(memPlcCfg);
-        dbCfg.setDefaultDataRegionName("dfltDataRegion");
-
-        cfg.setDataStorageConfiguration(dbCfg);
-
-        final DataStorageConfiguration pCfg = new DataStorageConfiguration();
-        pCfg.setWalHistorySize(1);
-        pCfg.setWalSegmentSize(1024 * 1024);
-        pCfg.setWalSegments(WAL_SEGMENTS);
-        pCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(1024 * 1024 * 1024).setPersistenceEnabled(true))
+            .setPageSize(PAGE_SIZE)
+            .setWalHistorySize(1)
+            .setWalSegmentSize(1024 * 1024)
+            .setWalSegments(WAL_SEGMENTS)
+            .setWalMode(customWalMode != null ? customWalMode : WALMode.BACKGROUND);
 
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
-            pCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
+            memCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
-        cfg.setDataStorageConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(memCfg);
+
         return cfg;
     }
 

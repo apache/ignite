@@ -87,16 +87,12 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
-
-        memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(1000 * 1024 * 1024);
-
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
-        memCfg.setDataRegionConfigurations(memPlcCfg);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(1000 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointingThreads(1)
+            .setCheckpointingFrequency(1);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -105,13 +101,6 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
 
         cfg.setCacheConfiguration(ccfg);
-
-        DataStorageConfiguration psiCfg = new DataStorageConfiguration()
-            .setCheckpointingThreads(1)
-            .setCheckpointingFrequency(1)
-            .setWalMode(WALMode.LOG_ONLY);
-
-        cfg.setDataStorageConfiguration(psiCfg);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

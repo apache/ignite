@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -56,18 +57,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration();
-
-        long memSize = 200L * 1024L * 1024L;
-
-        memCfg.setDataRegionConfigurations(
-            new DataRegionConfiguration()
-                .setInitialSize(memSize)
-                .setMaxSize(memSize)
-                .setName("dfltDataRegion")
-        );
-
-        memCfg.setDefaultDataRegionName("dfltDataRegion");
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -80,8 +73,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         return cfg;
     }
