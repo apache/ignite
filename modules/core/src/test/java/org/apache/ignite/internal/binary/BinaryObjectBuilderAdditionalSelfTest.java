@@ -56,7 +56,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
@@ -1210,6 +1209,28 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDate() throws Exception {
+        BinaryObjectBuilder builder = binaries().builder(TestDateClass.class.getName());
+
+        java.util.Date date1 = new java.util.Date();
+        java.sql.Date date2 = java.sql.Date.valueOf("2001-05-05");
+
+        builder.setField("date1", date2);
+        builder.setField("date2", date2);
+
+        builder.build().deserialize();
+
+        builder = binaries().builder(TestDateClass.class.getName());
+
+        builder.setField("date1", date1);
+        builder.setField("date2", date2);
+
+        builder.build().deserialize();
+    }
+
+    /**
      *
      */
     public void testChangeMap() {
@@ -1694,6 +1715,21 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             return "TestObjectExternalizable{" +
                 "val='" + val + '\'' +
                 '}';
+        }
+    }
+
+    /** */
+    private static class TestDateClass {
+        /** */
+        private java.util.Date date1;
+
+        /** */
+        private java.sql.Date date2;
+
+        /** */
+        TestDateClass(final java.util.Date date1, final java.sql.Date date2) {
+            this.date1 = date1;
+            this.date2 = date2;
         }
     }
 
