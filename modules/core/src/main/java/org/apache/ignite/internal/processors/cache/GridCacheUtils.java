@@ -1677,13 +1677,13 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if cache descriptor belongs to persistent cache.
+     * Checks if cache configuration belongs to persistent cache.
      *
-     * @param desc Cache descriptor.
+     * @param ccfg Cache configuration.
      * @param dsCfg Data storage config.
      */
-    public static boolean isPersistentCache(DynamicCacheDescriptor desc, DataStorageConfiguration dsCfg) {
-        String regName = desc.cacheConfiguration().getDataRegionName();
+    public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
+        String regName = ccfg.getDataRegionName();
 
         if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))
             return dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();

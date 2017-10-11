@@ -234,6 +234,55 @@ public class IgniteWalRecoveryPPCTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testDynamicallyStartedNonPersistentCache() throws Exception {
+        try {
+            IgniteEx ignite = startGrid(1);
+
+            ignite.active(true);
+
+            IgniteCache<Integer, Object> dynamicPersistent = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, Object>()
+                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
+                    .setName("dynamicPersistent")
+                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
+
+            IgniteCache<Integer, Object> dynamicVolatile = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, Object>()
+                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
+                    .setDataRegionName(MEM_PLC_NO_PDS)
+                    .setName("dynamicVolatile")
+                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
+
+            for (int i = 0; i < 10_000; i++) {
+                dynamicPersistent.put(i, new IndexedObject(i));
+                dynamicVolatile.put(i, new IndexedObject(i + 1));
+            }
+
+            stopGrid(1);
+
+            ignite = startGrid(1);
+
+            ignite.active(true);
+
+            dynamicPersistent = ignite.cache("dynamicPersistent");
+            dynamicVolatile = ignite.cache("dynamicVolatile");
+
+            for (int i = 0; i < 10_000; i++)
+                assertEquals(new IndexedObject(i), dynamicPersistent.get(i));
+
+            assertNull(dynamicVolatile);
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     *
+     */
     private static class IndexedObject {
         /** */
         @QuerySqlField(index = true)
