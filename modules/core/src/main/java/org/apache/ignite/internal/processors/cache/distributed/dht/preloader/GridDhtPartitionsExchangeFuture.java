@@ -881,8 +881,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
                 if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
-                    U.warn(log, "Failed to wait for locks release future. " +
-                        "Dumping pending objects that might be the cause: " + cctx.localNodeId());
+                    U.warn(log, "Failed to wait for locks release future. Dumping pending objects that might be the " +
+                        "cause [topVer=" + topologyVersion() + ", nodeId=" + cctx.localNodeId() + "]: ");
 
                     U.warn(log, "Locked keys:");
 
@@ -1799,6 +1799,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public void onNodeLeft(final ClusterNode node) {
         if (isDone() || !enterBusy())
             return;
+
+        cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
 
         try {
             onDiscoveryEvent(new IgniteRunnable() {
