@@ -53,9 +53,9 @@ namespace Apache.Ignite.Examples.Client
             using (IIgniteClient igniteClient = Ignition.StartClient(cfg))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Cache put-get client example started.");
+                Console.WriteLine(">>> Cache query client example started.");
 
-                ICacheClient<int, Organization> cache = igniteClient.GetCache<int, Organization>(CacheName);
+                ICacheClient<int, Employee> cache = igniteClient.GetCache<int, Employee>(CacheName);
 
                 // Populate cache with sample data entries.
                 PopulateCache(cache);
@@ -73,10 +73,11 @@ namespace Apache.Ignite.Examples.Client
         /// Queries organizations of specified type.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void ScanQueryExample(ICacheClient<int, Organization> cache)
+        private static void ScanQueryExample(ICacheClient<int, Employee> cache)
         {
-            var qry = cache.Query(new ScanQuery<int, Organization>(new DelegateScanQueryFilter<int, Organization>(
-                    cacheEntry => cacheEntry.Value.Type == OrganizationType.Private)));
+            const int zip = 94109;
+
+            var qry = cache.Query(new ScanQuery<int, Employee>(new ScanQueryFilter(zip)));
 
             Console.WriteLine();
             Console.WriteLine(">>> Private organizations (scan):");
@@ -91,20 +92,56 @@ namespace Apache.Ignite.Examples.Client
         /// Populate cache with data for this example.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void PopulateCache(ICacheClient<int, Organization> cache)
+        private static void PopulateCache(ICacheClient<int, Employee> cache)
         {
-            cache.RemoveAll();
-
-            cache.Put(1, new Organization(
-                "Apache",
-                new Address("1065 East Hillsdale Blvd, Foster City, CA", 94404),
-                OrganizationType.NonProfit,
-                DateTime.Now));
-
-            cache.Put(2, new Organization("Microsoft",
+            cache.Put(1, new Employee(
+                "James Wilson",
+                12500,
                 new Address("1096 Eddy Street, San Francisco, CA", 94109),
-                OrganizationType.Private,
-                DateTime.Now));
+                new[] { "Human Resources", "Customer Service" },
+                1));
+
+            cache.Put(2, new Employee(
+                "Daniel Adams",
+                11000,
+                new Address("184 Fidler Drive, San Antonio, TX", 78130),
+                new[] { "Development", "QA" },
+                1));
+
+            cache.Put(3, new Employee(
+                "Cristian Moss",
+                12500,
+                new Address("667 Jerry Dove Drive, Florence, SC", 29501),
+                new[] { "Logistics" },
+                1));
+
+            cache.Put(4, new Employee(
+                "Allison Mathis",
+                25300,
+                new Address("2702 Freedom Lane, San Francisco, CA", 94109),
+                new[] { "Development" },
+                2));
+
+            cache.Put(5, new Employee(
+                "Breana Robbin",
+                6500,
+                new Address("3960 Sundown Lane, Austin, TX", 78130),
+                new[] { "Sales" },
+                2));
+
+            cache.Put(6, new Employee(
+                "Philip Horsley",
+                19800,
+                new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
+                new[] { "Sales" },
+                2));
+
+            cache.Put(7, new Employee(
+                "Brian Peters",
+                10600,
+                new Address("1407 Pearlman Avenue, Boston, MA", 12110),
+                new[] { "Development", "QA" },
+                2));
         }
     }
 }

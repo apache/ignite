@@ -51,7 +51,6 @@
     <Compile Include="Compute\CharacterCountReducer.cs" />
     <Compile Include="Datagrid\CacheIncrementEntryProcessor.cs" />
     <Compile Include="Datagrid\CachePutEntryProcessor.cs" />
-    <Compile Include="Datagrid\DelegateScanQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStoreFactory.cs" />
     <Compile Include="Datagrid\EmployeeStorePredicate.cs" />
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
