@@ -83,7 +83,7 @@ public class ExchangeActions {
     public boolean cacheStarted(int cacheId) {
         if (cachesToStart != null) {
             for (CacheActionData cache : cachesToStart.values()) {
-                if (cache.desc.cacheId() == cacheId)
+                if (cache.desc.cacheId() == cacheId && !cache.request().clientStartOnly())
                     return true;
             }
         }
@@ -162,6 +162,23 @@ public class ExchangeActions {
         }
 
         return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
+    }
+
+    public List<DynamicCacheChangeRequest> requests() {
+        List<DynamicCacheChangeRequest> res = new ArrayList<>();
+
+        for (CacheActionData data : cacheStartRequests())
+            res.add(data.request());
+
+        for (CacheActionData data : cacheStopRequests())
+            res.add(data.request());
+
+        if (cachesToClose != null) {
+            for (CacheActionData data : cachesToClose.values())
+                res.add(data.request());
+        }
+
+        return res;
     }
 
     /**
