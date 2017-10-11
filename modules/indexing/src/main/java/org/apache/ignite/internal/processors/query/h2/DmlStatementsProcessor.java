@@ -50,7 +50,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -162,7 +161,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schemaName, Connection conn, Prepared prepared,
-        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         Object[] errKeys = null;
 
@@ -226,7 +225,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, Connection c, Prepared p,
-        SqlFieldsQueryEx fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
+        SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel);
 
         checkUpdateResult(res);
@@ -253,7 +252,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, Connection conn, PreparedStatement stmt,
-        SqlFieldsQueryEx fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName, conn, GridSqlQueryParser.prepared(stmt), fieldsQry, true,
             filters, cancel);
@@ -360,7 +359,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
-        Prepared prepared, SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters,
+        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         int mainCacheId = CU.cacheId(cctx.name());
 
@@ -462,7 +461,7 @@ public class DmlStatementsProcessor {
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQueryEx fieldsQry,
+    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL(), loc, fieldsQry);
 
@@ -1045,7 +1044,7 @@ public class DmlStatementsProcessor {
      * @return Update result.
      * @throws IgniteCheckedException if failed.
      */
-    UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQueryEx fldsQry,
+    UpdateResult mapDistributedUpdate(String schemaName, PreparedStatement stmt, SqlFieldsQuery fldsQry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local) throws IgniteCheckedException {
         Connection c;
 

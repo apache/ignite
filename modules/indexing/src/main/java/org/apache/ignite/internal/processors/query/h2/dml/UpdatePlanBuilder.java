@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -87,7 +88,7 @@ public final class UpdatePlanBuilder {
      * @return Update plan.
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQueryEx fieldsQuery, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -112,7 +113,7 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQueryEx fieldsQuery) throws IgniteCheckedException {
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
         GridSqlQuery sel;
 
         GridSqlElement target;
@@ -236,7 +237,7 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan planForUpdate(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQueryEx fieldsQuery, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
         GridSqlElement target;
 
@@ -546,10 +547,10 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan.DistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
-        Connection conn, SqlFieldsQueryEx fieldsQry, boolean loc, String selectQry, String cacheName)
+        Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
-        if (fieldsQry == null || !fieldsQry.isUpdateOnServer() || loc || fieldsQry.isLocal())
+        if (loc || !isUpdateOnServerQuery(fieldsQry))
             return null;
 
         assert conn != null;
@@ -576,6 +577,17 @@ public final class UpdatePlanBuilder {
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Checks whether query flags are compatible with server side update.
+     *
+     * @param qry Query.
+     * @return {@code true} if update can be distributed.
+     */
+    public static boolean isUpdateOnServerQuery(SqlFieldsQuery qry) {
+        return qry != null && !qry.isLocal() &&
+            qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isUpdateOnServer();
     }
 
     /**

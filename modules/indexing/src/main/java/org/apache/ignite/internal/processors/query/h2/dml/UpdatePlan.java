@@ -136,10 +136,10 @@ public final class UpdatePlan {
      * Additional information about distributed update plan.
      */
     public final static class DistributedPlanInfo {
-        /** */
+        /** Whether update involves only replicated caches. */
         private final boolean replicatedOnly;
 
-        /** */
+        /** Identifiers of caches involved in update (used for cluster nodes mapping). */
         private final List<Integer> cacheIds;
 
         /**
@@ -154,7 +154,7 @@ public final class UpdatePlan {
         }
 
         /**
-         * @return {@code true} in case all caches are replicated.
+         * @return {@code true} in case all involved caches are replicated.
          */
         public boolean isReplicatedOnly() {
             return replicatedOnly;

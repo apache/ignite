@@ -45,17 +45,11 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /**
      * @param qry SQL query.
      */
-    public SqlFieldsQueryEx(SqlFieldsQuery qry) {
+    public SqlFieldsQueryEx(SqlFieldsQueryEx qry) {
         super(qry);
 
-        if (qry instanceof SqlFieldsQueryEx) {
-            SqlFieldsQueryEx other = (SqlFieldsQueryEx)qry;
-
-            this.isQry = other.isQry;
-            this.updateOnServer = other.updateOnServer;
-        }
-        else
-            this.isQry = null;
+        this.isQry = qry.isQry;
+        this.updateOnServer = qry.updateOnServer;
     }
 
     /**
@@ -125,7 +119,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      * Sets server side update flag.
      * <p>
      * By default, when processing DML command, Ignite first fetches all affected intermediate rows for analysis to the
-     * node which initiated the query and only then forms batches of updated values to be send to remote nodes.
+     * node which initiated the query and only then forms batches of updated values to be sent to remote nodes.
      * For simple DML commands (that however affect great deal of rows) such approach may be an overkill in terms of
      * network delays and memory usage on initiating node. Use this flag as hint for Ignite to do all intermediate rows
      * analysis and updates in place on corresponding remote data nodes.
@@ -155,5 +149,10 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      */
     public boolean isUpdateOnServer() {
         return updateOnServer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlFieldsQuery copy() {
+        return new SqlFieldsQueryEx(this);
     }
 }

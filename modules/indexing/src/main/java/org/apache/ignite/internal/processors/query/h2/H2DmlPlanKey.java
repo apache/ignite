@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -40,11 +41,11 @@ public class H2DmlPlanKey {
      * @param schemaName Schema name.
      * @param sql SQL.
      */
-    public H2DmlPlanKey(String schemaName, String sql, boolean loc, SqlFieldsQueryEx fieldsQry) {
+    public H2DmlPlanKey(String schemaName, String sql, boolean loc, SqlFieldsQuery fieldsQry) {
         this.schemaName = schemaName;
         this.sql = sql;
 
-        if (!fieldsQry.isUpdateOnServer() || loc || fieldsQry.isLocal())
+        if (loc || !UpdatePlanBuilder.isUpdateOnServerQuery(fieldsQry))
             this.flags = 0; // flags only relevant for server side updates.
         else {
             this.flags = (byte)(1 +
