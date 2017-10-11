@@ -704,17 +704,17 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property define size thread local buffer.
+     * Property for size of thread local buffer.
      * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
      *
-     * @return Thread local buffer size.
+     * @return Thread local buffer size (in bytes).
      */
     public int getWalThreadLocalBufferSize() {
         return walTlbSize <= 0 ? DFLT_TLB_SIZE : walTlbSize;
     }
 
     /**
-     * @param walTlbSize Thread local buffer size.
+     * @param walTlbSize Thread local buffer size (in bytes).
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
