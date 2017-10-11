@@ -18,11 +18,13 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -61,14 +63,13 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
 
         double maxSalary = salary + 1000 * args.resultSetSize();
 
-        Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
+        List<List<?>> rows = executeQuery(salary, maxSalary);
 
-        for (Cache.Entry<Integer, Object> entry : entries) {
-            Person p = (Person)entry.getValue();
+        for (List<?> row  : rows) {
+            double sal = (Double)row.get(3);
 
-            if (p.getSalary() < salary || p.getSalary() > maxSalary)
-                throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
-                        ", person=" + p + ']');
+            if (sal < salary || sal > maxSalary)
+                throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary + ']');
         }
 
         return true;
@@ -80,10 +81,10 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
      * @return Query result.
      * @throws Exception If failed.
      */
-    private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
+    private List<List<?>> executeQuery(double minSalary, double maxSalary) throws Exception {
         IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
-        SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
 
