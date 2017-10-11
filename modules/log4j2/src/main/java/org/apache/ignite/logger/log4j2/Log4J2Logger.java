@@ -21,7 +21,6 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,10 +42,8 @@ import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
 import org.apache.logging.log4j.core.appender.routing.RoutingAppender;
 import org.apache.logging.log4j.core.config.AppenderControl;
-import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.jetbrains.annotations.Nullable;
 
@@ -219,21 +216,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         }
     }
 
-    /**
-     * Sets level for internal log4j implementation.
-     *
-     * @param level Log level to set.
-     */
-    public void setLevel(Level level) {
-        LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
-
-        Configuration conf = ctx.getConfiguration();
-
-        conf.getLoggerConfig(impl.getName()).setLevel(level);
-
-        ctx.updateLoggers(conf);
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
         for (Logger log = impl; log != null; log = log.getParent()) {
@@ -258,10 +240,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                             Appender innerApp = control.getAppender();
 
                             if (innerApp instanceof FileAppender)
-                                return normilize(((FileAppender)innerApp).getFileName());
+                                return normalize(((FileAppender)innerApp).getFileName());
 
                             if (innerApp instanceof RollingFileAppender)
-                                return normilize(((RollingFileAppender)innerApp).getFileName());
+                                return normalize(((RollingFileAppender)innerApp).getFileName());
                         }
                     }
                     catch (IllegalAccessException | NoSuchFieldException e) {
@@ -281,7 +263,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      * @param path Path.
      * @return Normalized path.
      */
-    private String normilize(String path) {
+    private String normalize(String path) {
         if (!U.isWindows())
             return path;
 
@@ -294,6 +276,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      * @param initLogClo Optional log implementation init closure.
      */
     private void addConsoleAppenderIfNeeded(@Nullable IgniteClosure<Boolean, Logger> initLogClo) {
+        System.out.println("addConsoleAppenderIfNeeded entry, " + inited);
         if (inited) {
             // Do not init.
             impl = initLogClo.apply(false);
@@ -351,7 +334,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
-                consoleLog = createConsoleLogger();
+                //consoleLog = createConsoleLogger();
+                createConsoleLogger();
             }
 
             quiet0 = quiet;
@@ -364,8 +348,13 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @return Logger with auto configured console appender.
      */
-    public static Logger createConsoleLogger() {
-        LoggerContext ctx = (LoggerContext)LogManager.getContext();
+    public Logger createConsoleLogger() {
+//        LoggerContext ctx = (LoggerContext)LogManager.getContext(true);
+
+        System.out.println("createConsoleLogger entry");
+
+        Logger rootLogger = this.impl;
+        LoggerContext ctx = rootLogger.getContext();
 
         Configuration cfg = ctx.getConfiguration();
 
@@ -377,35 +366,47 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         PatternLayout layout = builder.build();
 
+        //LevelRangeFilter filter = LevelRangeFilter.createFilter(Level.TRACE, Level.OFF, null, null);
+
         ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder()
             .withName(CONSOLE_APPENDER)
             .withLayout(layout);
+            //.withFilter(filter);
 
         ConsoleAppender consoleApp = consoleAppenderBuilder.build();
 
         consoleApp.start();
 
-        AppenderRef ref = AppenderRef.createAppenderRef(CONSOLE_APPENDER, Level.TRACE, null);
-        AppenderRef[] refs = {ref};
+//        AppenderRef ref = AppenderRef.createAppenderRef(CONSOLE_APPENDER, Level.TRACE, null);
+//        AppenderRef[] refs = {ref};
+//
+//        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, cfg, null);
+//
+//        logCfg.addAppender(consoleApp, null, null);
+        //cfg.addAppender(consoleApp);
+        cfg.getRootLogger().addAppender(consoleApp, Level.TRACE, null);
+//
+//        cfg.addLogger(LogManager.ROOT_LOGGER_NAME, logCfg);
+//
+//        ctx.updateLoggers(cfg);
 
-        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, cfg, null);
-
-        logCfg.addAppender(consoleApp, null, null);
-        cfg.addAppender(consoleApp);
-
-        cfg.addLogger(LogManager.ROOT_LOGGER_NAME, logCfg);
-
+        //rootLogger.addAppender(consoleApp);
         ctx.updateLoggers(cfg);
 
-        Collection<Logger> loggers = ctx.getLoggers();
-        Logger logger = ctx.getRootLogger();
-        final Map<String, Appender> appenders = logger.getAppenders();
 
-        return (Logger)ctx.getLogger(LogManager.ROOT_LOGGER_NAME);
+        final Map<String, Appender> appenders = rootLogger.getAppenders();
+
+        cfg = ctx.getConfiguration();
+
+        //return (Logger)ctx.getLogger(LogManager.ROOT_LOGGER_NAME);
+        System.out.println("createConsoleLogger exit");
+
+        return rootLogger;
     }
 
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
+        System.out.println("setNodeId entry");
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;
@@ -413,7 +414,20 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         // Set nodeId as system variable to be used at configuration.
         System.setProperty(NODE_ID, U.id8(nodeId));
 
-        ((LoggerContext)LogManager.getContext(false)).reconfigure();
+        if (inited) {
+            synchronized (mux) {
+                inited = false;
+                impl.getContext().reconfigure();
+                //((LoggerContext)LogManager.getContext(false)).reconfigure();
+                addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
+                    @Override public Logger apply(Boolean init) {
+                        return (Logger)LogManager.getRootLogger();
+                    }
+                });
+            }
+        }
+
+        System.out.println("setNodeId exit");
     }
 
     /** {@inheritDoc} */
@@ -432,20 +446,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      */
     @Override public Log4J2Logger getLogger(Object ctgr) {
         if (ctgr == null)
-            return new Log4J2Logger((Logger)LogManager.getRootLogger(),
-                consoleLog == null ? null : (Logger)LogManager.getContext().getLogger(""));
+            return new Log4J2Logger((Logger)LogManager.getRootLogger(), null);
 
         if (ctgr instanceof Class) {
             String name = ((Class<?>)ctgr).getName();
 
-            return new Log4J2Logger((Logger)LogManager.getLogger(name),
-                consoleLog == null ? null : (Logger)LogManager.getContext().getLogger(name));
+            return new Log4J2Logger((Logger)LogManager.getLogger(name), null);
         }
 
         String name = ctgr.toString();
 
-        return new Log4J2Logger((Logger)LogManager.getLogger(name),
-            consoleLog == null ? null : (Logger)LogManager.getContext().getLogger(name));
+        return new Log4J2Logger((Logger)LogManager.getLogger(name), null);
     }
 
     /** {@inheritDoc} */
