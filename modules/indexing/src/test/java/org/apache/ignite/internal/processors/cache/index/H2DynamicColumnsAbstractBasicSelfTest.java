@@ -302,6 +302,49 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueNonDynamicTable() {
+        CacheConfiguration c =
+            new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            grid(nodeIndex()).getOrCreateCache(c);
+
+            doTestAlterTableOnFlatValue("INTEGER");
+        }
+        finally {
+            grid(nodeIndex()).destroyCache("ints");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueDynamicTable() {
+        try {
+            run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
+
+            doTestAlterTableOnFlatValue("TEST");
+        }
+        finally {
+            run("DROP TABLE TEST");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have flat value.
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
+            "Cannot add column(s) because table was created with WRAP_VALUE=false option.");
+    }
+
+    /**
      * @return Node index to run queries on.
      */
     protected abstract int nodeIndex();
