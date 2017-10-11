@@ -137,7 +137,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final boolean DFLT_WAL_ALWAYS_WRITE_FULL_PAGES = false;
 
     /** Default wal directory. */
-    public static final String DFLT_WAL_STORE_PATH = "db/wal";
+    public static final String DFLT_WAL_PATH = "db/wal";
 
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
@@ -163,8 +163,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Data regions. */
     private DataRegionConfiguration[] dataRegions;
 
-    /** */
-    private String persistenceStorePath;
+    /** Directory where index and partition files are stored. */
+    private String storagePath;
 
     /** Checkpointing frequency. */
     private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
@@ -191,7 +191,7 @@ public class DataStorageConfiguration implements Serializable {
     private int walSegmentSize = DFLT_WAL_SEGMENT_SIZE;
 
     /** Directory where WAL is stored (work directory) */
-    private String walStorePath = DFLT_WAL_STORE_PATH;
+    private String walPath = DFLT_WAL_PATH;
 
     /** WAL archive path. */
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
@@ -203,7 +203,7 @@ public class DataStorageConfiguration implements Serializable {
     private WALMode walMode = DFLT_WAL_MODE;
 
     /** WAl thread local buffer size. */
-    private int tlbSize = DFLT_TLB_SIZE;
+    private int walTlbSize = DFLT_TLB_SIZE;
 
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
@@ -223,17 +223,17 @@ public class DataStorageConfiguration implements Serializable {
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
-     * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+     * Number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)} will be split into to calculate
      * rate-based metrics.
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
      * rate-based metrics when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      */
-    private int subIntervals = DFLT_SUB_INTERVALS;
+    private int metricsSubIntervalCount = DFLT_SUB_INTERVALS;
 
     /** Time interval (in milliseconds) for rate-based metrics. */
-    private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
+    private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
      *  Time interval (in milliseconds) for running auto archiving for incompletely WAL segment
@@ -386,8 +386,8 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Returns a path the root directory where the Persistent Store will persist data and indexes.
      */
-    public String getPersistentStorePath() {
-        return persistenceStorePath;
+    public String getStoragePath() {
+        return storagePath;
     }
 
     /**
@@ -396,8 +396,8 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param persistenceStorePath Persistence store path.
      */
-    public DataStorageConfiguration setPersistentStorePath(String persistenceStorePath) {
-        this.persistenceStorePath = persistenceStorePath;
+    public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
+        this.storagePath = persistenceStorePath;
 
         return this;
     }
@@ -563,8 +563,8 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return WAL persistence path, absolute or relative to Ignite work directory.
      */
-    public String getWalStorePath() {
-        return walStorePath;
+    public String getWalPath() {
+        return walPath;
     }
 
     /**
@@ -574,8 +574,8 @@ public class DataStorageConfiguration implements Serializable {
      * @param walStorePath WAL persistence path, absolute or relative to Ignite work directory.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setWalStorePath(String walStorePath) {
-        this.walStorePath = walStorePath;
+    public DataStorageConfiguration setWalPath(String walStorePath) {
+        this.walPath = walStorePath;
 
         return this;
     }
@@ -647,39 +647,39 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Time interval in milliseconds.
      */
-    public long getRateTimeInterval() {
-        return rateTimeInterval;
+    public long getMetricsRateTimeInterval() {
+        return metricsRateTimeInterval;
     }
 
     /**
      * Sets the length of the time interval for rate-based metrics. This interval defines a window over which
      * hits will be tracked.
      *
-     * @param rateTimeInterval Time interval in milliseconds.
+     * @param metricsRateTimeInterval Time interval in milliseconds.
      */
-    public DataStorageConfiguration setRateTimeInterval(long rateTimeInterval) {
-        this.rateTimeInterval = rateTimeInterval;
+    public DataStorageConfiguration setMetricsRateTimeInterval(long metricsRateTimeInterval) {
+        this.metricsRateTimeInterval = metricsRateTimeInterval;
 
         return this;
     }
 
     /**
-     * Gets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
+     * Gets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      * Default value is {@link #DFLT_SUB_INTERVALS}.
      *
      * @return The number of sub-intervals for history tracking.
      */
-    public int getSubIntervals() {
-        return subIntervals;
+    public int getMetricsSubIntervalCount() {
+        return metricsSubIntervalCount;
     }
 
     /**
-     * Sets the number of sub-intervals to split the {@link #getRateTimeInterval()} into to track the update history.
+     * Sets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      *
-     * @param subIntervals The number of sub-intervals for history tracking.
+     * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
      */
-    public DataStorageConfiguration setSubIntervals(int subIntervals) {
-        this.subIntervals = subIntervals;
+    public DataStorageConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
+        this.metricsSubIntervalCount = metricsSubIntervalCnt;
 
         return this;
     }
@@ -709,15 +709,15 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Thread local buffer size.
      */
-    public int getTlbSize() {
-        return tlbSize <= 0 ? DFLT_TLB_SIZE : tlbSize;
+    public int getWalTlbSize() {
+        return walTlbSize <= 0 ? DFLT_TLB_SIZE : walTlbSize;
     }
 
     /**
-     * @param tlbSize Tlb size.
+     * @param walTlbSize Tlb size.
      */
-    public DataStorageConfiguration setTlbSize(int tlbSize) {
-        this.tlbSize = tlbSize;
+    public DataStorageConfiguration setWalTlbSize(int walTlbSize) {
+        this.walTlbSize = walTlbSize;
 
         return this;
     }
@@ -780,14 +780,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     *
+     * Gets flag that enforces writing full page to WAL on every change (instead of delta record).
+     * Can be used for debugging purposes: every version of page will be present in WAL.
+     * Note that WAL will take several times more space in this mode.
      */
     public boolean isAlwaysWriteFullPages() {
         return alwaysWriteFullPages;
     }
 
     /**
-     * @param alwaysWriteFullPages Always write full pages.
+     * Sets flag that enforces writing full page to WAL on every change (instead of delta record).
+     * Can be used for debugging purposes: every version of page will be present in WAL.
+     * Note that WAL will take several times more space in this mode.
+     *
+     * @param alwaysWriteFullPages Always write full pages flag.
      */
     public DataStorageConfiguration setAlwaysWriteFullPages(boolean alwaysWriteFullPages) {
         this.alwaysWriteFullPages = alwaysWriteFullPages;

@@ -88,10 +88,10 @@ public class MockWalIteratorFactory {
     public WALIterator iterator(File wal, File walArchive) throws IgniteCheckedException {
         final DataStorageConfiguration persistentCfg1 = Mockito.mock(DataStorageConfiguration.class);
 
-        when(persistentCfg1.getWalStorePath()).thenReturn(wal.getAbsolutePath());
+        when(persistentCfg1.getWalPath()).thenReturn(wal.getAbsolutePath());
         when(persistentCfg1.getWalArchivePath()).thenReturn(walArchive.getAbsolutePath());
         when(persistentCfg1.getWalSegments()).thenReturn(segments);
-        when(persistentCfg1.getTlbSize()).thenReturn(DataStorageConfiguration.DFLT_TLB_SIZE);
+        when(persistentCfg1.getWalTlbSize()).thenReturn(DataStorageConfiguration.DFLT_TLB_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
         final FileIOFactory fileIOFactory = new DataStorageConfiguration().getFileIOFactory();

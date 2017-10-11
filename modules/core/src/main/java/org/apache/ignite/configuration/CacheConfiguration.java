@@ -511,7 +511,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * @return {@link DataRegionConfiguration} name.
      */
-    public String getDataRegionName() {
+    @Nullable public String getDataRegionName() {
         return memPlcName;
     }
 
@@ -530,7 +530,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *                   but should not be empty.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setDataRegionName(String dataRegionName) {
+    public CacheConfiguration<K, V> setDataRegionName(@Nullable String dataRegionName) {
         A.ensure(dataRegionName == null || !dataRegionName.isEmpty(), "Name cannot be empty.");
 
         this.memPlcName = dataRegionName;

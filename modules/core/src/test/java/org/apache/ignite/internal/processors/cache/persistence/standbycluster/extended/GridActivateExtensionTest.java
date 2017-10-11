@@ -63,9 +63,9 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
-        pCfg.setPersistentStorePath(testName + "/db");
+        pCfg.setStoragePath(testName + "/db");
         pCfg.setWalArchivePath(testName + "/db/wal/archive");
-        pCfg.setWalStorePath(testName + "/db/wal");
+        pCfg.setWalPath(testName + "/db/wal");
 
         pCfg.setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));

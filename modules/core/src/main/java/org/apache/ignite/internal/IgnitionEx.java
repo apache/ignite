@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -2808,8 +2807,8 @@ public class IgnitionEx {
                 region.setMaxSize(mpc.getMaxSize());
                 region.setName(mpc.getName());
                 region.setPageEvictionMode(mpc.getPageEvictionMode());
-                region.setRateTimeInterval(mpc.getRateTimeInterval());
-                region.setSubIntervals(mpc.getSubIntervals());
+                region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
+                region.setMetricsSubIntervalCount(mpc.getSubIntervals());
                 region.setSwapFilePath(mpc.getSwapFilePath());
                 region.setMetricsEnabled(mpc.isMetricsEnabled());
 
@@ -2855,10 +2854,10 @@ public class IgnitionEx {
             dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
             dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
             dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
-            dsCfg.setPersistentStorePath(psCfg.getPersistentStorePath());
-            dsCfg.setRateTimeInterval(psCfg.getRateTimeInterval());
-            dsCfg.setSubIntervals(psCfg.getSubIntervals());
-            dsCfg.setTlbSize(psCfg.getTlbSize());
+            dsCfg.setStoragePath(psCfg.getPersistentStorePath());
+            dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
+            dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
+            dsCfg.setWalTlbSize(psCfg.getTlbSize());
             dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
             dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
             dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
@@ -2868,7 +2867,7 @@ public class IgnitionEx {
             dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
             dsCfg.setWalSegments(psCfg.getWalSegments());
             dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
-            dsCfg.setWalStorePath(psCfg.getWalStorePath());
+            dsCfg.setWalPath(psCfg.getWalStorePath());
             dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
             dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
             dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());

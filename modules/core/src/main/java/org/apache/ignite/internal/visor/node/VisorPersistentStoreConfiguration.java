@@ -100,7 +100,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
      * @param cfg Persistent store configuration.
      */
     public VisorPersistentStoreConfiguration(DataStorageConfiguration cfg) {
-        persistenceStorePath = cfg.getPersistentStorePath();
+        persistenceStorePath = cfg.getStoragePath();
         checkpointingFreq = cfg.getCheckpointingFrequency();
         lockWaitTime = cfg.getLockWaitTime();
         checkpointingPageBufSize = cfg.getCheckpointingPageBufferSize();
@@ -108,17 +108,17 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         walHistSize = cfg.getWalHistorySize();
         walSegments = cfg.getWalSegments();
         walSegmentSize = cfg.getWalSegmentSize();
-        walStorePath = cfg.getWalStorePath();
+        walStorePath = cfg.getWalPath();
         walArchivePath = cfg.getWalArchivePath();
         metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
-        tlbSize = cfg.getTlbSize();
+        tlbSize = cfg.getWalTlbSize();
         walFlushFreq = cfg.getWalFlushFrequency();
         walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();
         alwaysWriteFullPages = cfg.isAlwaysWriteFullPages();
-        subIntervals = cfg.getSubIntervals();
-        rateTimeInterval = cfg.getRateTimeInterval();
+        subIntervals = cfg.getMetricsSubIntervalCount();
+        rateTimeInterval = cfg.getMetricsRateTimeInterval();
     }
 
     /**

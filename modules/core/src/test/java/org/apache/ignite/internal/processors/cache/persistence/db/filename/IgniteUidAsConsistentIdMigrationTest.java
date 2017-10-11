@@ -137,8 +137,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             pstWalStoreCustomPath = new File(tempDir, "WalStore");
             pstWalArchCustomPath = new File(tempDir, "WalArchive");
 
-            psCfg.setPersistentStorePath(pstStoreCustomPath.getAbsolutePath());
-            psCfg.setWalStorePath(pstWalStoreCustomPath.getAbsolutePath());
+            psCfg.setStoragePath(pstStoreCustomPath.getAbsolutePath());
+            psCfg.setWalPath(pstWalStoreCustomPath.getAbsolutePath());
             psCfg.setWalArchivePath(pstWalArchCustomPath.getAbsolutePath());
         }
 
@@ -664,7 +664,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
         assertDirectoryExist("binary_meta", subDirName);
-        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_STORE_PATH, subDirName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
         assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
     }

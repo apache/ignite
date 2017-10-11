@@ -83,9 +83,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
-        rateTimeInterval = memPlcCfg.getRateTimeInterval();
+        rateTimeInterval = memPlcCfg.getMetricsRateTimeInterval();
 
-        subInts = memPlcCfg.getSubIntervals();
+        subInts = memPlcCfg.getMetricsSubIntervalCount();
     }
 
     /** {@inheritDoc} */

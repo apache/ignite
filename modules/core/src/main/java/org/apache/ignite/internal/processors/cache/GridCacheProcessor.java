@@ -2186,7 +2186,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
 
-        if (ctx.config().isPersistentStoreEnabled() && !ctx.clientNode()) {
+        if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             if (ctx.clientNode()) {
                 U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
                     " configuration will be ignored).");

@@ -57,7 +57,7 @@ public class IgnitePdsWalTlbTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointingPageBufferSize(DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE + 1)
-            .setTlbSize(640000000);
+            .setWalTlbSize(640000000);
 
         cfg.setDataStorageConfiguration(memCfg);
 

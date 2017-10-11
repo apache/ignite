@@ -2218,30 +2218,11 @@ public class IgniteConfiguration {
 
     /**
      * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
+     *
+     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
     public boolean isPersistentStoreEnabled() {
-        if (getDataStorageConfiguration() == null)
-            return false;
-
-        DataRegionConfiguration dfltReg = getDataStorageConfiguration().getDefaultDataRegionConfiguration();
-
-        if (dfltReg == null)
-            return false;
-
-        if (dfltReg.isPersistenceEnabled())
-            return true;
-
-        DataRegionConfiguration[] regCfgs = getDataStorageConfiguration().getDataRegionConfigurations();
-
-        if (regCfgs == null)
-            return false;
-
-        for (DataRegionConfiguration cfg : regCfgs) {
-            if (cfg.isPersistenceEnabled())
-                return true;
-        }
-
-        return false;
+        return pstCfg != null;
     }
 
     /**
