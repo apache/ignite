@@ -87,7 +87,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
         ResultSet rs = stm.executeQuery();
 
         while (rs.next()) {
-            double sal = rs.getDouble("salary");
+            double sal = rs.getDouble(4);
 
             if (sal < salary || sal > maxSalary)
                 throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary + ']');
@@ -124,7 +124,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
         try {
             conn = DriverManager.getConnection(args.jdbcUrl());
 
-            return conn.prepareStatement("select * from Person where salary >= ? and salary <= ?");
+            return conn.prepareStatement("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
         }
         catch (Exception e) {
             if (conn != null)
