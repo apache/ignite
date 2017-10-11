@@ -71,7 +71,7 @@ public final class UpdatePlan {
     /** Whether update only uses replicated caches. */
     public final boolean isReplicatedOnly;
 
-    /** Identifiers of caches involved in update (Used for cluster nodes mapping in case of distributed update). */
+    /** Cache identifiers. */
     public final List<Integer> cacheIds;
 
     /** */
