@@ -209,8 +209,9 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     static void cleanup() {
         synchronized (mux) {
             if (inited) {
-                LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
-                ctx.terminate();
+//                LoggerContext ctx = (LoggerContext)LogManager.getContext(false);
+//                ctx.terminate();
+                LogManager.shutdown();
             }
             inited = false;
         }

@@ -101,9 +101,9 @@ public class Log4j2LoggerSelfTest extends TestCase {
         log.debug("This is 'debug' message.");
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");
-        log.warning("This is 'warning' message.", new Exception("It's a test warning exception"));
+        //log.warning("This is 'warning' message.", new Exception("It's a test warning exception"));
         log.error("This is 'error' message.");
-        log.error("This is 'error' message.", new Exception("It's a test error exception"));
+        //log.error("This is 'error' message.", new Exception("It's a test error exception"));
     }
 
     /**

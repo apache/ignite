@@ -17,7 +17,7 @@
   limitations under the License.
 -->
 
-<Configuration>
+<Configuration status="trace">
     <Appenders>
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>

@@ -42,6 +42,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
      */
     @Override protected void setUp() throws Exception {
         Log4J2Logger.cleanup();
+        System.out.println("**************** setUp ***************");
     }
 
     /**
