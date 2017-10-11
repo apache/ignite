@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -364,13 +365,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      * @return Logger with auto configured console appender.
      */
     public static Logger createConsoleLogger() {
-        LoggerContext ctx = (LoggerContext)LogManager.getContext(true);
+        LoggerContext ctx = (LoggerContext)LogManager.getContext();
 
         Configuration cfg = ctx.getConfiguration();
 
-        PatternLayout.Builder builder = PatternLayout.newBuilder();
-
-        builder
+        PatternLayout.Builder builder = PatternLayout.newBuilder()
             .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
             .withAlwaysWriteExceptions(false)
@@ -378,9 +377,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         PatternLayout layout = builder.build();
 
-        ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder();
-
-        consoleAppenderBuilder
+        ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder()
             .withName(CONSOLE_APPENDER)
             .withLayout(layout);
 
@@ -389,7 +386,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         consoleApp.start();
 
         AppenderRef ref = AppenderRef.createAppenderRef(CONSOLE_APPENDER, Level.TRACE, null);
-
         AppenderRef[] refs = {ref};
 
         LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, cfg, null);
@@ -401,7 +397,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         ctx.updateLoggers(cfg);
 
-        return (Logger)LogManager.getContext().getLogger(LogManager.ROOT_LOGGER_NAME);
+        Collection<Logger> loggers = ctx.getLoggers();
+        Logger logger = ctx.getRootLogger();
+        final Map<String, Appender> appenders = logger.getAppenders();
+
+        return (Logger)ctx.getLogger(LogManager.ROOT_LOGGER_NAME);
     }
 
     /** {@inheritDoc} */
