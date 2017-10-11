@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -72,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -104,7 +103,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -188,6 +186,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Pending status messages. */
     private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
+
+    /** Current cache that has a query running on it. */
+    private final ThreadLocal<GridCacheContext> curCache = new ThreadLocal<>();
 
     /** Disconnected flag. */
     private boolean disconnected;
@@ -694,8 +695,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                // Ensure that candidates have unique index names.
-                // Otherwise we will not be able to apply pending operations.
+                // Ensure that candidates has unique index names. Otherwise we will not be able to apply pending operations.
                 Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
                 Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
 
@@ -1358,6 +1358,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param schemaName Schema name to create table in.
      * @param entity Entity to create table from.
      * @param templateName Template name.
+     * @param cacheName Cache name.
      * @param cacheGroup Cache group name.
      * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
@@ -1367,8 +1368,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheGroup,
-        String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
+    public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
+        String cacheGroup, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
         @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
@@ -1391,7 +1392,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new SchemaOperationException("Template cache already contains query entities which it should not: " +
                 templateName);
 
-        ccfg.setName(QueryUtils.createTableCacheName(schemaName, entity.getTableName()));
+        if (!F.isEmpty(entity.getNotNullFields()))
+            QueryUtils.checkNotNullAllowed(ccfg);
+
+        if (F.isEmpty(cacheName))
+            cacheName = QueryUtils.createTableCacheName(schemaName, entity.getTableName());
+
+        ccfg.setName(cacheName);
 
         if (!F.isEmpty(cacheGroup))
             ccfg.setGroupName(cacheGroup);
@@ -1437,6 +1444,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableDrop(String cacheName, String tblName, boolean ifExists) throws SchemaOperationException {
+        GridCacheContext currCache = this.curCache.get();
+
+        if (currCache != null && F.eq(currCache.name(), cacheName))
+            throw new IgniteSQLException("DROP TABLE cannot be called from the same cache that holds " +
+                "the table being dropped [cacheName-" + cacheName + ", tblName=" + tblName + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         boolean res = ctx.grid().destroyCache0(cacheName, true);
 
         if (!res && !ifExists)
@@ -1833,49 +1847,65 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Query SQL fields.
      *
-     * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @return Cursor.
-     */
-    public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
-        return querySqlFields(null, qry, keepBinary);
-    }
-
-    /**
-     * Query SQL fields.
-     *
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary) {
+    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
+        final boolean keepBinary) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
 
+        boolean loc = (qry.isReplicatedOnly() && cctx.isReplicatedAffinityNode()) || cctx.isLocal() || qry.isLocal();
+
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
-        final String schemaName = qry.getSchema() != null ? qry.getSchema()
-            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+        GridCacheContext oldCctx = curCache.get();
+
+        curCache.set(cctx);
 
         try {
-            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
+            final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
+            final int mainCacheId = CU.cacheId(cctx.name());
 
-                    FieldsQueryCursor<List<?>> res =
-                        idx.querySqlFields(schemaName, qry, keepBinary, cancel);
+            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
 
-                    if (cctx != null)
+            if (loc) {
+                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        GridQueryCancel cancel = new GridQueryCancel();
+
+                        FieldsQueryCursor<List<?>> cur;
+
+                        if (cctx.config().getQueryParallelism() > 1) {
+                            qry.setDistributedJoins(true);
+
+                            cur = idx.queryDistributedSqlFields(schemaName, qry,
+                                keepBinary, cancel, mainCacheId, true).get(0);
+                        }
+                        else {
+                            IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
+
+                            cur = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+                        }
+
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
 
-                    return res;
-                }
-            };
+                        return cur;
+                    }
+                };
+            }
+            else {
+                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true).get(0);
+                    }
+                };
+            }
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
         }
@@ -1883,82 +1913,65 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException(e);
         }
         finally {
+            curCache.set(oldCctx);
+
             busyLock.leaveBusy();
         }
     }
 
     /**
-     * Create query filter for given partitions.
-     * @param parts partitions to create filter for.
-     * @return Indexing query filter.
+     * Query SQL fields without strict dependency on concrete cache.
+     *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
      */
-    public IndexingQueryFilter backupFilter(@Nullable final int[] parts) {
-        return backupFilter(U.firstNotNull(requestTopVer.get(), AffinityTopologyVersion.NONE), parts);
+    public FieldsQueryCursor<List<?>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
+        final boolean keepBinary) {
+        return querySqlFieldsNoCache(qry, keepBinary, true).get(0);
     }
 
     /**
-     * Create query filter for given partitions and topology version.
-     * @param topVer topology version.
-     * @param parts partitions to create filter for.
-     * @return Indexing query filter.
+     * Query SQL fields without strict dependency on concrete cache.
+     *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
      */
-    public IndexingQueryFilter backupFilter(final AffinityTopologyVersion topVer, @Nullable final int[] parts) {
-        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+    public List<FieldsQueryCursor<List<?>>> querySqlFieldsNoCache(final SqlFieldsQuery qry,
+        final boolean keepBinary, final boolean failOnMultipleStmts) {
+        checkxEnabled();
 
-        return new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+        validateSqlFieldsQuery(qry);
 
-                if (cache.context().isReplicated())
-                    return null;
+        if (qry.isLocal())
+            throw new IgniteException("Local query is not supported without specific cache.");
 
-                final GridCacheAffinityManager aff = cache.context().affinity();
+        if (qry.getSchema() == null)
+            qry.setSchema(QueryUtils.DFLT_SCHEMA);
 
-                if (parts != null) {
-                    if (parts.length < 64) { // Fast scan for small arrays.
-                        return new IgniteBiPredicate<K, V>() {
-                            @Override public boolean apply(K k, V v) {
-                                int p = aff.partition(k);
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
-                                for (int p0 : parts) {
-                                    if (p0 == p)
-                                        return true;
+        try {
+            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
+                new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+                @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
+                    GridQueryCancel cancel = new GridQueryCancel();
 
-                                    if (p0 > p) // Array is sorted.
-                                        return false;
-                                }
-
-                                return false;
-                            }
-                        };
-                    }
-
-                    return new IgniteBiPredicate<K, V>() {
-                        @Override public boolean apply(K k, V v) {
-                            int p = aff.partition(k);
-
-                            return Arrays.binarySearch(parts, p) >= 0;
-                        }
-                    };
+                    return idx.queryDistributedSqlFields(qry.getSchema(), qry, keepBinary, cancel, null,
+                        failOnMultipleStmts);
                 }
+            };
 
-                final ClusterNode locNode = ctx.discovery().localNode();
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return aff.primaryByKey(locNode, k, topVer0);
-                    }
-                };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
-            }
-
-            @Override public String toString() {
-                return "IndexingQueryFilter [ver=" + topVer + ']';
-            }
-        };
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), null, clo, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -2048,7 +2061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.SQL, qry.getSql(), cctx,
                 new IgniteOutClosureX<QueryCursor<Cache.Entry<K, V>>>() {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
+                        return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary, mainCacheId);
                     }
                 }, true);
         }
@@ -2092,10 +2105,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
-                            return idx.queryDistributedSql(schemaName, qry, keepBinary, mainCacheId);
+                            return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary, mainCacheId);
                         }
                         else
-                            return idx.queryLocalSql(schemaName, qry, backupFilter(qry.getPartitions()), keepBinary);
+                            return idx.queryLocalSql(schemaName, cctx.name(), qry, idx.backupFilter(requestTopVer.get(),
+                                qry.getPartitions()), keepBinary);
                     }
                 }, true);
         }
@@ -2256,8 +2270,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cols Columns to add.
      * @throws IgniteCheckedException If failed to update type descriptor.
      */
-    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols)
-        throws IgniteCheckedException {
+    private void processDynamicAddColumn(QueryTypeDescriptorImpl d, List<QueryField> cols) throws IgniteCheckedException {
         List<GridQueryProperty> props = new ArrayList<>(cols.size());
 
         for (QueryField col : cols) {
@@ -2348,7 +2361,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
                     }
                 }, true);
         }
@@ -2550,6 +2563,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (desc.schema() != null)
                     data.queryEntities(desc.schema().entities());
+
+                data.sql(desc.sql());
 
                 cctx.pageStore().storeCacheData(data, true);
             }

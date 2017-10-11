@@ -15,15 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.platform.client.cache;
+
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Factory to create smart pointer instances.
+ * Cache clear request.
  */
-public interface GridOffHeapSmartPointerFactory<T extends GridOffHeapSmartPointer> {
+public class ClientCacheClearRequest extends ClientCacheRequest {
     /**
-     * @param ptr Pointer.
-     * @return Smart pointer instance (may or may not return the same instance multiple times).
+     * Constructor.
+     *
+     * @param reader Reader.
      */
-    public T createPointer(long ptr);
+    public ClientCacheClearRequest(BinaryRawReader reader) {
+        super(reader);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        cache(ctx).clear();
+
+        return super.process(ctx);
+    }
 }

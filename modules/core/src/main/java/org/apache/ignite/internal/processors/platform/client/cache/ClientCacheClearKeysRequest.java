@@ -15,24 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.platform.client.cache;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffheapSnapTreeSelfTest;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Indexing SPI tests.
+ * Clear keys request.
  */
-public class IgniteSpiIndexingSelfTestSuite extends TestSuite {
+public class ClientCacheClearKeysRequest extends ClientCacheKeysRequest {
     /**
-     * @return Failover SPI tests suite.
-     * @throws Exception If failed.
+     * Constructor.
+     *
+     * @param reader Reader.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Indexing SPI Test Suite");
+    public ClientCacheClearKeysRequest(BinaryRawReaderEx reader) {
+        super(reader);
+    }
 
-        suite.addTest(new TestSuite(GridOffheapSnapTreeSelfTest.class));
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        cache(ctx).clearAll(keys());
 
-        return suite;
+        return super.process(ctx);
     }
 }

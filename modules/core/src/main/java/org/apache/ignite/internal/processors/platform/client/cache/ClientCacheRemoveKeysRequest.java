@@ -15,21 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.platform.client.cache;
+
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
- * Compound memory object. Contains one or more memory regions.
+ * Remove keys request.
  */
-public interface GridUnsafeCompoundMemory {
+public class ClientCacheRemoveKeysRequest extends ClientCacheKeysRequest {
     /**
-     * Deallocates this compound memory object.
-     */
-    public void deallocate();
-
-    /**
-     * Merges another compound memory object with this one.
+     * Constructor.
      *
-     * @param compound Compound memory.
+     * @param reader Reader.
      */
-    public void merge(GridUnsafeCompoundMemory compound);
+    public ClientCacheRemoveKeysRequest(BinaryRawReaderEx reader) {
+        super(reader);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
+        cache(ctx).removeAll(keys());
+
+        return super.process(ctx);
+    }
 }

@@ -15,24 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.processors.platform.client.cache;
+
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
 /**
- * Smart pointer with reference counting.
+ * Cache request involving key and value.
  */
-public interface GridOffHeapSmartPointer {
-    /**
-     * @return Pointer address.
-     */
-    public long pointer();
+public class ClientCacheKeyValueRequest extends ClientCacheKeyRequest {
+    /** Value. */
+    private final Object val;
 
     /**
-     * Increment reference count.
+     * Ctor.
+     *
+     * @param reader Reader.
      */
-    public void incrementRefCount();
+    ClientCacheKeyValueRequest(BinaryRawReaderEx reader) {
+        super(reader);
+
+        val = reader.readObjectDetached();
+    }
 
     /**
-     * Decrement reference count.
+     * Gets the value.
+     *
+     * @return Value.
      */
-    public void decrementRefCount();
+    public Object val() {
+        return val;
+    }
 }

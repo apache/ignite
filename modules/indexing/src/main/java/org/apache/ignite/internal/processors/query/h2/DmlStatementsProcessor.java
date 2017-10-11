@@ -49,13 +49,13 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -95,7 +95,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
  *
@@ -149,7 +149,7 @@ public class DmlStatementsProcessor {
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
      * @param schemaName Schema.
-     * @param stmt JDBC statement.
+     * @param prepared Prepared JDBC statement.
      * @param fieldsQry Original query.
      * @param loc Query locality flag.
      * @param filters Cache name and key filter.
@@ -157,13 +157,13 @@ public class DmlStatementsProcessor {
      * @return Update result (modified items count and failed keys).
      * @throws IgniteCheckedException if failed.
      */
-    private UpdateResult updateSqlFields(String schemaName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
+    private UpdateResult updateSqlFields(String schemaName, Prepared prepared, SqlFieldsQuery fieldsQry,
         boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
 
-        UpdatePlan plan = getPlanForStatement(schemaName, stmt, null);
+        UpdatePlan plan = getPlanForStatement(schemaName, prepared, null);
 
         GridCacheContext<?, ?> cctx = plan.tbl.rowDescriptor().context();
 
@@ -187,7 +187,7 @@ public class DmlStatementsProcessor {
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, cctx, stmt, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(schemaName, cctx, prepared, fieldsQry, loc, filters, cancel, errKeys);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -212,16 +212,16 @@ public class DmlStatementsProcessor {
 
     /**
      * @param schemaName Schema.
-     * @param stmt Prepared statement.
+     * @param p Prepared.
      * @param fieldsQry Initial query
      * @param cancel Query cancel.
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, PreparedStatement stmt,
+    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, Prepared p,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, false, null, cancel);
+        UpdateResult res = updateSqlFields(schemaName, p, fieldsQry, false, null, cancel);
 
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), cancel, false);
@@ -246,20 +246,20 @@ public class DmlStatementsProcessor {
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, PreparedStatement stmt,
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName, stmt, fieldsQry, true, filters, cancel);
+        UpdateResult res = updateSqlFields(schemaName,  GridSqlQueryParser.prepared(stmt), fieldsQry, true,
+            filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
     }
 
     /**
-     * Perform given statement against given data streamer. Only rows based INSERT and MERGE are supported
-     * as well as key bound UPDATE and DELETE (ones with filter {@code WHERE _key = ?}).
+     * Perform given statement against given data streamer. Only rows based INSERT is supported.
      *
      * @param streamer Streamer to feed data to.
      * @param stmt Statement.
      * @param args Statement arguments.
-     * @return Number of rows in given statement for INSERT and MERGE, {@code 1} otherwise.
+     * @return Number of rows in given INSERT statement.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
@@ -339,20 +339,22 @@ public class DmlStatementsProcessor {
      *
      * @param schemaName Schema name.
      * @param cctx Cache context.
-     * @param prepStmt Prepared statement for DML query.
+     * @param prepared Prepared statement for DML query.
      * @param fieldsQry Fields query.
+     * @param loc Local query flag.
      * @param filters Cache name and key filter.
+     * @param cancel Query cancel state holder.
      * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx,
-        PreparedStatement prepStmt, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
+        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         Integer errKeysPos = null;
 
-        UpdatePlan plan = getPlanForStatement(schemaName, prepStmt, errKeysPos);
+        UpdatePlan plan = getPlanForStatement(schemaName, prepared, errKeysPos);
 
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
@@ -375,7 +377,9 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, cancel);
+            cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schemaName, newFieldsQry, true,
+                cancel, mainCacheId, true).get(0);
+            //cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, cancel);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQry,
@@ -419,14 +423,12 @@ public class DmlStatementsProcessor {
      * if available.
      *
      * @param schema Schema.
-     * @param prepStmt JDBC statement.
+     * @param p Prepared JDBC statement.
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String schema, PreparedStatement prepStmt, @Nullable Integer errKeysPos)
+    private UpdatePlan getPlanForStatement(String schema, Prepared p, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
-        Prepared p = GridSqlQueryParser.prepared(prepStmt);
-
         H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL());
 
         UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
@@ -911,11 +913,22 @@ public class DmlStatementsProcessor {
             val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
         }
 
-        if (key == null)
-            throw new IgniteSQLException("Key for INSERT or MERGE must not be null",  IgniteQueryErrorCode.NULL_KEY);
+        if (key == null) {
+            if (F.isEmpty(desc.keyFieldName()))
+                throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
+            else
+                throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
+                    IgniteQueryErrorCode.NULL_KEY);
+        }
 
-        if (val == null)
-            throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
+        if (val == null) {
+            if (F.isEmpty(desc.valueFieldName()))
+                throw new IgniteSQLException("Value for INSERT, MERGE, or UPDATE must not be null",
+                    IgniteQueryErrorCode.NULL_VALUE);
+            else
+                throw new IgniteSQLException("Null value is not allowed for column '" + desc.valueFieldName() + "'",
+                    IgniteQueryErrorCode.NULL_VALUE);
+        }
 
         Map<String, Object> newColVals = new HashMap<>();
 

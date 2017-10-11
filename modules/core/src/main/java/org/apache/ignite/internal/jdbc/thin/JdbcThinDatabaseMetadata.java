@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
@@ -311,7 +310,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsMultipleResultSets() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -845,7 +844,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add((Integer)null);
         row.add((Integer)null);
         row.add(10);
-        row.add(JdbcUtils.nullable(colMeta.columnName(), colMeta.dataTypeClass()) ? 1 : 0 );
+        row.add(colMeta.isNullable() ? 1 : 0);
         row.add((String)null);
         row.add((String)null);
         row.add(Integer.MAX_VALUE);

@@ -38,6 +38,15 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Cache name upon which new cache configuration for this table must be based. */
     private String templateName;
 
+    /** Name of new cache associated with this table. */
+    private String cacheName;
+
+    /** Name of cache key type. */
+    private String keyTypeName;
+
+    /** Name of cache value type. */
+    private String valTypeName;
+
     /** Group to put new cache into. */
     private String cacheGrp;
 
@@ -62,6 +71,12 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Name of the column that represents affinity key. */
     private String affinityKey;
 
+    /** Forcefully turn single column PK into an Object. */
+    private Boolean wrapKey;
+
+    /** Forcefully turn single column value into an Object. */
+    private Boolean wrapVal;
+
     /** Extra WITH-params. */
     private List<String> params;
 
@@ -77,6 +92,48 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void templateName(String templateName) {
         this.templateName = templateName;
+    }
+
+    /**
+     * @return Name of new cache associated with this table.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @param cacheName Name of new cache associated with this table.
+     */
+    public void cacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+    /**
+     * @return Name of cache key type.
+     */
+    public String keyTypeName() {
+        return keyTypeName;
+    }
+
+    /**
+     * @param keyTypeName Name of cache key type.
+     */
+    public void keyTypeName(String keyTypeName) {
+        this.keyTypeName = keyTypeName;
+    }
+
+    /**
+     * @return Name of cache value type.
+     */
+    public String valueTypeName() {
+        return valTypeName;
+    }
+
+    /**
+     * @param valTypeName Name of cache value type.
+     */
+    public void valueTypeName(String valTypeName) {
+        this.valTypeName = valTypeName;
     }
 
     /**
@@ -217,6 +274,34 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void ifNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
+    }
+
+    /**
+     * @return Forcefully turn single column PK into an Object.
+     */
+    public Boolean wrapKey() {
+        return wrapKey;
+    }
+
+    /**
+     * @param wrapKey Forcefully turn single column PK into an Object.
+     */
+    public void wrapKey(boolean wrapKey) {
+        this.wrapKey = wrapKey;
+    }
+
+    /**
+     * @return Forcefully turn single column value into an Object.
+     */
+    public Boolean wrapValue() {
+        return wrapVal;
+    }
+
+    /**
+     * @param wrapVal Forcefully turn single column value into an Object..
+     */
+    public void wrapValue(boolean wrapVal) {
+        this.wrapVal = wrapVal;
     }
 
     /**

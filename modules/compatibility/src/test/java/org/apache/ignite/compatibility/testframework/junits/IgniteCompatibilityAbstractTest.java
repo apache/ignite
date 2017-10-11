@@ -18,6 +18,8 @@
 package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
@@ -30,10 +32,8 @@ import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
  * Super class for all compatibility tests.
  */
 public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstractTest {
+    /** */
+    private static final ClassLoader CLASS_LOADER = IgniteCompatibilityAbstractTest.class.getClassLoader();
+
     /** Using for synchronization of nodes startup in case of starting remote nodes first. */
     public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "[Compatibility] Node has been started, id=";
 
@@ -160,16 +163,16 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                         filteredJvmArgs.add(arg);
                 }
 
-                String classPath = System.getProperty("java.class.path");
-
-                String[] paths = classPath.split(File.pathSeparator);
+                URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
 
                 StringBuilder pathBuilder = new StringBuilder();
 
-                String corePathTemplate = "ignite.modules.core.target.classes".replace(".", File.separator);
-                String coreTestsPathTemplate = "ignite.modules.core.target.test-classes".replace(".", File.separator);
+                String corePathTemplate = "modules/core/target/classes";
+                String coreTestsPathTemplate = "modules/core/target/test-classes";
 
-                for (String path : paths) {
+                for (URL url : ldr.getURLs()) {
+                    String path = url.getPath();
+
                     if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))
                         pathBuilder.append(path).append(File.pathSeparator);
                 }

@@ -1664,6 +1664,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Converts long to timespan.
+        /// </summary>
+        public static TimeSpan LongToTimeSpan(long ms)
+        {
+            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
+                return TimeSpan.MaxValue;
+
+            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
+                return TimeSpan.MinValue;
+
+            return TimeSpan.FromMilliseconds(ms);
+        }
+
+        /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
         private static T CreateInstance<T>(BinaryReader reader)

@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -197,7 +197,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                 try {
                     assertEquals(DataType.getTypeFromClass(Class.forName(col.typeName())),
-                        rowDesc.fieldType(i - GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT));
+                        rowDesc.fieldType(i - GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT));
                 }
                 catch (ClassNotFoundException e) {
                     throw new AssertionError(e);
@@ -302,7 +302,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return result.
      */
     protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
-        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)).getAll();
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)
+            .setDistributedJoins(true);
+
+        return cache.query(qry).getAll();
     }
 
     /**
