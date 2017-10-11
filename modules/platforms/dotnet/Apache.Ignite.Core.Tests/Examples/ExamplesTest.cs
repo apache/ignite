@@ -24,11 +24,11 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
-    using Apache.Ignite.Examples.Client;
     using Apache.Ignite.Examples.Compute;
     using Apache.Ignite.Examples.Datagrid;
     using Apache.Ignite.Examples.Messaging;
     using Apache.Ignite.Examples.Misc;
+    using Apache.Ignite.Examples.ThinClient;
     using NUnit.Framework;
 
     /// <summary>
@@ -50,14 +50,14 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Type[] RemoteOnlyExamples =
         {
             typeof(PeerAssemblyLoadingExample), typeof(MessagingExample), typeof(NearCacheExample),
-            typeof(PutGetClientExample), typeof(QueryClientExample)
+            typeof(ThinClientPutGetExample), typeof(ThinClientQueryExample)
         };
 
         /** */
         private static readonly Type[] NoDllExamples =
         {
             typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
-            typeof(PutGetClientExample)
+            typeof(ThinClientPutGetExample)
         };
 
         /** Config file path. */

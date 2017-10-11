@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Examples.Client
+namespace Apache.Ignite.Examples.ThinClient
 {
     using System;
     using Apache.Ignite.Core;
@@ -37,7 +37,7 @@ namespace Apache.Ignite.Examples.Client
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    public class QueryClientExample
+    public class ThinClientQueryExample
     {
         /// <summary> Cache name. </summary>
         private const string CacheName = "default-cache";

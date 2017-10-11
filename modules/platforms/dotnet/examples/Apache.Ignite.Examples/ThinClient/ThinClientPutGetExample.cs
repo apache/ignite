@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Examples.Client
+namespace Apache.Ignite.Examples.ThinClient
 {
     using System;
     using Apache.Ignite.Core;
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Examples.Client
     /// This example can also be run with Java-only nodes started with ignite.bat/ignite.sh,
     /// cache named "default-cache" must be started.
     /// </summary>
-    public static class PutGetClientExample
+    public static class ThinClientPutGetExample
     {
         /// <summary> Cache name. </summary>
         private const string CacheName = "default-cache";
