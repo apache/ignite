@@ -83,7 +83,7 @@ public class ExchangeActions {
     public boolean cacheStarted(int cacheId) {
         if (cachesToStart != null) {
             for (CacheActionData cache : cachesToStart.values()) {
-                if (cache.desc.cacheId() == cacheId)
+                if (cache.desc.cacheId() == cacheId && !cache.request().clientStartOnly())
                     return true;
             }
         }
