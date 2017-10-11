@@ -707,12 +707,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                             GridLongList waitTxs = updRes.mvccWaitTransactions();
 
-                                            if (waitTxs != null) {
-                                                if (this.mvccWaitTxs == null)
-                                                    this.mvccWaitTxs = waitTxs;
-                                                else
-                                                    this.mvccWaitTxs.addAll(waitTxs);
-                                            }
+                                            updateWaitTxs(waitTxs);
                                         }
 
                                         if (nearCached != null && updRes.success()) {
@@ -762,8 +757,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             null,
                                             mvccInfo != null ? mvccInfo.version() : null);
 
-                                        if (updRes.success())
+                                        if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                            GridLongList waitTxs = updRes.mvccWaitTransactions();
+
+                                            updateWaitTxs(waitTxs);
+                                        }
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(
@@ -920,6 +920,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
+        }
+    }
+
+    /**
+     * @param waitTxs Tx ids to wait for.
+     */
+    private void updateWaitTxs(@Nullable GridLongList waitTxs) {
+        if (waitTxs != null) {
+            if (this.mvccWaitTxs == null)
+                this.mvccWaitTxs = waitTxs;
+            else
+                this.mvccWaitTxs.addAll(waitTxs);
         }
     }
 

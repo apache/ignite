@@ -81,6 +81,13 @@ public class DataRow extends CacheDataRowAdapter {
         this.cacheId = cacheId;
     }
 
+    /**
+     *
+     */
+    protected DataRow() {
+        super(0);
+    }
+
     /** {@inheritDoc} */
     @Override public int partition() {
         return part;

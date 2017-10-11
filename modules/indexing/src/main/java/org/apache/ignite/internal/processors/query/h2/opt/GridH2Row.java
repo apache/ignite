@@ -174,4 +174,9 @@ public abstract class GridH2Row implements SearchRow, CacheDataRow, Row {
     @Override public long mvccCounter() {
         throw new UnsupportedOperationException();
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        throw new UnsupportedOperationException();
+    }
 }

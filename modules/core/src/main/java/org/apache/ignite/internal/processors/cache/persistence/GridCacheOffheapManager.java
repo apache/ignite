@@ -837,6 +837,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public long mvccCoordinatorVersion() {
             return 0; // TODO IGNITE-3478.
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean removed() {
+            return false;  // TODO IGNITE-3478.
+        }
     }
 
     /**
@@ -1251,14 +1256,48 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridLongList mvccUpdate(GridCacheContext cctx,
+        @Override public boolean mvccInitialValue(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            MvccCoordinatorVersion mvccVer)
+            throws IgniteCheckedException
+        {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccInitialValue(cctx, key, val, ver, mvccVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridLongList mvccUpdate(
+            GridCacheContext cctx,
+            boolean primary,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccUpdate(cctx, key, val, ver, mvccVer);
+            return delegate.mvccUpdate(cctx, primary, key, val, ver, mvccVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridLongList mvccRemove(
+            GridCacheContext cctx,
+            boolean primary,
+            KeyCacheObject key,
+            MvccCoordinatorVersion mvccVer) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccRemove(cctx, primary, key, mvccVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccRemoveAll(cctx, key);
         }
 
         /** {@inheritDoc} */

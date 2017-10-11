@@ -43,7 +43,13 @@ public interface CacheSearchRow {
      */
     public int cacheId();
 
+    /**
+     * @return Mvcc coordinator version.
+     */
     public long mvccCoordinatorVersion();
 
+    /**
+     * @return Mvcc counter.
+     */
     public long mvccCounter();
 }

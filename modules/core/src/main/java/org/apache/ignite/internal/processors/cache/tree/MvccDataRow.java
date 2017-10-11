@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 
 /**
  *
@@ -46,7 +45,7 @@ public class MvccDataRow extends DataRow {
     MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
         super(grp, hash, link, part, rowData);
 
-        assert crdVer > 0 : crdVer;
+        assert unmaskCoordinatorVersion(crdVer) > 0 : crdVer;
         assert mvccCntr != CacheCoordinatorsProcessor.COUNTER_NA;
 
         this.crdVer = crdVer;
@@ -54,25 +53,32 @@ public class MvccDataRow extends DataRow {
     }
 
     /**
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
+     *
+     */
+    private MvccDataRow() {
+        // No-op.
+    }
+
+    /**
      * @param part Partition.
      * @param cacheId Cache ID.
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @return Row.
      */
-    public MvccDataRow(KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
+    static MvccDataRow removedRowNoKey(
         int part,
         int cacheId,
         long crdVer,
         long mvccCntr) {
-        super(key, val, ver, part, 0L, cacheId);
+        MvccDataRow row = new MvccDataRow();
 
-        this.mvccCntr = mvccCntr;
-        this.crdVer = crdVer;
+        row.cacheId = cacheId;
+        row.part = part;
+        row.crdVer = crdVer;
+        row.mvccCntr = mvccCntr;
+
+        return row;
     }
 
     /** {@inheritDoc} */

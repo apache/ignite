@@ -66,6 +66,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
@@ -86,7 +87,13 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
 
     /** */
     private static final byte MSG_POLICY = SYSTEM_POOL;
-    
+
+    /** */
+    private static final long CRD_VER_MASK = 0x3F_FF_FF_FF_FF_FF_FF_FFL;
+
+    /** */
+    private static final long RMVD_VAL_VER_MASK = 0x80_00_00_00_00_00_00_00L;
+
     /** */
     private volatile MvccCoordinator curCrd;
 
@@ -137,6 +144,30 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
      */
     public CacheCoordinatorsProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @param crdVer Coordinator version.
+     * @return Coordinator version with removed value flag.
+     */
+    public static long createVersionForRemovedValue(long crdVer) {
+        return crdVer | RMVD_VAL_VER_MASK;
+    }
+
+    /**
+     * @param crdVer Coordinator version with flags.
+     * @return {@code True} if removed value flag is set.
+     */
+    public static boolean versionForRemovedValue(long crdVer) {
+        return (crdVer & RMVD_VAL_VER_MASK) != 0;
+    }
+
+    /**
+     * @param crdVer Coordinator version with flags.
+     * @return Coordinator version.
+     */
+    public static long unmaskCoordinatorVersion(long crdVer) {
+        return crdVer & CRD_VER_MASK;
     }
 
     /** {@inheritDoc} */
@@ -199,7 +230,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
      * @param topVer Topology version.
      */
     public void onDiscoveryEvent(int evtType, Collection<ClusterNode> nodes, long topVer) {
-        if (evtType == EVT_NODE_METRICS_UPDATED)
+        if (evtType == EVT_NODE_METRICS_UPDATED || evtType == EVT_DISCOVERY_CUSTOM_EVT)
             return;
 
         MvccCoordinator crd;
@@ -778,7 +809,9 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     private MvccCoordinatorVersionResponse assignQueryCounter(UUID qryNodeId, long futId) {
         assert crdVer != 0;
 
-        return activeQueries.assignQueryCounter(qryNodeId, futId);
+        MvccCoordinatorVersionResponse res = activeQueries.assignQueryCounter(qryNodeId, futId);
+
+        return res;
 
 //        MvccCoordinatorVersionResponse res = new MvccCoordinatorVersionResponse();
 //
@@ -989,7 +1022,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
             ", topVer=" + topVer + ']');
 
-        crdVer = topVer.topologyVersion();
+        crdVer = topVer.topologyVersion() + ctx.discovery().gridStartTime();
 
         prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
 

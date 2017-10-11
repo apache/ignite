@@ -582,6 +582,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        return false;
+    }
+
     /**
      *
      */

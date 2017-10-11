@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+
 /**
  *
  */
@@ -65,17 +67,25 @@ public class CacheDataRowStore extends RowStore {
      * @param cacheId Cache ID.
      * @param hash Hash code.
      * @param link Link.
-     * @param mvccTopVer
-     * @param mvccCntr
+     * @param rowData Required row data.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
      * @return Search row.
      */
-    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long mvccTopVer, long mvccCntr) {
+    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr) {
+        if (rowData != CacheDataRowAdapter.RowData.KEY_ONLY && versionForRemovedValue(crdVer)) {
+            if (rowData == CacheDataRowAdapter.RowData.NO_KEY)
+                return MvccDataRow.removedRowNoKey(partId, cacheId, crdVer, mvccCntr);
+            else
+                rowData = CacheDataRowAdapter.RowData.KEY_ONLY;
+        }
+
         MvccDataRow dataRow = new MvccDataRow(grp,
             hash,
             link,
             partId,
             rowData,
-            mvccTopVer,
+            crdVer,
             mvccCntr);
 
         initDataRow(dataRow, cacheId);

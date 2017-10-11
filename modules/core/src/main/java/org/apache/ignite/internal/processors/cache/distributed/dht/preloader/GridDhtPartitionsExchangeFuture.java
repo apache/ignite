@@ -560,7 +560,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             MvccCoordinator mvccCrd = firstEvtDiscoCache.mvccCoordinator();
 
             boolean mvccCrdChange = mvccCrd != null &&
-                initialVersion().equals(mvccCrd.topologyVersion());
+                (initialVersion().equals(mvccCrd.topologyVersion()) || activateCluster());
 
             cctx.kernalContext().coordinators().currentCoordinator(mvccCrd);
 

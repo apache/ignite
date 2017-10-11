@@ -42,9 +42,4 @@ public interface MvccCoordinatorVersion extends Message {
      * @return Counter.
      */
     public long counter();
-
-    /**
-     *
-     */
-    public boolean initialLoad();
 }

@@ -28,6 +28,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
+
 /**
  *
  */
@@ -66,16 +69,23 @@ public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.Tr
     {
         boolean visible = true;
 
+        RowLinkIO rowIo = (RowLinkIO)io;
+
+        long crdVerMasked = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+
         if (ver.activeTransactions().size() > 0) {
-            RowLinkIO rowIo = (RowLinkIO)io;
+            long rowCrdVer = unmaskCoordinatorVersion(crdVerMasked);
 
             // TODO IGNITE-3478 sort active transactions?
-            if (rowIo.getMvccCoordinatorVersion(pageAddr, idx) == ver.coordinatorVersion())
+            if (rowCrdVer == ver.coordinatorVersion())
                 visible = !ver.activeTransactions().contains(rowIo.getMvccCounter(pageAddr, idx));
         }
 
         if (visible) {
-            resRow = ((CacheDataTree) tree).getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+            if (versionForRemovedValue(crdVerMasked))
+                resRow = null;
+            else
+                resRow = ((CacheDataTree)tree).getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
 
             return false; // Stop search.
         }

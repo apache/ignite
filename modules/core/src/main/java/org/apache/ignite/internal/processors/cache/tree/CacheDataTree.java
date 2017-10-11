@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 
 /**
  *
@@ -160,7 +161,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long mvccCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
 
-        cmp = Long.compare(row.mvccCoordinatorVersion(), mvccCrdVer);
+        cmp = Long.compare(unmaskCoordinatorVersion(row.mvccCoordinatorVersion()),
+            unmaskCoordinatorVersion(mvccCrdVer));
 
         if (cmp != 0)
             return cmp;
@@ -188,10 +190,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             CacheDataRowAdapter.RowData.FULL;
 
         if (grp.mvccEnabled()) {
-            long mvccTopVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = rowIo.getMvccCounter(pageAddr, idx);
 
-            return rowStore.mvccRow(cacheId, hash, link, x, mvccTopVer, mvccCntr);
+            return rowStore.mvccRow(cacheId, hash, link, x, mvccCrdVer, mvccCntr);
         }
         else
             return rowStore.dataRow(cacheId, hash, link, x);

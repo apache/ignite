@@ -1012,7 +1012,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.mvccEnabled() && !((IgniteCacheOffheapManagerImpl)cctx.offheap()).IGNITE_FAKE_MVCC_STORAGE) {
                 assert mvccVer != null;
 
-                mvccWaitTxs = cctx.offheap().mvccUpdate(this, val, newVer, mvccVer);
+                mvccWaitTxs = cctx.offheap().mvccUpdate(tx.local(),
+                    this,
+                    val,
+                    newVer,
+                    mvccVer);
             }
             else
                 storeValue(val, expireTime, newVer, null);
@@ -1141,6 +1145,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean marked = false;
 
+        GridLongList mvccWaitTxs = null;
+
         synchronized (this) {
             checkObsolete();
 
@@ -1181,7 +1187,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            removeValue();
+            if (cctx.mvccEnabled() && !((IgniteCacheOffheapManagerImpl)cctx.offheap()).IGNITE_FAKE_MVCC_STORAGE) {
+                assert mvccVer != null;
+
+                mvccWaitTxs = cctx.offheap().mvccRemove(tx.local(), this, mvccVer);
+            }
+            else
+                removeValue();
 
             update(null, 0, 0, newVer, true);
 
@@ -1292,7 +1304,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.config().getInterceptor().onAfterRemove(entry0);
 
         if (valid)
-            return new GridCacheUpdateTxResult(true, updateCntr0, null);
+            return new GridCacheUpdateTxResult(true, updateCntr0, mvccWaitTxs);
         else
             return new GridCacheUpdateTxResult(false);
     }
@@ -2569,6 +2581,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean walEnabled = !cctx.isNear() && cctx.shared().wal() != null;
 
+            // TODO IGNITE-3478: move checks in special initialValue method.
             if (cctx.shared().database().persistenceEnabled()) {
                 unswap(false);
 
@@ -2591,14 +2604,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-                if (val != null) {
-                    if (cctx.mvccEnabled())
-                        cctx.offheap().mvccUpdate(this, val, ver, mvccVer);
-                    else
-                        storeValue(val, expTime, ver, null);
-                }
+                if (cctx.mvccEnabled()) {
+                    cctx.offheap().mvccInitialValue(this, val, ver, mvccVer);
 
-                update(val, expTime, ttl, ver, true);
+                    if (val != null)
+                        update(val, expTime, ttl, ver, true);
+                }
+                else {
+                    if (val != null) {
+                        storeValue(val, expTime, ver, null);
+
+                        update(val, expTime, ttl, ver, true);
+                    }
+                }
 
                 boolean skipQryNtf = false;
 

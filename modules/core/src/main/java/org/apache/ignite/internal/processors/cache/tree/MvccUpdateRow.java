@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -32,12 +33,14 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+
 /**
  *
  */
 public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
     /** */
-    private Boolean hasPrev;
+    private UpdateResult res;
 
     /** */
     private boolean canCleanup;
@@ -74,8 +77,8 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     /**
      * @return {@code True} if previous value was non-null.
      */
-    public boolean previousNotNull() {
-        return hasPrev != null && hasPrev;
+    public UpdateResult updateResult() {
+        return res == null ? UpdateResult.PREV_NULL : res;
     }
 
     /**
@@ -92,6 +95,30 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         return cleanupRows;
     }
 
+    /**
+     * @param io IO.
+     * @param pageAddr Page address.
+     * @param idx Item index.
+     * @return Always {@code true}.
+     */
+    private boolean assertVersion(RowLinkIO io, long pageAddr, int idx) {
+        long rowCrdVer = unmaskCoordinatorVersion(io.getMvccCoordinatorVersion(pageAddr, idx));
+        long rowCntr = io.getMvccCounter(pageAddr, idx);
+
+        int cmp = Long.compare(unmaskedCoordinatorVersion(), rowCrdVer);
+
+        if (cmp == 0)
+            cmp = Long.compare(mvccVer.counter(), rowCntr);
+
+        // Can be equals if backup rebalanced value updated on primary.
+        assert cmp >= 0 : "[updCrd=" + unmaskedCoordinatorVersion() +
+            ", updCntr=" + mvccVer.counter() +
+            ", rowCrd=" + rowCrdVer +
+            ", rowCntr=" + rowCntr + ']';
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree,
         BPlusIO<CacheSearchRow> io,
@@ -101,16 +128,33 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        // All previous version should be less then new one.
-        assert mvccVer.coordinatorVersion() >= rowIo.getMvccCoordinatorVersion(pageAddr, idx);
-        assert mvccVer.coordinatorVersion() > rowIo.getMvccCoordinatorVersion(pageAddr, idx) || mvccVer.counter() > rowIo.getMvccCounter(pageAddr, idx);
+        // Assert version grows.
+        assert assertVersion(rowIo, pageAddr, idx);
 
         boolean checkActive = mvccVer.activeTransactions().size() > 0;
 
         boolean txActive = false;
 
+        long rowCrdVerMasked = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+        long rowCrdVer = unmaskCoordinatorVersion(rowCrdVerMasked);
+
+        long crdVer = unmaskedCoordinatorVersion();
+
+        if (res == null) {
+            int cmp = Long.compare(crdVer, rowCrdVer);
+
+            if (cmp == 0)
+                cmp = Long.compare(mvccVer.counter(), rowIo.getMvccCounter(pageAddr, idx));
+
+            if (cmp == 0)
+                res = UpdateResult.VERSION_FOUND;
+            else
+                res = CacheCoordinatorsProcessor.versionForRemovedValue(rowCrdVerMasked) ?
+                    UpdateResult.PREV_NULL : UpdateResult.PREV_NOT_NULL;
+        }
+
         // Suppose transactions on previous coordinator versions are done.
-        if (checkActive && mvccVer.coordinatorVersion() == rowIo.getMvccCoordinatorVersion(pageAddr, idx)) {
+        if (checkActive && crdVer == rowCrdVer) {
             long rowMvccCntr = rowIo.getMvccCounter(pageAddr, idx);
 
             if (mvccVer.activeTransactions().contains(rowMvccCntr)) {
@@ -123,15 +167,12 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
             }
         }
 
-        if (hasPrev == null)
-            hasPrev = Boolean.TRUE; // TODO IGNITE-3478 support removes.
-
         if (!txActive) {
-            assert Long.compare(mvccVer.coordinatorVersion(), rowIo.getMvccCoordinatorVersion(pageAddr, idx)) >= 0;
+            assert Long.compare(crdVer, rowCrdVer) >= 0;
 
             int cmp;
 
-            if (mvccVer.coordinatorVersion() == rowIo.getMvccCoordinatorVersion(pageAddr, idx))
+            if (crdVer == rowCrdVer)
                 cmp = Long.compare(mvccVer.cleanupVersion(), rowIo.getMvccCounter(pageAddr, idx));
             else
                 cmp = 1;
@@ -141,10 +182,10 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
                 if (canCleanup) {
                     CacheSearchRow row = io.getLookupRow(tree, pageAddr, idx);
 
-                    assert row.link() != 0 && row.mvccCoordinatorVersion() > 0 : row;
+                    assert row.link() != 0 && row.mvccCounter() != CacheCoordinatorsProcessor.COUNTER_NA : row;
 
                     // Should not be possible to cleanup active tx.
-                    assert row.mvccCoordinatorVersion() != mvccVer.coordinatorVersion()
+                    assert rowCrdVer != crdVer
                         || !mvccVer.activeTransactions().contains(row.mvccCounter());
 
                     if (cleanupRows == null)
@@ -160,6 +201,13 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         return true;
     }
 
+    /**
+     * @return Coordinator version without flags.
+     */
+    protected long unmaskedCoordinatorVersion() {
+        return mvccVer.coordinatorVersion();
+    }
+
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return mvccVer.coordinatorVersion();
@@ -173,5 +221,17 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccUpdateRow.class, this, "super", super.toString());
+    }
+
+    /**
+     *
+     */
+    public enum UpdateResult {
+        /** */
+        VERSION_FOUND,
+        /** */
+        PREV_NULL,
+        /** */
+        PREV_NOT_NULL
     }
 }

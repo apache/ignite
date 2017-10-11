@@ -82,6 +82,8 @@ public class RowStore {
 
         try {
             freeList.insertDataRow(row);
+
+            assert row.link() != 0L;
         }
         finally {
             ctx.database().checkpointReadUnlock();

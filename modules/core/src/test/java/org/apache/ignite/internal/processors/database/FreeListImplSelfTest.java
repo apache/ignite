@@ -435,6 +435,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public long mvccCounter() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean removed() {
+            return false;
+        }
     }
 
     /**
