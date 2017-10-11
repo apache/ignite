@@ -42,7 +42,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
      */
     @Override protected void setUp() throws Exception {
         Log4J2Logger.cleanup();
-        System.out.println("**************** setUp ***************");
+
     }
 
     /**
@@ -61,18 +61,13 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
         String consoleErr = "Empty";
         String testMsg = "******* Hello Tester! ******* ";
 
-        System.out.println("**************** Sample output to old out ***************");
-
         try {
-            PrintStream o = new PrintStream(testOut);
-            System.setOut(o);
+            System.setOut(new PrintStream(testOut));
             System.setErr(new PrintStream(testErr));
 
-            System.out.println("**************** Sample output to new out ***************");
 
             System.setProperty("IGNITE_QUIET", "false");
 
-            //assert (o == System.out);
 
             try (Ignite ignite = G.start(getConfiguration("verboseLogGrid", LOG_PATH_VERBOSE_TEST))) {
 
@@ -81,10 +76,8 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
                 ignite.log().info(testMsg + Level.INFO);
                 ignite.log().debug(testMsg + Level.DEBUG);
                 ignite.log().trace(testMsg + Level.TRACE);
-                Thread.sleep(1000);
             }
 
-            //assert (o == System.out);
         }
         finally {
             System.setProperty("IGNITE_QUIET", "true");
