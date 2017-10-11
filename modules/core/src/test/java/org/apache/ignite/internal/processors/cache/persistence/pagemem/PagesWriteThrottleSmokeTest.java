@@ -82,10 +82,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
-            .setCheckpointingFrequency(20_000)
-            .setCheckpointingPageBufferSize(200 * 1000 * 1000)
+            .setCheckpointFrequency(20_000)
+            .setCheckpointPageBufferSize(200 * 1000 * 1000)
             .setWriteThrottlingEnabled(true)
-            .setCheckpointingThreads(1)
+            .setCheckpointThreads(1)
             .setFileIOFactory(new SlowCheckpointFileIOFactory());
 
         cfg.setDataStorageConfiguration(dbCfg);

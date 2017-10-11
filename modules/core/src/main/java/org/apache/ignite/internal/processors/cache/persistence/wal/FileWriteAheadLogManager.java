@@ -246,7 +246,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         maxWalSegmentSize = dsCfg.getWalSegmentSize();
         mode = dsCfg.getWalMode();
-        tlbSize = dsCfg.getWalTlbSize();
+        tlbSize = dsCfg.getWalThreadLocalBufferSize();
         flushFreq = dsCfg.getWalFlushFrequency();
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();

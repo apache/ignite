@@ -91,8 +91,8 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(1000 * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointingThreads(1)
-            .setCheckpointingFrequency(1);
+            .setCheckpointThreads(1)
+            .setCheckpointFrequency(1);
 
         cfg.setDataStorageConfiguration(memCfg);
 

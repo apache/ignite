@@ -89,7 +89,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final String DFLT_DATA_REG_DEFAULT_NAME = "default";
 
     /** */
-    public static final int DFLT_CHECKPOINTING_FREQ = 180000;
+    public static final int DFLT_CHECKPOINT_FREQ = 180000;
 
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
@@ -103,8 +103,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Default length of interval over which rate-based metric is calculated. */
     public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
 
-    /** Default number of checkpointing threads. */
-    public static final int DFLT_CHECKPOINTING_THREADS = 4;
+    /** Default number of checkpoint threads. */
+    public static final int DFLT_CHECKPOINT_THREADS = 4;
 
     /** Default checkpoint write order. */
     public static final CheckpointWriteOrder DFLT_CHECKPOINT_WRITE_ORDER = CheckpointWriteOrder.SEQUENTIAL;
@@ -166,17 +166,17 @@ public class DataStorageConfiguration implements Serializable {
     /** Directory where index and partition files are stored. */
     private String storagePath;
 
-    /** Checkpointing frequency. */
-    private long checkpointingFreq = DFLT_CHECKPOINTING_FREQ;
+    /** Checkpoint frequency. */
+    private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
 
     /** Lock wait time, in milliseconds. */
     private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private long checkpointingPageBufSize;
+    private long checkpointPageBufSize;
 
     /** */
-    private int checkpointingThreads = DFLT_CHECKPOINTING_THREADS;
+    private int checkpointThreads = DFLT_CHECKPOINT_THREADS;
 
     /** Checkpoint write order. */
     private CheckpointWriteOrder checkpointWriteOrder = DFLT_CHECKPOINT_WRITE_ORDER;
@@ -403,70 +403,70 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets checkpointing frequency.
+     * Gets checkpoint frequency.
      *
-     * @return checkpointing frequency in milliseconds.
+     * @return checkpoint frequency in milliseconds.
      */
-    public long getCheckpointingFrequency() {
-        return checkpointingFreq <= 0 ? DFLT_CHECKPOINTING_FREQ : checkpointingFreq;
+    public long getCheckpointFrequency() {
+        return checkpointFreq <= 0 ? DFLT_CHECKPOINT_FREQ : checkpointFreq;
     }
 
     /**
-     * Sets the checkpointing frequency which is a minimal interval when the dirty pages will be written
-     * to the Persistent Store. If the rate is high, checkpointing will be triggered more frequently.
+     * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
+     * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
      *
-     * @param checkpointingFreq checkpointing frequency in milliseconds.
+     * @param checkpointFreq checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setCheckpointingFrequency(long checkpointingFreq) {
-        this.checkpointingFreq = checkpointingFreq;
+    public DataStorageConfiguration setCheckpointFrequency(long checkpointFreq) {
+        this.checkpointFreq = checkpointFreq;
 
         return this;
     }
 
     /**
-     * Gets amount of memory allocated for a checkpointing temporary buffer.
+     * Gets amount of memory allocated for a checkpoint temporary buffer.
      *
-     * @return Checkpointing page buffer size in bytes or {@code 0} for Ignite
+     * @return Checkpoint page buffer size in bytes or {@code 0} for Ignite
      *      to choose the buffer size automatically.
      */
-    public long getCheckpointingPageBufferSize() {
-        return checkpointingPageBufSize;
+    public long getCheckpointPageBufferSize() {
+        return checkpointPageBufSize;
     }
 
     /**
-     * Sets amount of memory allocated for the checkpointing temporary buffer. The buffer is used to create temporary
-     * copies of pages that are being written to disk and being update in parallel while the checkpointing is in
+     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
+     * copies of pages that are being written to disk and being update in parallel while the checkpoint is in
      * progress.
      *
-     * @param checkpointingPageBufSize Checkpointing page buffer size in bytes or {@code 0} for Ignite to
+     * @param checkpointPageBufSize Checkpoint page buffer size in bytes or {@code 0} for Ignite to
      *      choose the buffer size automatically.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setCheckpointingPageBufferSize(long checkpointingPageBufSize) {
-        this.checkpointingPageBufSize = checkpointingPageBufSize;
+    public DataStorageConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
+        this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
     }
 
 
     /**
-     * Gets a number of threads to use for the checkpointing purposes.
+     * Gets a number of threads to use for the checkpoint purposes.
      *
-     * @return Number of checkpointing threads.
+     * @return Number of checkpoint threads.
      */
-    public int getCheckpointingThreads() {
-        return checkpointingThreads;
+    public int getCheckpointThreads() {
+        return checkpointThreads;
     }
 
     /**
-     * Sets a number of threads to use for the checkpointing purposes.
+     * Sets a number of threads to use for the checkpoint purposes.
      *
-     * @param checkpointingThreads Number of checkpointing threads. Four threads are used by default.
+     * @param checkpointThreads Number of checkpoint threads. Four threads are used by default.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setCheckpointingThreads(int checkpointingThreads) {
-        this.checkpointingThreads = checkpointingThreads;
+    public DataStorageConfiguration setCheckpointThreads(int checkpointThreads) {
+        this.checkpointThreads = checkpointThreads;
 
         return this;
     }
@@ -709,14 +709,14 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return Thread local buffer size.
      */
-    public int getWalTlbSize() {
+    public int getWalThreadLocalBufferSize() {
         return walTlbSize <= 0 ? DFLT_TLB_SIZE : walTlbSize;
     }
 
     /**
-     * @param walTlbSize Tlb size.
+     * @param walTlbSize Thread local buffer size.
      */
-    public DataStorageConfiguration setWalTlbSize(int walTlbSize) {
+    public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
 
         return this;

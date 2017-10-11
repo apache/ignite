@@ -133,7 +133,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
         memCfg.setWalHistorySize(1);
-        memCfg.setCheckpointingFrequency(CHECKPOINT_FREQUENCY);
+        memCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
         memCfg.setPageSize(PAGE_SIZE * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);

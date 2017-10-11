@@ -2848,16 +2848,16 @@ public class IgnitionEx {
         if (persistenceEnabled) {
             PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
 
-            dsCfg.setCheckpointingFrequency(psCfg.getCheckpointingFrequency());
-            dsCfg.setCheckpointingPageBufferSize(psCfg.getCheckpointingPageBufferSize());
-            dsCfg.setCheckpointingThreads(psCfg.getCheckpointingThreads());
+            dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
+            dsCfg.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+            dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
             dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
             dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
             dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
             dsCfg.setStoragePath(psCfg.getPersistentStorePath());
             dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
             dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
-            dsCfg.setWalTlbSize(psCfg.getTlbSize());
+            dsCfg.setWalThreadLocalBufferSize(psCfg.getTlbSize());
             dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
             dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
             dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());

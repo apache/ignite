@@ -58,7 +58,7 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
-        pCfg.setCheckpointingFrequency(1000);
+        pCfg.setCheckpointFrequency(1000);
 
         cfg.setDataStorageConfiguration(pCfg);
 
