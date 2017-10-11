@@ -36,7 +36,7 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
     private static final int SIZE = 1 << 8;
 
     /** */
-    private static AtomicBoolean startLogged = new AtomicBoolean(false);
+    private static final AtomicBoolean startLogged = new AtomicBoolean(false);
 
     /** */
     private double[][] dataSquare;
