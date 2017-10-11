@@ -65,7 +65,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
         try {
             PrintStream o = new PrintStream(testOut);
-            //System.setOut(o);
+            System.setOut(o);
             System.setErr(new PrintStream(testErr));
 
             System.out.println("**************** Sample output to new out ***************");
