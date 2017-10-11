@@ -457,10 +457,10 @@ public class GridSqlQueryParser {
     private static final String PARAM_ATOMICITY = "ATOMICITY";
 
     /** */
-    private static final String PARAM_CACHE_GROUP = "CACHEGROUP";
+    private static final String PARAM_CACHE_GROUP = "CACHE_GROUP";
 
     /** */
-    private static final String PARAM_AFFINITY_KEY = "AFFINITYKEY";
+    private static final String PARAM_AFFINITY_KEY = "AFFINITY_KEY";
 
     /** */
     private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";

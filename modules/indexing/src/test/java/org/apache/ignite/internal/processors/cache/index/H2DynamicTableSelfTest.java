@@ -478,7 +478,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"" +
-            (F.isEmpty(cacheGrp) ? "" : ",\"cacheGroup=" + cacheGrp + '"');
+            (F.isEmpty(cacheGrp) ? "" : ",\"cache_group=" + cacheGrp + '"');
 
         for (String p : additionalParams)
             sql += ",\"" + p + "\"";
@@ -573,7 +573,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to omit mandatory value of CACHEGROUP parameter yields an error.
      */
     public void testEmptyCacheGroup() {
-        assertCreateTableWithParamsThrows("cachegroup=", "Parameter value cannot be empty: CACHEGROUP");
+        assertCreateTableWithParamsThrows("cache_group=", "Parameter value cannot be empty: CACHE_GROUP");
     }
 
     /**
@@ -808,7 +808,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testAffinityKey() throws Exception {
         execute("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey='name'\"");
+            "\"affinity_key='name'\"");
 
         assertAffinityCacheConfiguration("City", "name");
 
@@ -821,7 +821,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // We need unique name for this table to avoid conflicts with existing binary metadata.
         execute("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "wrap_key,wrap_value,\"template=cache,affinityKey='city'\"");
+            "wrap_key,wrap_value,\"template=cache,affinity_key='city'\"");
 
         assertAffinityCacheConfiguration("Person2", "city");
 
@@ -867,22 +867,22 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyCaseSensitivity() {
         execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey='name'\"");
+            "\"affinity_key='name'\"");
 
         assertAffinityCacheConfiguration("A", "name");
 
         execute("CREATE TABLE \"B\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=name\"");
+            "\"affinity_key=name\"");
 
         assertAffinityCacheConfiguration("B", "NAME");
 
         execute("CREATE TABLE \"C\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=NamE\"");
+            "\"affinity_key=NamE\"");
 
         assertAffinityCacheConfiguration("C", "NAME");
 
         execute("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=NAME\"");
+            "\"affinity_key=NAME\"");
 
         assertAffinityCacheConfiguration("D", "name");
 
@@ -890,7 +890,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-                    "\"affinityKey='Name'\"");
+                    "\"affinity_key='Name'\"");
 
                 return null;
             }
@@ -901,14 +901,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
-                    "\"Name\")) WITH \"affinityKey=name\"");
+                    "\"Name\")) WITH \"affinity_key=name\"");
 
                 return null;
             }
         }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: name");
 
         execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
-            "\"Name\")) WITH wrap_key,wrap_value,\"affinityKey='Name'\"");
+            "\"Name\")) WITH wrap_key,wrap_value,\"affinity_key='Name'\"");
 
         assertAffinityCacheConfiguration("E", "Name");
 
@@ -931,7 +931,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=code\"");
+                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinity_key=code\"");
 
                 return null;
             }
@@ -946,7 +946,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=missing\"");
+                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinity_key=missing\"");
 
                 return null;
             }

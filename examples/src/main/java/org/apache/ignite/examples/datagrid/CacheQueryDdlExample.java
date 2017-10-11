@@ -62,7 +62,7 @@ public class CacheQueryDdlExample {
                 // Create table based on PARTITIONED template with one backup.
                 cache.query(new SqlFieldsQuery(
                     "CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id)) " +
-                    "WITH \"backups=1, affinityKey=city_id\"")).getAll();
+                    "WITH \"backups=1, affinity_key=city_id\"")).getAll();
 
                 // Create an index.
                 cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll();
