@@ -65,13 +65,20 @@ public final class UpdatePlan {
     /** Arguments for fast UPDATE or DELETE. */
     public final FastUpdateArguments fastUpdateArgs;
 
-    /** Additional info for distributed update. */
-    public final DistributedPlanInfo distributed;
+    /** Whether distributed update is possible. */
+    public final boolean distributed;
+
+    /** Whether update only uses replicated caches. */
+    public final boolean isReplicatedOnly;
+
+    /** Cache identifiers. */
+    public List<Integer> cacheIds;
 
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, FastUpdateArguments fastUpdateArgs, DistributedPlanInfo distributed) {
+        int rowsNum, FastUpdateArguments fastUpdateArgs, boolean distributed, boolean isReplicatedOnly,
+        List<Integer> cacheIds) {
         this.colNames = colNames;
         this.colTypes = colTypes;
         this.rowsNum = rowsNum;
@@ -88,83 +95,51 @@ public final class UpdatePlan {
         this.isLocSubqry = isLocSubqry;
         this.fastUpdateArgs = fastUpdateArgs;
         this.distributed = distributed;
+        this.isReplicatedOnly = isReplicatedOnly;
+        this.cacheIds = cacheIds;
     }
 
     /** */
     public static UpdatePlan forMerge(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DistributedPlanInfo distributed) {
+        int rowsNum, boolean distributed, boolean isReplicatedOnly, List<Integer> cacheIds) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.MERGE, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx, valColIdx,
-            selectQry, isLocSubqry, rowsNum, null, distributed);
+            selectQry, isLocSubqry, rowsNum, null, distributed, isReplicatedOnly, cacheIds);
     }
 
     /** */
     public static UpdatePlan forInsert(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
         KeyValueSupplier valSupplier, int keyColIdx, int valColIdx, String selectQry, boolean isLocSubqry,
-        int rowsNum, DistributedPlanInfo distributed) {
+        int rowsNum, boolean distributed, boolean isReplicatedOnly, List<Integer> cacheIds) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.INSERT, tbl, colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-            valColIdx, selectQry, isLocSubqry, rowsNum, null, distributed);
+            valColIdx, selectQry, isLocSubqry, rowsNum, null, distributed, isReplicatedOnly, cacheIds);
     }
 
     /** */
     public static UpdatePlan forUpdate(GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier valSupplier,
-        int valColIdx, String selectQry, DistributedPlanInfo distributed) {
+        int valColIdx, String selectQry, boolean distributed, boolean isReplicatedOnly, List<Integer> cacheIds) {
         assert !F.isEmpty(colNames);
 
         return new UpdatePlan(UpdateMode.UPDATE, tbl, colNames, colTypes, null, valSupplier, -1, valColIdx, selectQry,
-            false, 0, null, distributed);
+            false, 0, null, distributed, isReplicatedOnly, cacheIds);
     }
 
     /** */
-    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry, DistributedPlanInfo distributed) {
+    public static UpdatePlan forDelete(GridH2Table tbl, String selectQry, boolean distributed, boolean isReplicatedOnly,
+        List<Integer> cacheIds) {
         return new UpdatePlan(UpdateMode.DELETE, tbl, null, null, null, null, -1, -1, selectQry, false, 0, null,
-            distributed);
+            distributed, isReplicatedOnly, cacheIds);
     }
 
     /** */
     public static UpdatePlan forFastUpdate(UpdateMode mode, GridH2Table tbl, FastUpdateArguments fastUpdateArgs) {
         assert mode == UpdateMode.UPDATE || mode == UpdateMode.DELETE;
 
-        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs, null);
-    }
-
-    /**
-     * Additional information about distributed update plan.
-     */
-    public final static class DistributedPlanInfo {
-        /** */
-        private final boolean replicatedOnly;
-
-        /** */
-        private final List<Integer> cacheIds;
-
-        /**
-         * Constructor.
-         *
-         * @param replicatedOnly Whether all caches are replicated.
-         * @param cacheIds List of cache identifiers.
-         */
-        DistributedPlanInfo(boolean replicatedOnly, List<Integer> cacheIds) {
-            this.replicatedOnly = replicatedOnly;
-            this.cacheIds = cacheIds;
-        }
-
-        /**
-         * @return {@code true} in case all caches are replicated.
-         */
-        public boolean isReplicatedOnly() {
-            return replicatedOnly;
-        }
-
-        /**
-         * @return cache identifiers.
-         */
-        public List<Integer> getCacheIds() {
-            return cacheIds;
-        }
+        return new UpdatePlan(mode, tbl, null, null, null, null, -1, -1, null, false, 0, fastUpdateArgs, false,
+            false, null);
     }
 }

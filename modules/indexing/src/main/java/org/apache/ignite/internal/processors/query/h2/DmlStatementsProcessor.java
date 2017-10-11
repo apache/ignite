@@ -374,7 +374,7 @@ public class DmlStatementsProcessor {
             return doFastUpdate(plan, fieldsQry.getArgs());
         }
 
-        if (plan.distributed != null) {
+        if (plan.distributed) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
 
             // null is returned in case not all nodes support distributed DML.
@@ -530,13 +530,10 @@ public class DmlStatementsProcessor {
      */
     private UpdateResult doDistributedUpdate(String schemaName, SqlFieldsQuery fieldsQry, UpdatePlan plan,
         GridQueryCancel cancel) throws IgniteCheckedException {
-        assert plan.distributed != null;
-
         if (cancel == null)
             cancel = new GridQueryCancel();
 
-        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.distributed.getCacheIds(),
-            plan.distributed.isReplicatedOnly(), cancel);
+        return idx.runDistributedUpdate(schemaName, fieldsQry, plan.cacheIds, plan.isReplicatedOnly, cancel);
     }
 
     /**

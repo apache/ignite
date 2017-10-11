@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.Prepared;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
@@ -212,15 +213,18 @@ public final class UpdatePlanBuilder {
 
         String selectSql = sel.getSQL();
 
-        UpdatePlan.DistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
+        IgniteBiTuple<Boolean, List<Integer>> distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
             checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
+
+        boolean isReplicatedOnly = distributed != null ? distributed.get1() : false;
+        List<Integer> cacheIds = distributed != null ? distributed.get2() : null;
 
         if (stmt instanceof GridSqlMerge)
             return UpdatePlan.forMerge(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
+                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed != null, isReplicatedOnly, cacheIds);
         else
             return UpdatePlan.forInsert(tbl.dataTable(), colNames, colTypes, keySupplier, valSupplier, keyColIdx,
-                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed);
+                valColIdx, selectSql, !isTwoStepSubqry, rowsNum, distributed != null, isReplicatedOnly, cacheIds);
     }
 
     /**
@@ -317,21 +321,24 @@ public final class UpdatePlanBuilder {
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                IgniteBiTuple<Boolean, List<Integer>> distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
                 return UpdatePlan.forUpdate(gridTbl, colNames, colTypes, newValSupplier, valColIdx, selectSql,
-                    distributed);
+                    distributed != null, distributed != null ? distributed.get1() : false,
+                    distributed != null ? distributed.get2() : null);
             }
             else {
                 sel = DmlAstUtils.selectForDelete((GridSqlDelete) stmt, errKeysPos);
 
                 String selectSql = sel.getSQL();
 
-                UpdatePlan.DistributedPlanInfo distributed = F.isEmpty(selectSql) ? null :
+                IgniteBiTuple<Boolean, List<Integer>> distributed = F.isEmpty(selectSql) ? null :
                     checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName());
 
-                return UpdatePlan.forDelete(gridTbl, selectSql, distributed);
+                return UpdatePlan.forDelete(gridTbl, selectSql, distributed != null,
+                    distributed != null ? distributed.get1() : false,
+                    distributed != null ? distributed.get2() : null);
             }
         }
     }
@@ -542,10 +549,10 @@ public final class UpdatePlanBuilder {
      * @param loc Local query flag.
      * @param selectQry Derived select query.
      * @param cacheName Cache name.
-     * @return distributed update plan info, or {@code null} if cannot be distributed.
+     * @return Tuple containing additional info for distributed update or {@code null} if cannot be distributed.
      * @throws IgniteCheckedException if failed.
      */
-    private static UpdatePlan.DistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
+    private static IgniteBiTuple<Boolean, List<Integer>> checkPlanCanBeDistributed(IgniteH2Indexing idx,
         Connection conn, SqlFieldsQueryEx fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
@@ -569,7 +576,7 @@ public final class UpdatePlanBuilder {
                 boolean distributed = qry.skipMergeTable() &&  qry.mapQueries().size() == 1 &&
                     !qry.mapQueries().get(0).hasSubQueries();
 
-                return distributed ? new UpdatePlan.DistributedPlanInfo(qry.isReplicatedOnly(),
+                return distributed ? new IgniteBiTuple<>(qry.isReplicatedOnly(),
                     idx.collectCacheIds(CU.cacheId(cacheName), qry)): null;
             }
         }
