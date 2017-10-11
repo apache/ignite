@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,12 +19,14 @@ namespace Apache.Ignite.Examples.Client
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Datagrid;
 
     /// <summary>
-    /// Demonstrates Ignite.NET "thin" client cache operations.
+    /// Demonstrates Ignite.NET "thin" client cache queries.
     /// <para />
     /// 1) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
@@ -32,13 +34,10 @@ namespace Apache.Ignite.Examples.Client
     /// <para />
     /// This example must be run with standalone Apache Ignite node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
-    /// <para />
-    /// This example can also be run with Java-only nodes started with ignite.bat/ignite.sh,
-    /// cache named "default-cache" must be started.
     /// </summary>
-    public static class PutGetClientExample
+    public class QueryClientExample
     {
         /// <summary> Cache name. </summary>
         private const string CacheName = "default-cache";
@@ -58,7 +57,11 @@ namespace Apache.Ignite.Examples.Client
 
                 ICacheClient<int, Organization> cache = igniteClient.GetCache<int, Organization>(CacheName);
 
-                PutGet(cache);
+                // Populate cache with sample data entries.
+                PopulateCache(cache);
+
+                // Run scan query example.
+                ScanQueryExample(cache);
             }
 
             Console.WriteLine();
@@ -67,27 +70,41 @@ namespace Apache.Ignite.Examples.Client
         }
 
         /// <summary>
-        /// Execute individual Put and Get.
+        /// Queries organizations of specified type.
         /// </summary>
-        /// <param name="cache">Cache instance.</param>
-        private static void PutGet(ICacheClient<int, Organization> cache)
+        /// <param name="cache">Cache.</param>
+        private static void ScanQueryExample(ICacheClient<int, Organization> cache)
         {
-            // Create new Organization to store in cache.
-            Organization org = new Organization(
-                "Microsoft",
-                new Address("1096 Eddy Street, San Francisco, CA", 94109),
-                OrganizationType.Private,
-                DateTime.Now
-            );
-
-            // Put created data entry to cache.
-            cache.Put(1, org);
-
-            // Get recently created employee as a strongly-typed fully de-serialized instance.
-            Organization orgFromCache = cache.Get(1);
+            var qry = cache.Query(new ScanQuery<int, Organization>(new DelegateScanQueryFilter<int, Organization>(
+                    cacheEntry => cacheEntry.Value.Type == OrganizationType.Private)));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Retrieved organization instance from cache: " + orgFromCache);
+            Console.WriteLine(">>> Private organizations (scan):");
+
+            foreach (var entry in qry)
+            {
+                Console.WriteLine(">>>    " + entry.Value);
+            }
+        }
+
+        /// <summary>
+        /// Populate cache with data for this example.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        private static void PopulateCache(ICacheClient<int, Organization> cache)
+        {
+            cache.RemoveAll();
+
+            cache.Put(1, new Organization(
+                "Apache",
+                new Address("1065 East Hillsdale Blvd, Foster City, CA", 94404),
+                OrganizationType.NonProfit,
+                DateTime.Now));
+
+            cache.Put(2, new Organization("Microsoft",
+                new Address("1096 Eddy Street, San Francisco, CA", 94109),
+                OrganizationType.Private,
+                DateTime.Now));
         }
     }
 }

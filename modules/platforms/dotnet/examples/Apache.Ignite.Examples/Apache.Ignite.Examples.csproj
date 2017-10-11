@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Client\PutGetClientExample.cs" />
+    <Compile Include="Client\QueryClientExample.cs" />
     <Compile Include="Compute\ClosureExample.cs" />
     <Compile Include="Compute\TaskExample.cs" />
     <Compile Include="Compute\PeerAssemblyLoadingExample.cs" />

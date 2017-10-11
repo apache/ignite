@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Type[] RemoteOnlyExamples =
         {
             typeof(PeerAssemblyLoadingExample), typeof(MessagingExample), typeof(NearCacheExample),
-            typeof(PutGetClientExample)
+            typeof(PutGetClientExample), typeof(QueryClientExample)
         };
 
         /** */
