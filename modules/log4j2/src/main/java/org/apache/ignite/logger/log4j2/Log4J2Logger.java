@@ -21,6 +21,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,6 +43,7 @@ import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.appender.RollingFileAppender;
 import org.apache.logging.log4j.core.appender.routing.RoutingAppender;
 import org.apache.logging.log4j.core.config.AppenderControl;
+import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.layout.PatternLayout;
@@ -354,10 +356,9 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         System.out.println("createConsoleLogger entry");
 
-        Logger rootLogger = this.impl;
-        LoggerContext ctx = rootLogger.getContext();
-
-        Configuration cfg = ctx.getConfiguration();
+        // from http://logging.apache.org/log4j/2.x/manual/customconfig.html
+        final LoggerContext ctx = this.impl.getContext();
+        final Configuration cfg = ctx.getConfiguration();
 
         PatternLayout.Builder builder = PatternLayout.newBuilder()
             .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
@@ -367,42 +368,23 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         PatternLayout layout = builder.build();
 
-        //LevelRangeFilter filter = LevelRangeFilter.createFilter(Level.TRACE, Level.OFF, null, null);
-
         ConsoleAppender.Builder consoleAppenderBuilder = ConsoleAppender.newBuilder()
             .withName(CONSOLE_APPENDER)
             .withLayout(layout);
-            //.withFilter(filter);
 
-        ConsoleAppender consoleApp = consoleAppenderBuilder.build();
-
+        final ConsoleAppender consoleApp = consoleAppenderBuilder.build();
         consoleApp.start();
 
-//        AppenderRef ref = AppenderRef.createAppenderRef(CONSOLE_APPENDER, Level.TRACE, null);
-//        AppenderRef[] refs = {ref};
-//
-//        LoggerConfig logCfg = LoggerConfig.createLogger(false, Level.INFO, LogManager.ROOT_LOGGER_NAME, "", refs, null, cfg, null);
-//
-//        logCfg.addAppender(consoleApp, null, null);
-        //cfg.addAppender(consoleApp);
+        cfg.addAppender(consoleApp);
         cfg.getRootLogger().addAppender(consoleApp, Level.TRACE, null);
-//
-//        cfg.addLogger(LogManager.ROOT_LOGGER_NAME, logCfg);
-//
-//        ctx.updateLoggers(cfg);
 
-        //rootLogger.addAppender(consoleApp);
         ctx.updateLoggers(cfg);
 
+        Configuration testCfg = ctx.getConfiguration();
 
-        final Map<String, Appender> appenders = rootLogger.getAppenders();
-
-        cfg = ctx.getConfiguration();
-
-        //return (Logger)ctx.getLogger(LogManager.ROOT_LOGGER_NAME);
         System.out.println("createConsoleLogger exit");
 
-        return rootLogger;
+        return ctx.getRootLogger();
     }
 
     /** {@inheritDoc} */

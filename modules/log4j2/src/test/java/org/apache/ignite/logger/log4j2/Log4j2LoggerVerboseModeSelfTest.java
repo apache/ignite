@@ -65,7 +65,7 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
         try {
             PrintStream o = new PrintStream(testOut);
-            System.setOut(o);
+            //System.setOut(o);
             System.setErr(new PrintStream(testErr));
 
             System.out.println("**************** Sample output to new out ***************");
@@ -136,9 +136,12 @@ public class Log4j2LoggerVerboseModeSelfTest extends TestCase {
 
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_VERBOSE_TEST);
 
+        Log4J2Logger logger = new Log4J2Logger(xml);
+        Thread.sleep(1000);
+
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)
-            .setGridLogger(new Log4J2Logger(xml))
+            .setGridLogger(logger)
             .setConnectorConfiguration(null)
             .setDiscoverySpi(disco);
     }
