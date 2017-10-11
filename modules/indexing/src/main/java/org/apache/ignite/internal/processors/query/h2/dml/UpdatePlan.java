@@ -72,7 +72,7 @@ public final class UpdatePlan {
     public final boolean isReplicatedOnly;
 
     /** Cache identifiers. */
-    public List<Integer> cacheIds;
+    public final List<Integer> cacheIds;
 
     /** */
     private UpdatePlan(UpdateMode mode, GridH2Table tbl, String[] colNames, int[] colTypes, KeyValueSupplier keySupplier,
