@@ -17,7 +17,7 @@
 #
 
 #
-# Ignite database launcher.
+# Ignite database connector.
 #
 
 SELF_NAME=$(basename $0)
