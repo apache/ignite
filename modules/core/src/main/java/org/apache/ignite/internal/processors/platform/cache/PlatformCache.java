@@ -930,7 +930,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {

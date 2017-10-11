@@ -17,33 +17,30 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+
+import javax.cache.Cache;
 
 /**
- * Query cursor next page request.
- */
-public class ClientCacheScanQueryNextPageRequest extends ClientRequest {
-    /** Cursor id. */
-    private final long cursorId;
-
+ * Query cursor holder.
+  */
+class ClientCacheEntryQueryCursor extends ClientCacheQueryCursor<Cache.Entry> {
     /**
      * Ctor.
      *
-     * @param reader Reader.
+     * @param cursor   Cursor.
+     * @param pageSize Page size.
+     * @param ctx      Context.
      */
-    public ClientCacheScanQueryNextPageRequest(BinaryRawReader reader) {
-        super(reader);
-
-        cursorId = reader.readLong();
+    ClientCacheEntryQueryCursor(QueryCursor<Cache.Entry> cursor, int pageSize, ClientConnectionContext ctx) {
+        super(cursor, pageSize, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ClientCacheScanQueryCursor cur = ctx.resources().get(cursorId);
-
-        return new ClientCacheScanQueryNextPageResponse(requestId(), cur);
+    @Override void writeEntry(BinaryRawWriterEx writer, Cache.Entry e) {
+        writer.writeObjectDetached(e.getKey());
+        writer.writeObjectDetached(e.getValue());
     }
 }

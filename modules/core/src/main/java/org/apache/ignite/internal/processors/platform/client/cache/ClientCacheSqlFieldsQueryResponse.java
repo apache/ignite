@@ -17,28 +17,37 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+
+import java.util.List;
 
 /**
  * Scan query response.
  */
-class ClientCacheScanQueryResponse extends ClientResponse {
+class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
     /** Cursor. */
-    private final ClientCacheScanQueryCursor cursor;
+    private final ClientCacheQueryCursor cursor;
+
+    /** Fields cursor. */
+    private final FieldsQueryCursor<List> fieldsCursor;
 
     /**
      * Ctor.
-     *
-     * @param requestId Request id.
-     * @param cursor Cursor.
+     *  @param requestId Request id.
+     * @param cursor Client cursor.
+     * @param fieldsCursor Fields cursor.
      */
-    ClientCacheScanQueryResponse(long requestId, ClientCacheScanQueryCursor cursor) {
+    ClientCacheSqlFieldsQueryResponse(long requestId, ClientCacheQueryCursor cursor,
+                                      FieldsQueryCursor<List> fieldsCursor) {
         super(requestId);
 
         assert cursor != null;
+        assert fieldsCursor != null;
 
         this.cursor = cursor;
+        this.fieldsCursor = fieldsCursor;
     }
 
     /** {@inheritDoc} */
@@ -46,6 +55,13 @@ class ClientCacheScanQueryResponse extends ClientResponse {
         super.encode(writer);
 
         writer.writeLong(cursor.id());
+
+        int cnt = fieldsCursor.getColumnsCount();
+        writer.writeInt(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            writer.writeString(fieldsCursor.getFieldName(i));
+        }
 
         cursor.writePage(writer);
     }
