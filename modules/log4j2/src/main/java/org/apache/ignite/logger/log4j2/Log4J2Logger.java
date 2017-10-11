@@ -378,7 +378,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         System.setProperty(NODE_ID, U.id8(nodeId));
 
         if (inited) {
-            LoggerContext ctx = impl.getContext();
+            final LoggerContext ctx = impl.getContext();
 
             inited = false;
 
