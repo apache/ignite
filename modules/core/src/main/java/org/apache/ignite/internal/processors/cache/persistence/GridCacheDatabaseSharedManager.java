@@ -926,6 +926,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
 
+            if (!gctx.persistenceEnabled())
+                continue;
+
             snapshotMgr.onCacheGroupStop(gctx);
 
             PageMemoryEx pageMem = (PageMemoryEx)gctx.dataRegion().pageMemory();
