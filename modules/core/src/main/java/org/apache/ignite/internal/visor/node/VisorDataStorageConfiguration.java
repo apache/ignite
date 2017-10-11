@@ -402,8 +402,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeLong(sysRegionMaxSize);
         out.writeInt(pageSize);
         out.writeInt(concLvl);
+        out.writeObject(dfltDataRegCfg);
         U.writeCollection(out, dataRegCfgs);
-
         U.writeString(out, persistenceStorePath);
         out.writeLong(checkpointingFreq);
         out.writeLong(lockWaitTime);
@@ -435,8 +435,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         sysRegionMaxSize = in.readLong();
         pageSize = in.readInt();
         concLvl = in.readInt();
+        dfltDataRegCfg = (VisorDataRegionConfiguration)in.readObject();
         dataRegCfgs = U.readList(in);
-
         persistenceStorePath = U.readString(in);
         checkpointingFreq = in.readLong();
         lockWaitTime = in.readLong();

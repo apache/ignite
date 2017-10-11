@@ -311,6 +311,39 @@ const DFLT_CLUSTER = {
             rateTimeInterval: 60000
         }
     },
+    dataStorageConfiguration: {
+        systemCacheInitialSize: 41943040,
+        systemCacheMaxSize: 104857600,
+        pageSize: 2048,
+        dataRegionConfigurations: {
+            name: 'default',
+            initialSize: 268435456,
+            pageEvictionMode: {
+                clsName: 'org.apache.ignite.configuration.DataPageEvictionMode',
+                value: 'DISABLED'
+            },
+            evictionThreshold: 0.9,
+            emptyPagesPoolSize: 100,
+            metricsEnabled: false,
+            subIntervals: 5,
+            rateTimeInterval: 60000
+        },
+        metricsEnabled: false,
+        alwaysWriteFullPages: false,
+        checkpointingFrequency: 180000,
+        checkpointingPageBufferSize: 268435456,
+        checkpointingThreads: 1,
+        walSegments: 10,
+        walSegmentSize: 67108864,
+        walHistorySize: 20,
+        walFlushFrequency: 2000,
+        walFsyncDelayNanos: 1000,
+        walRecordIteratorBufferSize: 67108864,
+        lockWaitTime: 10000,
+        rateTimeInterval: 60000,
+        tlbSize: 131072,
+        subIntervals: 5
+    },
     utilityCacheKeepAliveTime: 60000,
     hadoopConfiguration: {
         mapReducePlanner: {

@@ -19,7 +19,7 @@ include /app/helpers/jade/mixins
 -var form = 'dataStorageConfiguration'
 -var model = 'backupItem.dataStorageConfiguration'
 -var dfltRegionModel = model + '.defaultDataRegionConfiguration'
--var memoryPolicies = model + '.dataRegionConfigurations'
+-var dataRegionConfigurations = model + '.dataRegionConfigurations'
 
 .panel.panel-default(ng-show='$ctrl.available("2.3.0")' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
@@ -27,16 +27,16 @@ include /app/helpers/jade/mixins
         label Data storage configuration
         ignite-form-field-tooltip.tipLabel
             | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/durable-memory" target="_blank") More info]
+            | #[a(href="https://apacheignite.readme.io/docs/distributed-persistent-store" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
-                    +number-min-max('Page size:', model + '.pageSize', '"MemoryConfigurationPageSize"',
+                    +number-min-max('Page size:', model + '.pageSize', '"DataStorageConfigurationPageSize"',
                     'true', '2048', '1024', '16384', 'Every memory region is split on pages of fixed size')
                 .settings-row
-                    +number('Concurrency level:', model + '.concurrencyLevel', '"MemoryConfigurationConcurrencyLevel"',
+                    +number('Concurrency level:', model + '.concurrencyLevel', '"DataStorageConfigurationConcurrencyLevel"',
                     'true', 'availableProcessors', '2', 'The number of concurrent segments in Ignite internal page mapping tables')
                 .settings-row
                     +ignite-form-group
@@ -46,51 +46,93 @@ include /app/helpers/jade/mixins
                             | System region properties
                         .group-content
                             .details-row
-                                +number('Initial size:', model + '.systemRegionInitialSize', '"systemRegionInitialSize"',
+                                +number('Initial size:', model + '.systemRegionInitialSize', '"DataStorageSystemRegionInitialSize"',
                                 'true', '41943040', '10485760', 'Initial size of a data region reserved for system cache')
                             .details-row
-                                +number('Maximum size:', model + '.systemRegionMaxSize', '"systemRegionMaxSize"',
+                                +number('Maximum size:', model + '.systemRegionMaxSize', '"DataStorageSystemRegionMaxSize"',
                                 'true', '104857600', '10485760', 'Maximum data region size reserved for system cache')
                 .settings-row
                     +ignite-form-group
                         ignite-form-field-label
-                            | Memory policies
+                            | Data regions
                         ignite-form-group-tooltip
-                            | Memory policies configuration
+                            | Data region configurations
                         .group-content
                             .details-row
-                                +text('Default memory policy name:', model + '.defaultMemoryPolicyName', '"defaultMemoryPolicyName"',
-                                'false', 'default', 'Name of a memory policy to be used as default one')
-                            .details-row(ng-hide='(' + model + '.defaultMemoryPolicyName || "default") !== "default"')
-                                +number('Default memory policy size:', model + '.defaultMemoryPolicySize', '"defaultMemoryPolicySize"',
-                                'true', '0.8 * totalMemoryAvailable', '10485760',
-                                'Specify desired size of default memory policy without having to use more verbose syntax of MemoryPolicyConfiguration elements')
-                            .details-row(ng-init='memoryPoliciesTbl={type: "memoryPolicies", model: "memoryPolicies", focusId: "name", ui: "memory-policies-table"}')
+                                +ignite-form-group
+                                    ignite-form-field-label
+                                        | Default data region
+                                    ignite-form-group-tooltip
+                                        | Default data region properties
+                                    .group-content
+                                        .details-row
+                                            +text('Name:', dfltRegionModel + '.name', '"DfltRegionPolicyName" + $index', 'false', 'default', 'Default data region name')
+                                        .details-row
+                                            +number('Initial size:', dfltRegionModel + '.initialSize', '"DfltRegionPolicyInitialSize" + $index',
+                                            'true', '268435456', '10485760', 'Default data region initial size')
+                                        .details-row
+                                            +number('Maximum size:', dfltRegionModel + '.maxSize', '"DfltRegionPolicyMaxSize" + $index',
+                                            'true', '0.8 * totalMemoryAvailable', '10485760', 'Default data region maximum size')
+                                        .details-row
+                                            +text('Swap file path:', dfltRegionModel + '.swapFilePath', '"DfltRegionPolicySwapFilePath" + $index', 'false',
+                                            'Input swap file path', 'An optional path to a memory mapped file for default data region')
+                                        .details-row
+                                            +dropdown('Eviction mode:', dfltRegionModel + '.pageEvictionMode', '"DfltRegionPolicyPageEvictionMode"', 'true', 'DISABLED',
+                                            '[\
+                                                {value: "DISABLED", label: "DISABLED"},\
+                                                {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
+                                                {value: "RANDOM_2_LRU", label: "RANDOM_2_LRU"}\
+                                            ]',
+                                            'An algorithm for memory pages eviction\
+                                            <ul>\
+                                                <li>DISABLED - Eviction is disabled</li>\
+                                                <li>RANDOM_LRU - Once a memory region defined by a memory policy is configured, an off - heap array is allocated to track last usage timestamp for every individual data page</li>\
+                                                <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>\
+                                            </ul>')
+                                        .details-row
+                                            +number-min-max-step('Eviction threshold:', dfltRegionModel + '.evictionThreshold', '"DfltRegionPolicyEvictionThreshold" + $index',
+                                            'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
+                                        .details-row
+                                            +number('Empty pages pool size:', dfltRegionModel + '.emptyPagesPoolSize', '"DfltRegionPolicyEmptyPagesPoolSize" + $index',
+                                            'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for default data region')
+                                        .details-row
+                                            +number('Sub intervals:', dfltRegionModel + '.subIntervals', '"DfltRegionPolicySubIntervals" + $index',
+                                            'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
+                                        .details-row
+                                            +number('Rate time interval:', dfltRegionModel + '.rateTimeInterval', '"DfltRegionPolicyRateTimeInterval" + $index',
+                                            'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
+                                        .details-row
+                                            +checkbox('Metrics enabled', dfltRegionModel + '.metricsEnabled', '"DfltRegionPolicyMetricsEnabled" + $index',
+                                            'Whether memory metrics are enabled by default on node startup')
+                                        .details-row
+                                            +checkbox('Persistence enabled', dfltRegionModel + '.persistenceEnabled', '"DfltRegionPersistenceEnabled" + $index',
+                                            'Enable Ignite Native Persistence')
+                            .details-row(ng-init='dataRegionTbl={type: "dataRegions", model: "dataRegionConfigurations", focusId: "name", ui: "data-region-table"}')
                                 +ignite-form-group()
                                     ignite-form-field-label
                                         | Configured policies
                                     ignite-form-group-tooltip
                                         | List of configured policies
-                                    ignite-form-group-add(ng-click='tableNewItem(memoryPoliciesTbl)')
+                                    ignite-form-group-add(ng-click='tableNewItem(dataRegionTbl)')
                                         | Add Memory policy configuration
-                                    .group-content-empty(ng-if=`!(${memoryPolicies} && ${memoryPolicies}.length > 0)`)
+                                    .group-content-empty(ng-if=`!(${dataRegionConfigurations} && ${dataRegionConfigurations}.length > 0)`)
                                         | Not defined
-                                    .group-content(ng-show=`${memoryPolicies} && ${memoryPolicies}.length > 0` ng-repeat=`model in ${memoryPolicies} track by $index`)
+                                    .group-content(ng-show=`${dataRegionConfigurations} && ${dataRegionConfigurations}.length > 0` ng-repeat=`model in ${dataRegionConfigurations} track by $index`)
                                         hr(ng-if='$index != 0')
                                         .settings-row
-                                            +text-enabled-autofocus('Name:', 'model.name', '"MemoryPolicyName" + $index', 'true', 'false', 'default', 'Memory policy name')
-                                                +table-remove-button(memoryPolicies, 'Remove memory configuration')
+                                            +text-enabled-autofocus('Name:', 'model.name', '"DataRegionName" + $index', 'true', 'false', 'default', 'Memory policy name')
+                                                +table-remove-button(dataRegionConfigurations, 'Remove memory configuration')
                                         .settings-row
-                                            +number('Initial size:', 'model.initialSize', '"MemoryPolicyInitialSize" + $index',
+                                            +number('Initial size:', 'model.initialSize', '"DataRegionInitialSize" + $index',
                                             'true', '268435456', '10485760', 'Initial memory region size defined by this memory policy')
                                         .settings-row
-                                            +number('Maximum size:', 'model.maxSize', '"MemoryPolicyMaxSize" + $index',
+                                            +number('Maximum size:', 'model.maxSize', '"DataRegionMaxSize" + $index',
                                             'true', '0.8 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this memory policy')
                                         .settings-row
-                                            +text('Swap file path:', 'model.swapFilePath', '"MemoryPolicySwapFilePath" + $index', 'false',
+                                            +text('Swap file path:', 'model.swapFilePath', '"DataRegionSwapFilePath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for this memory policy')
                                         .settings-row
-                                            +dropdown('Eviction mode:', 'model.pageEvictionMode', '"MemoryPolicyPageEvictionMode"', 'true', 'DISABLED',
+                                            +dropdown('Eviction mode:', 'model.pageEvictionMode', '"DataRegionPageEvictionMode"', 'true', 'DISABLED',
                                             '[\
                                                 {value: "DISABLED", label: "DISABLED"},\
                                                 {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
@@ -103,65 +145,96 @@ include /app/helpers/jade/mixins
                                                 <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>\
                                             </ul>')
                                         .settings-row
-                                            +number-min-max-step('Eviction threshold:', 'model.evictionThreshold', '"MemoryPolicyEvictionThreshold" + $index',
+                                            +number-min-max-step('Eviction threshold:', 'model.evictionThreshold', '"DataRegionEvictionThreshold" + $index',
                                             'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
                                         .settings-row
-                                            +number('Empty pages pool size:', 'model.emptyPagesPoolSize', '"MemoryPolicyEmptyPagesPoolSize" + $index',
+                                            +number('Empty pages pool size:', 'model.emptyPagesPoolSize', '"DataRegionEmptyPagesPoolSize" + $index',
                                             'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for this memory policy')
                                         .settings-row
-                                            +number('Sub intervals:', 'model.subIntervals', '"MemoryPolicySubIntervals" + $index',
+                                            +number('Sub intervals:', 'model.subIntervals', '"DataRegionSubIntervals" + $index',
                                                 'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
                                         .settings-row
-                                            +number('Rate time interval:', 'model.rateTimeInterval', '"MemoryPolicyRateTimeInterval" + $index',
+                                            +number('Rate time interval:', 'model.rateTimeInterval', '"DataRegionRateTimeInterval" + $index',
                                                 'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
                                         .settings-row
-                                            +checkbox('Metrics enabled', 'model.metricsEnabled', '"MemoryPolicyMetricsEnabled" + $index',
+                                            +checkbox('Metrics enabled', 'model.metricsEnabled', '"DataRegionMetricsEnabled" + $index',
                                             'Whether memory metrics are enabled by default on node startup')
-
+                                        .settings-row
+                                            +checkbox('Persistence enabled', 'model.persistenceEnabled', '"DataRegionPersistenceEnabled" + $index',
+                                            'Enable Ignite Native Persistence')
                 .settings-row
-                    +text-enabled('Store path:', `${model}.persistentStorePath`, '"PersistenceStorePath"', 'true', 'false', 'Input store path',
+                    +text-enabled('Store path:', `${model}.persistentStorePath`, '"DataStorageStorePath"', 'true', 'false', 'Input store path',
                     'A path the root directory where the Persistent Store will persist data and indexes')
                 .settings-row
-                    +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"PersistenceMetricsEnabled"', 'true', 'Flag indicating whether persistence metrics collection is enabled')
-                .settings-row
-                    +checkbox-enabled('Always write full pages', `${model}.alwaysWriteFullPages`, '"PersistenceAlwaysWriteFullPages"', 'true', 'Flag indicating whether always write full pages')
-                .settings-row
-                    +number('Checkpointing frequency:', `${model}.checkpointingFrequency`, '"PersistenceCheckpointingFrequency"', 'true', '180000', '1',
+                    +number('Checkpointing frequency:', `${model}.checkpointingFrequency`, '"DataStorageCheckpointingFrequency"', 'true', '180000', '1',
                     'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
                 .settings-row
-                    +number('Checkpointing page buffer size:', `${model}.checkpointingPageBufferSize`, '"PersistenceCheckpointingPageBufferSize"', 'true', '268435456', '0',
+                    +number('Checkpointing page buffer size:', `${model}.checkpointingPageBufferSize`, '"DataStorageCheckpointingPageBufferSize"', 'true', '268435456', '0',
                     'Amount of memory allocated for a checkpointing temporary buffer')
                 .settings-row
-                    +number('Checkpointing threads:', `${model}.checkpointingThreads`, '"PersistenceCheckpointingThreads"', 'true', '1', '1', 'A number of threads to use for the checkpointing purposes')
+                    +number('Checkpointing threads:', `${model}.checkpointingThreads`, '"DataStorageCheckpointingThreads"', 'true', '1', '1', 'A number of threads to use for the checkpointing purposes')
                 .settings-row
-                    +text-enabled('WAL store path:', `${model}.walStorePath`, '"PersistenceWalStorePath"', 'true', 'false', 'Input store path', 'A path to the directory where WAL is stored')
+                    +dropdown('Checkpoint write order:', `${model}.checkpointWriteOrder`, '"DataStorageCheckpointWriteOrder"', 'true', 'SEQUENTIAL',
+                    '[\
+                        {value: "RANDOM", label: "RANDOM"},\
+                        {value: "SEQUENTIAL", label: "SEQUENTIAL"}\
+                    ]',
+                    'Order of writing pages to disk storage during checkpoint.\
+                    <ul>\
+                        <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                        <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                    </ul>')
                 .settings-row
-                    +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"PersistenceWalArchivePath"', 'true', 'false', 'Input archive path', 'A path to the WAL archive directory')
+                    +text-enabled('WAL store path:', `${model}.walStorePath`, '"DataStorageWalStorePath"', 'true', 'false', 'Input store path', 'A path to the directory where WAL is stored')
                 .settings-row
-                    +number('WAL segments:', `${model}.walSegments`, '"PersistenceWalSegments"', 'true', '10', '1', 'A number of WAL segments to work with')
+                    +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'Input archive path', 'A path to the WAL archive directory')
                 .settings-row
-                    +number('WAL segment size:', `${model}.walSegmentSize`, '"PersistenceWalSegmentSize"', 'true', '67108864', '0', 'Size of a WAL segment')
+                    +number('WAL segments:', `${model}.walSegments`, '"DataStorageWalSegments"', 'true', '10', '1', 'A number of WAL segments to work with')
                 .settings-row
-                    +number('WAL history size:', `${model}.walHistorySize`, '"PersistenceWalHistorySize"', 'true', '20', '1', 'A total number of checkpoints to keep in the WAL history')
+                    +number('WAL segment size:', `${model}.walSegmentSize`, '"DataStorageWalSegmentSize"', 'true', '67108864', '0', 'Size of a WAL segment')
                 .settings-row
-                    +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"PersistenceWalFlushFrequency"', 'true', '2000', '1',
+                    +number('WAL history size:', `${model}.walHistorySize`, '"DataStorageWalHistorySize"', 'true', '20', '1', 'A total number of checkpoints to keep in the WAL history')
+                .settings-row
+                    +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"DataStorageWalFlushFrequency"', 'true', '2000', '1',
                     'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
                 .settings-row
-                    +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"PersistenceWalFsyncDelay"', 'true', '1000', '1', 'WAL fsync delay, in nanoseconds')
+                    +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"DataStorageWalFsyncDelay"', 'true', '1000', '1', 'WAL fsync delay, in nanoseconds')
                 .settings-row
-                    +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"PersistenceWalRecordIteratorBufferSize"', 'true', '67108864', '1',
+                    +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"DataStorageWalRecordIteratorBufferSize"', 'true', '67108864', '1',
                     'How many bytes iterator read from disk(for one reading), during go ahead WAL')
                 .settings-row
-                    +number('Lock wait time:', `${model}.lockWaitTime`, '"PersistenceLockWaitTime"', 'true', '10000', '1',
+                    +number('Lock wait time:', `${model}.lockWaitTime`, '"DataStorageLockWaitTime"', 'true', '10000', '1',
                     'Time out in second, while wait and try get file lock for start persist manager')
                 .settings-row
-                    +number('Rate time interval:', `${model}.rateTimeInterval`, '"PersistenceRateTimeInterval"', 'true', '60000', '1000',
+                    +number('Rate time interval:', `${model}.rateTimeInterval`, '"DataStorageRateTimeInterval"', 'true', '60000', '1000',
                     'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked.')
                 .settings-row
-                    +number('Thread local buffer size:', `${model}.tlbSize`, '"PersistenceTlbSize"', 'true', '131072', '1',
+                    +number('Thread local buffer size:', `${model}.tlbSize`, '"DataStorageTlbSize"', 'true', '131072', '1',
                     'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL')
                 .settings-row
-                    +number('Sub intervals:', `${model}.subIntervals`, '"PersistenceSubIntervals"', 'true', '5', '1',
+                    +number('Sub intervals:', `${model}.subIntervals`, '"DataStorageSubIntervals"', 'true', '5', '1',
                     'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics')
+                .settings-row
+                    +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'SEQUENTIAL',
+                    '[\
+                        {value: "RANDOM", label: "RANDOM"},\
+                        {value: "SEQUENTIAL", label: "SEQUENTIAL"},\
+                        {value: null, label: "Default"},\
+                    ]',
+                    'Order of writing pages to disk storage during checkpoint.\
+                    <ul>\
+                        <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                        <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                    </ul>')
+                .settings-row
+                    +number('WAL auto archive after inactivity:', `${model}.walAutoArchiveAfterInactivity`, '"DataStorageWalAutoArchiveAfterInactivity"', 'true', '-1', '-1',
+                    'Time in millis to run auto archiving segment after last record logging')
+                .settings-row
+                    +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"DataStorageMetricsEnabled"', 'true', 'Flag indicating whether persistence metrics collection is enabled')
+                .settings-row
+                    +checkbox-enabled('Always write full pages', `${model}.alwaysWriteFullPages`, '"DataStorageAlwaysWriteFullPages"', 'true', 'Flag indicating whether always write full pages')
+                .settings-row
+                    +checkbox('Write throttling enabled', `${model}.writeThrottlingEnabled`, '"DataStorageWriteThrottlingEnabled"',
+                    'Throttle threads that generate dirty pages too fast during ongoing checkpoint')
             .col-sm-6
-                +preview-xml-java(model, 'clusterMemory')
+                +preview-xml-java(model, 'clusterDataStorageConfiguration')

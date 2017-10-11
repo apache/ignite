@@ -976,7 +976,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 metricsEnabled: Boolean,
                 subIntervals: Number,
                 rateTimeInterval: Number,
-                persistenceEnabled: Number
+                persistenceEnabled: Boolean
             },
             dataRegionConfigurations: [{
                 name: String,
@@ -989,7 +989,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 metricsEnabled: Boolean,
                 subIntervals: Number,
                 rateTimeInterval: Number,
-                persistenceEnabled: Number
+                persistenceEnabled: Boolean
             }],
             persistentStorePath: String,
             metricsEnabled: Boolean,
