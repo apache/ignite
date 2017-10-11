@@ -83,7 +83,6 @@ import org.jetbrains.annotations.Nullable;
  * Basic test suite.
  */
 public class IgniteBasicTestSuite extends TestSuite {
-
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -187,6 +186,6 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
 
-        return new TestSuite("Ignite Basic Test Suite");
+        return suite;
     }
 }

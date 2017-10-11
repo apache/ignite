@@ -33,6 +33,6 @@ public class IgniteJclTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(JclLoggerTest.class));
 
-        return new TestSuite("Commons Logging Test Suite");
+        return suite;
     }
 }

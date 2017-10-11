@@ -65,6 +65,6 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
             .igniteParams(GRID_PARAMETER_VARIATION)
             .build());
 
-        return new TestSuite("Compute New Full API Test Suite");
+        return suite;
     }
 }

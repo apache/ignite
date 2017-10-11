@@ -113,7 +113,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      */
     private Log4J2Logger(final Logger impl) {
         assert impl != null;
-        this.impl = impl;
+        
+        addConsoleAppenderIfNeeded(new C1<Boolean, Logger>() {
+            @Override public Logger apply(Boolean init) {
+                return impl;
+            }
+        });
 
         quiet = quiet0;
     }
@@ -391,7 +396,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                 }
             });
         }
-
     }
 
     /** {@inheritDoc} */
