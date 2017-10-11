@@ -164,23 +164,6 @@ public class ExchangeActions {
         return res != null ? res : Collections.<DynamicCacheChangeRequest>emptyList();
     }
 
-    public List<DynamicCacheChangeRequest> requests() {
-        List<DynamicCacheChangeRequest> res = new ArrayList<>();
-
-        for (CacheActionData data : cacheStartRequests())
-            res.add(data.request());
-
-        for (CacheActionData data : cacheStopRequests())
-            res.add(data.request());
-
-        if (cachesToClose != null) {
-            for (CacheActionData data : cachesToClose.values())
-                res.add(data.request());
-        }
-
-        return res;
-    }
-
     /**
      * @return {@code True} if there are no cache change actions.
      */
