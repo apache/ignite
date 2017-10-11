@@ -2221,6 +2221,7 @@ public class IgniteConfiguration {
      *
      * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
