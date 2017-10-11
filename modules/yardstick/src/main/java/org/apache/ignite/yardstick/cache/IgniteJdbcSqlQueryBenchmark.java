@@ -29,6 +29,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteJdbcThinDriver;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -58,6 +61,11 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
             }
         }
 
+        if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
+            if (ignite() != null)
+                Ignition.stop(ignite().name(), false);
+        }
+
         println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
 
@@ -72,8 +80,6 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
 
             ctx.put(0, stm);
         }
-
-        stm.getConnection().setSchema(cache.getName());
 
         double salary = ThreadLocalRandom.current().nextDouble() * args.range() * 1000;
 
@@ -123,6 +129,11 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
 
         try {
             conn = DriverManager.getConnection(args.jdbcUrl());
+
+            if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX))
+                conn.setSchema('"' + cache.getName() + '"');
+            else
+                conn.setSchema(cache.getName());
 
             return conn.prepareStatement("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
         }
