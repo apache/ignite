@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -63,9 +64,11 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
 
         double maxSalary = salary + 1000 * args.resultSetSize();
 
-        List<List<?>> rows = executeQuery(salary, maxSalary);
+        Iterator<List<?>> it = executeQuery(salary, maxSalary);
 
-        for (List<?> row  : rows) {
+        while (it.hasNext()) {
+            List<?> row = it.next();
+
             double sal = (Double)row.get(3);
 
             if (sal < salary || sal > maxSalary)
@@ -81,14 +84,14 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
      * @return Query result.
      * @throws Exception If failed.
      */
-    private List<List<?>> executeQuery(double minSalary, double maxSalary) throws Exception {
+    private Iterator<List<?>> executeQuery(double minSalary, double maxSalary) throws Exception {
         IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
 
-        return cache.query(qry).getAll();
+        return cache.query(qry).iterator();
     }
 
     /** {@inheritDoc} */
