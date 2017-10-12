@@ -59,7 +59,7 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
 
     /** {@inheritDoc} */
     @Override public void forceClose() {
-        closed.set(false);
+        closed.set(true);
     }
 
     /** {@inheritDoc} */
