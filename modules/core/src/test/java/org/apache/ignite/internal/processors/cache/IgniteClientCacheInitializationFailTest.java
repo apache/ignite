@@ -56,7 +56,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -256,19 +256,19 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
-            SqlQuery qry, QueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
+            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, QueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
+            boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName,
-            String cacheName, String qry, String typeName, QueryFilter filter) throws IgniteCheckedException {
+            String cacheName, String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
             return null;
         }
 
@@ -332,7 +332,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public QueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
+        @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
             return null;
         }
 

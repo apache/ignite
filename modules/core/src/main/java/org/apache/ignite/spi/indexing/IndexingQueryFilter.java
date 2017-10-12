@@ -22,12 +22,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache entry filter.
  */
-public interface QueryFilter {
+public interface IndexingQueryFilter {
     /**
      * Creates optional predicate for cache.
      *
      * @param cacheName Cache name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public QueryCacheFilter forCache(String cacheName);
+    @Nullable public IndexingQueryCacheFilter forCache(String cacheName);
 }

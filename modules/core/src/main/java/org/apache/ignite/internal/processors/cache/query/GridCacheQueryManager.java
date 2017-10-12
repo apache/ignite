@@ -118,8 +118,8 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
-import org.apache.ignite.spi.indexing.QueryFilter;
-import org.apache.ignite.spi.indexing.QueryFilterImpl;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1995,11 +1995,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Filter.
      */
-    private QueryFilter filter(GridCacheQueryAdapter<?> qry) {
+    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
         if (qry.includeBackups())
             return null;
 
-        return new QueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, null);
+        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, null);
     }
 
     /**

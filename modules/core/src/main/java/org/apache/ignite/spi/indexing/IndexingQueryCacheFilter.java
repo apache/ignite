@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  * Indexing query filter for specific cache.
  */
-public class QueryCacheFilter {
+public class IndexingQueryCacheFilter {
     /** Affinity manager. */
     private final GridCacheAffinityManager aff;
 
@@ -47,7 +47,7 @@ public class QueryCacheFilter {
      * @param topVer Topology version.
      * @param locNode Local node.
      */
-    public QueryCacheFilter(GridCacheAffinityManager aff, Set<Integer> parts,
+    public IndexingQueryCacheFilter(GridCacheAffinityManager aff, Set<Integer> parts,
         AffinityTopologyVersion topVer, ClusterNode locNode) {
         this.aff = aff;
         this.parts = parts;

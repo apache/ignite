@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -115,7 +115,7 @@ public interface GridQueryIndexing {
      * @param keepBinary Keep binary flag.    @return Cursor.
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
-        QueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
+        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -128,7 +128,7 @@ public interface GridQueryIndexing {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, QueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
+        boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -141,7 +141,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, QueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -260,7 +260,7 @@ public interface GridQueryIndexing {
      * @param parts Partitions.
      * @return Backup filter.
      */
-    public QueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
+    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
 
     /**
      * Client disconnected callback.

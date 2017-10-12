@@ -78,7 +78,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
@@ -159,7 +159,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     private UpdateResult updateSqlFields(String schemaName, Prepared prepared, SqlFieldsQuery fieldsQry,
-        boolean loc, QueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         Object[] errKeys = null;
 
         long items = 0;
@@ -245,7 +245,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, QueryFilter filters, GridQueryCancel cancel)
+        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(schemaName,  GridSqlQueryParser.prepared(stmt), fieldsQry, true,
             filters, cancel);
@@ -351,7 +351,7 @@ public class DmlStatementsProcessor {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, QueryFilter filters,
+        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
         int mainCacheId = CU.cacheId(cctx.name());
 

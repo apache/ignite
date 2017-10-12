@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -63,7 +63,7 @@ public class GridH2QueryContext {
     private int batchLookupIdGen;
 
     /** */
-    private QueryFilter filter;
+    private IndexingQueryFilter filter;
 
     /** */
     private AffinityTopologyVersion topVer;
@@ -452,7 +452,7 @@ public class GridH2QueryContext {
     /**
      * @return Filter.
      */
-    public QueryFilter filter() {
+    public IndexingQueryFilter filter() {
         return filter;
     }
 
@@ -460,7 +460,7 @@ public class GridH2QueryContext {
      * @param filter Filter.
      * @return {@code this}.
      */
-    public GridH2QueryContext filter(QueryFilter filter) {
+    public GridH2QueryContext filter(IndexingQueryFilter filter) {
         this.filter = filter;
 
         return this;
