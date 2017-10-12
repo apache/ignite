@@ -123,12 +123,11 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         node = Ignition.start(configuration("node0"));
 
-        for (int i = 1; i < nodesCnt; i++) {
-            Ignite ignite = Ignition.start(configuration("node" + i));
+        if (walMode != null)
+            node.active(true);
 
-            if (walMode != null)
-                ignite.active(true);
-        }
+        for (int i = 1; i < nodesCnt; i++)
+            Ignition.start(configuration("node" + i));
 
         boolean isClient = booleanProperty(PROP_CLIENT_MODE);
 
