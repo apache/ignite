@@ -354,17 +354,6 @@ public class GridLuceneIndex implements AutoCloseable {
         }
 
         /**
-         * Filters key using predicates.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return {@code True} if key passes filter.
-         */
-        private boolean filter(K key, V val) {
-            return filters == null || filters.apply(key, val);
-        }
-
-        /**
          * @param bytes Bytes.
          * @param ldr Class loader.
          * @return Object.
@@ -404,14 +393,14 @@ public class GridLuceneIndex implements AutoCloseable {
 
                 K k = unmarshall(doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
 
+                if (filters != null && !filters.apply(k))
+                    continue;
+
                 V v = type.valueClass() == String.class ?
                     (V)doc.get(VAL_STR_FIELD_NAME) :
                     this.<V>unmarshall(doc.getBinaryValue(VAL_FIELD_NAME).bytes, ldr);
 
                 assert v != null;
-
-                if (!filter(k, v))
-                    continue;
 
                 curr = new IgniteBiTuple<>(k, v);
 

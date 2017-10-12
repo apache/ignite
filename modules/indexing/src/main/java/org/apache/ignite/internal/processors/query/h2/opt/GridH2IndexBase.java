@@ -1621,7 +1621,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
             Object key = row.getValue(KEY_COL).getObject();
 
-            return fltr.apply(key, null);
+            return fltr.apply(key);
         }
 
         /** {@inheritDoc} */

@@ -25,8 +25,7 @@ public interface IndexingQueryFilterPredicate {
      * Apply predicate.
      *
      * @param key Key.
-     * @param val Value.
      * @return {@code True} if passed.
      */
-    public boolean apply(Object key, Object val);
+    public boolean apply(Object key);
 }

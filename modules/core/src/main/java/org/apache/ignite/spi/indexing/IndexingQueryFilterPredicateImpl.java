@@ -56,12 +56,12 @@ public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPred
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Object key, Object val) {
+    @Override public boolean apply(Object key) {
         int part = aff.partition(key);
 
         if (parts == null)
             return aff.primaryByPartition(locNode, part, topVer);
         else
-            return parts.contains(aff.partition(key));
+            return parts.contains(part);
     }
 }

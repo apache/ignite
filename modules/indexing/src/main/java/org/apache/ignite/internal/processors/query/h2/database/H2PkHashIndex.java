@@ -222,17 +222,16 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
+                    GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(),
+                        dataRow.version(), 0);
 
                     row.link(dataRow.link());
 
                     Object key = row.getValue(0).getObject();
-                    Object val = row.getValue(1).getObject();
 
                     assert key != null;
-                    assert val != null;
 
-                    if (filter.apply(key, val))
+                    if (filter.apply(key))
                         return true;
                 }
 
