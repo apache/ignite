@@ -62,7 +62,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IndexingQueryFilterPredicate forCache(String cacheName) {
+    @Nullable @Override public IndexingQueryCacheFilter forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
         // REPLICATED -> nothing to filter (explicit partitions are not supported).
@@ -73,7 +73,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (cache.configuration().getBackups() == 0 && parts == null)
             return null;
 
-        return new IndexingQueryFilterPredicateImpl(cache.context().affinity(), parts, topVer,
+        return new IndexingQueryCacheFilter(cache.context().affinity(), parts, topVer,
             ctx.discovery().localNode());
     }
 }

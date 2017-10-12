@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import java.util.Set;
 
 /**
- * Indexing query filter predicate.
+ * Indexing query filter for specific cache.
  */
-public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPredicate {
+public class IndexingQueryCacheFilter {
     /** Affinity manager. */
     private final GridCacheAffinityManager aff;
 
@@ -47,7 +47,7 @@ public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPred
      * @param topVer Topology version.
      * @param locNode Local node.
      */
-    public IndexingQueryFilterPredicateImpl(GridCacheAffinityManager aff, Set<Integer> parts,
+    public IndexingQueryCacheFilter(GridCacheAffinityManager aff, Set<Integer> parts,
         AffinityTopologyVersion topVer, ClusterNode locNode) {
         this.aff = aff;
         this.parts = parts;
@@ -55,8 +55,13 @@ public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPred
         this.locNode = locNode;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean apply(Object key) {
+    /**
+     * Apply filter.
+     *
+     * @param key Key.
+     * @return {@code True} if passed.
+     */
+    public boolean apply(Object key) {
         int part = aff.partition(key);
 
         if (parts == null)

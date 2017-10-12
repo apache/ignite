@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.indexing;
 
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,5 +29,5 @@ public interface IndexingQueryFilter {
      * @param cacheName Cache name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public IndexingQueryFilterPredicate forCache(String cacheName);
+    @Nullable public IndexingQueryCacheFilter forCache(String cacheName);
 }

@@ -46,7 +46,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryFilterPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -1585,8 +1585,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected static class FilteringCursor implements GridCursor<GridH2Row> {
         /** */
         private final GridCursor<GridH2Row> cursor;
+
         /** */
-        private final IndexingQueryFilterPredicate fltr;
+        private final IndexingQueryCacheFilter fltr;
 
         /** */
         private final long time;
