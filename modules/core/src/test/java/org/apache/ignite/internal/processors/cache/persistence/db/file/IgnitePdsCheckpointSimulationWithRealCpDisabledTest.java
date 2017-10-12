@@ -37,6 +37,7 @@ import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -105,15 +106,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         cfg.setCacheConfiguration(ccfg);
 
-        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
-
-        cfg.setDataStorageConfiguration(dbCfg);
-
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setCheckpointFrequency(500)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setAlwaysWriteFullPages(true)
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
         );
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();

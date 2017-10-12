@@ -77,7 +77,8 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(10 * 1024 * 1024)
                 .setPersistenceEnabled(true)
-                .setMetricsEnabled(true))
+                .setMetricsEnabled(true)
+                .setName("dflt-plc"))
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024);
 
