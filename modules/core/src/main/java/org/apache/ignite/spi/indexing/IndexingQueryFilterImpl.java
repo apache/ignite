@@ -20,12 +20,10 @@ package org.apache.ignite.spi.indexing;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Indexing query filter.
@@ -75,18 +73,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (cache.configuration().getBackups() == 0 && parts == null)
             return null;
 
-        final GridCacheAffinityManager aff = cache.context().affinity();
-
-        // Either explicit partitions with already filtered backup or unstable topology.
-        return new IndexingQueryFilterPredicate() {
-            @Override public boolean apply(Object key, Object val) {
-                int part = aff.partition(key);
-
-                if (parts == null)
-                    return aff.primaryByPartition(ctx.discovery().localNode(), part, topVer);
-                else
-                    return parts.contains(aff.partition(key));
-            }
-        };
+        return new IndexingQueryFilterPredicateImpl(cache.context().affinity(), parts, topVer,
+            ctx.discovery().localNode());
     }
 }

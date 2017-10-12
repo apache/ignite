@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.indexing;
 
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 
 import java.util.Set;
@@ -31,21 +33,35 @@ public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPred
     /** Partitions. */
     private final Set<Integer> parts;
 
+    /** Topology version. */
+    private final AffinityTopologyVersion topVer;
+
+    /** Local node. */
+    private final ClusterNode locNode;
+
     /**
      * Constructor.
      *
      * @param aff Affinity.
      * @param parts Partitions.
+     * @param topVer Topology version.
+     * @param locNode Local node.
      */
-    public IndexingQueryFilterPredicateImpl(GridCacheAffinityManager aff, Set<Integer> parts) {
+    public IndexingQueryFilterPredicateImpl(GridCacheAffinityManager aff, Set<Integer> parts,
+        AffinityTopologyVersion topVer, ClusterNode locNode) {
         this.aff = aff;
         this.parts = parts;
+        this.topVer = topVer;
+        this.locNode = locNode;
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(Object key, Object val) {
         int part = aff.partition(key);
 
-        return parts.contains(part);
+        if (parts == null)
+            return aff.primaryByPartition(locNode, part, topVer);
+        else
+            return parts.contains(aff.partition(key));
     }
 }
