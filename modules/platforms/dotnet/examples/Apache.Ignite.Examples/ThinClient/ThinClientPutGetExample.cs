@@ -35,8 +35,8 @@ namespace Apache.Ignite.Examples.ThinClient
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
     /// 2) Start example.
     /// <para />
-    /// This example can also be run with Java-only nodes started with ignite.bat/ignite.sh,
-    /// cache named "default-cache" must be started.
+    /// This example can also work via pure Java node started with ignite.bat/ignite.sh.
+    /// The only requirement is that the nodes have to create the cache named "default-cache" in advance.
     /// </summary>
     public static class ThinClientPutGetExample
     {
