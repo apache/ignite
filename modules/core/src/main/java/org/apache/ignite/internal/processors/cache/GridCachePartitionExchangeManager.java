@@ -698,6 +698,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return exchFuts.values();
     }
 
+    /**
+     * @param topVer Topology version.
+     */
     @Nullable public GridDhtPartitionsExchangeFuture exchangeFuture(AffinityTopologyVersion topVer) {
         for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
             if (fut.topologyVersion().compareTo(topVer) == 0)
@@ -812,8 +815,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
         GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, true);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
+        if (log.isInfoEnabled())
+            log.info("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
         for (ClusterNode node : nodes) {
             try {
@@ -975,8 +978,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cctx.kernalContext().clientNode(),
             false);
 
-        if (log.isDebugEnabled())
-            log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
+        if (log.isInfoEnabled())
+            log.info("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
@@ -1237,8 +1240,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
+                if (log.isInfoEnabled())
+                    log.info("Received full partition update [node=" + node.id() + ", msg=" + msg + ']');
 
                 boolean updated = false;
 
@@ -1282,8 +1285,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                if (log.isInfoEnabled())
+                    log.info("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
                 if (msg.partitions() == null)

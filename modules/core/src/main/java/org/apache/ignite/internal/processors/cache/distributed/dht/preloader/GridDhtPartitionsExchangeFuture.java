@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -475,6 +476,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             skipPreload = cctx.kernalContext().clientNode();
 
+            if (log.isInfoEnabled()) {
+                log.info("Started exchange init [topVer=" + topologyVersion() +
+                    ", crd=" + crdNode +
+                    ", evt=" + IgniteUtils.gridEventName(discoEvt.type()) +
+                    ", evtNode=" + discoEvt.eventNode().id() +
+                    ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT
+                    ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) + ']');
+            }
+
             ExchangeType exchange;
 
             Collection<DynamicCacheDescriptor> receivedCaches;
@@ -533,6 +543,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 default:
                     assert false;
             }
+
+            if (log.isInfoEnabled())
+                log.info("Finished exchange init [topVer=" + topologyVersion() + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
@@ -846,6 +859,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         int dumpedObjects = 0;
 
+        long waitStart = U.currentTimeMillis();
+
         while (true) {
             try {
                 partReleaseFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -860,6 +875,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     dumpedObjects++;
                 }
             }
+        }
+
+        long waitEnd = U.currentTimeMillis();
+
+        if (log.isInfoEnabled()) {
+            log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
+                ", waitTime=" + (waitEnd - waitStart) + "]");
         }
 
         if (log.isDebugEnabled())
@@ -1112,6 +1134,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         boolean realExchange = !dummy && !forcePreload;
 
+        if (log.isInfoEnabled()) {
+            log.info("Finish exchange future [startVer=" + topologyVersion() +
+                ", resVer=" + res +
+                ", err=" + err + ']');
+        }
+
         if (err == null && realExchange) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
@@ -1184,8 +1212,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             exchActions.completeRequestFutures(cctx, err);
 
         if (super.onDone(res, err) && realExchange) {
-            if (log.isDebugEnabled())
-                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
+            if (log.isInfoEnabled())
+                log.info("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
@@ -1277,8 +1305,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             updateLastVersion(msg.lastVersion());
 
         if (isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
+            if (log.isInfoEnabled())
+                log.info("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
             // Custom message (DynamicCacheChangeFailureMessage) was sent. Do not need sendAllPartitions.
@@ -1290,6 +1318,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         else {
             assert !msg.client();
+
+            if (log.isInfoEnabled())
+                log.info("Received single message [msg=" + msg +
+                    ", fut=" + this + ']');
 
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> f) {
@@ -1604,8 +1636,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         final UUID nodeId = node.id();
 
         if (isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Received message for finished future [msg=" + msg + ", fut=" + this + ']');
+            if (log.isInfoEnabled())
+                log.info("Received message for finished future [msg=" + msg + ", fut=" + this + ']');
 
             return;
         }
@@ -1645,8 +1677,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
 
             if (!crd.equals(node)) {
-                if (log.isDebugEnabled())
-                    log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
+                if (log.isInfoEnabled())
+                    log.info("Received full partition map from unexpected node [oldest=" + crd.id() +
                         ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
