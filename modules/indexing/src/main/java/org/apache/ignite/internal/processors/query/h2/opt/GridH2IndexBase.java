@@ -1580,9 +1580,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         private final long time;
 
-        /** Is value required for filtering predicate? */
-        private final boolean isValRequired;
-
         /** */
         private GridH2Row next;
 
@@ -1595,19 +1592,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
             String cacheName) {
             this.cursor = cursor;
-
             this.time = time;
-
-            if (qryFilter != null) {
-                this.fltr = qryFilter.forCache(cacheName);
-
-                this.isValRequired = qryFilter.isValueRequired();
-            }
-            else {
-                this.fltr = null;
-
-                this.isValRequired = false;
-            }
+            this.fltr = qryFilter != null ? qryFilter.forCache(cacheName) : null;
         }
 
         /**
@@ -1623,12 +1609,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 return true;
 
             Object key = row.getValue(KEY_COL).getObject();
-            Object val = isValRequired ? row.getValue(VAL_COL).getObject() : null;
 
-            assert key != null;
-            assert !isValRequired || val != null;
-
-            return fltr.apply(key, val);
+            return fltr.apply(key, null);
         }
 
         /** {@inheritDoc} */

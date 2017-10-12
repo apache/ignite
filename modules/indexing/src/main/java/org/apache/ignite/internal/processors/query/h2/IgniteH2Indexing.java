@@ -2356,7 +2356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
-                if (cache.context().isReplicated())
+                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
                     return null;
 
                 final GridCacheAffinityManager aff = cache.context().affinity();
@@ -2396,10 +2396,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         return aff.primaryByKey(locNode, k, topVer0);
                     }
                 };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
             }
 
             @Override public String toString() {

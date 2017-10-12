@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -1995,6 +1996,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (includeBackups)
             return null;
 
+        final AffinityTopologyVersion topVer0 = AffinityTopologyVersion.NONE;
+
         return new IndexingQueryFilter() {
             @Nullable @Override public IgniteBiPredicate<K, V> forCache(final String cacheName) {
                 final GridKernalContext ctx = cctx.kernalContext();
@@ -2004,15 +2007,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
                     return null;
 
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                final ClusterNode locNode = ctx.discovery().localNode();
+
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primaryByKey(ctx.discovery().localNode(), k, NONE);
+                        return aff.primaryByKey(locNode, k, topVer0);
                     }
                 };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
             }
         };
     }

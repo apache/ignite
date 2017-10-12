@@ -31,13 +31,4 @@ public interface IndexingQueryFilter {
      * @return Predicate or {@code null} if no filtering is needed.
      */
     @Nullable public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName);
-
-    /**
-     * Is the value required for filtering logic?
-     * If false then null instead of value will be passed
-     * to IgniteBiPredicate returned by {@link #forCache(String)} method.
-     *
-     * @return true if value is required for filtering, false otherwise.
-     */
-    public boolean isValueRequired();
 }
