@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -185,6 +186,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Cache validation results. */
     private volatile Map<Integer, Boolean> cacheValidRes;
+
+    /** Custom cache validation results. */
+    private volatile Map<Integer, Throwable> customCacheValidRes;
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -1138,6 +1142,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 detectLostPartitions();
 
             Map<Integer, Boolean> m = null;
+            Map<Integer, Throwable> m2 = null;
+
+            IgniteClosure<String, Throwable> validator = cctx.cache().cacheValidator();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
@@ -1146,9 +1153,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
                 }
+
+                if (validator != null) {
+                    if (m2 == null)
+                        m2 = new HashMap<>();
+
+                    Throwable t;
+
+                    try {
+                        t = validator.apply(cacheCtx.name());
+                    }
+                    catch (Throwable e) {
+                        t = e;
+                    }
+
+                    if (t != null)
+                        m2.put(cacheCtx.cacheId(), t);
+                }
             }
 
             cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+            customCacheValidRes = m2 != null ? m2 : Collections.<Integer, Throwable>emptyMap();
         }
 
         cctx.exchange().onExchangeDone(this, err);
@@ -1194,6 +1219,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (res != null && !res) {
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
+            }
+        }
+
+        if (cctx.kernalContext().cache().cacheValidator() != null) {
+            Throwable t = customCacheValidRes.get(cctx.cacheId());
+
+            if (t != null) {
+                return new IgniteCheckedException("Failed to perform cache operation " +
+                    "(cache is not valid): " + cctx.name());
             }
         }
 

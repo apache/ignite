@@ -698,6 +698,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return exchFuts.values();
     }
 
+    @Nullable public GridDhtPartitionsExchangeFuture exchangeFuture(AffinityTopologyVersion topVer) {
+        for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+            if (fut.topologyVersion().compareTo(topVer) == 0)
+                return fut;
+        }
+
+        return null;
+    }
+
     /**
      * @return {@code True} if pending future queue is empty.
      */

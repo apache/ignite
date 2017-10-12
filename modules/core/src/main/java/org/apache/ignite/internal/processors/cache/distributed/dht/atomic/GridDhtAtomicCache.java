@@ -1844,6 +1844,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = null;
 
         try {
+            Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+
+            if (exc != null)
+                throw new IgniteException(exc);
+
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());

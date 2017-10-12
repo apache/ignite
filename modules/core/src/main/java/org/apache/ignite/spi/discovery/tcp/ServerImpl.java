@@ -532,14 +532,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         long start = U.currentTimeMillis();
 
-        if (log.isInfoEnabled())
+        if (log.isDebugEnabled())
             log.info("Pinging node: " + nodeId);
 
         boolean res = pingNode(node);
 
         long end = System.currentTimeMillis();
 
-        if (log.isInfoEnabled())
+        if (log.isDebugEnabled())
             log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
         if (!res && !node.isClient() && nodeAlive(nodeId)) {
@@ -5606,7 +5606,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     long tstamp = U.currentTimeMillis();
 
-                    if (log.isInfoEnabled())
+                    if (log.isDebugEnabled())
                         log.info("TCP discovery accepted incoming connection " +
                             "[rmtAddr=" + sock.getInetAddress() + ", rmtPort=" + sock.getPort() + ']');
 
@@ -5616,7 +5616,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         readers.add(reader);
                     }
 
-                    if (log.isInfoEnabled())
+                    if (log.isDebugEnabled())
                         log.info("TCP discovery spawning a new thread for connection " +
                             "[rmtAddr=" + sock.getInetAddress() + ", rmtPort=" + sock.getPort() + ']');
 
@@ -5684,7 +5684,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             SocketAddress rmtAddr = sock.getRemoteSocketAddress();
 
-            if (log.isInfoEnabled())
+            if (log.isDebugEnabled())
                 log.info("Started serving remote node connection [rmtAddr=" + rmtAddr +
                     ", rmtPort=" + sock.getPort() + ']');
 
@@ -5755,7 +5755,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!spi.isNodeStopping0()) {
                             TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
-                            if (log.isInfoEnabled())
+                            if (log.isDebugEnabled())
                                 log.info("Received ping request from the remote node " +
                                     "[rmtNodeId=" + msg.creatorNodeId() +
                                     ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
@@ -5777,7 +5777,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!(sock instanceof SSLSocket))
                                 sock.shutdownOutput();
 
-                            if (log.isInfoEnabled())
+                            if (log.isDebugEnabled())
                                 log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
                                     ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
                         }
@@ -6197,7 +6197,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 U.closeQuiet(sock);
 
-                if (log.isInfoEnabled())
+                if (log.isDebugEnabled())
                     log.info("Finished serving remote node connection [rmtAddr=" + rmtAddr +
                         ", rmtPort=" + sock.getPort());
             }
