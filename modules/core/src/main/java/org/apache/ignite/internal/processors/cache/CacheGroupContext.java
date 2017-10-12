@@ -882,7 +882,7 @@ public class CacheGroupContext {
      * @return Persistence enabled flag.
      */
     public boolean persistenceEnabled() {
-        return dataRegion.config().isPersistenceEnabled();
+        return dataRegion != null && dataRegion.config().isPersistenceEnabled();
     }
 
     /**
