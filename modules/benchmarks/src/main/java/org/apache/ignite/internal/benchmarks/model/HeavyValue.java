@@ -15,11 +15,11 @@ public class HeavyValue {
         String s = i.toString();
 
         return new HeavyValue(
-            s,
-            s,
-            s,
-            s,
-            s,
+            s, // Indexed
+            s+"a", // Indexed
+            s+"b", // Indexed
+            s+"c", // Indexed
+            s+"d", // Indexed
             s,
             s,
             s,
