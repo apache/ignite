@@ -81,8 +81,9 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
 
         Set<Integer> parts0 = new HashSet<>(locParts);
 
-        parts0.retainAll(parts);
+        if (parts != null)
+            parts0.retainAll(parts);
 
-        return new IndexingQueryFilterPredicateImpl(aff, parts);
+        return new IndexingQueryFilterPredicateImpl(aff, parts0);
     }
 }
