@@ -123,22 +123,6 @@ export default class IgniteVersion {
         });
     }
 
-    _restore() {
-        _.head(this.supportedVersions);
-
-        try {
-            const ignite = localStorage.configurationVersion;
-
-            const restored = _.find(this.supportedVersions, {ignite});
-
-            if (restored)
-                this.current = restored;
-        }
-        catch (ignored) {
-            // No-op.
-        }
-    }
-
     /**
      * @return {String} Current Ignite version.
      */
