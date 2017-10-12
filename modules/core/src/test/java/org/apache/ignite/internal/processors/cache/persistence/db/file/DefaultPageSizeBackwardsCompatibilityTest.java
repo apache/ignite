@@ -68,7 +68,7 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
-        memCfg.setCheckpointingFrequency(3_000);
+        memCfg.setCheckpointFrequency(3_000);
 
         cfg.setDataStorageConfiguration(memCfg);
 

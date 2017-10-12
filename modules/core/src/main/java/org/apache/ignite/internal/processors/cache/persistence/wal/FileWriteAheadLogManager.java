@@ -246,7 +246,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         maxWalSegmentSize = dsCfg.getWalSegmentSize();
         mode = dsCfg.getWalMode();
-        tlbSize = dsCfg.getTlbSize();
+        tlbSize = dsCfg.getWalThreadLocalBufferSize();
         flushFreq = dsCfg.getWalFlushFrequency();
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
@@ -263,8 +263,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             checkWalConfiguration();
 
             walWorkDir = initDirectory(
-                dsCfg.getWalStorePath(),
-                DataStorageConfiguration.DFLT_WAL_STORE_PATH,
+                dsCfg.getWalPath(),
+                DataStorageConfiguration.DFLT_WAL_PATH,
                 resolveFolders.folderName(),
                 "write ahead log work directory"
             );
@@ -304,10 +304,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws IgniteCheckedException if WAL store path is configured and archive path isn't (or vice versa)
      */
     private void checkWalConfiguration() throws IgniteCheckedException {
-        if (dsCfg.getWalStorePath() == null ^ dsCfg.getWalArchivePath() == null) {
+        if (dsCfg.getWalPath() == null ^ dsCfg.getWalArchivePath() == null) {
             throw new IgniteCheckedException(
                 "Properties should be either both specified or both null " +
-                    "[walStorePath = " + dsCfg.getWalStorePath() +
+                    "[walStorePath = " + dsCfg.getWalPath() +
                     ", walArchivePath = " + dsCfg.getWalArchivePath() + "]"
             );
         }

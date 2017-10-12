@@ -86,7 +86,7 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
 
     /**
      * Sets time interval for rate-based metrics. Identical to setting
-     * {@link DataStorageConfiguration#setRateTimeInterval(long)} configuration property.
+     * {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)} configuration property.
      *
      * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
      */
@@ -103,7 +103,7 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
 
     /**
      * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
-     * rate-based metrics. Identical to setting {@link DataStorageConfiguration#setSubIntervals(int)} configuration
+     * rate-based metrics. Identical to setting {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)} configuration
      * property.
      *
      * @param subInts A number of sub-intervals.

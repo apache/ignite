@@ -171,7 +171,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointingFrequency(CHECKPOINT_FREQUENCY);
+            .setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
         cfg.setDataStorageConfiguration(memCfg);
 

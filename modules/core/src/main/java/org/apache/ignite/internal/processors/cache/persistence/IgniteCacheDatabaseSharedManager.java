@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -381,24 +382,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException if validation of memory metrics properties fails.
      */
     private static void checkMetricsProperties(DataRegionConfiguration regCfg) throws IgniteCheckedException {
-        if (regCfg.getRateTimeInterval() <= 0)
+        if (regCfg.getMetricsRateTimeInterval() <= 0)
             throw new IgniteCheckedException("Rate time interval must be greater than zero " +
                 "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
                 "[name=" + regCfg.getName() +
-                ", rateTimeInterval=" + regCfg.getRateTimeInterval() + "]"
+                ", rateTimeInterval=" + regCfg.getMetricsRateTimeInterval() + "]"
             );
-        if (regCfg.getSubIntervals() <= 0)
+        if (regCfg.getMetricsSubIntervalCount() <= 0)
             throw new IgniteCheckedException("Sub intervals must be greater than zero " +
                 "(use DataRegionConfiguration.subIntervals property to adjust the sub intervals) " +
                 "[name=" + regCfg.getName() +
-                ", subIntervals=" + regCfg.getSubIntervals() + "]"
+                ", subIntervals=" + regCfg.getMetricsSubIntervalCount() + "]"
             );
 
-        if (regCfg.getRateTimeInterval() < 1_000)
+        if (regCfg.getMetricsRateTimeInterval() < 1_000)
             throw new IgniteCheckedException("Rate time interval must be longer that 1 second (1_000 milliseconds) " +
                 "(use DataRegionConfiguration.rateTimeInterval property to adjust the interval) " +
                 "[name=" + regCfg.getName() +
-                ", rateTimeInterval=" + regCfg.getRateTimeInterval() + "]");
+                ", rateTimeInterval=" + regCfg.getMetricsRateTimeInterval() + "]");
     }
 
     /**
@@ -848,7 +849,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
-        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || cctx.gridConfig().isPersistentStoreEnabled())
+        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || CU.isPersistenceEnabled(cctx.gridConfig()))
             return new NoOpPageEvictionTracker();
 
         assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();

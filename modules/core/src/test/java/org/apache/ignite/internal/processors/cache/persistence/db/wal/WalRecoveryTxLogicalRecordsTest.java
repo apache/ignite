@@ -117,7 +117,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         pCfg.setWalHistorySize(WAL_HIST_SIZE);
 
         if (checkpointFreq != null)
-            pCfg.setCheckpointingFrequency(checkpointFreq);
+            pCfg.setCheckpointFrequency(checkpointFreq);
 
         cfg.setDataStorageConfiguration(pCfg);
 

@@ -72,8 +72,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
-            .setCheckpointingFrequency(20_000)
-            .setCheckpointingPageBufferSize(1000L * 1000 * 1000)
+            .setCheckpointFrequency(20_000)
+            .setCheckpointPageBufferSize(1000L * 1000 * 1000)
             .setWriteThrottlingEnabled(true);
 
         cfg.setDataStorageConfiguration(dbCfg);

@@ -321,14 +321,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         assert persistenceCfg != null;
 
-        checkpointFreq = persistenceCfg.getCheckpointingFrequency();
+        checkpointFreq = persistenceCfg.getCheckpointFrequency();
 
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
         persStoreMetrics = new DataStorageMetricsImpl(
             persistenceCfg.isMetricsEnabled(),
-            persistenceCfg.getRateTimeInterval(),
-            persistenceCfg.getSubIntervals()
+            persistenceCfg.getMetricsRateTimeInterval(),
+            persistenceCfg.getMetricsSubIntervalCount()
         );
     }
 
@@ -399,12 +399,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private void initDataBase() {
-        if (persistenceCfg.getCheckpointingThreads() > 1)
+        if (persistenceCfg.getCheckpointThreads() > 1)
             asyncRunner = new IgniteThreadPoolExecutor(
                 "checkpoint-runner",
                 cctx.igniteInstanceName(),
-                persistenceCfg.getCheckpointingThreads(),
-                persistenceCfg.getCheckpointingThreads(),
+                persistenceCfg.getCheckpointThreads(),
+                persistenceCfg.getCheckpointThreads(),
                 30_000,
                 new LinkedBlockingQueue<Runnable>()
             );
@@ -424,7 +424,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (persistenceCfg == null)
             return 0L;
 
-        long res = persistenceCfg.getCheckpointingPageBufferSize();
+        long res = persistenceCfg.getCheckpointPageBufferSize();
 
         if (res == 0L) {
             res = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
@@ -925,6 +925,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
+
+            if (!gctx.persistenceEnabled())
+                continue;
 
             snapshotMgr.onCacheGroupStop(gctx);
 
@@ -2517,7 +2520,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * Reorders list of checkpoint pages and splits them into needed number of sublists according to
-     * {@link DataStorageConfiguration#getCheckpointingThreads()} and
+     * {@link DataStorageConfiguration#getCheckpointThreads()} and
      * {@link DataStorageConfiguration#getCheckpointWriteOrder()}.
      *
      * @param cpPagesTuple Checkpoint pages tuple.
@@ -2545,7 +2548,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             });
         }
 
-        int cpThreads = persistenceCfg.getCheckpointingThreads();
+        int cpThreads = persistenceCfg.getCheckpointThreads();
 
         int pagesSubLists = cpThreads == 1 ? 1 : cpThreads * 4;
         // Splitting pages to (threads * 4) subtasks. If any thread will be faster, it will help slower threads.

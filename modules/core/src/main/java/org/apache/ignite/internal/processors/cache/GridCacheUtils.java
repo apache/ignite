@@ -1677,13 +1677,13 @@ public class GridCacheUtils {
     }
 
     /**
-     * Checks if cache descriptor belongs to persistent cache.
+     * Checks if cache configuration belongs to persistent cache.
      *
-     * @param desc Cache descriptor.
+     * @param ccfg Cache configuration.
      * @param dsCfg Data storage config.
      */
-    public static boolean isPersistentCache(DynamicCacheDescriptor desc, DataStorageConfiguration dsCfg) {
-        String regName = desc.cacheConfiguration().getDataRegionName();
+    public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
+        String regName = ccfg.getDataRegionName();
 
         if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))
             return dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();
@@ -1693,6 +1693,34 @@ public class GridCacheUtils {
                 if (regName.equals(drConf.getName()))
                     return drConf.isPersistenceEnabled();
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
+     */
+    public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
+        if (cfg.getDataStorageConfiguration() == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+        if (dfltReg == null)
+            return false;
+
+        if (dfltReg.isPersistenceEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = cfg.getDataStorageConfiguration().getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isPersistenceEnabled())
+                return true;
         }
 
         return false;

@@ -106,13 +106,13 @@ public final class DataRegionConfiguration implements Serializable {
      */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
-    /** Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+    /** Number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)} will be split into to calculate
      * {@link DataRegionMetrics#getAllocationRate()} and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
      * {@link DataRegionMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
      * calculation overhead. */
-    private int subIntervals = DFLT_SUB_INTERVALS;
+    private int metricsSubIntervalCount = DFLT_SUB_INTERVALS;
 
     /**
      * Time interval (in milliseconds) for {@link DataRegionMetrics#getAllocationRate()}
@@ -121,7 +121,7 @@ public final class DataRegionConfiguration implements Serializable {
      * For instance, after setting the interval to 60_000 milliseconds, subsequent calls to {@link DataRegionMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      */
-    private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
+    private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
      * Flag to enable Ignite Native Persistence.
@@ -320,7 +320,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Gets whether Ignite Native Persistence is enabled for this data region.
+     * Gets whether persistence is enabled for this data region. All caches residing in this region will be persistent.
      *
      * @return Persistence enabled flag.
      */
@@ -350,8 +350,8 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @return Time interval over which allocation rate is calculated.
      */
-    public long getRateTimeInterval() {
-        return rateTimeInterval;
+    public long getMetricsRateTimeInterval() {
+        return metricsRateTimeInterval;
     }
 
     /**
@@ -362,17 +362,17 @@ public final class DataRegionConfiguration implements Serializable {
      * subsequent calls to {@link DataRegionMetrics#getAllocationRate()}
      * will return average allocation rate (pages per second) for the last minute.
      *
-     * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
+     * @param metricsRateTimeInterval Time interval used for allocation and eviction rates calculations.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setRateTimeInterval(long rateTimeInterval) {
-        this.rateTimeInterval = rateTimeInterval;
+    public DataRegionConfiguration setMetricsRateTimeInterval(long metricsRateTimeInterval) {
+        this.metricsRateTimeInterval = metricsRateTimeInterval;
 
         return this;
     }
 
     /**
-     * Gets a number of sub-intervals the whole {@link #setRateTimeInterval(long)}
+     * Gets a number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)}
      * will be split into to calculate {@link DataRegionMetrics#getAllocationRate()}
      * and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
@@ -382,23 +382,23 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @return number of sub intervals.
      */
-    public int getSubIntervals() {
-        return subIntervals;
+    public int getMetricsSubIntervalCount() {
+        return metricsSubIntervalCount;
     }
 
     /**
-     * Sets a number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+     * Sets a number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)} will be split into to calculate
      * {@link DataRegionMetrics#getAllocationRate()} and {@link DataRegionMetrics#getEvictionRate()} rates (5 by default).
      * <p>
      * Setting it to a bigger value will result in more precise calculation and smaller drops of
      * {@link DataRegionMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      *
-     * @param subIntervals A number of sub-intervals.
+     * @param metricsSubIntervalCnt A number of sub-intervals.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setSubIntervals(int subIntervals) {
-        this.subIntervals = subIntervals;
+    public DataRegionConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
+        this.metricsSubIntervalCount = metricsSubIntervalCnt;
 
         return this;
     }

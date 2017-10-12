@@ -31,7 +31,7 @@ public class IgnitePersistenceSequentialCheckpointTest extends IgnitePersistentS
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
-            .setCheckpointingThreads(4)
+            .setCheckpointThreads(4)
             .setCheckpointWriteOrder(CheckpointWriteOrder.SEQUENTIAL));
 
         return cfg;

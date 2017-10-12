@@ -25,18 +25,18 @@ public interface DataStorageMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.
      * <p>
-     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
     public float getWalLoggingRate();
 
     /**
      * Gets the average number of bytes per second written during the last time interval.
-     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
     public float getWalWritingRate();
@@ -49,9 +49,9 @@ public interface DataStorageMetrics {
     /**
      * Gets the average WAL fsync duration in microseconds over the last time interval.
      * <p>
-     * The length of time interval is configured via {@link DataStorageConfiguration#setRateTimeInterval(long)}
+     * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
      * configurartion property.
-     * The number of subintervals is configured via {@link DataStorageConfiguration#setSubIntervals(int)}
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
     public float getWalFsyncTimeAverage();
