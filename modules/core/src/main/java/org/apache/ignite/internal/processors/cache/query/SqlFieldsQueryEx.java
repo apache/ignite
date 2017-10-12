@@ -45,7 +45,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /**
      * @param qry SQL query.
      */
-    public SqlFieldsQueryEx(SqlFieldsQueryEx qry) {
+    private SqlFieldsQueryEx(SqlFieldsQueryEx qry) {
         super(qry);
 
         this.isQry = qry.isQry;
