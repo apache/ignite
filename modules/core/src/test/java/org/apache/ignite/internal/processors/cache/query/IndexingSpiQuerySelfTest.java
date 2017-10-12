@@ -44,7 +44,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.QueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -255,7 +255,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
-            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
+            @Nullable QueryFilter filters) throws IgniteSpiException {
             if (params.size() < 2)
                 throw new IgniteSpiException("Range parameters required.");
 

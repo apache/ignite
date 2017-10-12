@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.QueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -165,8 +165,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
-            IndexingQueryCacheFilter p = null;
+            QueryFilter f = threadLocalFilter();
+            QueryCacheFilter p = null;
 
             if (f != null) {
                 String cacheName = getTable().cacheName();
@@ -323,7 +323,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        QueryFilter filter) {
         try {
             GridCursor<GridH2Row> range = t.find(first, last);
 

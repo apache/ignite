@@ -45,8 +45,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.QueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -267,14 +267,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Optional filter.
      * @return Filtered iterator.
      */
-    protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
+    protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, QueryFilter filter) {
         return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**
      * @return Filter for currently running query or {@code null} if none.
      */
-    protected static IndexingQueryFilter threadLocalFilter() {
+    protected static QueryFilter threadLocalFilter() {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
         return qctx != null ? qctx.filter() : null;
@@ -1467,7 +1467,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         private final int segment;
 
         /** */
-        final IndexingQueryFilter filter;
+        final QueryFilter filter;
 
         /** Iterator. */
         Iterator<GridH2Row> iter = emptyIterator();
@@ -1479,7 +1479,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
             int segment,
-            IndexingQueryFilter filter
+            QueryFilter filter
         ) {
             this.segment = segment;
             this.filter = filter;
@@ -1575,7 +1575,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        QueryFilter filter) {
         throw new UnsupportedOperationException();
     }
 
@@ -1587,7 +1587,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         private final GridCursor<GridH2Row> cursor;
 
         /** */
-        private final IndexingQueryCacheFilter fltr;
+        private final QueryCacheFilter fltr;
 
         /** */
         private final long time;
@@ -1601,7 +1601,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param qryFilter Filter.
          * @param cacheName Cache name.
          */
-        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
+        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, QueryFilter qryFilter,
             String cacheName) {
             this.cursor = cursor;
             this.time = time;

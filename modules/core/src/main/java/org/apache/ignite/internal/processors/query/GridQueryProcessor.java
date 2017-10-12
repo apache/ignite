@@ -109,7 +109,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.QueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1888,7 +1888,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 keepBinary, cancel, mainCacheId, true).get(0);
                         }
                         else {
-                            IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
+                            QueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
 
                             cur = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
                         }
@@ -2346,7 +2346,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
-        final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
+        final String resType, final QueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())

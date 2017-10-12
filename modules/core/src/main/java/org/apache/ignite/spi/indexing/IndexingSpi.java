@@ -72,7 +72,7 @@ public interface IndexingSpi extends IgniteSpi {
      * @throws IgniteSpiException If failed.
      */
     public Iterator<Cache.Entry<?,?>> query(@Nullable String cacheName, Collection<Object> params,
-        @Nullable IndexingQueryFilter filters) throws IgniteSpiException;
+        @Nullable QueryFilter filters) throws IgniteSpiException;
 
     /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes

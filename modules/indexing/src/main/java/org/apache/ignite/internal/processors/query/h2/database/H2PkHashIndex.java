@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.QueryFilter;
+import org.apache.ignite.spi.indexing.QueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -84,8 +84,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
-        IndexingQueryFilter f = threadLocalFilter();
-        IndexingQueryCacheFilter p = null;
+        QueryFilter f = threadLocalFilter();
+        QueryCacheFilter p = null;
 
         if (f != null) {
             String cacheName = getTable().cacheName();
@@ -179,13 +179,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
         final GridCursor<? extends CacheDataRow> cursor;
 
         /** */
-        final IndexingQueryCacheFilter filter;
+        final QueryCacheFilter filter;
 
         /**
          * @param cursor Cursor.
          * @param filter Filter.
          */
-        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IndexingQueryCacheFilter filter) {
+        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, QueryCacheFilter filter) {
             assert cursor != null;
 
             this.cursor = cursor;

@@ -28,7 +28,7 @@ import java.util.HashSet;
 /**
  * Indexing query filter.
  */
-public class IndexingQueryFilterImpl implements IndexingQueryFilter {
+public class QueryFilterImpl implements QueryFilter {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -45,7 +45,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
      * @param topVer Topology version.
      * @param partsArr Partitions array.
      */
-    public IndexingQueryFilterImpl(GridKernalContext ctx, @Nullable AffinityTopologyVersion topVer,
+    public QueryFilterImpl(GridKernalContext ctx, @Nullable AffinityTopologyVersion topVer,
         @Nullable int[] partsArr) {
         this.ctx = ctx;
 
@@ -62,7 +62,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IndexingQueryCacheFilter forCache(String cacheName) {
+    @Nullable @Override public QueryCacheFilter forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
         // REPLICATED -> nothing to filter (explicit partitions are not supported).
@@ -73,7 +73,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (cache.configuration().getBackups() == 0 && parts == null)
             return null;
 
-        return new IndexingQueryCacheFilter(cache.context().affinity(), parts, topVer,
+        return new QueryCacheFilter(cache.context().affinity(), parts, topVer,
             ctx.discovery().localNode());
     }
 }
