@@ -167,16 +167,19 @@ final class MarshallerMappingFileStore {
 
             try (FileInputStream in = new FileInputStream(file)) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String className = reader.readLine();
+                    String clsName = reader.readLine();
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, className);
+                    if (clsName == null) {
+                        throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                            ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                            "Clean up marshaller directory (<work_dir>/marshaller) and restart the node.");
+                    }
+
+                    marshCtx.registerClassNameLocally(platformId, typeId, clsName);
                 }
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file "
-                    + name
-                    + " failed."
-                    , e);
+                throw new IgniteCheckedException("Reading marshaller mapping from file " + name + " failed.", e);
             }
         }
     }
