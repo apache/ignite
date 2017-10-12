@@ -66,18 +66,18 @@ include /app/helpers/jade/mixins
                                         | Default data region properties
                                     .group-content
                                         .details-row
-                                            +text('Name:', dfltRegionModel + '.name', '"DfltRegionPolicyName" + $index', 'false', 'default', 'Default data region name')
+                                            +text('Name:', dfltRegionModel + '.name', '"DfltRegionName" + $index', 'false', 'default', 'Default data region name')
                                         .details-row
-                                            +number('Initial size:', dfltRegionModel + '.initialSize', '"DfltRegionPolicyInitialSize" + $index',
+                                            +number('Initial size:', dfltRegionModel + '.initialSize', '"DfltRegionInitialSize" + $index',
                                             'true', '268435456', '10485760', 'Default data region initial size')
                                         .details-row
-                                            +number('Maximum size:', dfltRegionModel + '.maxSize', '"DfltRegionPolicyMaxSize" + $index',
+                                            +number('Maximum size:', dfltRegionModel + '.maxSize', '"DfltRegionMaxSize" + $index',
                                             'true', '0.8 * totalMemoryAvailable', '10485760', 'Default data region maximum size')
                                         .details-row
-                                            +text('Swap file path:', dfltRegionModel + '.swapFilePath', '"DfltRegionPolicySwapFilePath" + $index', 'false',
+                                            +text('Swap file path:', dfltRegionModel + '.swapFilePath', '"DfltRegionSwapFilePath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for default data region')
                                         .details-row
-                                            +dropdown('Eviction mode:', dfltRegionModel + '.pageEvictionMode', '"DfltRegionPolicyPageEvictionMode"', 'true', 'DISABLED',
+                                            +dropdown('Eviction mode:', dfltRegionModel + '.pageEvictionMode', '"DfltRegionPageEvictionMode"', 'true', 'DISABLED',
                                             '[\
                                                 {value: "DISABLED", label: "DISABLED"},\
                                                 {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
@@ -90,19 +90,19 @@ include /app/helpers/jade/mixins
                                                 <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>\
                                             </ul>')
                                         .details-row
-                                            +number-min-max-step('Eviction threshold:', dfltRegionModel + '.evictionThreshold', '"DfltRegionPolicyEvictionThreshold" + $index',
+                                            +number-min-max-step('Eviction threshold:', dfltRegionModel + '.evictionThreshold', '"DfltRegionEvictionThreshold" + $index',
                                             'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
                                         .details-row
-                                            +number('Empty pages pool size:', dfltRegionModel + '.emptyPagesPoolSize', '"DfltRegionPolicyEmptyPagesPoolSize" + $index',
+                                            +number('Empty pages pool size:', dfltRegionModel + '.emptyPagesPoolSize', '"DfltRegionEmptyPagesPoolSize" + $index',
                                             'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for default data region')
                                         .details-row
-                                            +number('Sub intervals:', dfltRegionModel + '.subIntervals', '"DfltRegionPolicySubIntervals" + $index',
+                                            +number('Metrics sub interval count:', dfltRegionModel + '.metricsSubIntervalCount', '"DfltRegionSubIntervals" + $index',
                                             'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
                                         .details-row
-                                            +number('Rate time interval:', dfltRegionModel + '.rateTimeInterval', '"DfltRegionPolicyRateTimeInterval" + $index',
+                                            +number('Metrics rate time interval:', dfltRegionModel + '.metricsRateTimeInterval', '"DfltRegionRateTimeInterval" + $index',
                                             'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
                                         .details-row
-                                            +checkbox('Metrics enabled', dfltRegionModel + '.metricsEnabled', '"DfltRegionPolicyMetricsEnabled" + $index',
+                                            +checkbox('Metrics enabled', dfltRegionModel + '.metricsEnabled', '"DfltRegionMetricsEnabled" + $index',
                                             'Whether memory metrics are enabled by default on node startup')
                                         .details-row
                                             +checkbox('Persistence enabled', dfltRegionModel + '.persistenceEnabled', '"DfltRegionPersistenceEnabled" + $index',
@@ -110,27 +110,27 @@ include /app/helpers/jade/mixins
                             .details-row(ng-init='dataRegionTbl={type: "dataRegions", model: "dataRegionConfigurations", focusId: "name", ui: "data-region-table"}')
                                 +ignite-form-group()
                                     ignite-form-field-label
-                                        | Configured policies
+                                        | Configured data regions
                                     ignite-form-group-tooltip
-                                        | List of configured policies
+                                        | List of configured data regions
                                     ignite-form-group-add(ng-click='tableNewItem(dataRegionTbl)')
-                                        | Add Memory policy configuration
+                                        | Add data region configuration
                                     .group-content-empty(ng-if=`!(${dataRegionConfigurations} && ${dataRegionConfigurations}.length > 0)`)
                                         | Not defined
                                     .group-content(ng-show=`${dataRegionConfigurations} && ${dataRegionConfigurations}.length > 0` ng-repeat=`model in ${dataRegionConfigurations} track by $index`)
                                         hr(ng-if='$index != 0')
                                         .settings-row
-                                            +text-enabled-autofocus('Name:', 'model.name', '"DataRegionName" + $index', 'true', 'false', 'default', 'Memory policy name')
+                                            +text-enabled-autofocus('Name:', 'model.name', '"DataRegionName" + $index', 'true', 'false', 'default', 'Data region name')
                                                 +table-remove-button(dataRegionConfigurations, 'Remove memory configuration')
                                         .settings-row
                                             +number('Initial size:', 'model.initialSize', '"DataRegionInitialSize" + $index',
-                                            'true', '268435456', '10485760', 'Initial memory region size defined by this memory policy')
+                                            'true', '268435456', '10485760', 'Initial memory region size defined by this data region')
                                         .settings-row
                                             +number('Maximum size:', 'model.maxSize', '"DataRegionMaxSize" + $index',
-                                            'true', '0.8 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this memory policy')
+                                            'true', '0.8 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this data region')
                                         .settings-row
                                             +text('Swap file path:', 'model.swapFilePath', '"DataRegionSwapFilePath" + $index', 'false',
-                                            'Input swap file path', 'An optional path to a memory mapped file for this memory policy')
+                                            'Input swap file path', 'An optional path to a memory mapped file for this data region')
                                         .settings-row
                                             +dropdown('Eviction mode:', 'model.pageEvictionMode', '"DataRegionPageEvictionMode"', 'true', 'DISABLED',
                                             '[\
@@ -149,12 +149,12 @@ include /app/helpers/jade/mixins
                                             'true', '0.9', '0.5', '0.999', '0.05', 'A threshold for memory pages eviction initiation')
                                         .settings-row
                                             +number('Empty pages pool size:', 'model.emptyPagesPoolSize', '"DataRegionEmptyPagesPoolSize" + $index',
-                                            'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for this memory policy')
+                                            'true', '100', '11', 'The minimal number of empty pages to be present in reuse lists for this data region')
                                         .settings-row
-                                            +number('Sub intervals:', 'model.subIntervals', '"DataRegionSubIntervals" + $index',
+                                            +number('Metrics sub interval count:', 'model.metricsSubIntervalCount', '"DataRegionSubIntervals" + $index',
                                                 'true', '5', '1', 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates')
                                         .settings-row
-                                            +number('Rate time interval:', 'model.rateTimeInterval', '"DataRegionRateTimeInterval" + $index',
+                                            +number('Metrics rate time interval:', 'model.metricsRateTimeInterval', '"DataRegionRateTimeInterval" + $index',
                                                 'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
                                         .settings-row
                                             +checkbox('Metrics enabled', 'model.metricsEnabled', '"DataRegionMetricsEnabled" + $index',
@@ -163,16 +163,16 @@ include /app/helpers/jade/mixins
                                             +checkbox('Persistence enabled', 'model.persistenceEnabled', '"DataRegionPersistenceEnabled" + $index',
                                             'Enable Ignite Native Persistence')
                 .settings-row
-                    +text-enabled('Store path:', `${model}.persistentStorePath`, '"DataStorageStorePath"', 'true', 'false', 'Input store path',
-                    'A path the root directory where the Persistent Store will persist data and indexes')
+                    +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'Input storage path',
+                    'Directory where index and partition files are stored')
                 .settings-row
-                    +number('Checkpointing frequency:', `${model}.checkpointingFrequency`, '"DataStorageCheckpointingFrequency"', 'true', '180000', '1',
+                    +number('Checkpoint frequency:', `${model}.checkpointFrequency`, '"DataStorageCheckpointFrequency"', 'true', '180000', '1',
                     'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
                 .settings-row
-                    +number('Checkpointing page buffer size:', `${model}.checkpointingPageBufferSize`, '"DataStorageCheckpointingPageBufferSize"', 'true', '268435456', '0',
+                    +number('Checkpoint page buffer size:', `${model}.checkpointPageBufferSize`, '"DataStorageCheckpointPageBufferSize"', 'true', '268435456', '0',
                     'Amount of memory allocated for a checkpointing temporary buffer')
                 .settings-row
-                    +number('Checkpointing threads:', `${model}.checkpointingThreads`, '"DataStorageCheckpointingThreads"', 'true', '1', '1', 'A number of threads to use for the checkpointing purposes')
+                    +number('Checkpoint threads:', `${model}.checkpointThreads`, '"DataStorageCheckpointThreads"', 'true', '4', '1', 'A number of threads to use for the checkpoint purposes')
                 .settings-row
                     +dropdown('Checkpoint write order:', `${model}.checkpointWriteOrder`, '"DataStorageCheckpointWriteOrder"', 'true', 'SEQUENTIAL',
                     '[\
@@ -185,7 +185,22 @@ include /app/helpers/jade/mixins
                         <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
                     </ul>')
                 .settings-row
-                    +text-enabled('WAL store path:', `${model}.walStorePath`, '"DataStorageWalStorePath"', 'true', 'false', 'Input store path', 'A path to the directory where WAL is stored')
+                    +dropdown('WAL mode:', `${model}.walMode`, '"DataStorageWalMode"', 'true', 'DEFAULT',
+                    '[\
+                        {value: "DEFAULT", label: "DEFAULT"},\
+                        {value: "LOG_ONLY", label: "LOG_ONLY"}\
+                        {value: "BACKGROUND", label: "BACKGROUND"}\
+                        {value: "NONE", label: "NONE"}\
+                    ]',
+                    'Type define behavior wal fsync.\
+                    <ul>\
+                        <li>DEFAULT - full-sync disk writes</li>\
+                        <li>LOG_ONLY - flushes application buffers</li>\
+                        <li>BACKGROUND - does not force application&#39;s buffer flush</li>\
+                        <li>NONE - WAL is disabled</li>\
+                    </ul>')
+                .settings-row
+                    +text-enabled('WAL path:', `${model}.walPath`, '"DataStorageWalPath"', 'true', 'false', 'db/wal', 'A path to the directory where WAL is stored')
                 .settings-row
                     +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'Input archive path', 'A path to the WAL archive directory')
                 .settings-row
@@ -204,21 +219,21 @@ include /app/helpers/jade/mixins
                     'How many bytes iterator read from disk(for one reading), during go ahead WAL')
                 .settings-row
                     +number('Lock wait time:', `${model}.lockWaitTime`, '"DataStorageLockWaitTime"', 'true', '10000', '1',
-                    'Time out in second, while wait and try get file lock for start persist manager')
+                    'Time out in milliseconds, while wait and try get file lock for start persist manager')
                 .settings-row
-                    +number('Rate time interval:', `${model}.rateTimeInterval`, '"DataStorageRateTimeInterval"', 'true', '60000', '1000',
-                    'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked.')
-                .settings-row
-                    +number('Thread local buffer size:', `${model}.tlbSize`, '"DataStorageTlbSize"', 'true', '131072', '1',
+                    +number('WAL thread local buffer size:', `${model}.walThreadLocalBufferSize`, '"DataStorageWalThreadLocalBufferSize"', 'true', '131072', '1',
                     'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL')
                 .settings-row
-                    +number('Sub intervals:', `${model}.subIntervals`, '"DataStorageSubIntervals"', 'true', '5', '1',
+                    +number('Metrics sub interval count:', `${model}.metricsSubIntervalCount`, '"DataStorageMetricsSubIntervalCount"', 'true', '5', '1',
                     'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics')
+                .settings-row
+                    +number('Metrics rate time interval:', `${model}.metricsRateTimeInterval`, '"DataStorageMetricsRateTimeInterval"', 'true', '60000', '1000',
+                    'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked')
                 .settings-row
                     +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'SEQUENTIAL',
                     '[\
                         {value: "RANDOM", label: "RANDOM"},\
-                        {value: "SEQUENTIAL", label: "SEQUENTIAL"},\
+                        {value: "ASYNC", label: "ASYNC"},\
                         {value: null, label: "Default"},\
                     ]',
                     'Order of writing pages to disk storage during checkpoint.\

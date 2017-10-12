@@ -64,13 +64,13 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     private boolean metricsEnabled;
 
     /** Number of sub-intervals. */
-    private int subIntervals;
+    private int metricsSubIntervalCount;
 
     /**
      * Time interval (in milliseconds) for {@link DataRegionMetrics#getAllocationRate()}
      * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
      */
-    private long rateTimeInterval;
+    private long metricsRateTimeInterval;
 
     /** Enable Ignite Native Persistence. */
     private boolean persistenceEnabled;
@@ -98,8 +98,8 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         evictionThreshold = plc.getEvictionThreshold();
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
         metricsEnabled = plc.isMetricsEnabled();
-        subIntervals = plc.getSubIntervals();
-        rateTimeInterval = plc.getRateTimeInterval();
+        metricsSubIntervalCount = plc.getMetricsSubIntervalCount();
+        metricsRateTimeInterval = plc.getMetricsRateTimeInterval();
         persistenceEnabled = plc.isPersistenceEnabled();
     }
 
@@ -173,15 +173,15 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /**
      * @return Number of sub intervals.
      */
-    public int getSubIntervals() {
-        return subIntervals;
+    public int getMetricsSubIntervalCount() {
+        return metricsSubIntervalCount;
     }
 
     /**
      * @return Time interval over which allocation rate is calculated.
      */
-    public long getRateTimeInterval() {
-        return rateTimeInterval;
+    public long getMetricsRateTimeInterval() {
+        return metricsRateTimeInterval;
     }
 
     /**
@@ -201,8 +201,8 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         out.writeDouble(evictionThreshold);
         out.writeInt(emptyPagesPoolSize);
         out.writeBoolean(metricsEnabled);
-        out.writeInt(subIntervals);
-        out.writeLong(rateTimeInterval);
+        out.writeInt(metricsSubIntervalCount);
+        out.writeLong(metricsRateTimeInterval);
         out.writeBoolean(persistenceEnabled);
     }
 
@@ -216,8 +216,8 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         evictionThreshold = in.readDouble();
         emptyPagesPoolSize = in.readInt();
         metricsEnabled = in.readBoolean();
-        subIntervals = in.readInt();
-        rateTimeInterval = in.readLong();
+        metricsSubIntervalCount = in.readInt();
+        metricsRateTimeInterval = in.readLong();
         persistenceEnabled = in.readBoolean();
     }
 

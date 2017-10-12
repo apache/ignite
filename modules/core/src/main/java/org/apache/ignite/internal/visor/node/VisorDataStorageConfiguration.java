@@ -58,19 +58,19 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private List<VisorDataRegionConfiguration> dataRegCfgs;
 
     /** */
-    private String persistenceStorePath;
+    private String storagePath;
 
     /** Checkpointing frequency. */
-    private long checkpointingFreq;
+    private long checkpointFreq;
 
     /** Lock wait time. */
     private long lockWaitTime;
 
     /** */
-    private long checkpointingPageBufSize;
+    private long checkpointPageBufSize;
 
     /** */
-    private int checkpointingThreads;
+    private int checkpointThreads;
 
     /** Checkpoint write order. */
     private CheckpointWriteOrder checkpointWriteOrder;
@@ -85,7 +85,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private int walSegmentSize;
 
     /** WAL persistence path. */
-    private String walStorePath;
+    private String walPath;
 
     /** WAL archive path. */
     private String walArchivePath;
@@ -97,7 +97,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private WALMode walMode;
 
     /** WAl thread local buffer size. */
-    private int tlbSize;
+    private int walTlbSize;
 
     /** Wal flush frequency. */
     private long walFlushFreq;
@@ -115,10 +115,10 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private String fileIOFactory;
 
     /** Number of sub-intervals. */
-    private int subIntervals;
+    private int metricsSubIntervalCount;
 
     /** Time interval (in milliseconds) for rate-based metrics. */
-    private long rateTimeInterval;
+    private long metricsRateTimeInterval;
 
     /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment */
     private long walAutoArchiveAfterInactivity;
@@ -153,27 +153,27 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
 
         dataRegCfgs = VisorDataRegionConfiguration.from(cfg.getDataRegionConfigurations());
 
-        persistenceStorePath = cfg.getPersistentStorePath();
-        checkpointingFreq = cfg.getCheckpointingFrequency();
+        storagePath = cfg.getStoragePath();
+        checkpointFreq = cfg.getCheckpointFrequency();
         lockWaitTime = cfg.getLockWaitTime();
-        checkpointingPageBufSize = cfg.getCheckpointingPageBufferSize();
-        checkpointingThreads = cfg.getCheckpointingThreads();
+        checkpointPageBufSize = cfg.getCheckpointPageBufferSize();
+        checkpointThreads = cfg.getCheckpointThreads();
         checkpointWriteOrder = cfg.getCheckpointWriteOrder();
         walHistSize = cfg.getWalHistorySize();
         walSegments = cfg.getWalSegments();
         walSegmentSize = cfg.getWalSegmentSize();
-        walStorePath = cfg.getWalStorePath();
+        walPath = cfg.getWalPath();
         walArchivePath = cfg.getWalArchivePath();
         metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
-        tlbSize = cfg.getTlbSize();
+        walTlbSize = cfg.getWalThreadLocalBufferSize();
         walFlushFreq = cfg.getWalFlushFrequency();
         walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();
         alwaysWriteFullPages = cfg.isAlwaysWriteFullPages();
         fileIOFactory = compactClass(cfg.getFileIOFactory());
-        subIntervals = cfg.getSubIntervals();
-        rateTimeInterval = cfg.getRateTimeInterval();
+        metricsSubIntervalCount = cfg.getMetricsSubIntervalCount();
+        metricsRateTimeInterval = cfg.getMetricsRateTimeInterval();
         walAutoArchiveAfterInactivity = cfg.getWalAutoArchiveAfterInactivity();
         writeThrottlingEnabled = cfg.isWriteThrottlingEnabled();
     }
@@ -238,29 +238,29 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /**
      * @return Path the root directory where the Persistent Store will persist data and indexes.
      */
-    public String getPersistentStorePath() {
-        return persistenceStorePath;
+    public String getStoragePath() {
+        return storagePath;
     }
 
     /**
      * @return Checkpointing frequency in milliseconds.
      */
-    public long getCheckpointingFrequency() {
-        return checkpointingFreq;
+    public long getCheckpointFrequency() {
+        return checkpointFreq;
     }
 
     /**
      * @return Checkpointing page buffer size in bytes.
      */
-    public long getCheckpointingPageBufferSize() {
-        return checkpointingPageBufSize;
+    public long getCheckpointPageBufferSize() {
+        return checkpointPageBufSize;
     }
 
     /**
      * @return Number of checkpointing threads.
      */
-    public int getCheckpointingThreads() {
-        return checkpointingThreads;
+    public int getCheckpointThreads() {
+        return checkpointThreads;
     }
 
     /**
@@ -301,8 +301,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /**
      * @return WAL persistence path, absolute or relative to Ignite work directory.
      */
-    public String getWalStorePath() {
-        return walStorePath;
+    public String getWalPath() {
+        return walPath;
     }
 
     /**
@@ -322,15 +322,15 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /**
      * @return Time interval in milliseconds.
      */
-    public long getRateTimeInterval() {
-        return rateTimeInterval;
+    public long getMetricsRateTimeInterval() {
+        return metricsRateTimeInterval;
     }
 
     /**
      * @return The number of sub-intervals for history tracking.
      */
-    public int getSubIntervals() {
-        return subIntervals;
+    public int getMetricsSubIntervalCount() {
+        return metricsSubIntervalCount;
     }
 
     /**
@@ -343,8 +343,8 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /**
      * @return Thread local buffer size.
      */
-    public int getTlbSize() {
-        return tlbSize;
+    public int getWalThreadLocalBufferSize() {
+        return walTlbSize;
     }
 
     /**
@@ -404,27 +404,27 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeInt(concLvl);
         out.writeObject(dfltDataRegCfg);
         U.writeCollection(out, dataRegCfgs);
-        U.writeString(out, persistenceStorePath);
-        out.writeLong(checkpointingFreq);
+        U.writeString(out, storagePath);
+        out.writeLong(checkpointFreq);
         out.writeLong(lockWaitTime);
-        out.writeLong(checkpointingPageBufSize);
-        out.writeInt(checkpointingThreads);
+        out.writeLong(checkpointPageBufSize);
+        out.writeInt(checkpointThreads);
         U.writeEnum(out, checkpointWriteOrder);
         out.writeInt(walHistSize);
         out.writeInt(walSegments);
         out.writeInt(walSegmentSize);
-        U.writeString(out, walStorePath);
+        U.writeString(out, walPath);
         U.writeString(out, walArchivePath);
         out.writeBoolean(metricsEnabled);
         U.writeEnum(out, walMode);
-        out.writeInt(tlbSize);
+        out.writeInt(walTlbSize);
         out.writeLong(walFlushFreq);
         out.writeLong(walFsyncDelay);
         out.writeInt(walRecordIterBuffSize);
         out.writeBoolean(alwaysWriteFullPages);
         U.writeString(out, fileIOFactory);
-        out.writeInt(subIntervals);
-        out.writeLong(rateTimeInterval);
+        out.writeInt(metricsSubIntervalCount);
+        out.writeLong(metricsRateTimeInterval);
         out.writeLong(walAutoArchiveAfterInactivity);
         out.writeBoolean(writeThrottlingEnabled);
     }
@@ -437,27 +437,27 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         concLvl = in.readInt();
         dfltDataRegCfg = (VisorDataRegionConfiguration)in.readObject();
         dataRegCfgs = U.readList(in);
-        persistenceStorePath = U.readString(in);
-        checkpointingFreq = in.readLong();
+        storagePath = U.readString(in);
+        checkpointFreq = in.readLong();
         lockWaitTime = in.readLong();
-        checkpointingPageBufSize = in.readLong();
-        checkpointingThreads = in.readInt();
+        checkpointPageBufSize = in.readLong();
+        checkpointThreads = in.readInt();
         checkpointWriteOrder = CheckpointWriteOrder.fromOrdinal(in.readByte());
         walHistSize = in.readInt();
         walSegments = in.readInt();
         walSegmentSize = in.readInt();
-        walStorePath = U.readString(in);
+        walPath = U.readString(in);
         walArchivePath = U.readString(in);
         metricsEnabled = in.readBoolean();
         walMode = WALMode.fromOrdinal(in.readByte());
-        tlbSize = in.readInt();
+        walTlbSize = in.readInt();
         walFlushFreq = in.readLong();
         walFsyncDelay = in.readLong();
         walRecordIterBuffSize = in.readInt();
         alwaysWriteFullPages = in.readBoolean();
         fileIOFactory = U.readString(in);
-        subIntervals = in.readInt();
-        rateTimeInterval = in.readLong();
+        metricsSubIntervalCount = in.readInt();
+        metricsRateTimeInterval = in.readLong();
         walAutoArchiveAfterInactivity = in.readLong();
         writeThrottlingEnabled = in.readBoolean();
     }

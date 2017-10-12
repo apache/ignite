@@ -325,14 +325,14 @@ const DFLT_CLUSTER = {
             evictionThreshold: 0.9,
             emptyPagesPoolSize: 100,
             metricsEnabled: false,
-            subIntervals: 5,
-            rateTimeInterval: 60000
+            metricsSubIntervalCount: 5,
+            metricsRateTimeInterval: 60000
         },
         metricsEnabled: false,
         alwaysWriteFullPages: false,
-        checkpointingFrequency: 180000,
-        checkpointingPageBufferSize: 268435456,
-        checkpointingThreads: 1,
+        checkpointFrequency: 180000,
+        checkpointPageBufferSize: 268435456,
+        checkpointThreads: 4,
         walSegments: 10,
         walSegmentSize: 67108864,
         walHistorySize: 20,
@@ -340,9 +340,9 @@ const DFLT_CLUSTER = {
         walFsyncDelayNanos: 1000,
         walRecordIteratorBufferSize: 67108864,
         lockWaitTime: 10000,
-        rateTimeInterval: 60000,
-        tlbSize: 131072,
-        subIntervals: 5
+        walThreadLocalBufferSize: 131072,
+        metricsSubIntervalCount: 5,
+        metricsRateTimeInterval: 60000
     },
     utilityCacheKeepAliveTime: 60000,
     hadoopConfiguration: {

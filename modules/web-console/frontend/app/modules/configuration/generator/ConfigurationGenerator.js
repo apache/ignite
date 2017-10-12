@@ -1352,8 +1352,8 @@ export default class IgniteConfigurationGenerator {
             .enumProperty('pageEvictionMode')
             .doubleProperty('evictionThreshold')
             .intProperty('emptyPagesPoolSize')
-            .intProperty('subIntervals')
-            .longProperty('rateTimeInterval')
+            .intProperty('metricsSubIntervalCount')
+            .longProperty('metricsRateTimeInterval')
             .boolProperty('metricsEnabled')
             .boolProperty('persistenceEnabled');
     }
@@ -1389,11 +1389,11 @@ export default class IgniteConfigurationGenerator {
         if (!_.isEmpty(dataRegionCfgs))
             storageBean.varArgProperty('dataRegionConfigurations', 'dataRegionConfigurations', dataRegionCfgs, 'org.apache.ignite.configuration.DataRegionConfiguration');
 
-        storageBean.stringProperty('persistentStorePath')
-            .intProperty('checkpointingFrequency')
-            .longProperty('checkpointingPageBufferSize')
-            .intProperty('checkpointingThreads')
-            .stringProperty('walStorePath')
+        storageBean.stringProperty('storagePath')
+            .intProperty('checkpointFrequency')
+            .longProperty('checkpointPageBufferSize')
+            .intProperty('checkpointThreads')
+            .stringProperty('walPath')
             .stringProperty('walArchivePath')
             .intProperty('walSegments')
             .intProperty('walSegmentSize')
@@ -1402,13 +1402,25 @@ export default class IgniteConfigurationGenerator {
             .longProperty('walFsyncDelayNanos')
             .intProperty('walRecordIteratorBufferSize')
             .longProperty('lockWaitTime')
-            .intProperty('rateTimeInterval')
-            .intProperty('tlbSize')
-            .intProperty('subIntervals')
+            .intProperty('walThreadLocalBufferSize')
+            .intProperty('metricsSubIntervalCount')
+            .intProperty('metricsRateTimeInterval')
             .longProperty('walAutoArchiveAfterInactivity')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
             .boolProperty('writeThrottlingEnabled');
+
+        const fileIOFactory = _.get(dataStorageCfg, 'fileIOFactory');
+
+        let factoryBean;
+
+        if (fileIOFactory === 'RANDOM')
+            factoryBean = new Bean('org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory', 'rndFileIoFactory', {});
+        else if (fileIOFactory === 'ASYNC')
+            factoryBean = new Bean('org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory', 'asyncFileIoFactory', {});
+
+        if (factoryBean)
+            storageBean.beanProperty('fileIOFactory', factoryBean);
 
         if (storageBean.isEmpty())
             return cfg;

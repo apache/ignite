@@ -309,7 +309,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /**
      * @return Persistent store configuration.
      */
-    public VisorPersistentStoreConfiguration getDataStorageConfiguration() {
+    public VisorPersistentStoreConfiguration getPersistentStoreConfiguration() {
         return psCfg;
     }
 
@@ -365,7 +365,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /**
      * @return Configuration of data storage.
      */
-    public VisorDataStorageConfiguration getDataStorage() {
+    public VisorDataStorageConfiguration getDataStorageConfiguration() {
         return dataStorage;
     }
 
