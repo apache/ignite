@@ -175,72 +175,63 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
 
             LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-            fields.put("ACCOUNTCODE", "java.lang.String");
-            fields.put("ASSETTYPE", "java.lang.String");
-            fields.put("ASSETUNIT", "java.lang.String");
-            fields.put("ATLASFOLDERID", "java.lang.String");
-            fields.put("ATLASINSTRUMENTSTRUCTUREPATH", "java.lang.String");
-            fields.put("BOOKSOURCESYSTEM", "java.lang.String");
-            fields.put("BOOKSOURCESYSTEMCODE", "java.lang.String");
-            fields.put("BUSINESSDATE", "java.lang.String");
-            fields.put("CUSIP", "java.lang.String");
-            fields.put("DATASETFILTER", "java.lang.String");
-            fields.put("DATASETLABEL", "java.lang.String");
-            fields.put("ESMP", "java.lang.String");
-            fields.put("FOAGGRCODE", "java.lang.String");
-            fields.put("HOSTPRODID", "java.lang.String");
-            fields.put("INSTRUMENTEXPIRYDATE", "java.lang.String");
-            fields.put("INSTRUMENTMATURITYDATE", "java.lang.String");
-            fields.put("INSTRUMENTTYPE", "java.lang.String");
-            fields.put("ISIN", "java.lang.String");
-            fields.put("PROXYINSTRUMENTID", "java.lang.String");
-            fields.put("PROXYINSTRUMENTIDTYPE", "java.lang.String");
-            fields.put("PROXYINSTRUMENTTYPE", "java.lang.String");
-            fields.put("REGION", "java.lang.String");
-            fields.put("RIC", "java.lang.String");
-            fields.put("RISKFACTORNAME", "java.lang.String");
-            fields.put("RISKPARENTINSTRUMENTID", "java.lang.String");
-            fields.put("RISKPARENTINSTRUMENTIDTYPE", "java.lang.String");
-            fields.put("RISKSOURCESYSTEM", "java.lang.String");
-            fields.put("RISKSUBJECTCHORUSBOOKID", "java.lang.String");
-            fields.put("RISKSUBJECTID", "java.lang.String");
-            fields.put("RISKSUBJECTINSTRUMENTCOUNTERPARTYID", "java.lang.String");
-            fields.put("RISKSUBJECTINSTRUMENTID", "java.lang.String");
-            fields.put("RISKSUBJECTINSTRUMENTIDTYPE", "java.lang.String");
-            fields.put("RISKSUBJECTSOURCE", "java.lang.String");
-            fields.put("RISKSUBJECTTYPE", "java.lang.String");
-            fields.put("SENSITIVITYTYPE", "java.lang.String");
-            fields.put("SERIESDATE", "java.lang.String");
-            fields.put("SERIESDAY", "java.lang.String");
-            fields.put("SNAPVERSION", "java.lang.String");
-            fields.put("SYS_AUDIT_TRACE", "java.lang.String");
-            fields.put("UNDERLYINGSECURITYID", "java.lang.String");
-            fields.put("UNDERLYINGSECURITYIDTYPE", "java.lang.String");
-            fields.put("VALUATIONSOURCECONTEXTLABELNAME", "java.lang.String");
-            fields.put("VARTYPE", "java.lang.String");
-            fields.put("EODTOTALVALUE", "java.lang.Double");
-            fields.put("QUANTITY", "java.lang.Double");
-            fields.put("STRIKEVALUE", "java.lang.Double");
-            fields.put("THEOPRICE", "java.lang.Double");
-            fields.put("TOTALVALUE", "java.lang.Double");
-            fields.put("VALUE", "java.lang.Double");
+            fields.put("field1", "java.lang.String");
+            fields.put("field2", "java.lang.String");
+            fields.put("field3", "java.lang.String");
+            fields.put("field4", "java.lang.String");
+            fields.put("field5", "java.lang.String");
+            fields.put("field6", "java.lang.String");
+            fields.put("field7", "java.lang.String");
+            fields.put("field8", "java.lang.String");
+            fields.put("field9", "java.lang.String");
+            fields.put("field10", "java.lang.String");
+            fields.put("field11", "java.lang.String");
+            fields.put("field12", "java.lang.String");
+            fields.put("field13", "java.lang.String");
+            fields.put("field14", "java.lang.String");
+            fields.put("field15", "java.lang.String");
+            fields.put("field16", "java.lang.String");
+            fields.put("field17", "java.lang.String");
+            fields.put("field18", "java.lang.String");
+            fields.put("field19", "java.lang.String");
+            fields.put("field20", "java.lang.String");
+            fields.put("field21", "java.lang.String");
+            fields.put("field22", "java.lang.String");
+            fields.put("field23", "java.lang.String");
+            fields.put("field24", "java.lang.String");
+            fields.put("field25", "java.lang.String");
+            fields.put("field26", "java.lang.String");
+            fields.put("field27", "java.lang.String");
+            fields.put("field28", "java.lang.String");
+            fields.put("field29", "java.lang.String");
+            fields.put("field30", "java.lang.String");
+            fields.put("field31", "java.lang.String");
+            fields.put("field32", "java.lang.String");
+            fields.put("field33", "java.lang.String");
+            fields.put("field34", "java.lang.String");
+            fields.put("field35", "java.lang.String");
+            fields.put("field36", "java.lang.String");
+            fields.put("field37", "java.lang.String");
+            fields.put("field38", "java.lang.String");
+            fields.put("field39", "java.lang.String");
+            fields.put("field40", "java.lang.String");
+            fields.put("field41", "java.lang.String");
+            fields.put("field42", "java.lang.String");
+            fields.put("field43", "java.lang.String");
+            fields.put("field44", "java.lang.Double");
+            fields.put("field45", "java.lang.Double");
+            fields.put("field46", "java.lang.Double");
+            fields.put("field47", "java.lang.Double");
+            fields.put("field48", "java.lang.Double");
+            fields.put("field49", "java.lang.Double");
 
             entity.setFields(fields);
 
-            QueryIndex businessdate = new QueryIndex("BUSINESSDATE");
-            businessdate.setInlineSize(32);
-
-            QueryIndex risksubjectid = new QueryIndex("RISKSUBJECTID");
-            risksubjectid.setInlineSize(32);
-
-            QueryIndex seriesdate = new QueryIndex("SERIESDATE");
-            seriesdate.setInlineSize(32);
-
-            QueryIndex snapversion = new QueryIndex("SNAPVERSION");
-            snapversion.setInlineSize(32);
-
-            QueryIndex vartype = new QueryIndex("VARTYPE");
-            vartype.setInlineSize(32);
+            QueryIndex businessdate = new QueryIndex("field1");
+            QueryIndex risksubjectid = new QueryIndex("field2");
+            QueryIndex seriesdate = new QueryIndex("field3");
+            QueryIndex snapversion = new QueryIndex("field4");
+            QueryIndex vartype = new QueryIndex("field5");
 
             entity.setIndexes(Arrays.asList(
                 businessdate,

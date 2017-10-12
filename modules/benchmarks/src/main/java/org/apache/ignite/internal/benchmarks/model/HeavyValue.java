@@ -67,509 +67,119 @@ public class HeavyValue {
         );
     }
 
-    String ACCOUNTCODE;
-    String ASSETTYPE;
-    String ASSETUNIT;
-    String ATLASFOLDERID;
-    String ATLASINSTRUMENTSTRUCTUREPATH;
-    String BOOKSOURCESYSTEM;
-    String BOOKSOURCESYSTEMCODE;
-    String BUSINESSDATE;
-    String CUSIP;
-    String DATASETFILTER;
-    String DATASETLABEL;
-    Double EODTOTALVALUE;
-    String ESMP;
-    String FOAGGRCODE;
-    String HOSTPRODID;
-    String INSTRUMENTEXPIRYDATE;
-    String INSTRUMENTMATURITYDATE;
-    String INSTRUMENTTYPE;
-    String ISIN;
-    String PROXYINSTRUMENTID;
-    String PROXYINSTRUMENTIDTYPE;
-    String PROXYINSTRUMENTTYPE;
-    Double QUANTITY;
-    String REGION;
-    String RIC;
-    String RISKFACTORNAME;
-    String RISKPARENTINSTRUMENTID;
-    String RISKPARENTINSTRUMENTIDTYPE;
-    String RISKSOURCESYSTEM;
-    String RISKSUBJECTCHORUSBOOKID;
-    String RISKSUBJECTID;
-    String RISKSUBJECTINSTRUMENTCOUNTERPARTYID;
-    String RISKSUBJECTINSTRUMENTID;
-    String RISKSUBJECTINSTRUMENTIDTYPE;
-    String RISKSUBJECTSOURCE;
-    String RISKSUBJECTTYPE;
-    String SENSITIVITYTYPE;
-    String SERIESDATE;
-    String SERIESDAY;
-    String SNAPVERSION;
-    Double STRIKEVALUE;
-    String SYS_AUDIT_TRACE;
-    Double THEOPRICE;
-    Double TOTALVALUE;
-    String UNDERLYINGSECURITYID;
-    String UNDERLYINGSECURITYIDTYPE;
-    String VALUATIONSOURCECONTEXTLABELNAME;
-    Double VALUE;
-    String VARTYPE;
-
-    public HeavyValue(String ACCOUNTCODE, String ASSETTYPE, String ASSETUNIT, String ATLASFOLDERID,
-        String ATLASINSTRUMENTSTRUCTUREPATH, String BOOKSOURCESYSTEM, String BOOKSOURCESYSTEMCODE,
-        String BUSINESSDATE, String CUSIP, String DATASETFILTER, String DATASETLABEL, Double EODTOTALVALUE,
-        String ESMP, String FOAGGRCODE, String HOSTPRODID, String INSTRUMENTEXPIRYDATE,
-        String INSTRUMENTMATURITYDATE, String INSTRUMENTTYPE, String ISIN, String PROXYINSTRUMENTID,
-        String PROXYINSTRUMENTIDTYPE, String PROXYINSTRUMENTTYPE, Double QUANTITY, String REGION, String RIC,
-        String RISKFACTORNAME, String RISKPARENTINSTRUMENTID, String RISKPARENTINSTRUMENTIDTYPE,
-        String RISKSOURCESYSTEM, String RISKSUBJECTCHORUSBOOKID, String RISKSUBJECTID,
-        String RISKSUBJECTINSTRUMENTCOUNTERPARTYID, String RISKSUBJECTINSTRUMENTID,
-        String RISKSUBJECTINSTRUMENTIDTYPE, String RISKSUBJECTSOURCE, String RISKSUBJECTTYPE,
-        String SENSITIVITYTYPE, String SERIESDATE, String SERIESDAY, String SNAPVERSION, Double STRIKEVALUE,
-        String SYS_AUDIT_TRACE, Double THEOPRICE, Double TOTALVALUE, String UNDERLYINGSECURITYID,
-        String UNDERLYINGSECURITYIDTYPE, String VALUATIONSOURCECONTEXTLABELNAME, Double VALUE, String VARTYPE) {
-        this.ACCOUNTCODE = ACCOUNTCODE;
-        this.ASSETTYPE = ASSETTYPE;
-        this.ASSETUNIT = ASSETUNIT;
-        this.ATLASFOLDERID = ATLASFOLDERID;
-        this.ATLASINSTRUMENTSTRUCTUREPATH = ATLASINSTRUMENTSTRUCTUREPATH;
-        this.BOOKSOURCESYSTEM = BOOKSOURCESYSTEM;
-        this.BOOKSOURCESYSTEMCODE = BOOKSOURCESYSTEMCODE;
-        this.BUSINESSDATE = BUSINESSDATE;
-        this.CUSIP = CUSIP;
-        this.DATASETFILTER = DATASETFILTER;
-        this.DATASETLABEL = DATASETLABEL;
-        this.EODTOTALVALUE = EODTOTALVALUE;
-        this.ESMP = ESMP;
-        this.FOAGGRCODE = FOAGGRCODE;
-        this.HOSTPRODID = HOSTPRODID;
-        this.INSTRUMENTEXPIRYDATE = INSTRUMENTEXPIRYDATE;
-        this.INSTRUMENTMATURITYDATE = INSTRUMENTMATURITYDATE;
-        this.INSTRUMENTTYPE = INSTRUMENTTYPE;
-        this.ISIN = ISIN;
-        this.PROXYINSTRUMENTID = PROXYINSTRUMENTID;
-        this.PROXYINSTRUMENTIDTYPE = PROXYINSTRUMENTIDTYPE;
-        this.PROXYINSTRUMENTTYPE = PROXYINSTRUMENTTYPE;
-        this.QUANTITY = QUANTITY;
-        this.REGION = REGION;
-        this.RIC = RIC;
-        this.RISKFACTORNAME = RISKFACTORNAME;
-        this.RISKPARENTINSTRUMENTID = RISKPARENTINSTRUMENTID;
-        this.RISKPARENTINSTRUMENTIDTYPE = RISKPARENTINSTRUMENTIDTYPE;
-        this.RISKSOURCESYSTEM = RISKSOURCESYSTEM;
-        this.RISKSUBJECTCHORUSBOOKID = RISKSUBJECTCHORUSBOOKID;
-        this.RISKSUBJECTID = RISKSUBJECTID;
-        this.RISKSUBJECTINSTRUMENTCOUNTERPARTYID = RISKSUBJECTINSTRUMENTCOUNTERPARTYID;
-        this.RISKSUBJECTINSTRUMENTID = RISKSUBJECTINSTRUMENTID;
-        this.RISKSUBJECTINSTRUMENTIDTYPE = RISKSUBJECTINSTRUMENTIDTYPE;
-        this.RISKSUBJECTSOURCE = RISKSUBJECTSOURCE;
-        this.RISKSUBJECTTYPE = RISKSUBJECTTYPE;
-        this.SENSITIVITYTYPE = SENSITIVITYTYPE;
-        this.SERIESDATE = SERIESDATE;
-        this.SERIESDAY = SERIESDAY;
-        this.SNAPVERSION = SNAPVERSION;
-        this.STRIKEVALUE = STRIKEVALUE;
-        this.SYS_AUDIT_TRACE = SYS_AUDIT_TRACE;
-        this.THEOPRICE = THEOPRICE;
-        this.TOTALVALUE = TOTALVALUE;
-        this.UNDERLYINGSECURITYID = UNDERLYINGSECURITYID;
-        this.UNDERLYINGSECURITYIDTYPE = UNDERLYINGSECURITYIDTYPE;
-        this.VALUATIONSOURCECONTEXTLABELNAME = VALUATIONSOURCECONTEXTLABELNAME;
-        this.VALUE = VALUE;
-        this.VARTYPE = VARTYPE;
-    }
-
-    public String getACCOUNTCODE() {
-        return ACCOUNTCODE;
-    }
-
-    public void setACCOUNTCODE(String ACCOUNTCODE) {
-        this.ACCOUNTCODE = ACCOUNTCODE;
-    }
-
-    public String getASSETTYPE() {
-        return ASSETTYPE;
-    }
-
-    public void setASSETTYPE(String ASSETTYPE) {
-        this.ASSETTYPE = ASSETTYPE;
-    }
-
-    public String getASSETUNIT() {
-        return ASSETUNIT;
-    }
-
-    public void setASSETUNIT(String ASSETUNIT) {
-        this.ASSETUNIT = ASSETUNIT;
-    }
-
-    public String getATLASFOLDERID() {
-        return ATLASFOLDERID;
-    }
-
-    public void setATLASFOLDERID(String ATLASFOLDERID) {
-        this.ATLASFOLDERID = ATLASFOLDERID;
-    }
-
-    public String getATLASINSTRUMENTSTRUCTUREPATH() {
-        return ATLASINSTRUMENTSTRUCTUREPATH;
-    }
-
-    public void setATLASINSTRUMENTSTRUCTUREPATH(String ATLASINSTRUMENTSTRUCTUREPATH) {
-        this.ATLASINSTRUMENTSTRUCTUREPATH = ATLASINSTRUMENTSTRUCTUREPATH;
-    }
-
-    public String getBOOKSOURCESYSTEM() {
-        return BOOKSOURCESYSTEM;
-    }
-
-    public void setBOOKSOURCESYSTEM(String BOOKSOURCESYSTEM) {
-        this.BOOKSOURCESYSTEM = BOOKSOURCESYSTEM;
-    }
-
-    public String getBOOKSOURCESYSTEMCODE() {
-        return BOOKSOURCESYSTEMCODE;
-    }
-
-    public void setBOOKSOURCESYSTEMCODE(String BOOKSOURCESYSTEMCODE) {
-        this.BOOKSOURCESYSTEMCODE = BOOKSOURCESYSTEMCODE;
-    }
-
-    public String getBUSINESSDATE() {
-        return BUSINESSDATE;
-    }
-
-    public void setBUSINESSDATE(String BUSINESSDATE) {
-        this.BUSINESSDATE = BUSINESSDATE;
-    }
-
-    public String getCUSIP() {
-        return CUSIP;
-    }
-
-    public void setCUSIP(String CUSIP) {
-        this.CUSIP = CUSIP;
-    }
-
-    public String getDATASETFILTER() {
-        return DATASETFILTER;
-    }
-
-    public void setDATASETFILTER(String DATASETFILTER) {
-        this.DATASETFILTER = DATASETFILTER;
-    }
-
-    public String getDATASETLABEL() {
-        return DATASETLABEL;
-    }
-
-    public void setDATASETLABEL(String DATASETLABEL) {
-        this.DATASETLABEL = DATASETLABEL;
-    }
-
-    public Double getEODTOTALVALUE() {
-        return EODTOTALVALUE;
-    }
-
-    public void setEODTOTALVALUE(Double EODTOTALVALUE) {
-        this.EODTOTALVALUE = EODTOTALVALUE;
-    }
-
-    public String getESMP() {
-        return ESMP;
-    }
-
-    public void setESMP(String ESMP) {
-        this.ESMP = ESMP;
-    }
-
-    public String getFOAGGRCODE() {
-        return FOAGGRCODE;
-    }
-
-    public void setFOAGGRCODE(String FOAGGRCODE) {
-        this.FOAGGRCODE = FOAGGRCODE;
-    }
-
-    public String getHOSTPRODID() {
-        return HOSTPRODID;
-    }
-
-    public void setHOSTPRODID(String HOSTPRODID) {
-        this.HOSTPRODID = HOSTPRODID;
-    }
-
-    public String getINSTRUMENTEXPIRYDATE() {
-        return INSTRUMENTEXPIRYDATE;
-    }
-
-    public void setINSTRUMENTEXPIRYDATE(String INSTRUMENTEXPIRYDATE) {
-        this.INSTRUMENTEXPIRYDATE = INSTRUMENTEXPIRYDATE;
-    }
-
-    public String getINSTRUMENTMATURITYDATE() {
-        return INSTRUMENTMATURITYDATE;
-    }
-
-    public void setINSTRUMENTMATURITYDATE(String INSTRUMENTMATURITYDATE) {
-        this.INSTRUMENTMATURITYDATE = INSTRUMENTMATURITYDATE;
-    }
-
-    public String getINSTRUMENTTYPE() {
-        return INSTRUMENTTYPE;
-    }
-
-    public void setINSTRUMENTTYPE(String INSTRUMENTTYPE) {
-        this.INSTRUMENTTYPE = INSTRUMENTTYPE;
-    }
-
-    public String getISIN() {
-        return ISIN;
-    }
-
-    public void setISIN(String ISIN) {
-        this.ISIN = ISIN;
-    }
-
-    public String getPROXYINSTRUMENTID() {
-        return PROXYINSTRUMENTID;
-    }
-
-    public void setPROXYINSTRUMENTID(String PROXYINSTRUMENTID) {
-        this.PROXYINSTRUMENTID = PROXYINSTRUMENTID;
-    }
-
-    public String getPROXYINSTRUMENTIDTYPE() {
-        return PROXYINSTRUMENTIDTYPE;
-    }
-
-    public void setPROXYINSTRUMENTIDTYPE(String PROXYINSTRUMENTIDTYPE) {
-        this.PROXYINSTRUMENTIDTYPE = PROXYINSTRUMENTIDTYPE;
-    }
-
-    public String getPROXYINSTRUMENTTYPE() {
-        return PROXYINSTRUMENTTYPE;
-    }
-
-    public void setPROXYINSTRUMENTTYPE(String PROXYINSTRUMENTTYPE) {
-        this.PROXYINSTRUMENTTYPE = PROXYINSTRUMENTTYPE;
-    }
-
-    public Double getQUANTITY() {
-        return QUANTITY;
-    }
-
-    public void setQUANTITY(Double QUANTITY) {
-        this.QUANTITY = QUANTITY;
-    }
-
-    public String getREGION() {
-        return REGION;
-    }
-
-    public void setREGION(String REGION) {
-        this.REGION = REGION;
-    }
-
-    public String getRIC() {
-        return RIC;
-    }
-
-    public void setRIC(String RIC) {
-        this.RIC = RIC;
-    }
-
-    public String getRISKFACTORNAME() {
-        return RISKFACTORNAME;
-    }
-
-    public void setRISKFACTORNAME(String RISKFACTORNAME) {
-        this.RISKFACTORNAME = RISKFACTORNAME;
-    }
-
-    public String getRISKPARENTINSTRUMENTID() {
-        return RISKPARENTINSTRUMENTID;
-    }
-
-    public void setRISKPARENTINSTRUMENTID(String RISKPARENTINSTRUMENTID) {
-        this.RISKPARENTINSTRUMENTID = RISKPARENTINSTRUMENTID;
-    }
-
-    public String getRISKPARENTINSTRUMENTIDTYPE() {
-        return RISKPARENTINSTRUMENTIDTYPE;
-    }
-
-    public void setRISKPARENTINSTRUMENTIDTYPE(String RISKPARENTINSTRUMENTIDTYPE) {
-        this.RISKPARENTINSTRUMENTIDTYPE = RISKPARENTINSTRUMENTIDTYPE;
-    }
-
-    public String getRISKSOURCESYSTEM() {
-        return RISKSOURCESYSTEM;
-    }
-
-    public void setRISKSOURCESYSTEM(String RISKSOURCESYSTEM) {
-        this.RISKSOURCESYSTEM = RISKSOURCESYSTEM;
-    }
-
-    public String getRISKSUBJECTCHORUSBOOKID() {
-        return RISKSUBJECTCHORUSBOOKID;
-    }
-
-    public void setRISKSUBJECTCHORUSBOOKID(String RISKSUBJECTCHORUSBOOKID) {
-        this.RISKSUBJECTCHORUSBOOKID = RISKSUBJECTCHORUSBOOKID;
-    }
-
-    public String getRISKSUBJECTID() {
-        return RISKSUBJECTID;
-    }
-
-    public void setRISKSUBJECTID(String RISKSUBJECTID) {
-        this.RISKSUBJECTID = RISKSUBJECTID;
-    }
-
-    public String getRISKSUBJECTINSTRUMENTCOUNTERPARTYID() {
-        return RISKSUBJECTINSTRUMENTCOUNTERPARTYID;
-    }
-
-    public void setRISKSUBJECTINSTRUMENTCOUNTERPARTYID(String RISKSUBJECTINSTRUMENTCOUNTERPARTYID) {
-        this.RISKSUBJECTINSTRUMENTCOUNTERPARTYID = RISKSUBJECTINSTRUMENTCOUNTERPARTYID;
-    }
-
-    public String getRISKSUBJECTINSTRUMENTID() {
-        return RISKSUBJECTINSTRUMENTID;
-    }
-
-    public void setRISKSUBJECTINSTRUMENTID(String RISKSUBJECTINSTRUMENTID) {
-        this.RISKSUBJECTINSTRUMENTID = RISKSUBJECTINSTRUMENTID;
-    }
-
-    public String getRISKSUBJECTINSTRUMENTIDTYPE() {
-        return RISKSUBJECTINSTRUMENTIDTYPE;
-    }
-
-    public void setRISKSUBJECTINSTRUMENTIDTYPE(String RISKSUBJECTINSTRUMENTIDTYPE) {
-        this.RISKSUBJECTINSTRUMENTIDTYPE = RISKSUBJECTINSTRUMENTIDTYPE;
-    }
-
-    public String getRISKSUBJECTSOURCE() {
-        return RISKSUBJECTSOURCE;
-    }
-
-    public void setRISKSUBJECTSOURCE(String RISKSUBJECTSOURCE) {
-        this.RISKSUBJECTSOURCE = RISKSUBJECTSOURCE;
-    }
-
-    public String getRISKSUBJECTTYPE() {
-        return RISKSUBJECTTYPE;
-    }
-
-    public void setRISKSUBJECTTYPE(String RISKSUBJECTTYPE) {
-        this.RISKSUBJECTTYPE = RISKSUBJECTTYPE;
-    }
-
-    public String getSENSITIVITYTYPE() {
-        return SENSITIVITYTYPE;
-    }
-
-    public void setSENSITIVITYTYPE(String SENSITIVITYTYPE) {
-        this.SENSITIVITYTYPE = SENSITIVITYTYPE;
-    }
-
-    public String getSERIESDATE() {
-        return SERIESDATE;
-    }
-
-    public void setSERIESDATE(String SERIESDATE) {
-        this.SERIESDATE = SERIESDATE;
-    }
-
-    public String getSERIESDAY() {
-        return SERIESDAY;
-    }
-
-    public void setSERIESDAY(String SERIESDAY) {
-        this.SERIESDAY = SERIESDAY;
-    }
-
-    public String getSNAPVERSION() {
-        return SNAPVERSION;
-    }
-
-    public void setSNAPVERSION(String SNAPVERSION) {
-        this.SNAPVERSION = SNAPVERSION;
-    }
-
-    public Double getSTRIKEVALUE() {
-        return STRIKEVALUE;
-    }
-
-    public void setSTRIKEVALUE(Double STRIKEVALUE) {
-        this.STRIKEVALUE = STRIKEVALUE;
-    }
-
-    public String getSYS_AUDIT_TRACE() {
-        return SYS_AUDIT_TRACE;
-    }
-
-    public void setSYS_AUDIT_TRACE(String SYS_AUDIT_TRACE) {
-        this.SYS_AUDIT_TRACE = SYS_AUDIT_TRACE;
-    }
-
-    public Double getTHEOPRICE() {
-        return THEOPRICE;
-    }
-
-    public void setTHEOPRICE(Double THEOPRICE) {
-        this.THEOPRICE = THEOPRICE;
-    }
-
-    public Double getTOTALVALUE() {
-        return TOTALVALUE;
-    }
-
-    public void setTOTALVALUE(Double TOTALVALUE) {
-        this.TOTALVALUE = TOTALVALUE;
-    }
-
-    public String getUNDERLYINGSECURITYID() {
-        return UNDERLYINGSECURITYID;
-    }
-
-    public void setUNDERLYINGSECURITYID(String UNDERLYINGSECURITYID) {
-        this.UNDERLYINGSECURITYID = UNDERLYINGSECURITYID;
-    }
-
-    public String getUNDERLYINGSECURITYIDTYPE() {
-        return UNDERLYINGSECURITYIDTYPE;
-    }
-
-    public void setUNDERLYINGSECURITYIDTYPE(String UNDERLYINGSECURITYIDTYPE) {
-        this.UNDERLYINGSECURITYIDTYPE = UNDERLYINGSECURITYIDTYPE;
-    }
-
-    public String getVALUATIONSOURCECONTEXTLABELNAME() {
-        return VALUATIONSOURCECONTEXTLABELNAME;
-    }
-
-    public void setVALUATIONSOURCECONTEXTLABELNAME(String VALUATIONSOURCECONTEXTLABELNAME) {
-        this.VALUATIONSOURCECONTEXTLABELNAME = VALUATIONSOURCECONTEXTLABELNAME;
-    }
-
-    public Double getVALUE() {
-        return VALUE;
-    }
-
-    public void setVALUE(Double VALUE) {
-        this.VALUE = VALUE;
-    }
-
-    public String getVARTYPE() {
-        return VARTYPE;
-    }
-
-    public void setVARTYPE(String VARTYPE) {
-        this.VARTYPE = VARTYPE;
+    String field1;
+    String field2;
+    String field3;
+    String field4;
+    String field5;
+    String field6;
+    String field7;
+    String field8;
+    String field9;
+    String field10;
+    String field11;
+    Double field12;
+    String field13;
+    String field14;
+    String field15;
+    String field16;
+    String field17;
+    String field18;
+    String field19;
+    String field20;
+    String field21;
+    String field22;
+    Double field23;
+    String field24;
+    String field25;
+    String field26;
+    String field27;
+    String field28;
+    String field29;
+    String field30;
+    String field31;
+    String field32;
+    String field33;
+    String field34;
+    String field35;
+    String field36;
+    String field37;
+    String field38;
+    String field39;
+    String field40;
+    Double field41;
+    String field42;
+    Double field43;
+    Double field44;
+    String field45;
+    String field46;
+    String field47;
+    Double field48;
+    String field49;
+
+    /**
+     */
+    private HeavyValue(String field1, String field2, String field3, String field4,
+        String field5, String field6, String field7,
+        String field8, String field9, String field10, String field11, Double field12,
+        String field13, String field14, String field15, String field16,
+        String field17, String field18, String field19, String field20,
+        String field21, String field22, Double field23, String field24, String field25,
+        String field26, String field27, String field28,
+        String field29, String field30, String field31,
+        String field32, String field33,
+        String field34, String field35, String field36,
+        String field37, String field38, String field39, String field40, Double field41,
+        String field42, Double field43, Double field44, String field45,
+        String field46, String field47, Double field48, String field49) {
+        this.field1 = field1;
+        this.field2 = field2;
+        this.field3 = field3;
+        this.field4 = field4;
+        this.field5 = field5;
+        this.field6 = field6;
+        this.field7 = field7;
+        this.field8 = field8;
+        this.field9 = field9;
+        this.field10 = field10;
+        this.field11 = field11;
+        this.field12 = field12;
+        this.field13 = field13;
+        this.field14 = field14;
+        this.field15 = field15;
+        this.field16 = field16;
+        this.field17 = field17;
+        this.field18 = field18;
+        this.field19 = field19;
+        this.field20 = field20;
+        this.field21 = field21;
+        this.field22 = field22;
+        this.field23 = field23;
+        this.field24 = field24;
+        this.field25 = field25;
+        this.field26 = field26;
+        this.field27 = field27;
+        this.field28 = field28;
+        this.field29 = field29;
+        this.field30 = field30;
+        this.field31 = field31;
+        this.field32 = field32;
+        this.field33 = field33;
+        this.field34 = field34;
+        this.field35 = field35;
+        this.field36 = field36;
+        this.field37 = field37;
+        this.field38 = field38;
+        this.field39 = field39;
+        this.field40 = field40;
+        this.field41 = field41;
+        this.field42 = field42;
+        this.field43 = field43;
+        this.field44 = field44;
+        this.field45 = field45;
+        this.field46 = field46;
+        this.field47 = field47;
+        this.field48 = field48;
+        this.field49 = field49;
     }
 }
