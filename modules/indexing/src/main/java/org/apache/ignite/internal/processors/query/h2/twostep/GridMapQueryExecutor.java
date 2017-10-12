@@ -433,7 +433,6 @@ public class GridMapQueryExecutor {
 
         final Map<UUID,int[]> partsMap = req.partitions();
 
-`        // TODO: WTF is going on here? Looks like we are targeting unstable-node case.
         final int[] parts = qryParts == null ? partsMap == null ? null : partsMap.get(ctx.localNodeId()) : qryParts;
 
         final DistributedJoinMode joinMode = distributedJoinMode(
