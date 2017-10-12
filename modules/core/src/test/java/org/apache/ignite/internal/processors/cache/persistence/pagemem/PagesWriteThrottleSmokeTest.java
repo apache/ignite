@@ -63,7 +63,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Slow checkpoint enabled. */
-    private final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
+    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
@@ -279,7 +279,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /**
      * Create File I/O that emulates poor checkpoint write speed.
      */
-    private class SlowCheckpointFileIOFactory implements FileIOFactory {
+    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
