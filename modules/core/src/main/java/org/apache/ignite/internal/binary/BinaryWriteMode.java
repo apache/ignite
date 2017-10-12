@@ -82,6 +82,9 @@ public enum BinaryWriteMode {
     DATE(GridBinaryMarshaller.DATE),
 
     /** */
+    SQL_DATE(GridBinaryMarshaller.SQL_DATE),
+
+    /** */
     TIMESTAMP(GridBinaryMarshaller.TIMESTAMP),
 
     /** */

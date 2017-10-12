@@ -82,6 +82,9 @@ public class GridBinaryMarshaller {
     public static final byte DATE = 11;
 
     /** */
+    public static final byte SQL_DATE = 40;
+
+    /** */
     public static final byte BYTE_ARR = 12;
 
     /** */

@@ -170,6 +170,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(String.class, GridBinaryMarshaller.STRING);
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);
+        PLAIN_CLASS_TO_FLAG.put(java.sql.Date.class, GridBinaryMarshaller.SQL_DATE);
         PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
         PLAIN_CLASS_TO_FLAG.put(Time.class, GridBinaryMarshaller.TIME);
 
@@ -201,8 +202,8 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
 
         for (byte b : new byte[] {
-            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
+            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR,
+            GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,GridBinaryMarshaller.SQL_DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
             GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
             GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
             GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
@@ -221,6 +222,7 @@ public class BinaryUtils {
         BINARY_CLS.add(String.class);
         BINARY_CLS.add(UUID.class);
         BINARY_CLS.add(Date.class);
+        BINARY_CLS.add(java.sql.Date.class);
         BINARY_CLS.add(Timestamp.class);
         BINARY_CLS.add(Time.class);
         BINARY_CLS.add(BigDecimal.class);
@@ -253,6 +255,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DECIMAL] = "decimal";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING] = "String";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE] = "Date";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.SQL_DATE] = "Date";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME] = "Time";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
@@ -454,6 +457,11 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.DATE:
                 writer.doWriteDate((Date)val);
+
+                break;
+
+            case GridBinaryMarshaller.SQL_DATE:
+                writer.doWriteSQLDate((java.sql.Date)val);
 
                 break;
 
@@ -1105,6 +1113,8 @@ public class BinaryUtils {
             return BinaryWriteMode.UUID;
         else if (cls == Date.class)
             return BinaryWriteMode.DATE;
+        else if (cls == java.sql.Date.class)
+            return BinaryWriteMode.SQL_DATE;
         else if (cls == Timestamp.class)
             return BinaryWriteMode.TIMESTAMP;
         else if (cls == Time.class)
@@ -1333,6 +1343,15 @@ public class BinaryUtils {
         long time = in.readLong();
 
         return new Date(time);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Date doReadSQLDate(BinaryInputStream in) {
+        long time = in.readLong();
+
+        return new java.sql.Date(time);
     }
 
     /**
@@ -1912,6 +1931,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.DATE:
                 return doReadDate(in);
+
+            case GridBinaryMarshaller.SQL_DATE:
+                return doReadSQLDate(in);
 
             case GridBinaryMarshaller.TIMESTAMP:
                 return doReadTimestamp(in);

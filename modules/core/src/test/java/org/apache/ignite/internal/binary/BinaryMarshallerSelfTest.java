@@ -316,6 +316,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSQLDate() throws Exception {
+        java.sql.Date date = java.sql.Date.valueOf("2001-05-05");
+
+        java.sql.Date val = marshalUnmarshal(date);
+
+        assertEquals(date, val);
+        assertEquals(java.sql.Date.class, val.getClass());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testTimestamp() throws Exception {
         Timestamp ts = new Timestamp(System.currentTimeMillis());
 

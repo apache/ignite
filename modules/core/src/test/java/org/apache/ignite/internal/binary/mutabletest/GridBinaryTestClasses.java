@@ -489,4 +489,19 @@ public class GridBinaryTestClasses {
             });
         }
     }
+
+    /** */
+    public static class TestDateClass {
+        /** */
+        public java.util.Date date1;
+
+        /** */
+        public java.sql.Date date2;
+
+        /** */
+        TestDateClass(final java.util.Date date1, final java.sql.Date date2) {
+            this.date1 = date1;
+            this.date2 = date2;
+        }
+    }
 }

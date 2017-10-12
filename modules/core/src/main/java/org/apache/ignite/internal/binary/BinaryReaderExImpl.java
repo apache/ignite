@@ -75,6 +75,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SQL_DATE;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIME;
@@ -1166,7 +1167,19 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public Date readDate() throws BinaryObjectException {
-        return checkFlagNoHandles(DATE) == Flag.NORMAL ? BinaryUtils.doReadDate(in) : null;
+        byte flag = in.readByte();
+
+        if (flag == DATE)
+            return BinaryUtils.doReadDate(in);
+        else if (flag == SQL_DATE)
+            return BinaryUtils.doReadSQLDate(in);
+        else if (flag == NULL)
+            return null;
+
+        int pos = BinaryUtils.positionForHandle(in);
+
+        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=[" + String.valueOf(DATE) +
+            ", " + String.valueOf(SQL_DATE) + "] actual=" + String.valueOf(flag) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1822,6 +1835,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case DATE:
                 obj = BinaryUtils.doReadDate(in);
+
+                break;
+
+            case SQL_DATE:
+                obj = BinaryUtils.doReadSQLDate(in);
 
                 break;
 

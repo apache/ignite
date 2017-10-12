@@ -297,6 +297,7 @@ public class BinaryContext {
         registerPredefinedType(String.class, GridBinaryMarshaller.STRING);
         registerPredefinedType(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
         registerPredefinedType(Date.class, GridBinaryMarshaller.DATE);
+        registerPredefinedType(java.sql.Date.class, GridBinaryMarshaller.SQL_DATE);
         registerPredefinedType(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
         registerPredefinedType(Time.class, GridBinaryMarshaller.TIME);
         registerPredefinedType(UUID.class, GridBinaryMarshaller.UUID);

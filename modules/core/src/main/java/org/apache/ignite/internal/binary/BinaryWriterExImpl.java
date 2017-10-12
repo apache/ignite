@@ -455,6 +455,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param date Date.
+     */
+    public void doWriteSQLDate(@Nullable java.sql.Date date) {
+        if (date == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 8);
+            out.unsafeWriteByte(GridBinaryMarshaller.SQL_DATE);
+            out.unsafeWriteLong(date.getTime());
+        }
+    }
+
+    /**
      * @param ts Timestamp.
      */
     public void doWriteTimestamp(@Nullable Timestamp ts) {
@@ -1136,6 +1149,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeDateField(@Nullable Date val) {
         doWriteDate(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeSQLDateField(@Nullable java.sql.Date val) {
+        doWriteSQLDate(val);
     }
 
     /**

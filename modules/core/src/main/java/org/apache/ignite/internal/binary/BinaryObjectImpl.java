@@ -438,6 +438,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
             }
 
+            case GridBinaryMarshaller.SQL_DATE: {
+                long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
+
+                val = new java.sql.Date(time);
+
+                break;
+            }
+
             case GridBinaryMarshaller.TIMESTAMP: {
                 long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
                 int nanos = BinaryPrimitives.readInt(arr, fieldPos + 1 + 8);
