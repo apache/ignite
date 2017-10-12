@@ -65,8 +65,12 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
         DataRegionConfiguration[] policies = configuration.getDataStorageConfiguration().getDataRegionConfigurations();
 
-        for (DataRegionConfiguration plcCfg : policies)
-            plcCfg.setPageEvictionMode(mode);
+        if (policies != null) {
+            for (DataRegionConfiguration plcCfg : policies)
+                plcCfg.setPageEvictionMode(mode);
+        }
+
+        configuration.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPageEvictionMode(mode);
 
         return configuration;
     }
