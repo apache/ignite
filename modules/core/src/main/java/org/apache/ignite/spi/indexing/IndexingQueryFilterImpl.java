@@ -72,8 +72,8 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
             return null;
 
         // No backups and explicit partitions -> nothing to filter.
-        if (cache.configuration().getBackups() == 0 && parts == null)
-            return null;
+//        if (cache.configuration().getBackups() == 0 && parts == null)
+//            return null;
 
         final GridCacheAffinityManager aff = cache.context().affinity();
 
@@ -84,6 +84,28 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         if (parts != null)
             parts0.retainAll(parts);
 
-        return new IndexingQueryFilterPredicateImpl(aff, parts0);
+        return new IndexingQueryFilterPredicate() {
+            @Override public boolean apply(Object key, Object val) {
+                int part = aff.partition(key);
+
+//                boolean primary = aff.primaryByPartition(ctx.discovery().localNode(), part, topVer);
+//
+//                return primary && (parts == null || parts.contains(part));
+
+
+                boolean primary = aff.primaryByPartition(ctx.discovery().localNode(), part, topVer);
+
+                return primary;
+
+
+//                return aff.primaryByKey(ctx.discovery().localNode(), key, topVer);
+
+
+
+//                int part = aff.partition(key);
+//
+//                return parts0.contains(part);
+            }
+        };
     }
 }
