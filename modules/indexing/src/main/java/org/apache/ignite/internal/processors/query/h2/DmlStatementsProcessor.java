@@ -377,8 +377,8 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schemaName, newFieldsQry, true,
-                cancel, mainCacheId, true).get(0);
+            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, true, true,
+                cancel);
             //cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, cancel);
         }
         else {

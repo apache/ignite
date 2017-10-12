@@ -95,10 +95,11 @@ public interface GridQueryIndexing {
      * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts
      * @param cancel Query cancel state handler.     @return Cursor.
      */
     public FieldsQueryCursor<List<?>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
-                                                     GridQueryCancel cancel);
+        boolean failOnMultipleStmts, GridQueryCancel cancel);
 
     /**
      * Perform a MERGE statement using data streamer as receiver.
