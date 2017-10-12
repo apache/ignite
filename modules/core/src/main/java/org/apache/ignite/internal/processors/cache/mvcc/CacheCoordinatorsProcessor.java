@@ -261,7 +261,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
                 }
 
                 crd = crdNode != null ? new
-                    MvccCoordinator(crdNode.id(), topVer, new AffinityTopologyVersion(topVer, 0)) : null;
+                    MvccCoordinator(crdNode.id(), coordinatorVersion(topVer), new AffinityTopologyVersion(topVer, 0)) : null;
 
                 if (crd != null)
                     log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode +']');
@@ -271,6 +271,14 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         }
 
         discoData = new CacheCoordinatorsDiscoveryData(crd);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Coordinator version.
+     */
+    private long coordinatorVersion(long topVer) {
+        return topVer + ctx.discovery().gridStartTime();
     }
 
     /**
@@ -1022,7 +1030,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
             ", topVer=" + topVer + ']');
 
-        crdVer = topVer.topologyVersion() + ctx.discovery().gridStartTime();
+        crdVer = coordinatorVersion(topVer.topologyVersion());
 
         prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
 
