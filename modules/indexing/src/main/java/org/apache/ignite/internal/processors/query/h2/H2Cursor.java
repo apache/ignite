@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterPredicate;
 import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.result.*;
@@ -34,7 +35,7 @@ public class H2Cursor implements Cursor {
     private final GridCursor<GridH2Row> cursor;
 
     /** */
-    private final IgniteBiPredicate<Object,Object> filter;
+    private final IndexingQueryFilterPredicate filter;
 
     /** */
     private final long time = U.currentTimeMillis();
@@ -43,7 +44,7 @@ public class H2Cursor implements Cursor {
      * @param cursor Cursor.
      * @param filter Filter.
      */
-    public H2Cursor(GridCursor<GridH2Row> cursor, IgniteBiPredicate<Object, Object> filter) {
+    public H2Cursor(GridCursor<GridH2Row> cursor, IndexingQueryFilterPredicate filter) {
         assert cursor != null;
 
         this.cursor = cursor;

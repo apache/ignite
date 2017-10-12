@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Indexing query filter predicate.
  */
-public class IndexingQueryFilterPredicateImpl<K, V> implements IndexingQueryFilterPredicate<K, V> {
+public class IndexingQueryFilterPredicateImpl implements IndexingQueryFilterPredicate {
     /** Affinity manager. */
     private final GridCacheAffinityManager aff;
 
@@ -43,7 +43,7 @@ public class IndexingQueryFilterPredicateImpl<K, V> implements IndexingQueryFilt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(K key, V val) {
+    @Override public boolean apply(Object key, Object val) {
         int part = aff.partition(key);
 
         return parts.contains(part);

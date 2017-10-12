@@ -30,5 +30,5 @@ public interface IndexingQueryFilter {
      * @param cacheName Cache name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName);
+    @Nullable public IndexingQueryFilterPredicate forCache(String cacheName);
 }

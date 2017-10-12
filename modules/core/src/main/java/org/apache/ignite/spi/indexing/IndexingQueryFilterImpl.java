@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -65,7 +64,7 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
+    @Nullable @Override public IndexingQueryFilterPredicate forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
         // REPLICATED -> nothing to filter (explicit partitions are not supported).
@@ -84,6 +83,6 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
 
         parts0.retainAll(parts);
 
-        return new IndexingQueryFilterPredicateImpl<K, V>(aff, parts);
+        return new IndexingQueryFilterPredicateImpl(aff, parts);
     }
 }

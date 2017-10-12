@@ -20,7 +20,7 @@ package org.apache.ignite.spi.indexing;
 /**
  * Indexing query filter predicate.
  */
-public interface IndexingQueryFilterPredicate<K, V> {
+public interface IndexingQueryFilterPredicate {
     /**
      * Apply predicate.
      *
@@ -28,5 +28,5 @@ public interface IndexingQueryFilterPredicate<K, V> {
      * @param val Value.
      * @return {@code True} if passed.
      */
-    public boolean apply(K key, V val);
+    public boolean apply(Object key, Object val);
 }
