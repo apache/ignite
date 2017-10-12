@@ -37,12 +37,6 @@ public class IgniteSemaphoreExample {
     /** Number of items for each producer/consumer to produce/consume. */
     private static final int OPS_COUNT = 100;
 
-    /** Number of producers. */
-    private static final int NUM_PRODUCERS = 10;
-
-    /** Number of consumers. */
-    private static final int NUM_CONSUMERS = 10;
-
     /** Synchronization semaphore name. */
     private static final String SEM_NAME = IgniteSemaphoreExample.class.getSimpleName();
 
@@ -53,6 +47,12 @@ public class IgniteSemaphoreExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+            // Number of producers; should be equal to number of consumers.
+            // This value should not exceed overall number of compute threads in a cluster,
+            // otherwise blocking consumer jobs can occupy all the threads leading to deadlock.
+            int producerConsumerCount =
+                ignite.configuration().getPublicThreadPoolSize() * ignite.cluster().forServers().nodes().size() / 2;
+
             System.out.println();
             System.out.println(">>> Cache atomic semaphore example started.");
 
@@ -66,17 +66,17 @@ public class IgniteSemaphoreExample {
             IgniteSemaphore semaphore = ignite.semaphore(semaphoreName, 0, false, true);
 
             // Start consumers on all cluster nodes.
-            for (int i = 0; i < NUM_CONSUMERS; i++)
+            for (int i = 0; i < producerConsumerCount; i++)
                 ignite.compute().withAsync().run(new Consumer(semaphoreName));
 
             // Start producers on all cluster nodes.
-            for (int i = 0; i < NUM_PRODUCERS; i++)
+            for (int i = 0; i < producerConsumerCount; i++)
                 ignite.compute().withAsync().run(new Producer(semaphoreName));
 
             System.out.println("Master node is waiting for all other nodes to finish...");
 
             // Wait for everyone to finish.
-            syncSemaphore.acquire(NUM_CONSUMERS + NUM_PRODUCERS);
+            syncSemaphore.acquire(2 * producerConsumerCount);
         }
 
         System.out.flush();
@@ -159,7 +159,7 @@ public class IgniteSemaphoreExample {
             System.out.println("Consumer finished [nodeId=" + Ignition.ignite().cluster().localNode().id() + ']');
 
             // Gets the syncing semaphore
-            IgniteSemaphore sync = Ignition.ignite().semaphore(SEM_NAME, 3, true, true);
+            IgniteSemaphore sync = Ignition.ignite().semaphore(SEM_NAME, 0, true, true);
 
             // Signals the master thread.
             sync.release();

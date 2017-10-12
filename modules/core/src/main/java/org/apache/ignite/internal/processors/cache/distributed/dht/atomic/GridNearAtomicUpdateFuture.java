@@ -90,6 +90,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Map<UUID, GridNearAtomicFullUpdateRequest> mappings;
 
     /** Keys to remap. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> remapKeys;
 
     /** Not null is operation is mapped to single node. */

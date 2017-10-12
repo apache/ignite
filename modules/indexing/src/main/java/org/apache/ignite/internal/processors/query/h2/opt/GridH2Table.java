@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -34,22 +35,14 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.engine.Database;
-import org.h2.engine.DbObject;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
-import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.schema.Schema;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -82,10 +75,10 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session,Boolean>());
+    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap8<Session, Boolean>());
 
     /** */
-    private final AtomicReference<Object[]> actualSnapshot = new AtomicReference<>();
+    private final AtomicReferenceArray<Object[]> actualSnapshot;
 
     /** */
     private IndexColumn affKeyCol;
@@ -148,6 +141,11 @@ public class GridH2Table extends TableBase {
         idxs.add(0, new ScanIndex(index(0)));
 
         snapshotEnabled = desc == null || desc.snapshotableIndex();
+
+        final int segments = desc != null ? desc.configuration().getQueryParallelism() :
+            index(1).segmentsCount(); // Get index segments count from PK index. Null desc can be passed from tests.
+
+        actualSnapshot = snapshotEnabled ? new AtomicReferenceArray<Object[]>(Math.max(segments, 1)) : null;
 
         lock = snapshotEnabled ? new ReentrantReadWriteLock() : null;
     }
@@ -267,9 +265,20 @@ public class GridH2Table extends TableBase {
         }
 
         if (snapshotInLock())
-            snapshotIndexes(null);
+            snapshotIndexes(null, threadLocalSegmentId());
 
         return false;
+    }
+
+    /**
+     * @return segmentId for current thread.
+     */
+    private int threadLocalSegmentId() {
+        final GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        assert qctx != null;
+
+        return qctx.segment();
     }
 
     /**
@@ -289,22 +298,22 @@ public class GridH2Table extends TableBase {
     /**
      * @param qctx Query context.
      */
-    public void snapshotIndexes(GridH2QueryContext qctx) {
+    public void snapshotIndexes(GridH2QueryContext qctx, int segment) {
         if (!snapshotEnabled)
             return;
 
-        Object[] snapshots;
+        Object[] segmentSnapshot;
 
         Lock l;
 
         // Try to reuse existing snapshots outside of the lock.
-        for (long waitTime = 200;; waitTime *= 2) { // Increase wait time to avoid starvation.
-            snapshots = actualSnapshot.get();
+        for (long waitTime = 200; ; waitTime *= 2) { // Increase wait time to avoid starvation.
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) { // Reuse existing snapshot without locking.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) { // Reuse existing snapshot without locking.
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
-                if (snapshots != null)
+                if (segmentSnapshot != null)
                     return; // Reused successfully.
             }
 
@@ -316,17 +325,17 @@ public class GridH2Table extends TableBase {
 
         try {
             // Try again inside of the lock.
-            snapshots = actualSnapshot.get();
+            segmentSnapshot = actualSnapshot.get(segment);
 
-            if (snapshots != null) // Try reusing.
-                snapshots = doSnapshotIndexes(snapshots, qctx);
+            if (segmentSnapshot != null) // Try reusing.
+                segmentSnapshot = doSnapshotIndexes(segment, segmentSnapshot, qctx);
 
-            if (snapshots == null) { // Reuse failed, produce new snapshots.
-                snapshots = doSnapshotIndexes(null, qctx);
+            if (segmentSnapshot == null) { // Reuse failed, produce new snapshots.
+                segmentSnapshot = doSnapshotIndexes(segment, null, qctx);
 
-                assert snapshots != null;
+                assert segmentSnapshot != null;
 
-                actualSnapshot.set(snapshots);
+                actualSnapshot.set(segment, segmentSnapshot);
             }
         }
         finally {
@@ -381,19 +390,21 @@ public class GridH2Table extends TableBase {
      * Must be called inside of write lock because when using multiple indexes we have to ensure that all of them have
      * the same contents at snapshot taking time.
      *
+     * @param segment id of index segment snapshot.
+     * @param segmentSnapshot snapshot to be reused.
      * @param qctx Query context.
      * @return New indexes data snapshot.
      */
     @SuppressWarnings("unchecked")
-    private Object[] doSnapshotIndexes(Object[] snapshots, GridH2QueryContext qctx) {
+    private Object[] doSnapshotIndexes(int segment, Object[] segmentSnapshot, GridH2QueryContext qctx) {
         assert snapshotEnabled;
 
-        if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 1];
+        if (segmentSnapshot == null) // Nothing to reuse, create new snapshots.
+            segmentSnapshot = new Object[idxs.size() - 1];
 
         // Take snapshots on all except first which is scan.
         for (int i = 1, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 1];
+            Object s = segmentSnapshot[i - 1];
 
             boolean reuseExisting = s != null;
 
@@ -408,15 +419,15 @@ public class GridH2Table extends TableBase {
                     index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
-                actualSnapshot.compareAndSet(snapshots, null);
+                actualSnapshot.compareAndSet(segment, segmentSnapshot, null);
 
                 return null;
             }
 
-            snapshots[i - 1] = s;
+            segmentSnapshot[i - 1] = s;
         }
 
-        return snapshots;
+        return segmentSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -593,7 +604,7 @@ public class GridH2Table extends TableBase {
                     for (int i = 2, len = idxs.size(); i < len; i++) {
                         Row res = index(i).remove(old);
 
-                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
                 }
                 else
@@ -601,7 +612,8 @@ public class GridH2Table extends TableBase {
             }
 
             // The snapshot is not actual after update.
-            actualSnapshot.set(null);
+            if (snapshotEnabled)
+                actualSnapshot.set(pk.segmentForRow(row), null);
 
             return true;
         }
@@ -633,7 +645,7 @@ public class GridH2Table extends TableBase {
     ArrayList<GridH2IndexBase> indexes() {
         ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 1);
 
-        for (int i = 1, len = idxs.size(); i < len ; i++)
+        for (int i = 1, len = idxs.size(); i < len; i++)
             res.add(index(i));
 
         return res;
@@ -651,7 +663,9 @@ public class GridH2Table extends TableBase {
         ArrayList<Index> idxs0 = new ArrayList<>(idxs);
 
         try {
-            snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
+            // Allow read access while we are rebuilding indexes.
+            for (int seg = 0; seg < actualSnapshot.length(); seg++)
+                snapshotIndexes(null, seg);
 
             for (int i = 1, len = idxs.size(); i < len; i++) {
                 GridH2IndexBase newIdx = index(i).rebuild();
@@ -812,8 +826,8 @@ public class GridH2Table extends TableBase {
          * @param desc Row descriptor.
          * @param factory Indexes factory.
          * @param space Space name.
-         * @throws SQLException If failed.
          * @return Created table.
+         * @throws SQLException If failed.
          */
         public static synchronized GridH2Table createTable(Connection conn, String sql,
             @Nullable GridH2RowDescriptor desc, IndexesFactory factory, String space)
@@ -857,93 +871,15 @@ public class GridH2Table extends TableBase {
      * Wrapper type for primary key.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class ScanIndex extends BaseIndex {
+    static class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         /** */
         static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
-        /** */
-        private static final IndexType TYPE = IndexType.createScan(false);
-
-        /** */
-        private final GridH2IndexBase delegate;
-
         /**
-         * Constructor.
-         *
-         * @param delegate Index delegate to.
+         * @param delegate Delegate.
          */
-        private ScanIndex(GridH2IndexBase delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getDiskSpaceUsed() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Session ses, Row row) {
-            delegate.add(ses, row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canFindNext() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canGetFirstOrLast() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canScan() {
-            return delegate.canScan();
-        }
-
-        /** {@inheritDoc} */
-        @Override public final void close(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commit(int operation, Row row) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareRows(SearchRow rowData, SearchRow compare) {
-            return delegate.compareRows(rowData, compare);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-            return find(filter.getSession(), first, last);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-            return delegate.find(ses, null, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-            throw DbException.getUnsupportedException("SCAN");
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor findNext(Session ses, SearchRow higherThan, SearchRow last) {
-            throw DbException.throwInternalError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnIndex(Column col) {
-            return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Column[] getColumns() {
-            return delegate.getColumns();
+        public ScanIndex(GridH2IndexBase delegate) {
+            super(delegate);
         }
 
         /** {@inheritDoc} */
@@ -953,17 +889,7 @@ public class GridH2Table extends TableBase {
             double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
             int mul = delegate.getDistributedMultiplier(ses, filters, filter);
 
-            return  mul * baseCost;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexColumn[] getIndexColumns() {
-            return delegate.getIndexColumns();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexType getIndexType() {
-            return TYPE;
+            return mul * baseCost;
         }
 
         /** {@inheritDoc} */
@@ -972,148 +898,8 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public Row getRow(Session ses, long key) {
-            return delegate.getRow(ses, key);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getRowCount(Session ses) {
-            return delegate.getRowCount(ses);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getRowCountApproximation() {
-            return delegate.getRowCountApproximation();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Table getTable() {
-            return delegate.getTable();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRowIdIndex() {
-            return delegate.isRowIdIndex();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needRebuild() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(Session ses, Row row) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setSortedInsertMode(boolean sortedInsertMode) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-            return delegate.createLookupBatch(filter);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void truncate(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Schema getSchema() {
-            return delegate.getSchema();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isHidden() {
-            return delegate.isHidden();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void checkRename() {
-            throw DbException.getUnsupportedException("rename");
-        }
-
-        /** {@inheritDoc} */
-        @Override public ArrayList<DbObject> getChildren() {
-            return delegate.getChildren();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getComment() {
-            return delegate.getComment();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getCreateSQL() {
-            return null; // Scan should return null.
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getCreateSQLForCopy(Table tbl, String quotedName) {
-            return delegate.getCreateSQLForCopy(tbl, quotedName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Database getDatabase() {
-            return delegate.getDatabase();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getDropSQL() {
-            return delegate.getDropSQL();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getId() {
-            return delegate.getId();
-        }
-
-        /** {@inheritDoc} */
         @Override public String getName() {
             return delegate.getName() + SCAN_INDEX_NAME_SUFFIX;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getSQL() {
-            return delegate.getSQL();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return delegate.getType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isTemporary() {
-            return delegate.isTemporary();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeChildrenAndResources(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rename(String newName) {
-            throw DbException.getUnsupportedException("rename");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setComment(String comment) {
-            throw DbException.getUnsupportedException("comment");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTemporary(boolean temporary) {
-            throw DbException.getUnsupportedException("temporary");
         }
     }
 }

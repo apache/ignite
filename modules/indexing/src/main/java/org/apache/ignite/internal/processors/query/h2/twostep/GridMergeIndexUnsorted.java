@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
 /**
@@ -37,7 +42,16 @@ import org.h2.value.Value;
  */
 public final class GridMergeIndexUnsorted extends GridMergeIndex {
     /** */
-    private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
+    private static final IndexType TYPE = IndexType.createScan(false);
+
+    /** */
+    private final PollableQueue<GridResultPage> queue = new PollableQueue<>();
+
+    /** */
+    private final AtomicInteger activeSources = new AtomicInteger(-1);
+
+    /** */
+    private Iterator<Value[]> iter = Collections.emptyIterator();
 
     /**
      * @param ctx Context.
@@ -45,7 +59,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
      * @param name Index name.
      */
     public GridMergeIndexUnsorted(GridKernalContext ctx, GridMergeTable tbl, String name) {
-        super(ctx, tbl, name, IndexType.createScan(false), IndexColumn.wrap(tbl.getColumns()));
+        super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()));
     }
 
     /**
@@ -64,10 +78,46 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+        super.setSources(nodes, segmentsCnt);
+
+        int x = nodes.size() * segmentsCnt;
+
+        assert x > 0: x;
+
+        activeSources.set(x);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fetchedAll() {
+        int x = activeSources.get();
+
+        assert x >= 0: x; // This method must not be called if the sources were not set.
+
+        return x == 0 && queue.isEmpty();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
-        queue.add(page);
+        // Do not add empty page to avoid premature stream termination.
+        if (page.rowsInPage() != 0 || page.isFail())
+            queue.add(page);
+
+        if (page.isLast()) {
+            int x = activeSources.decrementAndGet();
+
+            assert x >= 0: x;
+
+            if (x == 0) // Always terminate with empty iterator.
+                queue.add(createDummyLastPage(page));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
     }
 
     /** {@inheritDoc} */
@@ -80,9 +130,6 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     @Override protected Cursor findInStream(SearchRow first, SearchRow last) {
         // This index is unsorted: have to ignore bounds.
         return new FetchingCursor(null, null, new Iterator<Row>() {
-            /** */
-            Iterator<Value[]> iter = Collections.emptyIterator();
-
             @Override public boolean hasNext() {
                 iter = pollNextIterator(queue, iter);
 
@@ -97,5 +144,11 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
                 throw new UnsupportedOperationException();
             }
         });
+    }
+
+    /**
+     */
+    private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements Pollable<X> {
+        // No-op.
     }
 }

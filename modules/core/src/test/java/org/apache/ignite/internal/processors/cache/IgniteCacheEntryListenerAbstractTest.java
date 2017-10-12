@@ -339,7 +339,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 if (!eagerTtl()) {
                     U.sleep(1100);
 
-                    assertNull(primaryCache(key, cache.getName()).get(key(key)));
+                    assertNull(primaryCache(key(key), cache.getName()).get(key(key)));
 
                     evtsLatch.await(5000, MILLISECONDS);
 
