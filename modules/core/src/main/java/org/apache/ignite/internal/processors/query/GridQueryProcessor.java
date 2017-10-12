@@ -2119,6 +2119,202 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         };
     }
 
+    /*
+        /**
+     * Query SQL fields.
+     *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     *
+    public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
+        return querySqlFields(null, qry, keepBinary);
+    }
+
+    /**
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     *
+    @SuppressWarnings("unchecked")
+    public FieldsQueryCursor<List<?>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
+                                                     final SqlFieldsQuery qry, final boolean keepBinary) {
+        checkxEnabled();
+
+        validateSqlFieldsQuery(qry);
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        final String schemaName = qry.getSchema() != null ? qry.getSchema()
+            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+
+        try {
+            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
+                @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                    GridQueryCancel cancel = new GridQueryCancel();
+
+                    FieldsQueryCursor<List<?>> res =
+                        idx.querySqlFields(schemaName, qry, keepBinary, cancel);
+
+                    if (cctx != null)
+                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
+
+                    return res;
+                }
+            };
+
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }*/
+
+    /**
+     * Create query filter for given partitions.
+     * @param parts partitions to create filter for.
+     * @return Indexing query filter.
+     */
+    public IndexingQueryFilter backupFilter(@Nullable final int[] parts) {
+        return backupFilter(U.firstNotNull(requestTopVer.get(), AffinityTopologyVersion.NONE), parts);
+    }
+
+
+/*
+    @Override public IndexingQueryFilter backupFilter(@Nullable final AffinityTopologyVersion topVer,
+                                                      @Nullable final int[] parts) {
+        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+
+        return new IndexingQueryFilter() {
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+                if (cache.context().isReplicated())
+                    return null;
+
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                if (parts != null) {
+                    if (parts.length < 64) { // Fast scan for small arrays.
+                        return new IgniteBiPredicate<K, V>() {
+                            @Override public boolean apply(K k, V v) {
+                                int p = aff.partition(k);
+
+                                for (int p0 : parts) {
+                                    if (p0 == p)
+                                        return true;
+
+                                    if (p0 > p) // Array is sorted.
+                                        return false;
+                                }
+
+                                return false;
+                            }
+                        };
+                    }
+
+                    return new IgniteBiPredicate<K, V>() {
+                        @Override public boolean apply(K k, V v) {
+                            int p = aff.partition(k);
+
+                            return Arrays.binarySearch(parts, p) >= 0;
+                        }
+                    };
+                }
+
+                final ClusterNode locNode = ctx.discovery().localNode();
+
+                return new IgniteBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return aff.primaryByKey(locNode, k, topVer0);
+                    }
+                };
+            }
+
+            @Override public boolean isValueRequired() {
+                return false;
+            }
+
+            @Override public String toString() {
+                return "IndexingQueryFilter [ver=" + topVer + ']';
+            }
+        };
+    }
+
+    */
+
+    /**
+     * Create query filter for given partitions and topology version.
+     * @param topVer topology version.
+     * @param parts partitions to create filter for.
+     * @return Indexing query filter.
+     */
+    public IndexingQueryFilter backupFilter(final AffinityTopologyVersion topVer, @Nullable final int[] parts) {
+        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+
+        return new IndexingQueryFilter() {
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
+
+                if (cache.context().isReplicated())
+                    return null;
+
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                if (parts != null) {
+                    if (parts.length < 64) { // Fast scan for small arrays.
+                        return new IgniteBiPredicate<K, V>() {
+                            @Override public boolean apply(K k, V v) {
+                                int p = aff.partition(k);
+
+                                for (int p0 : parts) {
+                                    if (p0 == p)
+                                        return true;
+
+                                    if (p0 > p) // Array is sorted.
+                                        return false;
+                                }
+
+                                return false;
+                            }
+                        };
+                    }
+
+                    return new IgniteBiPredicate<K, V>() {
+                        @Override public boolean apply(K k, V v) {
+                            int p = aff.partition(k);
+
+                            return Arrays.binarySearch(parts, p) >= 0;
+                        }
+                    };
+                }
+
+                final ClusterNode locNode = ctx.discovery().localNode();
+
+                return new IgniteBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return aff.primaryByKey(locNode, k, topVer0);
+                    }
+                };
+            }
+
+            @Override public boolean isValueRequired() {
+                return false;
+            }
+
+            @Override public String toString() {
+                return "IndexingQueryFilter [ver=" + topVer + ']';
+            }
+        };
+    }
+
     /**
      * Validate SQL fields query.
      *
