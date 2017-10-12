@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
@@ -64,13 +65,13 @@ public class IgnitePdsNoActualWalHistoryTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setWalSegmentSize(4 * 1024 * 1024)
-                .setWalHistorySize(2)
-                .setWalSegments(10)
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        dbCfg.setWalSegmentSize(4 * 1024 * 1024)
+            .setWalHistorySize(2)
+            .setWalSegments(10)
+            .setWalMode(WALMode.LOG_ONLY)
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true));
 
         cfg.setMarshaller(null);
 

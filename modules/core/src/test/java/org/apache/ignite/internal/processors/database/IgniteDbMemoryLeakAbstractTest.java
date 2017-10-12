@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
-    private static final int CONCURRENCY_LEVEL = 8;
+    private static final int CONCURRENCY_LEVEL = 16;
 
     /** */
     private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;

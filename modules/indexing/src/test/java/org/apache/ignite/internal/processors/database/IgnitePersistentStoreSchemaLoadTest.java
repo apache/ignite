@@ -27,6 +27,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -73,11 +74,13 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
+        pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(100 * 1024 * 1024));
+
         pCfg.setCheckpointFrequency(1000);
 
         cfg.setDataStorageConfiguration(pCfg);
-
-        cfg.setActiveOnStart(true);
 
         return cfg;
     }

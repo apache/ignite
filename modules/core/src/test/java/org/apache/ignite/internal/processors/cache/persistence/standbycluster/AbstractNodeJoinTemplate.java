@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -308,7 +309,10 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     protected IgniteConfiguration persistentCfg(IgniteConfiguration cfg) throws Exception {
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }

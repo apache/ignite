@@ -38,6 +38,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -110,16 +111,16 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
         dbCfg.setPageSize(pageSize);
 
-        cfg.setDataStorageConfiguration(dbCfg);
+        dbCfg.setWalHistorySize(WAL_HIST_SIZE);
 
-        DataStorageConfiguration pCfg = new DataStorageConfiguration();
-
-        pCfg.setWalHistorySize(WAL_HIST_SIZE);
+        dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(100 * 1024 * 1024)
+            .setPersistenceEnabled(true));
 
         if (checkpointFreq != null)
-            pCfg.setCheckpointFrequency(checkpointFreq);
+            dbCfg.setCheckpointFrequency(checkpointFreq);
 
-        cfg.setDataStorageConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 
