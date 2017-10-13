@@ -24,52 +24,52 @@ Setlocal EnableDelayedExpansion
 
 
 if "%1"=="" (
-	CALL :print_help
-	EXIT /B 1
+	call :print_help
+	exit /B 1
 )
 
 if "%1"=="-h" (
-	CALL :print_help
-	EXIT /B 0
+	call :print_help
+	exit /B 0
 )
 
 if "%1"=="--help" (
-	CALL :print_help
-	EXIT /B 0
+	call :print_help
+	exit /B 0
 )
 
-SET HOST_AND_PORT=%1
+set HOST_AND_PORT=%1
 shift 
 
-SET param_delimiter=to_be_replaced
+set param_delimiter=to_be_replaced
 
 :loop
 if NOT "%1"=="" (
 
     if "%1"=="--schema" (
-        SET schema=%2
+        set schema=%2
 		set schema_delimiter=/
     )
     if "%1"=="--distributedJoins" (
-        SET PARAMS=%PARAMS%%param_delimiter%distributedJoins=true
+        set PARAMS=%PARAMS%%param_delimiter%distributedJoins=true
     )
 	if "%1"=="--lazy" (
-        SET PARAMS=%PARAMS%%param_delimiter%lazy=true
+        set PARAMS=%PARAMS%%param_delimiter%lazy=true
     )
 	if "%1"=="--collocated" (
-        SET PARAMS=%PARAMS%%param_delimiter%collocated=true
+        set PARAMS=%PARAMS%%param_delimiter%collocated=true
     )
 	if "%1"=="--replicatedOnly" (
-        SET PARAMS=%PARAMS%%param_delimiter%replicatedOnly=true
+        set PARAMS=%PARAMS%%param_delimiter%replicatedOnly=true
     )
 	if "%1"=="--enforceJoinOrder" (
-        SET PARAMS=%PARAMS%%param_delimiter%enforceJoinOrder=true
+        set PARAMS=%PARAMS%%param_delimiter%enforceJoinOrder=true
     )
 	if "%1"=="--socketSendBuffer" (
-        SET PARAMS=%PARAMS%%param_delimiter%socketSendBuffer=%2
+        set PARAMS=%PARAMS%%param_delimiter%socketSendBuffer=%2
     )
 	if "%1"=="--socketReceiveBuffer" (
-        SET PARAMS=%PARAMS%%param_delimiter%socketReceiveBuffer=%2
+        set PARAMS=%PARAMS%%param_delimiter%socketReceiveBuffer=%2
     )
     shift
     goto :loop
@@ -83,9 +83,7 @@ if not "%NEW_PARAMS%"=="" (
 
 set prepare_link=jdbc:ignite:thin://%HOST_AND_PORT%%schema_delimiter%%schema%%final_param_delimiter%%NEW_PARAMS%
 
-SET jdbc_link=%prepare_link:to_be_replaced=^&%
-
-echo "%jdbc_link%"
+set jdbc_link=%prepare_link:to_be_replaced=^&%
 
 :end_parser
 
@@ -115,7 +113,7 @@ goto end_help
     echo "
     echo "For more information see https://apacheignite-sql.readme.io/docs/jdbc-driver
 	echo "
-EXIT /B 0
+exit /B 0
 
 :end_help
 
