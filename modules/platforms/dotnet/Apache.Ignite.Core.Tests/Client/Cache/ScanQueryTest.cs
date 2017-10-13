@@ -32,7 +32,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Tests scan queries.
     /// </summary>
-    public class ScanQueryTest : ClientTestBase
+    [Ignore]
+    internal class ScanQueryTest : ClientTestBase
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ScanQueryTest"/> class.
