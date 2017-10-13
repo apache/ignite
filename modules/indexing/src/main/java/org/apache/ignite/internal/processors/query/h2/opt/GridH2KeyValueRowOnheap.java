@@ -116,6 +116,11 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                 return ver;
 
             default:
+                if (desc.isKeyAliasColumn(col))
+                    return key;
+                else if (desc.isValueAliasColumn(col))
+                    return val;
+
                 return getValue0(col - DEFAULT_COLUMNS_COUNT);
         }
     }
@@ -132,28 +137,22 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         if (v != null)
             return v;
 
-        if (desc.isKeyAliasColumn(col))
-            return key;
-        else if (desc.isValueAliasColumn(col))
-            return val;
+        Object res = desc.columnValue(key.getObject(), val.getObject(), col);
+
+        if (res == null)
+            v = ValueNull.INSTANCE;
         else {
-            Object res = desc.columnValue(key.getObject(), val.getObject(), col);
-
-            if (res == null)
-                v = ValueNull.INSTANCE;
-            else {
-                try {
-                    v = desc.wrap(res, desc.fieldType(col));
-                }
-                catch (IgniteCheckedException e) {
-                    throw DbException.convert(e);
-                }
+            try {
+                v = desc.wrap(res, desc.fieldType(col));
             }
-
-            setCached(col, v);
-
-            return v;
+            catch (IgniteCheckedException e) {
+                throw DbException.convert(e);
+            }
         }
+
+        setCached(col, v);
+
+        return v;
     }
 
     /**
