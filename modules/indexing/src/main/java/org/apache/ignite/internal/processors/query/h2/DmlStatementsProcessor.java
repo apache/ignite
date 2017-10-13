@@ -235,7 +235,7 @@ public class DmlStatementsProcessor {
      * Execute DML statement on local cache.
      *
      * @param schemaName Schema.
-     * @param stmt Prepared statement.
+     * @param prepared Prepared statement.
      * @param fieldsQry Fields query.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel.
@@ -243,11 +243,9 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, PreparedStatement stmt,
-        SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel)
-        throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName,  GridSqlQueryParser.prepared(stmt), fieldsQry, true,
-            filters, cancel);
+    GridQueryFieldsResult updateSqlFieldsLocal(String schemaName, Prepared prepared, SqlFieldsQuery fieldsQry,
+        IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        UpdateResult res = updateSqlFields(schemaName, prepared, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res.cnt)));
@@ -378,7 +376,7 @@ public class DmlStatementsProcessor {
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, true, true,
-                cancel);
+                cancel).get(0);
             //cur = (QueryCursorImpl<List<?>>) idx.querySqlFields(schemaName, newFieldsQry, true, cancel);
         }
         else {
