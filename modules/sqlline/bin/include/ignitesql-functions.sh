@@ -36,6 +36,8 @@ function print_help()
     echo "    --socketReceiveBuffer <buf_size>    Socket receive buffer size in bytes."
     echo
     echo "Examples: ${SELF_NAME} myHost --schema mySchema --distributedJoins"
+    echo "          ${SELF_NAME} localhost --schema mySchema --collocated"
+    echo "          ${SELF_NAME} 127.0.0.1:10800 --schema mySchema --replicatedOnly"
     echo
     echo "For more information see https://apacheignite-sql.readme.io/docs/jdbc-driver"
 

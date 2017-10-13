@@ -110,10 +110,12 @@ goto end_help
     echo "   --socketReceiveBuffer <buf_size>    Socket receive buffer size in bytes.
     echo "
     echo " Examples: ignitesql.bat myHost --schema mySchema --distributedJoins
+    echo "           ignitesql.bat localhost --schema mySchema --collocated
+    echo "           ignitesql.bat 127.0.0.1:10800 --schema mySchema --replicatedOnly
     echo "
     echo "For more information see https://apacheignite-sql.readme.io/docs/jdbc-driver
 	echo "
-exit /B 0
+    exit /B 0
 
 :end_help
 
