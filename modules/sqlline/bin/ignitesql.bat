@@ -206,6 +206,6 @@ call "%SCRIPTS_HOME%\include\setenv.bat"
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u "%jdbc_link%"
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --verbose=true --showWarnings=true --showNestedErrs=true -u "%jdbc_link%"
 
 :error_finish
