@@ -96,6 +96,7 @@ public class GridH2ProxyIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
         GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
+
         return idx.find(session, desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
     }
 
@@ -178,6 +179,7 @@ public class GridH2ProxyIndex extends BaseIndex {
         /** {@inheritDoc} */
         @Override public boolean addSearchRows(SearchRow first, SearchRow last) {
             GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
+
             return target.addSearchRows(desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
         }
 

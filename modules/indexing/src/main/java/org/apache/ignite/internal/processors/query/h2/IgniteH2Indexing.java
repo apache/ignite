@@ -1775,7 +1775,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Creating DB table with SQL: " + sql);
 
-        H2RowDescriptor rowDesc = new H2RowDescriptor(this, tbl, tbl.type());
+        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(this, tbl, tbl.type());
 
         H2RowFactory rowFactory = tbl.rowFactory(rowDesc);
 
@@ -2450,8 +2450,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         assert partInfo != null;
         assert partInfo.partition() < 0;
 
-        GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()),
-                partInfo.tableName()).rowDescriptor();
+        GridH2RowDescriptor desc = dataTable(schema(partInfo.cacheName()), partInfo.tableName()).rowDescriptor();
 
         Object param = H2Utils.convert(params[partInfo.paramIdx()],
                 desc, partInfo.dataType());

@@ -182,6 +182,7 @@ public final class DmlAstUtils {
             return null;
 
         GridH2RowDescriptor desc = ((GridH2Table)tbl).rowDescriptor();
+
         if (!desc.isValueColumn(update.cols().get(0).column().getColumnId()))
             return null;
 

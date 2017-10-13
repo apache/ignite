@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,7 +70,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final H2RowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -124,7 +123,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, H2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -412,15 +411,19 @@ public class GridH2Table extends TableBase {
 
         row.link = link;
 
-        if (!rmv)
-            ((GridH2KeyValueRowOnheap)row).valuesCache(new Value[getColumns().length]);
+        if (rmv)
+            return doUpdate(row, true);
+        else {
+            GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)row;
 
-        try {
-            return doUpdate(row, rmv);
-        }
-        finally {
-            if (!rmv)
-                ((GridH2KeyValueRowOnheap)row).valuesCache(null);
+            row0.prepareValuesCache();
+
+            try {
+                return doUpdate(row, false);
+            }
+            finally {
+                row0.clearValuesCache();
+            }
         }
     }
 
