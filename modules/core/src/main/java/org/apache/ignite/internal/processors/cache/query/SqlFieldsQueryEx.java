@@ -131,11 +131,11 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      * Only affects DML commands. Ignored when {@link #isLocal()} is {@code true}.
      * Note that when set to {@code true}, the query may fail in the case of even single node failure.
      *
-     * @param updateOnServer Server side update flag.
+     * @param skipReducerOnUpdate Server side update flag.
      * @return {@code this} For chaining.
      */
-    public SqlFieldsQuery setSkipReducerOnUpdate(boolean updateOnServer) {
-        this.skipReducerOnUpdate = updateOnServer;
+    public SqlFieldsQuery setSkipReducerOnUpdate(boolean skipReducerOnUpdate) {
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
 
         return this;
     }

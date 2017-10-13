@@ -32,7 +32,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** Response to remote DML request. */
+/**
+ * Response to remote DML request.
+ */
 public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -37,7 +37,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.5: added "lazy" flag. */
     public static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
-    /** Version 2.3.0: added "updateOnServer" flag. */
+    /** Version 2.3.0: added "skipReducerOnUpdate" flag. */
     public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
     /** Current version. */

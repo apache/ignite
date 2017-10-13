@@ -45,7 +45,7 @@ public class H2DmlPlanKey {
         this.schemaName = schemaName;
         this.sql = sql;
 
-        if (loc || !UpdatePlanBuilder.isUpdateOnServerQuery(fieldsQry))
+        if (loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
             this.flags = 0; // flags only relevant for server side updates.
         else {
             this.flags = (byte)(1 +

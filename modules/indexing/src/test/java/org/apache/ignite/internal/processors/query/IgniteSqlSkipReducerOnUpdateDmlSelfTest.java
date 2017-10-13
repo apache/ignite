@@ -58,9 +58,11 @@ import org.jsr166.ThreadLocalRandom8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 
-/** Tests for distributed DML. */
+/**
+ * Tests for distributed DML.
+ */
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -127,7 +129,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             ccfg.setQueryEntities(Collections.singletonList(entity));
 
-            ccfg.setSqlFunctionClasses(IgniteSqlDistributedDmlSelfTest.class);
+            ccfg.setSqlFunctionClasses(IgniteSqlSkipReducerOnUpdateDmlSelfTest.class);
 
             return ccfg;
         }
@@ -142,7 +144,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             ccfg.setKeyConfiguration(new CacheKeyConfiguration(PersonKey.class));
 
-            ccfg.setSqlFunctionClasses(IgniteSqlDistributedDmlSelfTest.class);
+            ccfg.setSqlFunctionClasses(IgniteSqlSkipReducerOnUpdateDmlSelfTest.class);
 
             return ccfg;
         }
@@ -155,7 +157,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
             ccfg.setQueryEntities(Collections.singletonList(entity));
 
-            ccfg.setSqlFunctionClasses(IgniteSqlDistributedDmlSelfTest.class);
+            ccfg.setSqlFunctionClasses(IgniteSqlSkipReducerOnUpdateDmlSelfTest.class);
 
             return ccfg;
         }

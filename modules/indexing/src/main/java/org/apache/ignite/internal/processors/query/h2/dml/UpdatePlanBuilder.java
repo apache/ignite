@@ -550,7 +550,7 @@ public final class UpdatePlanBuilder {
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
-        if (loc || !isUpdateOnServerQuery(fieldsQry))
+        if (loc || !isSkipReducerOnUpdateQuery(fieldsQry))
             return null;
 
         assert conn != null;
@@ -585,7 +585,7 @@ public final class UpdatePlanBuilder {
      * @param qry Query.
      * @return {@code true} if update can be distributed.
      */
-    public static boolean isUpdateOnServerQuery(SqlFieldsQuery qry) {
+    public static boolean isSkipReducerOnUpdateQuery(SqlFieldsQuery qry) {
         return qry != null && !qry.isLocal() &&
             qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate();
     }

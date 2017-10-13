@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Update result - modifications count and keys to re-run query with, if needed. */
+/**
+ * Update result - modifications count and keys to re-run query with, if needed.
+ */
 public final class UpdateResult {
     /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
     final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);

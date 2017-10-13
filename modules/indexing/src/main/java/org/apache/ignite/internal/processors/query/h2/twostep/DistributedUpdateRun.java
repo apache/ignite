@@ -29,7 +29,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRespo
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** Context for DML operation on reducer node. */
+/**
+ * Context for DML operation on reducer node.
+ */
 class DistributedUpdateRun {
     /** Expected number of responses. */
     private final int nodeCount;

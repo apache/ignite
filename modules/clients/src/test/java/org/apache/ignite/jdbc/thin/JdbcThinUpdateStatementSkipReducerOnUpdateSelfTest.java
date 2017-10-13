@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin.updateonserver;
+package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 
 /**
- * Statement test.
+ *
  */
-public class JdbcThinInsertStatementSkipReducerOnUpdateSelfTest extends JdbcThinInsertStatementSelfTest {
+public class JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest extends JdbcThinUpdateStatementSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true");

@@ -58,10 +58,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinInsertStatementSkipReducerOnUpdateSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinMergeStatementSkipReducerOnUpdateSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
 
 /**
  * JDBC driver test suite.
