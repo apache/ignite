@@ -244,7 +244,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
     /**
      * @return Flag to update enable server side updates.
      */
-    protected boolean updateOnServer() {
+    protected boolean skipReducerOnUpdate() {
         return false;
     }
 

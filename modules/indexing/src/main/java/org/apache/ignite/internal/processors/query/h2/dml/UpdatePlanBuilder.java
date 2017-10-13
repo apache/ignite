@@ -587,7 +587,7 @@ public final class UpdatePlanBuilder {
      */
     public static boolean isUpdateOnServerQuery(SqlFieldsQuery qry) {
         return qry != null && !qry.isLocal() &&
-            qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isUpdateOnServer();
+            qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate();
     }
 
     /**

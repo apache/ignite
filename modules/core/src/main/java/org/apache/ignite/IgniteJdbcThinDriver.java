@@ -187,7 +187,7 @@ public class IgniteJdbcThinDriver implements Driver {
             new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
             new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
             new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),""),
-            new JdbcDriverPropertyInfo("Execute update query on server", info.getProperty(JdbcThinUtils.PROP_UPDATE_ON_SERVER),"")
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(JdbcThinUtils.PROP_SKIP_REDUCER_ON_UPDATE),"")
         );
 
         return props.toArray(new DriverPropertyInfo[0]);

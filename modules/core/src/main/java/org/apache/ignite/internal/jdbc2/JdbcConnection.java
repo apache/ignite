@@ -88,7 +88,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_UPDATE_ON_SERVER;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -169,8 +169,8 @@ public class JdbcConnection implements Connection {
     /** Allow queries with multiple statements. */
     private final boolean multipleStmts;
 
-    /** Update on server flag. */
-    private final boolean updateOnServer;
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
 
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
@@ -213,7 +213,7 @@ public class JdbcConnection implements Connection {
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
-        updateOnServer = Boolean.parseBoolean(props.getProperty(PROP_UPDATE_ON_SERVER));
+        skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -861,8 +861,8 @@ public class JdbcConnection implements Connection {
     /**
      * @return {@code true} if update on server is enabled, {@code false} otherwise.
      */
-    boolean updateOnServer() {
-        return updateOnServer;
+    boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
     }
 
     /**

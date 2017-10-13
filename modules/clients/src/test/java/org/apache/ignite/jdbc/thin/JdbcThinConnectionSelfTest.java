@@ -187,7 +187,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
@@ -196,7 +196,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
@@ -205,7 +205,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
@@ -214,7 +214,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertTrue(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
@@ -223,7 +223,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
@@ -232,26 +232,26 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertTrue(io(conn).lazy());
-            assertFalse(io(conn).updateOnServer());
+            assertFalse(io(conn).skipReducerOnUpdate());
         }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?updateOnServer=true")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true")) {
             assertFalse(io(conn).distributedJoins());
             assertFalse(io(conn).enforceJoinOrder());
             assertFalse(io(conn).collocated());
             assertFalse(io(conn).replicatedOnly());
             assertFalse(io(conn).lazy());
-            assertTrue(io(conn).updateOnServer());
+            assertTrue(io(conn).skipReducerOnUpdate());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&updateOnServer=true")) {
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
             assertTrue(io(conn).distributedJoins());
             assertTrue(io(conn).enforceJoinOrder());
             assertTrue(io(conn).collocated());
             assertTrue(io(conn).replicatedOnly());
             assertTrue(io(conn).lazy());
-            assertTrue(io(conn).updateOnServer());
+            assertTrue(io(conn).skipReducerOnUpdate());
         }
     }
 

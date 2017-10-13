@@ -103,8 +103,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Lazy query execution flag. */
     private final boolean lazy;
 
-    /** Update on server flag. */
-    private final boolean updateOnServer;
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
 
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
@@ -124,12 +124,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
-     * @param updateOnServer Server side update flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean updateOnServer, ClientListenerProtocolVersion protocolVer) {
+        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
+        ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -139,7 +140,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
-        this.updateOnServer = updateOnServer;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -277,8 +278,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     qry = new SqlFieldsQueryEx(sql, false);
 
-                    if (updateOnServer)
-                        ((SqlFieldsQueryEx)qry).setUpdateOnServer(true);
+                    if (skipReducerOnUpdate)
+                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());

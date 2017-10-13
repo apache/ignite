@@ -20,14 +20,14 @@ package org.apache.ignite.jdbc.thin.updateonserver;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinInsertStatementSelfTest;
 
 /**
- * Base class for complex SQL tests based on JDBC driver.
+ * Statement test.
  */
-public class JdbcThinComplexDmlDdlUpdateOnServerSelfTest extends JdbcThinComplexDmlDdlSelfTest {
+public class JdbcThinInsertStatementSkipReducerOnUpdateSelfTest extends JdbcThinInsertStatementSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?updateOnServer=true");
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true");
     }
 }

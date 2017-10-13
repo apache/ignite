@@ -95,7 +95,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private final boolean lazy;
 
     /** Update on server flag. */
-    private final boolean updateOnServer;
+    private final boolean skipReducerOnUpdate;
 
     /**
      * Constructor.
@@ -107,11 +107,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
-     * @param updateOnServer Update on server flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-        boolean collocated, boolean lazy, boolean updateOnServer) {
+        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -120,7 +120,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.collocated = collocated;
         this.lazy = lazy;
-        this.updateOnServer = updateOnServer;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
 
         log = ctx.log(getClass());
     }
@@ -212,7 +212,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setCollocated(collocated);
         qry.setLazy(lazy);
         qry.setSchema(schema);
-        qry.setUpdateOnServer(updateOnServer);
+        qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
 
         return qry;
     }

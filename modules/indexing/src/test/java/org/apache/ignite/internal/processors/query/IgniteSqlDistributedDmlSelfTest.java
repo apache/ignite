@@ -211,7 +211,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         Position p = cache.get(1);
 
         List<List<?>> r = cache.query(new SqlFieldsQueryEx("UPDATE Position p SET name = CONCAT('A ', name)", false)
-            .setUpdateOnServer(true)).getAll();
+            .setSkipReducerOnUpdate(true)).getAll();
 
         assertEquals((long)cache.size(), r.get(0).get(0));
 
@@ -229,7 +229,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         List<List<?>> r = cache.query(new SqlFieldsQueryEx(
             "UPDATE Person SET position = CASEWHEN(position = 1, 1, position - 1)", false)
-            .setUpdateOnServer(true)).getAll();
+            .setSkipReducerOnUpdate(true)).getAll();
 
         assertEquals((long)cache.size(), r.get(0).get(0));
     }
@@ -247,7 +247,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
                 return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET rate = Modify(_key, rate - 1)", false)
-                    .setUpdateOnServer(true));
+                    .setSkipReducerOnUpdate(true));
             }
         }, CacheException.class, "Failed to update some keys because they had been modified concurrently");
     }
@@ -264,7 +264,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() {
                 return cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
-                    .setUpdateOnServer(true));
+                    .setSkipReducerOnUpdate(true));
             }
         }, CacheException.class, "Failed to execute SQL query");
     }
@@ -287,7 +287,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             cache.put(i, new Organization("Acme Inc #" + i, 0));
 
         List<List<?>> r = cache.query(new SqlFieldsQueryEx("UPDATE \"" + cacheName +
-            "\".Organization o SET name = UPPER(name)", false).setUpdateOnServer(true)).getAll();
+            "\".Organization o SET name = UPPER(name)", false).setSkipReducerOnUpdate(true)).getAll();
 
         assertEquals((long)cache.size(), r.get(0).get(0));
     }
@@ -322,7 +322,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
             cache.put(i, new Organization("Acme Inc #" + i, 0));
 
         cache.query(new SqlFieldsQueryEx("UPDATE \"org\".Organization o SET name = UPPER(name)", false)
-            .setUpdateOnServer(true)).getAll();
+            .setSkipReducerOnUpdate(true)).getAll();
 
         assertTrue(latch.await(5000, MILLISECONDS));
 
@@ -349,7 +349,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
 
         // UPDATE over even partitions
         cache.query(new SqlFieldsQueryEx("UPDATE Person SET position = 0", false)
-                .setUpdateOnServer(true)
+                .setSkipReducerOnUpdate(true)
                 .setPartitions(parts));
 
         List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _key, position FROM Person")).getAll();
@@ -377,7 +377,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
                 return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET name = WAIT(name)", false)
-                    .setUpdateOnServer(true));
+                    .setSkipReducerOnUpdate(true));
             }
         });
 
@@ -423,7 +423,7 @@ public class IgniteSqlDistributedDmlSelfTest extends GridCommonAbstractTest {
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() {
                 return cache.query(new SqlFieldsQueryEx("UPDATE Organization SET name = WAIT(name)", false)
-                    .setUpdateOnServer(true));
+                    .setSkipReducerOnUpdate(true));
             }
         });
 

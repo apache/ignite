@@ -55,7 +55,7 @@ namespace ignite
                             REPLICATED_ONLY_CHECK_BOX,
                             COLLOCATED_CHECK_BOX,
                             LAZY_CHECK_BOX,
-                            UPDATE_ON_SERVER_CHECK_BOX,
+                            SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
                             PROTOCOL_VERSION_LABEL,
                             PROTOCOL_VERSION_COMBO_BOX,
                             OK_BUTTON,
@@ -151,7 +151,7 @@ namespace ignite
                     std::auto_ptr<Window> lazyCheckBox;
 
                     /** Update on server CheckBox. */
-                    std::auto_ptr<Window> updateOnServerCheckBox;
+                    std::auto_ptr<Window> skipReducerOnUpdateCheckBox;
 
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;

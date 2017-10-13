@@ -102,13 +102,13 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazy = reader.readBoolean();
 
-        boolean updateOnServer = false;
+        boolean skipReducerOnUpdate = false;
 
         if (ver.compareTo(VER_2_3_0) >= 0)
-            updateOnServer = reader.readBoolean();
+            skipReducerOnUpdate = reader.readBoolean();
 
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, updateOnServer);
+                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate);
 
         parser = new OdbcMessageParser(ctx, ver);
     }

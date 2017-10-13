@@ -334,8 +334,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Allow queries with multiple statements. */
     private static final String PARAM_MULTIPLE_STMTS = "multipleStatementsAllowed";
 
-    /** Server side update property name. */
-    private static final String PARAM_UPDATE_ON_SERVER = "updateOnServer";
+    /** Skip reducer on update property name. */
+    private static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
@@ -385,8 +385,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Allow query with multiple statements. */
     public static final String PROP_MULTIPLE_STMTS = PROP_PREFIX + PARAM_MULTIPLE_STMTS;
 
-    /** Server side update property name. */
-    public static final String PROP_UPDATE_ON_SERVER = PROP_PREFIX + PARAM_UPDATE_ON_SERVER;
+    /** Skip reducer on update update property name. */
+    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -461,7 +461,7 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(JdbcThinUtils.PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
-            new JdbcDriverPropertyInfo("Server side update", info.getProperty(PROP_UPDATE_ON_SERVER), "")
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

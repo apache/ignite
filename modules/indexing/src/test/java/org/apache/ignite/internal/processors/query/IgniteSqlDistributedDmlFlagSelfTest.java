@@ -586,7 +586,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         if (!F.isEmpty(initial))
             cache.putAll(initial);
 
-        List<List<?>> updRes = cache.query(qry.setUpdateOnServer(true)).getAll();
+        List<List<?>> updRes = cache.query(qry.setSkipReducerOnUpdate(true)).getAll();
 
         Map<K, V> result = new HashMap<>(cache.size());
 
@@ -598,7 +598,7 @@ public class IgniteSqlDistributedDmlFlagSelfTest extends GridCommonAbstractTest 
         if (!F.isEmpty(initial))
             cache.putAll(initial);
 
-        List<List<?>> updRes2 = cache.query(qry.setUpdateOnServer(false)).getAll();
+        List<List<?>> updRes2 = cache.query(qry.setSkipReducerOnUpdate(false)).getAll();
 
         assertTrue(((Number)updRes.get(0).get(0)).intValue() > 0);
 

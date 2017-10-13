@@ -43,7 +43,7 @@ namespace
     const bool testReplicatedOnly = true;
     const bool testCollocated = true;
     const bool testLazy = true;
-    const bool testUpdateOnServer = true;
+    const bool testSkipReducerOnUpdate = true;
 
     const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
@@ -133,7 +133,7 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), testReplicatedOnly);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), testCollocated);
     BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
-    BOOST_CHECK_EQUAL(cfg.IsUpdateOnServer(), testUpdateOnServer);
+    BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
 
     std::stringstream constructor;
 
@@ -146,7 +146,7 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "schema=" << testSchemaName << ';'
-                << "update_on_server=" << BoolToStr(testReplicatedOnly) << ';';
+                << "skip_reducer_on_update=" << BoolToStr(testReplicatedOnly) << ';';
 
     const std::string& expectedStr = constructor.str();
 
@@ -167,7 +167,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), false);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), false);
     BOOST_CHECK_EQUAL(cfg.IsLazy(), false);
-    BOOST_CHECK_EQUAL(cfg.IsUpdateOnServer(), false);
+    BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), false);
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testReplicatedOnly, Configuration::DefaultValue::replicatedOnly);
     BOOST_CHECK_NE(testCollocated, Configuration::DefaultValue::collocated);
     BOOST_CHECK_NE(testLazy, Configuration::DefaultValue::lazy);
-    BOOST_CHECK_NE(testUpdateOnServer, Configuration::DefaultValue::updateOnServer);
+    BOOST_CHECK_NE(testSkipReducerOnUpdate, Configuration::DefaultValue::skipReducerOnUpdate);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
                 << "REPLICATED_ONLY=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "PAGE_SIZE=" << testPageSize << ';'
                 << "SCHEMA=" << testSchemaName << ';'
-                << "UPDATE_ON_SERVER=" << BoolToStr(testUpdateOnServer, false);
+                << "SKIP_REDUCER_ON_UPDATE=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();
 
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
                 << "schema=" << testSchemaName << ';'
-                << "update_on_server=" << BoolToStr(testUpdateOnServer);
+                << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
                 << "schema=" << testSchemaName << ';'
-                << "update_on_server=" << BoolToStr(testUpdateOnServer);
+                << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
                 << "Replicated_Only=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "Collocated=" << BoolToStr(testCollocated) << ';'
                 << "Schema=" << testSchemaName << ';'
-                << "Update_On_Server=" << BoolToStr(testUpdateOnServer);
+                << "Skip_Reducer_On_Update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
                 << "  REPLICATED_ONLY=   " << BoolToStr(testReplicatedOnly, false) << ';'
                 << "ENFORCE_JOIN_ORDER=   " << BoolToStr(testEnforceJoinOrder, false) << "  ;"
                 << "SCHEMA = \n\r" << testSchemaName << ';'
-                << " update_on_server=" << BoolToStr(testUpdateOnServer, false);
+                << " skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();
 
@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
     keys.insert("replicated_only");
     keys.insert("collocated");
     keys.insert("lazy");
-    keys.insert("update_on_server");
+    keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)
     {
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidBoolKeys)
     keys.insert("replicated_only");
     keys.insert("collocated");
     keys.insert("lazy");
-    keys.insert("update_on_server");
+    keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)
     {

@@ -31,7 +31,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     private final Boolean isQry;
 
     /** Whether server side DML should be enabled. */
-    private boolean updateOnServer;
+    private boolean skipReducerOnUpdate;
 
     /**
      * @param sql SQL query.
@@ -49,7 +49,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
         super(qry);
 
         this.isQry = qry.isQry;
-        this.updateOnServer = qry.updateOnServer;
+        this.skipReducerOnUpdate = qry.skipReducerOnUpdate;
     }
 
     /**
@@ -134,8 +134,8 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      * @param updateOnServer Server side update flag.
      * @return {@code this} For chaining.
      */
-    public SqlFieldsQuery setUpdateOnServer(boolean updateOnServer) {
-        this.updateOnServer = updateOnServer;
+    public SqlFieldsQuery setSkipReducerOnUpdate(boolean updateOnServer) {
+        this.skipReducerOnUpdate = updateOnServer;
 
         return this;
     }
@@ -143,12 +143,12 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /**
      * Gets server side update flag.
      * <p>
-     * See {@link #setUpdateOnServer(boolean)} for more information.
+     * See {@link #setSkipReducerOnUpdate(boolean)} for more information.
      *
      * @return Server side update flag.
      */
-    public boolean isUpdateOnServer() {
-        return updateOnServer;
+    public boolean isSkipReducerOnUpdate() {
+        return skipReducerOnUpdate;
     }
 
     /** {@inheritDoc} */

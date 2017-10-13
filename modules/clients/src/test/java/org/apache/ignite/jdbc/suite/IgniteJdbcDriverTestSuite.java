@@ -58,10 +58,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinComplexDmlDdlUpdateOnServerSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinInsertStatementUpdateOnServerSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinMergeStatementUpdateOnServerSelfTest;
-import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinUpdateStatementUpdateOnServerSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinInsertStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinMergeStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.updateonserver.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -157,10 +157,10 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinSelectAfterAlterTable.class));
 
         // Update on server
-        suite.addTest(new TestSuite(JdbcThinInsertStatementUpdateOnServerSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinUpdateStatementUpdateOnServerSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinMergeStatementUpdateOnServerSelfTest.class));
-        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlUpdateOnServerSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinInsertStatementSkipReducerOnUpdateSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinMergeStatementSkipReducerOnUpdateSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest.class));
 
 
         return suite;

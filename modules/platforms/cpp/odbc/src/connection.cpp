@@ -417,7 +417,7 @@ namespace ignite
             bool replicatedOnly = false;
             bool collocated = false;
             bool lazy = false;
-            bool updateOnServer = false;
+            bool skipReducerOnUpdate = false;
             ProtocolVersion protocolVersion;
 
             try
@@ -428,7 +428,7 @@ namespace ignite
                 replicatedOnly = config.IsReplicatedOnly();
                 collocated = config.IsCollocated();
                 lazy = config.IsLazy();
-                updateOnServer = config.IsUpdateOnServer();
+                skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
             }
             catch (const IgniteError& err)
             {
@@ -446,7 +446,7 @@ namespace ignite
             }
 
             HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy,
-                updateOnServer);
+                skipReducerOnUpdate);
             HandshakeResponse rsp;
 
             try

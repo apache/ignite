@@ -23,14 +23,14 @@ namespace ignite
     namespace odbc
     {
         HandshakeRequest::HandshakeRequest(const ProtocolVersion& version, bool distributedJoins,
-            bool enforceJoinOrder, bool replicatedOnly, bool collocated, bool lazy, bool updateOnServer):
+            bool enforceJoinOrder, bool replicatedOnly, bool collocated, bool lazy, bool skipReducerOnUpdate):
             version(version),
             distributedJoins(distributedJoins),
             enforceJoinOrder(enforceJoinOrder),
             replicatedOnly(replicatedOnly),
             collocated(collocated),
             lazy(lazy),
-            updateOnServer(updateOnServer)
+            skipReducerOnUpdate(skipReducerOnUpdate)
         {
             // No-op.
         }
@@ -59,7 +59,7 @@ namespace ignite
                 writer.WriteBool(lazy);
 
             if (version >= ProtocolVersion::VERSION_2_3_0)
-                writer.WriteBool(updateOnServer);
+                writer.WriteBool(skipReducerOnUpdate);
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,

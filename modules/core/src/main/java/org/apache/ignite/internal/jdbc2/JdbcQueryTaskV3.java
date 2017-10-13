@@ -31,7 +31,7 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
     private final boolean updateMeta;
 
     /** Update metadata on demand flag. */
-    private final boolean updateOnServer;
+    private final boolean skipReducerOnUpdate;
 
     /**
      * @param ignite Ignite.
@@ -49,16 +49,16 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param enforceJoinOrder Enforce joins order flag.
      * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
-     * @param updateOnServer Flkag to enable server side updates.
+     * @param skipReducerOnUpdate Flkag to enable server side updates.
      */
     public JdbcQueryTaskV3(Ignite ignite, String cacheName, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, UUID uuid, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean updateOnServer) {
+        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean skipReducerOnUpdate) {
         super(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize, uuid, locQry,
             collocatedQry, distributedJoins, enforceJoinOrder, lazy);
 
         this.updateMeta = updateMeta;
-        this.updateOnServer = updateOnServer;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
     }
 
     /** {@inheritDoc} */
@@ -67,8 +67,8 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean updateOnServer() {
-        return updateOnServer;
+    @Override protected boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
     }
 
     /**
@@ -87,17 +87,17 @@ class JdbcQueryTaskV3 extends JdbcQueryTaskV2 {
      * @param enforceJoinOrder Enforce joins order flag.
      * @param lazy Lazy query execution flag.
      * @param updateMeta Update metadata on demand.
-     * @param updateOnServer Update on server flag.
+     * @param skipReducerOnUpdate Update on server flag.
      * @return Appropriate task JdbcQueryTask or JdbcQueryTaskV2.
      */
     public static JdbcQueryTask createTask(Ignite ignite, String cacheName, String schemaName, String sql,
         Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid, boolean locQry,
         boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean updateOnServer) {
+        boolean enforceJoinOrder, boolean lazy, boolean updateMeta, boolean skipReducerOnUpdate) {
 
-        if (updateMeta || updateOnServer)
+        if (updateMeta || skipReducerOnUpdate)
             return new JdbcQueryTaskV3(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
-                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy, updateMeta, updateOnServer);
+                uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy, updateMeta, skipReducerOnUpdate);
         else
             return JdbcQueryTaskV2.createTask(ignite, cacheName, schemaName, sql, isQry, loc, args, fetchSize,
                 uuid, locQry, collocatedQry, distributedJoins, enforceJoinOrder, lazy);

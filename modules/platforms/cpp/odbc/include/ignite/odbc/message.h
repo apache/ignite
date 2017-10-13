@@ -79,10 +79,10 @@ namespace ignite
              * @param replicatedOnly Replicated only flag.
              * @param collocated Collocated flag.
              * @param lazy Lazy flag.
-             * @param updateOnServer Update on server.
+             * @param skipReducerOnUpdate Skip reducer on update.
              */
             HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder,
-                bool replicatedOnly, bool collocated, bool lazy, bool updateOnServer);
+                bool replicatedOnly, bool collocated, bool lazy, bool skipReducerOnUpdate);
 
             /**
              * Destructor.
@@ -114,8 +114,8 @@ namespace ignite
             /** Lazy flag. */
             bool lazy;
 
-            /** Update on server flag. */
-            bool updateOnServer;
+            /** Skip reducer on update flag. */
+            bool skipReducerOnUpdate;
         };
 
         /**
