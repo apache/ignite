@@ -197,7 +197,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
             try {
                 CacheDataRow dataRow = cursor.get();
 
-                GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
+                GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(),
+                    dataRow.version(), 0);
 
                 row.link(dataRow.link());
 
@@ -222,7 +223,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    if (filter.apply(dataRow.key()))
+                    if (filter.applyPartition(dataRow.partition()))
                         return true;
                 }
 
