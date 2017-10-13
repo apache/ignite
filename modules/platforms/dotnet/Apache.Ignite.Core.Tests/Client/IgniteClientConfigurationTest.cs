@@ -23,7 +23,8 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests for <see cref="IgniteClientConfiguration"/>.
     /// </summary>
-    public class IgniteClientConfigurationTest
+    [Ignore]
+    internal class IgniteClientConfigurationTest
     {
         /// <summary>
         /// Tests the defaults.

@@ -29,7 +29,8 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests client connection: port ranges, version checks, etc.
     /// </summary>
-    public class ClientConnectionTest
+    [Ignore]
+    internal class ClientConnectionTest
     {
         /// <summary>
         /// Fixture tear down.
