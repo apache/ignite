@@ -136,7 +136,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /**
      * Constructor.
      *
-     * @param cfg Memory policy configuration.
+     * @param cfg Data storage configuration.
      */
     public VisorDataStorageConfiguration(DataStorageConfiguration cfg) {
         assert cfg != null;
@@ -179,27 +179,20 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Initial size of a data region reserved for system cache in bytes.
-     *
-     * @return Size in bytes.
+     * @return Initial size in bytes.
      */
     public long getSystemRegionInitialSize() {
         return sysRegionInitSize;
     }
 
     /**
-     * Maximum data region size reserved for system cache in bytes.
-     *
-     * @return Size in bytes.
+     * @return Maximum in bytes.
      */
     public long getSystemRegionMaxSize() {
         return sysRegionMaxSize;
     }
 
     /**
-     * The page memory consists of one or more expandable data regions defined by {@link DataRegionConfiguration}.
-     * Every data region is split on pages of fixed size that store actual cache entries.
-     *
      * @return Page size in bytes.
      */
     public int getPageSize() {
@@ -207,9 +200,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
-     * to the number of available CPUs multiplied by 4.
-     *
      * @return Mapping table concurrency level.
      */
     public int getConcurrencyLevel() {
@@ -217,18 +207,13 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Configuration of default data region. All cache groups will reside in this data region by default.
-     * For assigning a custom data region to cache group, use {@link CacheConfiguration#setDataRegionName(String)}.
+     * @return Configuration of default data region.
      */
     public VisorDataRegionConfiguration getDefaultDataRegionConfiguration() {
         return dfltDataRegCfg;
     }
 
     /**
-     * Gets an list of all data regions configured. Apache Ignite will instantiate a dedicated data region per
-     * region. An Apache Ignite cache can be mapped to a specific region with
-     * {@link CacheConfiguration#setDataRegionName(String)} method.
-     *
      * @return Array of configured data regions.
      */
     public List<VisorDataRegionConfiguration> getDataRegionConfigurations() {
@@ -355,7 +340,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Gets the fsync delay, in nanoseconds.
+     * @return Gets the fsync delay, in nanoseconds.
      */
     public long getWalFsyncDelayNanos() {
         return walFsyncDelay;
@@ -369,7 +354,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     *
+     * @return Flag indicating whether full pages should be always written.
      */
     public boolean isAlwaysWriteFullPages() {
         return alwaysWriteFullPages;
@@ -383,14 +368,14 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return time in millis to run auto archiving WAL segment (even if incomplete) after last record log
+     * @return Time in millis.
      */
     public long getWalAutoArchiveAfterInactivity() {
         return walAutoArchiveAfterInactivity;
     }
 
     /**
-     * Gets flag indicating whether write throttling is enabled.
+     * @return Flag indicating whether write throttling is enabled.
      */
     public boolean isWriteThrottlingEnabled() {
         return writeThrottlingEnabled;

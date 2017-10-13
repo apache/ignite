@@ -22,7 +22,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Data transfer object for memory configuration.
+ * Data transfer object for data region configuration.
  */
 public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /** */
@@ -51,10 +50,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /** An algorithm for memory pages eviction. */
     private DataPageEvictionMode pageEvictionMode;
 
-    /**
-     * A threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page
-     * memory will start the eviction only after 90% memory region (defined by this policy) is occupied.
-     */
+    /** A threshold for memory pages eviction initiation. */
     private double evictionThreshold;
 
     /** Minimum number of empty pages in reuse lists. */
@@ -66,10 +62,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /** Number of sub-intervals. */
     private int metricsSubIntervalCount;
 
-    /**
-     * Time interval (in milliseconds) for {@link DataRegionMetrics#getAllocationRate()}
-     * and {@link DataRegionMetrics#getEvictionRate()} monitoring purposes.
-     */
+    /** Time interval over which allocation rate is calculated. */
     private long metricsRateTimeInterval;
 
     /** Enable Ignite Native Persistence. */
@@ -85,7 +78,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /**
      * Constructor.
      *
-     * @param plc Memory policy configuration.
+     * @param plc Data region configuration.
      */
     public VisorDataRegionConfiguration(DataRegionConfiguration plc) {
         assert plc != null;
@@ -103,11 +96,15 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         persistenceEnabled = plc.isPersistenceEnabled();
     }
 
-    public static List<VisorDataRegionConfiguration> from(DataRegionConfiguration[] plcs) {
+    /**
+     * @param regCfgs Array of data region configurations.
+     * @return Collection of DTO objects.
+     */
+    public static List<VisorDataRegionConfiguration> from(DataRegionConfiguration[] regCfgs) {
         List<VisorDataRegionConfiguration> res = new ArrayList<>();
 
-        if (plcs != null) {
-            for (DataRegionConfiguration plc: plcs)
+        if (regCfgs != null) {
+            for (DataRegionConfiguration plc: regCfgs)
                 res.add(new VisorDataRegionConfiguration(plc));
         }
 
@@ -115,21 +112,21 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * Unique name of DataRegion.
+     * @return Unique name of DataRegion.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Maximum memory region size defined by this memory policy.
+     * @return Maximum memory region size defined by this memory policy.
      */
     public long getMaxSize() {
         return maxSize;
     }
 
     /**
-     * Initial memory region size defined by this memory policy.
+     * @return Initial memory region size defined by this memory policy.
      */
     public long getInitialSize() {
         return initSize;

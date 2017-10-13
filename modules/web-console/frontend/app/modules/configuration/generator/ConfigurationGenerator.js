@@ -94,7 +94,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterLogger(cluster.logger, cfg);
         this.clusterMarshaller(cluster, available, cfg);
 
-        // Since ignite 2.0 Removed in ignite 2.3
+        // Since ignite 2.0 and deprecated in ignite 2.3
         if (available(['2.0.0', '2.3.0']))
             this.clusterMemory(cluster.memoryConfiguration, available, cfg);
 
@@ -102,7 +102,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterMetrics(cluster, available, cfg);
         this.clusterODBC(cluster.odbc, available, cfg);
 
-        // Since ignite 2.1 Removed in ignite 2.3
+        // Since ignite 2.1 deprecated in ignite 2.3
         if (available(['2.1.0', '2.3.0']))
             this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
 
@@ -110,7 +110,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
 
-        // Removed in ignite 2.0
+        // Deprecated in ignite 2.0
         if (available(['1.0.0', '2.0.0']))
             this.clusterSwap(cluster, cfg);
 
@@ -1358,7 +1358,7 @@ export default class IgniteConfigurationGenerator {
             .boolProperty('persistenceEnabled');
     }
 
-    // Generate memory configuration.
+    // Generate data storage configuration.
     static clusterDataStorageConfiguration(dataStorageCfg, available, cfg = this.igniteConfigurationBean()) {
         if (!available('2.3.0'))
             return cfg;
