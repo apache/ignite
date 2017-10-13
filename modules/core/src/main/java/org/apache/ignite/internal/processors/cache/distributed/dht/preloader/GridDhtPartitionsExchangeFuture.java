@@ -1251,7 +1251,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (cctx.kernalContext().cache().cacheValidator() != null) {
-            Throwable t = customCacheValidRes.get(cctx.cacheId());
+            Throwable t;
+
+            Map<Integer, Throwable> resMap = customCacheValidRes;
+
+            if (resMap != null)
+                t = resMap.get(cctx.cacheId());
+            else
+                // Do not cache results, because it's better to do on exchange done.
+                t = cctx.kernalContext().cache().cacheValidator().apply(cctx.name());
 
             if (t != null) {
                 return new IgniteCheckedException("Failed to perform cache operation " +
