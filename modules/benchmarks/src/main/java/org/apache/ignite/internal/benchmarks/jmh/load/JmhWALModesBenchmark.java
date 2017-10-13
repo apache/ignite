@@ -33,13 +33,16 @@ import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.HeavyValue;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.profile.GCProfiler;
+import org.openjdk.jmh.annotations.Mode;
 
 /**
  * WAL modes benchmark.
  */
 @SuppressWarnings("unchecked")
 public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
+    /** Size. */
+    private static final int SIZE = 2_000_000;
+
     /**
      * Set up routine.
      *
@@ -52,7 +55,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
     /**
      */
     @Benchmark
-    public void loadIndexed() throws Exception {
+    public void indexedLoad() throws Exception {
         IgniteCache c = node.getOrCreateCache(cacheCfg(true));
 
         load(c);
@@ -78,9 +81,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
 
         IgniteDataStreamer<Integer, HeavyValue> dataLdr = node.dataStreamer(c.getName());
 
-        int size = 2_000_000;
-
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < SIZE; i++) {
             if (i % 100_000 == 0)
                 System.out.println("... " + i);
 
@@ -91,7 +92,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
 
         dataLdr.future().get();
 
-        if (c.size() != size)
+        if (c.size() != SIZE)
             throw new RuntimeException("Loading failed.");
 
         System.out.println("Loaded ... " + new Date().toString());
@@ -109,10 +110,10 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
         run("load", 1, false, WALMode.BACKGROUND);
         run("load", 1, false, WALMode.NONE);
 
-        run("loadIndexed", 1, false, WALMode.DEFAULT);
-        run("loadIndexed", 1, false, WALMode.LOG_ONLY);
-        run("loadIndexed", 1, false, WALMode.BACKGROUND);
-        run("loadIndexed", 1, false, WALMode.NONE);
+        run("indexedLoad", 1, false, WALMode.DEFAULT);
+        run("indexedLoad", 1, false, WALMode.LOG_ONLY);
+        run("indexedLoad", 1, false, WALMode.BACKGROUND);
+        run("indexedLoad", 1, false, WALMode.NONE);
     }
 
     /**
@@ -139,16 +140,13 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
             .forks(1)
             .threads(threads)
             .warmupIterations(0) // No warmup
-            .measurementIterations(1) // Only one iteration
+            .measurementIterations(1) // Single shot
             .benchmarks(simpleClsName + "." + benchmark)
             .output(output + ".jmh.log")
-            .profilers(GCProfiler.class)
+            .benchmarkModes(Mode.SingleShotTime)
             .jvmArguments(
                 "-Xms10g",
                 "-Xmx10g",
-                "-XX:+UnlockCommercialFeatures",
-                "-XX:+FlightRecorder",
-                "-XX:StartFlightRecording=delay=30s,dumponexit=true,settings=alloc,filename=" + output + ".jfr",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, CacheAtomicityMode.ATOMIC),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.FULL_SYNC),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 1),
