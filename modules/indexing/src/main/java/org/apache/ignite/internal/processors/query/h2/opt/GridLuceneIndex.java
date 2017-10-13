@@ -261,21 +261,25 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        IndexSearcher searcher = new IndexSearcher(reader);
-
-        MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_30, idxdFields,
-            writer.getAnalyzer());
-
-        // Filter expired items.
-        Filter f = new TermRangeFilter(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(U.currentTimeMillis(),
-            DateTools.Resolution.MILLISECOND), null, false, false);
+        IndexSearcher searcher;
 
         TopDocs docs;
 
         try {
+            searcher = new IndexSearcher(reader);
+
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_30, idxdFields,
+                writer.getAnalyzer());
+
+            // Filter expired items.
+            Filter f = new TermRangeFilter(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(U.currentTimeMillis(),
+                DateTools.Resolution.MILLISECOND), null, false, false);
+
             docs = searcher.search(parser.parse(qry), f, Integer.MAX_VALUE);
         }
         catch (Exception e) {
+            U.closeQuiet(reader);
+
             throw new IgniteCheckedException(e);
         }
 
