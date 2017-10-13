@@ -55,7 +55,7 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
     /**
      */
     @Benchmark
-    public void indexedLoad() throws Exception {
+    public void loadIndexed() throws Exception {
         IgniteCache c = node.getOrCreateCache(cacheCfg(true));
 
         load(c);
@@ -109,11 +109,6 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
         run("load", 1, false, WALMode.LOG_ONLY);
         run("load", 1, false, WALMode.BACKGROUND);
         run("load", 1, false, WALMode.NONE);
-
-        run("indexedLoad", 1, false, WALMode.DEFAULT);
-        run("indexedLoad", 1, false, WALMode.LOG_ONLY);
-        run("indexedLoad", 1, false, WALMode.BACKGROUND);
-        run("indexedLoad", 1, false, WALMode.NONE);
     }
 
     /**
