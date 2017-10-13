@@ -22,15 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
@@ -92,7 +89,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 String cacheName = arg.getCacheName();
 
                 if (F.isEmpty(cacheName))
-                    qryCursor = ignite.context().query().querySqlFieldsNoCache(qry, true);
+                    qryCursor = ignite.context().query().querySqlFields(qry, true, true).get(0);
                 else {
                     IgniteCache<Object, Object> c = ignite.cache(cacheName);
 

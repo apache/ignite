@@ -191,7 +191,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         CountDownLatch cnt = checkpointLatch(node);
 
         node.context().query().querySqlFields(
-            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false);
 
         assertEquals(0, indexCnt(node, SQL_CACHE_NAME));
 
@@ -209,7 +209,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
-        node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
+        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false);
     }
 
     /** */

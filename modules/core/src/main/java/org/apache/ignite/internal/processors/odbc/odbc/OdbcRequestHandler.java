@@ -236,7 +236,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true, true)
+                .get(0);
 
             long rowsAffected = 0;
 
@@ -291,7 +292,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             // Getting meta and do the checks for the first execution.
             qry.setArgs(paramSet[0]);
 
-            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true);
+            QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFields(qry, true, true)
+                .get(0);
 
             if (qryCur.isQuery())
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
@@ -322,7 +324,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private long executeQuery(SqlFieldsQuery qry, Object[] row) {
         qry.setArgs(row);
 
-        QueryCursor<List<?>> cur = ctx.query().querySqlFields(qry, true);
+        QueryCursor<List<?>> cur = ctx.query().querySqlFields(qry, true, true).get(0);
 
         return getRowsAffected(cur);
     }

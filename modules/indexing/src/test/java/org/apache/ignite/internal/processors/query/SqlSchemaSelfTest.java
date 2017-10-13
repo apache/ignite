@@ -64,13 +64,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
 
-        List<List<?>> res = qryProc.querySqlFields(null, qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFields(null, qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(qry, true).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -96,13 +96,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
 
-        List<List<?>> res = qryProc.querySqlFields(null, qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFields(null, qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(qry, true).iterator();
 
         assertTrue(iter.hasNext());
 
