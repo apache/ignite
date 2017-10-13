@@ -1614,9 +1614,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
          */
         @SuppressWarnings({"unchecked", "SimplifiableIfStatement"})
         protected boolean accept(GridH2Row row) {
+            if (row instanceof GridH2FilteredRow )
+                return false;
+
             if (row.expireTime() != 0 && row.expireTime() <= time)
                 return false;
 
+            // TODO: This is not needed any more!
             return fltr == null || fltr.applyPartition(row.partition());
         }
 
