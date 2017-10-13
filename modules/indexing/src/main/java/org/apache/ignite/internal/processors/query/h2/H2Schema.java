@@ -34,6 +34,9 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
+    /** */
+    private int numCaches;
+
     /**
      * Constructor.
      *
@@ -48,6 +51,31 @@ public class H2Schema {
      */
     public String schemaName() {
         return schemaName;
+    }
+
+    /**
+     * @return Number of caches having this schema.
+     */
+    public int numCaches() {
+        return numCaches;
+    }
+
+    /**
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
+     */
+    public int incNumCaches() {
+        return ++numCaches;
+    }
+
+    /**
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
+     */
+    public int decNumCaches() {
+        return --numCaches;
     }
 
     /**

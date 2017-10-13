@@ -2286,10 +2286,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (!isDefaultSchema(schemaName)) {
-            if (schemas.putIfAbsent(schemaName, new H2Schema(schemaName)) != null)
-                throw new IgniteCheckedException("Schema already registered: " + U.maskName(schemaName));
+            H2Schema schema = new H2Schema(schemaName);
 
-            createSchema(schemaName);
+            H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
+
+            if (oldSchema == null)
+                createSchema(schemaName);
+            else
+                schema = oldSchema;
+
+            schema.incNumCaches();
         }
 
         cacheName2schema.put(cacheName, schemaName);
@@ -2301,9 +2307,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void unregisterCache(String cacheName, boolean destroy) {
         String schemaName = schema(cacheName);
 
-        boolean dflt = isDefaultSchema(schemaName);
-
-        H2Schema schema = dflt ? schemas.get(schemaName) : schemas.remove(schemaName);
+        H2Schema schema = schemas.get(schemaName);
 
         if (schema != null) {
             mapQryExec.onCacheStop(cacheName);
@@ -2334,7 +2338,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            if (!dflt) {
+            if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
+                schemas.remove(schemaName);
+
                 try {
                     dropSchema(schemaName);
                 }
