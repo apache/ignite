@@ -60,6 +60,12 @@ export default class Clusters {
             },
             swapSpaceSpi: {},
             transactionConfiguration: {},
+            dataStorageConfiguration: {
+                defaultDataRegionConfiguration: {
+                    name: 'default'
+                },
+                dataRegionConfigurations: []
+            },
             memoryConfiguration: {
                 memoryPolicies: [{
                     name: 'default',
