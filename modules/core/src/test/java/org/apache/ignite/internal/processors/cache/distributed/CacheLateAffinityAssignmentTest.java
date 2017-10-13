@@ -1103,7 +1103,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 U.sleep(5000);
 
                 for (int i = 0; i < NODES; i++)
-                    stopGrid(i);
+                    stopGrid(i, false, false);
 
                 return null;
             }
