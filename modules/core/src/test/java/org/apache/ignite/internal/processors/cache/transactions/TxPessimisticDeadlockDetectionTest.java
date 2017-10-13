@@ -90,7 +90,9 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10));
+            new DataRegionConfiguration()
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10)
+                .setName("dfltPlc"));
 
         cfg.setDataStorageConfiguration(memCfg);
 

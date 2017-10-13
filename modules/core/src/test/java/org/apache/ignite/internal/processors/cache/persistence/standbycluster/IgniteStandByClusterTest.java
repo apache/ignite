@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -68,7 +69,12 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true)));
+
         cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
@@ -178,7 +184,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         for (IgniteEx ig : Arrays.asList(ig1, ig2, ig3)) {
             Map<String, DynamicCacheDescriptor> desc = U.field(
-                U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
+                (Object)U.field(ig.context().cache(), "cachesInfo"), "registeredCaches");
 
             assertEquals(4, desc.size());
 
