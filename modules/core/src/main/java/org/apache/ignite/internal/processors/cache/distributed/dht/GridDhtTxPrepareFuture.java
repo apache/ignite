@@ -42,6 +42,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
+import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -362,7 +363,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
-                CacheObject val;
+                CacheObject val = null;
                 CacheObject oldVal = null;
 
                 boolean readOld = hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM ||
@@ -501,6 +502,39 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         oldVal.prepareMarshal(cacheCtx.cacheObjectContext());
 
                     txEntry.oldValue(oldVal);
+                }
+
+                Object newVal = txEntry.hasValue() ? txEntry.value() : val;
+
+                if (tx.hasInterceptor() && newVal != null &&
+                    (txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == TRANSFORM)) {
+                    CacheLazyEntry lazyEntry = new CacheLazyEntry(cacheCtx, txEntry.key(), oldVal,
+                        txEntry.keepBinary());
+
+                    Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(lazyEntry,
+                        cacheCtx.unwrapBinaryIfNeeded(newVal, txEntry.keepBinary(), false));
+
+                    if (interceptorVal == null) {
+                        txEntry.op(GridCacheOperation.NOOP);
+                    }
+                    else if (interceptorVal != newVal) {
+                        interceptorVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
+
+                        try {
+                            cacheCtx.validateKeyAndValue(txEntry.key(), (CacheObject)interceptorVal);
+                        }
+                        catch (Exception e) {
+                            err = e;
+
+                            txEntry.op(GridCacheOperation.NOOP);
+
+                            ret.success(false);
+
+                            onDone(e);
+
+                            return;
+                        }
+                    }
                 }
             }
             catch (IgniteCheckedException e) {

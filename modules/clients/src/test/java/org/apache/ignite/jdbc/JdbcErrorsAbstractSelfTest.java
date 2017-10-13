@@ -545,25 +545,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Check error code for the case not null field is configured for table belonging to cache
-     * with configured cache interceptor.
-     *
-     * @throws SQLException if failed.
-     */
-    public void testNotNullRestrictionCacheInterceptor() throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setSchema("PUBLIC");
-
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
-                        "WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
-                }
-            }
-        }, "0A000");
-    }
-
-    /**
      * @return Connection to execute statements on.
      * @throws SQLException if failed.
      */

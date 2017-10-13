@@ -1330,6 +1330,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                     continue;
 
                                 val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
+
+                                cacheCtx.validateKeyAndValue(key, val);
                             }
 
                             if (writeStore == null)

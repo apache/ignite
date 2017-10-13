@@ -1135,6 +1135,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     continue;
 
                                 updated = ctx.toCacheObject(ctx.unwrapTemporary(interceptorVal));
+
+                                ctx.validateKeyAndValue(entry.key(), updated);
                             }
 
                             // Update previous batch.
