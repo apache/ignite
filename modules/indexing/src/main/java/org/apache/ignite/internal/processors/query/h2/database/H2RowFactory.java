@@ -65,9 +65,7 @@ public class H2RowFactory {
 
         try {
             row = rowDesc.createRow(rowBuilder.key(),
-                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), rowBuilder.expireTime());
-
-            row.link = link;
+                PageIdUtils.partId(link), rowBuilder.value(), rowBuilder.version(), rowBuilder.expireTime(), link);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

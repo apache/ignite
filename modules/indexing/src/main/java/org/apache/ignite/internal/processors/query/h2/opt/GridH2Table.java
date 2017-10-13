@@ -54,7 +54,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
@@ -407,9 +406,7 @@ public class GridH2Table extends TableBase {
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
-
-        row.link = link;
+        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime, link);
 
         if (rmv)
             return doUpdate(row, true);

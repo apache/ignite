@@ -675,9 +675,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (expTime == 0L)
                         expTime = Long.MAX_VALUE;
 
-                    GridH2Row row = rowDesc.createRow(key, part, val, ver, expTime);
-
-                    row.link(link);
+                    GridH2Row row = rowDesc.createRow(key, part, val, ver, expTime, link);
 
                     h2Idx.put(row);
                 }

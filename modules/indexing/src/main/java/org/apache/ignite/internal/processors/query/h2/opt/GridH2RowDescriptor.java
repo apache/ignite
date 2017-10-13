@@ -281,8 +281,8 @@ public class GridH2RowDescriptor {
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val,
-        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+    public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val, GridCacheVersion ver,
+        long expirationTime, long link) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
@@ -302,6 +302,8 @@ public class GridH2RowDescriptor {
         row.key = key;
         row.val = val;
         row.partId = partId;
+
+        row.link(link);
 
         return row;
     }
