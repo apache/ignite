@@ -26,8 +26,17 @@ public class DataStorageMetricsAdapter implements PersistenceMetrics {
     /**
      * @param delegate Delegate.
      */
-    public DataStorageMetricsAdapter(DataStorageMetrics delegate) {
+    private DataStorageMetricsAdapter(DataStorageMetrics delegate) {
         this.delegate = delegate;
+    }
+
+    /**
+     * @param delegate DataStorageMetrics.
+     * @return Wrapped {@link DataStorageMetrics} that implements {@link PersistenceMetrics}.
+     * Null value is not wrapped and returned as is.
+     */
+    public static DataStorageMetricsAdapter valueOf(DataStorageMetrics delegate) {
+        return delegate == null ? null : new DataStorageMetricsAdapter(delegate);
     }
 
     /** {@inheritDoc} */

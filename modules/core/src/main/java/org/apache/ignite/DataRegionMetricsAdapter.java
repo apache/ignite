@@ -29,7 +29,7 @@ public class DataRegionMetricsAdapter implements MemoryMetrics {
     /**
      * @param delegate Delegate.
      */
-    public DataRegionMetricsAdapter(DataRegionMetrics delegate) {
+    private DataRegionMetricsAdapter(DataRegionMetrics delegate) {
         this.delegate = delegate;
     }
 
@@ -48,6 +48,15 @@ public class DataRegionMetricsAdapter implements MemoryMetrics {
             res.add(new DataRegionMetricsAdapter(d));
 
         return res;
+    }
+
+    /**
+     * @param delegate DataRegionMetrics.
+     * @return Wrapped {@link DataRegionMetrics} that implements {@link MemoryMetrics}.
+     * Null value is not wrapped and returned as is.
+     */
+    public static DataRegionMetricsAdapter valueOf(DataRegionMetrics delegate) {
+        return delegate == null ? null : new DataRegionMetricsAdapter(delegate);
     }
 
     /** {@inheritDoc} */
