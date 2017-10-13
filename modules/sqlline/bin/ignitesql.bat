@@ -75,7 +75,9 @@ if NOT "%1"=="" (
     goto :loop
 )
 
-set NEW_PARAMS=%PARAMS:~14%
+if not "%PARAMS%"=="" (
+    set NEW_PARAMS=%PARAMS:~14%
+)
 
 if not "%NEW_PARAMS%"=="" (
 	set final_param_delimiter=?
