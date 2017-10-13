@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.h2.index.*;
-import org.h2.message.*;
-import org.h2.result.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.h2.index.Cursor;
+import org.h2.message.DbException;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
 
 /**
  * Cursor.
@@ -34,7 +35,7 @@ public class H2Cursor implements Cursor {
     private final GridCursor<GridH2Row> cursor;
 
     /** */
-    private final IgniteBiPredicate<Object,Object> filter;
+    private final IndexingQueryCacheFilter filter;
 
     /** */
     private final long time = U.currentTimeMillis();
@@ -43,7 +44,7 @@ public class H2Cursor implements Cursor {
      * @param cursor Cursor.
      * @param filter Filter.
      */
-    public H2Cursor(GridCursor<GridH2Row> cursor, IgniteBiPredicate<Object, Object> filter) {
+    public H2Cursor(GridCursor<GridH2Row> cursor, IndexingQueryCacheFilter filter) {
         assert cursor != null;
 
         this.cursor = cursor;
@@ -85,12 +86,10 @@ public class H2Cursor implements Cursor {
                     return true;
 
                 Object key = row.getValue(0).getObject();
-                Object val = row.getValue(1).getObject();
 
                 assert key != null;
-                assert val != null;
 
-                if (filter.apply(key, val))
+                if (filter.apply(key))
                     return true;
             }
 

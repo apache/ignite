@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.indexing;
 
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,14 +29,5 @@ public interface IndexingQueryFilter {
      * @param cacheName Cache name.
      * @return Predicate or {@code null} if no filtering is needed.
      */
-    @Nullable public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName);
-
-    /**
-     * Is the value required for filtering logic?
-     * If false then null instead of value will be passed
-     * to IgniteBiPredicate returned by {@link #forCache(String)} method.
-     *
-     * @return true if value is required for filtering, false otherwise.
-     */
-    public boolean isValueRequired();
+    @Nullable public IndexingQueryCacheFilter forCache(String cacheName);
 }
