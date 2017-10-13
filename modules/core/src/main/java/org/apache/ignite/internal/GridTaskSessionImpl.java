@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,6 +111,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final Collection<UUID> top;
 
     /** */
+    private final IgnitePredicate<ClusterNode> topPred;
+
+    /** */
     private final UUID subjId;
 
     /** */
@@ -121,6 +126,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param taskClsName Task class name.
      * @param sesId Task session ID.
      * @param top Topology.
+     * @param topPred Topology predicate.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
      * @param siblings Collection of siblings.
@@ -137,6 +143,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         String taskClsName,
         IgniteUuid sesId,
         @Nullable Collection<UUID> top,
+        @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
         Collection<ComputeJobSibling> siblings,
@@ -154,6 +161,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.taskName = taskName;
         this.dep = dep;
         this.top = top;
+        this.topPred = topPred;
 
         // Note that class name might be null here if task was not explicitly
         // deployed.
@@ -766,8 +774,18 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         return ctx.checkpoint().removeCheckpoint(ses, key);
     }
 
+    /**
+     * @return Topology predicate.
+     */
+    @Nullable public IgnitePredicate<ClusterNode> getTopologyPredicate() {
+        return topPred;
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
+        if (topPred != null)
+           return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+
         return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
     }
 

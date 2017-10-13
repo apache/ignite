@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
@@ -261,7 +262,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return (R)saveOrGet(ctx.task().execute(taskName, arg));
@@ -281,7 +282,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return saveOrGet(ctx.task().execute(taskCls, arg));
@@ -325,7 +326,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, prj.predicate());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
             return ctx.task().execute(task, arg);
