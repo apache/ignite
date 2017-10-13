@@ -65,8 +65,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -130,7 +128,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -139,6 +136,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -2375,62 +2373,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public IndexingQueryFilter backupFilter(@Nullable final AffinityTopologyVersion topVer,
         @Nullable final int[] parts) {
-        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
-
-        return new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
-
-                if (cache.context().isReplicated())
-                    return null;
-
-                final GridCacheAffinityManager aff = cache.context().affinity();
-
-                if (parts != null) {
-                    if (parts.length < 64) { // Fast scan for small arrays.
-                        return new IgniteBiPredicate<K, V>() {
-                            @Override public boolean apply(K k, V v) {
-                                int p = aff.partition(k);
-
-                                for (int p0 : parts) {
-                                    if (p0 == p)
-                                        return true;
-
-                                    if (p0 > p) // Array is sorted.
-                                        return false;
-                                }
-
-                                return false;
-                            }
-                        };
-                    }
-
-                    return new IgniteBiPredicate<K, V>() {
-                        @Override public boolean apply(K k, V v) {
-                            int p = aff.partition(k);
-
-                            return Arrays.binarySearch(parts, p) >= 0;
-                        }
-                    };
-                }
-
-                final ClusterNode locNode = ctx.discovery().localNode();
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return aff.primaryByKey(locNode, k, topVer0);
-                    }
-                };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
-            }
-
-            @Override public String toString() {
-                return "IndexingQueryFilter [ver=" + topVer + ']';
-            }
-        };
+        return new IndexingQueryFilterImpl(ctx, topVer, parts);
     }
 
     /**
