@@ -331,7 +331,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                         if (state == GridDhtPartitionState.OWNING)
                                             addPartition(ctx.partitionStatMap(), metaPageAddr, metaIo, grpId, PageIdAllocator.INDEX_PARTITION,
-                                                    this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
+                                                this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
                                     }
                                     finally {
                                         pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
@@ -1336,6 +1336,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             if (delegate != null)
                 delegate.clear(cacheId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "GridCacheDataStore{" +
+                "partId=" + partId +
+                ", name='" + name + '\'' +
+                ", exists=" + exists +
+                ", init=" + init +
+                '}';
         }
     }
 

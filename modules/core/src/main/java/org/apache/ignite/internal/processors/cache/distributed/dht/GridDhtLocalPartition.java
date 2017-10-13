@@ -544,7 +544,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(setPartState(state.get(),stateToRestore));
+        long currState = state.get();
+
+        U.log(log, "Restore partition state: [partId=" + id +
+            ", from=" + currState +
+            ", to=" + stateToRestore + ']');
+
+        state.set(setPartState(currState, stateToRestore));
     }
 
     /**
@@ -805,6 +811,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (addEvicting()) {
             try {
+                assert partState != EVICTED : this;
+
                 // Attempt to evict partition entries from cache.
                 clearAll();
 
