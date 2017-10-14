@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
 /**
  * {@link VectorStorage} implementation for {@link /*SparseDistributedVector}.
  */
-public class SparseDistributedVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<Integer> {
+public class SparseDistributedVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedVectorStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_VECTORS_CONTAINER";
     /** Amount of elements in the vector. */
@@ -56,7 +56,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     private IgniteUuid uuid;
 
     /** Actual distributed storage. */
-    private IgniteCache<Integer, Double> cache = null;
+    private IgniteCache<RowColMatrixKey, Double> cache = null;
 
     /**
      *
@@ -85,8 +85,8 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     /**
      * Create new ML cache if needed.
      */
-    private IgniteCache<Integer, Double> newCache() {
-        CacheConfiguration<Integer, Double> cfg = new CacheConfiguration<>();
+    private IgniteCache<RowColMatrixKey, Double> newCache() {
+        CacheConfiguration<RowColMatrixKey, Double> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -112,7 +112,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     /**
      *
      */
-    public IgniteCache<Integer, Double> cache() {
+    public IgniteCache<RowColMatrixKey, Double> cache() {
         return cache;
     }
 
@@ -123,22 +123,24 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     @Override
     public double get(int i) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, i)).call(() -> {
-            IgniteCache<Integer, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
-            return cache.get(i);
+        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).call(() -> {
+            IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+            return cache.get(getCacheKey(i));
         });
     }
 
     @Override
     public void set(int i, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, i)).run(() -> {
-            IgniteCache<Integer, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+        ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).run(() -> {
+            IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+
+            RowColMatrixKey cacheKey = getCacheKey(i);
 
             if (v != 0.0)
-                cache.put(i, v);
-            else if (cache.containsKey(i)) // remove zero elements
-                cache.remove(i);
+                cache.put(cacheKey, v);
+            else if (cache.containsKey(cacheKey)) // remove zero elements
+                cache.remove(cacheKey);
 
         });
     }
@@ -193,8 +195,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
 
     /** Delete all data from cache. */
     @Override public void destroy() {
-        Set<Integer> keyset = IntStream.range(0, size).boxed().collect(Collectors.toSet());
-
+        Set<RowColMatrixKey> keyset = IntStream.range(0, size).mapToObj(this::getCacheKey).collect(Collectors.toSet());
         cache.clearAll(keyset);
     }
 
@@ -224,11 +225,16 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
             && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
+
+    public RowColMatrixKey getCacheKey(int idx) {
+        return new SparseMatrixKey(idx, uuid, null);
+    }
+
     /** {@inheritDoc} */
-    @Override public Set<Integer> getAllKeys() {
+    @Override public Set<RowColMatrixKey> getAllKeys() {
         int range = size;
 
-        return IntStream.range(0, range).boxed().collect(Collectors.toSet());
+        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), null)).collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */

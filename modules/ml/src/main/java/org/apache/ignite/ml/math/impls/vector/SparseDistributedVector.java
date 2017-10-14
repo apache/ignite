@@ -121,6 +121,11 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /** {@inheritDoc} */
+    @Override public Vector assign(Vector data) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         return mapOverValues(fun);
     }
