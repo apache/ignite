@@ -7,6 +7,7 @@ import org.apache.ignite.ml.math.decompositions.distributed.DistributedQRDecompo
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 
@@ -41,7 +42,7 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      * {@inheritDoc}
      * <p>This implementation computes and caches the QR decomposition of the X matrix.</p>
      */
-    @Override public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
+    public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
         super.newSampleData(data, nobs, nvars, like); // DEBUG:  it has distributed Matrix support
         qr = new DistributedQRDecomposition(getX(), threshold); // TODO: it should be distributed
     }
