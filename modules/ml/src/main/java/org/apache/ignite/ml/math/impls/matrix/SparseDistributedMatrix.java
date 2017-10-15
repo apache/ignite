@@ -67,11 +67,18 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         assertStorageMode(stoMode);
 
         setStorage(new SparseDistributedMatrixStorage(rows, cols, stoMode, acsMode));
+
     }
 
     public SparseDistributedMatrix(double[][] data) {
         assert data.length > 0;
         setStorage(new SparseDistributedMatrixStorage(data.length, getMaxAmountOfColumns(data),  StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE));
+
+        for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[i].length; j++) {
+                storage().set(i,j,data[i][j]);
+            }
+        }
     }
 
 

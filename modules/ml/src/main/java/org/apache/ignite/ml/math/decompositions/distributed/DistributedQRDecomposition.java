@@ -22,6 +22,7 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.copy;
 import static org.apache.ignite.ml.math.util.MatrixUtil.like;
@@ -84,7 +85,9 @@ public class DistributedQRDecomposition implements Destroyable {
 
         mType = like(mtx, 1, 1);
 
-        Matrix qTmp = copy(mtx); // TODO: distribute it: add like + assign
+        MatrixUtil.toString("Mtx", mtx, cols, rows);
+        Matrix qTmp = copy(mtx);
+        MatrixUtil.toString("qTmp", qTmp, cols, rows);
 
         boolean fullRank = true;
 
@@ -104,7 +107,7 @@ public class DistributedQRDecomposition implements Destroyable {
                 fullRank = false;
             }
 
-            r.set(i, i, alpha); // TODO: distribute it ???
+            r.set(i, i, alpha);
 
             for (int j = i + 1; j < cols; j++) {
                 Vector qj = qTmp.viewColumn(j);
@@ -130,6 +133,9 @@ public class DistributedQRDecomposition implements Destroyable {
             q = qTmp;
 
         this.fullRank = fullRank;
+
+        MatrixUtil.toString("R ", r, cols, rows);
+        MatrixUtil.toString("Q ", q, cols, rows);
     }
 
     /** {@inheritDoc} */
@@ -175,13 +181,17 @@ public class DistributedQRDecomposition implements Destroyable {
 
         int cols = mtx.columnSize();
         Matrix r = getR();
+        MatrixUtil.toString("Before singular", r, rows, rows);
         checkSingular(r, threshold, true); //TODO: Make it distributed in IGNITE-5828
         Matrix x = like(mType, this.cols, cols);
 
-        Matrix qt = getQ().transpose(); // DEBUG: is distributed
-        Matrix y = qt.times(mtx);
+        Matrix qt = getQ().transpose();
+        MatrixUtil.toString("QT", qt, rows, rows);
+        MatrixUtil.toString("mtx", mtx, cols, rows);
+        Matrix y = qt.times(mtx); //TODO:6222 The main problem is here
+        MatrixUtil.toString("y", y, 1, rows);
 
-        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {  // TODO: distribute it
+        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {  // TODO:6222 distribute it
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
 
@@ -191,8 +201,8 @@ public class DistributedQRDecomposition implements Destroyable {
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
             Vector rCol = r.viewColumn(k).viewPart(0, k);
 
-            for (int c = 0; c < cols; c++) // TODO: distribute it with affinityRun and Keys to map
-                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c))); // TODO: distribute it
+            for (int c = 0; c < cols; c++) // TODO:6222 distribute it with affinityRun and Keys to map
+                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c))); // TODO:6222 distribute it
         }
 
         return x;
@@ -206,6 +216,7 @@ public class DistributedQRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Vector solve(Vector vec) {
+        MatrixUtil.toString("vec", vec.likeMatrix(vec.size(), 1).assignColumn(0, vec),  1, vec.size());
         Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
         return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }

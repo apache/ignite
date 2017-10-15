@@ -231,4 +231,34 @@ public class MatrixUtil {
 
         return res;
     }
+
+    /**
+     * For matrices with size less than 100
+     */
+    public static void toString(String name, Matrix mtx, int cols, int rows){
+        System.out.println(">>>> Print out matrix " + name + " " + mtx.guid().toString());
+        assert cols < 100;
+        assert rows < 100;
+        for (int i = 0; i < rows; i++) {
+            StringBuffer s = new StringBuffer("[");
+            for(int j = 0; j < cols; j++){
+                s.append(" " + mtx.get(i,j));
+            }
+            System.out.println(s + "]");
+        }
+    }
+
+    /**
+     * For vectors with size less than 100
+     */
+    public static void toString(Vector v, int size){
+        System.out.println(">>>> Print out vector " + v.guid().toString());
+        assert size < 100;
+        StringBuffer s = new StringBuffer("[");
+        for (int i = 0; i < size; i++) {
+            s.append(" " + v.get(i));
+        }
+        System.out.println(s + "]");
+
+    }
 }
