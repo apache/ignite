@@ -59,4 +59,4 @@ CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
-java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --color=true --verbose=true --showWarnings=true --showNestedErrs=true -u ${JDBCLINK}
+java -cp ${CP} org.apache.ignite.sqlline.CommandLineStartup $@
