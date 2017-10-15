@@ -72,6 +72,26 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
         setStorage(new SparseDistributedVectorStorage(size, acsMode));
     }
 
+    public SparseDistributedVector(int size) {
+        this(size, StorageConstants.RANDOM_ACCESS_MODE);
+    }
+
+    /**
+     *
+     * @param data
+     */
+    public SparseDistributedVector(double[] data) {
+        setStorage(new SparseDistributedVectorStorage(data.length, StorageConstants.RANDOM_ACCESS_MODE));
+        for (int i = 0; i < data.length; i++) {
+            double value = data[i];
+            if(value != 0.0){
+                storage().set(i, value);
+            }
+        }
+    }
+
+
+
     /** */
     private SparseDistributedVectorStorage storage() {
         return (SparseDistributedVectorStorage)getStorage();
@@ -93,7 +113,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 
     /**
@@ -122,7 +142,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Vector assign(Vector data) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(); // TODO: implement
     }
 
     /** {@inheritDoc} */

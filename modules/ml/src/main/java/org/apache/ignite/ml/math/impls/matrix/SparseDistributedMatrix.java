@@ -69,6 +69,16 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         setStorage(new SparseDistributedMatrixStorage(rows, cols, stoMode, acsMode));
     }
 
+    public SparseDistributedMatrix(double[][] data) {
+        assert data.length > 0;
+        setStorage(new SparseDistributedMatrixStorage(data.length, getMaxAmountOfColumns(data),  StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE));
+    }
+
+
+    public SparseDistributedMatrix(int rows, int cols) {
+        this(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+    }
+
     /** */
     private SparseDistributedMatrixStorage storage() {
         return (SparseDistributedMatrixStorage)getStorage();
@@ -197,12 +207,19 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        throw new UnsupportedOperationException();
+        Matrix cp = like(rowSize(), columnSize());
+
+        cp.assign(this);
+
+        return cp;
     }
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
+        if(storage()==null){
+            return new SparseDistributedMatrix(rows, cols);
+        } else return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
+
     }
 
     /** {@inheritDoc} */

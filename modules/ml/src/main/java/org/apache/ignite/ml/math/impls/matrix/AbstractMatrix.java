@@ -974,4 +974,15 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
         setX(row, col, f.apply(row, col, getX(row, col)));
     }
+
+
+    protected int getMaxAmountOfColumns(double[][] data) {
+        int maxAmountOfColumns = 0;
+
+        for (int i = 0; i < data.length; i++) {
+            maxAmountOfColumns = Math.max(maxAmountOfColumns, data[i].length);
+        }
+
+        return maxAmountOfColumns;
+    }
 }
