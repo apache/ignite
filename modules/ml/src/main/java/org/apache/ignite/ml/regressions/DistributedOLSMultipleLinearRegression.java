@@ -38,6 +38,22 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
     }
 
 
+
+    /**
+     * Loads model x and y sample data, overriding any previous sample.
+     *
+     * Computes and caches QR decomposition of the X matrix.
+     *
+     * @param y the {@code n}-sized vector representing the y sample
+     * @param x the {@code n x k} matrix representing the x sample
+     * @throws MathIllegalArgumentException if the x and y array data are not compatible for the regression
+     */
+    public void newSampleData(Vector y, Matrix x) throws MathIllegalArgumentException { // TODO: move to the parent class
+        validateSampleData(x, y);
+        newYSampleData(y);
+        newXSampleData(x);
+    }
+
     /**
      * {@inheritDoc}
      * <p>This implementation computes and caches the QR decomposition of the X matrix.</p>
@@ -139,6 +155,16 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      */
     public double calculateRSquared() {
         return 1 - calculateResidualSumOfSquares() / calculateTotalSumOfSquares(); // DEBUG: it will be distributed due to distribution of two called methods
+    }
+
+
+    public double calculateAdjustedRSquared() {
+        final double n = getX().rowSize();
+        if (isNoIntercept())
+            return 1 - (1 - calculateRSquared()) * (n / (n - getX().columnSize()));
+        else
+            return 1 - (calculateResidualSumOfSquares() * (n - 1)) /
+                    (calculateTotalSumOfSquares() * (n - getX().columnSize()));
     }
 
     /**

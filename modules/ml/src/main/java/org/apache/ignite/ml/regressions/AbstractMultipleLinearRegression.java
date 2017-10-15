@@ -123,7 +123,7 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
                 x[i][j] = data[pointer++];
         }
         xMatrix = MatrixUtil.like(like, nobs, cols).assign(x);
-        yVector = MatrixUtil.likeVector(like, y.length).assign(y);
+        yVector = MatrixUtil.likeVector(like, y.length).assign(y); // TODO: fix the problem for distributed vector
     }
 
     /**
