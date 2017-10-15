@@ -31,9 +31,7 @@ import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.impls.matrix.AbstractMatrix;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
+import org.apache.ignite.ml.math.impls.matrix.*;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 
@@ -113,7 +111,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        throw new UnsupportedOperationException(); // TODO: implement
+        return new SparseDistributedMatrix(rows, cols);
     }
 
     /**

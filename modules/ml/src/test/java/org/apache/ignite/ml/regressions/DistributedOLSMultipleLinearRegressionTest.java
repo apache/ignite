@@ -563,7 +563,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         try {
-            createRegression().newSampleData(new SparseDistributedVector(new double[] {}), null);
+            createRegression().newSampleData(new SparseDistributedVector(new double[] {1}), null);
             fail("NullArgumentException");
         }
         catch (NullArgumentException e) {
