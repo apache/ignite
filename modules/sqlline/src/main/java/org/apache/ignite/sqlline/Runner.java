@@ -90,13 +90,11 @@ class Runner {
             "--verbose=true",
             "--showWarnings=true",
             "--showNestedErrs=true",
-            "-u=" + getConnStr(connStrParams, host)
+            "-u", getConnStr(connStrParams, host)
         };
 
-        SqlLine sqlline = new SqlLine();
-
         try {
-            sqlline.main(args0);
+            SqlLine.main(args0);
         }
         catch (Exception e) {
             e.printStackTrace();

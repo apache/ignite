@@ -22,105 +22,6 @@
 @echo off
 Setlocal EnableDelayedExpansion
 
-
-if "%1"=="" (
-	call :print_help
-	exit /B 1
-)
-
-if "%1"=="-h" (
-	call :print_help
-	exit /B 0
-)
-
-if "%1"=="--help" (
-	call :print_help
-	exit /B 0
-)
-
-set HOST_AND_PORT=%1
-shift 
-
-set param_delimiter=to_be_replaced
-
-:loop
-if NOT "%1"=="" (
-
-    if "%1"=="--schema" (
-        set schema=%2
-		set schema_delimiter=/
-    )
-    if "%1"=="--distributedJoins" (
-        set PARAMS=%PARAMS%%param_delimiter%distributedJoins=true
-    )
-	if "%1"=="--lazy" (
-        set PARAMS=%PARAMS%%param_delimiter%lazy=true
-    )
-	if "%1"=="--collocated" (
-        set PARAMS=%PARAMS%%param_delimiter%collocated=true
-    )
-	if "%1"=="--replicatedOnly" (
-        set PARAMS=%PARAMS%%param_delimiter%replicatedOnly=true
-    )
-	if "%1"=="--enforceJoinOrder" (
-        set PARAMS=%PARAMS%%param_delimiter%enforceJoinOrder=true
-    )
-	if "%1"=="--socketSendBuffer" (
-        set PARAMS=%PARAMS%%param_delimiter%socketSendBuffer=%2
-    )
-	if "%1"=="--socketReceiveBuffer" (
-        set PARAMS=%PARAMS%%param_delimiter%socketReceiveBuffer=%2
-    )
-    shift
-    goto :loop
-)
-
-if not "%PARAMS%"=="" (
-    set NEW_PARAMS=%PARAMS:~14%
-)
-
-if not "%NEW_PARAMS%"=="" (
-	set final_param_delimiter=?
-)
-
-set prepare_link=jdbc:ignite:thin://%HOST_AND_PORT%%schema_delimiter%%schema%%final_param_delimiter%%NEW_PARAMS%
-
-set jdbc_link=%prepare_link:to_be_replaced=^&%
-
-:end_parser
-
-goto end_help
-
-::
-:: a function to print help
-::
-:print_help
-    echo "
-    echo " Usage: ignitesql.bat host[:port] [options]
-    echo "
-    echo " If port is omitted default port 10800 will be used.
-    echo "
-    echo " Options:
-    echo "    -h  |  --help                       Help.
-    echo "    --schema <schema>                   Schema name; defaults to PUBLIC.
-    echo "    --distributedJoins                  Enable distributed joins.
-    echo "    --lazy                              Execute queries in lazy mode.
-    echo "    --collocated                        Collocated flag.
-    echo "    --replicatedOnly                    Replicated only flag
-    echo "    --enforceJoinOrder                  Enforce join order.
-    echo "    --socketSendBuffer <buf_size>       Socket send buffer size in bytes.
-    echo "   --socketReceiveBuffer <buf_size>    Socket receive buffer size in bytes.
-    echo "
-    echo " Examples: ignitesql.bat myHost --schema mySchema --distributedJoins
-    echo "           ignitesql.bat localhost --schema mySchema --collocated
-    echo "           ignitesql.bat 127.0.0.1:10800 --schema mySchema --replicatedOnly
-    echo "
-    echo "For more information see https://apacheignite-sql.readme.io/docs/jdbc-driver
-	echo "
-    exit /B 0
-
-:end_help
-
 if "%OS%" == "Windows_NT"  setlocal
 
 :: Check JAVA_HOME.
@@ -206,6 +107,6 @@ call "%SCRIPTS_HOME%\include\setenv.bat"
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver --verbose=true --showWarnings=true --showNestedErrs=true -u "%jdbc_link%"
+"%JAVA_HOME%\bin\java.exe" -cp "%CP%" org.apache.ignite.sqlline.CommandLineStartup %*
 
 :error_finish
