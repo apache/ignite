@@ -2,6 +2,7 @@ package org.apache.ignite.sqlline;
 
 import java.util.ArrayList;
 import java.util.List;
+import sqlline.SqlLine;
 
 /**
  * Created by oostanin on 15.10.17.
@@ -9,13 +10,13 @@ import java.util.List;
 class Runner {
 
     private final String defaultDriver = "org.apache.ignite.IgniteJdbcThinDriver";
-    private String schema = "PUBLIC";
-    private String color="true";
-    private String scriptName = "ignitedb.sh";
+    private String schema = "";
+    private String color = "true";
+    private String scriptName = "ignitesql.sh";
 
     public int run(String[] args) {
         if (System.getProperty("os.name").toLowerCase().startsWith("windows"))
-            scriptName = "ignitedb.bat";
+            scriptName = "ignitesql.bat";
 
         if (args.length == 0) {
             System.out.println("Error. You need to define host.");
@@ -34,36 +35,48 @@ class Runner {
             switch (val) {
                 case "--schema":
                     check(args, i, val);
-                    schema = args[++i];
+                    schema = args[i+1];
+                    i++;
                     break;
+
                 case "--nocolor":
-                    color="false";
+                    color = "false";
                     break;
+
                 case "--distributedjoins":
                     connStrParams.add("distributedJoins=true");
                     break;
+
                 case "--lazy":
                     connStrParams.add("lazy=true");
                     break;
+
                 case "--collocated":
                     connStrParams.add("collocated=true");
                     break;
+
                 case "--replicatedonly":
                     connStrParams.add("replicatedOnly=true");
                     break;
+
                 case "--enforcejoinorder":
                     connStrParams.add("enforceJoinOrder=true");
                     break;
+
                 case "--socketsendbuffer":
                     check(args, i, val);
-                    checkNum(valOrig, args[++i]);
-                    connStrParams.add("socketSendBuffer=" + args[i]);
+                    checkNum(valOrig, args[i+1]);
+                    connStrParams.add("socketSendBuffer=" + args[i+1]);
+                    i++;
                     break;
+
                 case "--socketreceivebuffer":
                     check(args, i, val);
-                    checkNum(valOrig, args[++i]);
-                    connStrParams.add("socketReceiveBuffer=" + args[i]);
+                    checkNum(valOrig, args[i+1]);
+                    connStrParams.add("socketReceiveBuffer=" + args[i+1]);
+                    i++;
                     break;
+
                 default:
                     System.out.println("Error: Invalid argument " + val);
                     printHelp();
@@ -71,7 +84,7 @@ class Runner {
             }
         }
 
-        String[] args0 = new String[]{
+        String[] args0 = new String[] {
             "-d", defaultDriver,
             "--color=" + color,
             "--verbose=true",
@@ -80,13 +93,10 @@ class Runner {
             "-u=" + getConnStr(connStrParams, host)
         };
 
-        for (String arg : args0)
-            System.out.print(arg + " ");
-
-        System.out.println();
+        SqlLine sqlline = new SqlLine();
 
         try {
-            sqlline.SqlLine.main(args0);
+            sqlline.main(args0);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -113,6 +123,7 @@ class Runner {
         System.out.println("    --enforceJoinOrder                  Enforce join order.");
         System.out.println("    --socketSendBuffer <buf_size>       Socket send buffer size in bytes.");
         System.out.println("    --socketReceiveBuffer <buf_size>    Socket receive buffer size in bytes.");
+        System.out.println("    --nocolor                           Use it in Windows cmd mode to avoid charset issues.");
         System.out.println();
         System.out.println("Examples: " + scriptName + " myHost --schema mySchema --distributedJoins");
         System.out.println("          " + scriptName + " localhost --schema mySchema --collocated");
@@ -122,30 +133,42 @@ class Runner {
     }
 
     private void check(String[] args, int i, String val) {
-        if (args.length < i && args[i+1].startsWith("-")){
+        if (args.length <= i + 1) {
             System.out.println("Error. You did not define value for " + val);
+
+            printHelp();
+            System.exit(1);
+        }
+
+        if (args[i + 1].startsWith("-")) {
+            System.out.println("Error. Invalid value '" + args[i + 1] + "' for " + val);
+
             printHelp();
             System.exit(1);
         }
     }
 
-    private void checkNum(String param, String val){
+    private void checkNum(String param, String val) {
         try {
             Integer.parseInt(val);
         }
         catch (NumberFormatException ignored) {
-            System.out.println("Error: Invalid value " + val + " for " + param + ". Should be an integer.");
+            System.out.println("Error: Invalid value '" + val + "' for " + param + ". Should be an integer.");
+
             printHelp();
             System.exit(1);
         }
     }
 
-    private String getConnStr(List<String> params, String host){
-        StringBuilder connStr = new StringBuilder("jdbc:ignite:thin://" + host + "/" + schema);
+    private String getConnStr(List<String> params, String host) {
+        StringBuilder connStr = new StringBuilder("jdbc:ignite:thin://" + host);
+
+        if(!schema.equals(""))
+            connStr.append("/").append(schema);
 
         String dlmtr = "?";
 
-        for (String param : params){
+        for (String param : params) {
             connStr.append(dlmtr);
             connStr.append(param);
 
