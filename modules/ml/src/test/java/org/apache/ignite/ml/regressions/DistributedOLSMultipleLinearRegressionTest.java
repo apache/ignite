@@ -17,17 +17,22 @@
 
 package org.apache.ignite.ml.regressions;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
+import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,16 +40,55 @@ import org.junit.Test;
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
  */
-public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegressionTest {
+
+@GridCommonTest(group = "Distributed Models")
+public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstractTest {
     /** */
     private double[] y;
 
     /** */
     private double[][] x;
 
-    /** */
-    @Before
-    @Override public void setUp() {
+    protected AbstractMultipleLinearRegression regression;
+
+    /** Number of nodes in grid */
+    private static final int NODE_COUNT = 3;
+
+    /** Grid instance. */
+    private Ignite ignite;
+
+    public DistributedOLSMultipleLinearRegressionTest(){ //TODO: should be moved to the separate test
+
+        super(false);
+
+
+    }
+
+
+
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
+        ignite = grid(NODE_COUNT);
+
+        ignite.configuration().setPeerClassLoadingEnabled(true);
+
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+
         y = new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         x = new double[6][];
         x[0] = new double[] {0, 0, 0, 0, 0};
@@ -53,38 +97,33 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
         x[3] = new double[] {0, 0, 4.0, 0, 0};
         x[4] = new double[] {0, 0, 0, 5.0, 0};
         x[5] = new double[] {0, 0, 0, 0, 6.0};
-        super.setUp();
+
+        regression = createRegression();
     }
 
     /** */
-    @Override protected DistributedOLSMultipleLinearRegression createRegression() {
+    protected DistributedOLSMultipleLinearRegression createRegression() {
         DistributedOLSMultipleLinearRegression regression = new DistributedOLSMultipleLinearRegression();
         regression.newSampleData(new SparseDistributedVector(y), new SparseDistributedMatrix(x));
         return regression;
     }
 
     /** */
-    @Override protected int getNumberOfRegressors() {
+    protected int getNumberOfRegressors() {
         return x[0].length + 1;
     }
 
     /** */
-    @Override protected int getSampleSize() {
+    protected int getSampleSize() {
         return y.length;
     }
 
-    /** */
-    @Test(expected = MathIllegalArgumentException.class)
-    public void cannotAddSampleDataWithSizeMismatch() {
-        double[] y = new double[] {1.0, 2.0};
-        double[][] x = new double[1][];
-        x[0] = new double[] {1.0, 0};
-        createRegression().newSampleData(new SparseDistributedVector(y), new SparseDistributedMatrix(x));
-    }
 
     /** */
     @Test
     public void testPerfectFit() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         double[] betaHat = regression.estimateRegressionParameters();
         TestUtils.assertEquals(new double[] {11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0},
             betaHat,
@@ -122,6 +161,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testLongly() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         // Y values are first, then independent vars
         // Each row is one observation
         double[] design = new double[] {
@@ -234,6 +275,8 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testSwissFertility() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         double[] design = new double[] {
             80.2, 17.0, 15, 12, 9.96,
             83.1, 45.1, 6, 9, 84.84,
@@ -391,6 +434,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testHat() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         /*
          * This example is from "The Hat Matrix in Regression and ANOVA",
@@ -459,6 +503,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testYVariance() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         // assumes: y = new double[]{11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
         mdl.newSampleData(new SparseDistributedVector(y), new SparseDistributedMatrix(x));
@@ -470,6 +515,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testNewSample2() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] y = new double[] {1, 2, 3, 4};
         double[][] x = new double[][] {
             {19, 22, 33},
@@ -500,13 +546,32 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
     /** */
     @Test(expected = NullArgumentException.class)
     public void testNewSampleDataYNull() {
-        createRegression().newSampleData(null, new SparseDistributedMatrix(new double[][] {{1}}));
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        try {
+            createRegression().newSampleData(null, new SparseDistributedMatrix(new double[][] {{1}}));
+            fail("NullArgumentException");
+        }
+        catch (NullArgumentException e) {
+            return;
+        }
+        fail("NullArgumentException");
     }
 
     /** */
-    @Test(expected = NullArgumentException.class)
     public void testNewSampleDataXNull() {
-        createRegression().newSampleData(new SparseDistributedVector(new double[] {}), null);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        try {
+            createRegression().newSampleData(new SparseDistributedVector(new double[] {}), null);
+            fail("NullArgumentException");
+        }
+        catch (NullArgumentException e) {
+            return;
+        }
+        fail("NullArgumentException");
+
+
     }
 
     /**
@@ -515,6 +580,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testWampler1() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             1, 0,
             6, 1,
@@ -582,6 +648,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testWampler2() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             1.00000, 0,
             1.11111, 1,
@@ -649,6 +716,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testWampler3() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             760, 0,
             -2042, 1,
@@ -718,6 +786,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
      */
     @Test
     public void testWampler4() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             75901, 0,
             -204794, 1,
@@ -784,38 +853,84 @@ public class DistributedOLSMultipleLinearRegressionTest extends AbstractMultiple
     /**
      * Anything requiring beta calculation should advertise SME.
      */
-    @Test(expected = SingularMatrixException.class)
     public void testSingularCalculateBeta() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression(1e-15);
         mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseDistributedMatrix());
-        mdl.calculateBeta();
+
+        try {
+            mdl.calculateBeta();
+            fail("SingularMatrixException");
+        }
+        catch (SingularMatrixException e) {
+            return;
+        }
+        fail("SingularMatrixException");
+
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateBeta() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
-        mdl.calculateBeta();
+
+        try {
+            mdl.calculateBeta();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
+
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateHat() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
-        mdl.calculateHat();
+
+        try {
+            mdl.calculateHat();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
     }
 
-    /** */
-    @Test(expected = NullPointerException.class)
+
     public void testNoDataNPESSTO() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
-        mdl.calculateTotalSumOfSquares();
+
+        try {
+            mdl.calculateTotalSumOfSquares();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
+
+
     }
 
     /** */
-    @Test(expected = MathIllegalArgumentException.class)
     public void testMathIllegalArgumentException() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
-        mdl.validateSampleData(new SparseDistributedMatrix(1, 2), new SparseDistributedVector(1));
+
+
+        try {
+            mdl.validateSampleData(new SparseDistributedMatrix(1, 2), new SparseDistributedVector(1));
+            fail("MathIllegalArgumentException");
+        }
+        catch (MathIllegalArgumentException e) {
+            return;
+        }
+        fail("MathIllegalArgumentException");
+
     }
 }
