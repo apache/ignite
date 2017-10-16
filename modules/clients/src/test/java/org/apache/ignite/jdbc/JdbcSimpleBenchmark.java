@@ -62,7 +62,7 @@ public class JdbcSimpleBenchmark {
      */
     public static void main(String [] args) throws SQLException {
         cfgPath = System.getProperty("cfg", "/home/tledkov/work/jdbc.bm/default-config.srv.xml");
-        jdbcUrl = System.getProperty("jdbcUrl", "jdbc:ignite:thin://127.0.0.1/");
+        jdbcUrl = System.getProperty("jdbcUrl");
 
         itemsCnt = Long.getLong("items", 1000000);
         warmup = Integer.getInteger("warmup", 30);
@@ -106,7 +106,7 @@ public class JdbcSimpleBenchmark {
 
         long ops = 0;
 
-        try (PreparedStatement pstmt = conn.prepareStatement("select id, val from test_long where id > ? and id < ?")) {
+        try (PreparedStatement pstmt = conn.prepareStatement("select id, val from test_long where id > ? and id <= ?")) {
             while (System.currentTimeMillis() < tEnd) {
                 long expRsSize = 0;
 
@@ -160,13 +160,12 @@ public class JdbcSimpleBenchmark {
             long t0 = System.currentTimeMillis();
             try (PreparedStatement pstmt = conn.prepareStatement("insert into test_long (id, val) values (?, ?)")) {
                 for (long l = 1; l <= itemsCnt; ++l) {
-                    System.out.println("Insert " + l);
                     pstmt.setLong(1, l);
                     pstmt.setLong(2, l + 1);
 
                     pstmt.executeUpdate();
 
-                    if (l % 1000 == 0)
+                    if (l % 10000 == 0)
                         System.out.println("Insert " + l);
                 }
             }
@@ -203,7 +202,7 @@ public class JdbcSimpleBenchmark {
 
         long t0 = System.currentTimeMillis();
 
-        for (long l = 1; l <= itemsCnt; ++l) {
+        for (long l = 0; l <= itemsCnt; ++l) {
             ignCli.context().query().querySqlFieldsNoCache(
                 new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
                     .setArgs(l, l + 1), true);
@@ -247,7 +246,7 @@ public class JdbcSimpleBenchmark {
             }
 
             Iterator<List<?>> it = ignCli.context().query().querySqlFieldsNoCache(
-                new SqlFieldsQuery("select id, val from test_long where id > ? and id < ?")
+                new SqlFieldsQuery("select id, val from test_long where id > ? and id <= ?")
                     .setArgs(id0, id1), false).iterator();
 
             int cnt = 0;
