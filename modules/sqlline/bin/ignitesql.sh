@@ -39,11 +39,6 @@ source "${SCRIPTS_HOME}"/include/functions.sh
 source "${SCRIPTS_HOME}"/include/ignitesql-functions.sh
 
 #
-# Parse arguments.
-#
-#parse_arguments $@
-
-#
 # Discover IGNITE_HOME environment variable.
 #
 setIgniteHome
