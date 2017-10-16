@@ -498,8 +498,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @param factory WAL iterator factory.
      * @param workDir Ignite work directory.
      * @param subfolderName DB subfolder name based on consistent ID.
-     * @param expCntEntries minimum expected entries count to find.
-     * @param expTxCnt minimum expected transaction count to find.
+     * @param minCntEntries minimum expected entries count to find.
+     * @param minTxCnt minimum expected transaction count to find.
      * @param objConsumer object handler, called for each object found in logical data records.
      * @param dataRecordHnd data handler record
      * @throws IgniteCheckedException if failed.
@@ -508,8 +508,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final IgniteWalIteratorFactory factory,
         final String workDir,
         final String subfolderName,
-        final int expCntEntries,
-        final int expTxCnt,
+        final int minCntEntries,
+        final int minTxCnt,
         @Nullable final BiConsumer<Object, Object> objConsumer,
         @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
@@ -544,8 +544,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final int entriesWork = valuesSum(cntWork.values());
         log.info("Archive directory: Tx found " + txCntObservedWork + " entries " + entriesWork);
 
-        assert entriesArch + entriesWork >= expCntEntries;
-        assert txCntObservedWork + txCntObservedArch >= expTxCnt;
+        assert entriesArch + entriesWork >= minCntEntries;
+        assert txCntObservedWork + txCntObservedArch >= minTxCnt;
     }
 
     /**
