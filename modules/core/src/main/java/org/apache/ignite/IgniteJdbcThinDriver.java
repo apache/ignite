@@ -141,18 +141,6 @@ public class IgniteJdbcThinDriver implements Driver {
         register();
     }
 
-    /*
-     * Static initializer.
-     */
-    static {
-        try {
-            DriverManager.registerDriver(new IgniteJdbcThinDriver());
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
-        }
-    }
-
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
