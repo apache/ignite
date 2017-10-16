@@ -2228,6 +2228,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
+            stmtCache.clear();
+
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
                     idx.close(null);
@@ -2250,7 +2252,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Remove all cached queries from cached two-steps queries.
      */
-    public void clearCachedQueries() {
+    private void clearCachedQueries() {
         twoStepCache.clear();
     }
 

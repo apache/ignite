@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -974,6 +975,39 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * @throws Exception If test failed.
+     */
+    public void testQueryLocalWithRecreate() throws Exception {
+        execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) WITH \"cache_name=cache," +
+            "template=replicated\"");
+
+        // In order for local queries to work, let's use non client node.
+        IgniteInternalCache cache = grid(0).cachex("cache");
+
+        assertNotNull(cache);
+
+        executeLocal(cache.context(), "INSERT INTO A(id, name, surname) values (1, 'X', 'Y')");
+
+        assertEqualsCollections(Collections.singletonList(Arrays.asList(1, "X", "Y")),
+            executeLocal(cache.context(), "SELECT id, name, surname FROM A"));
+
+        execute("DROP TABLE A");
+
+        execute("CREATE TABLE A(id int primary key, name varchar, surname varchar) WITH \"cache_name=cache\"");
+
+        cache = grid(0).cachex("cache");
+
+        assertNotNull(cache);
+
+        try {
+            executeLocal(cache.context(), "INSERT INTO A(id, name, surname) values (1, 'X', 'Y')");
+        }
+        finally {
+            execute("DROP TABLE A");
+        }
+    }
+
+    /**
      * Test that it's impossible to create tables with same name regardless of key/value wrapping settings.
      */
     public void testWrappedAndUnwrappedKeyTablesInteroperability() {
@@ -1417,6 +1451,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private List<List<?>> execute(Ignite node, String sql) {
         return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    }
+
+    /**
+     * Execute DDL statement on given node.
+     *
+     * @param sql Statement.
+     */
+    private List<List<?>> executeLocal(GridCacheContext cctx, String sql) {
+        return queryProcessor(cctx.grid()).querySqlFields(cctx, new SqlFieldsQuery(sql).setLocal(true), true).getAll();
     }
 
     /**
