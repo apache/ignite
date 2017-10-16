@@ -194,6 +194,8 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
      * @throws Exception If failed.
      */
     public void testJoin2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5956");
+
         join(true, PARTITIONED, REPLICATED, PARTITIONED);
     }
 

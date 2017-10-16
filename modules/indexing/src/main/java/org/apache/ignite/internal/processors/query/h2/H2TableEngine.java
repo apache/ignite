@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -31,7 +32,7 @@ import org.h2.table.TableBase;
  */
 public class H2TableEngine implements TableEngine {
     /** */
-    private static H2RowDescriptor rowDesc0;
+    private static GridH2RowDescriptor rowDesc0;
 
     /** */
     private static H2RowFactory rowFactory0;
@@ -53,7 +54,7 @@ public class H2TableEngine implements TableEngine {
      * @throws SQLException If failed.
      * @return Created table.
      */
-    public static synchronized GridH2Table createTable(Connection conn, String sql, H2RowDescriptor rowDesc,
+    public static synchronized GridH2Table createTable(Connection conn, String sql, GridH2RowDescriptor rowDesc,
         H2RowFactory rowFactory, H2TableDescriptor tblDesc)
         throws SQLException {
         rowDesc0 = rowDesc;
