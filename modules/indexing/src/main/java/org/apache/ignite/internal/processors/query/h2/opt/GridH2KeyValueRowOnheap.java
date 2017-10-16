@@ -89,11 +89,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public Value[] getValueList() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public long expireTime() {
         return expirationTime;
     }
@@ -225,37 +220,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public void setKeyAndVersion(SearchRow old) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void setKey(long key) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Row getCopy() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setDeleted(boolean deleted) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKey() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSessionId(int sesId) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setVersion(int ver) {
         throw new UnsupportedOperationException();
     }
 
