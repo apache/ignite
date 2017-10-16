@@ -56,22 +56,21 @@ public class InlineIndexHelper {
 
     /** */
     public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
-        Value.BOOLEAN,
-        Value.BYTE,
-        Value.SHORT,
-        Value.INT,
-        Value.LONG,
-        Value.LONG,
-        Value.FLOAT,
-        Value.DOUBLE,
-        Value.DATE,
-        Value.TIME,
-        Value.TIMESTAMP,
-        Value.UUID,
-        Value.STRING,
-        Value.STRING_FIXED,
-        Value.STRING_IGNORECASE,
-        Value.BYTES
+        IndexValueType.BOOLEAN,
+        IndexValueType.BYTE,
+        IndexValueType.SHORT,
+        IndexValueType.INT,
+        IndexValueType.LONG,
+        IndexValueType.FLOAT,
+        IndexValueType.DOUBLE,
+        IndexValueType.DATE,
+        IndexValueType.TIME,
+        IndexValueType.TIMESTAMP,
+        IndexValueType.UUID,
+        IndexValueType.STRING,
+        IndexValueType.STRING_FIXED,
+        IndexValueType.STRING_IGNORECASE,
+        IndexValueType.BYTES
     );
 
     /** */
@@ -93,7 +92,7 @@ public class InlineIndexHelper {
     private final boolean compareStringsOptimized;
 
     /**
-     * @param type Index type (see {@link Value}).
+     * @param type Index type.
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
      */
@@ -109,51 +108,51 @@ public class InlineIndexHelper {
         this.compareStringsOptimized = CompareMode.OFF.equals(compareMode.getName());
 
         switch (type) {
-            case Value.BOOLEAN:
-            case Value.BYTE:
+            case IndexValueType.BOOLEAN:
+            case IndexValueType.BYTE:
                 this.size = 1;
                 break;
 
-            case Value.SHORT:
+            case IndexValueType.SHORT:
                 this.size = 2;
                 break;
 
-            case Value.INT:
+            case IndexValueType.INT:
                 this.size = 4;
                 break;
 
-            case Value.LONG:
+            case IndexValueType.LONG:
                 this.size = 8;
                 break;
 
-            case Value.FLOAT:
+            case IndexValueType.FLOAT:
                 this.size = 4;
                 break;
 
-            case Value.DOUBLE:
+            case IndexValueType.DOUBLE:
                 this.size = 8;
                 break;
 
-            case Value.DATE:
+            case IndexValueType.DATE:
                 this.size = 8;
                 break;
 
-            case Value.TIME:
+            case IndexValueType.TIME:
                 this.size = 8;
                 break;
 
-            case Value.TIMESTAMP:
+            case IndexValueType.TIMESTAMP:
                 this.size = 16;
                 break;
 
-            case Value.UUID:
+            case IndexValueType.UUID:
                 this.size = 16;
                 break;
 
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-            case Value.BYTES:
+            case IndexValueType.STRING:
+            case IndexValueType.STRING_FIXED:
+            case IndexValueType.STRING_IGNORECASE:
+            case IndexValueType.BYTES:
                 this.size = -1;
                 break;
 
@@ -219,7 +218,7 @@ public class InlineIndexHelper {
     public int fullSize(long pageAddr, int off) {
         int type = PageUtils.getByte(pageAddr, off);
 
-        if (type == Value.NULL)
+        if (type == IndexValueType.NULL)
             return 1;
 
         if (size > 0)
@@ -242,61 +241,61 @@ public class InlineIndexHelper {
 
         int type = PageUtils.getByte(pageAddr, off);
 
-        if (type == Value.UNKNOWN)
+        if (type == IndexValueType.UNKNOWN)
             return null;
 
-        if (type == Value.NULL)
+        if (type == IndexValueType.NULL)
             return ValueNull.INSTANCE;
 
         if (this.type != type)
             throw new UnsupportedOperationException("invalid fast index type " + type);
 
         switch (this.type) {
-            case Value.BOOLEAN:
+            case IndexValueType.BOOLEAN:
                 return ValueBoolean.get(PageUtils.getByte(pageAddr, off + 1) != 0);
 
-            case Value.BYTE:
+            case IndexValueType.BYTE:
                 return ValueByte.get(PageUtils.getByte(pageAddr, off + 1));
 
-            case Value.SHORT:
+            case IndexValueType.SHORT:
                 return ValueShort.get(PageUtils.getShort(pageAddr, off + 1));
 
-            case Value.INT:
+            case IndexValueType.INT:
                 return ValueInt.get(PageUtils.getInt(pageAddr, off + 1));
 
-            case Value.LONG:
+            case IndexValueType.LONG:
                 return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
 
-            case Value.FLOAT: {
+            case IndexValueType.FLOAT: {
                 return ValueFloat.get(Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1)));
             }
 
-            case Value.DOUBLE: {
+            case IndexValueType.DOUBLE: {
                 return ValueDouble.get(Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1)));
             }
 
-            case Value.TIME:
+            case IndexValueType.TIME:
                 return ValueTime.fromNanos(PageUtils.getLong(pageAddr, off + 1));
 
-            case Value.DATE:
+            case IndexValueType.DATE:
                 return ValueDate.fromDateValue(PageUtils.getLong(pageAddr, off + 1));
 
-            case Value.TIMESTAMP:
+            case IndexValueType.TIMESTAMP:
                 return ValueTimestamp.fromDateValueAndNanos(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
 
-            case Value.UUID:
+            case IndexValueType.UUID:
                 return ValueUuid.get(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
 
-            case Value.STRING:
+            case IndexValueType.STRING:
                 return ValueString.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.STRING_FIXED:
+            case IndexValueType.STRING_FIXED:
                 return ValueStringFixed.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.STRING_IGNORECASE:
+            case IndexValueType.STRING_IGNORECASE:
                 return ValueStringIgnoreCase.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.BYTES:
+            case IndexValueType.BYTES:
                 return ValueBytes.get(readBytes(pageAddr, off));
 
             default:
@@ -317,17 +316,17 @@ public class InlineIndexHelper {
      */
     protected boolean isValueFull(long pageAddr, int off) {
         switch (type) {
-            case Value.BOOLEAN:
-            case Value.BYTE:
-            case Value.INT:
-            case Value.SHORT:
-            case Value.LONG:
+            case IndexValueType.BOOLEAN:
+            case IndexValueType.BYTE:
+            case IndexValueType.INT:
+            case IndexValueType.SHORT:
+            case IndexValueType.LONG:
                 return true;
 
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-            case Value.BYTES:
+            case IndexValueType.STRING:
+            case IndexValueType.STRING_FIXED:
+            case IndexValueType.STRING_IGNORECASE:
+            case IndexValueType.BYTES:
                 return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
 
             default:
@@ -377,10 +376,10 @@ public class InlineIndexHelper {
 
         if ((size > 0 && size + 1 > maxSize)
                 || maxSize < 1
-                || (type = PageUtils.getByte(pageAddr, off)) == Value.UNKNOWN)
+                || (type = PageUtils.getByte(pageAddr, off)) == IndexValueType.UNKNOWN)
             return -2;
 
-        if (type == Value.NULL)
+        if (type == IndexValueType.NULL)
             return Integer.MIN_VALUE;
 
         if (v == ValueNull.INSTANCE)
@@ -392,29 +391,29 @@ public class InlineIndexHelper {
         type = Value.getHigherOrder(type, v.getType());
 
         switch (type) {
-            case Value.BOOLEAN:
-            case Value.BYTE:
-            case Value.SHORT:
-            case Value.INT:
-            case Value.LONG:
-            case Value.FLOAT:
-            case Value.DOUBLE:
+            case IndexValueType.BOOLEAN:
+            case IndexValueType.BYTE:
+            case IndexValueType.SHORT:
+            case IndexValueType.INT:
+            case IndexValueType.LONG:
+            case IndexValueType.FLOAT:
+            case IndexValueType.DOUBLE:
                 return compareAsPrimitive(pageAddr, off, v, type);
 
-            case Value.TIME:
-            case Value.DATE:
-            case Value.TIMESTAMP:
+            case IndexValueType.TIME:
+            case IndexValueType.DATE:
+            case IndexValueType.TIMESTAMP:
                 return compareAsDateTime(pageAddr, off, v, type);
 
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
+            case IndexValueType.STRING:
+            case IndexValueType.STRING_FIXED:
+            case IndexValueType.STRING_IGNORECASE:
                 if (compareStringsOptimized)
-                    return compareAsString(pageAddr, off, v, type == Value.STRING_IGNORECASE);
+                    return compareAsString(pageAddr, off, v, type == IndexValueType.STRING_IGNORECASE);
 
                 break;
 
-            case Value.BYTES:
+            case IndexValueType.BYTES:
                 return compareAsBytes(pageAddr, off, v);
         }
 
@@ -432,19 +431,19 @@ public class InlineIndexHelper {
         // only compatible types are supported now.
         if(PageUtils.getByte(pageAddr, off) == type) {
             switch (type) {
-                case Value.TIME:
+                case IndexValueType.TIME:
                     long nanos1 = PageUtils.getLong(pageAddr, off + 1);
                     long nanos2 = ((ValueTime)v.convertTo(type)).getNanos();
 
                     return fixSort(Long.signum(nanos1 - nanos2), sortType());
 
-                case Value.DATE:
+                case IndexValueType.DATE:
                     long date1 = PageUtils.getLong(pageAddr, off + 1);
                     long date2 = ((ValueDate)v.convertTo(type)).getDateValue();
 
                     return fixSort(Long.signum(date1 - date2), sortType());
 
-                case Value.TIMESTAMP:
+                case IndexValueType.TIMESTAMP:
                     ValueTimestamp v0 = (ValueTimestamp) v.convertTo(type);
 
                     date1 = PageUtils.getLong(pageAddr, off + 1);
@@ -477,43 +476,43 @@ public class InlineIndexHelper {
         // only compatible types are supported now.
         if(PageUtils.getByte(pageAddr, off) == type) {
             switch (type) {
-                case Value.BOOLEAN:
+                case IndexValueType.BOOLEAN:
                     boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
                     boolean bool2 = v.getBoolean();
 
                     return fixSort(Boolean.compare(bool1, bool2), sortType());
 
-                case Value.BYTE:
+                case IndexValueType.BYTE:
                     byte byte1 = PageUtils.getByte(pageAddr, off + 1);
                     byte byte2 = v.getByte();
 
                     return fixSort(Integer.signum(byte1 - byte2), sortType());
 
-                case Value.SHORT:
+                case IndexValueType.SHORT:
                     short short1 = PageUtils.getShort(pageAddr, off + 1);
                     short short2 = v.getShort();
 
                     return fixSort(Integer.signum(short1 - short2), sortType());
 
-                case Value.INT:
+                case IndexValueType.INT:
                     int int1 = PageUtils.getInt(pageAddr, off + 1);
                     int int2 = v.getInt();
 
                     return fixSort(Integer.compare(int1, int2), sortType());
 
-                case Value.LONG:
+                case IndexValueType.LONG:
                     long long1 = PageUtils.getLong(pageAddr, off + 1);
                     long long2 = v.getLong();
 
                     return fixSort(Long.compare(long1, long2), sortType());
 
-                case Value.FLOAT:
+                case IndexValueType.FLOAT:
                     float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
                     float float2 = v.getFloat();
 
                     return fixSort(Float.compare(float1, float2), sortType());
 
-                case Value.DOUBLE:
+                case IndexValueType.DOUBLE:
                     double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
                     double double2 = v.getDouble();
 
@@ -770,12 +769,12 @@ public class InlineIndexHelper {
 
         if (size < 0 && maxSize < 4) {
             // can't fit vartype field
-            PageUtils.putByte(pageAddr, off, (byte)Value.UNKNOWN);
+            PageUtils.putByte(pageAddr, off, (byte)IndexValueType.UNKNOWN);
             return 0;
         }
 
-        if (val.getType() == Value.NULL) {
-            PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
+        if (val.getType() == IndexValueType.NULL) {
+            PageUtils.putByte(pageAddr, off, (byte)IndexValueType.NULL);
             return 1;
         }
 
@@ -783,68 +782,68 @@ public class InlineIndexHelper {
             throw new UnsupportedOperationException("value type doesn't match");
 
         switch (type) {
-            case Value.BOOLEAN:
+            case IndexValueType.BOOLEAN:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putByte(pageAddr, off + 1, (byte)(val.getBoolean() ? 1 : 0));
                 return size + 1;
 
-            case Value.BYTE:
+            case IndexValueType.BYTE:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putByte(pageAddr, off + 1, val.getByte());
                 return size + 1;
 
-            case Value.SHORT:
+            case IndexValueType.SHORT:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putShort(pageAddr, off + 1, val.getShort());
                 return size + 1;
 
-            case Value.INT:
+            case IndexValueType.INT:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putInt(pageAddr, off + 1, val.getInt());
                 return size + 1;
 
-            case Value.LONG:
+            case IndexValueType.LONG:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, val.getLong());
                 return size + 1;
 
-            case Value.FLOAT: {
+            case IndexValueType.FLOAT: {
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits(val.getFloat()));
                 return size + 1;
             }
 
-            case Value.DOUBLE: {
+            case IndexValueType.DOUBLE: {
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits(val.getDouble()));
                 return size + 1;
             }
 
-            case Value.TIME:
+            case IndexValueType.TIME:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTime)val).getNanos());
                 return size + 1;
 
-            case Value.DATE:
+            case IndexValueType.DATE:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueDate)val).getDateValue());
                 return size + 1;
 
-            case Value.TIMESTAMP:
+            case IndexValueType.TIMESTAMP:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTimestamp)val).getDateValue());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueTimestamp)val).getTimeNanos());
                 return size + 1;
 
-            case Value.UUID:
+            case IndexValueType.UUID:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueUuid)val).getHigh());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueUuid)val).getLow());
                 return size + 1;
 
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE: {
+            case IndexValueType.STRING:
+            case IndexValueType.STRING_FIXED:
+            case IndexValueType.STRING_IGNORECASE: {
                 short size;
 
                 byte[] s = val.getString().getBytes(CHARSET);
@@ -857,7 +856,7 @@ public class InlineIndexHelper {
 
                 if (s == null) {
                     // Can't fit anything to
-                    PageUtils.putByte(pageAddr, off, (byte)Value.UNKNOWN);
+                    PageUtils.putByte(pageAddr, off, (byte)IndexValueType.UNKNOWN);
                     return 0;
                 }
                 else {
@@ -868,7 +867,7 @@ public class InlineIndexHelper {
                 }
             }
 
-            case Value.BYTES: {
+            case IndexValueType.BYTES: {
                 short size;
 
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
@@ -923,20 +922,20 @@ public class InlineIndexHelper {
     @SuppressWarnings("RedundantIfStatement")
     protected boolean canRelyOnCompare(int c, Value shortVal, Value v2) {
         switch (type) {
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-            case Value.BYTES:
-                if (shortVal.getType() == Value.NULL || v2.getType() == Value.NULL)
+            case IndexValueType.STRING:
+            case IndexValueType.STRING_FIXED:
+            case IndexValueType.STRING_IGNORECASE:
+            case IndexValueType.BYTES:
+                if (shortVal.getType() == IndexValueType.NULL || v2.getType() == IndexValueType.NULL)
                     return true;
 
-                if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                if (c == 0 && shortVal.getType() != IndexValueType.NULL && v2.getType() != IndexValueType.NULL)
                     return false;
 
                 int l1;
                 int l2;
 
-                if (type == Value.BYTES) {
+                if (type == IndexValueType.BYTES) {
                     l1 = shortVal.getBytes().length;
                     l2 = v2.getBytes().length;
                 }
