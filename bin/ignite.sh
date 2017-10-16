@@ -100,8 +100,7 @@ fi
 #
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m"
-# JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60"
+# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.
