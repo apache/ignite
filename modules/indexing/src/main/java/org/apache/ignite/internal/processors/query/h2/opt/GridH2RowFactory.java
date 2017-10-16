@@ -35,15 +35,6 @@ public class GridH2RowFactory extends RowFactory {
     }
 
     /**
-     * @param v1 Value 1.
-     * @param v2 Value 2.
-     * @return Row.
-     */
-    public static GridH2Row create(Value v1, Value v2) {
-        return new RowPair(v1, v2);
-    }
-
-    /**
      * @param data Values.
      * @return Row.
      */

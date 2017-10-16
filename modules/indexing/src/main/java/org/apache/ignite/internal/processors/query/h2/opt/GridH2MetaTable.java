@@ -219,7 +219,7 @@ public class GridH2MetaTable extends TableBase {
     /**
      * Get value row.
      */
-    private static class MetaRow extends GridH2Row {
+    private static class MetaRow extends GridH2SearchRowAdapter {
         /** */
         private Value v0;
 
@@ -283,11 +283,6 @@ public class GridH2MetaTable extends TableBase {
                 default:
                     throw new IllegalStateException("Index: " + idx);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public long expireTime() {
-            return 0;
         }
     }
 
