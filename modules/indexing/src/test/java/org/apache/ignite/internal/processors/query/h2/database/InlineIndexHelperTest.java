@@ -204,8 +204,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
-                CompareMode.getInstance(null, 0));
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, false, CompareMode.getInstance(null, 0));
 
             ih.put(pageAddr, off, v1 == null ? ValueNull.INSTANCE : ValueString.get(v1), maxSize);
 
@@ -235,8 +234,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** Test on String values compare */
     public void testRelyOnCompare() {
-        InlineIndexHelper ha = new InlineIndexHelper(Value.STRING, 0, SortOrder.ASCENDING,
-            CompareMode.getInstance(null, 0));
+        InlineIndexHelper ha = new InlineIndexHelper(Value.STRING, 0, false, CompareMode.getInstance(null, 0));
 
         // same size
         assertFalse(getRes(ha, "aabb", "aabb"));
@@ -257,8 +255,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
     /** Test on Bytes values compare */
     public void testRelyOnCompareBytes() {
-        InlineIndexHelper ha = new InlineIndexHelper(Value.BYTES, 0, SortOrder.ASCENDING,
-            CompareMode.getInstance(null, 0));
+        InlineIndexHelper ha = new InlineIndexHelper(Value.BYTES, 0, false, CompareMode.getInstance(null, 0));
 
         // same size
         assertFalse(getResBytes(ha, new byte[] {1, 2, 3, 4}, new byte[] {1, 2, 3, 4}));
@@ -302,8 +299,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0,
-                CompareMode.getInstance(null, 0));
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, false, CompareMode.getInstance(null, 0));
 
             ih.put(pageAddr, off, ValueString.get("aaaaaaa"), 3 + 5);
 
@@ -353,8 +349,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
 
             int off = 0;
 
-            InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, 0,
-                CompareMode.getInstance(null, 0));
+            InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, false, CompareMode.getInstance(null, 0));
 
             ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), 3 + 3);
 
@@ -473,8 +468,7 @@ public class InlineIndexHelperTest extends GridCommonAbstractTest {
             int off = 0;
             int max = 255;
 
-            InlineIndexHelper ih = new InlineIndexHelper(v1.getType(), 1, 0,
-                CompareMode.getInstance(null, 0));
+            InlineIndexHelper ih = new InlineIndexHelper(v1.getType(), 1, false, CompareMode.getInstance(null, 0));
 
             off += ih.put(pageAddr, off, v1, max - off);
             off += ih.put(pageAddr, off, v2, max - off);

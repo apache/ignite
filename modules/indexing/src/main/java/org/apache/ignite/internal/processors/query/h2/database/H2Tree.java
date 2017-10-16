@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 
@@ -213,7 +214,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
                 int c = compareValues(v1, v2);
                 if (c != 0)
-                    return InlineIndexHelper.fixSort(c, col.sortType);
+                    return fixSort(c, col);
             }
 
             return 0;
@@ -241,11 +242,29 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             }
             int c = compareValues(v1, v2);
             if (c != 0)
-                return InlineIndexHelper.fixSort(c, cols[i].sortType);
+                return fixSort(c, cols[i]);
         }
         return 0;
     }
 
     /** Compares two Values. */
     public abstract int compareValues(Value v1, Value v2);
+
+    /**
+     * Fix sort order.
+     *
+     * @param c Compare result.
+     * @param col Column.
+     * @return Whether it is sorted in descending order.
+     */
+    private static int fixSort(int c, IndexColumn col) {
+        int sortType = col.sortType;
+
+        boolean desc = (sortType & SortOrder.DESCENDING) != 0;
+
+        if (desc)
+            c = -c;
+
+        return c;
+    }
 }

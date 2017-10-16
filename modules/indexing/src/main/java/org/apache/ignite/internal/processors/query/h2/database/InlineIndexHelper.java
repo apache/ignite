@@ -24,8 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.h2.result.SortOrder;
-import org.h2.table.IndexColumn;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
@@ -80,7 +78,7 @@ public class InlineIndexHelper {
     private final int colIdx;
 
     /** */
-    private final int sortType;
+    private final boolean descending;
 
     /** */
     private final short size;
@@ -94,12 +92,12 @@ public class InlineIndexHelper {
     /**
      * @param type Index type.
      * @param colIdx Index column index.
-     * @param sortType Column sort type (see {@link IndexColumn#sortType}).
+     * @param descending Whether column is sorted in descending order.
      */
-    public InlineIndexHelper(int type, int colIdx, int sortType, CompareMode compareMode) {
+    public InlineIndexHelper(int type, int colIdx, boolean descending, CompareMode compareMode) {
         this.type = type;
         this.colIdx = colIdx;
-        this.sortType = sortType;
+        this.descending = descending;
 
         this.compareBinaryUnsigned = compareMode.isBinaryUnsigned();
 
@@ -173,13 +171,6 @@ public class InlineIndexHelper {
      */
     public int columnIndex() {
         return colIdx;
-    }
-
-    /**
-     * @return Sort type.
-     */
-    public int sortType() {
-        return sortType;
     }
 
     /**
@@ -356,10 +347,10 @@ public class InlineIndexHelper {
         c = Integer.signum(comp.compare(v1, v));
 
         if (size > 0)
-            return fixSort(c, sortType());
+            return fixSort(c);
 
         if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
-            return fixSort(c, sortType());
+            return fixSort(c);
 
         return -2;
     }
@@ -383,7 +374,7 @@ public class InlineIndexHelper {
             return Integer.MIN_VALUE;
 
         if (v == ValueNull.INSTANCE)
-            return fixSort(1, sortType());
+            return fixSort(1);
 
         if (this.type != type)
             throw new UnsupportedOperationException("Invalid fast index type: " + type);
@@ -435,13 +426,13 @@ public class InlineIndexHelper {
                     long nanos1 = PageUtils.getLong(pageAddr, off + 1);
                     long nanos2 = ((ValueTime)v.convertTo(type)).getNanos();
 
-                    return fixSort(Long.signum(nanos1 - nanos2), sortType());
+                    return fixSort(Long.signum(nanos1 - nanos2));
 
                 case IndexValueType.DATE:
                     long date1 = PageUtils.getLong(pageAddr, off + 1);
                     long date2 = ((ValueDate)v.convertTo(type)).getDateValue();
 
-                    return fixSort(Long.signum(date1 - date2), sortType());
+                    return fixSort(Long.signum(date1 - date2));
 
                 case IndexValueType.TIMESTAMP:
                     ValueTimestamp v0 = (ValueTimestamp) v.convertTo(type);
@@ -458,7 +449,7 @@ public class InlineIndexHelper {
                         c = Long.signum(nanos1 - nanos2);
                     }
 
-                    return fixSort(c, sortType());
+                    return fixSort(c);
             }
         }
 
@@ -480,43 +471,43 @@ public class InlineIndexHelper {
                     boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
                     boolean bool2 = v.getBoolean();
 
-                    return fixSort(Boolean.compare(bool1, bool2), sortType());
+                    return fixSort(Boolean.compare(bool1, bool2));
 
                 case IndexValueType.BYTE:
                     byte byte1 = PageUtils.getByte(pageAddr, off + 1);
                     byte byte2 = v.getByte();
 
-                    return fixSort(Integer.signum(byte1 - byte2), sortType());
+                    return fixSort(Integer.signum(byte1 - byte2));
 
                 case IndexValueType.SHORT:
                     short short1 = PageUtils.getShort(pageAddr, off + 1);
                     short short2 = v.getShort();
 
-                    return fixSort(Integer.signum(short1 - short2), sortType());
+                    return fixSort(Integer.signum(short1 - short2));
 
                 case IndexValueType.INT:
                     int int1 = PageUtils.getInt(pageAddr, off + 1);
                     int int2 = v.getInt();
 
-                    return fixSort(Integer.compare(int1, int2), sortType());
+                    return fixSort(Integer.compare(int1, int2));
 
                 case IndexValueType.LONG:
                     long long1 = PageUtils.getLong(pageAddr, off + 1);
                     long long2 = v.getLong();
 
-                    return fixSort(Long.compare(long1, long2), sortType());
+                    return fixSort(Long.compare(long1, long2));
 
                 case IndexValueType.FLOAT:
                     float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
                     float float2 = v.getFloat();
 
-                    return fixSort(Float.compare(float1, float2), sortType());
+                    return fixSort(Float.compare(float1, float2));
 
                 case IndexValueType.DOUBLE:
                     double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
                     double double2 = v.getDouble();
 
-                    return fixSort(Double.compare(double1, double2), sortType());
+                    return fixSort(Double.compare(double1, double2));
             }
         }
 
@@ -555,7 +546,7 @@ public class InlineIndexHelper {
                 int b2 = bytes[i] & 0xff;
 
                 if (b1 != b2)
-                    return fixSort(Integer.signum(b1 - b2), sortType());
+                    return fixSort(Integer.signum(b1 - b2));
             }
         }
         else {
@@ -564,20 +555,20 @@ public class InlineIndexHelper {
                 byte b2 = bytes[i];
 
                 if (b1 != b2)
-                    return fixSort(Integer.signum(b1 - b2), sortType());
+                    return fixSort(Integer.signum(b1 - b2));
             }
         }
 
         int res = Integer.signum(len1 - len2);
 
         if(isValueFull(pageAddr, off))
-            return fixSort(res, sortType());
+            return fixSort(res);
 
         if (res >= 0)
             // There are two cases:
             // a) The values are equal but the stored value is truncated, so that it's bigger.
             // b) Even truncated current value is longer, so that it's bigger.
-            return fixSort(1, sortType());
+            return fixSort(1);
 
         return -2;
     }
@@ -618,7 +609,7 @@ public class InlineIndexHelper {
             }
 
             if (v1 != v2)
-                return fixSort(Integer.signum(v1 - v2), sortType());
+                return fixSort(Integer.signum(v1 - v2));
         }
 
         // read other
@@ -711,19 +702,19 @@ public class InlineIndexHelper {
                     v2 = s.charAt(cntr2++);
 
                     if (v1 != v2)
-                        return fixSort(Integer.signum(v1 - v2), sortType());
+                        return fixSort(Integer.signum(v1 - v2));
 
                     if (cntr2 == len2)
                         // The string is malformed (partial partial character at the end).
                         // Finish comparison here.
-                        return fixSort(1, sortType());
+                        return fixSort(1);
 
                     // Low surrogate.
                     v1 = (char)(0xDC00 + (c & 0x3FF));
                     v2 = s.charAt(cntr2++);
 
                     if (v1 != v2)
-                        return fixSort(Integer.signum(v1 - v2), sortType());
+                        return fixSort(Integer.signum(v1 - v2));
 
                     continue;
 
@@ -740,19 +731,19 @@ public class InlineIndexHelper {
             }
 
             if (v1 != v2)
-                return fixSort(Integer.signum(v1 - v2), sortType());
+                return fixSort(Integer.signum(v1 - v2));
         }
 
         int res = cntr1 == len1 && cntr2 == len2 ? 0 : cntr1 == len1 ? -1 : 1;
 
         if (isValueFull(pageAddr, off))
-            return fixSort(res, sortType());
+            return fixSort(res);
 
         if (res >= 0)
             // There are two cases:
             // a) The values are equal but the stored value is truncated, so that it's bigger.
             // b) Even truncated current value is longer, so that it's bigger.
-            return fixSort(1, sortType());
+            return fixSort(1);
 
         return -2;
     }
@@ -960,10 +951,9 @@ public class InlineIndexHelper {
      * Perform sort order correction.
      *
      * @param c Compare result.
-     * @param sortType Sort type.
      * @return Fixed compare result.
      */
-    public static int fixSort(int c, int sortType) {
-        return sortType == SortOrder.ASCENDING ? c : -c;
+    private int fixSort(int c) {
+        return descending ? -c : c;
     }
 }
