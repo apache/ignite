@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -41,17 +35,18 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -68,13 +63,29 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.buildCollocationModel;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
@@ -804,26 +815,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected int segmentForRow(SearchRow row) {
         assert row != null;
 
+        if (segmentsCount() == 1 || ctx == null)
+            return 0;
+
         CacheObject key;
 
-        if (ctx != null) {
-            final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(KEY_COL);
 
-            assert keyColValue != null;
+        assert keyColValue != null;
 
-            final Object o = keyColValue.getObject();
+        final Object o = keyColValue.getObject();
 
-            if (o instanceof CacheObject)
-                key = (CacheObject)o;
-            else
-                key = ctx.toCacheKeyObject(o);
+        if (o instanceof CacheObject)
+            key = (CacheObject)o;
+        else
+            key = ctx.toCacheKeyObject(o);
 
-            return segmentForPartition(ctx.affinity().partition(key));
-        }
-
-        assert segmentsCount() == 1;
-
-        return 0;
+        return segmentForPartition(ctx.affinity().partition(key));
     }
 
     /**
@@ -1577,14 +1585,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected static class FilteringCursor implements GridCursor<GridH2Row> {
         /** */
         private final GridCursor<GridH2Row> cursor;
+
         /** */
-        private final IgniteBiPredicate<Object, Object> fltr;
+        private final IndexingQueryCacheFilter fltr;
 
         /** */
         private final long time;
-
-        /** Is value required for filtering predicate? */
-        private final boolean isValRequired;
 
         /** */
         private GridH2Row next;
@@ -1598,19 +1604,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
             String cacheName) {
             this.cursor = cursor;
-
             this.time = time;
-
-            if (qryFilter != null) {
-                this.fltr = qryFilter.forCache(cacheName);
-
-                this.isValRequired = qryFilter.isValueRequired();
-            }
-            else {
-                this.fltr = null;
-
-                this.isValRequired = false;
-            }
+            this.fltr = qryFilter != null ? qryFilter.forCache(cacheName) : null;
         }
 
         /**
@@ -1626,12 +1621,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 return true;
 
             Object key = row.getValue(KEY_COL).getObject();
-            Object val = isValRequired ? row.getValue(VAL_COL).getObject() : null;
 
-            assert key != null;
-            assert !isValRequired || val != null;
-
-            return fltr.apply(key, val);
+            return fltr.apply(key);
         }
 
         /** {@inheritDoc} */

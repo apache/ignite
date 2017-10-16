@@ -108,6 +108,9 @@ namespace ignite
 
             bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
 
+            bool skipReducerOnUpdate =
+                ReadDsnBool(dsn, Configuration::Key::skipReducerOnUpdate, config.IsSkipReducerOnUpdate());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
@@ -125,6 +128,7 @@ namespace ignite
             config.SetReplicatedOnly(replicatedOnly);
             config.SetCollocated(collocated);
             config.SetLazy(lazy);
+            config.SetSkipReducerOnUpdate(skipReducerOnUpdate);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }
