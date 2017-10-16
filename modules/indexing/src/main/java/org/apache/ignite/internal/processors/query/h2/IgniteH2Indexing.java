@@ -1811,13 +1811,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      *
      * @param oldQry
-     * @param sql
-     * @param args
      * @return
      */
     private SqlFieldsQuery cloneFieldsQuery(SqlFieldsQuery oldQry) {
-        return oldQry instanceof JdbcSqlFieldsQuery ? new JdbcSqlFieldsQuery(oldQry,
+        SqlFieldsQuery res = oldQry instanceof JdbcSqlFieldsQuery ? new JdbcSqlFieldsQuery(oldQry,
             ((JdbcSqlFieldsQuery) oldQry).isQuery()) : new SqlFieldsQuery(oldQry);
+
+        // These are not cloned in ctor.
+        res.setLocal(oldQry.isLocal()).setPageSize(oldQry.getPageSize());
+
+        return res;
     }
 
     /**
