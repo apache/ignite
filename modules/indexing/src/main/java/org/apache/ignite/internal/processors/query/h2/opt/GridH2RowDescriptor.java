@@ -287,7 +287,7 @@ public class GridH2RowDescriptor {
 
         try {
             if (val == null) // Only can happen for remove operation, can create simple search row.
-                row = GridH2RowFactory.create(wrap(key, keyType));
+                row = new GridH2KeyRowOnheap(wrap(key, keyType));
             else
                 row = new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime);
         }
@@ -297,12 +297,10 @@ public class GridH2RowDescriptor {
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
 
-        row.ver = ver;
-
-        row.key = key;
-        row.val = val;
-        row.partId = partId;
-
+        row.version(ver);
+        row.key(key);
+        row.value(val);
+        row.partition(partId);
         row.link(link);
 
         return row;

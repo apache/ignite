@@ -54,7 +54,7 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     /** Exception while collecting node events. */
     private VisorExceptionWrapper evtsEx;
 
-    /** Node memory metrics. */
+    /** Node data region metrics. */
     private List<VisorMemoryMetrics> memoryMetrics = new ArrayList<>();
 
     /** Exception while collecting memory metrics. */
@@ -161,7 +161,7 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     }
 
     /**
-     * @return Collected memory metrics.
+     * @return Collected data region metrics.
      */
     public List<VisorMemoryMetrics> getMemoryMetrics() {
         return memoryMetrics;

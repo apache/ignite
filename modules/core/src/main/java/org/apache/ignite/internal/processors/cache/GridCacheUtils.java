@@ -1683,6 +1683,9 @@ public class GridCacheUtils {
      * @param dsCfg Data storage config.
      */
     public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
+        if (dsCfg == null)
+            return false;
+
         String regName = ccfg.getDataRegionName();
 
         if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))

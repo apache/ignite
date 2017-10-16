@@ -71,7 +71,7 @@ public class H2RowFactory {
             throw new IgniteException(e);
         }
 
-        assert row.ver != null;
+        assert row.version() != null;
 
         return row;
     }

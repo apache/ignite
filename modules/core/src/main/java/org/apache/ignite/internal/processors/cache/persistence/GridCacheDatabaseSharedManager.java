@@ -543,9 +543,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
-        if (freeListMap != null && freeListMap.containsKey(memPlcName))
-            return super.fillFactorProvider(memPlcName);
+    @Override protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+        if (!dataRegCfg.isPersistenceEnabled())
+            return super.fillFactorProvider(dataRegCfg);
+
+        final String dataRegName = dataRegCfg.getName();
 
         return new IgniteOutClosure<Float>() {
             @Override public Float apply() {
@@ -553,7 +555,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 long totalSize = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                    if (!grpCtx.dataRegion().config().getName().equals(memPlcName))
+                    if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
                         continue;
 
                     assert grpCtx.offheap() instanceof GridCacheOffheapManager;

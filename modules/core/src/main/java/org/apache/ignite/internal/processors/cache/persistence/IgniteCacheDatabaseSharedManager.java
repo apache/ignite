@@ -254,7 +254,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionName));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
 
         DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics);
 
@@ -272,16 +272,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Closure that can be used to compute fill factor for provided data region.
      *
-     * @param memPlcName data region name.
+     * @param dataRegCfg Data region configuration.
      * @return Closure.
      */
-    protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
+    protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+        final String dataRegName = dataRegCfg.getName();
+
         return new IgniteOutClosure<Float>() {
             private FreeListImpl freeList;
 
             @Override public Float apply() {
                 if (freeList == null) {
-                    FreeListImpl freeList0 = freeListMap.get(memPlcName);
+                    FreeListImpl freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
                         return (float) 0;

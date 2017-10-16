@@ -86,7 +86,7 @@ public class GridH2MetaTable extends TableBase {
     /** {@inheritDoc} */
     @Override public SearchRow getTemplateSimpleRow(boolean singleColumn) {
         if (singleColumn)
-            return GridH2RowFactory.create((Value)null);
+            return GridH2PlainRowFactory.create((Value)null);
 
         return new MetaRow();
     }
@@ -219,7 +219,7 @@ public class GridH2MetaTable extends TableBase {
     /**
      * Get value row.
      */
-    private static class MetaRow extends GridH2Row {
+    private static class MetaRow extends GridH2SearchRowAdapter {
         /** */
         private Value v0;
 
@@ -284,11 +284,6 @@ public class GridH2MetaTable extends TableBase {
                     throw new IllegalStateException("Index: " + idx);
             }
         }
-
-        /** {@inheritDoc} */
-        @Override public long expireTime() {
-            return 0;
-        }
     }
 
     /**
@@ -296,7 +291,7 @@ public class GridH2MetaTable extends TableBase {
      */
     private static class MetaIndex extends BaseIndex {
         /** */
-        private final ConcurrentMap<ValueInt, GridH2Row> rows = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap8<>();
 
         /** {@inheritDoc} */
         @Override public void checkRename() {
@@ -322,7 +317,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public void add(Session session, Row row) {
-            rows.put(id(row), (GridH2Row)row);
+            rows.put(id(row), row);
         }
 
         /** {@inheritDoc} */
