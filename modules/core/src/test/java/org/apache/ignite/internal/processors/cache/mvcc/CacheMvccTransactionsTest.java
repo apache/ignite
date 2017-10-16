@@ -1475,6 +1475,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             readers,
             DFLT_TEST_TIME,
             null,
+            null,
             writer,
             reader);
 
@@ -1486,49 +1487,49 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_SingleNode() throws Exception {
-        accountsTxReadAll(1, 0, 0, 64, false, ReadMode.GET_ALL);
+        accountsTxReadAll(1, 0, 0, 64, null, false, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, false, ReadMode.GET_ALL);
+        accountsTxReadAll(1, 0, 0, 1, null, false, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_WithRemoves_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, true, ReadMode.GET_ALL);
+        accountsTxReadAll(1, 0, 0, 1, null, true, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups0() throws Exception {
-        accountsTxReadAll(4, 2, 0, 64, false, ReadMode.GET_ALL);
+        accountsTxReadAll(4, 2, 0, 64, null, false, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups1() throws Exception {
-        accountsTxReadAll(4, 2, 1, 64, false, ReadMode.GET_ALL);
+        accountsTxReadAll(4, 2, 1, 64, null, false, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxGetAll_ClientServer_Backups2() throws Exception {
-        accountsTxReadAll(4, 2, 2, 64, false, ReadMode.GET_ALL);
+        accountsTxReadAll(4, 2, 2, 64, null, false, ReadMode.GET_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAccountsTxScan_SingleNode_SinglePartition() throws Exception {
-        accountsTxReadAll(1, 0, 0, 1, false, ReadMode.SCAN);
+        accountsTxReadAll(1, 0, 0, 1, null, false, ReadMode.SCAN);
     }
 
     /**
@@ -1796,6 +1797,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             writers,
             readers,
             DFLT_TEST_TIME,
+            null,
             init,
             writer,
             reader);
@@ -1947,6 +1949,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             readers,
             time,
             null,
+            null,
             writer,
             reader);
     }
@@ -2084,6 +2087,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             writers,
             readers,
             DFLT_TEST_TIME,
+            null,
             null,
             writer,
             reader);
@@ -3449,6 +3453,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             writers,
             readers,
             time,
+            null,
             init,
             writer,
             reader);

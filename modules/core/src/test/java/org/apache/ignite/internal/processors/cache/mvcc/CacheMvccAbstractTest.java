@@ -38,6 +38,9 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -64,6 +67,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -160,6 +164,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param clients Number of client nodes.
      * @param cacheBackups Number of cache backups.
      * @param cacheParts Number of cache partitions.
+     * @param cfgC Optional closure applied to cache configuration.
      * @param withRmvs If {@code true} then in addition to puts tests also executes removes.
      * @param readMode Read mode.
      * @throws Exception If failed.
@@ -169,6 +174,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final int clients,
         int cacheBackups,
         int cacheParts,
+        @Nullable IgniteInClosure<CacheConfiguration> cfgC,
         final boolean withRmvs,
         final ReadMode readMode
     )
@@ -335,17 +341,60 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                         Map<Integer, MvccTestAccount> accounts;
 
                         try {
-                            if (readMode == ReadMode.SCAN) {
-                                accounts = new HashMap<>();
+                            switch (readMode) {
+                                case GET_ALL: {
+                                    accounts = cache.cache.getAll(keys);
 
-                                for (IgniteCache.Entry<Integer, MvccTestAccount> e : cache.cache) {
-                                    MvccTestAccount old = accounts.put(e.getKey(), e.getValue());
+                                    break;
+                                }
 
-                                    assertNull(old);
+                                case SCAN: {
+                                    accounts = new HashMap<>();
+
+                                    for (IgniteCache.Entry<Integer, MvccTestAccount> e : cache.cache) {
+                                        MvccTestAccount old = accounts.put(e.getKey(), e.getValue());
+
+                                        assertNull(old);
+                                    }
+
+                                    break;
+                                }
+
+                                case SQL_ALL: {
+                                    accounts = new HashMap<>();
+
+                                    if (rnd.nextBoolean()) {
+                                        SqlQuery<Integer, MvccTestAccount> qry =
+                                            new SqlQuery<>(MvccTestAccount.class, "_key >= 0");
+
+                                        for (IgniteCache.Entry<Integer, MvccTestAccount> e : cache.cache.query(qry)) {
+                                            MvccTestAccount old = accounts.put(e.getKey(), e.getValue());
+
+                                            assertNull(old);
+                                        }
+                                    }
+                                    else {
+                                        SqlFieldsQuery qry = new SqlFieldsQuery("select _key, val from MvccTestAccount");
+
+                                        for (List<?> row : cache.cache.query(qry)) {
+                                            Integer id = (Integer)row.get(0);
+                                            Integer val = (Integer)row.get(0);
+
+                                            MvccTestAccount old = accounts.put(id, new MvccTestAccount(val, 1));
+
+                                            assertNull(old);
+                                        }
+                                    }
+
+                                    break;
+                                }
+
+                                default: {
+                                    fail();
+
+                                    return;
                                 }
                             }
-                            else
-                                accounts = cache.cache.getAll(keys);
                         }
                         finally {
                             cache.readUnlock();
@@ -415,6 +464,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             writers,
             readers,
             DFLT_TEST_TIME,
+            cfgC,
             init,
             writer,
             reader);
@@ -427,6 +477,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cacheBackups Number of cache backups.
      * @param cacheParts Number of cache partitions.
      * @param time Test time.
+     * @param cfgC Optional closure applied to cache configuration.
      * @param writers Number of writers.
      * @param readers Number of readers.
      * @param init Optional init closure.
@@ -443,6 +494,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final int writers,
         final int readers,
         final long time,
+        @Nullable IgniteInClosure<CacheConfiguration> cfgC,
         IgniteInClosure<IgniteCache<Object, Object>> init,
         final GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer,
         final GridInClosure3<Integer, List<TestCache>, AtomicBoolean> reader) throws Exception {
@@ -466,6 +518,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         if (restartMode == RestartMode.RESTART_CRD)
             ccfg.setNodeFilter(new CoordinatorNodeFilter());
+
+        if (cfgC != null)
+            cfgC.apply(ccfg);
 
         IgniteCache<Object, Object> cache = srv0.createCache(ccfg);
 
@@ -738,6 +793,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      */
     static class MvccTestAccount {
         /** */
+        @QuerySqlField(index = false)
         final int val;
 
         /** */
@@ -768,7 +824,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         GET_ALL,
 
         /** */
-        SCAN
+        SCAN,
+
+        /** */
+        SQL_ALL
     }
 
     /**
