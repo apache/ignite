@@ -37,6 +37,7 @@ public class CommandLineStartup {
 
     /**
      * Entry point.
+     *
      * @param args Arguments.
      */
     public static void main(String[] args) {
@@ -79,7 +80,7 @@ public class CommandLineStartup {
                 case "--schema":
                     check(args, i, valOriginal);
 
-                    schema = args[i+1];
+                    schema = args[i + 1];
 
                     i++;
 
@@ -117,7 +118,7 @@ public class CommandLineStartup {
                 case "--socketsendbuffer":
                     check(args, i, valOriginal, true);
 
-                    connStrParams.add("socketSendBuffer=" + args[i+1]);
+                    connStrParams.add("socketSendBuffer=" + args[i + 1]);
 
                     i++;
                     break;
@@ -125,7 +126,7 @@ public class CommandLineStartup {
                 case "--socketreceivebuffer":
                     check(args, i, valOriginal, true);
 
-                    connStrParams.add("socketReceiveBuffer=" + args[i+1]);
+                    connStrParams.add("socketReceiveBuffer=" + args[i + 1]);
 
                     i++;
 
@@ -217,7 +218,7 @@ public class CommandLineStartup {
         }
 
         if (integer) {
-            String val = args[i];
+            String val = args[i + 1];
 
             try {
                 Integer.parseInt(val);
