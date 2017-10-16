@@ -147,18 +147,6 @@ public class IgniteJdbcThinDriver implements Driver {
     /** Minor version. */
     private static final int MINOR_VER = IgniteVersionUtils.VER.minor();
 
-    /*
-     * Register driver.
-     */
-    static {
-        try {
-            DriverManager.registerDriver(new IgniteJdbcThinDriver());
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
         if (!acceptsURL(url))
