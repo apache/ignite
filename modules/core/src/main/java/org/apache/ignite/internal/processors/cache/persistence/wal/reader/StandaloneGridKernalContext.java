@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
@@ -177,7 +178,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final Marshaller marshaller = new BinaryMarshaller();
         cfg.setMarshaller(marshaller);
 
-        DataStorageConfiguration pstCfg = new DataStorageConfiguration();
+        final DataStorageConfiguration pstCfg = new DataStorageConfiguration();
+        final DataRegionConfiguration regCfg = new DataRegionConfiguration();
+        regCfg.setPersistenceEnabled(true);
+        pstCfg.setDefaultDataRegionConfiguration(regCfg);
+
         cfg.setDataStorageConfiguration(pstCfg);
 
         marshaller.setContext(marshallerCtx);
