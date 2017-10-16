@@ -4326,8 +4326,13 @@ public class CacheMvccTransactionsTest extends GridCommonAbstractTest {
      */
     private static <K, V> TestCache<K, V> randomCache(List<TestCache> caches, ThreadLocalRandom rnd) {
         synchronized (caches) {
-            if (caches.size() == 1)
-                return caches.get(0);
+            if (caches.size() == 1) {
+                TestCache cache = caches.get(0);
+
+                assertTrue(cache.readLock());
+
+                return cache;
+            }
 
             for (;;) {
                 int idx = rnd.nextInt(caches.size());
