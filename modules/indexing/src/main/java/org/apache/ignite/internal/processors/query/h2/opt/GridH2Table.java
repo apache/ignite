@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,7 +54,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
@@ -71,7 +69,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final H2RowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -124,7 +122,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, H2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -408,19 +406,21 @@ public class GridH2Table extends TableBase {
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
+        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime, link);
 
-        row.link = link;
+        if (rmv)
+            return doUpdate(row, true);
+        else {
+            GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)row;
 
-        if (!rmv)
-            ((GridH2KeyValueRowOnheap)row).valuesCache(new Value[getColumns().length]);
+            row0.prepareValuesCache();
 
-        try {
-            return doUpdate(row, rmv);
-        }
-        finally {
-            if (!rmv)
-                ((GridH2KeyValueRowOnheap)row).valuesCache(null);
+            try {
+                return doUpdate(row, false);
+            }
+            finally {
+                row0.clearValuesCache();
+            }
         }
     }
 
@@ -463,7 +463,7 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase pk = pk();
 
             if (!del) {
-                assert rowFactory == null || row.link != 0 : row;
+                assert rowFactory == null || row.link() != 0 : row;
 
                 GridH2Row old = pk.put(row); // Put to PK.
 

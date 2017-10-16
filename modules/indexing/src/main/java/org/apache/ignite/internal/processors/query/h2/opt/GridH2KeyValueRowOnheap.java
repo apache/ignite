@@ -61,7 +61,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     private Value[] valCache;
 
     /** */
-    private Value version;
+    private Value ver;
 
     /**
      * Constructor.
@@ -79,18 +79,13 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         this.desc = desc;
         this.expirationTime = expirationTime;
 
-        setValue(KEY_COL, desc.wrap(key, keyType));
+        this.key = desc.wrap(key, keyType);
 
-        if (val != null) // We remove by key only, so value can be null here.
-            setValue(VAL_COL, desc.wrap(val, valType));
+        if (val != null)
+            this.val = desc.wrap(val, valType);
 
         if (ver != null)
-            setValue(VER_COL, desc.wrap(ver, Value.JAVA_OBJECT));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Value[] getValueList() {
-        throw new UnsupportedOperationException();
+            this.ver = desc.wrap(ver, Value.JAVA_OBJECT);
     }
 
     /** {@inheritDoc} */
@@ -103,59 +98,39 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         return DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
     }
 
-    /**
-     * @param col Column index.
-     * @return Value if exists.
-     */
-    protected final Value peekValue(int col) {
-        if (col == KEY_COL)
-            return key;
-
-        if (col == VAL_COL)
-            return val;
-
-        assert col == VER_COL;
-
-        return version;
-    }
-
     /** {@inheritDoc} */
     @Override public Value getValue(int col) {
-        Value[] vCache = valCache;
+        switch (col) {
+            case KEY_COL:
+                return key;
 
-        if (vCache != null) {
-            Value v = vCache[col];
+            case VAL_COL:
+                return val;
 
-            if (v != null)
-                return v;
+            case VER_COL:
+                return ver;
+
+            default:
+                if (desc.isKeyAliasColumn(col))
+                    return key;
+                else if (desc.isValueAliasColumn(col))
+                    return val;
+
+                return getValue0(col - DEFAULT_COLUMNS_COUNT);
         }
+    }
 
-        Value v;
+    /**
+     * Get real column value.
+     *
+     * @param col Adjusted column index (without default columns).
+     * @return Value.
+     */
+    private Value getValue0(int col) {
+        Value v = getCached(col);
 
-        if (desc.isValueColumn(col)) {
-            v = peekValue(VAL_COL);
-
+        if (v != null)
             return v;
-        }
-        else if (desc.isKeyColumn(col)) {
-            v = peekValue(KEY_COL);
-
-            assert v != null;
-
-            return v;
-        }
-        else if (col == VER_COL)
-            return version;
-
-        col -= DEFAULT_COLUMNS_COUNT;
-
-        assert col >= 0;
-
-        Value key = getValue(KEY_COL);
-        Value val = getValue(VAL_COL);
-
-        assert key != null;
-        assert val != null;
 
         Object res = desc.columnValue(key.getObject(), val.getObject(), col);
 
@@ -170,21 +145,44 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
             }
         }
 
-        if (vCache != null)
-            vCache[col + DEFAULT_COLUMNS_COUNT] = v;
+        setCached(col, v);
 
         return v;
     }
 
     /**
-     * @param valCache Value cache.
+     * Prepare values cache.
      */
-    public void valuesCache(Value[] valCache) {
-        if (valCache != null) {
-            desc.initValueCache(valCache, key, val, version);
-        }
+    public void prepareValuesCache() {
+        this.valCache = new Value[desc.fieldsCount()];
+    }
 
-        this.valCache = valCache;
+    /**
+     * Clear values cache.
+     */
+    public void clearValuesCache() {
+        this.valCache = null;
+    }
+
+    /**
+     * Get cached value (if any).
+     *
+     * @param colIdx Column index.
+     * @return Value.
+     */
+    private Value getCached(int colIdx) {
+        return valCache != null ? valCache[colIdx] : null;
+    }
+
+    /**
+     * Set cache value.
+     *
+     * @param colIdx Column index.
+     * @param val Value.
+     */
+    private void setCached(int colIdx, Value val) {
+        if (valCache != null)
+            valCache[colIdx] = val;
     }
 
     /** {@inheritDoc} */
@@ -193,13 +191,13 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
 
         sb.a(Integer.toHexString(System.identityHashCode(this)));
 
-        Value v = peekValue(KEY_COL);
+        Value v = key;
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
-        v = peekValue(VAL_COL);
+        v = val;
         sb.a(", val: ").a(v == null ? "nil" : v.getString());
 
-        v = peekValue(VER_COL);
+        v = ver;
         sb.a(", ver: ").a(v == null ? "nil" : v.getString());
 
         sb.a(" ][ ");
@@ -222,55 +220,17 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public void setKeyAndVersion(SearchRow old) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void setKey(long key) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Row getCopy() {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setDeleted(boolean deleted) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKey() {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSessionId(int sesId) {
-        throw new IllegalStateException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setVersion(int ver) {
-        throw new IllegalStateException();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void setValue(int idx, Value v) {
-        if (desc.isValueColumn(idx))
-            val = v;
-        else if (idx == VER_COL)
-            version = v;
-        else {
-            assert desc.isKeyColumn(idx) : idx + " " + v;
-
-            key = v;
-        }
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public final int hashCode() {
-        throw new IllegalStateException();
+        throw new UnsupportedOperationException();
     }
 }
