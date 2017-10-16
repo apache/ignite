@@ -95,25 +95,34 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <param name="writer">The writer.</param>
         public void UpdateWriterStructure(BinaryWriter writer)
         {
-            if (_curStructUpdates != null)
+            if (_curStructUpdates == null)
             {
-                _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
+                // that is a special case when the object is with no properties
 
-                var marsh = writer.Marshaller;
+                // save meta to Marshaller (no other ways to save)
+                writer.Marshaller.GetBinaryTypeHandler(_desc);
 
-                var metaHnd = marsh.GetBinaryTypeHandler(_desc);
+                // save meta to Binary writer
+                writer.SaveMetadata(_desc, null);
+                return;
+            }
 
-                if (metaHnd != null)
-                {
-                    foreach (var u in _curStructUpdates)
-                        metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
+            _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
 
-                    var fields = metaHnd.OnObjectWriteFinished();
+            var marsh = writer.Marshaller;
 
-                    // A new schema may be added, but no new fields. 
-                    // In this case, we should still call SaveMetadata even if fields are null
-                    writer.SaveMetadata(_desc, fields);
-                }
+            var metaHnd = marsh.GetBinaryTypeHandler(_desc);
+
+            if (metaHnd != null)
+            {
+                foreach (var u in _curStructUpdates)
+                    metaHnd.OnFieldWrite(u.FieldId, u.FieldName, u.FieldType);
+
+                var fields = metaHnd.OnObjectWriteFinished();
+
+                // A new schema may be added, but no new fields. 
+                // In this case, we should still call SaveMetadata even if fields are null
+                writer.SaveMetadata(_desc, fields);
             }
         }
 
