@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Client
     /// Ignite thin client exception.
     /// </summary>
     [Serializable]
-    public class IgniteClientException : IgniteException
+    internal class IgniteClientException : IgniteException
     {
         /** Error code field. */
         private const string ErrorCodeField = "ErrorCode";

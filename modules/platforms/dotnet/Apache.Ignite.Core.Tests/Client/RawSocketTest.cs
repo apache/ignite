@@ -30,7 +30,8 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Tests the thin client mode with a raw socket.
     /// </summary>
-    public class RawSocketTest : ClientTestBase
+    [Ignore]
+    internal class RawSocketTest : ClientTestBase
     {
         /// <summary>
         /// Tests the socket handshake connection.

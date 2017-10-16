@@ -742,7 +742,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <returns>Ignite instance.</returns>
-        public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
+        internal static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
             IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
             IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");

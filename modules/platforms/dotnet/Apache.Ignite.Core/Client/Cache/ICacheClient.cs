@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Client.Cache
     /// Client cache API. See <see cref="IIgniteClient.GetCache{K, V}"/>.
     /// </summary>
     // ReSharper disable once TypeParameterCanBeVariant (ICache shoul not be variant, more methods will be added)
-    public interface ICacheClient<TK, TV>
+    internal interface ICacheClient<TK, TV>
     {
         /// <summary>
         /// Name of this cache (<c>null</c> for default cache).
