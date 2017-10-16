@@ -46,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Primary' here, not 'Near Cache'.
@@ -132,6 +133,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addDepInfo Deployment info.
+     * @param mvccVer Mvcc version.
      */
     public GridNearGetRequest(
         int cacheId,
@@ -149,7 +151,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
-        MvccCoordinatorVersion mvccVer
+        @Nullable MvccCoordinatorVersion mvccVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -194,9 +196,9 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
-     * @return Counter.
+     * @return Mvcc version.
      */
-    public MvccCoordinatorVersion mvccVersion() {
+    @Nullable public MvccCoordinatorVersion mvccVersion() {
         return mvccVer;
     }
 

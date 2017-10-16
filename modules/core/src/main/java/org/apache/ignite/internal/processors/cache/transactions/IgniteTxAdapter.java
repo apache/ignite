@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -379,6 +380,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     @Nullable public TxMvccInfo mvccInfo() {
         return mvccInfo;
+    }
+
+    /**
+     * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
+     */
+    @Nullable protected final MvccCoordinatorVersion mvccVersionForUpdate() {
+        assert !txState().mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+
+        return mvccInfo != null ? mvccInfo.version() : null;
     }
 
     /** {@inheritDoc} */

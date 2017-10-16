@@ -187,8 +187,16 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @throws InterruptedException If interrupted.
      */
     public void waitForBlocked() throws InterruptedException {
+        waitForBlocked(1);
+    }
+
+    /**
+     * @param size Number of messages to wait for.
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForBlocked(int size) throws InterruptedException {
         synchronized (this) {
-            while (blockedMsgs.isEmpty())
+            while (blockedMsgs.size() < size)
                 wait();
         }
     }

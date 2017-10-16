@@ -559,7 +559,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean retVer,
         boolean keepBinary,
         boolean reserveForLoad,
-        MvccCoordinatorVersion mvccVer,
+        @Nullable MvccCoordinatorVersion mvccVer,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !(retVer && readThrough);
@@ -748,7 +748,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     long expTime = CU.toExpireTime(ttl);
 
                     // Update indexes before actual write to entry.
-                    storeValue(ret, expTime, nextVer, null);
+                    if (cctx.mvccEnabled())
+                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null); // TODO IGNITE-3478.
+                    else
+                        storeValue(ret, expTime, nextVer, null);
 
                     update(ret, expTime, ttl, nextVer, true);
 
@@ -1016,6 +1019,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     this,
                     val,
                     newVer,
+                    expireTime,
                     mvccVer);
             }
             else
@@ -2091,7 +2095,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     ", val=" + val + ']');
             }
 
-            removeValue();
+            if (cctx.mvccEnabled())
+                cctx.offheap().mvccRemoveAll(this);
+            else
+                removeValue();
         }
 
         onMarkedObsolete();
@@ -2285,7 +2292,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         ver = newVer;
         flags &= ~IS_EVICT_DISABLED;
 
-        removeValue();
+        if (cctx.mvccEnabled())
+            cctx.offheap().mvccRemoveAll(this);
+        else
+            removeValue();
 
         onInvalidate();
 
@@ -2520,7 +2530,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long delta = expireTime - U.currentTimeMillis();
 
             if (delta <= 0) {
-                removeValue();
+                if (cctx.mvccEnabled())
+                    cctx.offheap().mvccRemoveAll(this);
+                else
+                    removeValue();
 
                 return true;
             }
@@ -2605,7 +2618,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (cctx.mvccEnabled()) {
-                    cctx.offheap().mvccInitialValue(this, val, ver, mvccVer);
+                    cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer);
 
                     if (val != null)
                         update(val, expTime, ttl, ver, true);
@@ -2769,7 +2782,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (val != null) {
-                    storeValue(val, expTime, newVer, null);
+                    if (cctx.mvccEnabled()) // TODO IGNITE-3478
+                        cctx.offheap().mvccInitialValue(this, val, newVer, expTime, null);
+                    else
+                        storeValue(val, expTime, newVer, null);
 
                     if (deletedUnlocked())
                         deletedUnlocked(false);
@@ -3086,7 +3102,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        removeValue();
+        if (cctx.mvccEnabled())
+            cctx.offheap().mvccRemoveAll(this);
+        else
+            removeValue();
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),

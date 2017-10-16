@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -53,12 +54,21 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
                 @Override public void apply(final GridNearTxFinishFuture fut) {
                     GridNearTxLocal tx = fut.tx();
 
+                    IgniteInternalFuture<Void> ackFut = null;
+
+                    MvccQueryTracker qryTracker = tx.mvccQueryTracker();
+
                     TxMvccInfo mvccInfo = tx.mvccInfo();
 
-                    if (mvccInfo != null) {
-                        IgniteInternalFuture<Void> ackFut = fut.context().coordinators().ackTxCommit(
-                            mvccInfo.coordinator(), mvccInfo.version());
+                    if (qryTracker != null)
+                        ackFut = qryTracker.onTxDone(mvccInfo, fut.context(), true);
+                    else if (mvccInfo != null) {
+                        ackFut = fut.context().coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(),
+                            mvccInfo.version(),
+                            null);
+                    }
 
+                    if (ackFut != null) {
                         ackFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                             @Override public void apply(IgniteInternalFuture<Void> ackFut) {
                                 Exception err = null;

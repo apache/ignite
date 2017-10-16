@@ -58,7 +58,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private static final int ALLOW_WAIT_TOP_FUT_FLAG_MASK = 0x10;
 
     /** */
-    private static final int REQUEST_MVCC_CNTR_FLAG_MASK = 0x02;
+    private static final int REQUEST_MVCC_CNTR_FLAG_MASK = 0x20;
 
     /** Future ID. */
     private IgniteUuid futId;

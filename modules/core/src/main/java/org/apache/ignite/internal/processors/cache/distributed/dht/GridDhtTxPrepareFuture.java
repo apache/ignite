@@ -1344,6 +1344,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
+        // Do not need process active transactions on backups.
+        TxMvccInfo mvccInfo = tx.mvccInfo();
+
+        if (mvccInfo != null)
+            mvccInfo = mvccInfo.withoutActiveTransactions();
+
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
             assert !dhtMapping.empty();
@@ -1387,7 +1393,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
                 retVal,
-                tx.mvccInfo());
+                mvccInfo);
 
             int idx = 0;
 
@@ -1501,7 +1507,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
                     retVal,
-                    tx.mvccInfo());
+                    mvccInfo);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

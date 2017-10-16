@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -61,13 +61,15 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Colocated get future.
  */
-public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> implements MvccQueryAware {
+public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
+    implements MvccCoordinatorChangeAware, IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -76,6 +78,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
     /** Logger. */
     private static IgniteLogger log;
+
+    /** */
+    protected final MvccCoordinatorVersion mvccVer;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -94,6 +99,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
+     * @param mvccVer Mvcc version.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -107,7 +113,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        @Nullable MvccCoordinatorVersion mvccVer
     ) {
         super(cctx,
             keys,
@@ -121,6 +128,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             needVer,
             keepCacheObjects,
             recovery);
+        assert mvccVer == null || cctx.mvccEnabled();
+
+        this.mvccVer = mvccVer;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
@@ -132,6 +142,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     @Nullable private MvccCoordinatorVersion mvccVersion() {
         if (!cctx.mvccEnabled())
             return null;
+
+        if (mvccVer != null)
+            return mvccVer;
 
         MvccCoordinatorVersion ver = mvccTracker.mvccVersion();
 
@@ -158,7 +171,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
         }
 
-        if (cctx.mvccEnabled()) {
+        if (cctx.mvccEnabled() && mvccVer == null) {
             mvccTracker = new MvccQueryTracker(cctx, canRemap, this);
 
             trackable = true;
@@ -174,13 +187,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccVersionReceived(AffinityTopologyVersion topVer) {
-        initialMap(topVer);
-    }
+    @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
+        if (e != null)
+            onDone(e);
+        else {
+            assert topVer != null;
 
-    /** {@inheritDoc} */
-    @Override public void onMvccVersionError(IgniteCheckedException e) {
-        onDone(e);
+            initialMap(topVer);
+        }
     }
 
     /** {@inheritDoc} */

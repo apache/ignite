@@ -17,34 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface MvccCoordinatorVersion extends Message {
+public interface MvccCoordinatorChangeAware {
     /**
-     * @return Active transactions.
+     * @param newCrd New coordinator.
+     * @return Version used by this query.
      */
-    public MvccLongList activeTransactions();
-
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion();
-
-    /**
-     * @return Cleanup version (all smaller versions are safe to remove).
-     */
-    public long cleanupVersion();
-
-    /**
-     * @return Counter.
-     */
-    public long counter();
-
-    /**
-     * @return Version without active transactions.
-     */
-    public MvccCoordinatorVersion withoutActiveTransactions();
+    @Nullable public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd);
 }

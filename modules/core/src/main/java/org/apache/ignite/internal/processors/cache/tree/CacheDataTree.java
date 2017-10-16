@@ -157,7 +157,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         cmp = compareKeys(row.key(), link);
 
         if (cmp != 0 || !grp.mvccEnabled())
-            return 0;
+            return cmp;
 
         long mvccCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
 

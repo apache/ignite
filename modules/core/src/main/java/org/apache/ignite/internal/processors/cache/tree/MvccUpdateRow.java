@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
 
 /**
  *
@@ -54,6 +56,12 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     /** */
     private final MvccCoordinatorVersion mvccVer;
 
+    /** */
+    private final boolean needOld;
+
+    /** */
+    private CacheDataRow oldRow;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -66,12 +74,22 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
+        long expireTime,
         MvccCoordinatorVersion mvccVer,
+        boolean needOld,
         int part,
         int cacheId) {
-        super(key, val, ver, part, 0L, cacheId);
+        super(key, val, ver, part, expireTime, cacheId);
 
         this.mvccVer = mvccVer;
+        this.needOld = needOld;
+    }
+
+    /**
+     * @return Old row.
+     */
+    public CacheDataRow oldRow() {
+        return oldRow;
     }
 
     /**
@@ -110,7 +128,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         if (cmp == 0)
             cmp = Long.compare(mvccVer.counter(), rowCntr);
 
-        // Can be equals if backup rebalanced value updated on primary.
+        // Can be equals if execute update on backup and backup already rebalanced value updated on primary.
         assert cmp >= 0 : "[updCrd=" + unmaskedCoordinatorVersion() +
             ", updCntr=" + mvccVer.counter() +
             ", rowCrd=" + rowCrdVer +
@@ -148,9 +166,18 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
 
             if (cmp == 0)
                 res = UpdateResult.VERSION_FOUND;
-            else
-                res = CacheCoordinatorsProcessor.versionForRemovedValue(rowCrdVerMasked) ?
+            else {
+                if (versionForRemovedValue(rowCrdVerMasked))
+                    res = UpdateResult.PREV_NULL;
+                else {
+                    res = UpdateResult.PREV_NOT_NULL;
+
+                    if (needOld)
+                        oldRow = ((CacheDataTree)tree).getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+                }
+                res = versionForRemovedValue(rowCrdVerMasked) ?
                     UpdateResult.PREV_NULL : UpdateResult.PREV_NOT_NULL;
+            }
         }
 
         // Suppose transactions on previous coordinator versions are done.

@@ -15,36 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 
 /**
  *
  */
-public interface MvccCoordinatorVersion extends Message {
+public class IgniteCacheMvccTestSuite extends TestSuite {
     /**
-     * @return Active transactions.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public MvccLongList activeTransactions();
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
 
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion();
+        suite.addTestSuite(CacheMvccTransactionsTest.class);
+        suite.addTestSuite(CacheMvccClusterRestartTest.class);
+        suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
 
-    /**
-     * @return Cleanup version (all smaller versions are safe to remove).
-     */
-    public long cleanupVersion();
-
-    /**
-     * @return Counter.
-     */
-    public long counter();
-
-    /**
-     * @return Version without active transactions.
-     */
-    public MvccCoordinatorVersion withoutActiveTransactions();
+        return suite;
+    }
 }

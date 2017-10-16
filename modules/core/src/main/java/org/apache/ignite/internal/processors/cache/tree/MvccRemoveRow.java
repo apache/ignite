@@ -37,9 +37,10 @@ public class MvccRemoveRow extends MvccUpdateRow {
     public MvccRemoveRow(
         KeyCacheObject key,
         MvccCoordinatorVersion mvccVer,
+        boolean needOld,
         int part,
         int cacheId) {
-        super(key, null, null, mvccVer, part, cacheId);
+        super(key, null, null, 0L, mvccVer, needOld, part, cacheId);
     }
 
     /** {@inheritDoc} */

@@ -28,6 +28,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class MvccCounter implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long crdVer;
 
     /** */
@@ -143,7 +146,7 @@ public class MvccCounter implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 141;
+        return 143;
     }
 
     /** {@inheritDoc} */

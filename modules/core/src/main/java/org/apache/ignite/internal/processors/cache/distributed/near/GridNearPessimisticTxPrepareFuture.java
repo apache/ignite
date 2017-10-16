@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
@@ -301,7 +302,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
 
                 if (mvccCrd == null) {
-                    onDone(new IgniteCheckedException("Mvcc coordinator is not assigned: " + topVer));
+                    onDone(CacheCoordinatorsProcessor.noCoordinatorError(topVer));
 
                     return;
                 }
@@ -456,6 +457,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
     /** {@inheritDoc} */
     @Override public void onMvccError(IgniteCheckedException e) {
+        if (e instanceof ClusterTopologyCheckedException) {
+            IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
+
+            ((ClusterTopologyCheckedException)e).retryReadyFuture(fut);
+        }
+
         ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e);
     }
 
@@ -492,12 +499,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                         ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
-                else if (f instanceof CacheCoordinatorsProcessor.MvccVersionFuture) {
-                    CacheCoordinatorsProcessor.MvccVersionFuture crdFut =
-                        (CacheCoordinatorsProcessor.MvccVersionFuture)f;
+                else if (f instanceof MvccCoordinatorFuture) {
+                    MvccCoordinatorFuture crdFut = (MvccCoordinatorFuture)f;
 
-                    return "[mvccCrdNode=" + crdFut.crdId +
-                        ", loc=" + crdFut.crdId.equals(cctx.localNodeId()) +
+                    return "[mvccCrdNode=" + crdFut.coordinatorNodeId() +
+                        ", loc=" + crdFut.coordinatorNodeId().equals(cctx.localNodeId()) +
                         ", done=" + f.isDone() + "]";
                 }
                 else

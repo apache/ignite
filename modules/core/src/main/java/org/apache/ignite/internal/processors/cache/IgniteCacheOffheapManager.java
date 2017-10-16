@@ -200,6 +200,7 @@ public interface IgniteCacheOffheapManager {
         GridCacheMapEntry entry,
         @Nullable CacheObject val,
         GridCacheVersion ver,
+        long expireTime,
         MvccCoordinatorVersion mvccVer
     ) throws IgniteCheckedException;
 
@@ -208,6 +209,7 @@ public interface IgniteCacheOffheapManager {
      * @param entry Entry.
      * @param val Value.
      * @param ver Cache version.
+     * @param expireTime Expire time.
      * @param mvccVer Mvcc update version.
      * @return Transactions to wait for before finishing current transaction.
      * @throws IgniteCheckedException If failed.
@@ -217,6 +219,7 @@ public interface IgniteCacheOffheapManager {
         GridCacheMapEntry entry,
         CacheObject val,
         GridCacheVersion ver,
+        long expireTime,
         MvccCoordinatorVersion mvccVer
     ) throws IgniteCheckedException;
 
@@ -545,6 +548,7 @@ public interface IgniteCacheOffheapManager {
             KeyCacheObject key,
             @Nullable CacheObject val,
             GridCacheVersion ver,
+            long expireTime,
             MvccCoordinatorVersion mvccVer) throws IgniteCheckedException;
 
         /**
@@ -553,6 +557,7 @@ public interface IgniteCacheOffheapManager {
          * @param key Key.
          * @param val Value.
          * @param ver Version.
+         * @param expireTime Expire time.
          * @param mvccVer Mvcc version.
          * @return List of transactions to wait for.
          * @throws IgniteCheckedException If failed.
@@ -563,6 +568,7 @@ public interface IgniteCacheOffheapManager {
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
+            long expireTime,
             MvccCoordinatorVersion mvccVer) throws IgniteCheckedException;
 
         /**

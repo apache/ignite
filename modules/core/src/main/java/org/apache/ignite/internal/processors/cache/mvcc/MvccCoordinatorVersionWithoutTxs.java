@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,56 +26,57 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
+public class MvccCoordinatorVersionWithoutTxs implements MvccCoordinatorVersion {
     /** */
-    private static final long serialVersionUID = 0L;
+    private long crdVer;
 
     /** */
-    private long futId;
+    private long cntr;
 
     /** */
-    private GridLongList txs;
+    private long cleanupVer;
 
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorWaitTxsRequest() {
+    public MvccCoordinatorVersionWithoutTxs() {
         // No-op.
     }
 
     /**
-     * @param futId Future ID.
-     * @param txs Transactions to wait for.
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     * @param cleanupVer Cleanup version.
      */
-    public CoordinatorWaitTxsRequest(long futId, GridLongList txs) {
-        assert txs != null && txs.size() > 0 : txs;
-
-        this.futId = futId;
-        this.txs = txs;
-    }
-
-    /**
-     * @return Future ID.
-     */
-    long futureId() {
-        return futId;
-    }
-
-    /**
-     * @return Transactions to wait for.
-     */
-    GridLongList transactions() {
-        return txs;
+    public MvccCoordinatorVersionWithoutTxs(long crdVer, long cntr, long cleanupVer) {
+        this.crdVer = crdVer;
+        this.cntr = cntr;
+        this.cleanupVer = cleanupVer;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return false;
+    @Override public MvccLongList activeTransactions() {
+        return MvccEmptyLongList.INSTANCE;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return true;
+    @Override public long coordinatorVersion() {
+        return crdVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long cleanupVersion() {
+        return cleanupVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long counter() {
+        return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccCoordinatorVersion withoutActiveTransactions() {
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -91,13 +92,19 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong("cleanupVer", cleanupVer))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("txs", txs))
+                if (!writer.writeLong("cntr", cntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeLong("crdVer", crdVer))
                     return false;
 
                 writer.incrementState();
@@ -116,7 +123,7 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
         switch (reader.state()) {
             case 0:
-                futId = reader.readLong("futId");
+                cleanupVer = reader.readLong("cleanupVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,7 +131,15 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
                 reader.incrementState();
 
             case 1:
-                txs = reader.readMessage("txs");
+                cntr = reader.readLong("cntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                crdVer = reader.readLong("crdVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -133,17 +148,17 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorWaitTxsRequest.class);
+        return reader.afterMessageRead(MvccCoordinatorVersionWithoutTxs.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 137;
+        return 145;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -153,6 +168,6 @@ public class CoordinatorWaitTxsRequest implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorWaitTxsRequest.class, this);
+        return S.toString(MvccCoordinatorVersionWithoutTxs.class, this);
     }
 }

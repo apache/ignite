@@ -17,34 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-
 /**
  *
  */
-public interface MvccCoordinatorVersion extends Message {
-    /**
-     * @return Active transactions.
-     */
-    public MvccLongList activeTransactions();
+public class MvccEmptyLongList implements MvccLongList {
+    /** */
+    public static MvccEmptyLongList INSTANCE = new MvccEmptyLongList();
 
     /**
-     * @return Coordinator version.
+     *
      */
-    public long coordinatorVersion();
+    private MvccEmptyLongList() {
+        // No-op.
+    }
 
-    /**
-     * @return Cleanup version (all smaller versions are safe to remove).
-     */
-    public long cleanupVersion();
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return 0;
+    }
 
-    /**
-     * @return Counter.
-     */
-    public long counter();
+    /** {@inheritDoc} */
+    @Override public long get(int i) {
+        throw new IndexOutOfBoundsException();
+    }
 
-    /**
-     * @return Version without active transactions.
-     */
-    public MvccCoordinatorVersion withoutActiveTransactions();
+    /** {@inheritDoc} */
+    @Override public boolean contains(long val) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "MvccEmptyLongList[]";
+    }
 }

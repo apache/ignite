@@ -103,13 +103,17 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryAckRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxAckRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTxAndQueryEx;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorActiveQueriesMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorFutureResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestQuery;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorQueryVersionRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTx;
+import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorAckRequestTxAndQuery;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorTxCounterRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.CoordinatorWaitTxsRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.mvcc.NewCoordinatorQueryAckRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
@@ -892,7 +896,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 131: // TODO IGNITE-3478 fix constants.
-                msg = new CoordinatorTxAckRequest();
+                msg = new CoordinatorAckRequestTx();
 
                 break;
 
@@ -907,7 +911,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 134:
-                msg = new CoordinatorQueryAckRequest();
+                msg = new CoordinatorAckRequestQuery();
 
                 break;
 
@@ -937,7 +941,27 @@ public class GridIoMessageFactory implements MessageFactory {
                 return msg;
 
             case 141:
+                msg = new CoordinatorAckRequestTxAndQuery();
+
+                return msg;
+
+            case 142:
+                msg = new CoordinatorAckRequestTxAndQueryEx();
+
+                return msg;
+
+            case 143:
                 msg = new MvccCounter();
+
+                return msg;
+
+            case 144:
+                msg = new CoordinatorActiveQueriesMessage();
+
+                return msg;
+
+            case 145:
+                msg = new MvccCoordinatorVersionWithoutTxs();
 
                 return msg;
 

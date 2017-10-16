@@ -26,47 +26,52 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class CoordinatorQueryAckRequest implements MvccCoordinatorMessage {
+public class CoordinatorAckRequestTxAndQueryEx extends CoordinatorAckRequestTx {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long cntr;
+    private long qryCrdVer;
+
+    /** */
+    private long qryCntr;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public CoordinatorQueryAckRequest() {
+    public CoordinatorAckRequestTxAndQueryEx() {
         // No-op.
     }
 
     /**
-     * @param cntr Query counter.
+     * @param futId Future ID.
+     * @param txCntr Counter assigned to transaction update.
+     * @param qryCrdVer Version of coordinator assigned read counter.
+     * @param qryCntr Counter assigned for transaction reads.
      */
-    CoordinatorQueryAckRequest(long cntr) {
-        this.cntr = cntr;
+    CoordinatorAckRequestTxAndQueryEx(long futId, long txCntr, long qryCrdVer, long qryCntr) {
+        super(futId, txCntr);
+
+        this.qryCrdVer = qryCrdVer;
+        this.qryCntr = qryCntr;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean waitForCoordinatorInit() {
-        return false;
+    @Override long queryCoordinatorVersion() {
+        return qryCrdVer;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean processedFromNioThread() {
-        return true;
-    }
-
-    /**
-     * @return Counter.
-     */
-    public long counter() {
-        return cntr;
+    @Override long queryCounter() {
+        return qryCntr;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -76,8 +81,14 @@ public class CoordinatorQueryAckRequest implements MvccCoordinatorMessage {
         }
 
         switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong("cntr", cntr))
+            case 3:
+                if (!writer.writeLong("qryCntr", qryCntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLong("qryCrdVer", qryCrdVer))
                     return false;
 
                 writer.incrementState();
@@ -94,9 +105,20 @@ public class CoordinatorQueryAckRequest implements MvccCoordinatorMessage {
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
-                cntr = reader.readLong("cntr");
+            case 3:
+                qryCntr = reader.readLong("qryCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                qryCrdVer = reader.readLong("qryCrdVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -105,26 +127,21 @@ public class CoordinatorQueryAckRequest implements MvccCoordinatorMessage {
 
         }
 
-        return reader.afterMessageRead(CoordinatorQueryAckRequest.class);
+        return reader.afterMessageRead(CoordinatorAckRequestTxAndQueryEx.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 134;
+        return 142;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+        return 5;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CoordinatorQueryAckRequest.class, this);
+        return S.toString(CoordinatorAckRequestTxAndQueryEx.class, this);
     }
 }

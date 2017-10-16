@@ -46,7 +46,7 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
     private int txsCnt;
 
     /** */
-    private long[] txs; // TODO IGNITE-3478 (do not send on backups?)
+    private long[] txs;
 
     /** */
     private long cleanupVer;
@@ -63,7 +63,7 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
      * @param cntr Counter.
      * @param cleanupVer Cleanup version.
      */
-    public MvccCoordinatorVersionResponse(long crdVer, long cntr, long cleanupVer) {
+    MvccCoordinatorVersionResponse(long crdVer, long cntr, long cleanupVer) {
         this.crdVer = crdVer;
         this.cntr = cntr;
         this.cleanupVer = cleanupVer;
@@ -150,6 +150,14 @@ public class MvccCoordinatorVersionResponse implements MvccCoordinatorMessage, M
 
     /** {@inheritDoc} */
     @Override public MvccLongList activeTransactions() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccCoordinatorVersion withoutActiveTransactions() {
+        if (txsCnt > 0)
+            return new MvccCoordinatorVersionWithoutTxs(crdVer, cntr, cleanupVer);
+
         return this;
     }
 

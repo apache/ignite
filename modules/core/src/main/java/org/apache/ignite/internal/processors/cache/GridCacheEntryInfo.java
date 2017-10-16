@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccEmptyLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -82,8 +83,13 @@ public class GridCacheEntryInfo implements Message, MvccCoordinatorVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public MvccLongList activeTransactions() {
-        return null;
+    @Override public final MvccLongList activeTransactions() {
+        return MvccEmptyLongList.INSTANCE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final MvccCoordinatorVersion withoutActiveTransactions() {
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -23,15 +23,17 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * TODO IGNITE-3478: make sure clean up is called when related future is forcibly finished, i.e. on cache stop
  */
-public class MvccQueryTracker {
+public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     /** */
     private MvccCoordinator mvccCrd;
 
@@ -47,14 +49,17 @@ public class MvccQueryTracker {
 
     /** */
     @GridToStringExclude
-    private final MvccQueryAware lsnr;
+    private final IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr;
 
     /**
      * @param cctx Cache context.
      * @param canRemap {@code True} if can wait for topology changes.
      * @param lsnr Listener.
      */
-    public MvccQueryTracker(GridCacheContext cctx, boolean canRemap, MvccQueryAware lsnr) {
+    public MvccQueryTracker(GridCacheContext cctx,
+        boolean canRemap,
+        IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr)
+    {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
@@ -115,13 +120,53 @@ public class MvccQueryTracker {
     }
 
     /**
+     * @param mvccInfo Mvcc update info.
+     * @param ctx Context.
+     * @param commit If {@code true} ack commit, otherwise rollback.
+     * @return Commit ack future.
+     */
+    public IgniteInternalFuture<Void> onTxDone(@Nullable TxMvccInfo mvccInfo, GridCacheSharedContext ctx, boolean commit) {
+        MvccCoordinator mvccCrd0 = null;
+        MvccCoordinatorVersion mvccVer0 = null;
+
+        synchronized (this) {
+            if (mvccVer != null) {
+                assert mvccCrd != null;
+
+                mvccCrd0 = mvccCrd;
+                mvccVer0 = mvccVer;
+
+                mvccVer = null; // Mark as finished.
+            }
+        }
+
+        assert mvccVer0 == null || mvccInfo == null || mvccInfo.coordinatorNodeId().equals(mvccCrd0.nodeId());
+
+        if (mvccVer0 != null || mvccInfo != null) {
+            if (mvccInfo == null) {
+                cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccVer0);
+
+                return null;
+            }
+            else {
+                if (commit)
+                    return ctx.coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(), mvccInfo.version(), mvccVer0);
+                else
+                    ctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.version(), mvccVer0);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param topVer Topology version.
      */
     public void requestVersion(final AffinityTopologyVersion topVer) {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if (mvccCrd0 == null) {
-            lsnr.onMvccVersionError(new IgniteCheckedException("Mvcc coordinator is not assigned: " + topVer));
+            lsnr.apply(null, CacheCoordinatorsProcessor.noCoordinatorError(topVer));
 
             return;
         }
@@ -136,7 +181,7 @@ public class MvccQueryTracker {
             assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
 
             if (!canRemap) {
-                lsnr.onMvccVersionError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
+                lsnr.apply(null, new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
 
                 return;
             }
@@ -147,6 +192,7 @@ public class MvccQueryTracker {
             }
         }
 
+        // TODO IGNITE-3478: get rid of future creation in 'requestQueryCounter'.
         IgniteInternalFuture<MvccCoordinatorVersion> cntrFut =
             cctx.shared().coordinators().requestQueryCounter(mvccCrd0);
 
@@ -172,7 +218,7 @@ public class MvccQueryTracker {
                     }
 
                     if (!needRemap) {
-                        lsnr.onMvccVersionReceived(topVer);
+                        lsnr.apply(topVer, null);
 
                         return;
                     }
@@ -184,7 +230,7 @@ public class MvccQueryTracker {
                         log.debug("Mvcc coordinator failed, need remap: " + e);
                 }
                 catch (IgniteCheckedException e) {
-                    lsnr.onMvccVersionError(e);
+                    lsnr.apply(null, e);
 
                     return;
                 }
@@ -193,7 +239,7 @@ public class MvccQueryTracker {
                 if (canRemap)
                     waitNextTopology(topVer);
                 else {
-                    lsnr.onMvccVersionError(new ClusterTopologyCheckedException("Failed to " +
+                    lsnr.apply(null, new ClusterTopologyCheckedException("Failed to " +
                         "request mvcc version, coordinator failed."));
                 }
             }
@@ -218,7 +264,7 @@ public class MvccQueryTracker {
                         requestVersion(fut.get());
                     }
                     catch (IgniteCheckedException e) {
-                        lsnr.onMvccVersionError(e);
+                        lsnr.apply(null, e);
                     }
                 }
             });

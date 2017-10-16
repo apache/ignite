@@ -29,6 +29,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TxMvccInfo implements Message {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private UUID crd;
 
     /** */
@@ -42,8 +45,8 @@ public class TxMvccInfo implements Message {
     }
 
     /**
-     * @param crd
-     * @param mvccVer
+     * @param crd Coordinator node ID.
+     * @param mvccVer Mvcc version.
      */
     public TxMvccInfo(UUID crd, MvccCoordinatorVersion mvccVer) {
         assert crd != null;
@@ -53,10 +56,28 @@ public class TxMvccInfo implements Message {
         this.mvccVer = mvccVer;
     }
 
-    public UUID coordinator() {
+    /**
+     * @return Instance with version without active transactions.
+     */
+    public TxMvccInfo withoutActiveTransactions() {
+        MvccCoordinatorVersion mvccVer0 = mvccVer.withoutActiveTransactions();
+
+        if (mvccVer0 == mvccVer)
+            return this;
+
+        return new TxMvccInfo(crd, mvccVer0);
+    }
+
+    /**
+     * @return Coordinator node ID.
+     */
+    public UUID coordinatorNodeId() {
         return crd;
     }
 
+    /**
+     * @return Mvcc version.
+     */
     public MvccCoordinatorVersion version() {
         return mvccVer;
     }

@@ -81,6 +81,9 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
 
+            assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
+            assert mvccCntr != COUNTER_NA;
+
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
                 link,
@@ -122,15 +125,15 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
         if (storeMvccVersion()) {
             long mvccTopVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
-            long mvcCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+            long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
 
-            assert mvccTopVer > 0 : mvccTopVer;
-            assert mvcCntr != COUNTER_NA;
+            assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
+            assert mvccCntr != COUNTER_NA;
 
             PageUtils.putLong(dstPageAddr, off, mvccTopVer);
             off += 8;
 
-            PageUtils.putLong(dstPageAddr, off, mvcCntr);
+            PageUtils.putLong(dstPageAddr, off, mvccCntr);
         }
     }
 
