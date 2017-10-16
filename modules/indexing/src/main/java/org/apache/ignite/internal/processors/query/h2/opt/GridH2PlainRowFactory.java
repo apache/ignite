@@ -19,35 +19,27 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.result.Row;
 import org.h2.result.RowFactory;
 import org.h2.value.Value;
 
 /**
  * Row factory.
  */
-public class GridH2RowFactory extends RowFactory {
+public class GridH2PlainRowFactory extends RowFactory {
     /**
      * @param v Value.
      * @return Row.
      */
-    public static GridH2Row create(Value v) {
+    public static Row create(Value v) {
         return new RowKey(v);
-    }
-
-    /**
-     * @param v1 Value 1.
-     * @param v2 Value 2.
-     * @return Row.
-     */
-    public static GridH2Row create(Value v1, Value v2) {
-        return new RowPair(v1, v2);
     }
 
     /**
      * @param data Values.
      * @return Row.
      */
-    public static GridH2Row create(Value... data) {
+    public static Row create(Value... data) {
         switch (data.length) {
             case 0:
                 throw new IllegalStateException("Zero columns row.");
@@ -64,14 +56,14 @@ public class GridH2RowFactory extends RowFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row createRow(Value[] data, int memory) {
+    @Override public Row createRow(Value[] data, int memory) {
         return create(data);
     }
 
     /**
      * Single value row.
      */
-    private static final class RowKey extends GridH2Row {
+    private static final class RowKey extends GridH2SearchRowAdapter {
         /** */
         private Value key;
 
@@ -100,15 +92,15 @@ public class GridH2RowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public long expireTime() {
-            return 0;
+        @Override public String toString() {
+            return S.toString(RowKey.class, this);
         }
     }
 
     /**
      * Row of two values.
      */
-    private static final class RowPair extends GridH2Row  {
+    private static final class RowPair extends GridH2SearchRowAdapter  {
         /** */
         private Value v1;
 
@@ -146,15 +138,15 @@ public class GridH2RowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
-        @Override public long expireTime() {
-            return 0;
+        @Override public String toString() {
+            return S.toString(RowPair.class, this);
         }
     }
 
     /**
      * Simple array based row.
      */
-    private static final class RowSimple extends GridH2Row {
+    private static final class RowSimple extends GridH2SearchRowAdapter {
         /** */
         @GridToStringInclude
         private Value[] vals;
@@ -184,11 +176,6 @@ public class GridH2RowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowSimple.class, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long expireTime() {
-            return 0;
         }
     }
 }
