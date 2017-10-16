@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignition;
@@ -49,6 +50,9 @@ public class JdbcSimpleBenchmark {
     /** Benchmark duration. */
     private static int duration;
 
+    /** The size of result set. */
+    private static long rsSize = 1;
+
     /** Random. */
     private static ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -58,7 +62,7 @@ public class JdbcSimpleBenchmark {
      */
     public static void main(String [] args) throws SQLException {
         cfgPath = System.getProperty("cfg", "/home/tledkov/work/jdbc.bm/default-config.srv.xml");
-        jdbcUrl = System.getProperty("jdbcUrl");
+        jdbcUrl = System.getProperty("jdbcUrl", "jdbc:ignite:thin://127.0.0.1/");
 
         itemsCnt = Long.getLong("items", 1000000);
         warmup = Integer.getInteger("warmup", 30);
@@ -102,18 +106,38 @@ public class JdbcSimpleBenchmark {
 
         long ops = 0;
 
-        try (PreparedStatement pstmt = conn.prepareStatement("select val from test_long where id = ?")) {
+        try (PreparedStatement pstmt = conn.prepareStatement("select id, val from test_long where id > ? and id < ?")) {
             while (System.currentTimeMillis() < tEnd) {
-                id = rnd.nextLong(itemsCnt);
+                long expRsSize = 0;
 
-                pstmt.setLong(1, id);
+                if (rsSize > 0) {
+                    id = rnd.nextLong(itemsCnt - rsSize);
+
+                    pstmt.setLong(1, id);
+                    pstmt.setLong(2, id + rsSize);
+
+                    expRsSize = rsSize;
+                }
+                else {
+                    pstmt.setLong(1, 0);
+                    pstmt.setLong(2, itemsCnt + 1);
+
+                    expRsSize = itemsCnt;
+                }
 
                 ResultSet rs = pstmt.executeQuery();
 
-                rs.next();
+                int cnt = 0;
 
-                if (rs.getLong(1) != id + 1)
-                    throw new RuntimeException("Invalid results");
+                while (rs.next()) {
+                    if (rs.getLong(2) != rs.getLong(1) + 1)
+                        throw new RuntimeException("Invalid results");
+
+                    cnt++;
+                }
+
+                if (cnt != expRsSize)
+                    throw new RuntimeException("Invalid results size: " + cnt + ", expected: " + expRsSize);
 
                 if (ops % 10000 == 0)
                     System.out.println("Select " + ops);
@@ -135,13 +159,14 @@ public class JdbcSimpleBenchmark {
 
             long t0 = System.currentTimeMillis();
             try (PreparedStatement pstmt = conn.prepareStatement("insert into test_long (id, val) values (?, ?)")) {
-                for (long l = 0; l < itemsCnt; ++l) {
+                for (long l = 1; l <= itemsCnt; ++l) {
+                    System.out.println("Insert " + l);
                     pstmt.setLong(1, l);
                     pstmt.setLong(2, l + 1);
 
                     pstmt.executeUpdate();
 
-                    if (l % 10000 == 0)
+                    if (l % 1000 == 0)
                         System.out.println("Insert " + l);
                 }
             }
@@ -178,7 +203,7 @@ public class JdbcSimpleBenchmark {
 
         long t0 = System.currentTimeMillis();
 
-        for (long l = 0; l < itemsCnt; ++l) {
+        for (long l = 1; l <= itemsCnt; ++l) {
             ignCli.context().query().querySqlFieldsNoCache(
                 new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
                     .setArgs(l, l + 1), true);
@@ -203,14 +228,40 @@ public class JdbcSimpleBenchmark {
         long ops = 0;
 
         while (System.currentTimeMillis() < tEnd) {
-            id = rnd.nextLong(itemsCnt);
+            long expRsSize = 0;
 
-            List<List<?>> res = ignCli.context().query().querySqlFieldsNoCache(
-                new SqlFieldsQuery("select val from test_long where id = ?")
-                    .setArgs(id), false).getAll();
+            long id0, id1;
+            if (rsSize > 0) {
+                id = rnd.nextLong(itemsCnt - rsSize);
 
-            if ((Long)(res.get(0).get(0)) != id + 1)
-                throw new RuntimeException("Invalid results");
+                id0 = id;
+                id1 = id + rsSize;
+
+                expRsSize = rsSize;
+            }
+            else {
+                id0 = 0;
+                id1 = itemsCnt + 1;
+
+                expRsSize = itemsCnt;
+            }
+
+            Iterator<List<?>> it = ignCli.context().query().querySqlFieldsNoCache(
+                new SqlFieldsQuery("select id, val from test_long where id > ? and id < ?")
+                    .setArgs(id0, id1), false).iterator();
+
+            int cnt = 0;
+
+            while (it.hasNext()) {
+                List<?> row = it.next();
+                if ((Long)(row.get(1)) != (Long)(row.get(0)) + 1)
+                    throw new RuntimeException("Invalid results");
+
+                cnt++;
+            }
+
+            if (cnt != expRsSize)
+                throw new RuntimeException("Invalid results size: " + cnt + ", expected: " + expRsSize);
 
             if (ops % 10000 == 0)
                 System.out.println("Select " + ops);
