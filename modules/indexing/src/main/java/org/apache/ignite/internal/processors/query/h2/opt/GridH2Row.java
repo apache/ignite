@@ -26,20 +26,20 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  * Row with locking support needed for unique key conflicts resolution.
  */
 public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheDataRow {
-    /** */
-    public long link; // TODO remove
+    /** Link. */
+    private long link;
 
-    /** */
-    public KeyCacheObject key; // TODO remove
+    /** Key. */
+    private KeyCacheObject key;
 
-    /** */
-    public CacheObject val; // TODO remove
+    /** Value. */
+    private CacheObject val;
 
-    /** */
-    public GridCacheVersion ver; // TODO remove
+    /** Version. */
+    private GridCacheVersion ver;
 
-    /** */
-    public int partId; // TODO remove
+    /** Partition. */
+    private int partId;
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
@@ -56,14 +56,35 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
         return val;
     }
 
+    /**
+     * @param val Value.
+     */
+    public void value(CacheObject val) {
+        this.val = val;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
     }
 
+    /**
+     * @param ver Version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
+    }
+
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */

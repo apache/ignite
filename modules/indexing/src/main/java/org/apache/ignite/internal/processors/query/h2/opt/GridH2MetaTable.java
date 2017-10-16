@@ -291,7 +291,7 @@ public class GridH2MetaTable extends TableBase {
      */
     private static class MetaIndex extends BaseIndex {
         /** */
-        private final ConcurrentMap<ValueInt, GridH2Row> rows = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap8<>();
 
         /** {@inheritDoc} */
         @Override public void checkRename() {
@@ -317,7 +317,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public void add(Session session, Row row) {
-            rows.put(id(row), (GridH2Row)row);
+            rows.put(id(row), row);
         }
 
         /** {@inheritDoc} */

@@ -463,7 +463,7 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase pk = pk();
 
             if (!del) {
-                assert rowFactory == null || row.link != 0 : row;
+                assert rowFactory == null || row.link() != 0 : row;
 
                 GridH2Row old = pk.put(row); // Put to PK.
 

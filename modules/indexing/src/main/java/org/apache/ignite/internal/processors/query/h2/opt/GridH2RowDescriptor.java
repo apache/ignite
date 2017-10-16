@@ -297,12 +297,10 @@ public class GridH2RowDescriptor {
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
 
-        row.ver = ver;
-
-        row.key = key;
-        row.val = val;
-        row.partId = partId;
-
+        row.version(ver);
+        row.key(key);
+        row.value(val);
+        row.partition(partId);
         row.link(link);
 
         return row;
