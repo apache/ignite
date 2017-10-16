@@ -581,14 +581,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (qry instanceof SqlQuery)
                 return (QueryCursor<R>) ctx.kernalContext().query().querySql(ctx, (SqlQuery) qry, keepBinary);
 
-            if (qry instanceof SqlFieldsQuery) {
-                SqlFieldsQuery fldsQry = (SqlFieldsQuery)qry;
-
-                if (fldsQry.getSchema() == null)
-                    fldsQry.setSchema(ctx.kernalContext().query().getIndexing().schema(ctx.name()));
-
-                return (FieldsQueryCursor<R>) ctx.kernalContext().query().querySqlFields(fldsQry, keepBinary);
-            }
+            if (qry instanceof SqlFieldsQuery)
+                return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
+                    keepBinary, true).get(0);
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
