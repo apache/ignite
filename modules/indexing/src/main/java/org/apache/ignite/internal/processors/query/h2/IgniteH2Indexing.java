@@ -1558,9 +1558,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Second, let's check if we already have a parsed statement...
             PreparedStatement cachedStmt;
 
-            if ((cachedStmt = getStatementsCacheForCurrentThread().get(qry.getSql())) != null)
-                return Collections.singletonList(doRunPrepared(schemaName, GridSqlQueryParser.prepared(cachedStmt), qry,
-                    null, null, keepBinary, cancel));
+            if ((cachedStmt = getStatementsCacheForCurrentThread().get(qry.getSql())) != null) {
+                Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
+
+                // We may use this cached statement only for local queries and non queries.
+                // If it's a query and source SqlFieldsQuery doesn't have locality flag, let's set it -
+                // if we've cached a query statement, it means that before it was deemed to be local based
+                // on its characteristics.
+                if (!qry.isLocal() && prepared.isQuery())
+                    qry = cloneFieldsQuery(qry).setLocal(true);
+
+                return Collections.singletonList(doRunPrepared(schemaName, prepared, qry, null, null, keepBinary,
+                    cancel));
+            }
         }
 
         List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
@@ -1599,15 +1609,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     *
-     * @param schemaName
-     * @param prepared
-     * @param newQry
-     * @param twoStepQry
-     * @param meta
-     * @param keepBinary
-     * @param cancel
-     * @return
+     * Execute an all-ready {@link SqlFieldsQuery}.
+     * @param schemaName Schema name.
+     * @param prepared H2 command.
+     * @param newQry Fields query with flags.
+     * @param twoStepQry Two-step query if this query must be executed in a distributed way.
+     * @param meta Metadata for {@code twoStepQry}.
+     * @param keepBinary Whether binary objects must not be deserialized automatically.
+     * @param cancel Query cancel state holder.
+     * @return Query result.
      */
     private FieldsQueryCursor<List<?>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery newQry,
         GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
@@ -1756,13 +1766,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
+        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args).setLocal(loc);
+
+        boolean hasTwoStep = !loc && prepared.isQuery();
 
         // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
-        if (remainingSql != null || (!loc && prepared.isQuery()))
+        if (remainingSql != null || hasTwoStep)
             getStatementsCacheForCurrentThread().remove(qry.getSql());
 
-        if (loc || !prepared.isQuery())
+        if (!hasTwoStep)
             return new ParsingResult(prepared, newQry, remainingSql, null, null, null);
 
         final UUID locNodeId = ctx.localNodeId();
@@ -2699,6 +2711,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
                 }
             }
+
+            stmtCache.clear();
 
             for (H2TableDescriptor tbl : rmvTbls) {
                 for (Index idx : tbl.table().getIndexes())
