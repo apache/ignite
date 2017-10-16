@@ -912,7 +912,8 @@ class ClusterCachesInfo {
                 grpDesc.startTopologyVersion(),
                 grpDesc.deploymentId(),
                 grpDesc.caches(),
-                0);
+                0,
+                grpDesc.persistenceEnabled());
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -990,7 +991,8 @@ class ClusterCachesInfo {
                 grpData.receivedFrom(),
                 grpData.startTopologyVersion(),
                 grpData.deploymentId(),
-                grpData.caches());
+                grpData.caches(),
+                grpData.persistenceEnabled());
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
@@ -1508,7 +1510,8 @@ class ClusterCachesInfo {
             rcvdFrom,
             curTopVer != null ? curTopVer.nextMinorVersion() : null,
             deploymentId,
-            caches);
+            caches,
+            CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()));
 
         CacheGroupDescriptor old = registeredCacheGrps.put(grpId, grpDesc);
 

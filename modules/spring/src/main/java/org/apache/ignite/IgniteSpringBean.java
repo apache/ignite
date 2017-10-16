@@ -300,12 +300,12 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return new DataRegionMetricsAdapter(dataRegionMetrics(memPlcName));
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        return new DataStorageMetricsAdapter(dataStorageMetrics());
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */

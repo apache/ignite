@@ -2801,9 +2801,11 @@ public class IgnitionEx {
 
                 region.setPersistenceEnabled(persistenceEnabled);
 
+                if (mpc.getInitialSize() != 0L)
+                    region.setInitialSize(mpc.getInitialSize());
+
                 region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
                 region.setEvictionThreshold(mpc.getEvictionThreshold());
-                region.setInitialSize(mpc.getInitialSize());
                 region.setMaxSize(mpc.getMaxSize());
                 region.setName(mpc.getName());
                 region.setPageEvictionMode(mpc.getPageEvictionMode());
