@@ -110,10 +110,20 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                     var fields = metaHnd.OnObjectWriteFinished();
 
-                    // A new schema may be added, but no new fields. 
+                    // A new schema may be added, but no new fields.
                     // In this case, we should still call SaveMetadata even if fields are null
                     writer.SaveMetadata(_desc, fields);
                 }
+            }
+            else
+            {
+                // Special case when the object is with no properties.
+                // Save meta to Marshaller.
+                writer.Marshaller.GetBinaryTypeHandler(_desc);
+
+                // Save meta to cluster.
+                writer.SaveMetadata(_desc, null);
+                return;
             }
         }
 
