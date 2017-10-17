@@ -191,7 +191,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             CacheDataRow row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
@@ -509,6 +509,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
 
