@@ -1269,6 +1269,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
                                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
 
+
+                            for (MemoryPolicy policy : policies) {
+                                if(policy.config().isMetricsEnabled()) {
+                                    MemoryMetrics metrics = policy.memoryMetrics();
+
+                                    msg = msg + NL +
+                                        "Metrics for memory policy: [" + metrics.getName() + "]" + NL +
+                                            "    ^-- Allocation Rate: " + metrics.getAllocationRate() + NL +
+                                            "    ^-- Dirty Pages: " + metrics.getDirtyPages() + NL +
+                                            "    ^-- Large Entries Pages Percentage: " + metrics.getLargeEntriesPagesPercentage() + NL +
+                                            "    ^-- Pages Fill Factor: " + metrics.getPagesFillFactor() + NL +
+                                            "    ^-- Eviction Rate: " + metrics.getEvictionRate() + NL +
+                                            "    ^-- Pages Replace Rate: " + metrics.getPagesReplaceRate() + NL +
+                                            "    ^-- Physical Memory Pages: " + metrics.getPhysicalMemoryPages() + NL +
+                                            "    ^-- Total Allocated Pages: " + metrics.getTotalAllocatedPages();
+
+                                }
+
+                            }
+
                             if (log.isInfoEnabled())
                                 log.info(msg);
 
