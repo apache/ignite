@@ -169,9 +169,76 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
                 // Since we start extra nodes, there may be extra start and cancel events,
                 // so we check only the difference between start and cancel and
                 // not start and cancel events individually.
-                assertEquals(name, nodeCount() + servers,  DummyService.started(name) - DummyService.cancelled(name));
+                assertEquals(name, nodeCount() + servers, DummyService.started(name) - DummyService.cancelled(name));
 
                 checkCount(name, g.services().serviceDescriptors(), nodeCount() + servers);
+            }
+            finally {
+                stopExtraNodes(servers + clients);
+            }
+        }
+        finally {
+            stopGrid("client");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployOnEachProjectionNodeUpdateTopology() throws Exception {
+        // Prestart client node.
+        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
+
+        try {
+            final String name = "serviceOnEachProjectionNodeUpdateTopology";
+
+            Ignite g = randomGrid();
+
+            int prestartedSrvcs = 1;
+
+            CountDownLatch latch = new CountDownLatch(prestartedSrvcs);
+
+            DummyService.exeLatch(name, latch);
+
+            IgniteServices svcs = g.services(g.cluster().forClients());
+
+            IgniteFuture<?> fut = svcs.deployNodeSingletonAsync(name, new DummyService());
+
+            info("Deployed service: " + name);
+
+            fut.get();
+
+            info("Finished waiting for service future: " + name);
+
+            latch.await();
+
+            // Ensure service is deployed
+            assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
+
+            assertEquals(name, prestartedSrvcs, DummyService.started(name));
+            assertEquals(name, 0, DummyService.cancelled(name));
+
+            int servers = 2;
+
+            int clients = 2;
+
+            latch = new CountDownLatch(clients);
+
+            DummyService.exeLatch(name, latch);
+
+            startExtraNodes(servers, clients);
+
+            try {
+                latch.await();
+
+                waitForDeployment(name, clients);
+
+                // Since we start extra nodes, there may be extra start and cancel events,
+                // so we check only the difference between start and cancel and
+                // not start and cancel events individually.
+                assertEquals(name, clients + prestartedSrvcs, DummyService.started(name) - DummyService.cancelled(name));
+
+                checkCount(name, g.services().serviceDescriptors(), clients + prestartedSrvcs);
             }
             finally {
                 stopExtraNodes(servers + clients);
@@ -315,7 +382,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             // Since we start extra nodes, there may be extra start and cancel events,
             // so we check only the difference between start and cancel and
             // not start and cancel events individually.
-            assertEquals(name, totalInstances,  DummyService.started(name) - DummyService.cancelled(name));
+            assertEquals(name, totalInstances, DummyService.started(name) - DummyService.cancelled(name));
 
             checkCount(name, g.services().serviceDescriptors(), totalInstances);
         }
