@@ -124,6 +124,13 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @return Date.
+     * @throws BinaryObjectException In case of error.
+     */
+    public java.sql.Date readSqlDate(String fieldName) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
      * @return Timestamp.
      * @throws BinaryObjectException In case of error.
      */
@@ -226,6 +233,13 @@ public interface BinaryReader {
      * @throws BinaryObjectException In case of error.
      */
     public Date[] readDateArray(String fieldName) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
+     * @return Date array.
+     * @throws BinaryObjectException In case of error.
+     */
+    public java.sql.Date[] readSqlDateArray(String fieldName) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.

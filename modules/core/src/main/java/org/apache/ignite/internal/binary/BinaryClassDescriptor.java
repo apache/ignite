@@ -233,6 +233,7 @@ public class BinaryClassDescriptor {
             case STRING_ARR:
             case UUID_ARR:
             case DATE_ARR:
+            case SQL_DATE_ARR:
             case TIMESTAMP_ARR:
             case TIME_ARR:
             case OBJECT_ARR:
@@ -607,7 +608,7 @@ public class BinaryClassDescriptor {
                 break;
 
             case SQL_DATE:
-                writer.doWriteSQLDate((java.sql.Date)obj);
+                writer.doWriteSqlDate((java.sql.Date)obj);
 
                 break;
 
@@ -678,6 +679,11 @@ public class BinaryClassDescriptor {
 
             case DATE_ARR:
                 writer.doWriteDateArray((Date[]) obj);
+
+                break;
+
+            case SQL_DATE_ARR:
+                writer.doWriteSqlDateArray((java.sql.Date[]) obj);
 
                 break;
 

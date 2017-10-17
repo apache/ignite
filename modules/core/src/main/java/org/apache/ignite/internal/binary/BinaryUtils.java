@@ -186,6 +186,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(String[].class, GridBinaryMarshaller.STRING_ARR);
         PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
         PLAIN_CLASS_TO_FLAG.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
+        PLAIN_CLASS_TO_FLAG.put(java.sql.Date[].class, GridBinaryMarshaller.SQL_DATE_ARR);
         PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
         PLAIN_CLASS_TO_FLAG.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
 
@@ -205,8 +206,8 @@ public class BinaryUtils {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR,
             GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,GridBinaryMarshaller.SQL_DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
             GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
-            GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
-            GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
+            GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.SQL_DATE_ARR,
+            GridBinaryMarshaller.TIMESTAMP_ARR, GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
 
             PLAIN_TYPE_FLAG[b] = true;
         }
@@ -237,6 +238,7 @@ public class BinaryUtils {
         BINARY_CLS.add(String[].class);
         BINARY_CLS.add(UUID[].class);
         BINARY_CLS.add(Date[].class);
+        BINARY_CLS.add(java.sql.Date[].class);
         BINARY_CLS.add(Timestamp[].class);
         BINARY_CLS.add(Time[].class);
         BINARY_CLS.add(BigDecimal[].class);
@@ -276,6 +278,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DECIMAL_ARR] = "decimal[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING_ARR] = "String[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE_ARR] = "Date[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.SQL_DATE_ARR] = "Date[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME_ARR] = "Time[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
@@ -461,7 +464,7 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.SQL_DATE:
-                writer.doWriteSQLDate((java.sql.Date)val);
+                writer.doWriteSqlDate((java.sql.Date)val);
 
                 break;
 
@@ -535,6 +538,11 @@ public class BinaryUtils {
 
                 break;
 
+            case GridBinaryMarshaller.SQL_DATE_ARR:
+                writer.doWriteSqlDateArray((java.sql.Date[])val);
+
+                break;
+
             case GridBinaryMarshaller.TIMESTAMP_ARR:
                 writer.doWriteTimestampArray((Timestamp[])val);
 
@@ -596,7 +604,8 @@ public class BinaryUtils {
      */
     public static boolean isPlainArrayType(int type) {
         return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
-            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR;
+            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR
+            || type == GridBinaryMarshaller.SQL_DATE_ARR;
     }
 
     /**
@@ -753,7 +762,7 @@ public class BinaryUtils {
         return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
             cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
             cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
-            cls == BigDecimal[].class || cls == Time[].class;
+            cls == BigDecimal[].class || cls == Time[].class || cls == java.sql.Date[].class;
     }
 
     /**
@@ -1143,6 +1152,8 @@ public class BinaryUtils {
             return BinaryWriteMode.UUID_ARR;
         else if (cls == Date[].class)
             return BinaryWriteMode.DATE_ARR;
+        else if (cls == java.sql.Date[].class)
+            return BinaryWriteMode.SQL_DATE_ARR;
         else if (cls == Timestamp[].class)
             return BinaryWriteMode.TIMESTAMP_ARR;
         else if (cls == Time[].class)
@@ -1348,7 +1359,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
-    public static Date doReadSQLDate(BinaryInputStream in) {
+    public static java.sql.Date doReadSqlDate(BinaryInputStream in) {
         long time = in.readLong();
 
         return new java.sql.Date(time);
@@ -1471,6 +1482,31 @@ public class BinaryUtils {
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
                 arr[i] = doReadDate(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static java.sql.Date[] doReadSqlDateArray(BinaryInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        java.sql.Date[] arr = new java.sql.Date[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == GridBinaryMarshaller.NULL)
+                arr[i] = null;
+            else {
+                if (flag != GridBinaryMarshaller.SQL_DATE)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadSqlDate(in);
             }
         }
 
@@ -1933,7 +1969,7 @@ public class BinaryUtils {
                 return doReadDate(in);
 
             case GridBinaryMarshaller.SQL_DATE:
-                return doReadSQLDate(in);
+                return doReadSqlDate(in);
 
             case GridBinaryMarshaller.TIMESTAMP:
                 return doReadTimestamp(in);
@@ -1976,6 +2012,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.DATE_ARR:
                 return doReadDateArray(in);
+
+            case GridBinaryMarshaller.SQL_DATE_ARR:
+                return doReadSqlDateArray(in);
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
                 return doReadTimestampArray(in);

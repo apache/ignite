@@ -106,6 +106,7 @@ public abstract class BinaryFieldAccessor {
             case STRING_ARR:
             case UUID_ARR:
             case DATE_ARR:
+            case SQL_DATE_ARR:
             case TIMESTAMP_ARR:
             case TIME_ARR:
             case ENUM_ARR:
@@ -544,7 +545,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case SQL_DATE:
-                    writer.writeSQLDateField((java.sql.Date)val);
+                    writer.writeSqlDateField((java.sql.Date)val);
 
                     break;
 
@@ -615,6 +616,11 @@ public abstract class BinaryFieldAccessor {
 
                 case DATE_ARR:
                     writer.writeDateArrayField((Date[])val);
+
+                    break;
+
+                case SQL_DATE_ARR:
+                    writer.writeSqlDateArrayField((java.sql.Date[])val);
 
                     break;
 
@@ -760,8 +766,12 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case DATE:
-                case SQL_DATE:
                     val = reader.readDate(id);
+
+                    break;
+
+                case SQL_DATE:
+                    val = reader.readSqlDate(id);
 
                     break;
 
@@ -832,6 +842,11 @@ public abstract class BinaryFieldAccessor {
 
                 case DATE_ARR:
                     val = reader.readDateArray(id);
+
+                    break;
+
+                case SQL_DATE_ARR:
+                    val = reader.readSqlDateArray(id);
 
                     break;
 

@@ -463,6 +463,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSqlDateArray() throws Exception {
+        java.sql.Date[] arr = new java.sql.Date[] {
+            new java.sql.Date(11111), new java.sql.Date(22222), new java.sql.Date(33333)};
+
+        assertArrayEquals(arr, marshalUnmarshal(arr));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testObjectArray() throws Exception {
         Object[] arr = new Object[] {1, 2, 3};
 
@@ -693,12 +703,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(cfg1));
 
         Date date = new Date();
+        java.sql.Date sqlDate = new java.sql.Date(System.currentTimeMillis());
+        java.sql.Date[] sqlDateArr = new java.sql.Date[]{sqlDate, new java.sql.Date(System.currentTimeMillis())};
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         Time time = new Time(System.currentTimeMillis());
         Time[] timeArr = new Time[]{time, new Time(date.getTime()), new Time(System.currentTimeMillis())};
 
         DateClass1 obj1 = new DateClass1();
         obj1.date = date;
+        obj1.sqlDate = sqlDate;
+        obj1.sqlDateArr = sqlDateArr;
         obj1.ts = ts;
         obj1.time = time;
         obj1.timeArr = timeArr;
@@ -707,6 +721,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(date, po1.field("date"));
         assertEquals(Date.class, po1.field("date").getClass());
+        assertEquals(sqlDate, po1.field("sqlDate"));
+        assertEquals(java.sql.Date.class, po1.field("sqlDate").getClass());
+        assertArrayEquals(sqlDateArr, (Object[])po1.field("sqlDateArr"));
+        assertEquals(java.sql.Date[].class, po1.field("sqlDateArr").getClass());
         assertEquals(ts, po1.field("ts"));
         assertEquals(Timestamp.class, po1.field("ts").getClass());
         assertEquals(time, po1.field("time"));
@@ -716,6 +734,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         obj1 = po1.deserialize();
         assertEquals(date, obj1.date);
+        assertEquals(sqlDate, obj1.sqlDate);
+        assertArrayEquals(sqlDateArr, obj1.sqlDateArr);
         assertEquals(ts, obj1.ts);
         assertEquals(time, obj1.time);
         assertArrayEquals(timeArr, obj1.timeArr);
@@ -830,6 +850,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.str, po.field("_str"));
         assertEquals(obj.uuid, po.field("_uuid"));
         assertEquals(obj.date, po.field("_date"));
+        assertEquals(obj.sqlDate, po.field("_sqlDate"));
         assertEquals(obj.ts, po.field("_ts"));
         assertArrayEquals(obj.bArr, (byte[])po.field("_bArr"));
         assertArrayEquals(obj.sArr, (short[])po.field("_sArr"));
@@ -842,6 +863,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.strArr, (String[])po.field("_strArr"));
         assertArrayEquals(obj.uuidArr, (UUID[])po.field("_uuidArr"));
         assertArrayEquals(obj.dateArr, (Date[])po.field("_dateArr"));
+        assertArrayEquals(obj.sqlDateArr, (java.sql.Date[])po.field("_sqlDateArr"));
         assertArrayEquals(obj.objArr, (Object[])po.field("_objArr"));
         assertEquals(obj.col, po.field("_col"));
         assertEquals(obj.map, po.field("_map"));
@@ -902,6 +924,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj.binary.str, binaryPo.field("_str"));
         assertEquals(obj.binary.uuid, binaryPo.field("_uuid"));
         assertEquals(obj.binary.date, binaryPo.field("_date"));
+        assertEquals(obj.binary.sqlDate, binaryPo.field("_sqlDate"));
         assertEquals(obj.binary.ts, binaryPo.field("_ts"));
         assertArrayEquals(obj.binary.bArr, (byte[])binaryPo.field("_bArr"));
         assertArrayEquals(obj.binary.sArr, (short[])binaryPo.field("_sArr"));
@@ -914,6 +937,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertArrayEquals(obj.binary.strArr, (String[])binaryPo.field("_strArr"));
         assertArrayEquals(obj.binary.uuidArr, (UUID[])binaryPo.field("_uuidArr"));
         assertArrayEquals(obj.binary.dateArr, (Date[])binaryPo.field("_dateArr"));
+        assertArrayEquals(obj.binary.sqlDateArr, (java.sql.Date[])binaryPo.field("_sqlDateArr"));
         assertArrayEquals(obj.binary.objArr, (Object[])binaryPo.field("_objArr"));
         assertEquals(obj.binary.col, binaryPo.field("_col"));
         assertEquals(obj.binary.map, binaryPo.field("_map"));
@@ -3888,6 +3912,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.str = "str2";
         innerBinary.uuid = UUID.randomUUID();
         innerBinary.date = new Date();
+        innerBinary.sqlDate = new java.sql.Date(System.currentTimeMillis());
         innerBinary.ts = new Timestamp(System.currentTimeMillis());
         innerBinary.bArr = new byte[] {10, 20, 30};
         innerBinary.sArr = new short[] {10, 20, 30};
@@ -3900,6 +3925,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.strArr = new String[] {"str10", "str20", "str30"};
         innerBinary.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerBinary.dateArr = new Date[] {new Date(44444), new Date(55555), new Date(66666)};
+        innerBinary.sqlDateArr = new java.sql.Date[] {
+            new java.sql.Date(44444), new java.sql.Date(55555), new java.sql.Date(66666)};
         innerBinary.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerBinary.bRaw = 3;
         innerBinary.sRaw = 3;
@@ -3912,6 +3939,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.strRaw = "str3";
         innerBinary.uuidRaw = UUID.randomUUID();
         innerBinary.dateRaw = new Date();
+        innerBinary.sqlDateRaw = new java.sql.Date(System.currentTimeMillis());
         innerBinary.tsRaw = new Timestamp(System.currentTimeMillis());
         innerBinary.bArrRaw = new byte[] {11, 21, 31};
         innerBinary.sArrRaw = new short[] {11, 21, 31};
@@ -3924,6 +3952,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         innerBinary.strArrRaw = new String[] {"str11", "str21", "str31"};
         innerBinary.uuidArrRaw = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerBinary.dateArrRaw = new Date[] {new Date(77777), new Date(88888), new Date(99999)};
+        innerBinary.sqlDateArrRaw = new java.sql.Date[] {
+            new java.sql.Date(77777), new java.sql.Date(88888), new java.sql.Date(99999)};
         innerBinary.objArrRaw = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         innerBinary.col = new ArrayList<>();
         innerBinary.colRaw = new ArrayList<>();
@@ -3963,6 +3993,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.str = "str4";
         outer.uuid = UUID.randomUUID();
         outer.date = new Date();
+        outer.sqlDate = new java.sql.Date(System.currentTimeMillis());
         outer.ts = new Timestamp(System.currentTimeMillis());
         outer.bArr = new byte[] {12, 22, 32};
         outer.sArr = new short[] {12, 22, 32};
@@ -3975,6 +4006,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.strArr = new String[] {"str12", "str22", "str32"};
         outer.uuidArr = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         outer.dateArr = new Date[] {new Date(10101), new Date(20202), new Date(30303)};
+        outer.sqlDateArr = new java.sql.Date[] {
+            new java.sql.Date(10101), new java.sql.Date(20202), new java.sql.Date(30303)};
         outer.objArr = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         outer.simple = innerSimple;
         outer.binary = innerBinary;
@@ -3989,6 +4022,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.strRaw = "str5";
         outer.uuidRaw = UUID.randomUUID();
         outer.dateRaw = new Date();
+        outer.sqlDateRaw = new java.sql.Date(System.currentTimeMillis());
         outer.tsRaw = new Timestamp(System.currentTimeMillis());
         outer.bArrRaw = new byte[] {13, 23, 33};
         outer.sArrRaw = new short[] {13, 23, 33};
@@ -4001,6 +4035,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         outer.strArrRaw = new String[] {"str13", "str23", "str33"};
         outer.uuidArrRaw = new UUID[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         outer.dateArr = new Date[] {new Date(40404), new Date(50505), new Date(60606)};
+        outer.sqlDateArr = new java.sql.Date[] {
+            new java.sql.Date(40404), new java.sql.Date(50505), new java.sql.Date(60606)};
         outer.objArrRaw = new Object[] {UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()};
         outer.col = new ArrayList<>();
         outer.colRaw = new ArrayList<>();
@@ -4074,6 +4110,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Date date;
 
         /** */
+        private java.sql.Date sqlDate;
+
+        /** */
         private Timestamp ts;
 
         /** */
@@ -4111,6 +4150,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private Date[] dateArr;
+
+        /** */
+        private java.sql.Date[] sqlDateArr;
 
         /** */
         private Time[] timeArr;
@@ -4225,6 +4267,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Date dateRaw;
 
         /** */
+        private java.sql.Date sqlDate;
+
+        /** */
+        private java.sql.Date sqlDateRaw;
+
+        /** */
         private Timestamp ts;
 
         /** */
@@ -4303,6 +4351,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Date[] dateArrRaw;
 
         /** */
+        private java.sql.Date[] sqlDateArr;
+
+        /** */
+        private java.sql.Date[] sqlDateArrRaw;
+
+        /** */
         private Time[] timeArr;
 
         /** */
@@ -4363,6 +4417,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeString("_str", str);
             writer.writeUuid("_uuid", uuid);
             writer.writeDate("_date", date);
+            writer.writeSqlDate("_sqlDate", sqlDate);
             writer.writeTimestamp("_ts", ts);
             writer.writeTime("_time", time);
             writer.writeByteArray("_bArr", bArr);
@@ -4376,6 +4431,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeStringArray("_strArr", strArr);
             writer.writeUuidArray("_uuidArr", uuidArr);
             writer.writeDateArray("_dateArr", dateArr);
+            writer.writeSqlDateArray("_sqlDateArr", sqlDateArr);
             writer.writeTimeArray("_timeArr", timeArr);
             writer.writeObjectArray("_objArr", objArr);
             writer.writeCollection("_col", col);
@@ -4398,6 +4454,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             raw.writeString(strRaw);
             raw.writeUuid(uuidRaw);
             raw.writeDate(dateRaw);
+            raw.writeSqlDate(sqlDateRaw);
             raw.writeTimestamp(tsRaw);
             raw.writeTime(timeRaw);
             raw.writeByteArray(bArrRaw);
@@ -4411,6 +4468,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             raw.writeStringArray(strArrRaw);
             raw.writeUuidArray(uuidArrRaw);
             raw.writeDateArray(dateArrRaw);
+            raw.writeSqlDateArray(sqlDateArrRaw);
             raw.writeTimeArray(timeArrRaw);
             raw.writeObjectArray(objArrRaw);
             raw.writeCollection(colRaw);
@@ -4434,6 +4492,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             str = reader.readString("_str");
             uuid = reader.readUuid("_uuid");
             date = reader.readDate("_date");
+            sqlDate = reader.readSqlDate("_sqlDate");
             ts = reader.readTimestamp("_ts");
             time = reader.readTime("_time");
             bArr = reader.readByteArray("_bArr");
@@ -4447,6 +4506,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             strArr = reader.readStringArray("_strArr");
             uuidArr = reader.readUuidArray("_uuidArr");
             dateArr = reader.readDateArray("_dateArr");
+            sqlDateArr = reader.readSqlDateArray("_sqlDateArr");
             timeArr = reader.readTimeArray("_timeArr");
             objArr = reader.readObjectArray("_objArr");
             col = reader.readCollection("_col");
@@ -4469,6 +4529,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             strRaw = raw.readString();
             uuidRaw = raw.readUuid();
             dateRaw = raw.readDate();
+            sqlDateRaw = raw.readSqlDate();
             tsRaw = raw.readTimestamp();
             timeRaw = raw.readTime();
             bArrRaw = raw.readByteArray();
@@ -4482,6 +4543,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             strArrRaw = raw.readStringArray();
             uuidArrRaw = raw.readUuidArray();
             dateArrRaw = raw.readDateArray();
+            sqlDateArrRaw = raw.readSqlDateArray();
             timeArrRaw = raw.readTimeArray();
             objArrRaw = raw.readObjectArray();
             colRaw = raw.readCollection();
@@ -4997,6 +5059,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private static class DateClass1 {
         /** */
         private Date date;
+
+        /** */
+        private java.sql.Date sqlDate;
+
+        /** */
+        private java.sql.Date[] sqlDateArr;
 
         /** */
         private Timestamp ts;

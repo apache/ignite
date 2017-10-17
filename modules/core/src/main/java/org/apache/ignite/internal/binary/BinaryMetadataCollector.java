@@ -140,6 +140,11 @@ class BinaryMetadataCollector implements BinaryWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeSqlDate(String fieldName, @Nullable java.sql.Date val) throws BinaryObjectException {
+        add(fieldName, BinaryWriteMode.SQL_DATE);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
         add(fieldName, BinaryWriteMode.TIMESTAMP);
     }
@@ -222,6 +227,11 @@ class BinaryMetadataCollector implements BinaryWriter {
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
         add(fieldName, BinaryWriteMode.DATE_ARR);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeSqlDateArray(String fieldName, @Nullable java.sql.Date[] val) throws BinaryObjectException {
+        add(fieldName, BinaryWriteMode.SQL_DATE_ARR);
     }
 
     /** {@inheritDoc} */

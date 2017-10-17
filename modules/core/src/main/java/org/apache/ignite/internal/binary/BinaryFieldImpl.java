@@ -196,6 +196,14 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     break;
                 }
 
+                case GridBinaryMarshaller.SQL_DATE: {
+                    long time = buf.getLong();
+
+                    val = new java.sql.Date(time);
+
+                    break;
+                }
+
                 case GridBinaryMarshaller.TIMESTAMP: {
                     long time = buf.getLong();
                     int nanos = buf.getInt();

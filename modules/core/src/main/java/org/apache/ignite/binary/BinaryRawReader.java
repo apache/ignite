@@ -105,6 +105,12 @@ public interface BinaryRawReader {
     @Nullable public Date readDate() throws BinaryObjectException;
 
     /**
+     * @return Date.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public java.sql.Date readSqlDate() throws BinaryObjectException;
+
+    /**
      * @return Timestamp.
      * @throws BinaryObjectException In case of error.
      */
@@ -193,6 +199,12 @@ public interface BinaryRawReader {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable public Date[] readDateArray() throws BinaryObjectException;
+
+    /**
+     * @return Date array.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public java.sql.Date[] readSqlDateArray() throws BinaryObjectException;
 
     /**
      * @return Timestamp array.

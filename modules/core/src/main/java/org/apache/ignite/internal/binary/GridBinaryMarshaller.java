@@ -82,9 +82,6 @@ public class GridBinaryMarshaller {
     public static final byte DATE = 11;
 
     /** */
-    public static final byte SQL_DATE = 40;
-
-    /** */
     public static final byte BYTE_ARR = 12;
 
     /** */
@@ -158,6 +155,12 @@ public class GridBinaryMarshaller {
 
     /** Binary enum */
     public static final byte BINARY_ENUM = 38;
+
+    /** */
+    public static final byte SQL_DATE = 39;
+
+    /** */
+    public static final byte SQL_DATE_ARR = 40;
 
     /** */
     public static final byte NULL = (byte)101;

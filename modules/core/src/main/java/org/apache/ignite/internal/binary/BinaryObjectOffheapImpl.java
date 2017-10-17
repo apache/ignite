@@ -333,6 +333,14 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 break;
             }
 
+            case GridBinaryMarshaller.SQL_DATE: {
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+
+                val = new java.sql.Date(time);
+
+                break;
+            }
+
             case GridBinaryMarshaller.TIMESTAMP: {
                 long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
                 int nanos = BinaryPrimitives.readInt(ptr, fieldPos + 1 + 8);

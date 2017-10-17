@@ -553,6 +553,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
             case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.SQL_DATE:
                 totalLen = 9;
 
                 break;

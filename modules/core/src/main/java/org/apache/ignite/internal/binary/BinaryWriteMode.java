@@ -127,6 +127,9 @@ public enum BinaryWriteMode {
     DATE_ARR(GridBinaryMarshaller.DATE_ARR),
 
     /** */
+    SQL_DATE_ARR(GridBinaryMarshaller.SQL_DATE_ARR),
+
+    /** */
     TIMESTAMP_ARR(GridBinaryMarshaller.TIMESTAMP_ARR),
 
     /** */

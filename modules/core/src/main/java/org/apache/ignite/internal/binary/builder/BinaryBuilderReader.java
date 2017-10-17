@@ -288,6 +288,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 break;
 
+            case GridBinaryMarshaller.SQL_DATE:
+                len = 8;
+
+                break;
+
             case GridBinaryMarshaller.TIMESTAMP:
                 len = 8 + 4;
 
@@ -318,6 +323,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
             case GridBinaryMarshaller.DECIMAL_ARR:
             case GridBinaryMarshaller.DATE_ARR:
+            case GridBinaryMarshaller.SQL_DATE_ARR:
             case GridBinaryMarshaller.TIMESTAMP_ARR:
             case GridBinaryMarshaller.TIME_ARR:
             case GridBinaryMarshaller.OBJ_ARR:
@@ -434,6 +440,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.STRING:
             case GridBinaryMarshaller.UUID:
             case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.SQL_DATE:
             case GridBinaryMarshaller.TIMESTAMP:
             case GridBinaryMarshaller.TIME:
                 return new BinaryPlainLazyValue(this, pos, len);
@@ -448,6 +455,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.BOOLEAN_ARR:
             case GridBinaryMarshaller.DECIMAL_ARR:
             case GridBinaryMarshaller.DATE_ARR:
+            case GridBinaryMarshaller.SQL_DATE_ARR:
             case GridBinaryMarshaller.TIMESTAMP_ARR:
             case GridBinaryMarshaller.TIME_ARR:
             case GridBinaryMarshaller.UUID_ARR:
@@ -599,6 +607,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 break;
 
+            case GridBinaryMarshaller.SQL_DATE:
+                plainLazyValLen = 8;
+
+                break;
+
             case GridBinaryMarshaller.TIMESTAMP:
                 plainLazyValLen = 8 + 4;
 
@@ -678,6 +691,29 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     pos += 8;
 
                     res[i] = new Date(time);
+                }
+
+                return res;
+            }
+
+            case GridBinaryMarshaller.SQL_DATE_ARR: {
+                int size = readInt();
+
+                java.sql.Date[] res = new java.sql.Date[size];
+
+                for (int i = 0; i < res.length; i++) {
+                    byte flag = arr[pos++];
+
+                    if (flag == GridBinaryMarshaller.NULL) continue;
+
+                    if (flag != GridBinaryMarshaller.SQL_DATE)
+                        throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                    long time = BinaryPrimitives.readLong(arr, pos);
+
+                    pos += 8;
+
+                    res[i] = new java.sql.Date(time);
                 }
 
                 return res;

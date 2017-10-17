@@ -197,6 +197,9 @@ public class GridBinaryTestClasses {
         public Date date;
 
         /** */
+        public java.sql.Date sqlDate;
+
+        /** */
         public Timestamp ts;
 
         /** */
@@ -231,6 +234,9 @@ public class GridBinaryTestClasses {
 
         /** */
         public UUID[] uuidArr;
+
+        /** */
+        public java.sql.Date[] sqlDateArr;
 
         /** */
         public Date[] dateArr;
@@ -294,6 +300,7 @@ public class GridBinaryTestClasses {
             str = "abc";
             uuid = new UUID(1, 1);
             date = new Date(1000000);
+            sqlDate = new java.sql.Date(1000000);
             ts = new Timestamp(100020003);
 
             bArr = new byte[] {1, 2, 3};
@@ -309,6 +316,7 @@ public class GridBinaryTestClasses {
             uuidArr = new UUID[] {new UUID(1, 1), new UUID(2, 2)};
             bdArr = new BigDecimal[] {new BigDecimal(1000), BigDecimal.TEN};
             dateArr = new Date[] {new Date(1000000), new Date(200000)};
+            sqlDateArr = new java.sql.Date[] {new java.sql.Date(1000000), new java.sql.Date(200000)};
             tsArr = new Timestamp[] {new Timestamp(100020003), new Timestamp(200030004)};
 
             anEnum = TestObjectEnum.A;
@@ -487,21 +495,6 @@ public class GridBinaryTestClasses {
                     return new TreeMap<>();
                 }
             });
-        }
-    }
-
-    /** */
-    public static class TestDateClass {
-        /** */
-        public java.util.Date date1;
-
-        /** */
-        public java.sql.Date date2;
-
-        /** */
-        TestDateClass(final java.util.Date date1, final java.sql.Date date2) {
-            this.date1 = date1;
-            this.date2 = date2;
         }
     }
 }

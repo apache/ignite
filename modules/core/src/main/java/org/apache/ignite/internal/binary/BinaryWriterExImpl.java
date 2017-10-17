@@ -457,7 +457,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param date Date.
      */
-    public void doWriteSQLDate(@Nullable java.sql.Date date) {
+    public void doWriteSqlDate(@Nullable java.sql.Date date) {
         if (date == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -691,6 +691,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             for (Date date : val)
                 doWriteDate(date);
+        }
+    }
+
+    /**
+     * @param val Array of dates.
+     */
+    void doWriteSqlDateArray(@Nullable java.sql.Date[] val) {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.SQL_DATE_ARR);
+            out.unsafeWriteInt(val.length);
+
+            for (java.sql.Date date : val)
+                doWriteSqlDate(date);
         }
     }
 
@@ -1154,8 +1170,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /**
      * @param val Value.
      */
-    void writeSQLDateField(@Nullable java.sql.Date val) {
-        doWriteSQLDate(val);
+    void writeSqlDateField(@Nullable java.sql.Date val) {
+        doWriteSqlDate(val);
     }
 
     /**
@@ -1262,6 +1278,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeDateArrayField(@Nullable Date[] val) {
         doWriteDateArray(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeSqlDateArrayField(@Nullable java.sql.Date[] val) {
+        doWriteSqlDateArray(val);
     }
 
     /**
@@ -1457,6 +1480,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
+    @Override public void writeSqlDate(String fieldName, @Nullable java.sql.Date val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeSqlDateField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeSqlDate(@Nullable java.sql.Date val) throws BinaryObjectException {
+        doWriteSqlDate(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeTimestamp(String fieldName, @Nullable Timestamp val) throws BinaryObjectException {
         writeFieldId(fieldName);
         writeTimestampField(val);
@@ -1634,6 +1668,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDateArray(@Nullable Date[] val) throws BinaryObjectException {
         doWriteDateArray(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeSqlDateArray(String fieldName, @Nullable java.sql.Date[] val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeSqlDateArrayField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeSqlDateArray(@Nullable java.sql.Date[] val) throws BinaryObjectException {
+        doWriteSqlDateArray(val);
     }
 
     /** {@inheritDoc} */

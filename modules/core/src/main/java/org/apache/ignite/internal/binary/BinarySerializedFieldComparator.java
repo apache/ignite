@@ -224,6 +224,7 @@ public class BinarySerializedFieldComparator {
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
             case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.SQL_DATE:
                 return c1.readLong(1) == c2.readLong(1);
 
             case GridBinaryMarshaller.TIMESTAMP:

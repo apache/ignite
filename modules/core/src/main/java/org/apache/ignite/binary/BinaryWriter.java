@@ -125,6 +125,13 @@ public interface BinaryWriter {
 
     /**
      * @param fieldName Field name.
+     * @param val Date to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeSqlDate(String fieldName, @Nullable java.sql.Date val) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
      * @param val Timestamp to write.
      * @throws BinaryObjectException In case of error.
      */
@@ -227,6 +234,13 @@ public interface BinaryWriter {
      * @throws BinaryObjectException In case of error.
      */
     public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeSqlDateArray(String fieldName, @Nullable java.sql.Date[] val) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.

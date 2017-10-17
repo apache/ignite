@@ -260,6 +260,27 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    public void testSqlDateArrayModification() {
+        GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
+
+        obj.sqlDateArr = new java.sql.Date[] {
+            new java.sql.Date(11111), new java.sql.Date(11111), new java.sql.Date(11111)};
+
+        BinaryObjectBuilderImpl mutObj = wrap(obj);
+
+        java.sql.Date[] arr = mutObj.getField("sqlDateArr");
+        arr[0] = new java.sql.Date(22222);
+
+        GridBinaryTestClasses.TestObjectAllTypes res = mutObj.build().deserialize();
+
+        Assert.assertArrayEquals(
+            new java.sql.Date[] {new java.sql.Date(22222), new java.sql.Date(11111), new java.sql.Date(11111)},
+            res.sqlDateArr);
+    }
+
+    /**
+     *
+     */
     public void testTimestampArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
@@ -1206,34 +1227,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assertEquals(Timestamp[].class, res.foo.getClass());
         assertTrue(Objects.deepEquals(arr, res.foo));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDate() throws Exception {
-        BinaryObjectBuilder builder = newWrapper(GridBinaryTestClasses.TestDateClass.class);
-
-        java.util.Date date1 = new java.util.Date();
-        java.sql.Date date2 = java.sql.Date.valueOf("2001-05-05");
-
-        builder.setField("date1", date2);
-        builder.setField("date2", date2);
-
-        GridBinaryTestClasses.TestDateClass obj = builder.build().deserialize();
-
-        assertEquals(date2, obj.date1);
-        assertEquals(date2, obj.date2);
-
-        builder = newWrapper(GridBinaryTestClasses.TestDateClass.class);
-
-        builder.setField("date1", date1);
-        builder.setField("date2", date2);
-
-        obj = builder.build().deserialize();
-
-        assertEquals(date1, obj.date1);
-        assertEquals(date2, obj.date2);
     }
 
     /**

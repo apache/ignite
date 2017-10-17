@@ -89,6 +89,9 @@ public abstract class SqlListenerUtils {
             case GridBinaryMarshaller.DATE:
                 return BinaryUtils.doReadDate(reader.in());
 
+            case GridBinaryMarshaller.SQL_DATE:
+                return BinaryUtils.doReadSqlDate(reader.in());
+
             case GridBinaryMarshaller.BOOLEAN_ARR:
                 return BinaryUtils.doReadBooleanArray(reader.in());
 
@@ -130,6 +133,9 @@ public abstract class SqlListenerUtils {
 
             case GridBinaryMarshaller.DATE_ARR:
                 return BinaryUtils.doReadDateArray(reader.in());
+
+            case GridBinaryMarshaller.SQL_DATE_ARR:
+                return BinaryUtils.doReadSqlDateArray(reader.in());
 
             default:
                 reader.in().position(reader.in().position() - 1);
@@ -183,8 +189,10 @@ public abstract class SqlListenerUtils {
             writer.writeTime((Time)obj);
         else if (cls == Timestamp.class)
             writer.writeTimestamp((Timestamp)obj);
-        else if (cls == java.sql.Date.class || cls == java.util.Date.class)
+        else if (cls == java.util.Date.class)
             writer.writeDate((java.util.Date)obj);
+        else if (cls == java.sql.Date.class)
+            writer.writeSqlDate((java.sql.Date)obj);
         else if (cls == boolean[].class)
             writer.writeBooleanArray((boolean[])obj);
         else if (cls == byte[].class)
@@ -211,8 +219,10 @@ public abstract class SqlListenerUtils {
             writer.writeTimeArray((Time[])obj);
         else if (cls == Timestamp[].class)
             writer.writeTimestampArray((Timestamp[])obj);
-        else if (cls == java.util.Date[].class || cls == java.sql.Date[].class)
+        else if (cls == java.util.Date[].class)
             writer.writeDateArray((java.util.Date[])obj);
+        else if (cls == java.sql.Date[].class)
+            writer.writeSqlDateArray((java.sql.Date[])obj);
         else if (binObjAllow)
             writer.writeObjectDetached(obj);
         else

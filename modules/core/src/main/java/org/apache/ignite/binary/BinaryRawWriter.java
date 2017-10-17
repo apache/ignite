@@ -105,6 +105,12 @@ public interface BinaryRawWriter {
     public void writeDate(@Nullable Date val) throws BinaryObjectException;
 
     /**
+     * @param val Date to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeSqlDate(@Nullable java.sql.Date val) throws BinaryObjectException;
+
+    /**
      * @param val Timestamp to write.
      * @throws BinaryObjectException In case of error.
      */
@@ -193,6 +199,12 @@ public interface BinaryRawWriter {
      * @throws BinaryObjectException In case of error.
      */
     public void writeDateArray(@Nullable Date[] val) throws BinaryObjectException;
+
+    /**
+     * @param val Value to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeSqlDateArray(@Nullable java.sql.Date[] val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.

@@ -76,6 +76,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SQL_DATE;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SQL_DATE_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TIME;
@@ -1167,19 +1168,31 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public Date readDate() throws BinaryObjectException {
-        byte flag = in.readByte();
+        return checkFlagNoHandles(DATE) == Flag.NORMAL ? BinaryUtils.doReadDate(in) : null;
+    }
 
-        if (flag == DATE)
-            return BinaryUtils.doReadDate(in);
-        else if (flag == SQL_DATE)
-            return BinaryUtils.doReadSQLDate(in);
-        else if (flag == NULL)
-            return null;
+    /** {@inheritDoc} */
+    @Override @Nullable public java.sql.Date readSqlDate(String fieldName) throws BinaryObjectException {
+        try {
+            return findFieldByName(fieldName) ? this.readSqlDate() : null;
+        }
+        catch (Exception ex) {
+            throw wrapFieldException(fieldName, ex);
+        }
+    }
 
-        int pos = BinaryUtils.positionForHandle(in);
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable Date readSqlDate(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? this.readSqlDate() : null;
+    }
 
-        throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=[" + String.valueOf(DATE) +
-            ", " + String.valueOf(SQL_DATE) + "] actual=" + String.valueOf(flag) + ']');
+    /** {@inheritDoc} */
+    @Override @Nullable public java.sql.Date readSqlDate() throws BinaryObjectException {
+        return checkFlagNoHandles(SQL_DATE) == Flag.NORMAL ? BinaryUtils.doReadSqlDate(in) : null;
     }
 
     /** {@inheritDoc} */
@@ -1206,6 +1219,39 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         switch (checkFlag(DATE_ARR)) {
             case NORMAL:
                 return BinaryUtils.doReadDateArray(in);
+
+            case HANDLE:
+                return readHandleField();
+
+            default:
+                return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public java.sql.Date[] readSqlDateArray(String fieldName) throws BinaryObjectException {
+        try {
+            return findFieldByName(fieldName) ? this.readSqlDateArray() : null;
+        }
+        catch (Exception ex) {
+            throw wrapFieldException(fieldName, ex);
+        }
+    }
+
+    /**
+     * @param fieldId Field ID.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable java.sql.Date[] readSqlDateArray(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? this.readSqlDateArray() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public java.sql.Date[] readSqlDateArray() throws BinaryObjectException {
+        switch (checkFlag(SQL_DATE_ARR)) {
+            case NORMAL:
+                return BinaryUtils.doReadSqlDateArray(in);
 
             case HANDLE:
                 return readHandleField();
@@ -1839,7 +1885,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case SQL_DATE:
-                obj = BinaryUtils.doReadSQLDate(in);
+                obj = BinaryUtils.doReadSqlDate(in);
 
                 break;
 
@@ -1910,6 +1956,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case DATE_ARR:
                 obj = BinaryUtils.doReadDateArray(in);
+
+                break;
+
+            case SQL_DATE_ARR:
+                obj = BinaryUtils.doReadSqlDateArray(in);
 
                 break;
 
