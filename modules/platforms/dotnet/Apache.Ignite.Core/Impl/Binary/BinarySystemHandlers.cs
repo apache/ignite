@@ -474,17 +474,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.WriteInt(binEnum.EnumValue);
         }
 
-        /**
-         * <summary>Read enum array.</summary>
-         */
-        [Obsolete("Use ReadArray()")]
-        private static object ReadEnumArray(BinaryReader ctx, Type type)
-        {
-            var elemType = type.GetElementType() ?? typeof(object);
-
-            return BinaryUtils.ReadTypedArray(ctx, true, elemType);
-        }
-
         /// <summary>
         /// Reads the array.
         /// </summary>
