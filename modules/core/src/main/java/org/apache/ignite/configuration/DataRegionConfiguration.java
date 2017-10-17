@@ -138,7 +138,7 @@ public final class DataRegionConfiguration implements Serializable {
     }
 
     /**
-     * Sets data region name. The name must be non empty and must not be equal to the reserved 'sysDataReg' one.
+     * Sets data region name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
      *
      * If not specified, {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} value is used.
      *

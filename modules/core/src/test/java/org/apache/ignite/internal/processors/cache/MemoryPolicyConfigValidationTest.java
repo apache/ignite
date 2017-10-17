@@ -187,7 +187,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithReservedNameMisuseCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("sysDataReg", 10 * 1024 * 1024, 10 * 1024 * 1024);
+        res[0] = createMemoryPolicy("sysMemPlc", 10 * 1024 * 1024, 10 * 1024 * 1024);
 
         return res;
     }

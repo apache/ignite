@@ -138,7 +138,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Sets memory policy name. The name must be non empty and must not be equal to the reserved 'sysDataReg' one.
+     * Sets memory policy name. The name must be non empty and must not be equal to the reserved 'sysMemPlc' one.
      *
      * If not specified, {@link MemoryConfiguration#DFLT_MEM_PLC_DEFAULT_NAME} value is used.
      *
