@@ -34,7 +34,6 @@ fi
 SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
-source "${SCRIPTS_HOME}"/include/ignitesql-functions.sh
 
 #
 # Discover IGNITE_HOME environment variable.
