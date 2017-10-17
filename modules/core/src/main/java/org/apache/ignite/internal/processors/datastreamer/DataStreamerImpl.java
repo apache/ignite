@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -72,6 +73,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -115,8 +118,10 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Data streamer implementation.
@@ -281,7 +286,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log == null)
             log = U.logger(ctx, logRef, DataStreamerImpl.class);
 
-        CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
+        final CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
         try {
             this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
@@ -295,28 +300,68 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
-                assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
+                assert evt instanceof DiscoveryEvent;
 
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+                if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                UUID id = discoEvt.eventNode().id();
+                    UUID id = discoEvt.eventNode().id();
 
-                // Remap regular mappings.
-                final Buffer buf = bufMappings.remove(id);
+                    // Remap regular mappings.
+                    final Buffer buf = bufMappings.remove(id);
 
-                // Only async notification is possible since
-                // discovery thread may be trapped otherwise.
-                if (buf != null) {
-                    waitAffinityAndRun(new Runnable() {
-                        @Override public void run() {
-                            buf.onNodeLeft();
+                    // Only async notification is possible since
+                    // discovery thread may be trapped otherwise.
+                    if (buf != null) {
+                        waitAffinityAndRun(new Runnable() {
+                            @Override public void run() {
+                                buf.onNodeLeft();
+                            }
+                        }, discoEvt.topologyVersion(), true);
+                    }
+                }
+
+                boolean needRemap = false;
+
+                if ((evt.type() == EVT_NODE_FAILED && evt.type() == EVT_NODE_LEFT && evt.type() == EVT_NODE_JOINED)
+                    && CU.affinityNode(evt.node(), ccfg.getNodeFilter()))
+                    needRemap = true;
+                else if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                    DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent) evt;
+
+                    if (customEvt.customMessage() instanceof DynamicCacheChangeBatch) {
+                        DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch) customEvt.customMessage();
+
+                        for (DynamicCacheChangeRequest request : cacheChangeBatch.requests()) {
+                            if (request.cacheName().equals(cacheName)) {
+                                needRemap = true;
+
+                                break;
+                            }
                         }
-                    }, discoEvt.topologyVersion(), true);
+                    }
+                }
+
+                if (!needRemap) {
+                    AffinityTopologyVersion topVer;
+                    if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT)
+                        topVer = ((DiscoveryCustomEvent) evt).affinityTopologyVersion();
+                    else {
+                        topVer = new AffinityTopologyVersion(((DiscoveryEvent) evt).topologyVersion(), 0);
+                    }
+
+                    for (Entry<UUID, Buffer> e : bufMappings.entrySet()) {
+                        Buffer buf = e.getValue();
+
+                        for (PerStripeBuffer stripe : buf.stripes)
+                            stripe.batchTopVer = topVer;
+                    }
                 }
             }
         };
 
-        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED,
+            EVT_DISCOVERY_CUSTOM_EVT);
 
         // Generate unique topic for this loader.
         topic = TOPIC_DATASTREAM.topic(IgniteUuid.fromUuid(ctx.localNodeId()));

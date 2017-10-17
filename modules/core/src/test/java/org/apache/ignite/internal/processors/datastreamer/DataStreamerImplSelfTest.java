@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -428,6 +429,85 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
+    }
+
+    /** */
+    public void testClientEventsNotCausingRemaps() throws Exception {
+        startGrids(2);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final AtomicBoolean stopped = new AtomicBoolean(false);
+
+        final IgniteInternalFuture<?> streamer = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try (final Ignite client = startGrid(getConfiguration("client").setClientMode(true))) {
+                    client.getOrCreateCache(cacheConfiguration());
+
+                    try (final IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
+                        int i = 0;
+                        long j = 0L;
+
+                        assertTrue(streamer instanceof DataStreamerImpl);
+
+                        ((DataStreamerImpl)streamer).maxRemapCount(3);
+
+                        while (!stopped.get()) {
+                            streamer.addData(i++, j++);
+
+                            if (i > 1000) {
+                                latch.countDown();
+                                i = 0;
+
+                                try {
+                                    Thread.sleep(300);
+                                }
+                                catch (InterruptedException ignore) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }, 1, "streamer-thread");
+
+        latch.await();
+
+        boolean isStreamerFailed = false;
+
+        int topChanges = 0;
+
+        while (topChanges < 30 && !isStreamerFailed) {
+            final Ignite node = startGrid(getConfiguration("flapping-client").setClientMode(true));
+
+            node.getOrCreateCache(cacheConfiguration()).get(0);
+
+            Thread.sleep(200);
+
+            topChanges++;
+
+            isStreamerFailed = streamer.isCancelled();
+
+            node.close();
+
+            if (!isStreamerFailed) {
+                topChanges++;
+
+                Thread.sleep(200);
+            }
+
+            isStreamerFailed = streamer.isCancelled();
+        }
+
+        stopped.set(true);
+
+        assertFalse("Streamer fails after remaps: " + topChanges, isStreamerFailed);
+
+        if (!isStreamerFailed)
+            streamer.get();
     }
 
     /**
