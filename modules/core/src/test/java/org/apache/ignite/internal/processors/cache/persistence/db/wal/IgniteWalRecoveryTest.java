@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -90,6 +92,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -179,7 +183,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         cacheName = "partitioned";
     }
@@ -190,7 +194,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         logOnly = false;
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -573,9 +577,11 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++)
                 cache.put(i, new IndexedObject(i));
 
+            final Object consistentId = ignite.cluster().localNode().consistentId();
+
             stopGrid(1);
 
-            final File cacheDir = cacheDir("partitioned", ignite.context().discovery().consistentId().toString());
+            final File cacheDir = cacheDir("partitioned", consistentId.toString());
 
             final boolean renamed = cacheDir.renameTo(new File(cacheDir.getParent(), "cache-partitioned0"));
 
@@ -603,14 +609,15 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @return Cache dir.
      * @throws IgniteCheckedException If fail.
      */
-    private File cacheDir(final String cacheName, String consId) throws IgniteCheckedException {
-        consId = consId.replaceAll("[\\.:]", "_");
+    private File cacheDir(final String cacheName, final String consId) throws IgniteCheckedException {
+        final String subfolderName
+            = PdsConsistentIdProcessor.genNewStyleSubfolderName(0, UUID.fromString(consId));
 
-        final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false);
+        final File dbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
         assert dbDir.exists();
 
-        final File consIdDir = new File(dbDir.getAbsolutePath(), consId);
+        final File consIdDir = new File(dbDir.getAbsolutePath(), subfolderName);
 
         assert consIdDir.exists();
 

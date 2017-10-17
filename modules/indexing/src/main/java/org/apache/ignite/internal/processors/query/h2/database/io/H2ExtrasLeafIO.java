@@ -47,6 +47,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
      * @param payload Payload size.
      * @return IOVersions for given payload.
      */
+    @SuppressWarnings("unchecked")
     public static IOVersions<? extends BPlusLeafIO<SearchRow>> getVersions(int payload) {
         assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
 
@@ -76,10 +77,11 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link() != 0;
 
         List<InlineIndexHelper> inlineIdxs = InlineIndexHelper.getCurrentInlineIndexes();
 
@@ -98,7 +100,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             fieldOff += size;
         }
 
-        PageUtils.putLong(pageAddr, off + payloadSize, row0.link);
+        PageUtils.putLong(pageAddr, off + payloadSize, row0.link());
     }
 
     /** {@inheritDoc} */

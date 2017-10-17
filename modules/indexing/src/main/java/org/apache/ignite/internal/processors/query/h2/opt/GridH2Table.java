@@ -27,19 +27,14 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.h2.H2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -57,13 +52,12 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * H2 Table implementation.
@@ -73,7 +67,7 @@ public class GridH2Table extends TableBase {
     private final GridCacheContext cctx;
 
     /** */
-    private final H2RowDescriptor desc;
+    private final GridH2RowDescriptor desc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -126,7 +120,7 @@ public class GridH2Table extends TableBase {
      * @param idxsFactory Indexes factory.
      * @param cctx Cache context.
      */
-    public GridH2Table(CreateTableData createTblData, H2RowDescriptor desc, H2RowFactory rowFactory,
+    public GridH2Table(CreateTableData createTblData, GridH2RowDescriptor desc, H2RowFactory rowFactory,
         GridH2SystemIndexFactory idxsFactory, GridCacheContext cctx) {
         super(createTblData);
 
@@ -223,6 +217,13 @@ public class GridH2Table extends TableBase {
      */
     public String cacheName() {
         return cctx.name();
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cctx.cacheId();
     }
 
     /**
@@ -393,58 +394,31 @@ public class GridH2Table extends TableBase {
      * Updates table for given key. If value is null then row with given key will be removed from table,
      * otherwise value and expiration time will be updated or new row will be added.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param expirationTime Expiration time.
+     * @param row Row.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(KeyCacheObject key,
-        int partId,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime,
-        boolean rmv,
-        long link)
+    public boolean update(CacheDataRow row, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
+        GridH2Row h2Row = desc.createRow(row);
 
-        row.link = link;
+        if (rmv)
+            return doUpdate(h2Row, true);
+        else {
+            GridH2KeyValueRowOnheap h2Row0 = (GridH2KeyValueRowOnheap)h2Row;
 
-        if (!rmv)
-            ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);
+            h2Row0.prepareValuesCache();
 
-        try {
-            return doUpdate(row, rmv);
+            try {
+                return doUpdate(h2Row0, false);
+            }
+            finally {
+                h2Row0.clearValuesCache();
+            }
         }
-        finally {
-            if (!rmv)
-                ((GridH2AbstractKeyValueRow)row).valuesCache(null);
-        }
-    }
-
-    /**
-     * @param key Key to read.
-     * @return Read value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        int partId
-    ) throws IgniteCheckedException {
-        assert desc != null;
-
-        GridH2Row row = desc.createRow(key, partId, null, null, 0);
-
-        GridH2IndexBase primaryIdx = pk();
-
-        GridH2Row res = primaryIdx.findOne(row);
-
-        return res != null ? F.t(res.val, res.ver) : null;
     }
 
     /**
@@ -475,15 +449,10 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
+    private boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
-        GridUnsafeMemory mem = desc == null ? null : desc.memory();
-
         lock(false);
-
-        if (mem != null)
-            desc.guard().begin();
 
         try {
             ensureNotDestroyed();
@@ -491,7 +460,7 @@ public class GridH2Table extends TableBase {
             GridH2IndexBase pk = pk();
 
             if (!del) {
-                assert rowFactory == null || row.link != 0 : row;
+                assert rowFactory == null || row.link() != 0 : row;
 
                 GridH2Row old = pk.put(row); // Put to PK.
 
@@ -505,15 +474,16 @@ public class GridH2Table extends TableBase {
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                 while (++i < len) {
-                    if (!(idxs.get(i) instanceof GridH2IndexBase))
-                        continue;
-                    GridH2IndexBase idx = index(i);
+                    Index idx = idxs.get(i);
 
-                    addToIndex(idx, pk, row, old, false);
+                    if (idx instanceof GridH2IndexBase)
+                        addToIndex((GridH2IndexBase)idx, pk, row, old, false);
                 }
 
-                for (GridH2IndexBase idx : tmpIdxs.values())
-                    addToIndex(idx, pk, row, old, true);
+                if (!tmpIdxs.isEmpty()) {
+                    for (GridH2IndexBase idx : tmpIdxs.values())
+                        addToIndex(idx, pk, row, old, true);
+                }
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
@@ -523,15 +493,19 @@ public class GridH2Table extends TableBase {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                     for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
-                        if (!(idxs.get(i) instanceof GridH2IndexBase))
-                            continue;
-                        Row res = index(i).remove(old);
+                        Index idx = idxs.get(i);
 
-                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        if (idx instanceof GridH2IndexBase) {
+                            Row res = ((GridH2IndexBase)idx).remove(old);
+
+                            assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        }
                     }
 
-                    for (GridH2IndexBase idx : tmpIdxs.values())
-                        idx.remove(old);
+                    if (!tmpIdxs.isEmpty()) {
+                        for (GridH2IndexBase idx : tmpIdxs.values())
+                            idx.remove(old);
+                    }
 
                     size.decrement();
                 }
@@ -543,9 +517,6 @@ public class GridH2Table extends TableBase {
         }
         finally {
             unlock(false);
-
-            if (mem != null)
-                desc.guard().end();
         }
     }
 
@@ -584,22 +555,6 @@ public class GridH2Table extends TableBase {
      */
     private static boolean eq(Index pk, SearchRow r1, SearchRow r2) {
         return r1 == r2 || (r1 != null && r2 != null && pk.compareRows(r1, r2) == 0);
-    }
-
-    /**
-     * For testing only.
-     *
-     * @return Indexes.
-     */
-    ArrayList<GridH2IndexBase> indexes() {
-        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
-
-        for (int i = pkIndexPos, len = idxs.size(); i < len; i++) {
-            if (idxs.get(i) instanceof GridH2IndexBase)
-                res.add(index(i));
-        }
-
-        return res;
     }
 
     /**
@@ -830,13 +785,6 @@ public class GridH2Table extends TableBase {
         return idxs;
     }
 
-    /**
-     * @return All indexes, even marked for rebuild.
-     */
-    public ArrayList<Index> getAllIndexes() {
-        return idxs;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isLockedExclusively() {
         return false;
@@ -913,7 +861,7 @@ public class GridH2Table extends TableBase {
      * @param target Index to clone.
      * @return Proxy index.
      */
-    public Index createDuplicateIndexIfNeeded(Index target) {
+    private Index createDuplicateIndexIfNeeded(Index target) {
         if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
             return null;
 

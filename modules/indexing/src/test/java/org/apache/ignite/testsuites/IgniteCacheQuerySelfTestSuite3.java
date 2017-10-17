@@ -137,8 +137,6 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheContinuousWithTransformerFailoverTest.class);
         suite.addTestSuite(CacheContinuousWithTransformerRandomOperationsTest.class);
 
-        suite.addTest(IgniteDistributedJoinTestSuite.suite());
-
         return suite;
     }
 }
