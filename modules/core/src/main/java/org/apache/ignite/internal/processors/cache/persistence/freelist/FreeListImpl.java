@@ -256,12 +256,18 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+    private final PageHandler<Void, Long> rmvRow;
 
     /**
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        private final boolean maskPageId;
+
+        RemoveRowHandler(boolean maskPageId) {
+            this.maskPageId = maskPageId;
+        }
+
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -293,6 +299,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPageId ? maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -307,6 +314,13 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
+    }
+
+    /**
+     * @param unmaskedPageId Unmasked page id.
+     */
+    private long maskPartitionId(long unmaskedPageId) {
+        return unmaskedPageId & ~((-1L << 32) & (~(-1L << 48)));
     }
 
     /**
@@ -330,6 +344,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+
+        rmvRow = new RemoveRowHandler(cacheId == 0);
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
