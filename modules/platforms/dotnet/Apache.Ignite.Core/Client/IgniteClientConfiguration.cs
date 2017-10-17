@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Client
     /// This configuration should correspond to <see cref="IgniteConfiguration.ClientConnectorConfiguration"/>
     /// on a target node.
     /// </summary>
-    public class IgniteClientConfiguration
+    internal class IgniteClientConfiguration
     {
         /// <summary>
         /// Default port.

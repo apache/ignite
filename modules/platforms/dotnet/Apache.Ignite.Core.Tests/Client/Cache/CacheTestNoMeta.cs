@@ -31,7 +31,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Client cache test without metadata (no-op binary processor).
     /// </summary>
-    public class CacheTestNoMeta : ClientTestBase
+    [Ignore]
+    internal class CacheTestNoMeta : ClientTestBase
     {
         /// <summary>
         /// Tests the cache put / get with user data types.
@@ -52,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             using (var client = Ignition.StartClient(cfg))
             {
                 var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
-                    new CacheConfiguration(CacheName, new QueryEntity
+                    new CacheConfiguration("person", new QueryEntity
                     {
                         KeyType = typeof(int),
                         ValueType = typeof(Person),
@@ -63,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                         }
                     }));
 
-                var clientCache = client.GetCache<int?, Person>(CacheName);
+                var clientCache = client.GetCache<int?, Person>(serverCache.Name);
 
                 // Put through client cache.
                 clientCache.Put(1, new Person { Id = 100, Name = "foo" });

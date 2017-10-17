@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client
     /// <summary>
     /// Base class for client tests.
     /// </summary>
-    public class ClientTestBase
+    internal class ClientTestBase
     {
         /** Cache name. */
         protected const string CacheName = "cache";
@@ -73,6 +73,15 @@ namespace Apache.Ignite.Core.Tests.Client
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void TestSetUp()
+        {
+            GetCache<int>().RemoveAll();
         }
 
         /// <summary>

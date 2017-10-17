@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Client
     /// Ignite thin client exception.
     /// </summary>
     [Serializable]
-    public class IgniteClientException : IgniteException
+    internal class IgniteClientException : IgniteException
     {
         /** Error code field. */
         private const string ErrorCodeField = "ErrorCode";
@@ -103,6 +103,14 @@ namespace Apache.Ignite.Core.Client
             base.GetObjectData(info, context);
 
             info.AddValue(ErrorCodeField, _errorCode);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        public override string ToString()
+        {
+            return string.Format("{0} [ErrorCode={1}]", base.ToString(), ErrorCode);
         }
     }
 }
