@@ -17,8 +17,10 @@
 
 package org.apache.ignite.yardstick;
 
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,8 +30,8 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -48,6 +50,7 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Standalone Ignite node.
@@ -168,12 +171,18 @@ public class IgniteNode implements BenchmarkServer {
             memCfg.setPageSize(args.getPageSize());
         }
 
-        if (args.persistentStoreEnabled()) {
+        if (args.persistentStoreEnabled() || args.walMode() != null) {
             PersistentStoreConfiguration pcCfg = new PersistentStoreConfiguration();
+
+            if (args.walMode() != null)
+                pcCfg.setWalMode(args.walMode());
+
+            c.setPersistentStoreConfiguration(pcCfg);
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-            c.setPersistentStoreConfiguration(pcCfg);
+            // Removing persistence data
+            U.delete(Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR).toFile());
         }
 
         ignite = IgniteSpring.start(c, appCtx);

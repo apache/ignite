@@ -168,70 +168,23 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
 
             LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-            fields.put("field1", "java.lang.String");
-            fields.put("field2", "java.lang.String");
-            fields.put("field3", "java.lang.String");
-            fields.put("field4", "java.lang.String");
-            fields.put("field5", "java.lang.String");
-            fields.put("field6", "java.lang.String");
-            fields.put("field7", "java.lang.String");
-            fields.put("field8", "java.lang.String");
-            fields.put("field9", "java.lang.String");
-            fields.put("field10", "java.lang.String");
-            fields.put("field11", "java.lang.String");
-            fields.put("field12", "java.lang.String");
-            fields.put("field13", "java.lang.String");
-            fields.put("field14", "java.lang.String");
-            fields.put("field15", "java.lang.String");
-            fields.put("field16", "java.lang.String");
-            fields.put("field17", "java.lang.String");
-            fields.put("field18", "java.lang.String");
-            fields.put("field19", "java.lang.String");
-            fields.put("field20", "java.lang.String");
-            fields.put("field21", "java.lang.String");
-            fields.put("field22", "java.lang.String");
-            fields.put("field23", "java.lang.String");
-            fields.put("field24", "java.lang.String");
-            fields.put("field25", "java.lang.String");
-            fields.put("field26", "java.lang.String");
-            fields.put("field27", "java.lang.String");
-            fields.put("field28", "java.lang.String");
-            fields.put("field29", "java.lang.String");
-            fields.put("field30", "java.lang.String");
-            fields.put("field31", "java.lang.String");
-            fields.put("field32", "java.lang.String");
-            fields.put("field33", "java.lang.String");
-            fields.put("field34", "java.lang.String");
-            fields.put("field35", "java.lang.String");
-            fields.put("field36", "java.lang.String");
-            fields.put("field37", "java.lang.String");
-            fields.put("field38", "java.lang.String");
-            fields.put("field39", "java.lang.String");
-            fields.put("field40", "java.lang.String");
-            fields.put("field41", "java.lang.String");
-            fields.put("field42", "java.lang.String");
-            fields.put("field43", "java.lang.String");
-            fields.put("field44", "java.lang.Double");
-            fields.put("field45", "java.lang.Double");
-            fields.put("field46", "java.lang.Double");
-            fields.put("field47", "java.lang.Double");
-            fields.put("field48", "java.lang.Double");
-            fields.put("field49", "java.lang.Double");
+            for (int i = 1; i < 50; i++)
+                fields.put("field" + i, i < 44 ? "java.lang.String" : "java.lang.Double");
 
             entity.setFields(fields);
 
-            QueryIndex businessdate = new QueryIndex("field1");
-            QueryIndex risksubjectid = new QueryIndex("field2");
-            QueryIndex seriesdate = new QueryIndex("field3");
-            QueryIndex snapversion = new QueryIndex("field4");
-            QueryIndex vartype = new QueryIndex("field5");
+            QueryIndex idx1 = new QueryIndex("field1");
+            QueryIndex idx2 = new QueryIndex("field2");
+            QueryIndex idx3 = new QueryIndex("field3");
+            QueryIndex idx4 = new QueryIndex("field4");
+            QueryIndex idx5 = new QueryIndex("field5");
 
             entity.setIndexes(Arrays.asList(
-                businessdate,
-                risksubjectid,
-                seriesdate,
-                snapversion,
-                vartype
+                idx1,
+                idx2,
+                idx3,
+                idx4,
+                idx5
             ));
 
             cacheCfg.setQueryEntities(Arrays.asList(entity));

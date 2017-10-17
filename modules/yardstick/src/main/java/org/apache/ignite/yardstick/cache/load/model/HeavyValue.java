@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.benchmarks.model;
+package org.apache.ignite.yardstick.cache.load.model;
 
 import java.util.concurrent.ThreadLocalRandom;
 
