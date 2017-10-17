@@ -107,6 +107,6 @@ call "%SCRIPTS_HOME%\include\setenv.bat"
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" -cp "%CP%" org.apache.ignite.sqlline.CommandLineStartup %*
+"%JAVA_HOME%\bin\java.exe" -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver %*
 
 :error_finish

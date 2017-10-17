@@ -20,8 +20,6 @@
 # Ignite database connector.
 #
 
-SELF_NAME=$(basename $0)
-
 #
 # Import common functions.
 #
@@ -54,4 +52,4 @@ CP="${IGNITE_LIBS}"
 
 CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 
-java -cp ${CP} org.apache.ignite.sqlline.CommandLineStartup $@
+java -cp ${CP} sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver $@
