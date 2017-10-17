@@ -342,19 +342,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
-                if (!needRemap) {
-                    AffinityTopologyVersion topVer;
-                    if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT)
-                        topVer = ((DiscoveryCustomEvent) evt).affinityTopologyVersion();
-                    else {
-                        topVer = new AffinityTopologyVersion(((DiscoveryEvent) evt).topologyVersion(), 0);
-                    }
-
+                if (needRemap) {
                     for (Entry<UUID, Buffer> e : bufMappings.entrySet()) {
                         Buffer buf = e.getValue();
 
-                        for (PerStripeBuffer stripe : buf.stripes)
-                            stripe.batchTopVer = topVer;
+                        for (PerStripeBuffer stripe : buf.stripes) {
+                            synchronized (stripe) {
+                                stripe.needRemap = true;
+                            }
+                        }
                     }
                 }
             }
@@ -1457,6 +1453,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 GridFutureAdapter<Object> curFut0;
                 PerStripeBuffer b = stripes[part % stripes.length];
 
+                boolean needRemap = false;
+
                 synchronized (b) {
                     curFut0 = b.curFut;
 
@@ -1483,9 +1481,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         b.renewBatch(remap);
                     }
+
+                    needRemap = b.needRemap;
                 }
 
-                if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
+                if (!allowOverwrite() && needRemap && !topVer.equals(curBatchTopVer)) {
                     for (int i = 0; i < stripes.length; i++) {
                         PerStripeBuffer b0 = stripes[i];
 
@@ -1494,7 +1494,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             // Another thread might already renew the batch
                             AffinityTopologyVersion bTopVer = b0.batchTopVer;
 
-                            if(bTopVer != null && topVer.compareTo(bTopVer) > 0) {
+                            if (bTopVer != null && b0.needRemap && topVer.compareTo(bTopVer) > 0) {
                                 GridFutureAdapter<Object> bFut = b0.curFut;
 
                                 b0.renewBatch(remap);
@@ -2214,6 +2214,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private AffinityTopologyVersion batchTopVer;
 
         /** */
+        private boolean needRemap;
+
+        /** */
         private final IgniteInClosure<? super IgniteInternalFuture<Object>> signalC;
 
         /**
@@ -2238,6 +2241,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             curFut = new GridFutureAdapter<>();
 
             batchTopVer = null;
+            needRemap = false;
 
             if (!remap)
                 curFut.listen(signalC);
