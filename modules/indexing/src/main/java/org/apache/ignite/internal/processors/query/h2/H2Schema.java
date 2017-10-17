@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Database schema object.
@@ -35,7 +36,7 @@ public class H2Schema {
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
     /** */
-    private int numCaches;
+    private AtomicInteger numCaches = new AtomicInteger();
 
     /**
      * Constructor.
@@ -57,7 +58,7 @@ public class H2Schema {
      * @return Number of caches having this schema.
      */
     public int numCaches() {
-        return numCaches;
+        return numCaches.get();
     }
 
     /**
@@ -66,7 +67,7 @@ public class H2Schema {
      * @return New value of caches counter.
      */
     public int incNumCaches() {
-        return ++numCaches;
+        return numCaches.incrementAndGet();
     }
 
     /**
@@ -75,7 +76,7 @@ public class H2Schema {
      * @return New value of caches counter.
      */
     public int decNumCaches() {
-        return --numCaches;
+        return numCaches.decrementAndGet();
     }
 
     /**
