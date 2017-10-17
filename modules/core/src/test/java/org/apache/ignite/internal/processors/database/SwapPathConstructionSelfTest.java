@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapFilePath(String)}
+ * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapPath(String)}
  * when absolute or relative paths are provided via configuration.
  */
 public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
@@ -139,9 +139,9 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         memPlcCfg.setMaxSize(20 * 1024 * 1024);
 
         if (isRelativePath)
-            memPlcCfg.setSwapFilePath(RELATIVE_SWAP_PATH);
+            memPlcCfg.setSwapPath(RELATIVE_SWAP_PATH);
         else
-            memPlcCfg.setSwapFilePath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
+            memPlcCfg.setSwapPath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 

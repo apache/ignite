@@ -56,7 +56,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
  *                          <property name="name" value="25MB_Region_Swapping"/>
  *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
  *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
- *                          <property name="swapFilePath" value="dataRegionExampleSwap"/>
+ *                          <property name="swapPath" value="dataRegionExampleSwap"/>
  *                      </bean>
  *                  </list>
  *              </property>
@@ -86,8 +86,8 @@ public final class DataRegionConfiguration implements Serializable {
     private long initSize = Math.min(
         DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE, DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
 
-    /** An optional path to a memory mapped file for this data region. */
-    private String swapFilePath;
+    /** An optional path to a memory mapped files directory for this data region. */
+    private String swapPath;
 
     /** An algorithm for memory pages eviction. */
     private DataPageEvictionMode pageEvictionMode = DataPageEvictionMode.DISABLED;
@@ -204,18 +204,18 @@ public final class DataRegionConfiguration implements Serializable {
      * @return A path to the memory-mapped files or {@code null} if this feature is not used for the memory region
      *         defined by this data region.
      */
-    public String getSwapFilePath() {
-        return swapFilePath;
+    public String getSwapPath() {
+        return swapPath;
     }
 
     /**
-     * Sets a path to the memory-mapped file.
+     * Sets a path to the memory-mapped files.
      *
      * @param swapFilePath A Path to the memory mapped file.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setSwapFilePath(String swapFilePath) {
-        this.swapFilePath = swapFilePath;
+    public DataRegionConfiguration setSwapPath(String swapFilePath) {
+        this.swapPath = swapFilePath;
 
         return this;
     }

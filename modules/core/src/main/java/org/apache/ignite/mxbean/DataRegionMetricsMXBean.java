@@ -51,7 +51,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      * @return Path to the memory-mapped files.
      */
     @MXBeanDescription("Path to the memory-mapped files.")
-    public String getSwapFilePath();
+    public String getSwapPath();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of allocated pages.")

@@ -2811,7 +2811,7 @@ public class IgnitionEx {
                 region.setPageEvictionMode(mpc.getPageEvictionMode());
                 region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
                 region.setMetricsSubIntervalCount(mpc.getSubIntervals());
-                region.setSwapFilePath(mpc.getSwapFilePath());
+                region.setSwapPath(mpc.getSwapFilePath());
                 region.setMetricsEnabled(mpc.isMetricsEnabled());
 
                 if (mpc.getName() == null) {

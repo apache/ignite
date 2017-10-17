@@ -879,7 +879,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If resolving swap directory fails.
      */
     @Nullable private File buildAllocPath(DataRegionConfiguration plc) throws IgniteCheckedException {
-        String path = plc.getSwapFilePath();
+        String path = plc.getSwapPath();
 
         if (path == null)
             return null;

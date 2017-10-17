@@ -65,7 +65,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
                 new DataRegionConfiguration()
                     .setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
-                    .setSwapFilePath(DFLT_STORE_DIR))
+                    .setSwapPath(DFLT_STORE_DIR))
             .setWalMode(WALMode.LOG_ONLY)
             .setPageSize(1024)
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);

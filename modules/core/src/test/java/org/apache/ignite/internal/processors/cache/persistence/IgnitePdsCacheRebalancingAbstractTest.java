@@ -123,7 +123,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setMaxSize(150 * 1024 * 1024);
         memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath("work/swap");
+        memPlcCfg.setSwapPath("work/swap");
         memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);

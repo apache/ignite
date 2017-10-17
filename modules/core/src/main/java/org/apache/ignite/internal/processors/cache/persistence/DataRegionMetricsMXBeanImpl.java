@@ -28,17 +28,17 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     private final DataRegionMetricsImpl memMetrics;
 
     /** */
-    private final DataRegionConfiguration memPlcCfg;
+    private final DataRegionConfiguration dataRegCfg;
 
     /**
      * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
-     * @param memPlcCfg configuration of memory policy this MX Bean is created for.
+     * @param dataRegCfg Configuration of data region this MX Bean is created for.
      */
     DataRegionMetricsMXBeanImpl(DataRegionMetricsImpl memMetrics,
-        DataRegionConfiguration memPlcCfg
+        DataRegionConfiguration dataRegCfg
     ) {
         this.memMetrics = memMetrics;
-        this.memPlcCfg = memPlcCfg;
+        this.dataRegCfg = dataRegCfg;
     }
 
     /** {@inheritDoc} */
@@ -116,16 +116,16 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getInitialSize() {
-        return (int) (memPlcCfg.getInitialSize() / (1024 * 1024));
+        return (int) (dataRegCfg.getInitialSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
     @Override public int getMaxSize() {
-        return (int) (memPlcCfg.getMaxSize() / (1024 * 1024));
+        return (int) (dataRegCfg.getMaxSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
-    @Override public String getSwapFilePath() {
-        return memPlcCfg.getSwapFilePath();
+    @Override public String getSwapPath() {
+        return dataRegCfg.getSwapPath();
     }
 }
