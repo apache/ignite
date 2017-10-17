@@ -306,11 +306,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (serInfo.ObjectType != serializable.GetType() &&
-                serInfo.ObjectType.GetInterface("ISerializable") != null)
+                typeof(ISerializable).IsAssignableFrom(serInfo.ObjectType))
             {
                 // serInfo.ObjectType should be ISerializable. There is a known case for generic collections:
-                // serializable is EnumEqualityCompare: ISerializable and serInfo.ObjectType is ObjectEqualityComparer
-                // (does not implement ISerializable interface). Please read a possible explanation here:
+                // serializable is EnumEqualityComparer : ISerializable 
+                // and serInfo.ObjectType is ObjectEqualityComparer (does not implement ISerializable interface).
+                // Please read a possible explanation here:
                 // http://dotnetstudio.blogspot.ru/2012/06/net-35-to-net-40-enum.html
 
                 return serInfo.ObjectType;

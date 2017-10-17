@@ -111,9 +111,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             // 13. Arbitrary dictionary.
             ReadHandlers[BinaryTypeId.Dictionary] = new BinarySystemReader(ReadDictionary);
 
-            // 14. Enum. Should be read as Array, please see WriteEnumArray implementation
+            // 14. Enum. Should be read as Array, see WriteEnumArray implementation.
             ReadHandlers[BinaryTypeId.ArrayEnum] = new BinarySystemReader(ReadArray);
-
         }
 
         /// <summary>
