@@ -383,21 +383,105 @@ public class InlineIndexHelper {
 
         switch (type) {
             case IndexValueType.BOOLEAN:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
+                boolean bool2 = v.getBoolean();
+
+                return fixSort(Boolean.compare(bool1, bool2));
+
             case IndexValueType.BYTE:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                byte byte1 = PageUtils.getByte(pageAddr, off + 1);
+                byte byte2 = v.getByte();
+
+                return fixSort(Byte.compare(byte1, byte2));
+
             case IndexValueType.SHORT:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                short short1 = PageUtils.getShort(pageAddr, off + 1);
+                short short2 = v.getShort();
+
+                return fixSort(Short.compare(short1, short2));
+
             case IndexValueType.INT:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                int int1 = PageUtils.getInt(pageAddr, off + 1);
+                int int2 = v.getInt();
+
+                return fixSort(Integer.compare(int1, int2));
+
             case IndexValueType.LONG:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                long long1 = PageUtils.getLong(pageAddr, off + 1);
+                long long2 = v.getLong();
+
+                return fixSort(Long.compare(long1, long2));
+
             case IndexValueType.FLOAT:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
+                float float2 = v.getFloat();
+
+                return fixSort(Float.compare(float1, float2));
+
             case IndexValueType.DOUBLE:
                 if (PageUtils.getByte(pageAddr, off) != type)
                     return Integer.MIN_VALUE;
-                else
-                    return compareAsPrimitive(pageAddr, off, v, type);
+
+                double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
+                double double2 = v.getDouble();
+
+                return fixSort(Double.compare(double1, double2));
 
             case IndexValueType.TIME:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                long nanos1 = PageUtils.getLong(pageAddr, off + 1);
+                long nanos2 = ((ValueTime)v.convertTo(Value.TIME)).getNanos();
+
+                return fixSort(Long.compare(nanos1, nanos2));
+
             case IndexValueType.DATE:
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                long date1 = PageUtils.getLong(pageAddr, off + 1);
+                long date2 = ((ValueDate)v.convertTo(Value.DATE)).getDateValue();
+
+                return fixSort(Long.compare(date1, date2));
+
             case IndexValueType.TIMESTAMP:
-                return compareAsDateTime(pageAddr, off, v, type);
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+
+                ValueTimestamp v0 = (ValueTimestamp)v.convertTo(Value.TIMESTAMP);
+
+                date1 = PageUtils.getLong(pageAddr, off + 1);
+                date2 = v0.getDateValue();
+
+                int c = Long.compare(date1, date2);
+
+                if (c == 0) {
+                    nanos1 = PageUtils.getLong(pageAddr, off + 9);
+                    nanos2 = v0.getTimeNanos();
+
+                    c = Long.compare(nanos1, nanos2);
+                }
+
+                return fixSort(c);
 
             case IndexValueType.STRING:
             case IndexValueType.STRING_FIXED:
@@ -412,106 +496,6 @@ public class InlineIndexHelper {
         }
 
         return Integer.MIN_VALUE;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @param v Value to compare.
-     * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
-     */
-    private int compareAsDateTime(long pageAddr, int off, Value v, int type) {
-        // only compatible types are supported now.
-        if(PageUtils.getByte(pageAddr, off) == type) {
-            switch (type) {
-                case IndexValueType.TIME:
-                    long nanos1 = PageUtils.getLong(pageAddr, off + 1);
-                    long nanos2 = ((ValueTime)v.convertTo(type)).getNanos();
-
-                    return fixSort(Long.signum(nanos1 - nanos2));
-
-                case IndexValueType.DATE:
-                    long date1 = PageUtils.getLong(pageAddr, off + 1);
-                    long date2 = ((ValueDate)v.convertTo(type)).getDateValue();
-
-                    return fixSort(Long.signum(date1 - date2));
-
-                case IndexValueType.TIMESTAMP:
-                    ValueTimestamp v0 = (ValueTimestamp) v.convertTo(type);
-
-                    date1 = PageUtils.getLong(pageAddr, off + 1);
-                    date2 = v0.getDateValue();
-
-                    int c = Long.signum(date1 - date2);
-
-                    if (c == 0) {
-                        nanos1 = PageUtils.getLong(pageAddr, off + 9);
-                        nanos2 = v0.getTimeNanos();
-
-                        c = Long.signum(nanos1 - nanos2);
-                    }
-
-                    return fixSort(c);
-            }
-        }
-
-        return Integer.MIN_VALUE;
-    }
-
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @param v Value to compare.
-     * @param type Highest value type.
-     * @return Compare result ({@code -2} means we can't compare).
-     */
-    private int compareAsPrimitive(long pageAddr, int off, Value v, int type) {
-        switch (type) {
-            case IndexValueType.BOOLEAN:
-                boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
-                boolean bool2 = v.getBoolean();
-
-                return fixSort(Boolean.compare(bool1, bool2));
-
-            case IndexValueType.BYTE:
-                byte byte1 = PageUtils.getByte(pageAddr, off + 1);
-                byte byte2 = v.getByte();
-
-                return fixSort(Integer.signum(byte1 - byte2));
-
-            case IndexValueType.SHORT:
-                short short1 = PageUtils.getShort(pageAddr, off + 1);
-                short short2 = v.getShort();
-
-                return fixSort(Integer.signum(short1 - short2));
-
-            case IndexValueType.INT:
-                int int1 = PageUtils.getInt(pageAddr, off + 1);
-                int int2 = v.getInt();
-
-                return fixSort(Integer.compare(int1, int2));
-
-            case IndexValueType.LONG:
-                long long1 = PageUtils.getLong(pageAddr, off + 1);
-                long long2 = v.getLong();
-
-                return fixSort(Long.compare(long1, long2));
-
-            case IndexValueType.FLOAT:
-                float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
-                float float2 = v.getFloat();
-
-                return fixSort(Float.compare(float1, float2));
-
-            default:
-                assert type == IndexValueType.DOUBLE;
-
-                double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
-                double double2 = v.getDouble();
-
-                return fixSort(Double.compare(double1, double2));
-        }
     }
 
     /**
