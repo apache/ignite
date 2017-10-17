@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -211,6 +212,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Cache change requests. */
     private ExchangeActions exchActions;
+
+    /** Disco thread flag. */
+    private final ThreadLocal<Boolean> discoThread = new ThreadLocal<Boolean>(){
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     /**
      * Dummy future created to trigger reassignments if partition topology changed while preloading.
@@ -1072,6 +1080,30 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * @param nodeIds Node ids.
+     * @param req Partition single request.
+     */
+    private void sendPartitionRequest(Set<UUID> nodeIds, GridDhtPartitionsSingleRequest req) {
+        for (UUID nodeId : nodeIds) {
+            if (log.isDebugEnabled())
+                log.debug("Sending message: [node=" + nodeId + ", req=" + req + ']');
+
+            try {
+                // It is possible that some nodes finished exchange with previous coordinator.
+                cctx.io().send(nodeId, req, SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Node left during partition exchange [nodeId=" + nodeId +
+                        ", exchId=" + exchId + ']');
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to request partitions from node: " + nodeId, e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err) {
         boolean realExchange = !dummy && !forcePreload;
@@ -1742,7 +1774,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert discoEvts.isEmpty() : discoEvts;
         }
 
+        discoThread.set(true);
+
         c.run();
+
+        discoThread.set(false);
     }
 
     /**
@@ -1785,6 +1821,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
+                    // true if method was invoke from disco thread, otherwise false.
+                    boolean discoThread = GridDhtPartitionsExchangeFuture.this.discoThread.get();
+
                     if (isDone() || !enterBusy())
                         return;
 
@@ -1793,7 +1832,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         boolean allReceived = false;
                         Set<UUID> reqFrom = null;
 
-                        ClusterNode crd0;
+                        final ClusterNode crd0;
 
                         discoCache.updateAlives(node);
 
@@ -1849,22 +1888,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
 
                             if (crdChanged && reqFrom != null) {
-                                GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
+                                final GridDhtPartitionsSingleRequest req = new GridDhtPartitionsSingleRequest(exchId);
 
-                                for (UUID nodeId : reqFrom) {
-                                    try {
-                                        // It is possible that some nodes finished exchange with previous coordinator.
-                                        cctx.io().send(nodeId, req, SYSTEM_POOL);
-                                    }
-                                    catch (ClusterTopologyCheckedException ignored) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Node left during partition exchange [nodeId=" + nodeId +
-                                                ", exchId=" + exchId + ']');
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to request partitions from node: " + nodeId, e);
-                                    }
+                                if (discoThread) {
+                                    final Set<UUID> reqFrom0 = reqFrom;
+
+                                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                                        @Override public void run() {
+                                            sendPartitionRequest(reqFrom0, req);
+                                        }
+                                    }, true);
                                 }
+                                else
+                                    sendPartitionRequest(reqFrom, req);
                             }
 
                             for (Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> m : singleMsgs.entrySet())
@@ -1872,7 +1908,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
                         else {
                             if (crdChanged) {
-                                sendPartitions(crd0);
+                                if (discoThread) {
+                                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                                        @Override public void run() {
+                                            sendPartitions(crd0);
+                                        }
+                                    }, true);
+                                }
+                                else
+                                    sendPartitions(crd0);
 
                                 for (Map.Entry<ClusterNode, GridDhtPartitionsFullMessage> m : fullMsgs.entrySet())
                                     processMessage(m.getKey(), m.getValue());
