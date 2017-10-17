@@ -59,6 +59,27 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 // Null key.
                 Assert.Throws<ArgumentNullException>(() => clientCache.Get(null));
+
+                // Null vs 0.
+                var intCache = client.GetCache<int?, int?>(CacheName);
+                intCache.Put(1, 0);
+                Assert.AreEqual(0, intCache.Get(1));
+            }
+        }
+
+        /// <summary>
+        /// Tests the cache put / get for Empty object type.
+        /// </summary>
+        [Test]
+        public void TestPutGetEmptyObject()
+        {
+            using (var client = GetClient())
+            {
+                var serverCache = GetCache<EmptyObject>();
+                var clientCache = client.GetCache<int, EmptyObject>(CacheName);
+
+                serverCache.Put(1, new EmptyObject());
+                Assert.IsNotNull(clientCache.Get(1));
             }
         }
 
@@ -79,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 var person = new Person {Id = 100, Name = "foo"};
                 var person2 = new Person2 {Id = 200, Name = "bar"};
-                
+
                 var serverCache = GetCache<Person>();
                 var clientCache = client.GetCache<int?, Person>(CacheName);
 
