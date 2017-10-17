@@ -2,12 +2,10 @@ package org.apache.ignite.ml.regressions;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.decompositions.QRDecomposition;
 import org.apache.ignite.ml.math.decompositions.distributed.DistributedQRDecomposition;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.functions.Functions;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 

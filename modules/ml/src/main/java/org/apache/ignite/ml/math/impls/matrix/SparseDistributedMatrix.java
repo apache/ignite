@@ -138,7 +138,6 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
             Ignite ignite = Ignition.localIgnite();
             Affinity affinity = ignite.affinity(cacheName);
 
-            IgniteCache<RowColMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
 
             SparseDistributedMatrixStorage storageC = matrixC.storage();

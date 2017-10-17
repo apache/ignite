@@ -188,7 +188,7 @@ public class DistributedQRDecomposition implements Destroyable {
         Matrix qt = getQ().transpose();
         MatrixUtil.toString("QT", qt, rows, rows);
         MatrixUtil.toString("mtx", mtx, cols, rows);
-        Matrix y = qt.times(mtx); //TODO:6222 The main problem is here
+        Matrix y = qt.times(mtx);
         MatrixUtil.toString("y", y, 1, rows);
 
         for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {  // TODO:6222 distribute it
@@ -200,9 +200,14 @@ public class DistributedQRDecomposition implements Destroyable {
 
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
             Vector rCol = r.viewColumn(k).viewPart(0, k);
+            MatrixUtil.toString("rCol on iteration k = " + k, rCol, k);
 
-            for (int c = 0; c < cols; c++) // TODO:6222 distribute it with affinityRun and Keys to map
-                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c))); // TODO:6222 distribute it
+            for (int c = 0; c < cols; c++){
+                Vector part = y.viewColumn(c).viewPart(0, k);
+                MatrixUtil.toString("part on iteration c before mult = " + c, part, k);
+                part.map(rCol, Functions.plusMult(-x.get(k, c)));
+                MatrixUtil.toString("part on iteration c after mult = " + c, part, k);
+            }
         }
 
         return x;
@@ -218,6 +223,7 @@ public class DistributedQRDecomposition implements Destroyable {
     public Vector solve(Vector vec) {
         MatrixUtil.toString("vec", vec.likeMatrix(vec.size(), 1).assignColumn(0, vec),  1, vec.size());
         Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
+        MatrixUtil.toString("Result of solving = ", res, 1, vec.size());
         return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }
 

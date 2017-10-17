@@ -251,8 +251,8 @@ public class MatrixUtil {
     /**
      * For vectors with size less than 100
      */
-    public static void toString(Vector v, int size){
-        System.out.println(">>>> Print out vector " + v.guid().toString());
+    public static void toString(String name, Vector v, int size){
+        System.out.println(">>>> Print out vector " + name + " " +  v.guid().toString());
         assert size < 100;
         StringBuffer s = new StringBuffer("[");
         for (int i = 0; i < size; i++) {

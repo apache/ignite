@@ -111,7 +111,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return new SparseDistributedMatrix(rows, cols);
+        return new SparseBlockDistributedMatrix(rows, cols);
     }
 
     /**
@@ -136,11 +136,6 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {
         return mapOverValues(v -> val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector assign(Vector data) {
-        throw new UnsupportedOperationException(); // TODO: implement
     }
 
     /** {@inheritDoc} */

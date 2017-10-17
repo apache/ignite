@@ -35,6 +35,7 @@ import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
+import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link BlockEntry}.
@@ -58,6 +59,17 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         assert cols > 0;
 
         setStorage(new BlockMatrixStorage(rows, cols));
+    }
+
+    public SparseBlockDistributedMatrix(double[][] data) {
+        assert data.length > 0;
+        setStorage(new BlockMatrixStorage(data.length, getMaxAmountOfColumns(data)));
+
+        for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[i].length; j++) {
+                storage().set(i,j,data[i][j]);
+            }
+        }
     }
 
     /**
@@ -171,7 +183,11 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        throw new UnsupportedOperationException();
+        Matrix cp = like(rowSize(), columnSize());
+
+        cp.assign(this);
+
+        return cp;
     }
 
     /** {@inheritDoc} */
