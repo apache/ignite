@@ -65,8 +65,12 @@ public class JdbcSimpleBenchmark {
         jdbcUrl = System.getProperty("jdbcUrl");
 
         itemsCnt = Long.getLong("items", 1000000);
+        rsSize = Long.getLong("rsSize", 1);
+
         warmup = Integer.getInteger("warmup", 30);
         duration = Integer.getInteger("duration", 300);
+
+        System.out.println("rsSize=" + rsSize);
 
         if (F.isEmpty(jdbcUrl))
             nativeSqlBenchmark();
