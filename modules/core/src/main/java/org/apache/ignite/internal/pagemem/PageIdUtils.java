@@ -213,4 +213,15 @@ public final class PageIdUtils {
             ")"
             ;
     }
+
+    /**
+     * @param pageId Page ID.
+     * @param partId Partition ID.
+     */
+    public static long changePartitionId(long pageId, int partId) {
+        byte flag = flag(pageId);
+        int pageIdx = pageIndex(pageId);
+
+        return pageId(partId, flag, pageIdx);
+    }
 }
