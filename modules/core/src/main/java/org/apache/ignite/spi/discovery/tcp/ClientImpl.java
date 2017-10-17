@@ -1680,7 +1680,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                 onDisconnected();
 
-                                notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
+                                if (joinLatch.getCount() == 0)
+                                    notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
 
                             UUID newId = UUID.randomUUID();
