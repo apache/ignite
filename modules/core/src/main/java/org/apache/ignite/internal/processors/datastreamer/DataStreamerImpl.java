@@ -302,10 +302,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             @Override public void onEvent(Event evt) {
                 assert evt instanceof DiscoveryEvent;
 
+                ClusterNode evtNode = ((DiscoveryEvent)evt).eventNode();
+
                 if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
                     DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
-                    UUID id = discoEvt.eventNode().id();
+                    UUID id = evtNode.id();
 
                     // Remap regular mappings.
                     final Buffer buf = bufMappings.remove(id);
@@ -323,8 +325,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 boolean needRemap = false;
 
-                if ((evt.type() == EVT_NODE_FAILED && evt.type() == EVT_NODE_LEFT && evt.type() == EVT_NODE_JOINED)
-                    && CU.affinityNode(evt.node(), ccfg.getNodeFilter()))
+                if ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_JOINED)
+                    && CU.affinityNode(evtNode, ccfg.getNodeFilter()))
                     needRemap = true;
                 else if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                     DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent) evt;

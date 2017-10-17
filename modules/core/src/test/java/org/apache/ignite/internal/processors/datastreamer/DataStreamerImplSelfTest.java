@@ -431,7 +431,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientEventsNotCausingRemaps() throws Exception {
         startGrids(2);
 
@@ -481,7 +483,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         int topChanges = 0;
 
         while (topChanges < 30 && !isStreamerFailed) {
-            final Ignite node = startGrid(getConfiguration("flapping-client").setClientMode(true));
+            final Ignite node = startGrid(optimize(getConfiguration("flapping-client").setClientMode(true)));
 
             node.getOrCreateCache(cacheConfiguration()).get(0);
 
@@ -509,6 +511,35 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         if (!isStreamerFailed)
             streamer.get();
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerEventsCauseRemaps() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.createCache(DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ((DataStreamerImpl)streamer).maxRemapCount(0);
+
+        streamer.addData(1, 1);
+
+        startGrid(2);
+
+        try {
+            streamer.addData(1, 1);
+
+            streamer.flush();
+        }
+        catch (Exception ex) {
+            return;
+        }
+
+        fail("Expected exception wasn't thrown");
+    }
+
 
     /**
      * Gets cache configuration.
