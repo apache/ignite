@@ -389,7 +389,10 @@ public class InlineIndexHelper {
             case IndexValueType.LONG:
             case IndexValueType.FLOAT:
             case IndexValueType.DOUBLE:
-                return compareAsPrimitive(pageAddr, off, v, type);
+                if (PageUtils.getByte(pageAddr, off) != type)
+                    return Integer.MIN_VALUE;
+                else
+                    return compareAsPrimitive(pageAddr, off, v, type);
 
             case IndexValueType.TIME:
             case IndexValueType.DATE:
@@ -400,12 +403,12 @@ public class InlineIndexHelper {
             case IndexValueType.STRING_FIXED:
             case IndexValueType.STRING_IGNORECASE:
                 if (compareStringsOptimized)
-                    return compareAsString(pageAddr, off, v, type == IndexValueType.STRING_IGNORECASE);
+                    return compareAsString(pageAddr, off, v.getString(), type == IndexValueType.STRING_IGNORECASE);
 
                 break;
 
             case IndexValueType.BYTES:
-                return compareAsBytes(pageAddr, off, v);
+                return compareAsBytes(pageAddr, off, v.getBytesNoCopy());
         }
 
         return Integer.MIN_VALUE;
@@ -464,65 +467,60 @@ public class InlineIndexHelper {
      * @return Compare result ({@code -2} means we can't compare).
      */
     private int compareAsPrimitive(long pageAddr, int off, Value v, int type) {
-        // only compatible types are supported now.
-        if(PageUtils.getByte(pageAddr, off) == type) {
-            switch (type) {
-                case IndexValueType.BOOLEAN:
-                    boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
-                    boolean bool2 = v.getBoolean();
+        switch (type) {
+            case IndexValueType.BOOLEAN:
+                boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
+                boolean bool2 = v.getBoolean();
 
-                    return fixSort(Boolean.compare(bool1, bool2));
+                return fixSort(Boolean.compare(bool1, bool2));
 
-                case IndexValueType.BYTE:
-                    byte byte1 = PageUtils.getByte(pageAddr, off + 1);
-                    byte byte2 = v.getByte();
+            case IndexValueType.BYTE:
+                byte byte1 = PageUtils.getByte(pageAddr, off + 1);
+                byte byte2 = v.getByte();
 
-                    return fixSort(Integer.signum(byte1 - byte2));
+                return fixSort(Integer.signum(byte1 - byte2));
 
-                case IndexValueType.SHORT:
-                    short short1 = PageUtils.getShort(pageAddr, off + 1);
-                    short short2 = v.getShort();
+            case IndexValueType.SHORT:
+                short short1 = PageUtils.getShort(pageAddr, off + 1);
+                short short2 = v.getShort();
 
-                    return fixSort(Integer.signum(short1 - short2));
+                return fixSort(Integer.signum(short1 - short2));
 
-                case IndexValueType.INT:
-                    int int1 = PageUtils.getInt(pageAddr, off + 1);
-                    int int2 = v.getInt();
+            case IndexValueType.INT:
+                int int1 = PageUtils.getInt(pageAddr, off + 1);
+                int int2 = v.getInt();
 
-                    return fixSort(Integer.compare(int1, int2));
+                return fixSort(Integer.compare(int1, int2));
 
-                case IndexValueType.LONG:
-                    long long1 = PageUtils.getLong(pageAddr, off + 1);
-                    long long2 = v.getLong();
+            case IndexValueType.LONG:
+                long long1 = PageUtils.getLong(pageAddr, off + 1);
+                long long2 = v.getLong();
 
-                    return fixSort(Long.compare(long1, long2));
+                return fixSort(Long.compare(long1, long2));
 
-                case IndexValueType.FLOAT:
-                    float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
-                    float float2 = v.getFloat();
+            case IndexValueType.FLOAT:
+                float float1 = Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1));
+                float float2 = v.getFloat();
 
-                    return fixSort(Float.compare(float1, float2));
+                return fixSort(Float.compare(float1, float2));
 
-                case IndexValueType.DOUBLE:
-                    double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
-                    double double2 = v.getDouble();
+            default:
+                assert type == IndexValueType.DOUBLE;
 
-                    return fixSort(Double.compare(double1, double2));
-            }
+                double double1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
+                double double2 = v.getDouble();
+
+                return fixSort(Double.compare(double1, double2));
         }
-
-        return Integer.MIN_VALUE;
     }
 
     /**
      * @param pageAddr Page address.
      * @param off Offset.
-     * @param v Value to compare.
+     * @param bytes Bytes to compare to.
      * @return Compare result ({@code -2} means we can't compare).
      */
-    private int compareAsBytes(long pageAddr, int off, Value v) {
-        byte[] bytes = v.getBytesNoCopy();
-
+    private int compareAsBytes(long pageAddr, int off, byte[] bytes) {
         int len1;
 
         long addr = pageAddr + off + 1; // Skip type.
@@ -576,13 +574,11 @@ public class InlineIndexHelper {
     /**
      * @param pageAddr Page address.
      * @param off Offset.
-     * @param v Value to compare.
+     * @param s String to compare.
      * @param ignoreCase {@code True} if a case-insensitive comparison should be used.
      * @return Compare result ({@code -2} means we can't compare).
      */
-    private int compareAsString(long pageAddr, int off, Value v, boolean ignoreCase) {
-        String s = v.getString();
-
+    private int compareAsString(long pageAddr, int off, String s, boolean ignoreCase) {
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
         int len2 = s.length();
 
