@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -635,35 +636,32 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
                 }
                 catch (Exception ex) {
-                    e = new IgniteCheckedException("Failed to perform final activation steps", ex);
-
-                    U.error(log, "Failed to perform final activation steps [nodeId=" + ctx.localNodeId() +
-                        ", client=" + client + ", topVer=" + req.topologyVersion() + "]", ex);
-                }
-                finally {
-                    globalState.setTransitionResult(req.requestId(), true);
-
-                    sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), e);
+                    throw new IgniteException(ex);
                 }
             }
         });
     }
 
-    /**
-     * @param req State change request.
-     */
-    private void onFinalDeActivate(final StateChangeRequest req) {
-        globalState.setTransitionResult(req.requestId(), false);
-
-        sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);
-    }
-
     /** {@inheritDoc} */
     @Override public void onStateChangeExchangeDone(StateChangeRequest req) {
-        if (req.activate())
-            onFinalActivate(req);
-        else
-            onFinalDeActivate(req);
+        try {
+            if (req.activeChanged()) {
+                if (req.activate())
+                    onFinalActivate(req);
+
+                globalState.setTransitionResult(req.requestId(), req.activate());
+            }
+
+            sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);
+        }
+        catch (Exception ex) {
+            Exception e = new IgniteCheckedException("Failed to perform final activation steps", ex);
+
+            U.error(log, "Failed to perform final activation steps [nodeId=" + ctx.localNodeId() +
+                ", client=" + ctx.clientNode() + ", topVer=" + req.topologyVersion() + "]", ex);
+
+            sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), e);
+        }
     }
 
     /**
