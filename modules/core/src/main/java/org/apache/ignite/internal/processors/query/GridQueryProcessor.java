@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,16 +63,15 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -105,7 +103,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -1698,30 +1695,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Writes key-value pair to index.
-     *
-     * @param cacheName Cache name.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Cache entry version.
-     * @param expirationTime Expiration time or 0 if never expires.
+     * @param cctx Cache context.
+     * @param newRow New row.
+     * @param prevRow Previous row.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(final String cacheName,
-        final KeyCacheObject key,
-        int partId,
-        @Nullable CacheObject prevVal,
-        @Nullable GridCacheVersion prevVer,
-        final CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime,
-        long link) throws IgniteCheckedException {
-        assert key != null;
-        assert val != null;
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+        throws IgniteCheckedException {
+        assert cctx != null;
+        assert newRow != null;
+
+        KeyCacheObject key = newRow.key();
 
         if (log.isDebugEnabled())
-            log.debug("Store [cache=" + cacheName + ", key=" + key + ", val=" + val + "]");
+            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + newRow.value() + "]");
 
         if (idx == null)
             return;
@@ -1730,21 +1718,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
         try {
-            CacheObjectContext coctx = cacheObjectContext(cacheName);
+            String cacheName = cctx.name();
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
+            CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            if (prevVal != null) {
-                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName, coctx, key, prevVal, false);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
+
+            if (prevRow != null) {
+                QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
+                    coctx,
+                    key,
+                    prevRow.value(),
+                    false);
 
                 if (prevValDesc != null && prevValDesc != desc)
-                    idx.remove(cacheName, prevValDesc, key, partId, prevVal, prevVer);
+                    idx.remove(cctx, prevValDesc, prevRow);
             }
 
             if (desc == null)
                 return;
 
-            idx.store(cacheName, desc, key, partId, val, ver, expirationTime, link);
+            idx.store(cctx, desc, newRow);
         }
         finally {
             busyLock.leaveBusy();
@@ -1925,80 +1919,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Create query filter for given partitions.
-     * @param parts partitions to create filter for.
-     * @return Indexing query filter.
-     */
-    public IndexingQueryFilter backupFilter(@Nullable final int[] parts) {
-        return backupFilter(U.firstNotNull(requestTopVer.get(), AffinityTopologyVersion.NONE), parts);
-    }
-
-    /**
-     * Create query filter for given partitions and topology version.
-     * @param topVer topology version.
-     * @param parts partitions to create filter for.
-     * @return Indexing query filter.
-     */
-    public IndexingQueryFilter backupFilter(final AffinityTopologyVersion topVer, @Nullable final int[] parts) {
-        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
-
-        return new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forCache(String cacheName) {
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
-
-                if (cache.context().isReplicated())
-                    return null;
-
-                final GridCacheAffinityManager aff = cache.context().affinity();
-
-                if (parts != null) {
-                    if (parts.length < 64) { // Fast scan for small arrays.
-                        return new IgniteBiPredicate<K, V>() {
-                            @Override public boolean apply(K k, V v) {
-                                int p = aff.partition(k);
-
-                                for (int p0 : parts) {
-                                    if (p0 == p)
-                                        return true;
-
-                                    if (p0 > p) // Array is sorted.
-                                        return false;
-                                }
-
-                                return false;
-                            }
-                        };
-                    }
-
-                    return new IgniteBiPredicate<K, V>() {
-                        @Override public boolean apply(K k, V v) {
-                            int p = aff.partition(k);
-
-                            return Arrays.binarySearch(parts, p) >= 0;
-                        }
-                    };
-                }
-
-                final ClusterNode locNode = ctx.discovery().localNode();
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return aff.primaryByKey(locNode, k, topVer0);
-                    }
-                };
-            }
-
-            @Override public boolean isValueRequired() {
-                return false;
-            }
-
-            @Override public String toString() {
-                return "IndexingQueryFilter [ver=" + topVer + ']';
-            }
-        };
-    }
-
-    /**
      * Validate SQL fields query.
      *
      * @param qry Query.
@@ -2130,7 +2050,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             return idx.queryDistributedSql(schemaName, cctx.name(), qry, keepBinary);
                         }
                         else
-                            return idx.queryLocalSql(schemaName, cctx.name(), qry, backupFilter(requestTopVer.get(),
+                            return idx.queryLocalSql(schemaName, cctx.name(), qry, idx.backupFilter(requestTopVer.get(),
                                 qry.getPartitions()), keepBinary);
                     }
                 }, true);
@@ -2325,16 +2245,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param key Key.
+     * @param cctx Cache context.
+     * @param val Row.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(String cacheName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver)
+    public void remove(GridCacheContext cctx, CacheDataRow val)
         throws IgniteCheckedException {
-        assert key != null;
+        assert val != null;
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cacheName + ", key=" + key + ", val=" + val + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key()+ ", val=" + val.value() + "]");
 
         if (idx == null)
             return;
@@ -2343,14 +2263,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            CacheObjectContext coctx = cacheObjectContext(cacheName);
-
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, false);
+            QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
+                cctx.cacheObjectContext(),
+                val.key(),
+                val.value(),
+                false);
 
             if (desc == null)
                 return;
 
-            idx.remove(cacheName, desc, key, partId, val, ver);
+            idx.remove(cctx, desc, val);
         }
         finally {
             busyLock.leaveBusy();

@@ -42,7 +42,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -308,15 +309,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void store(String cacheName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-            CacheObject val, GridCacheVersion ver, long expirationTime, long link) throws IgniteCheckedException {
-            // No-op
+        @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-            CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
-            // No-op
+        @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -327,6 +326,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public void markForRebuildFromHash(String cacheName) {
             // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
+            return null;
         }
 
         /** {@inheritDoc} */

@@ -209,7 +209,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
-        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false);
+        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
     }
 
     /** */

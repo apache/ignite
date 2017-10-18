@@ -29,10 +29,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -209,27 +208,24 @@ public interface GridQueryIndexing {
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param type Type descriptor.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expirationTime Expiration time or 0 if never expires.
+     * @param row New row.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(String cacheName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId, CacheObject val,
-        GridCacheVersion ver, long expirationTime, long link) throws IgniteCheckedException;
+    public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row)
+        throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
      *
-     * @param cacheName Cache name.
-     * @param key Key.
-     * @param val Value.
+     * @param cctx Cache context.
+     * @param type Type descriptor.
+     * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(String cacheName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId, CacheObject val,
-        GridCacheVersion ver) throws IgniteCheckedException;
+    public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row)
+        throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type from hash index.
@@ -245,6 +241,15 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      */
     public void markForRebuildFromHash(String cacheName);
+
+    /**
+     * Returns backup filter.
+     *
+     * @param topVer Topology version.
+     * @param parts Partitions.
+     * @return Backup filter.
+     */
+    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
 
     /**
      * Client disconnected callback.

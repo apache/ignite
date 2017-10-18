@@ -180,6 +180,12 @@ namespace ignite
 
                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
 
+                    skipReducerOnUpdateCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos,
+                        checkBoxSize, rowSize, "Skip reducer on update", ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
+                        config.IsSkipReducerOnUpdate());
+
+                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
                     rowPos += interval * 2 + rowSize;
 
                     connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
@@ -264,6 +270,13 @@ namespace ignite
                                     break;
                                 }
 
+                                case ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX:
+                                {
+                                    skipReducerOnUpdateCheckBox->SetChecked(!skipReducerOnUpdateCheckBox->IsChecked());
+
+                                    break;
+                                }
+
                                 case ChildId::PROTOCOL_VERSION_COMBO_BOX:
                                 {
                                     std::string versionStr;
@@ -271,6 +284,7 @@ namespace ignite
 
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+                                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
 
                                     break;
                                 }
@@ -309,6 +323,7 @@ namespace ignite
                     bool replicatedOnly;
                     bool collocated;
                     bool lazy;
+                    bool skipReducerOnUpdate;
 
                     nameEdit->GetText(dsn);
                     addressEdit->GetText(address);
@@ -330,6 +345,9 @@ namespace ignite
                     collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
                     lazy = lazyCheckBox->IsEnabled() && lazyCheckBox->IsChecked();
 
+                    skipReducerOnUpdate =
+                        skipReducerOnUpdateCheckBox->IsEnabled() && skipReducerOnUpdateCheckBox->IsChecked();
+
                     LOG_MSG("Retriving arguments:");
                     LOG_MSG("DSN:                " << dsn);
                     LOG_MSG("Address:            " << address);
@@ -341,6 +359,7 @@ namespace ignite
                     LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
                     LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
                     LOG_MSG("Lazy:               " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update:   " << (skipReducerOnUpdate ? "true" : "false"));
 
                     if (dsn.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
@@ -355,6 +374,7 @@ namespace ignite
                     cfg.SetReplicatedOnly(replicatedOnly);
                     cfg.SetCollocated(collocated);
                     cfg.SetLazy(lazy);
+                    cfg.SetSkipReducerOnUpdate(skipReducerOnUpdate);
                 }
             }
         }
