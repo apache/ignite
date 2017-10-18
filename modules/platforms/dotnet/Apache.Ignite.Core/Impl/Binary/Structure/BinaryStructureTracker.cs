@@ -119,6 +119,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             {
                 // Empty object (no fields).
                 // Null WriterTypeStructure indicates that meta has never been sent for this type.
+                writer.Marshaller.GetBinaryTypeHandler(_desc);
                 writer.SaveMetadata(_desc, null);
                 _desc.UpdateWriteStructure(_curStructPath, null);
             }
