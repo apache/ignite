@@ -26,7 +26,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
 /**
  * This class allows defining custom data regions' configurations with various parameters for Apache Ignite
  * page memory (see {@link DataStorageConfiguration}. For each configured data region Apache Ignite instantiates
- * respective memory regions with different parameters like maximum size, eviction policy, swapping options, etc.
+ * respective memory regions with different parameters like maximum size, eviction policy, swapping options,
+ * persistent mode flag, etc.
  * An Apache Ignite cache can be mapped to a particular region using
  * {@link CacheConfiguration#setDataRegionName(String)} method.
  * <p>Sample configuration below shows how to configure several data regions:</p>

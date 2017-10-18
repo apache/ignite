@@ -26,21 +26,21 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * A page memory configuration for an Apache Ignite node. The page memory is a manageable off-heap based memory
+ * A durable memory configuration for an Apache Ignite node. The durable memory is a manageable off-heap based memory
  * architecture that divides all expandable data regions into pages of fixed size
- * (see {@link DataStorageConfiguration#getPageSize()}. An individual page can store one or many cache key-value entries
+ * (see {@link DataStorageConfiguration#getPageSize()}). An individual page can store one or many cache key-value entries
  * that allows reusing the memory in the most efficient way and avoid memory fragmentation issues.
  * <p>
- * By default, the page memory allocates a single expandable data region with default settings. All the caches that
+ * By default, the durable memory allocates a single expandable data region with default settings. All the caches that
  * will be configured in an application will be mapped to this data region by default, thus, all the cache data will
- * reside in that data region.
+ * reside in that data region. Parameters of default data region can be changed by setting
+ * {@link DataStorageConfiguration#setDefaultDataRegionConfiguration(DataRegionConfiguration)}.
+ * Other data regions (except default) can be configured with
+ * {@link DataStorageConfiguration#setDataRegionConfigurations(DataRegionConfiguration...)}.
  * <p>
- * If initial size of the default data region doesn't satisfy requirements or it's required to have multiple data
- * regions with different properties then {@link DataRegionConfiguration} can be used for both scenarios.
- * For instance, using data regions you can define data regions of different maximum size, eviction policies,
- * swapping options, etc. Once you define a new data region you can bind particular Ignite caches to it.
- * <p>
- * To learn more about data regions refer to {@link DataRegionConfiguration} documentation.
+ * Data region can be used in memory-only mode, or in persistent mode, when memory is used as a caching layer for disk.
+ * Persistence for data region can be turned on with {@link DataRegionConfiguration#setPersistenceEnabled(boolean)}
+ * flag. To learn more about data regions refer to {@link DataRegionConfiguration} documentation.
  * <p>Sample configuration below shows how to make 5 GB data regions the default one for Apache Ignite:</p>
  * <pre>
  *     {@code
@@ -685,8 +685,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Type define behavior wal fsync.
-     * Different type provide different guarantees for consistency.
+     * Property that defines behavior of wal fsync.
+     * Different type provides different guarantees for consistency. See {@link WALMode} for details.
      *
      * @return WAL mode.
      */
@@ -695,6 +695,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets property that defines behavior of wal fsync.
+     * Different type provides different guarantees for consistency. See {@link WALMode} for details.
+     *
      * @param walMode Wal mode.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
@@ -714,6 +717,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets size of thread local buffer.
+     * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     *
      * @param walTlbSize Thread local buffer size (in bytes).
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
@@ -745,13 +751,21 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets the fsync delay, in nanoseconds.
+     * Property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
+     * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
+     * Total throughput should increase under load as total WAL fsync rate will be limited.
      */
     public long getWalFsyncDelayNanos() {
         return walFsyncDelay <= 0 ? DFLT_WAL_FSYNC_DELAY : walFsyncDelay;
     }
 
     /**
+     * Sets property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
+     * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
+     * Total throughput should increase under load as total WAL fsync rate will be limited.
+     *
      * @param walFsyncDelayNanos Wal fsync delay, in nanoseconds.
      */
     public DataStorageConfiguration setWalFsyncDelayNanos(long walFsyncDelayNanos) {
@@ -761,8 +775,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     *  Property define how many bytes iterator read from
-     *  disk (for one reading), during go ahead wal.
+     * Property define how many bytes iterator read from
+     * disk (for one reading), during go ahead wal.
      *
      * @return Record iterator buffer size.
      */
@@ -771,6 +785,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets property defining how many bytes iterator read from
+     * disk (for one reading), during go ahead wal.
+     *
      * @param walRecordIterBuffSize Wal record iterator buffer size.
      */
     public DataStorageConfiguration setWalRecordIteratorBufferSize(int walRecordIterBuffSize) {
@@ -812,6 +829,9 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * Sets factory to provide implementation of FileIO interface
+     * which is used for any file read/write operations
+     *
      * @param fileIOFactory File I/O factory
      */
     public DataStorageConfiguration setFileIOFactory(FileIOFactory fileIOFactory) {
