@@ -61,10 +61,8 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
             }
         }
 
-        if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
-            if (ignite() != null)
-                Ignition.stop(ignite().name(), false);
-        }
+        if (ignite() != null)
+            Ignition.stop(ignite().name(), false);
 
         println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
