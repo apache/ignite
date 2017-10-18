@@ -236,6 +236,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (_writerTypeStruct == null)
                 {
+                    // Null struct serves as an indication of a binary type that has never been sent to the cluster,
+                    // which is important for types without any fields.
                     _writerTypeStruct = BinaryStructure.CreateEmpty();
                 }
 
