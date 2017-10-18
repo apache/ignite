@@ -46,7 +46,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
     private static final ClassLoader CLASS_LOADER = IgniteCompatibilityAbstractTest.class.getClassLoader();
 
     /** Using for synchronization of nodes startup in case of starting remote nodes first. */
-    public static final String SYNCHRONIZATION_LOG_MESSAGE_PREPARED = "[Compatibility] Node has been started, id=";
+    public static final String SYNCHRONIZATION_LOG_MESSAGE = "[Compatibility] Node has been started, id=";
 
     /** Waiting milliseconds of the join of a node to topology. */
     protected static final int NODE_JOIN_TIMEOUT = 30_000;
@@ -271,7 +271,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
          */
         LoggedJoinNodeClosure(CountDownLatch nodeJoinedLatch, UUID nodeId) {
             this.nodeJoinedLatch = nodeJoinedLatch;
-            this.pattern = SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId;
+            this.pattern = SYNCHRONIZATION_LOG_MESSAGE + nodeId;
         }
 
         /** {@inheritDoc} */
