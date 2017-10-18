@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         public void UpdateReaderStructure()
         {
             if (_curStructUpdates != null)
-                _desc.UpdateReadStructure(_desc.ReaderTypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateReadStructure(_curStructPath, _curStructUpdates);
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             if (_curStructUpdates != null)
             {
-                _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateWriteStructure(_curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;
 
@@ -114,6 +114,10 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     // In this case, we should still call SaveMetadata even if fields are null
                     writer.SaveMetadata(_desc, fields);
                 }
+            }
+            else
+            {
+                // TODO
             }
         }
 
