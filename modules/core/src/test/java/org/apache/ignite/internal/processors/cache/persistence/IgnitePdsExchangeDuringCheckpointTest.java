@@ -39,6 +39,9 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Non-persistent data region name. */
+    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+
     /**
      *
      */
@@ -89,18 +92,26 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(1000 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(800 * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointThreads(1)
             .setCheckpointFrequency(1);
+
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setMaxSize(200 * 1024 * 1024)
+            .setName(NO_PERSISTENCE_REGION)
+            .setPersistenceEnabled(false));
 
         cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
+        CacheConfiguration ccfgNp = new CacheConfiguration("nonPersistentCache");
+        ccfgNp.setDataRegionName(NO_PERSISTENCE_REGION);
+
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
 
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(ccfg, ccfgNp);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

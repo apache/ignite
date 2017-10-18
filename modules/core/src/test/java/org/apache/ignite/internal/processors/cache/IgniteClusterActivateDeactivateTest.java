@@ -67,6 +67,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /** */
     static final String CACHE_NAME_PREFIX = "cache-";
 
+    /** Non-persistent data region name. */
+    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+
     /** */
     boolean client;
 
@@ -121,6 +124,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(10 * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
+
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setMaxSize(10 * 1024 * 1024)
+            .setName(NO_PERSISTENCE_REGION)
+            .setPersistenceEnabled(false));
 
         if (persistenceEnabled())
             memCfg.setWalMode(WALMode.LOG_ONLY);
@@ -1233,12 +1241,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @return Cache configurations.
      */
     final CacheConfiguration[] cacheConfigurations2() {
-        CacheConfiguration[] ccfgs = new CacheConfiguration[4];
+        CacheConfiguration[] ccfgs = new CacheConfiguration[5];
 
         ccfgs[0] = cacheConfiguration(CACHE_NAME_PREFIX + 0, ATOMIC);
         ccfgs[1] = cacheConfiguration(CACHE_NAME_PREFIX + 1, TRANSACTIONAL);
         ccfgs[2] = cacheConfiguration(CACHE_NAME_PREFIX + 2, ATOMIC);
         ccfgs[3] = cacheConfiguration(CACHE_NAME_PREFIX + 3, TRANSACTIONAL);
+        ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
+
+        ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
 
         return ccfgs;
     }

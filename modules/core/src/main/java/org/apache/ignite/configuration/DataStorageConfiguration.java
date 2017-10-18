@@ -472,8 +472,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Time out in milliseonds to wait when acquiring persistence store lock file before failing the
-     * local node.
+     * Timeout in milliseconds to wait when acquiring persistence store lock file before failing the local node.
      *
      * @return Lock wait time in milliseconds.
      */
@@ -482,8 +481,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Time out in milliseconds  to wait when acquiring persistence store lock file before failing the
-     * local node.
+     * Timeout in milliseconds to wait when acquiring persistence store lock file before failing the local node.
      *
      * @param lockWaitTime Lock wait time in milliseconds.
      * @return {@code this} for chaining.
