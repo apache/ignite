@@ -19,6 +19,9 @@ package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -82,6 +85,43 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 100; i++) {
             TestObject to = new TestObject(rnd.nextLong());
+
+            BinaryObjectImpl bObj = toBinary(to, marsh);
+
+            for (BinaryFieldEx field : fields)
+                field.writeField(bObj, buf);
+
+            buf.flip();
+
+            for (BinaryFieldEx field : fields)
+                assertEquals(field.value(bObj), field.readField(buf));
+
+            buf.flip();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDateMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        TestDate obj = new TestDate(0);
+
+        BinaryObjectImpl binObj = toBinary(obj, marsh);
+
+        BinaryFieldEx[] fields = new BinaryFieldEx[] {
+            (BinaryFieldEx)binObj.type().field("date"),
+            (BinaryFieldEx)binObj.type().field("time"),
+            (BinaryFieldEx)binObj.type().field("timestamp")
+        };
+
+        ByteBuffer buf = ByteBuffer.allocate(1024 * 1024);
+
+        for (int i = 0; i < 100; i++) {
+            TestDate to = new TestDate(rnd.nextLong());
 
             BinaryObjectImpl bObj = toBinary(to, marsh);
 
@@ -191,6 +231,27 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
             lVal = seed;
             fVal = seed;
             dVal = seed;
+        }
+    }
+
+    /** */
+    private static class TestDate {
+        /** */
+        private Date date;
+
+        /** */
+        private Time time;
+
+        /** */
+        private Timestamp timestamp;
+
+        /**
+         * @param time Time.
+         */
+        TestDate(long time) {
+            this.date = new Date(time);
+            this.time = new Time(time);
+            this.timestamp = new Timestamp(time);
         }
     }
 
