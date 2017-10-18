@@ -1793,8 +1793,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         KeyCacheObject key = keyIter.next();
 
                         while (true) {
+                            GridCacheEntryEx entry = null;
+
                             try {
-                                GridCacheEntryEx entry = cctx.isNear() ?
+                                entry = cctx.isNear() ?
                                     cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
                                 entry.ensureIndexed();
@@ -1806,6 +1808,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             }
                             catch (GridDhtInvalidPartitionException ignore) {
                                 break;
+                            }
+                            finally {
+                                entry.context().evicts().touch(entry, AffinityTopologyVersion.NONE);
                             }
                         }
                     }
