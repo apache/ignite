@@ -1672,27 +1672,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
         }
 
-        // We've detected a local query, let's just run it.
-        if (loc) {
-            assert prepared.isQuery();
+        if (twoStepQry != null) {
+            if (log.isDebugEnabled())
+                log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-            try {
-                return queryLocalSqlFields(schemaName, newQry, keepBinary, filter, cancel);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
-                    ", params=" + Arrays.deepToString(newQry.getArgs()) + "]", e);
-            }
+            checkQueryType(newQry, true);
+
+            return doRunDistributedQuery(schemaName, newQry, twoStepQry, meta, keepBinary, cancel);
         }
 
-        assert twoStepQry != null;
+        // We've detected a local query, let's just run it.
+        assert loc && prepared.isQuery();
 
-        if (log.isDebugEnabled())
-            log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
-
-        checkQueryType(newQry, true);
-
-        return doRunDistributedQuery(schemaName, newQry, twoStepQry, meta, keepBinary, cancel);
+        try {
+            return queryLocalSqlFields(schemaName, newQry, keepBinary, filter, cancel);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
+                ", params=" + Arrays.deepToString(newQry.getArgs()) + "]", e);
+        }
     }
 
     /**
@@ -1766,7 +1764,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args).setLocal(loc);
+        SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(prepared.getSQL()).setArgs(args);
 
         boolean hasTwoStep = !loc && prepared.isQuery();
 
