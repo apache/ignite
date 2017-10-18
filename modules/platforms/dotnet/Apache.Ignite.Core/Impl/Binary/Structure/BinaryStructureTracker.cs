@@ -115,16 +115,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     writer.SaveMetadata(_desc, fields);
                 }
             }
-            else
-            {
-                // Special case when the object is with no properties.
-                // Save meta to Marshaller.
-                writer.Marshaller.GetBinaryTypeHandler(_desc);
-
-                // Save meta to cluster.
-                writer.SaveMetadata(_desc, null);
-                return;
-            }
         }
 
         /// <summary>
