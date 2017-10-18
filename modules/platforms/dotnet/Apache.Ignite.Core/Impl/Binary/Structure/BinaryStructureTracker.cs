@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             _curStructAction++;
 
-            if (_curStructUpdates == null)
+            if (_curStructUpdates == null && _portStruct != null)
             {
                 var fieldId = _portStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath,
                     _curStructAction);
@@ -115,9 +115,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     writer.SaveMetadata(_desc, fields);
                 }
             }
-            else
+            else if (_desc.WriterTypeStructure == null)
             {
-                // TODO
+                // Empty object (no fields).
+                // Null WriterTypeStructure indicates that meta has never been sent for this type.
+                writer.SaveMetadata(_desc, null);
+                _desc.UpdateWriteStructure(_curStructPath, null);
             }
         }
 

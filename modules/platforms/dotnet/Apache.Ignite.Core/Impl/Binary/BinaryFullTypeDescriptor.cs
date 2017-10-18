@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly string _affKeyFieldName;
 
         /** Type structure. */
-        private volatile BinaryStructure _writerTypeStruct = BinaryStructure.CreateEmpty();
+        private volatile BinaryStructure _writerTypeStruct;
 
         /** Type structure. */
         private volatile BinaryStructure _readerTypeStructure = BinaryStructure.CreateEmpty();

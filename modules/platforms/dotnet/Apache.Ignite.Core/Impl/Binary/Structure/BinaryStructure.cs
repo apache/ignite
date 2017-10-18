@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <returns>New type structure with updates.</returns>
         public BinaryStructure Merge(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
-            if (updates.Count == 0)
+            if (updates == null || updates.Count == 0)
                 return this;
 
             // Algorithm ensures that updates are applied to the same type structure,
