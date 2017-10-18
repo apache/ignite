@@ -72,7 +72,7 @@ include /app/helpers/jade/mixins
                                             'true', '268435456', '10485760', 'Default data region initial size')
                                         .details-row
                                             +number('Maximum size:', dfltRegionModel + '.maxSize', '"DfltRegionMaxSize" + $index',
-                                            'true', '0.8 * totalMemoryAvailable', '10485760', 'Default data region maximum size')
+                                            'true', '0.2 * totalMemoryAvailable', '10485760', 'Default data region maximum size')
                                         .details-row
                                             +text('Swap file path:', dfltRegionModel + '.swapPath', '"DfltRegionSwapFilePath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for default data region')
@@ -127,7 +127,7 @@ include /app/helpers/jade/mixins
                                             'true', '268435456', '10485760', 'Initial memory region size defined by this data region')
                                         .settings-row
                                             +number('Maximum size:', 'model.maxSize', '"DataRegionMaxSize" + $index',
-                                            'true', '0.8 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this data region')
+                                            'true', '0.2 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this data region')
                                         .settings-row
                                             +text('Swap file path:', 'model.swapPath', '"DataRegionSwapPath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for this data region')
