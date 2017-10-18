@@ -22,6 +22,8 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 
 /**
  * Binary type schema request.
@@ -43,7 +45,11 @@ public class ClientBinaryTypeGetRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        BinaryTypeImpl type = (BinaryTypeImpl)ctx.kernalContext().cacheObjects().binary().type( typeId);
+        BinaryTypeImpl type = (BinaryTypeImpl)ctx.kernalContext().cacheObjects().binary().type(typeId);
+
+        if (type == null) {
+            throw new IgniteClientException(ClientStatus.FAILED, "Binary type not found: " + typeId);
+        }
 
         return new ClientBinaryTypeGetResponse(requestId(), type.metadata());
     }
