@@ -74,7 +74,7 @@ include /app/helpers/jade/mixins
                                             +number('Maximum size:', dfltRegionModel + '.maxSize', '"DfltRegionMaxSize" + $index',
                                             'true', '0.8 * totalMemoryAvailable', '10485760', 'Default data region maximum size')
                                         .details-row
-                                            +text('Swap file path:', dfltRegionModel + '.swapFilePath', '"DfltRegionSwapFilePath" + $index', 'false',
+                                            +text('Swap file path:', dfltRegionModel + '.swapPath', '"DfltRegionSwapFilePath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for default data region')
                                         .details-row
                                             +dropdown('Eviction mode:', dfltRegionModel + '.pageEvictionMode', '"DfltRegionPageEvictionMode"', 'true', 'DISABLED',
@@ -129,7 +129,7 @@ include /app/helpers/jade/mixins
                                             +number('Maximum size:', 'model.maxSize', '"DataRegionMaxSize" + $index',
                                             'true', '0.8 * totalMemoryAvailable', '10485760', 'Maximum memory region size defined by this data region')
                                         .settings-row
-                                            +text('Swap file path:', 'model.swapFilePath', '"DataRegionSwapFilePath" + $index', 'false',
+                                            +text('Swap file path:', 'model.swapPath', '"DataRegionSwapPath" + $index', 'false',
                                             'Input swap file path', 'An optional path to a memory mapped file for this data region')
                                         .settings-row
                                             +dropdown('Eviction mode:', 'model.pageEvictionMode', '"DataRegionPageEvictionMode"', 'true', 'DISABLED',
@@ -163,7 +163,7 @@ include /app/helpers/jade/mixins
                                             +checkbox('Persistence enabled', 'model.persistenceEnabled', '"DataRegionPersistenceEnabled" + $index',
                                             'Enable Ignite Native Persistence')
                 .settings-row
-                    +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'Input storage path',
+                    +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'db',
                     'Directory where index and partition files are stored')
                 .settings-row
                     +number('Checkpoint frequency:', `${model}.checkpointFrequency`, '"DataStorageCheckpointFrequency"', 'true', '180000', '1',
@@ -188,8 +188,8 @@ include /app/helpers/jade/mixins
                     +dropdown('WAL mode:', `${model}.walMode`, '"DataStorageWalMode"', 'true', 'DEFAULT',
                     '[\
                         {value: "DEFAULT", label: "DEFAULT"},\
-                        {value: "LOG_ONLY", label: "LOG_ONLY"}\
-                        {value: "BACKGROUND", label: "BACKGROUND"}\
+                        {value: "LOG_ONLY", label: "LOG_ONLY"},\
+                        {value: "BACKGROUND", label: "BACKGROUND"},\
                         {value: "NONE", label: "NONE"}\
                     ]',
                     'Type define behavior wal fsync.\

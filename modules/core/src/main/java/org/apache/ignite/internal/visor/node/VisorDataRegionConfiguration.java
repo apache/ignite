@@ -45,7 +45,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     private long maxSize;
 
     /** Path for memory mapped file. */
-    private String swapFilePath;
+    private String swapPath;
 
     /** An algorithm for memory pages eviction. */
     private DataPageEvictionMode pageEvictionMode;
@@ -86,7 +86,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         name = plc.getName();
         initSize = plc.getInitialSize();
         maxSize = plc.getMaxSize();
-        swapFilePath = plc.getSwapPath();
+        swapPath = plc.getSwapPath();
         pageEvictionMode = plc.getPageEvictionMode();
         evictionThreshold = plc.getEvictionThreshold();
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
@@ -135,8 +135,8 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /**
      * @return Path for memory mapped file.
      */
-    public String getSwapFilePath() {
-        return swapFilePath;
+    public String getSwapPath() {
+        return swapPath;
     }
 
     /**
@@ -193,7 +193,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         U.writeString(out, name);
         out.writeLong(initSize);
         out.writeLong(maxSize);
-        U.writeString(out, swapFilePath);
+        U.writeString(out, swapPath);
         U.writeEnum(out, pageEvictionMode);
         out.writeDouble(evictionThreshold);
         out.writeInt(emptyPagesPoolSize);
@@ -208,7 +208,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         name = U.readString(in);
         initSize = in.readLong();
         maxSize = in.readLong();
-        swapFilePath = U.readString(in);
+        swapPath = U.readString(in);
         pageEvictionMode = DataPageEvictionMode.fromOrdinal(in.readByte());
         evictionThreshold = in.readDouble();
         emptyPagesPoolSize = in.readInt();

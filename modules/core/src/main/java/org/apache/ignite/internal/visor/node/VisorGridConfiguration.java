@@ -157,10 +157,10 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         txCfg = new VisorTransactionConfiguration(c.getTransactionConfiguration());
 
         if (c.getDataStorageConfiguration() != null)
-            memCfg = new VisorMemoryConfiguration(c.getDataStorageConfiguration());
+            memCfg = null;
 
         if (c.getDataStorageConfiguration() != null)
-            psCfg = new VisorPersistentStoreConfiguration(c.getDataStorageConfiguration());
+            psCfg = null;
 
         storeSesLsnrs = compactArray(c.getCacheStoreSessionListenerFactories());
         warmupClos = compactClass(c.getWarmupClosure());

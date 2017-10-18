@@ -315,6 +315,7 @@ const DFLT_CLUSTER = {
         systemCacheInitialSize: 41943040,
         systemCacheMaxSize: 104857600,
         pageSize: 2048,
+        storagePath: 'db',
         dataRegionConfigurations: {
             name: 'default',
             initialSize: 268435456,
@@ -333,6 +334,10 @@ const DFLT_CLUSTER = {
         checkpointFrequency: 180000,
         checkpointPageBufferSize: 268435456,
         checkpointThreads: 4,
+        walMode: {
+            clsName: 'org.apache.ignite.configuration.WALMode',
+            value: 'DEFAULT'
+        },
         walSegments: 10,
         walSegmentSize: 67108864,
         walHistorySize: 20,
