@@ -137,8 +137,12 @@ public class GridH2Table extends TableBase {
             int affKeyColId = -1;
 
             if (affKey != null) {
-                if (doesColumnExist(affKey))
+                if (doesColumnExist(affKey)) {
                     affKeyColId = getColumn(affKey).getColumnId();
+
+                    if (desc.isKeyColumn(affKeyColId))
+                        affKeyColId = KEY_COL;
+                }
                 else
                     affinityColExists = false;
             }
