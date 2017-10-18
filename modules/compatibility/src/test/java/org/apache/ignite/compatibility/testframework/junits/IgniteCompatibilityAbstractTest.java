@@ -139,7 +139,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, log, locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
-                return ListenedGridTestLog4jLogger.createLogger(ctgr + "#" + ver.replaceAll("[/.]", "_"));
+                return ListenedGridTestLog4jLogger.createLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }
 
             @Override protected String igniteNodeRunnerClassName() throws Exception {
