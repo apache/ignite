@@ -34,13 +34,13 @@ import org.apache.ignite.examples.ExampleNodeStartup;
  * {@link DataRegionConfiguration}.
  * <p>
  * Additional remote nodes can be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} example-memory-policies.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} example-data-regions.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which passing
- * {@code examples/config/example-memory-policies.xml} configuration to it.
+ * {@code examples/config/example-data-regions.xml} configuration to it.
  */
 public class DataRegionsExample {
-    /** Name of the default data region defined in 'example-memory-policies.xml'. */
+    /** Name of the default data region defined in 'example-data-regions.xml'. */
     public static final String REGION_DEFAULT = "Default_Region";
 
     /** Name of the data region that creates a memory region limited by 40 MB with eviction enabled */
@@ -56,13 +56,13 @@ public class DataRegionsExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-memory-policies.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-data-regions.xml")) {
             System.out.println();
             System.out.println(">>> Data regions example started.");
 
             /*
              * Preparing configurations for 2 caches that will be bound to the memory region defined by
-             * '10MB_Region_Eviction' data region from 'example-memory-policies.xml' configuration.
+             * '10MB_Region_Eviction' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> firstCacheCfg = new CacheConfiguration<>("firstCache");
 
@@ -82,7 +82,7 @@ public class DataRegionsExample {
 
             /*
              * Preparing a configuration for a cache that will be bound to the memory region defined by
-             * '5MB_Region_Swapping' data region from 'example-memory-policies.xml' configuration.
+             * '5MB_Region_Swapping' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> thirdCacheCfg = new CacheConfiguration<>("thirdCache");
 
@@ -94,7 +94,7 @@ public class DataRegionsExample {
 
             /*
              * Preparing a configuration for a cache that will be bound to the default memory region defined by
-             * default 'Default_Region' data region from 'example-memory-policies.xml' configuration.
+             * default 'Default_Region' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> fourthCacheCfg = new CacheConfiguration<>("fourthCache");
 

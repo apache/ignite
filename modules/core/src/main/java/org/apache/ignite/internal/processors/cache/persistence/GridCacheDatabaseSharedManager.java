@@ -1032,7 +1032,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return {@code true} if all PageMemory instances are safe to update.
      */
     private boolean safeToUpdatePageMemories() {
-        Collection<DataRegion> memPlcs = context().database().memoryPolicies();
+        Collection<DataRegion> memPlcs = context().database().dataRegions();
 
         if (memPlcs == null)
             return true;
@@ -1060,14 +1060,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointLock.readLock().unlock();
 
         if (checkpointer != null) {
-            Collection<DataRegion> memPlcs = context().database().memoryPolicies();
+            Collection<DataRegion> dataRegs = context().database().dataRegions();
 
-            if (memPlcs != null) {
-                for (DataRegion memPlc : memPlcs) {
-                    if (!memPlc.config().isPersistenceEnabled())
+            if (dataRegs != null) {
+                for (DataRegion dataReg : dataRegs) {
+                    if (!dataReg.config().isPersistenceEnabled())
                         continue;
 
-                    PageMemoryEx mem = (PageMemoryEx)memPlc.pageMemory();
+                    PageMemoryEx mem = (PageMemoryEx)dataReg.pageMemory();
 
                     if (mem != null && !mem.safeToUpdate()) {
                         checkpointer.wakeupForCheckpoint(0, "too many dirty pages");
@@ -1839,7 +1839,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = System.currentTimeMillis();
 
-        Collection<DataRegion> memPolicies = context().database().memoryPolicies();
+        Collection<DataRegion> memPolicies = context().database().dataRegions();
 
         List<IgniteBiTuple<PageMemory, Collection<FullPageId>>> cpEntities = new ArrayList<>(memPolicies.size());
 
@@ -2446,11 +2446,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * pages.
          */
         private IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> beginAllCheckpoints() {
-            Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(memoryPolicies().size());
+            Collection<GridMultiCollectionWrapper<FullPageId>> res = new ArrayList(dataRegions().size());
 
             int pagesNum = 0;
 
-            for (DataRegion memPlc : memoryPolicies()) {
+            for (DataRegion memPlc : dataRegions()) {
                 if (!memPlc.config().isPersistenceEnabled())
                     continue;
 
@@ -2469,7 +2469,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
             synchronized (this) {
-                for (DataRegion memPlc : memoryPolicies()) {
+                for (DataRegion memPlc : dataRegions()) {
                     if (!memPlc.config().isPersistenceEnabled())
                         continue;
 

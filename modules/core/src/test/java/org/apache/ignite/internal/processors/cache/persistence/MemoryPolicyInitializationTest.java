@@ -73,7 +73,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().memoryPolicies();
+        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
         assertTrue(allMemPlcs.size() == 2);
 
@@ -89,7 +89,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().memoryPolicies();
+        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
         assertTrue(allMemPlcs.size() == 3);
 
@@ -110,7 +110,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        Collection<DataRegion> allMemPlcs = dbMgr.memoryPolicies();
+        Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
         assertTrue(allMemPlcs.size() == 2);
 
@@ -134,7 +134,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        Collection<DataRegion> allMemPlcs = dbMgr.memoryPolicies();
+        Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
         assertTrue(allMemPlcs.size() == 3);
 

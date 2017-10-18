@@ -1252,7 +1252,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            Collection<DataRegion> policies = ctx.cache().context().database().memoryPolicies();
+                            Collection<DataRegion> policies = ctx.cache().context().database().dataRegions();
 
                             if (!F.isEmpty(policies)) {
                                 for (DataRegion memPlc : policies)

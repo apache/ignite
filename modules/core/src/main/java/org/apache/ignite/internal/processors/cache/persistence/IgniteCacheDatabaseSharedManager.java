@@ -529,7 +529,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @return collection of all configured {@link DataRegion policies}.
      */
-    public Collection<DataRegion> memoryPolicies() {
+    public Collection<DataRegion> dataRegions() {
         return dataRegionMap != null ? dataRegionMap.values() : null;
     }
 
