@@ -164,7 +164,20 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         assert initialMapping.size() == mapping.size() : mapping;
-        assert initialMapping.containsAll(mapping) : mapping;
+
+        for (ClusterNode n1 : initialMapping) {
+            boolean found = false;
+
+            for (ClusterNode n2 : mapping) {
+                if (n2.consistentId().equals(n1.consistentId())) {
+                    found = true;
+
+                    break;
+                }
+            }
+
+            assert found;
+        }
 
         assert topology.lostPartitions().contains(part);
 
