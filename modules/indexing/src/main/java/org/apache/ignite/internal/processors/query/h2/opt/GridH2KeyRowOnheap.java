@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.h2.value.Value;
 
 /**
@@ -27,9 +28,12 @@ public class GridH2KeyRowOnheap extends GridH2Row {
     private Value key;
 
     /**
+     * @param row Row.
      * @param key Key.
      */
-    public GridH2KeyRowOnheap(Value key) {
+    public GridH2KeyRowOnheap(CacheDataRow row, Value key) {
+        super(row);
+
         this.key = key;
     }
 
