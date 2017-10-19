@@ -1759,27 +1759,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-            if (qryMgr.enabled()) {
-                if (oldRow != null) {
-                    qryMgr.store(key,
-                        partId,
-                        oldRow.value(),
-                        oldRow.version(),
-                        newRow.value(),
-                        newRow.version(),
-                        expireTime,
-                        newRow.link());
-                }
-                else {
-                    qryMgr.store(key,
-                        partId,
-                        null, null,
-                        newRow.value(),
-                        newRow.version(),
-                        expireTime,
-                        newRow.link());
-                }
-            }
+            if (qryMgr.enabled())
+                qryMgr.store(newRow, oldRow);
 
             if (oldRow != null) {
                 assert oldRow.link() != 0 : oldRow;
@@ -1811,15 +1792,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
-                qryMgr.store(
-                    key,
-                    partId,
-                    null,
-                    null,
-                    row.value(),
-                    row.version(),
-                    row.expireTime(),
-                    row.link());
+                qryMgr.store(row, null);
             }
         }
 
@@ -1847,9 +1820,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @throws IgniteCheckedException If failed.
          */
         private void finishRemove(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            CacheObject val = null;
-            GridCacheVersion ver = null;
-
             if (oldRow != null) {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
@@ -1861,16 +1831,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     pendingEntries.removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
 
                 decrementSize(cctx.cacheId());
-
-                val = oldRow.value();
-
-                ver = oldRow.version();
             }
 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key, partId, val, ver);
+                qryMgr.remove(key, oldRow);
 
             if (oldRow != null)
                 rowStore.removeRow(oldRow.link());
