@@ -2684,6 +2684,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg instanceof TcpDiscoveryJoinRequestMessage)
                 processJoinRequestMessage((TcpDiscoveryJoinRequestMessage)msg);
 
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
+                if (sendMessageToRemotes(msg))
+                    sendMessageAcrossRing(msg);
+            }
+
             else if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 processNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
 
@@ -5919,24 +5924,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                         }
                         else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
-                            if (clientMsgWrk != null) {
-                                TcpDiscoverySpiState state = spiStateCopy();
+                            TcpDiscoverySpiState state = spiStateCopy();
 
-                                if (state == CONNECTED) {
-                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            if (state == CONNECTED) {
+                                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                                    if (clientMsgWrk.getState() == State.NEW)
-                                        clientMsgWrk.start();
+                                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                                    clientMsgWrk.start();
 
-                                    processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
+                                processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
 
-                                    continue;
-                                }
-                                else {
-                                    spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
+                                continue;
+                            }
+                            else {
+                                spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
 
-                                    break;
-                                }
+                                break;
                             }
                         }
                         else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
@@ -6189,50 +6192,88 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             UUID locNodeId = getLocalNodeId();
 
-            assert msg.routerNodeId().equals(locNodeId);
+            boolean isLocNodeRouter = msg.routerNodeId().equals(locNodeId);
 
             TcpDiscoveryNode node = ring.node(nodeId);
 
             assert node == null || node.isClient();
 
-            msg.verify(locNodeId);
-
             if (node != null) {
-                node.clientRouterNodeId(locNodeId);
+                node.clientRouterNodeId(msg.routerNodeId());
                 node.clientAliveTime(spi.clientFailureDetectionTimeout());
-
-                Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
-
-                if (pending != null) {
-                    msg.success(true);
-                    msg.pendingMessages(pending);
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Accept client reconnect, restored pending messages " +
-                            "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
-                    }
-                }
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Failing reconnecting client node because failed to restore pending " +
-                            "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
-
-                    TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
-                        node.id(), node.internalOrder());
-
-                    msgWorker.addMessage(nodeFailedMsg);
-                }
             }
-            else if (log.isDebugEnabled())
-                log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
 
-            ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+            if (!msg.verified()) {
+                if (isLocNodeRouter || isLocalNodeCoordinator()) {
+                    if (node != null) {
+                        Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
-            if (wrk != null)
-                wrk.addMessage(msg);
-            else if (log.isDebugEnabled())
-                log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
-                    locNodeId + ", clientNodeId=" + nodeId + ']');
+                        if (pending != null) {
+                            msg.verify(locNodeId);
+                            msg.pendingMessages(pending);
+                            msg.success(true);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Accept client reconnect, restored pending messages " +
+                                    "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                        }
+                        else if (!isLocalNodeCoordinator()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to restore pending messages for reconnecting client. " +
+                                    "Forwarding reconnection message to coordinator " +
+                                    "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+                        }
+                        else {
+                            msg.verify(locNodeId);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Failing reconnecting client node because failed to restore pending " +
+                                    "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
+                            TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
+                                node.id(), node.internalOrder());
+
+                            msgWorker.addMessage(nodeFailedMsg);
+                        }
+                    }
+                    else {
+                        msg.verify(locNodeId);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
+                    }
+
+                    if (msg.verified() && isLocNodeRouter) {
+                        ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+
+                        if (wrk != null)
+                            wrk.addMessage(msg);
+                        else if (log.isDebugEnabled())
+                            log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                                locNodeId + ", clientNodeId=" + nodeId + ']');
+                    }
+                    else
+                        msgWorker.addMessage(msg);
+                }
+                else
+                    msgWorker.addMessage(msg);
+            }
+            else {
+                if (isLocalNodeCoordinator())
+                    msgWorker.addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
+
+                if (isLocNodeRouter) {
+                    ClientMessageWorker wrk = clientMsgWorkers.get(nodeId);
+
+                    if (wrk != null)
+                        wrk.addMessage(msg);
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to reconnect client node (disconnected during the process) [locNodeId=" +
+                            locNodeId + ", clientNodeId=" + nodeId + ']');
+                }
+                else if (ring.hasRemoteNodes() && !isLocalNodeCoordinator())
+                    msgWorker.addMessage(msg);
+            }
         }
 
         /**
