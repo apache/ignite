@@ -68,15 +68,14 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
 
         dataLdr.future().get();
 
-        if (c.size() != args.preloadAmount())
-            throw new RuntimeException("Loading failed.");
-
         System.out.println("Loaded ... " + new Date().toString());
 
         long time = System.currentTimeMillis() - start;
 
-        BenchmarkUtils.println("IgniteStreamerBenchmark finished load cache [bufferSize=" + args.streamerBufferSize() +
-            ", totalTimeMillis=" + time + ']');
+        BenchmarkUtils.println("IgniteStreamerBenchmark finished load cache [totalSeconds=" + time / 1000 + ']');
+
+        if (c.size() != args.preloadAmount())
+            throw new RuntimeException("Loading failed. actual size =" + c.size());
     }
 
     /**
