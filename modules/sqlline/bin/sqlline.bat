@@ -94,7 +94,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
 ::
 :: Set program name.
 ::
-set PROG_NAME=ignitesql.bat
+set PROG_NAME=sqlline.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
