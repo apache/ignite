@@ -700,6 +700,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
+        validateCache();
+
         PeekModes modes = parsePeekModes(peekModes, false);
 
         Collection<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
@@ -762,6 +764,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKey(key);
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        validateCache();
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -851,6 +855,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             return null;
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If validation failed.
+     */
+    private void validateCache() throws IgniteCheckedException {
+        Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+
+        if (exc != null)
+            throw new IgniteCheckedException(exc);
     }
 
     /**
@@ -1927,6 +1941,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     tx.topologyVersion();
 
                 int keysSize = keys.size();
+
+                Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+
+                if (exc != null)
+                    return new GridFinishedFuture<>(exc);
 
                 final Map<K1, V1> map = keysSize == 1 ?
                     (Map<K1, V1>)new IgniteBiTuple<>() :

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -184,6 +186,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** Cache validation results. */
     private volatile Map<Integer, Boolean> cacheValidRes;
+
+    /** Custom cache validation results. */
+    private volatile Map<Integer, Throwable> customCacheValidRes;
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -462,6 +467,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             boolean crdNode = crd != null && crd.isLocal();
 
             skipPreload = cctx.kernalContext().clientNode();
+
+            if (log.isInfoEnabled()) {
+                log.info("Started exchange init [topVer=" + topologyVersion() +
+                    ", crd=" + crdNode +
+                    ", evt=" + IgniteUtils.gridEventName(discoEvt.type()) +
+                    ", evtNode=" + discoEvt.eventNode().id() +
+                    ", customEvt=" + (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT
+                    ? ((DiscoveryCustomEvent)discoEvt).customMessage() : null) + ']');
+            }
 
             ExchangeType exchange;
 
@@ -1106,6 +1120,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 detectLostPartitions();
 
             Map<Integer, Boolean> m = null;
+            Map<Integer, Throwable> m2 = null;
+
+            IgniteClosure<String, Throwable> validator = cctx.cache().cacheValidator();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
@@ -1114,9 +1131,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
                 }
+
+                if (validator != null) {
+                    if (m2 == null)
+                        m2 = new HashMap<>();
+
+                    Throwable t;
+
+                    try {
+                        t = validator.apply(cacheCtx.name());
+                    }
+                    catch (Throwable e) {
+                        t = e;
+                    }
+
+                    if (t != null)
+                        m2.put(cacheCtx.cacheId(), t);
+                }
             }
 
             cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+            customCacheValidRes = m2 != null ? m2 : Collections.<Integer, Throwable>emptyMap();
         }
 
         cctx.exchange().onExchangeDone(this, err);
@@ -1162,6 +1197,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (res != null && !res) {
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
+            }
+        }
+
+        if (cctx.kernalContext().cache().cacheValidator() != null) {
+            Throwable t;
+
+            Map<Integer, Throwable> resMap = customCacheValidRes;
+
+            if (resMap != null)
+                t = resMap.get(cctx.cacheId());
+            else
+                // Do not cache results, because it's better to do on exchange done.
+                t = cctx.kernalContext().cache().cacheValidator().apply(cctx.name());
+
+            if (t != null) {
+                return new IgniteCheckedException("Failed to perform cache operation " +
+                    "(cache is not valid): " + cctx.name(), t);
             }
         }
 
