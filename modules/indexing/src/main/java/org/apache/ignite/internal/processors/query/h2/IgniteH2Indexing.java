@@ -1355,14 +1355,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                 // We may use this cached statement only for local queries and non queries.
-                // If it's a query and source SqlFieldsQuery doesn't have locality flag, let's set it -
-                // if we've cached a query statement, it means that before it was deemed to be local based
-                // on its characteristics.
-                if (!qry.isLocal() && prepared.isQuery())
-                    qry = cloneFieldsQuery(qry).setLocal(true);
-
-                return Collections.singletonList(doRunPrepared(schemaName, prepared, qry, null, null, keepBinary,
-                    cancel));
+                if (qry.isLocal() || !prepared.isQuery())
+                    return Collections.singletonList(doRunPrepared(schemaName, prepared, qry, null, null, keepBinary,
+                        cancel));
             }
         }
 
@@ -1405,21 +1400,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Execute an all-ready {@link SqlFieldsQuery}.
      * @param schemaName Schema name.
      * @param prepared H2 command.
-     * @param newQry Fields query with flags.
+     * @param qry Fields query with flags.
      * @param twoStepQry Two-step query if this query must be executed in a distributed way.
      * @param meta Metadata for {@code twoStepQry}.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
      * @param cancel Query cancel state holder.
      * @return Query result.
      */
-    private FieldsQueryCursor<List<?>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery newQry,
+    private FieldsQueryCursor<List<?>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery qry,
         GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         GridQueryCancel cancel) {
-        String sqlQry = newQry.getSql();
+        String sqlQry = qry.getSql();
 
-        boolean loc = newQry.isLocal();
+        boolean loc = qry.isLocal();
 
-        IndexingQueryFilter filter = (loc ? backupFilter(null, newQry.getPartitions()) : null);
+        IndexingQueryFilter filter = (loc ? backupFilter(null, qry.getPartitions()) : null);
 
         if (!prepared.isQuery()) {
             if (DmlStatementsProcessor.isDmlStatement(prepared)) {
@@ -1427,10 +1422,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Connection conn = connectionForSchema(schemaName);
 
                     if (!loc)
-                        return dmlProc.updateSqlFieldsDistributed(schemaName, conn, prepared, newQry, cancel);
+                        return dmlProc.updateSqlFieldsDistributed(schemaName, conn, prepared, qry, cancel);
                     else {
                         final GridQueryFieldsResult updRes =
-                            dmlProc.updateSqlFieldsLocal(schemaName, conn, prepared, newQry, filter, cancel);
+                            dmlProc.updateSqlFieldsLocal(schemaName, conn, prepared, qry, filter, cancel);
 
                         return new QueryCursorImpl<>(new Iterable<List<?>>() {
                             @Override public Iterator<List<?>> iterator() {
@@ -1447,7 +1442,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                        ", params=" + Arrays.deepToString(newQry.getArgs()) + "]", e);
+                        ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                 }
             }
 
@@ -1471,18 +1466,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (log.isDebugEnabled())
                 log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
-            checkQueryType(newQry, true);
+            checkQueryType(qry, true);
 
-            return doRunDistributedQuery(schemaName, newQry, twoStepQry, meta, keepBinary, cancel);
+            return doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
         }
 
         // We've encountered a local query, let's just run it.
         try {
-            return queryLocalSqlFields(schemaName, newQry, keepBinary, filter, cancel);
+            return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
-                ", params=" + Arrays.deepToString(newQry.getArgs()) + "]", e);
+                ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
         }
     }
 
