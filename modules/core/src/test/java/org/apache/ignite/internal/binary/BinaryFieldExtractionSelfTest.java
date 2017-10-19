@@ -20,8 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -103,38 +101,22 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDateMarshalling() throws Exception {
+    public void testTimeMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        TestDate obj = new TestDate(0);
+        TimeValue obj = new TimeValue(11111L);
 
         BinaryObjectImpl binObj = toBinary(obj, marsh);
 
-        BinaryFieldEx[] fields = new BinaryFieldEx[] {
-            (BinaryFieldEx)binObj.type().field("date"),
-            (BinaryFieldEx)binObj.type().field("time"),
-            (BinaryFieldEx)binObj.type().field("timestamp")
-        };
+        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("time");
 
-        ByteBuffer buf = ByteBuffer.allocate(1024 * 1024);
+        ByteBuffer buf = ByteBuffer.allocate(16);
 
-        for (int i = 0; i < 100; i++) {
-            TestDate to = new TestDate(rnd.nextLong());
+        field.writeField(binObj, buf);
 
-            BinaryObjectImpl bObj = toBinary(to, marsh);
+        buf.flip();
 
-            for (BinaryFieldEx field : fields)
-                field.writeField(bObj, buf);
-
-            buf.flip();
-
-            for (BinaryFieldEx field : fields)
-                assertEquals(field.value(bObj), field.readField(buf));
-
-            buf.flip();
-        }
+        assertEquals(field.value(binObj), field.<Time>readField(buf));
     }
 
     /**
@@ -235,23 +217,15 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestDate {
-        /** */
-        private Date date;
-
+    private static class TimeValue {
         /** */
         private Time time;
-
-        /** */
-        private Timestamp timestamp;
 
         /**
          * @param time Time.
          */
-        TestDate(long time) {
-            this.date = new Date(time);
+        TimeValue(long time) {
             this.time = new Time(time);
-            this.timestamp = new Timestamp(time);
         }
     }
 
