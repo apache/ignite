@@ -202,7 +202,7 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +text-enabled('WAL path:', `${model}.walPath`, '"DataStorageWalPath"', 'true', 'false', 'db/wal', 'A path to the directory where WAL is stored')
                 .settings-row
-                    +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'Input archive path', 'A path to the WAL archive directory')
+                    +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'db/wal/archive', 'A path to the WAL archive directory')
                 .settings-row
                     +number('WAL segments:', `${model}.walSegments`, '"DataStorageWalSegments"', 'true', '10', '1', 'A number of WAL segments to work with')
                 .settings-row
@@ -230,7 +230,7 @@ include /app/helpers/jade/mixins
                     +number('Metrics rate time interval:', `${model}.metricsRateTimeInterval`, '"DataStorageMetricsRateTimeInterval"', 'true', '60000', '1000',
                     'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked')
                 .settings-row
-                    +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'SEQUENTIAL',
+                    +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'Default',
                     '[\
                         {value: "RANDOM", label: "RANDOM"},\
                         {value: "ASYNC", label: "ASYNC"},\

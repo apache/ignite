@@ -338,6 +338,8 @@ const DFLT_CLUSTER = {
             clsName: 'org.apache.ignite.configuration.WALMode',
             value: 'DEFAULT'
         },
+        walPath: 'db/wal',
+        walArchivePath :'db/wal/archive',
         walSegments: 10,
         walSegmentSize: 67108864,
         walHistorySize: 20,
