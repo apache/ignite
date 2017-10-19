@@ -106,6 +106,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     private boolean writeThrough;
 
     /** */
+    private boolean readThrough;
+
+    /** */
     private Collection<CacheStoreSessionListener> sesLsnrs;
 
     /** */
@@ -121,6 +124,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         CacheConfiguration cfg = cacheConfiguration();
 
         writeThrough = cfg.isWriteThrough();
+
+        readThrough = cfg.isReadThrough();
 
         this.cfgStore = cfgStore;
 
@@ -157,6 +162,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
         return writeThrough;
+    }
+
+    private boolean isReadWriteThroughEnabled() {
+        return writeThrough || readThrough;
     }
 
     /**
@@ -781,7 +790,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sessionInit0(tx);
 
         try {
-            if (sesLsnrs != null) {
+            if (sesLsnrs != null && isReadWriteThroughEnabled()) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionEnd(locSes, commit);
             }
@@ -855,7 +864,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder.set(ses);
 
         try {
-            if (!ses.started(store) && sesLsnrs != null) {
+            if (!ses.started(store) && sesLsnrs != null && isReadWriteThroughEnabled()) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionStart(locSes);
             }
@@ -871,7 +880,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     private void sessionEnd0(@Nullable IgniteInternalTx tx, boolean threwEx) throws IgniteCheckedException {
         try {
             if (tx == null) {
-                if (sesLsnrs != null) {
+                if (sesLsnrs != null && isReadWriteThroughEnabled()) {
                     for (CacheStoreSessionListener lsnr : sesLsnrs)
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
