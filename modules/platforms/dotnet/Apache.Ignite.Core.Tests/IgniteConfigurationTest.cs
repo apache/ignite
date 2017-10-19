@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
@@ -131,6 +132,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
                 Assert.AreEqual(cfg.IgniteInstanceName, resCfg.IgniteInstanceName);
+                Assert.AreEqual(cfg.IgniteHome, resCfg.IgniteHome);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
                 Assert.AreEqual(cfg.MetricsExpireTime, resCfg.MetricsExpireTime);
                 Assert.AreEqual(cfg.MetricsHistorySize, resCfg.MetricsHistorySize);
@@ -682,6 +684,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 IgniteInstanceName = "gridName1",
+                IgniteHome = IgniteHome.Resolve(null),
                 IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
