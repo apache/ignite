@@ -29,7 +29,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.yardstick.cache.IgniteJdbcSqlQueryBenchmark;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
 import org.jetbrains.annotations.Nullable;
 
@@ -258,6 +257,11 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int resultSetSize = 1_000;
 
+    /** */
+    @Parameter(names = {"-clidx", "--clientNodesAfterId"},
+        description = "Start client nodes when server ID greater then the parameter value")
+    @GridToStringInclude
+    private int clientNodesAfterId = -1;
 
     /**
      * @return {@code True} if need set {@link PersistentStoreConfiguration}.
@@ -639,10 +643,17 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return Result set size {@link IgniteJdbcSqlQueryBenchmark}
+     * @return Result set size.
      */
     public int resultSetSize() {
         return resultSetSize;
+    }
+
+    /**
+     * @return Result set size.
+     */
+    public int clientNodesAfterId() {
+        return clientNodesAfterId;
     }
 
     /** {@inheritDoc} */
