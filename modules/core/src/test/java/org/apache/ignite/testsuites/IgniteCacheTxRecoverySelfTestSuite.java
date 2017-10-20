@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCo
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedPrimaryNodeFailureRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitTxConsistencyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTxRecoveryRollbackTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.TxRecoveryStoreEnabledTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest;
@@ -59,8 +58,6 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheTxRecoveryRollbackTest.class);
         suite.addTestSuite(TxRecoveryStoreEnabledTest.class);
-
-        suite.addTestSuite(IgniteCacheTopologySplitTxConsistencyTest.class);
 
         return suite;
     }
