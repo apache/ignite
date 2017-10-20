@@ -194,14 +194,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
-        Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
-
-        if (exc != null) {
-            onDone(exc);
-
-            return;
-        }
-
         map(topVer);
     }
 
@@ -220,6 +212,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
         if (isDone())
             return;
+
+        Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
+
+            return;
+        }
 
         if (node.isLocal()) {
             Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);

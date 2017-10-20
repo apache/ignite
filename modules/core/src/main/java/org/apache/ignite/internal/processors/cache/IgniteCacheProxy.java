@@ -856,10 +856,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                 "of all Ignite nodes.");
 
-        Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+        if (!ctx.isLocal()) {
+            Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
 
-        if (exc != null)
-            throw new CacheException(exc);
+            if (exc != null)
+                throw new CacheException(exc);
+        }
     }
 
     /** {@inheritDoc} */

@@ -861,6 +861,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException If validation failed.
      */
     private void validateCache() throws IgniteCheckedException {
+        if (isLocal())
+            return;
+
         Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
 
         if (exc != null)
@@ -1942,10 +1945,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 int keysSize = keys.size();
 
-                Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+                if (!isLocal()) {
+                    Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
 
-                if (exc != null)
-                    return new GridFinishedFuture<>(exc);
+                    if (exc != null)
+                        return new GridFinishedFuture<>(exc);
+                }
 
                 final Map<K1, V1> map = keysSize == 1 ?
                     (Map<K1, V1>)new IgniteBiTuple<>() :
