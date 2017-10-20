@@ -2554,7 +2554,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
         GridCacheSharedContext cctx = ctx.cache().context();
 
-        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode() &&
+            CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 
             try {

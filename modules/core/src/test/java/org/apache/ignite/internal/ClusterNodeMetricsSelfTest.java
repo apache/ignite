@@ -29,7 +29,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -111,7 +111,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         final IgniteCache cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        MemoryMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
+        DataRegionMetricsImpl memMetrics = getDefaultMemoryPolicyMetrics(ignite);
 
         memMetrics.enableMetrics();
 
@@ -128,8 +128,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Ignite instance.
      */
-    private MemoryMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().cache().context().database().memoryPolicy(null).memoryMetrics();
+    private DataRegionMetricsImpl getDefaultMemoryPolicyMetrics(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
     }
 
     /**

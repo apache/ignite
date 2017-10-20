@@ -31,12 +31,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -157,7 +158,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         //here deprecated method is used to get compatible version of consistentId
         final Serializable consistentId = ctx.discovery().consistentId();
 
-        if (!cfg.isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
@@ -442,12 +443,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @throws IgniteCheckedException if I/O failed.
      */
     @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
-        final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+        final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        if (pstCfg == null)
+        if (dsCfg == null)
             return null;
 
-        final String pstPath = pstCfg.getPersistentStorePath();
+        final String pstPath = dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),

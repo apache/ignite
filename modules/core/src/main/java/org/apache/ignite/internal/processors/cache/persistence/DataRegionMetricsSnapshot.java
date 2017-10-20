@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 
 /**
  *
  */
-public class MemoryMetricsSnapshot implements MemoryMetrics {
+public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private String name;
 
@@ -53,7 +53,7 @@ public class MemoryMetricsSnapshot implements MemoryMetrics {
     /**
      * @param metrics Metrics instance to take a copy.
      */
-    public MemoryMetricsSnapshot(MemoryMetrics metrics) {
+    public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
         allocationRate = metrics.getAllocationRate();

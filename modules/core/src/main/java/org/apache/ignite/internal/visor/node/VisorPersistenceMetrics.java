@@ -19,12 +19,12 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * DTO object for {@link PersistenceMetrics}.
+ * DTO object for {@link DataStorageMetrics}.
  */
 public class VisorPersistenceMetrics extends VisorDataTransferObject {
     /** */
@@ -76,7 +76,7 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
     /**
      * @param metrics Persistence metrics.
      */
-    public VisorPersistenceMetrics(PersistenceMetrics metrics) {
+    public VisorPersistenceMetrics(DataStorageMetrics metrics) {
         walLoggingRate = metrics.getWalLoggingRate();
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();
