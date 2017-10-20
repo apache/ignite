@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class OdbcQueryExecuteBatchResult {
     /** Rows affected. */
-    private final Collection<Long> rowsAffected;
+    private final Collection<Long> affectedRows;
 
     /** Index of the set which caused an error. */
     private final long errorSetIdx;
@@ -38,24 +38,24 @@ public class OdbcQueryExecuteBatchResult {
     private final String errorMessage;
 
     /**
-     * @param rowsAffected Number of rows affected by the query.
+     * @param affectedRows Number of rows affected by the query.
      */
-    public OdbcQueryExecuteBatchResult(Collection<Long> rowsAffected) {
-        this.rowsAffected = rowsAffected;
+    public OdbcQueryExecuteBatchResult(Collection<Long> affectedRows) {
+        this.affectedRows = affectedRows;
         this.errorSetIdx = -1;
         this.errorMessage = null;
         this.errorCode = ClientListenerResponse.STATUS_SUCCESS;
     }
 
     /**
-     * @param rowsAffected Number of rows affected by the query.
+     * @param affectedRows Number of rows affected by the query.
      * @param errorSetIdx Sets processed.
      * @param errorCode Error code.
      * @param errorMessage Error message.
      */
-    public OdbcQueryExecuteBatchResult(Collection<Long> rowsAffected, long errorSetIdx, int errorCode,
+    public OdbcQueryExecuteBatchResult(Collection<Long> affectedRows, long errorSetIdx, int errorCode,
         String errorMessage) {
-        this.rowsAffected = rowsAffected;
+        this.affectedRows = affectedRows;
         this.errorSetIdx = errorSetIdx;
         this.errorMessage = errorMessage;
         this.errorCode = errorCode;
@@ -64,8 +64,8 @@ public class OdbcQueryExecuteBatchResult {
     /**
      * @return Number of rows affected by the query.
      */
-    public Collection<Long> rowsAffected() {
-        return rowsAffected;
+    public Collection<Long> affectedRows() {
+        return affectedRows;
     }
 
     /**

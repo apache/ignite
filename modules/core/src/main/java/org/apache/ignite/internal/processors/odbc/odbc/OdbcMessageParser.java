@@ -187,6 +187,8 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         return params;
     }
 
+
+
     /** {@inheritDoc} */
     @Override public byte[] encode(ClientListenerResponse msg0) {
         assert msg0 != null;
@@ -233,13 +235,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
 
-            writer.writeLong(res.affectedRows());
+            writeAffectedRows(writer, res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
 
             writer.writeBoolean(res.errorMessage() == null);
-            writer.writeLong(res.rowsAffected());
+            writeAffectedRows(writer, res.affectedRows());
 
             if (res.errorMessage() != null) {
                 writer.writeLong(res.errorSetIdx());
@@ -319,5 +321,19 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /**
+     * @param writer Writer to use.
+     * @param affectedRows Affected rows.
+     */
+    private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0)
+            writer.writeLong(affectedRows.iterator().next());
+        else {
+            writer.writeInt(affectedRows.size());
+            for (Long value : affectedRows)
+                writer.writeLong(value);
+        }
     }
 }

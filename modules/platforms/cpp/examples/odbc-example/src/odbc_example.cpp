@@ -102,6 +102,7 @@ void PrintOdbcResultSet(SQLHSTMT stmt)
             std::cout << std::setw(16) << std::left << columns[i].buffer << " ";
 
         std::cout << std::endl;
+	break;
     }
 }
 
@@ -163,6 +164,8 @@ void GetDataWithOdbc(SQLHDBC dbc, const std::string& query)
     else
         std::cerr << "Failed to execute query: " << GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
 
+    if (!SQL_SUCCEEDED(SQLFreeStmt(stmt, SQL_CLOSE)))
+        std::cerr << "Failed to close statement handle: " << GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
     // Releasing statement handle.
     SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
