@@ -213,6 +213,7 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
+        //TODO: add EvictionPolicyFactory support
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         if (ccfg.getEvictionPolicy() != null)
             ccfg.setOnheapCacheEnabled(true);
@@ -905,6 +906,7 @@ public class PlatformConfigurationUtils {
         else
             writer.writeBoolean(false);
 
+        //TODO: add EvictionPolicyFactory support
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());

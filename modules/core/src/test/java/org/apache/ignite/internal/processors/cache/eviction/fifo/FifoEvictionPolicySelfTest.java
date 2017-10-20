@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest
 /**
  * FIFO eviction policy tests.
  */
+@Deprecated
 public class FifoEvictionPolicySelfTest extends
     EvictionAbstractTest<FifoEvictionPolicy<String, String>> {
     /** {@inheritDoc} */
@@ -240,7 +241,7 @@ public class FifoEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected FifoEvictionPolicy<String, String> createPolicy(int plcMax) {
+    @Override protected FifoEvictionPolicy<String, String> createPolicy() {
         FifoEvictionPolicy<String, String> plc = new FifoEvictionPolicy<>();
 
         plc.setMaxSize(this.plcMax);

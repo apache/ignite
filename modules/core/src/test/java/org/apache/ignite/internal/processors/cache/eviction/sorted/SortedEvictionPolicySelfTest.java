@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest
 /**
  * Sorted eviction policy tests.
  */
+@Deprecated
 public class SortedEvictionPolicySelfTest extends
     EvictionAbstractTest<SortedEvictionPolicy<String, String>> {
     /** {@inheritDoc} */
@@ -243,7 +244,7 @@ public class SortedEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected SortedEvictionPolicy<String, String> createPolicy(int plcMax) {
+    @Override protected SortedEvictionPolicy<String, String> createPolicy() {
         SortedEvictionPolicy<String, String> plc = new SortedEvictionPolicy<>();
 
         plc.setMaxSize(this.plcMax);

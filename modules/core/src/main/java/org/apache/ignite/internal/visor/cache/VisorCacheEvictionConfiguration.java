@@ -58,7 +58,9 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
      * @param ccfg Cache configuration.
      */
     public VisorCacheEvictionConfiguration(CacheConfiguration ccfg) {
-        final EvictionPolicy evictionPlc = ccfg.getEvictionPolicy();
+        EvictionPolicy evictionPlc = ccfg.getEvictionPolicyFactory() != null ?
+            (EvictionPolicy)ccfg.getEvictionPolicyFactory().create()
+            : ccfg.getEvictionPolicy();
 
         plc = compactClass(evictionPlc);
         plcMaxSize = evictionPolicyMaxSize(evictionPlc);
