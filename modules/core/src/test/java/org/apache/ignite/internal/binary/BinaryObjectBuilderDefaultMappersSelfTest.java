@@ -791,7 +791,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             else
                 GridUnsafe.putInt(ptr0, len);
 
-            GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr0 + 4, arr.length);
+            GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr0 + 4, arr.length);
 
             BinaryObject offheapObj = (BinaryObject)
                 ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);

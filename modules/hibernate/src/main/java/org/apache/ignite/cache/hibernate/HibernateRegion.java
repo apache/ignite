@@ -20,7 +20,6 @@ package org.apache.ignite.cache.hibernate;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.Region;
 
@@ -35,7 +34,7 @@ public class HibernateRegion implements Region {
     private final String name;
 
     /** Cache instance. */
-    protected final IgniteInternalCache<Object, Object> cache;
+    protected final HibernateCacheProxy cache;
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -46,8 +45,7 @@ public class HibernateRegion implements Region {
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    public HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite,
-        IgniteInternalCache<Object, Object> cache) {
+    public HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite, HibernateCacheProxy cache) {
         this.factory = factory;
         this.name = name;
         this.ignite = ignite;

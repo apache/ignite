@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
@@ -150,10 +151,17 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     @Override public void deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
+        deployAll(Collections.singleton(cfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deployAll(Collection<ServiceConfiguration> cfgs) {
+        A.notNull(cfgs, "cfgs");
+
         guard();
 
         try {
-            saveOrGet(ctx.service().deploy(cfg));
+            saveOrGet(ctx.service().deployAll(prj, cfgs));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -171,6 +179,21 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
         try {
             saveOrGet(ctx.service().cancel(name));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelAll(Collection<String> names) {
+        guard();
+
+        try {
+            saveOrGet(ctx.service().cancelAll(names));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -222,14 +245,21 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
+        return (T) serviceProxy(name, svcItf, sticky, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
+        final long timeout) throws IgniteException {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
+        A.ensure(timeout >= 0, "Timeout cannot be negative: " + timeout);
 
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
         }
         finally {
             unguard();

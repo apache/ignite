@@ -29,11 +29,11 @@
 
 #ifndef SQL_ASYNC_NOTIFICATION_NOT_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_NOT_CAPABLE      0x00000000L
-#endif 
+#endif
 
 #ifndef SQL_ASYNC_NOTIFICATION_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_CAPABLE          0x00000001L
-#endif 
+#endif
 
 namespace ignite
 {
@@ -95,7 +95,9 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
-                default: 
+                    DBG_STR_CASE(SQL_PARAM_ARRAY_ROW_COUNTS);
+                    DBG_STR_CASE(SQL_PARAM_ARRAY_SELECTS);
+                default:
                     break;
                 }
                 return "<< UNKNOWN TYPE >>";
@@ -117,7 +119,7 @@ namespace ignite
                 strParams[SQL_DBMS_VER]        = "03.00";
 
 #ifdef SQL_DRIVER_VER
-                // Driver version. At a minimum, the version is of the form 
+                // Driver version. At a minimum, the version is of the form
                 // ##.##.####, where the first two digits are the major version,
                 // the next two digits are the minor version, and the last four
                 // digits are the release version.
@@ -125,7 +127,7 @@ namespace ignite
 #endif // SQL_DRIVER_VER
 
 #ifdef SQL_COLUMN_ALIAS
-                // A character string: "Y" if the data source supports column 
+                // A character string: "Y" if the data source supports column
                 // aliases; otherwise, "N".
                 strParams[SQL_COLUMN_ALIAS] = "Y";
 #endif // SQL_COLUMN_ALIAS
@@ -168,7 +170,7 @@ namespace ignite
 #endif // SQL_TABLE_TERM
 
 #ifdef SQL_SCHEMA_TERM
-                // A character string with the data source vendor's name for 
+                // A character string with the data source vendor's name for
                 // a schema; for example, "owner", "Authorization ID", or "Schema".
                 strParams[SQL_SCHEMA_TERM] = "schema";
 #endif // SQL_SCHEMA_TERM
@@ -194,9 +196,9 @@ namespace ignite
 
 #ifdef SQL_ASYNC_NOTIFICATION
                 // Indicates if the driver supports asynchronous notification.
-                // SQL_ASYNC_NOTIFICATION_CAPABLE  = Asynchronous execution 
+                // SQL_ASYNC_NOTIFICATION_CAPABLE  = Asynchronous execution
                 // notification is supported by the driver.
-                // SQL_ASYNC_NOTIFICATION_NOT_CAPABLE Asynchronous execution 
+                // SQL_ASYNC_NOTIFICATION_NOT_CAPABLE Asynchronous execution
                 // notification is not supported by the driver.
                 intParams[SQL_ASYNC_NOTIFICATION] = SQL_ASYNC_NOTIFICATION_NOT_CAPABLE;
 #endif // SQL_ASYNC_NOTIFICATION
@@ -207,7 +209,7 @@ namespace ignite
 #endif // SQL_GETDATA_EXTENSIONS
 
 #ifdef SQL_ODBC_INTERFACE_CONFORMANCE
-                // Indicates the level of the ODBC 3.x interface that the driver 
+                // Indicates the level of the ODBC 3.x interface that the driver
                 // complies with.
                 intParams[SQL_ODBC_INTERFACE_CONFORMANCE] = SQL_OIC_CORE;
 #endif // SQL_ODBC_INTERFACE_CONFORMANCE
@@ -229,7 +231,7 @@ namespace ignite
 #endif // SQL_SCHEMA_USAGE
 
 #ifdef SQL_MAX_IDENTIFIER_LEN
-                // Indicates the maximum size in characters that the data source 
+                // Indicates the maximum size in characters that the data source
                 // supports for user-defined names.
                 intParams[SQL_MAX_IDENTIFIER_LEN] = 128;
 #endif // SQL_MAX_IDENTIFIER_LEN
@@ -243,7 +245,7 @@ namespace ignite
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN | 
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN |
                     SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
                     SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_MOD | SQL_FN_NUM_SIGN |
                     SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN | SQL_FN_NUM_PI | SQL_FN_NUM_RAND |
@@ -273,7 +275,7 @@ namespace ignite
 #endif // SQL_TIMEDATE_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_ADD_INTERVALS
-                // Bitmask enumerating timestamp intervals supported by the driver 
+                // Bitmask enumerating timestamp intervals supported by the driver
                 // and associated data source for the TIMESTAMPADD scalar function.
                 intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
 #endif // SQL_TIMEDATE_ADD_INTERVALS
@@ -303,7 +305,7 @@ namespace ignite
 #endif // SQL_CONVERT_FUNCTIONS
 
 #ifdef SQL_OJ_CAPABILITIES
-                // Bitmask enumerating the types of outer joins supported by the 
+                // Bitmask enumerating the types of outer joins supported by the
                 // driver and data source.
                 intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_NOT_ORDERED | SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
@@ -333,7 +335,7 @@ namespace ignite
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
-                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
+                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE |
                     SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF;
 #endif // SQL_SQL92_VALUE_EXPRESSIONS
 
@@ -368,6 +370,40 @@ namespace ignite
                 // SQL_STATIC_CURSOR_ATTRIBUTES1.
                 intParams[SQL_STATIC_CURSOR_ATTRIBUTES2] = 0;
 #endif //SQL_STATIC_CURSOR_ATTRIBUTES2
+
+#ifdef SQL_PARAM_ARRAY_ROW_COUNTS
+                // Enumerating the driver's properties regarding the availability of row counts in a parameterized
+                // execution. Has the following values:
+                //
+                // SQL_PARC_BATCH = Individual row counts are available for each set of parameters. This is conceptually
+                //     equivalent to the driver generating a batch of SQL statements, one for each parameter set in the
+                //     array. Extended error information can be retrieved by using the SQL_PARAM_STATUS_PTR descriptor
+                //     field.
+                //
+                // SQL_PARC_NO_BATCH = There is only one row count available, which is the cumulative row count
+                //     resulting from the execution of the statement for the entire array of parameters. This is
+                //     conceptually equivalent to treating the statement together with the complete parameter array as
+                //     one atomic unit. Errors are handled the same as if one statement were executed.
+                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
+#endif //SQL_PARAM_ARRAY_ROW_COUNTS
+
+#ifdef SQL_PARAM_ARRAY_SELECTS
+                // Enumerating the driver's properties regarding the availability of result sets in a parameterized
+                // execution. Has the following values:
+                //
+                // SQL_PAS_BATCH = There is one result set available per set of parameters. This is conceptually
+                //     equivalent to the driver generating a batch of SQL statements, one for each parameter set in
+                //     the array.
+                //
+                // SQL_PAS_NO_BATCH = There is only one result set available, which represents the cumulative result set
+                //     resulting from the execution of the statement for the complete array of parameters. This is
+                //     conceptually equivalent to treating the statement together with the complete parameter array as
+                //     one atomic unit.
+                //
+                // SQL_PAS_NO_SELECT = A driver does not allow a result - set generating statement to be executed with
+                //     an array of parameters.
+                intParams[SQL_PARAM_ARRAY_SELECTS] = SQL_PAS_NO_SELECT;
+#endif //SQL_PARAM_ARRAY_SELECTS
 
                 //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
@@ -412,10 +448,10 @@ namespace ignite
 
                 StringInfoMap::const_iterator itStr = strParams.find(type);
 
-                if (itStr != strParams.cend()) 
+                if (itStr != strParams.cend())
                 {
                     unsigned short strlen = static_cast<short>(
-                        utility::CopyStringToBuffer(itStr->second, 
+                        utility::CopyStringToBuffer(itStr->second,
                             reinterpret_cast<char*>(buf), buflen));
 
                     if (reslen)

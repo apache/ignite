@@ -139,6 +139,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .gridName(ctx.gridName())
+                            .serverName("odbc")
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())
