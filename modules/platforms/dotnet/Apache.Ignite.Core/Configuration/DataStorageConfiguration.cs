@@ -15,33 +15,46 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.PersistentStore
+namespace Apache.Ignite.Core.Configuration
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Configures Apache Ignite persistent store.
+    /// Data storage configuration for Ignite page memory.
     /// <para />
-    /// Obsolete, use <see cref="DataStorageConfiguration"/>.
+    /// The page memory is a manageable off-heap based memory architecture that divides all expandable data
+    /// regions into pages of fixed size. An individual page can store one or many cache key-value entries
+    /// that allows reusing the memory in the most efficient way and avoid memory fragmentation issues.
+    /// <para />
+    /// By default, the page memory allocates a single expandable data region. All the caches that will be
+    /// configured in an application will be mapped to this data region by default, thus, all the cache data
+    /// will reside in that data region.
     /// </summary>
-    [Obsolete("Use DataStorageConfiguration.")]
-    public class PersistentStoreConfiguration
+    public class DataStorageConfiguration
     {
         /// <summary>
-        /// Default value for <see cref="CheckpointingThreads"/>.
+        /// Default value for <see cref="CheckpointThreads"/>.
         /// </summary>
-        public const int DefaultCheckpointingThreads = 4;
+        public const int DefaultCheckpointThreads = 4;
 
         /// <summary>
-        /// Default value for <see cref="CheckpointingFrequency"/>.
+        /// Default name is assigned to default data region if no user-defined
+        /// <see cref="DefaultDataRegionConfiguration"/> is specified.
         /// </summary>
-        public static readonly TimeSpan DefaultCheckpointingFrequency = TimeSpan.FromSeconds(180);
+        public const string DefaultDataRegionName = "default";
+
+        /// <summary>
+        /// Default value for <see cref="CheckpointFrequency"/>.
+        /// </summary>
+        public static readonly TimeSpan DefaultCheckpointFrequency = TimeSpan.FromSeconds(180);
 
         /// <summary>
         /// Default value for <see cref="LockWaitTime"/>.
@@ -64,7 +77,7 @@ namespace Apache.Ignite.Core.PersistentStore
         public const int DefaultWalSegmentSize = 64 * 1024 * 1024;
 
         /// <summary>
-        /// Default value for <see cref="TlbSize"/>.
+        /// Default value for <see cref="WalThreadLocalBufferSize"/>.
         /// </summary>
         public const int DefaultTlbSize = 128 * 1024;
 
@@ -88,22 +101,27 @@ namespace Apache.Ignite.Core.PersistentStore
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with Java config")]
-        public const int DefaultSubIntervals = 5;
+        public const int DefaultMetricsSubIntervalCount = 5;
 
         /// <summary>
         /// The default rate time interval.
         /// </summary>
-        public static readonly TimeSpan DefaultRateTimeInterval = TimeSpan.FromSeconds(60);
+        public static readonly TimeSpan DefaultMetricsRateTimeInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>
-        /// Default value for <see cref="WalStorePath"/>.
+        /// Default value for <see cref="WalPath"/>.
         /// </summary>
-        public const string DefaultWalStorePath = "db/wal";
+        public const string DefaultWalPath = "db/wal";
 
         /// <summary>
         /// Default value for <see cref="WalArchivePath"/>.
         /// </summary>
         public const string DefaultWalArchivePath = "db/wal/archive";
+
+        /// <summary>
+        /// Default value for <see cref="WalMode"/>.
+        /// </summary>
+        public const WalMode DefaultWalMode = WalMode.Default;
 
         /// <summary>
         /// Default value for <see cref="CheckpointWriteOrder"/>.
@@ -116,57 +134,99 @@ namespace Apache.Ignite.Core.PersistentStore
         public const bool DefaultWriteThrottlingEnabled = false;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
+        /// Default size of a memory chunk reserved for system cache initially.
         /// </summary>
-        public PersistentStoreConfiguration()
+        public const long DefaultSystemRegionInitialSize = 40 * 1024 * 1024;
+
+        /// <summary>
+        /// Default max size of a memory chunk for the system cache.
+        /// </summary>
+        public const long DefaultSystemRegionMaxSize = 100 * 1024 * 1024;
+
+        /// <summary>
+        /// The default page size.
+        /// </summary>
+        public const int DefaultPageSize = 4 * 1024;
+
+        /// <summary>
+        /// The default concurrency level.
+        /// </summary>
+        public const int DefaultConcurrencyLevel = 0;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
+        /// </summary>
+        public DataStorageConfiguration()
         {
-            CheckpointingThreads = DefaultCheckpointingThreads;
-            CheckpointingFrequency = DefaultCheckpointingFrequency;
+            CheckpointThreads = DefaultCheckpointThreads;
+            CheckpointFrequency = DefaultCheckpointFrequency;
             LockWaitTime = DefaultLockWaitTime;
             WalHistorySize = DefaultWalHistorySize;
             WalSegments = DefaultWalSegments;
             WalSegmentSize = DefaultWalSegmentSize;
-            TlbSize = DefaultTlbSize;
+            WalThreadLocalBufferSize = DefaultTlbSize;
             WalFlushFrequency = DefaultWalFlushFrequency;
             WalRecordIteratorBufferSize = DefaultWalRecordIteratorBufferSize;
             WalFsyncDelayNanos = DefaultWalFsyncDelayNanos;
-            RateTimeInterval = DefaultRateTimeInterval;
-            SubIntervals = DefaultSubIntervals;
+            MetricsRateTimeInterval = DefaultMetricsRateTimeInterval;
+            MetricsSubIntervalCount = DefaultMetricsSubIntervalCount;
             WalArchivePath = DefaultWalArchivePath;
-            WalStorePath = DefaultWalStorePath;
+            WalPath = DefaultWalPath;
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
             WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
+            SystemRegionInitialSize = DefaultSystemRegionInitialSize;
+            SystemRegionMaxSize = DefaultSystemRegionMaxSize;
+            PageSize = DefaultPageSize;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal PersistentStoreConfiguration(IBinaryRawReader reader)
+        internal DataStorageConfiguration(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
-            PersistentStorePath = reader.ReadString();
-            CheckpointingFrequency = reader.ReadLongAsTimespan();
-            CheckpointingPageBufferSize = reader.ReadLong();
-            CheckpointingThreads = reader.ReadInt();
+            StoragePath = reader.ReadString();
+            CheckpointFrequency = reader.ReadLongAsTimespan();
+            CheckpointPageBufferSize = reader.ReadLong();
+            CheckpointThreads = reader.ReadInt();
             LockWaitTime = reader.ReadLongAsTimespan();
             WalHistorySize = reader.ReadInt();
             WalSegments = reader.ReadInt();
             WalSegmentSize = reader.ReadInt();
-            WalStorePath = reader.ReadString();
+            WalPath = reader.ReadString();
             WalArchivePath = reader.ReadString();
             WalMode = (WalMode)reader.ReadInt();
-            TlbSize = reader.ReadInt();
+            WalThreadLocalBufferSize = reader.ReadInt();
             WalFlushFrequency = reader.ReadLongAsTimespan();
             WalFsyncDelayNanos = reader.ReadLong();
             WalRecordIteratorBufferSize = reader.ReadInt();
             AlwaysWriteFullPages = reader.ReadBoolean();
             MetricsEnabled = reader.ReadBoolean();
-            SubIntervals = reader.ReadInt();
-            RateTimeInterval = reader.ReadLongAsTimespan();
-            CheckpointWriteOrder = (CheckpointWriteOrder) reader.ReadInt();
+            MetricsSubIntervalCount = reader.ReadInt();
+            MetricsRateTimeInterval = reader.ReadLongAsTimespan();
+            CheckpointWriteOrder = (CheckpointWriteOrder)reader.ReadInt();
             WriteThrottlingEnabled = reader.ReadBoolean();
+
+            SystemRegionInitialSize = reader.ReadLong();
+            SystemRegionMaxSize = reader.ReadLong();
+            PageSize = reader.ReadInt();
+            ConcurrencyLevel = reader.ReadInt();
+
+            var count = reader.ReadInt();
+
+            if (count > 0)
+            {
+                DataRegionConfigurations = Enumerable.Range(0, count)
+                    .Select(x => new DataRegionConfiguration(reader))
+                    .ToArray();
+            }
+
+            if (reader.ReadBoolean())
+            {
+                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
+            }
         }
 
         /// <summary>
@@ -177,53 +237,88 @@ namespace Apache.Ignite.Core.PersistentStore
         {
             Debug.Assert(writer != null);
 
-            writer.WriteString(PersistentStorePath);
-            writer.WriteTimeSpanAsLong(CheckpointingFrequency);
-            writer.WriteLong(CheckpointingPageBufferSize);
-            writer.WriteInt(CheckpointingThreads);
+            writer.WriteString(StoragePath);
+            writer.WriteTimeSpanAsLong(CheckpointFrequency);
+            writer.WriteLong(CheckpointPageBufferSize);
+            writer.WriteInt(CheckpointThreads);
             writer.WriteTimeSpanAsLong(LockWaitTime);
             writer.WriteInt(WalHistorySize);
             writer.WriteInt(WalSegments);
             writer.WriteInt(WalSegmentSize);
-            writer.WriteString(WalStorePath);
+            writer.WriteString(WalPath);
             writer.WriteString(WalArchivePath);
             writer.WriteInt((int)WalMode);
-            writer.WriteInt(TlbSize);
+            writer.WriteInt(WalThreadLocalBufferSize);
             writer.WriteTimeSpanAsLong(WalFlushFrequency);
             writer.WriteLong(WalFsyncDelayNanos);
             writer.WriteInt(WalRecordIteratorBufferSize);
             writer.WriteBoolean(AlwaysWriteFullPages);
             writer.WriteBoolean(MetricsEnabled);
-            writer.WriteInt(SubIntervals);
-            writer.WriteTimeSpanAsLong(RateTimeInterval);
-            writer.WriteInt((int) CheckpointWriteOrder);
+            writer.WriteInt(MetricsSubIntervalCount);
+            writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
+            writer.WriteInt((int)CheckpointWriteOrder);
             writer.WriteBoolean(WriteThrottlingEnabled);
+
+            writer.WriteLong(SystemRegionInitialSize);
+            writer.WriteLong(SystemRegionMaxSize);
+            writer.WriteInt(PageSize);
+            writer.WriteInt(ConcurrencyLevel);
+
+            if (DataRegionConfigurations != null)
+            {
+                writer.WriteInt(DataRegionConfigurations.Count);
+
+                foreach (var region in DataRegionConfigurations)
+                {
+                    if (region == null)
+                    {
+                        throw new IgniteException(
+                            "DataStorageConfiguration.DataRegionConfigurations must not contain null items.");
+                    }
+
+                    region.Write(writer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+
+            if (DefaultDataRegionConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                DefaultDataRegionConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
         }
 
         /// <summary>
         /// Gets or sets the path where data and indexes will be persisted.
         /// </summary>
-        public string PersistentStorePath { get; set; }
+        public string StoragePath { get; set; }
 
         /// <summary>
         /// Gets or sets the checkpointing frequency which is a minimal interval when the dirty pages will be written
         /// to the Persistent Store.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:03:00")]
-        public TimeSpan CheckpointingFrequency { get; set; }
+        public TimeSpan CheckpointFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the checkpointing page buffer.
         /// <para />
         /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
-        public long CheckpointingPageBufferSize { get; set; }
+        public long CheckpointPageBufferSize { get; set; }
 
         /// <summary>
         /// Gets or sets the number of threads for checkpointing.
         /// </summary>
-        [DefaultValue(DefaultCheckpointingThreads)]
-        public int CheckpointingThreads { get; set; }
+        [DefaultValue(DefaultCheckpointThreads)]
+        public int CheckpointThreads { get; set; }
 
         /// <summary>
         /// Gets or sets the persistent manager file lock wait time.
@@ -254,8 +349,8 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) is stored.
         /// </summary>
-        [DefaultValue(DefaultWalStorePath)]
-        public string WalStorePath { get; set; }
+        [DefaultValue(DefaultWalPath)]
+        public string WalPath { get; set; }
 
         /// <summary>
         /// Gets or sets the path to the directory where WAL (Write Ahead Log) archive is stored.
@@ -267,13 +362,14 @@ namespace Apache.Ignite.Core.PersistentStore
         /// <summary>
         /// Gets or sets the WAL (Write Ahead Log) mode.
         /// </summary>
+        [DefaultValue(DefaultWalMode)]
         public WalMode WalMode { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the TLB (Thread-Local Buffer), in bytes.
         /// </summary>
         [DefaultValue(DefaultTlbSize)]
-        public int TlbSize { get; set; }
+        public int WalThreadLocalBufferSize { get; set; }
 
         /// <summary>
         /// Gets or sets the WAL (Write Ahead Log) flush frequency.
@@ -299,8 +395,8 @@ namespace Apache.Ignite.Core.PersistentStore
         public bool AlwaysWriteFullPages { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to enable persistent store metrics.
-        /// See <see cref="IIgnite.GetPersistentStoreMetrics"/>.
+        /// Gets or sets a value indicating whether to enable data storage metrics.
+        /// See <see cref="IIgnite.GetDataStorageMetrics"/>.
         /// </summary>
         public bool MetricsEnabled { get; set; }
 
@@ -309,15 +405,15 @@ namespace Apache.Ignite.Core.PersistentStore
         /// This interval defines a window over which hits will be tracked.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:01:00")]
-        public TimeSpan RateTimeInterval { get; set; }
+        public TimeSpan MetricsRateTimeInterval { get; set; }
 
         /// <summary>
-        /// Number of sub-intervals to split the <see cref="RateTimeInterval"/> into to track the update history.
+        /// Number of sub-intervals to split the <see cref="MetricsRateTimeInterval"/> into to track the update history.
         /// </summary>
-        [DefaultValue(DefaultSubIntervals)]
+        [DefaultValue(DefaultMetricsSubIntervalCount)]
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with Java config")]
-        public int SubIntervals { get; set; }
+        public int MetricsSubIntervalCount { get; set; }
 
         /// <summary>
         /// Gets or sets the checkpoint page write order on disk.
@@ -331,5 +427,40 @@ namespace Apache.Ignite.Core.PersistentStore
         /// </summary>
         [DefaultValue(DefaultWriteThrottlingEnabled)]
         public bool WriteThrottlingEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of a memory chunk reserved for system needs.
+        /// </summary>
+        [DefaultValue(DefaultSystemRegionInitialSize)]
+        public long SystemRegionInitialSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum memory region size reserved for system needs.
+        /// </summary>
+        [DefaultValue(DefaultSystemRegionMaxSize)]
+        public long SystemRegionMaxSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the memory page.
+        /// </summary>
+        [DefaultValue(DefaultPageSize)]
+        public int PageSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of concurrent segments in Ignite internal page mapping tables.
+        /// </summary>
+        [DefaultValue(DefaultConcurrencyLevel)]
+        public int ConcurrencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the data region configurations.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<DataRegionConfiguration> DataRegionConfigurations { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default region configuration.
+        /// </summary>
+        public DataRegionConfiguration DefaultDataRegionConfiguration { get; set; }
     }
 }
