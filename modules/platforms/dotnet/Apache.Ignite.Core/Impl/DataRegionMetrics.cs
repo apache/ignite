@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache
+namespace Apache.Ignite.Core.Impl
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// Memory metrics.
+    /// Data region metrics.
     /// </summary>
-#pragma warning disable 618
-    internal class MemoryMetrics : IMemoryMetrics
-#pragma warning restore 618
+    internal class DataRegionMetrics : IDataRegionMetrics
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="MemoryMetrics"/> class.
+        /// Initializes a new instance of the <see cref="DataRegionMetrics"/> class.
         /// </summary>
-        public MemoryMetrics(IBinaryRawReader reader)
+        public DataRegionMetrics(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
