@@ -86,12 +86,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.Greater(metrics.LastCheckpointPagesWriteDuration, TimeSpan.Zero);
                 Assert.Greater(metrics.LastCheckpointMarkDuration, TimeSpan.Zero);
-                Assert.Greater(metrics.LastCheckpointingDuration, TimeSpan.Zero);
+                Assert.Greater(metrics.LastCheckpointDuration, TimeSpan.Zero);
                 Assert.Greater(metrics.LastCheckpointFsyncDuration, TimeSpan.Zero);
 
-                Assert.Greater(metrics.LastCheckpointingDuration, metrics.LastCheckpointMarkDuration);
-                Assert.Greater(metrics.LastCheckpointingDuration, metrics.LastCheckpointPagesWriteDuration);
-                Assert.Greater(metrics.LastCheckpointingDuration, metrics.LastCheckpointFsyncDuration);
+                Assert.Greater(metrics.LastCheckpointDuration, metrics.LastCheckpointMarkDuration);
+                Assert.Greater(metrics.LastCheckpointDuration, metrics.LastCheckpointPagesWriteDuration);
+                Assert.Greater(metrics.LastCheckpointDuration, metrics.LastCheckpointFsyncDuration);
             }
         }
 

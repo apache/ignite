@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl
             WalWritingRate = reader.ReadFloat();
             WalArchiveSegments = reader.ReadInt();
             WalFsyncTimeAverage = reader.ReadFloat();
-            LastCheckpointingDuration = reader.ReadLongAsTimespan();
+            LastCheckpointDuration = reader.ReadLongAsTimespan();
             LastCheckpointLockWaitDuration = reader.ReadLongAsTimespan();
             LastCheckpointMarkDuration = reader.ReadLongAsTimespan();
             LastCheckpointPagesWriteDuration = reader.ReadLongAsTimespan();
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl
         public float WalFsyncTimeAverage { get; private set; }
 
         /** <inheritdoc /> */
-        public TimeSpan LastCheckpointingDuration { get; private set; }
+        public TimeSpan LastCheckpointDuration { get; private set; }
 
         /** <inheritdoc /> */
         public TimeSpan LastCheckpointLockWaitDuration { get; private set; }

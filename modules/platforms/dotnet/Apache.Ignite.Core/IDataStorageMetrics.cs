@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets the duration of the last checkpoint.
         /// </summary>
-        TimeSpan LastCheckpointingDuration { get; }
+        TimeSpan LastCheckpointDuration { get; }
 
         /// <summary>
         /// Gets the duration of last checkpoint lock wait.
