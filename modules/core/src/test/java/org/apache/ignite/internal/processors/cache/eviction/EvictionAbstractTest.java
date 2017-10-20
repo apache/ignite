@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -103,7 +104,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setEvictionPolicy(createPolicy(plcMax));
+        cc.setEvictionPolicy(createPolicy());
         cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -843,10 +844,19 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /**
-     * @param plcMax Policy max.
+     * @return Policy.
+     *
+     * @deprecated replace with getPolicyFactory();
+     */
+    @Deprecated
+    protected abstract T createPolicy();
+
+    /**
      * @return Policy.
      */
-    protected abstract T createPolicy(int plcMax);
+    protected Factory<T> getPolicyFactory(){
+        return null;
+    }
 
     /**
      * @param nearMax Near max.

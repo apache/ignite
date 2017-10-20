@@ -60,7 +60,12 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration cfg = cctx.config();
 
-        plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
+        if (cctx.isNear())
+            plc = cfg.getNearConfiguration().getNearEvictionPolicy();
+        else if (cfg.getEvictionPolicyFactory() != null)
+            plc = (EvictionPolicy)cfg.getEvictionPolicyFactory().create();
+        else
+            plc = cfg.getEvictionPolicy();
 
         plcEnabled = plc != null;
 

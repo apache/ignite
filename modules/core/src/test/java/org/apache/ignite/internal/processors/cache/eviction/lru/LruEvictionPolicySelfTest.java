@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest
 /**
  * LRU Eviction policy tests.
  */
+@Deprecated
 public class LruEvictionPolicySelfTest extends
     EvictionAbstractTest<LruEvictionPolicy<String, String>> {
     /**
@@ -307,7 +308,7 @@ public class LruEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected LruEvictionPolicy<String, String> createPolicy(int plcMax) {
+    @Override protected LruEvictionPolicy<String, String> createPolicy() {
         LruEvictionPolicy<String, String> plc = new LruEvictionPolicy<>();
 
         plc.setMaxSize(this.plcMax);

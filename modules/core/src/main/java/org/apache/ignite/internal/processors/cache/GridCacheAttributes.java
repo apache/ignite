@@ -154,9 +154,19 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Eviction policy class name.
+     *
+     * @deprecated Use evictionPolicyFactoryClassName() instead.
      */
+    @Deprecated
     public String evictionPolicyClassName() {
         return className(ccfg.getEvictionPolicy());
+    }
+
+    /**
+     * @return Eviction policy factory class name.
+     */
+    public String evictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
     }
 
     /**
