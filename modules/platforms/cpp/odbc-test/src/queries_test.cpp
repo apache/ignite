@@ -2198,4 +2198,27 @@ BOOST_AUTO_TEST_CASE(TestAffectedRows)
     BOOST_CHECK_EQUAL(affected, 0);
 }
 
+BOOST_AUTO_TEST_CASE(TestMultipleStatements)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    const int stmtCnt = 10;
+
+    std::stringstream stream;
+    for (int i = 0; i < stmtCnt; ++i)
+        stream << "select " << i << "; ";
+
+    stream << '\0';
+
+    std::string query0 = stream.str();
+    std::vector<SQLCHAR> query(query0.begin(), query0.end());
+
+    SQLRETURN ret = SQLExecDirect(stmt, &query[0], SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    //
+}
+
 BOOST_AUTO_TEST_SUITE_END()
