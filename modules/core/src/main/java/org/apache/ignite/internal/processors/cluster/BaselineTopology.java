@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -111,6 +113,22 @@ public class BaselineTopology implements Serializable {
         Collections.sort(res, NodeOrderComparator.getInstance());
 
         return res;
+    }
+
+    /**
+     * @param presentedNodes Nodes present in cluster.
+     * @return {@code True} if current topology satisfies baseline.
+     */
+    public boolean isSatisfied(@NotNull Collection<ClusterNode> presentedNodes) {
+        if (presentedNodes.size() < nodeMap.size())
+            return false;
+
+        Set<Object> presentedNodeIds = new HashSet<>();
+
+        for (ClusterNode node : presentedNodes)
+            presentedNodeIds.add(node.consistentId());
+
+        return presentedNodeIds.containsAll(nodeMap.keySet());
     }
 
     /** {@inheritDoc} */
