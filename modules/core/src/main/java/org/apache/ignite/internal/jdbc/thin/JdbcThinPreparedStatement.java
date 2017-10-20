@@ -50,9 +50,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
  * JDBC prepared statement implementation.
  */
 public class JdbcThinPreparedStatement extends JdbcThinStatement implements PreparedStatement {
-    /** Initial size of the arguments array. */
-    private static final int INITIAL_ARGS_SIZE = 8;
-
     /** SQL query. */
     private final String sql;
 
@@ -531,7 +528,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
             throw new SQLException("Parameter index is invalid: " + paramIdx);
 
         if (args == null)
-            args = new ArrayList<>(INITIAL_ARGS_SIZE);
+            args = new ArrayList<>(paramIdx);
 
         while (args.size() < paramIdx)
             args.add(null);
