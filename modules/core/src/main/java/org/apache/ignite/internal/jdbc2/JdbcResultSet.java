@@ -92,7 +92,9 @@ public class JdbcResultSet implements ResultSet {
     private final boolean useNewQryTask;
 
     /**
-     * Creates new result set.
+     * Creates new result set with predefined fields.
+     * Result set created with this constructor will
+     * never execute remote tasks.
      *
      * @param uuid Query UUID.
      * @param stmt Statement.
@@ -100,6 +102,7 @@ public class JdbcResultSet implements ResultSet {
      * @param cols Column names.
      * @param types Types.
      * @param fields Fields.
+     * @param finished Result set finished flag (the last result set).
      */
     JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
         List<String> types, Collection<List<?>> fields, boolean finished) {
@@ -185,8 +188,17 @@ public class JdbcResultSet implements ResultSet {
 
             if (useNewQryTask) {
                 // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
-                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+                JdbcQueryTaskV2 qryTask;
+                if (conn.isEnforceJoinOrder()) {
+                    qryTask = new JdbcQueryTaskV3(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                        fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                        conn.isDistributedJoins(), true);
+                }
+                else {
+                    qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
+                        fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                        conn.isDistributedJoins());
+                }
 
                 try {
                     JdbcQueryTaskV2.QueryResult res =
@@ -243,6 +255,7 @@ public class JdbcResultSet implements ResultSet {
     /**
      * Marks result set as closed.
      * If this result set is associated with locally executed query then query cursor will also closed.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException  {
         if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {

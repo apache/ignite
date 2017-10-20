@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -45,5 +49,31 @@ public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelf
         assertEquals(1, res);
         assertFalse(jcache(0).containsKey("p2"));
         assertTrue(jcache(0).containsKeys(new HashSet<Object>(Arrays.asList("p1", "p3"))));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStatementTypeMismatchUpdate() throws Exception {
+        GridTestUtils.assertThrowsAnyCause(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    conn.createStatement().executeQuery("delete from person where id=1");
+
+                    return null;
+                }
+            },
+            CacheException.class,
+            "Given statement type does not match that declared by JDBC driver");
+
+        ResultSet rs = conn.createStatement().executeQuery("select age from person where id=1");
+
+        boolean next = rs.next();
+
+        assert next;
+
+        assert rs.getInt(1) == 25 : "The data must not be updated. " +
+            "Because update statement is executed via 'executeQuery' method." +
+            " Data [val=" + rs.getInt(1) + ']';
     }
 }
