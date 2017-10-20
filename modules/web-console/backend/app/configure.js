@@ -59,8 +59,14 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
             app.use(passport.initialize());
             app.use(passport.session());
 
-            passport.serializeUser((user, cb) => cb(null, user._id));
-            passport.deserializeUser((id, cb) => mongo.Account.findById(id, cb));
+            passport.serializeUser((user, done) => done(null, user._id));
+            passport.deserializeUser((id, done) => {
+                if (mongo.ObjectId.isValid(id))
+                    return mongo.Account.findById(id, done);
+
+                // invalidates the existing login session.
+                done(null, false);
+            });
 
             passport.use(mongo.Account.createStrategy());
         },

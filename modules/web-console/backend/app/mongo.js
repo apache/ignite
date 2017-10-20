@@ -38,7 +38,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
 
-    result.ObjectId = ObjectId;
+    result.ObjectId = mongoose.Types.ObjectId;
 
     // Define Account schema.
     const AccountSchema = new Schema({
