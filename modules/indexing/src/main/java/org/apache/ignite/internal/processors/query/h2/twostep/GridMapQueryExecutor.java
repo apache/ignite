@@ -1081,10 +1081,12 @@ public class GridMapQueryExecutor {
             for (Integer cacheId : cacheIds) {
                 GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
-                Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+                if (!cctx.isLocal()) {
+                    Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
 
-                if (exc != null)
-                    return exc;
+                    if (exc != null)
+                        return exc;
+                }
             }
 
             return null;

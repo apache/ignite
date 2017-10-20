@@ -871,7 +871,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
-        if (ctx.cache().cacheValidator() != null)
+        if (ctx != null && ctx.cache().cacheValidator() != null)
             validateCaches(p);
 
         if (!p.isQuery()) {
@@ -1292,7 +1292,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
 
-            if (ctx.cache().cacheValidator() != null) {
+            if (ctx != null && ctx.cache().cacheValidator() != null) {
                 Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
                 validateCaches(p);

@@ -249,14 +249,16 @@ public class GridLostPartitionValidationTest extends GridCommonAbstractTest {
             }
         });
 
-        assertThrows(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (Cache.Entry<Object, Object> entry : cache.localEntries())
-                    System.out.println(entry);
+        if (!client) {
+            assertThrows(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    for (Cache.Entry<Object, Object> entry : cache.localEntries())
+                        System.out.println(entry);
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
+        }
 
         assertThrows(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -420,25 +422,16 @@ public class GridLostPartitionValidationTest extends GridCommonAbstractTest {
             });
         }
 
-        assertThrows(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Lock lock = txCache.lock(0);
+        if (!client) {
+            assertThrows(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    for (Cache.Entry<Object, Object> entry : txCache.localEntries())
+                        System.out.println(entry);
 
-                lock.lock();
-
-                return null;
-            }
-        });
-
-        assertThrows(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (Cache.Entry<Object, Object> entry : txCache.localEntries())
-                    System.out.println(entry);
-
-                return null;
-            }
-        });
-
+                    return null;
+                }
+            });
+        }
     }
 
     /**
