@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -328,7 +329,7 @@ public class GridIoMessage implements Message {
      * @return Partition ID.
      */
     public int partition() {
-        if (msg instanceof GridCacheMessage)
+        if (msg instanceof GridCacheMessage && !(msg instanceof GridCacheQueryRequest))
             return ((GridCacheMessage)msg).partition();
         else
             return Integer.MIN_VALUE;
