@@ -305,14 +305,14 @@ public class GridAffinityAssignmentCache {
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                        discoCache.state().baselineTopology().createBaselineView(sorted),
+                        discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                         prevAssignment, discoEvt, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                    discoCache.state().baselineTopology().createBaselineView(sorted),
+                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                     prevAssignment, discoEvt, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
@@ -324,7 +324,7 @@ public class GridAffinityAssignmentCache {
         else {
             if (hasBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
-                    discoCache.state().baselineTopology().createBaselineView(sorted),
+                    discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
                     prevAssignment, discoEvt, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
