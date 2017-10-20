@@ -109,6 +109,10 @@ import org.apache.ignite.logger.java.JavaLogger;
  *         combination with {@code local} and/or {@code collocated} flags with {@code true} value or in case of querying
  *         of local cache. Default value is {@code false}.
  *     </li>
+ *     <li>
+ *         {@code enforceJoinOrder} - Sets flag to enforce join order of tables in the query. If set to {@code true}
+ *          query optimizer will not reorder tables in join. By default is {@code false}.
+ *     </li>
  * </ul>
  *
  * <h2 class="header">Configuration of Ignite Java client based connection</h2>
@@ -289,6 +293,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Collocated parameter name. */
     private static final String PARAM_COLLOCATED = "collocated";
 
+    /** Parameter: enforce join order flag. */
+    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
@@ -318,6 +325,10 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Transactions allowed property name. */
     public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
+
+    /** Enforce join order property name. */
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -385,7 +396,8 @@ public class IgniteJdbcDriver implements Driver {
             new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
             new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
             new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
-            new PropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
+            new PropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
+            new PropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

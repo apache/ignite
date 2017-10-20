@@ -71,6 +71,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_ENFORCE_JOIN_ORDER;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
@@ -125,6 +126,9 @@ public class JdbcConnection implements Connection {
     /** Current transaction isolation. */
     private int txIsolation;
 
+    /** Enforced join order flag. */
+    private boolean enforceJoinOrder;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -146,6 +150,7 @@ public class JdbcConnection implements Connection {
         collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
         distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
+        this.enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -739,6 +744,13 @@ public class JdbcConnection implements Connection {
      */
     boolean isDistributedJoins() {
         return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    boolean isEnforceJoinOrder() {
+        return enforceJoinOrder;
     }
 
     /**
