@@ -29,9 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteJdbcThinDriver;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -61,9 +58,6 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
             }
         }
 
-        if (ignite() != null)
-            Ignition.stop(ignite().name(), false);
-
         println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
 
@@ -81,7 +75,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
 
         double salary = ThreadLocalRandom.current().nextDouble() * args.range() * 1000;
 
-        double maxSalary = salary + 1000 * args.resultSetSize();
+        double maxSalary = salary + 1000;
 
         stm.clearParameters();
 
@@ -91,7 +85,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
         ResultSet rs = stm.executeQuery();
 
         while (rs.next()) {
-            double sal = rs.getDouble(4);
+            double sal = rs.getDouble("salary");
 
             if (sal < salary || sal > maxSalary)
                 throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary + ']');
@@ -118,7 +112,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
 
     /**
      * @return Prepared statement.
-     * @throws Exception If failed.
+     * @throws Exception
      */
     private PreparedStatement createStatement() throws Exception {
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
@@ -128,12 +122,7 @@ public class IgniteJdbcSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<In
         try {
             conn = DriverManager.getConnection(args.jdbcUrl());
 
-            if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX))
-                conn.setSchema('"' + cache.getName() + '"');
-            else
-                conn.setSchema(cache.getName());
-
-            return conn.prepareStatement("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
+            return conn.prepareStatement("select * from Person where salary >= ? and salary <= ?");
         }
         catch (Exception e) {
             if (conn != null)

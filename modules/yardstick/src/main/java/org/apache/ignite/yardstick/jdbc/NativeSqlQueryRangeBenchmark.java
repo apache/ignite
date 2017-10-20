@@ -43,7 +43,7 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
 
         println(cfg, "Populate data...");
 
-        for (long l = 1; l <= args.keysCount(); ++l) {
+        for (long l = 1; l <= args.range(); ++l) {
             ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(
                 new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
                     .setArgs(l, l + 1), true);
@@ -64,19 +64,19 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
         if (args.resultSetSize() <= 0) {
             qry = new SqlFieldsQuery("select id, val from test_long");
 
-            expRsSize = args.keysCount();
+            expRsSize = args.range();
         }
         else if (args.resultSetSize() == 1) {
             qry = new SqlFieldsQuery("select id, val from test_long where id = ?");
 
-            qry.setArgs(ThreadLocalRandom.current().nextLong(args.keysCount() + 1));
+            qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
 
             expRsSize = 1;
         }
         else {
             qry = new SqlFieldsQuery("select id, val from test_long where id > ? and id <= ?");
 
-            long id = ThreadLocalRandom.current().nextLong(args.keysCount() - args.range());
+            long id = ThreadLocalRandom.current().nextLong(args.range() - args.resultSetSize()) + 1;
             long maxId = id + args.resultSetSize();
 
             qry.setArgs(id, maxId);

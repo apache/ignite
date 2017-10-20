@@ -18,14 +18,11 @@
 package org.apache.ignite.yardstick.cache;
 
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.yardstick.cache.model.Person;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -62,17 +59,16 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         double salary = ThreadLocalRandom.current().nextDouble() * args.range() * 1000;
 
-        double maxSalary = salary + 1000 * args.resultSetSize();
+        double maxSalary = salary + 1000;
 
-        Iterator<List<?>> it = executeQuery(salary, maxSalary);
+        Collection<Cache.Entry<Integer, Object>> entries = executeQuery(salary, maxSalary);
 
-        while (it.hasNext()) {
-            List<?> row = it.next();
+        for (Cache.Entry<Integer, Object> entry : entries) {
+            Person p = (Person)entry.getValue();
 
-            double sal = (Double)row.get(3);
-
-            if (sal < salary || sal > maxSalary)
-                throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary + ']');
+            if (p.getSalary() < salary || p.getSalary() > maxSalary)
+                throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
+                        ", person=" + p + ']');
         }
 
         return true;
@@ -84,14 +80,14 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
      * @return Query result.
      * @throws Exception If failed.
      */
-    private Iterator<List<?>> executeQuery(double minSalary, double maxSalary) throws Exception {
+    private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
         IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select id, firstName, lastName, salary from Person where salary >= ? and salary <= ?");
+        SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);
 
-        return cache.query(qry).iterator();
+        return cache.query(qry).getAll();
     }
 
     /** {@inheritDoc} */
