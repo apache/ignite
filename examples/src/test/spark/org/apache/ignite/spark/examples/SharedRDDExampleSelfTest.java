@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java8.examples;
+package org.apache.ignite.spark.examples;
 
-import org.apache.ignite.examples.java8.spark.SharedRDDExample;
+import org.apache.ignite.examples.spark.SharedRDDExample;
 import org.junit.Test;
 
 /**

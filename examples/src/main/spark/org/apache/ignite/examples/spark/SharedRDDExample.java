@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.spark;
+package org.apache.ignite.examples.spark;
 
 import org.apache.ignite.spark.JavaIgniteContext;
 import org.apache.ignite.spark.JavaIgniteRDD;
@@ -25,13 +25,14 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * This example demonstrates how to create an JavaIgnitedRDD and share it with multiple spark workers. The goal of this
@@ -70,7 +71,11 @@ public class SharedRDDExample {
         JavaIgniteRDD<Integer, Integer> sharedRDD = igniteContext.<Integer, Integer>fromCache("sharedRDD");
 
         // Define data to be stored in the Ignite RDD (cache).
-        List<Integer> data = IntStream.range(0, 20).boxed().collect(Collectors.toList());
+        List<Integer> data = new ArrayList<>(20);
+
+        for (int i = 0; i<20; i++) {
+            data.add(i);
+        }
 
         // Preparing a Java RDD.
         JavaRDD<Integer> javaRDD = sparkContext.<Integer>parallelize(data);
@@ -85,16 +90,28 @@ public class SharedRDDExample {
         System.out.println(">>> Iterating over Ignite Shared RDD...");
 
         // Iterate over the Ignite RDD.
-        sharedRDD.foreach((x) -> System.out.println("(" + x._1 + "," + x._2 + ")"));
+        sharedRDD.foreach(new VoidFunction<Tuple2<Integer, Integer>>() {
+            @Override public void call(Tuple2<Integer, Integer> tuple) throws Exception {
+                System.out.println("(" + tuple._1 + "," + tuple._2 + ")");
+            }
+        });
 
         System.out.println(">>> Transforming values stored in Ignite Shared RDD...");
 
         // Filter out even values as a transformed RDD.
         JavaPairRDD<Integer, Integer> transformedValues =
-            sharedRDD.filter((Tuple2<Integer, Integer> pair) -> pair._2() % 2 == 0);
+            sharedRDD.filter(new Function<Tuple2<Integer, Integer>, Boolean>() {
+                @Override public Boolean call(Tuple2<Integer, Integer> tuple) throws Exception {
+                    return tuple._2() % 2 == 0;
+                }
+            });
 
         // Print out the transformed values.
-        transformedValues.foreach((x) -> System.out.println("(" + x._1 + "," + x._2 + ")"));
+        transformedValues.foreach(new VoidFunction<Tuple2<Integer, Integer>>() {
+            @Override public void call(Tuple2<Integer, Integer> tuple) throws Exception {
+                System.out.println("(" + tuple._1 + "," + tuple._2 + ")");
+            }
+        });
 
         System.out.println(">>> Executing SQL query over Ignite Shared RDD...");
 
