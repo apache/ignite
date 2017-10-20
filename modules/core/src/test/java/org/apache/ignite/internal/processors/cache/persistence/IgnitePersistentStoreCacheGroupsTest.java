@@ -33,9 +33,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -85,13 +85,13 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         cfg.setConsistentId(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(100 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 

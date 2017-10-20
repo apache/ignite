@@ -98,7 +98,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(CacheGroupContext grp, RowData rowData) throws IgniteCheckedException {
-        initFromLink(grp, grp.shared(), grp.memoryPolicy().pageMemory(), rowData);
+        initFromLink(grp, grp.shared(), grp.dataRegion().pageMemory(), rowData);
     }
 
     /**

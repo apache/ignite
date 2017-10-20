@@ -176,6 +176,8 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 }
                 else if (field.type === 'memoryPolicies')
                     $scope.backupItem.memoryConfiguration.memoryPolicies.push({});
+                else if (field.type === 'dataRegions')
+                    $scope.backupItem.dataStorageConfiguration.dataRegionConfigurations.push({});
                 else if (field.type === 'serviceConfigurations')
                     $scope.backupItem.serviceConfigurations.push({});
                 else if (field.type === 'executorConfigurations')
@@ -328,6 +330,9 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
 
                     if (!cluster.memoryConfiguration)
                         cluster.memoryConfiguration = { memoryPolicies: [] };
+
+                    if (!cluster.dataStorageConfiguration)
+                        cluster.dataStorageConfiguration = { dataRegionConfigurations: [] };
 
                     if (!cluster.hadoopConfiguration)
                         cluster.hadoopConfiguration = { nativeLibraryNames: [] };
@@ -712,6 +717,53 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
             }));
         }
 
+        function checkDataStorageConfiguration(item) {
+            const dataStorage = item.dataStorageConfiguration;
+
+            if ((dataStorage.systemRegionMaxSize || 104857600) < (dataStorage.systemRegionInitialSize || 41943040))
+                return ErrorPopover.show('DataStorageSystemRegionMaxSize', 'System data region maximum size should be greater than initial size', $scope.ui, 'dataStorageConfiguration');
+
+            const pageSize = dataStorage.pageSize;
+
+            if (pageSize > 0 && (pageSize & (pageSize - 1) !== 0)) {
+                ErrorPopover.show('DataStorageConfigurationPageSize', 'Page size must be power of 2', $scope.ui, 'dataStorageConfiguration');
+
+                return false;
+            }
+
+            return _.isNil(_.find(dataStorage.dataRegionConfigurations, (curPlc, curIx) => {
+                if (curPlc.name === 'sysMemPlc') {
+                    ErrorPopover.show('DfltRegionPolicyName' + curIx, '"sysMemPlc" policy name is reserved for internal use', $scope.ui, 'dataStorageConfiguration');
+
+                    return true;
+                }
+
+                if (_.find(dataStorage.dataRegionConfigurations, (plc, ix) => curIx > ix && (curPlc.name || 'default') === (plc.name || 'default'))) {
+                    ErrorPopover.show('DfltRegionPolicyName' + curIx, 'Data region with that name is already configured', $scope.ui, 'dataStorageConfiguration');
+
+                    return true;
+                }
+
+                if (curPlc.maxSize && curPlc.maxSize < (curPlc.initialSize || 268435456)) {
+                    ErrorPopover.show('DfltRegionPolicyMaxSize' + curIx, 'Maximum size should be greater than initial size', $scope.ui, 'dataStorageConfiguration');
+
+                    return true;
+                }
+
+                if (curPlc.maxSize) {
+                    const maxPoolSize = Math.floor(curPlc.maxSize / (dataStorage.pageSize || 2048) / 10);
+
+                    if (maxPoolSize < (curPlc.emptyPagesPoolSize || 100)) {
+                        ErrorPopover.show('DfltRegionPolicyEmptyPagesPoolSize' + curIx, 'Evicted pages pool size should be lesser than ' + maxPoolSize, $scope.ui, 'dataStorageConfiguration');
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+
         function checkODBC(item) {
             if (_.get(item, 'odbc.odbcEnabled') && _.get(item, 'marshaller.kind'))
                 return ErrorPopover.show('odbcEnabledInput', 'ODBC can only be used with BinaryMarshaller', $scope.ui, 'odbcConfiguration');
@@ -786,7 +838,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
         }
 
         // Check cluster logical consistency.
-        function validate(item) {
+        this.validate = (item) => {
             ErrorPopover.hide();
 
             if (LegacyUtils.isEmptyString(item.name))
@@ -813,13 +865,16 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
             if (!checkCommunicationConfiguration(item))
                 return false;
 
+            if (!this.available('2.3.0') && !checkDataStorageConfiguration(item))
+                return false;
+
             if (!checkDiscoveryConfiguration(item))
                 return false;
 
             if (!checkLoadBalancingConfiguration(item))
                 return false;
 
-            if (!checkMemoryConfiguration(item))
+            if (this.available(['2.0.0', '2.3.0']) && !checkMemoryConfiguration(item))
                 return false;
 
             if (!checkODBC(item))
@@ -838,7 +893,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 return false;
 
             return true;
-        }
+        };
 
         // Save cluster in database.
         function save(item) {
@@ -882,7 +937,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
         }
 
         // Save cluster.
-        $scope.saveItem = function() {
+        $scope.saveItem = () => {
             const item = $scope.backupItem;
 
             const swapConfigured = item.swapSpaceSpi && item.swapSpaceSpi.kind;
@@ -890,7 +945,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
             if (!swapConfigured && _.find(clusterCaches(item), (cache) => cache.swapEnabled))
                 _.merge(item, {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}});
 
-            if (validate(item))
+            if (this.validate(item))
                 save(item);
         };
 
@@ -899,8 +954,8 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
         }
 
         // Clone cluster with new name.
-        $scope.cloneItem = function() {
-            if (validate($scope.backupItem)) {
+        $scope.cloneItem = () => {
+            if (this.validate($scope.backupItem)) {
                 Input.clone($scope.backupItem.name, _clusterNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 

@@ -25,9 +25,9 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -39,18 +39,10 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setInitialSize(200 * 1024 * 1024);
-        plc.setMaxSize(200 * 1024 * 1024);
-
-        dbCfg.setDefaultMemoryPolicyName("dfltPlc");
-        dbCfg.setMemoryPolicies(plc);
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (gridName.equals("client"))
             cfg.setClientMode(true);

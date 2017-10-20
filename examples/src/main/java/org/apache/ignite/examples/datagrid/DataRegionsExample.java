@@ -24,30 +24,30 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
  * This example demonstrates how to tweak particular settings of Apache Ignite page memory using
- * {@link MemoryConfiguration} and set up several memory policies for different caches with
- * {@link MemoryPolicyConfiguration}.
+ * {@link DataStorageConfiguration} and set up several data regions for different caches with
+ * {@link DataRegionConfiguration}.
  * <p>
  * Additional remote nodes can be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} example-memory-policies.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} example-data-regions.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which passing
- * {@code examples/config/example-memory-policies.xml} configuration to it.
+ * {@code examples/config/example-data-regions.xml} configuration to it.
  */
-public class MemoryPoliciesExample {
-    /** Name of the default memory policy defined in 'example-memory-policies.xml'. */
-    public static final String POLICY_DEFAULT = "Default_Region";
+public class DataRegionsExample {
+    /** Name of the default data region defined in 'example-data-regions.xml'. */
+    public static final String REGION_DEFAULT = "Default_Region";
 
-    /** Name of the memory policy that creates a memory region limited by 40 MB with eviction enabled */
-    public static final String POLICY_40MB_EVICTION = "40MB_Region_Eviction";
+    /** Name of the data region that creates a memory region limited by 40 MB with eviction enabled */
+    public static final String REGION_40MB_EVICTION = "40MB_Region_Eviction";
 
-    /** Name of the memory policy that creates a memory region mapped to a memory-mapped file. */
-    public static final String POLICY_30MB_MEMORY_MAPPED_FILE = "30MB_Region_Swapping";
+    /** Name of the data region that creates a memory region mapped to a memory-mapped file. */
+    public static final String REGION_30MB_MEMORY_MAPPED_FILE = "30MB_Region_Swapping";
 
     /**
      * Executes example.
@@ -56,52 +56,51 @@ public class MemoryPoliciesExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-memory-policies.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-data-regions.xml")) {
             System.out.println();
-            System.out.println(">>> Memory policies example started.");
+            System.out.println(">>> Data regions example started.");
 
-            /**
+            /*
              * Preparing configurations for 2 caches that will be bound to the memory region defined by
-             * '10MB_Region_Eviction' memory policy from 'example-memory-policies.xml' configuration.
+             * '10MB_Region_Eviction' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> firstCacheCfg = new CacheConfiguration<>("firstCache");
 
-            firstCacheCfg.setMemoryPolicyName(POLICY_40MB_EVICTION);
+            firstCacheCfg.setDataRegionName(REGION_40MB_EVICTION);
             firstCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             firstCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
             CacheConfiguration<Integer, Integer> secondCacheCfg = new CacheConfiguration<>("secondCache");
-            secondCacheCfg.setMemoryPolicyName(POLICY_40MB_EVICTION);
+            secondCacheCfg.setDataRegionName(REGION_40MB_EVICTION);
             secondCacheCfg.setCacheMode(CacheMode.REPLICATED);
             secondCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
             IgniteCache<Integer, Integer> firstCache = ignite.createCache(firstCacheCfg);
             IgniteCache<Integer, Integer> secondCache = ignite.createCache(secondCacheCfg);
 
-            System.out.println(">>> Started two caches bound to '" + POLICY_40MB_EVICTION + "' memory region.");
+            System.out.println(">>> Started two caches bound to '" + REGION_40MB_EVICTION + "' memory region.");
 
-            /**
+            /*
              * Preparing a configuration for a cache that will be bound to the memory region defined by
-             * '5MB_Region_Swapping' memory policy from 'example-memory-policies.xml' configuration.
+             * '5MB_Region_Swapping' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> thirdCacheCfg = new CacheConfiguration<>("thirdCache");
 
-            thirdCacheCfg.setMemoryPolicyName(POLICY_30MB_MEMORY_MAPPED_FILE);
+            thirdCacheCfg.setDataRegionName(REGION_30MB_MEMORY_MAPPED_FILE);
 
             IgniteCache<Integer, Integer> thirdCache = ignite.createCache(thirdCacheCfg);
 
-            System.out.println(">>> Started a cache bound to '" + POLICY_30MB_MEMORY_MAPPED_FILE + "' memory region.");
+            System.out.println(">>> Started a cache bound to '" + REGION_30MB_MEMORY_MAPPED_FILE + "' memory region.");
 
-
-            /**
+            /*
              * Preparing a configuration for a cache that will be bound to the default memory region defined by
-             * default 'Default_Region' memory policy from 'example-memory-policies.xml' configuration.
+             * default 'Default_Region' data region from 'example-data-regions.xml' configuration.
              */
             CacheConfiguration<Integer, Integer> fourthCacheCfg = new CacheConfiguration<>("fourthCache");
 
             IgniteCache<Integer, Integer> fourthCache = ignite.createCache(fourthCacheCfg);
 
-            System.out.println(">>> Started a cache bound to '" + POLICY_DEFAULT + "' memory region.");
+            System.out.println(">>> Started a cache bound to '" + REGION_DEFAULT + "' memory region.");
 
             System.out.println(">>> Destroying caches...");
 

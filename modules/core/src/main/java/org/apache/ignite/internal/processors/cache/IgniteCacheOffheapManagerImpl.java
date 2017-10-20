@@ -148,7 +148,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pendingEntries = new PendingEntriesTree(
                 grp,
                 name,
-                grp.memoryPolicy().pageMemory(),
+                grp.dataRegion().pageMemory(),
                 rootPage,
                 grp.reuseList(),
                 true);
@@ -794,7 +794,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         long pageId;
 
         if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L)
-            pageId = grp.memoryPolicy().pageMemory().allocatePage(grp.groupId(), INDEX_PARTITION, FLAG_IDX);
+            pageId = grp.dataRegion().pageMemory().allocatePage(grp.groupId(), INDEX_PARTITION, FLAG_IDX);
 
         return pageId;
     }
@@ -1435,7 +1435,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (row != null) {
                 row.key(key);
 
-                grp.memoryPolicy().evictionTracker().touchPage(row.link());
+                grp.dataRegion().evictionTracker().touchPage(row.link());
             }
 
             return row;

@@ -53,8 +53,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -1533,32 +1533,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if(ctx.config().isClientMode())
             return 0;
 
-        MemoryConfiguration memCfg = ctx.config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
         assert memCfg != null;
 
-        long res = memCfg.getSystemCacheMaxSize();
+        long res = memCfg.getSystemRegionMaxSize();
 
         // Add memory policies.
-        MemoryPolicyConfiguration[] memPlcCfgs = memCfg.getMemoryPolicies();
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
 
-        if (memPlcCfgs != null) {
-            String dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
-
-            boolean customDflt = false;
-
-            for (MemoryPolicyConfiguration memPlcCfg : memPlcCfgs) {
-                if(F.eq(dfltMemPlcName, memPlcCfg.getName()))
-                    customDflt = true;
-
-                res += memPlcCfg.getMaxSize();
-            }
-
-            if(!customDflt)
-                res += memCfg.getDefaultMemoryPolicySize();
+        if (dataRegions != null) {
+            for (DataRegionConfiguration dataReg : dataRegions)
+                res += dataReg.getMaxSize();
         }
-        else
-            res += memCfg.getDefaultMemoryPolicySize();
+
+        res += memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
         // Add persistence (if any).
         res += GridCacheDatabaseSharedManager.checkpointBufferSize(ctx.config());

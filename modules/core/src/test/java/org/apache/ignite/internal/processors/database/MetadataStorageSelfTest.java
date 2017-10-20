@@ -23,12 +23,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -156,7 +156,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
     protected PageMemory memory(boolean clean) throws Exception {
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath);
 
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration()
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
             .setMaxSize(30 * 1024 * 1024).setInitialSize(30 * 1024 * 1024);
 
         return new PageMemoryNoStoreImpl(
@@ -165,7 +165,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new MemoryMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(plcCfg),
             true);
     }
 }

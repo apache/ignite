@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -142,7 +142,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** */
     private boolean loadPrevVal;
 
-    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    /** Name of {@link DataRegionConfiguration} for this cache */
     private String memPlcName;
 
     /** Maximum inline size for sql indexes. */
@@ -219,7 +219,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = compactClass(ccfg.getEvictionFilter());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
-        memPlcName = ccfg.getMemoryPolicyName();
+        memPlcName = ccfg.getDataRegionName();
         sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
         nodeFilter = compactClass(ccfg.getNodeFilter());
         qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
@@ -460,7 +460,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@link MemoryPolicyConfiguration} name.
+     * @return {@link DataRegionConfiguration} name.
      */
     public String getMemoryPolicyName() {
         return memPlcName;
