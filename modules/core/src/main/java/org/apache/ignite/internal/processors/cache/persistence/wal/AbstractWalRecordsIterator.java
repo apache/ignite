@@ -65,8 +65,11 @@ public abstract class AbstractWalRecordsIterator
     /** Logger */
     @NotNull protected final IgniteLogger log;
 
-    /** Shared context for creating serializer of required version and grid name access */
-    @NotNull private final GridCacheSharedContext sharedCtx;
+    /**
+     * Shared context for creating serializer of required version and grid name access. Also cacheObjects processor from
+     * this context may be used to covert Data entry key and value from its binary representation into objects.
+     */
+    @NotNull protected final GridCacheSharedContext sharedCtx;
 
     /** Serializer of current version to read headers. */
     @NotNull private final RecordSerializer serializer;
@@ -78,10 +81,11 @@ public abstract class AbstractWalRecordsIterator
     private final ByteBufferExpander buf;
 
     /**
-     * @param log Logger
-     * @param sharedCtx Shared context
+     * @param log Logger.
+     * @param sharedCtx Shared context.
      * @param serializer Serializer of current version to read headers.
-     * @param bufSize buffer for reading records size
+     * @param ioFactory ioFactory for file IO access.
+     * @param bufSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
@@ -95,7 +99,6 @@ public abstract class AbstractWalRecordsIterator
         this.serializer = serializer;
         this.ioFactory = ioFactory;
 
-        // Do not allocate direct buffer for iterator.
         buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
     }
 
@@ -126,6 +129,16 @@ public abstract class AbstractWalRecordsIterator
     /** {@inheritDoc} */
     @Override protected boolean onHasNext() throws IgniteCheckedException {
         return curRec != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        try {
+            buf.close();
+        }
+        catch (Exception ex) {
+            throw new IgniteCheckedException(ex);
+        }
     }
 
     /**
@@ -201,13 +214,24 @@ public abstract class AbstractWalRecordsIterator
             ptr.length(rec.size());
 
             // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)ptr, rec);
+            return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
             if (!(e instanceof SegmentEofException))
                 handleRecordException(e, ptr);
             return null;
         }
+    }
+
+    /**
+     * Performs final conversions with record loaded from WAL.
+     * To be overridden by subclasses if any processing required.
+     *
+     * @param rec record to post process.
+     * @return post processed record.
+     */
+    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+        return rec;
     }
 
     /**
@@ -234,7 +258,7 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = ioFactory.create(desc.file, "r");
+            FileIO fileIO = ioFactory.create(desc.file);
 
             try {
                 FileInput in = new FileInput(fileIO, buf);
@@ -251,7 +275,7 @@ public abstract class AbstractWalRecordsIterator
 
                 int ver = ((HeaderRecord)rec).version();
 
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver);
+                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver, serializer.writePointer());
 
                 if (start != null && desc.idx == start.index())
                     in.seek(start.fileOffset());

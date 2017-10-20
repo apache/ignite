@@ -301,13 +301,13 @@ namespace ignite
         stream.WriteBool(false);
         stream.Synchronize();
 
-        jobject javaRef = ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
+        ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
 
         // Releasing control over environment as it is controlled by Java at this point.
         // Even if the call has failed environment are going to be released by the Java.
         envTarget.release();
 
-        if (!javaRef)
+        if (!env.Get()->GetProcessor() || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
         {
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
@@ -323,7 +323,7 @@ namespace ignite
 
         env.Get()->ProcessorReleaseStart();
 
-        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        IgniteImpl* impl = new IgniteImpl(env);
 
         return Ignite(impl);
     }
@@ -383,22 +383,9 @@ namespace ignite
                         SharedPointer<IgniteEnvironment>* env =
                             static_cast<SharedPointer<IgniteEnvironment>*>(hnds->target);
 
-                        // 4. Get fresh node reference.
-                        jobject ref = ctx.Get()->IgnitionInstance(name0, &jniErr);
+                        IgniteImpl* impl = new IgniteImpl(*env);
 
-                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS) {
-                            if (ref)
-                            {
-                                IgniteImpl* impl = new IgniteImpl(*env, ref);
-
-                                res = Ignite(impl);
-                            }
-                            else
-                                // Error: concurrent node stop.
-                                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                    "Failed to get Ignite instance because it was stopped concurrently.");
-
-                        }
+                        res = Ignite(impl);
                     }
                     else
                         // Error: no node with the given name.

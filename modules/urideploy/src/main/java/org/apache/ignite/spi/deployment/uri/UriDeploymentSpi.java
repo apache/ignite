@@ -604,7 +604,8 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
                             uriList.add(U.hidePassword(uri));
                     }
 
-                    log.info("Found deleted GAR units [uris=" + uriList + ']');
+                    if (log.isInfoEnabled())
+                        log.info("Found deleted GAR units [uris=" + uriList + ']');
                 }
 
                 processDeletedFiles(uris);

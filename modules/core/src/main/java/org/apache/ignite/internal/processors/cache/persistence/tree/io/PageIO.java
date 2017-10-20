@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.io.Pages
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Base format for all the page types.
@@ -544,5 +546,30 @@ public abstract class PageIO {
      */
     public static boolean isDataPageType(int type) {
         return type == T_DATA;
+    }
+
+    /**
+     * @param addr Address.
+     * @param pageSize Page size.
+     * @param sb Sb.
+     */
+    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;
+
+    /**
+     * @param addr Address.
+     */
+    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
+        PageIO io = getPageIO(addr);
+
+        GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
+
+        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+            .a("\n],\n");
+
+        io.printPage(addr, pageSize, sb);
+
+        return sb.toString();
     }
 }

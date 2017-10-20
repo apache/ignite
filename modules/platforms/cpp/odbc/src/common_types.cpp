@@ -118,6 +118,57 @@ namespace ignite
 
             return EnvironmentAttribute::UNKNOWN;
         }
+
+        SqlState::Type ResponseStatusToSqlState(int32_t status)
+        {
+            switch (status)
+            {
+                case ResponseStatus::PARSING_FAILURE:
+                case ResponseStatus::KEY_UPDATE:
+                case ResponseStatus::UNEXPECTED_OPERATION:
+                    return SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION;
+
+                case ResponseStatus::UNSUPPORTED_OPERATION:
+                    return SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED;
+
+                case ResponseStatus::UNEXPECTED_ELEMENT_TYPE:
+                    return SqlState::SHY004_INVALID_SQL_DATA_TYPE;
+
+                case ResponseStatus::DUPLICATE_KEY:
+                case ResponseStatus::NULL_KEY:
+                case ResponseStatus::NULL_VALUE:
+                    return SqlState::S23000_INTEGRITY_CONSTRAINT_VIOLATION;
+
+                case ResponseStatus::TABLE_NOT_FOUND:
+                    return SqlState::S42S02_TABLE_OR_VIEW_NOT_FOUND;
+
+                case ResponseStatus::INDEX_ALREADY_EXISTS:
+                    return SqlState::S42S11_INDEX_ALREADY_EXISTS;
+
+                case ResponseStatus::INDEX_NOT_FOUND:
+                    return SqlState::S42S12_INDEX_NOT_FOUND;
+
+                case ResponseStatus::TABLE_ALREADY_EXISTS:
+                    return SqlState::S42S01_TABLE_OR_VIEW_ALREADY_EXISTS;
+
+                case ResponseStatus::COLUMN_NOT_FOUND:
+                    return SqlState::S42S22_COLUMN_NOT_FOUND;
+
+                case ResponseStatus::COLUMN_ALREADY_EXISTS:
+                    return SqlState::S42S21_COLUMN_ALREADY_EXISTS;
+
+                case ResponseStatus::CACHE_NOT_FOUND:
+                case ResponseStatus::NULL_TABLE_DESCRIPTOR:
+                case ResponseStatus::CONVERSION_FAILED:
+                case ResponseStatus::CONCURRENT_UPDATE:
+                case ResponseStatus::ENTRY_PROCESSING:
+                case ResponseStatus::TABLE_DROP_FAILED:
+                case ResponseStatus::STMT_TYPE_MISMATCH:
+                case ResponseStatus::UNKNOWN_ERROR:
+                default:
+                    return SqlState::SHY000_GENERAL_ERROR;
+            }
+        }
     }
 }
 

@@ -128,14 +128,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetIgnite(idx).GetCache<TK, TV>(CacheName());
         }
 
-        protected ICache<int, int> Cache()
+        protected ICache<int, int> Cache(bool async = false)
         {
-            return Cache<int, int>(0);
+            var cache = Cache<int, int>(0);
+
+            return async ? cache.WrapAsync() : cache;
         }
 
-        private ICache<TK, TV> Cache<TK, TV>()
+        private ICache<TK, TV> Cache<TK, TV>(bool async = false)
         {
-            return Cache<TK, TV>(0);
+            var cache = Cache<TK, TV>(0);
+
+            return async ? cache : cache.WrapAsync();
         }
 
         private ICacheAffinity Affinity()
@@ -404,39 +408,26 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPut()
+        public void TestPut([Values(true, false)] bool async)
         {
-            var cache = Cache();
+            var cache = Cache(async);
 
             cache.Put(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
-        }
 
-        [Test]
-        public void TestPutxAsync()
-        {
-            var cache = Cache().WrapAsync();
+            // Objects.
+            var cache2 = Cache<Container, Container>(async);
 
-            cache.Put(1, 1);
+            var obj1 = new Container {Id = 1};
+            var obj2 = new Container {Id = 2};
 
-            Assert.AreEqual(1, cache.Get(1));
-        }
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
 
-        [Test]
-        public void TestPutIfAbsent()
-        {
-            var cache = Cache();
+            cache2[obj1] = obj2;
 
-            Assert.IsFalse(cache.ContainsKey(1));
-
-            Assert.AreEqual(true, cache.PutIfAbsent(1, 1));
-
-            Assert.AreEqual(1, cache.Get(1));
-
-            Assert.AreEqual(false, cache.PutIfAbsent(1, 2));
-
-            Assert.AreEqual(1, cache.Get(1));
+            Assert.AreEqual(2, cache2[obj1].Id);
         }
 
         [Test]
@@ -458,7 +449,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndPutIfAbsentAsync()
         {
-            var cache = Cache().WrapAsync();
+            var cache = Cache(true);
 
             Assert.IsFalse(cache.ContainsKey(1));
 
@@ -476,9 +467,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutIfAbsentAsync()
+        public void TestPutIfAbsent([Values(true, false)] bool async)
         {
-            var cache = Cache().WrapAsync();
+            var cache = Cache(async);
 
             Assert.Throws<KeyNotFoundException>(() => cache.Get(1));
             Assert.IsFalse(cache.ContainsKey(1));
@@ -597,27 +588,42 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutAll()
+        public void TestPutAll([Values(true, false)] bool async)
         {
-            var cache = Cache();
+            var cache = Cache(async);
 
+            // Primitives.
             cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
             Assert.AreEqual(3, cache.Get(3));
-        }
 
-        [Test]
-        public void TestPutAllAsync()
-        {
-            var cache = Cache().WrapAsync();
+            // Objects.
+            var cache2 = Cache<int, Container>(async);
 
-            cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
 
-            Assert.AreEqual(1, cache.Get(1));
-            Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(3, cache.Get(3));
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj2;
+
+            cache2.PutAll(new Dictionary<int, Container>
+            {
+                {1, obj1},
+                {2, obj2},
+                {3, obj3}
+            });
+
+            var res1 = cache2[1];
+            var res2 = cache2[2];
+            var res3 = cache2[3];
+
+            Assert.AreEqual(res1, res1.Inner.Inner);
+            Assert.AreEqual(res2, res2.Inner.Inner);
+            Assert.IsNotNull(res3.Inner.Inner.Inner);
         }
 
         /// <summary>
@@ -2536,6 +2542,13 @@ namespace Apache.Ignite.Core.Tests.Cache
                     return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ Id;
                 }
             }
+        }
+
+        private class Container
+        {
+            public int Id;
+
+            public Container Inner;
         }
     }
 }

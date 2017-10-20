@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Adapter for cache metrics.
@@ -107,6 +108,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Total rebalanced bytes count. */
     private AtomicLong totalRebalancedBytes = new AtomicLong();
+
+    /** Rebalanced start time. */
+    private AtomicLong rebalanceStartTime = new AtomicLong(-1L);
 
     /** Estimated rebalancing keys count. */
     private AtomicLong estimatedRebalancingKeys = new AtomicLong();
@@ -734,7 +738,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public int getTotalPartitionsCount() {
+    @Override public int getTotalPartitionsCount() {
         int res = 0;
 
         if (cctx.isLocal())
@@ -749,7 +753,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public int getRebalancingPartitionsCount() {
+    @Override public int getRebalancingPartitionsCount() {
         int res = 0;
 
         if (cctx.isLocal())
@@ -764,17 +768,17 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    public long getKeysToRebalanceLeft() {
+    @Override public long getKeysToRebalanceLeft() {
         return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
     }
 
     /** {@inheritDoc} */
-    public long getRebalancingKeysRate() {
+    @Override public long getRebalancingKeysRate() {
         return rebalancingKeysRate.getRate();
     }
 
     /** {@inheritDoc} */
-    public long getRebalancingBytesRate() {
+    @Override public long getRebalancingBytesRate() {
         return rebalancingBytesRate.getRate();
     }
 
@@ -791,6 +795,38 @@ public class CacheMetricsImpl implements CacheMetrics {
         rebalancingBytesRate.clear();
 
         rebalancingKeysRate.clear();
+
+        rebalanceStartTime.set(-1L);
+    }
+
+    /**
+     *
+     */
+    public void startRebalance(long delay){
+        rebalanceStartTime.addAndGet(delay + U.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public long estimateRebalancingFinishTime() {
+        return getEstimatedRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        long rate = rebalancingKeysRate.getRate();
+
+        return rate <= 0 ? -1L :
+            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return rebalanceStartTime.get();
     }
 
     /**

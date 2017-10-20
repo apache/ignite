@@ -89,7 +89,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
         taskRes.getTopologyVersions().put(nid, jobRes.getTopologyVersion());
 
-        taskRes.isTaskMonitoringEnabled().put(nid, jobRes.isTaskMonitoringEnabled());
+        taskRes.getTaskMonitoringEnabled().put(nid, jobRes.isTaskMonitoringEnabled());
 
         taskRes.getErrorCounts().put(nid, jobRes.getErrorCount());
 
