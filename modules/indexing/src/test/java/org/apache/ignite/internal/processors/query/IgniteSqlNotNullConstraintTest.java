@@ -41,8 +41,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -141,7 +141,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
             c.setClientMode(true);
 
             // Not allowed to have local cache on client without memory config
-            c.setMemoryConfiguration(new MemoryConfiguration());
+            c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         return c;

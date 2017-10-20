@@ -17,6 +17,8 @@
 
 package org.apache.ignite.igfs;
 
+import org.apache.ignite.configuration.DataRegionConfiguration;
+
 /**
  * {@code IGFS} metrics snapshot for the file system. Note, that some metrics are global and
  * some are local (i.e. per each node).
@@ -33,7 +35,7 @@ public interface IgfsMetrics {
 
     /**
      * Gets maximum amount of data that can be stored on local node. This metrics is related to
-     * to the {@link org.apache.ignite.configuration.MemoryPolicyConfiguration#getMaxSize()} of the IGFS data cache.
+     * to the {@link DataRegionConfiguration#getMaxSize()} of the IGFS data cache.
      *
      * @return Maximum IGFS local space size.
      */
