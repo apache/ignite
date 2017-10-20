@@ -81,7 +81,7 @@ public class VisorPersistenceMetrics extends VisorDataTransferObject {
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();
         walFsyncTimeAvg = metrics.getWalFsyncTimeAverage();
-        lastCpDuration = metrics.getLastCheckpointingDuration();
+        lastCpDuration = metrics.getLastCheckpointDuration();
         lastCpLockWaitDuration = metrics.getLastCheckpointLockWaitDuration();
         lastCpMmarkDuration = metrics.getLastCheckpointMarkDuration();
         lastCpPagesWriteDuration = metrics.getLastCheckpointPagesWriteDuration();

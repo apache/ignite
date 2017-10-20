@@ -42,7 +42,7 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
 
     /** {@inheritDoc} */
     @MXBeanDescription("Duration of the last checkpoint in milliseconds.")
-    @Override long getLastCheckpointingDuration();
+    @Override long getLastCheckpointDuration();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Duration of the checkpoint lock wait in milliseconds.")
