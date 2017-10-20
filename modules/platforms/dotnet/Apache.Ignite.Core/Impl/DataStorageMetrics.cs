@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.PersistentStore
+namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.PersistentStore;
-    
+
     /// <summary>
-    /// Persistent store metrics.
+    /// Data storage metrics.
     /// </summary>
-#pragma warning disable 618
-    internal class PersistentStoreMetrics : IPersistentStoreMetrics
-#pragma warning restore 618
+    internal class DataStorageMetrics : IDataStorageMetrics
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PersistentStoreMetrics"/> class.
+        /// Initializes a new instance of the <see cref="DataStorageMetrics"/> class.
         /// </summary>
-        public PersistentStoreMetrics(IBinaryRawReader reader)
+        public DataStorageMetrics(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 

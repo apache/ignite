@@ -15,26 +15,41 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.PersistentStore
+namespace Apache.Ignite.Core
 {
-    using System;
-
     /// <summary>
-    /// Defines checkpoint pages order on disk.
+    /// Memory usage metrics.
     /// </summary>
-    [Obsolete("Use Apache.Ignite.Core.Data.CheckpointWriteOrder")]
-    public enum CheckpointWriteOrder
+    public interface IDataRegionMetrics
     {
         /// <summary>
-        /// Pages are written in order provided by checkpoint pages collection iterator
-        /// (which is basically a hashtable).
+        /// Gets the memory policy name.
         /// </summary>
-        Random,
+        string Name { get; }
 
         /// <summary>
-        /// All checkpoint pages are collected into single list and sorted by page index.
-        /// Provides almost sequential disk writes, which can be much faster on some SSD models.
+        /// Gets the count of allocated pages.
         /// </summary>
-        Sequential
+        long TotalAllocatedPages { get; }
+
+        /// <summary>
+        /// Gets the allocation rate, in pages per second.
+        /// </summary>
+        float AllocationRate { get; }
+
+        /// <summary>
+        /// Gets the eviction rate, in pages per second.
+        /// </summary>
+        float EvictionRate { get; }
+
+        /// <summary>
+        /// Gets the percentage of pages fully occupied by entries that are larger than page.
+        /// </summary>
+        float LargeEntriesPagesPercentage { get; }
+
+        /// <summary>
+        /// Gets the page fill factor: free space to overall size ratio across all pages.
+        /// </summary>
+        float PageFillFactor { get; }
     }
 }

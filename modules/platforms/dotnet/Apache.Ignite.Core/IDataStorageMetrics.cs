@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.PersistentStore
+namespace Apache.Ignite.Core
 {
     using System;
 
     /// <summary>
     /// Persistent store metrics.
-    /// Obsolete, see <see cref="IDataStorageMetrics"/>.
     /// </summary>
-    [Obsolete("Use IDataStorageMetrics")]
-    public interface IPersistentStoreMetrics
+    public interface IDataStorageMetrics
     {
         /// <summary>
         /// Gets the average number of WAL records per second written during the last time interval. 
