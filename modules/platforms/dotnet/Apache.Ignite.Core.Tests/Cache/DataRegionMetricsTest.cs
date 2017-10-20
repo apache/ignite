@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Linq;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
     /// <summary>
-    /// Memory metrics tests.
+    /// Data region metrics test.
     /// </summary>
-    public class MemoryMetricsTest
+    public class DataRegionMetricsTest
     {
         /** */
-        private const string MemoryPolicyWithMetrics = "plcWithMetrics";
+        private const string RegionWithMetrics = "regWithMetrics";
 
         /** */
-        private const string MemoryPolicyNoMetrics = "plcNoMetrics";
+        private const string RegionNoMetrics = "regNoMetrics";
 
         /// <summary>
         /// Tests the memory metrics.
@@ -40,18 +39,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestMemoryMetrics()
         {
-            var ignite = StartIgniteWithTwoPolicies();
+            var ignite = StartIgniteWithTwoDataRegions();
 
             // Verify metrics.
-            var metrics = ignite.GetMemoryMetrics().OrderBy(x => x.Name).ToArray();
+            var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
             Assert.AreEqual(3, metrics.Length);  // two defined plus system.
 
             var emptyMetrics = metrics[0];
-            Assert.AreEqual(MemoryPolicyNoMetrics, emptyMetrics.Name);
+            Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
             AssertMetricsAreEmpty(emptyMetrics);
 
             var memMetrics = metrics[1];
-            Assert.AreEqual(MemoryPolicyWithMetrics, memMetrics.Name);
+            Assert.AreEqual(RegionWithMetrics, memMetrics.Name);
             Assert.Greater(memMetrics.AllocationRate, 0);
             Assert.AreEqual(0, memMetrics.EvictionRate);
             Assert.AreEqual(0, memMetrics.LargeEntriesPagesPercentage);
@@ -63,30 +62,30 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertMetricsAreEmpty(sysMetrics);
 
             // Metrics by name.
-            emptyMetrics = ignite.GetMemoryMetrics(MemoryPolicyNoMetrics);
-            Assert.AreEqual(MemoryPolicyNoMetrics, emptyMetrics.Name);
+            emptyMetrics = ignite.GetDataRegionMetrics(RegionNoMetrics);
+            Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
             AssertMetricsAreEmpty(emptyMetrics);
 
-            memMetrics = ignite.GetMemoryMetrics(MemoryPolicyWithMetrics);
-            Assert.AreEqual(MemoryPolicyWithMetrics, memMetrics.Name);
+            memMetrics = ignite.GetDataRegionMetrics(RegionWithMetrics);
+            Assert.AreEqual(RegionWithMetrics, memMetrics.Name);
             Assert.Greater(memMetrics.AllocationRate, 0);
             Assert.AreEqual(0, memMetrics.EvictionRate);
             Assert.AreEqual(0, memMetrics.LargeEntriesPagesPercentage);
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
 
-            sysMetrics = ignite.GetMemoryMetrics("sysMemPlc");
+            sysMetrics = ignite.GetDataRegionMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
             // Invalid name.
-            Assert.IsNull(ignite.GetMemoryMetrics("boo"));
+            Assert.IsNull(ignite.GetDataRegionMetrics("boo"));
         }
 
         /// <summary>
         /// Asserts that metrics are empty.
         /// </summary>
-        private static void AssertMetricsAreEmpty(IMemoryMetrics metrics)
+        private static void AssertMetricsAreEmpty(IDataRegionMetrics metrics)
         {
             Assert.AreEqual(0, metrics.AllocationRate);
             Assert.AreEqual(0, metrics.EvictionRate);
@@ -98,23 +97,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Starts the ignite with two policies.
         /// </summary>
-        private static IIgnite StartIgniteWithTwoPolicies()
+        private static IIgnite StartIgniteWithTwoDataRegions()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                MemoryConfiguration = new MemoryConfiguration
+                DataStorageConfiguration = new DataStorageConfiguration()
                 {
-                    DefaultMemoryPolicyName = MemoryPolicyWithMetrics,
-                    MemoryPolicies = new[]
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
-                        new MemoryPolicyConfiguration
+                        Name = RegionWithMetrics,
+                        MetricsEnabled = true
+                    },
+                    DataRegionConfigurations = new[]
+                    {
+                        new DataRegionConfiguration
                         {
-                            Name = MemoryPolicyWithMetrics,
-                            MetricsEnabled = true
-                        },
-                        new MemoryPolicyConfiguration
-                        {
-                            Name = MemoryPolicyNoMetrics,
+                            Name = RegionNoMetrics,
                             MetricsEnabled = false
                         }
                     }
@@ -126,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Create caches and do some things with them.
             var cacheNoMetrics = ignite.CreateCache<int, int>(new CacheConfiguration("cacheNoMetrics")
             {
-                MemoryPolicyName = MemoryPolicyNoMetrics
+                DataRegionName = RegionNoMetrics
             });
 
             cacheNoMetrics.Put(1, 1);
@@ -134,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var cacheWithMetrics = ignite.CreateCache<int, int>(new CacheConfiguration("cacheWithMetrics")
             {
-                MemoryPolicyName = MemoryPolicyWithMetrics
+                DataRegionName = RegionWithMetrics
             });
 
             cacheWithMetrics.Put(1, 1);
