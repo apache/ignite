@@ -31,9 +31,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.load.model.HeavyValue;
+import org.jsr166.LongAdder8;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
@@ -78,6 +78,8 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
                             System.out.println("... " + i);
 
                         if (cnt > 1_000) {
+                            map.put(i, HeavyValue.generate());
+
                             dataLdr.addData(map);
 
                             map.clear();
