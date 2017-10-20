@@ -715,9 +715,9 @@ namespace Apache.Ignite.Core
             // Persistence.
             if (r.ReadBoolean())
             {
-#pragma warning disable CS0618 // Obsolete
+#pragma warning disable 618 // Obsolete
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
-#pragma warning restore CS0618
+#pragma warning restore 618
             }
 
             // Data storage.
