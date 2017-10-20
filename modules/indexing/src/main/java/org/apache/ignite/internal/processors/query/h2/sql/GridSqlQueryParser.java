@@ -1104,7 +1104,7 @@ public class GridSqlQueryParser {
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
 
-            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1)
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1 && wrapKey0)
                 res.affinityKey(pkCols0.iterator().next());
         }
 
