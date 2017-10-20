@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spark.examples;
 
+import junit.framework.TestCase;
 import org.apache.ignite.examples.spark.SharedRDDExample;
 import org.junit.Test;
 
 /**
  * SharedRDD  examples self test.
  */
-public class SharedRDDExampleSelfTest {
+public class SharedRDDExampleSelfTest extends TestCase {
     static final String[] EMPTY_ARGS = new String[0];
     /**
      * @throws Exception If failed.
