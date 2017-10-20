@@ -61,7 +61,7 @@ public class DataStorageMetricsAdapter implements PersistenceMetrics {
 
     /** {@inheritDoc} */
     @Override public long getLastCheckpointingDuration() {
-        return delegate.getLastCheckpointingDuration();
+        return delegate.getLastCheckpointDuration();
     }
 
     /** {@inheritDoc} */

@@ -127,7 +127,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getLastCheckpointingDuration() {
+    @Override public long getLastCheckpointDuration() {
         if (!metricsEnabled)
             return 0;
 

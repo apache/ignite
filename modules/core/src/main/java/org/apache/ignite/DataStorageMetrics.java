@@ -61,7 +61,7 @@ public interface DataStorageMetrics {
      *
      * @return Total checkpoint duration in milliseconds.
      */
-    public long getLastCheckpointingDuration();
+    public long getLastCheckpointDuration();
 
     /**
      * Gets the duration of last checkpoint lock wait in milliseconds.
