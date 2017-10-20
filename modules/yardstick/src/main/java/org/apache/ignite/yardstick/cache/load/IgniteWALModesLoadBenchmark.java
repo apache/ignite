@@ -17,9 +17,12 @@
 
 package org.apache.ignite.yardstick.cache.load;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -28,6 +31,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.load.model.HeavyValue;
 import org.yardstickframework.BenchmarkUtils;
@@ -46,7 +50,7 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
     /**
      * @param c Closure.
      */
-    private void load(IgniteCache c) {
+    private void load(IgniteCache c) throws Exception {
         if (c.size() != 0)
             throw new RuntimeException("Cache is not empty!");
 
@@ -55,15 +59,52 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
 
         long start = System.currentTimeMillis();
 
-        IgniteDataStreamer<Integer, HeavyValue> dataLdr = ignite().dataStreamer(c.getName());
+        final IgniteDataStreamer<Integer, HeavyValue> dataLdr = ignite().dataStreamer(c.getName());
 
-        for (int i = 0; i < args.range(); i++) {
-            if (i % 100_000 == 0)
-                System.out.println("... " + i);
+        final List<Thread> ths = new ArrayList<>();
+        final int thCnt = 16;
 
-            dataLdr.addData(i, HeavyValue.generate());
+        for (int j = 0; j < thCnt; j++) {
+            final int finalJ = j;
+
+            final Thread th = new Thread() {
+                @Override public void run() {
+                    Map<Integer, HeavyValue> map = new HashMap<>();
+
+                    int cnt = 0;
+
+                    for (int i = finalJ; i < args.range(); i += thCnt) {
+                        if (i % 100_000 == 0)
+                            System.out.println("... " + i);
+
+                        if (cnt > 1_000) {
+                            dataLdr.addData(map);
+
+                            map.clear();
+
+                            cnt = 0;
+                        }
+                        else {
+                            map.put(i, HeavyValue.generate());
+
+                            cnt++;
+                        }
+                    }
+
+                    dataLdr.addData(map);
+                    dataLdr.flush();
+                }
+            };
+
+            ths.add(th);
+
+            th.start();
         }
 
+        for (Thread th : ths)
+            th.join();
+
+        dataLdr.flush();
         dataLdr.close();
 
         dataLdr.future().get();
@@ -74,8 +115,8 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
 
         BenchmarkUtils.println("IgniteStreamerBenchmark finished load cache [totalSeconds=" + time / 1000 + ']');
 
-        if (c.size() != args.preloadAmount())
-            throw new RuntimeException("Loading failed. actual size =" + c.size());
+        if (c.size() != args.range())
+            throw new RuntimeException("Loading failed. actual size =" + c.size() + ", expected =" + args.range());
     }
 
     /**
