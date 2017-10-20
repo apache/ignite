@@ -16,36 +16,36 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 
 /**
- * Memory policy provides access to objects configured with {@link MemoryPolicyConfiguration} configuration.
+ * Data region provides access to objects configured with {@link DataRegionConfiguration} configuration.
  */
-public class MemoryPolicy {
+public class DataRegion {
     /** */
     private final PageMemory pageMem;
 
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
-    private final MemoryPolicyConfiguration cfg;
+    private final DataRegionConfiguration cfg;
 
     /** */
     private final PageEvictionTracker evictionTracker;
 
     /**
      * @param pageMem PageMemory instance.
-     * @param memMetrics MemoryMetrics instance.
-     * @param cfg Configuration of given MemoryPolicy.
+     * @param memMetrics DataRegionMetrics instance.
+     * @param cfg Configuration of given DataRegion.
      * @param evictionTracker Eviction tracker.
      */
-    public MemoryPolicy(
+    public DataRegion(
         PageMemory pageMem,
-        MemoryPolicyConfiguration cfg,
-        MemoryMetricsImpl memMetrics,
+        DataRegionConfiguration cfg,
+        DataRegionMetricsImpl memMetrics,
         PageEvictionTracker evictionTracker
     ) {
         this.pageMem = pageMem;
@@ -64,14 +64,14 @@ public class MemoryPolicy {
     /**
      * @return Config.
      */
-    public MemoryPolicyConfiguration config() {
+    public DataRegionConfiguration config() {
         return cfg;
     }
 
     /**
      * @return Memory Metrics.
      */
-    public MemoryMetricsImpl memoryMetrics() {
+    public DataRegionMetricsImpl memoryMetrics() {
         return memMetrics;
     }
 

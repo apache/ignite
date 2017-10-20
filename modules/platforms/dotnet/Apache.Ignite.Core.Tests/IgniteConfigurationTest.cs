@@ -316,7 +316,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.IsNotNull(mem);
                 Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
-                Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
                 Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheInitialSize, mem.SystemCacheInitialSize);
                 Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMaxSize, mem.SystemCacheMaxSize);
 
@@ -324,7 +323,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("dfltPlc", plc.Name);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultEmptyPagesPoolSize, plc.EmptyPagesPoolSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
                 Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);

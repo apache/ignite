@@ -273,24 +273,39 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         checkIgnite();
 
-        return g.memoryMetrics();
+        return g.dataRegionMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        checkIgnite();
+
+        return g.dataRegionMetrics(memPlcName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        checkIgnite();
+
+        return g.dataStorageMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        checkIgnite();
-
-        return g.memoryMetrics(memPlcName);
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        checkIgnite();
-
-        return g.persistentStoreMetrics();
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */
