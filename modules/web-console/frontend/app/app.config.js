@@ -115,3 +115,7 @@ igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
 igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
     $translateProvider.useSanitizeValueStrategy('sanitize');
 }]);
+
+igniteConsoleCfg.config(['$httpProvider', ($httpProvider) => {
+    $httpProvider.defaults.withCredentials = true;
+}]);

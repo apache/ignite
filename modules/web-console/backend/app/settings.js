@@ -56,7 +56,8 @@ module.exports.factory = function(nconf, fs) {
         server: {
             host: nconf.get('server:host') || '127.0.0.1',
             port: _normalizePort(nconf.get('server:port') || 3000),
-            SSLOptions: nconf.get('server:ssl') && {
+            // eslint-disable-next-line eqeqeq
+            SSLOptions: nconf.get('server:ssl') == 'true' && {
                 enable301Redirects: true,
                 trustXFPHeader: true,
                 key: fs.readFileSync(nconf.get('server:key')),
@@ -66,8 +67,13 @@ module.exports.factory = function(nconf, fs) {
         },
         mail,
         mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
-        cookieTTL: 3600000 * 24 * 30,
-        sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
+        cookie: {
+            domain: nconf.get('server:cookie:domain'),
+            // eslint-disable-next-line eqeqeq
+            httpOnly: nconf.get('server:cookie:httpOnly') != 'false',
+            ttl: 3600000 * 24 * 30
+        },
+        sessionSecret: nconf.get('server:sessionSecret') || 'CHANGE ME',
         tokenLength: 20
     };
 };

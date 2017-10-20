@@ -56,7 +56,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Install passport plugin.
     AccountSchema.plugin(passportMongo, {
-        usernameField: 'email', limitAttempts: true, lastLoginField: 'lastLogin',
+        usernameField: 'email',
+        limitAttempts: true,
+        lastLoginField: 'lastLogin',
         usernameLowerCase: true
     });
 

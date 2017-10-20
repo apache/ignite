@@ -61,6 +61,9 @@ export default merge(commonCfg, {
         ]
     },
     devServer: {
+        headers: {
+            'Content-Security-Policy': `script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http: https:;`
+        },
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,

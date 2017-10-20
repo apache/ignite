@@ -39,8 +39,6 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
 
             _.forEach(apis, (api) => app.use(api));
 
-            app.use(cookieParser(settings.sessionSecret));
-
             app.use(bodyParser.json({limit: '50mb'}));
             app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
@@ -50,8 +48,10 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
                 saveUninitialized: true,
                 unset: 'destroy',
                 cookie: {
-                    expires: new Date(Date.now() + settings.cookieTTL),
-                    maxAge: settings.cookieTTL
+                    domain: settings.cookie.domain,
+                    httpOnly: settings.cookie.httpOnly,
+                    expires: new Date(Date.now() + settings.cookie.ttl),
+                    maxAge: settings.cookie.ttl
                 },
                 store: _sessionStore
             }));
@@ -59,8 +59,8 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
             app.use(passport.initialize());
             app.use(passport.session());
 
-            passport.serializeUser(mongo.Account.serializeUser());
-            passport.deserializeUser(mongo.Account.deserializeUser());
+            passport.serializeUser((user, cb) => cb(null, user._id));
+            passport.deserializeUser((id, cb) => mongo.Account.findById(id, cb));
 
             passport.use(mongo.Account.createStrategy());
         },
