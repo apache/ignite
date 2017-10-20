@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Configuration
+namespace Apache.Ignite.Core.Configuration
 {
-    using System;
-
     /// <summary>
     /// Memory page eviction mode.
     /// Only data pages, that store key-value entries, are eligible for eviction.
     /// The other types of pages, like index or system pages, are not evictable.
     /// </summary>
-    [Obsolete("Use Apache.Ignite.Core.Configuration.DataPageEvictionMode")]
     public enum DataPageEvictionMode
     {
         /// <summary>
@@ -37,10 +34,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <para />
         /// Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
         /// last usage timestamp for every individual data page. The size of the array equals to
-        /// <see cref="MemoryPolicyConfiguration.MaxSize"/> / <see cref="MemoryConfiguration.PageSize"/>.
+        /// <see cref="DataRegionConfiguration.MaxSize"/> / <see cref="DataStorageConfiguration.PageSize"/>.
         /// <para />
         /// When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the
-        /// tracking array equals to pageAddress / <see cref="MemoryPolicyConfiguration.MaxSize"/>.
+        /// tracking array equals to pageAddress / <see cref="DataRegionConfiguration.MaxSize"/>.
         /// <para />
         /// When some pages need to be evicted, the algorithm randomly chooses 5 indexes from the tracking array and
         /// evicts a page with the latest timestamp. If some of the indexes point to non-data pages
