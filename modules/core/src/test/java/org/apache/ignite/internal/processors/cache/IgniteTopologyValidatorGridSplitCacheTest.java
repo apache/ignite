@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -60,10 +61,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
-    private static final int GRID_CNT = 8;
+    private static final int GRID_CNT = 32;
 
     /** */
-    private static final int CACHES_CNT = 100;
+    private static final int CACHES_CNT = 50;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
@@ -160,7 +161,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
         cfg.setUserAttributes(userAttrs);
 
         cfg.setMemoryConfiguration(new MemoryConfiguration().
-            setDefaultMemoryPolicySize((100L << 20) * CACHES_CNT / GRID_CNT));
+            setDefaultMemoryPolicySize((50L << 20) + (100L << 20) * CACHES_CNT / GRID_CNT));
 
         return cfg;
     }
@@ -424,34 +425,44 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
         for (int cnt = 0; cnt < CACHES_CNT; cnt++) {
             String cacheName = testCacheName(cnt);
 
-            for (int k = 0; k < 100; k++) {
-                if (g.affinity(cacheName).isPrimary(g.cluster().localNode(), k)) {
-                    IgniteCache<Object, Object> cache = g.cache(cacheName);
+            int key = -1;
 
-                    try {
-                        cache.put(k, k);
+            Affinity<Object> aff = g.affinity(cacheName);
 
-                        assertEquals(1, cache.localSize());
+            for (int k = 0; k < aff.partitions(); k++) {
+                if (aff.isPrimary(g.cluster().localNode(), k)) {
+                    key = k;
 
-                        if (ex != null)
-                            throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx +
-                                ", cacheName=" + cacheName + ']', ex);
-
-                        putCnt++;
-                    }
-                    catch (Throwable t) {
-                        IgniteException e = new IgniteException("Failed to put entry: [cache=" + cacheName + ", key=" +
-                            k + ']', t);
-
-                        log.error(e.getMessage(), e.getCause());
-
-                        if (ex == null)
-                            ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');
-
-                        ex.addSuppressed(t);
-                    }
                     break;
                 }
+            }
+
+            assertTrue("Failed to find affinity key [gridIdx=" + idx +", cache=" + cacheName + ']',
+                key != -1);
+
+            IgniteCache<Object, Object> cache = g.cache(cacheName);
+
+            try {
+                cache.put(key, key);
+
+                assertEquals(1, cache.localSize());
+
+                if (ex != null)
+                    throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx +
+                        ", cacheName=" + cacheName + ']', ex);
+
+                putCnt++;
+            }
+            catch (Throwable t) {
+                IgniteException e = new IgniteException("Failed to put entry [cache=" + cacheName + ", key=" +
+                    key + ']', t);
+
+                log.error(e.getMessage(), e.getCause());
+
+                if (ex == null)
+                    ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');
+
+                ex.addSuppressed(t);
             }
         }
         if (ex != null)
@@ -474,10 +485,13 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
         for (int[] idxs : grids) {
             for (int idx : idxs) {
                 try {
-                    putCnt += tryPut(idx);
+                    int cnt = tryPut(idx);
 
                     if (ex != null)
-                        throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx + ']', ex);
+                        throw new AssertionError("Successful tryPut after failure [gridIdx=" + idx +
+                            ", sucessful puts = " + cnt + ']', ex);
+
+                    putCnt += cnt;
                 }
                 catch (Exception e) {
                     if (ex == null)
