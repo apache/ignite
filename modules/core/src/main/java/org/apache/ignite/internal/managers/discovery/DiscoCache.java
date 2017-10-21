@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -35,6 +28,13 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  *
@@ -108,7 +108,8 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<UUID> alives) {
+        Set<UUID> alives,
+        @Nullable IgniteProductVersion minVer) {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
@@ -122,15 +123,15 @@ public class DiscoCache {
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
 
-        IgniteProductVersion minVer = null;
+        if (minVer == null) {
+            for (int i = 0; i < allNodes.size(); i++) {
+                ClusterNode node = allNodes.get(i);
 
-        for (int i = 0; i < allNodes.size(); i++) {
-            ClusterNode node = allNodes.get(i);
-
-            if (minVer == null)
-                minVer = node.version();
-            else if (node.version().compareTo(minVer) < 0)
-                minVer = node.version();
+                if (minVer == null)
+                    minVer = node.version();
+                else if (node.version().compareTo(minVer) < 0)
+                    minVer = node.version();
+            }
         }
 
         minNodeVer = minVer;
@@ -324,6 +325,29 @@ public class DiscoCache {
      */
     private List<ClusterNode> emptyIfNull(List<ClusterNode> nodes) {
         return nodes == null ? Collections.<ClusterNode>emptyList() : nodes;
+    }
+
+    /**
+     * Returns copy of discovery cache suitable for further reuse.
+     *
+     * @param ver Version.
+     * @return Copy.
+     */
+    public DiscoCache copy(AffinityTopologyVersion ver) {
+        return new DiscoCache(
+            ver,
+            state,
+            loc,
+            rmtNodes,
+            allNodes,
+            srvNodes,
+            daemonNodes,
+            rmtNodesWithCaches,
+            allCacheNodes,
+            cacheGrpAffNodes,
+            nodeMap,
+            alives,
+            minNodeVer);
     }
 
     /** {@inheritDoc} */
