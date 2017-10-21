@@ -30,12 +30,15 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
-import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * Sparse block distributed matrix. This matrix represented by blocks 32x32 {@link BlockEntry}.
@@ -156,6 +159,71 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return matrixC;
     }
 
+
+    @SuppressWarnings({"unchecked"})
+    @Override public Vector times(final Vector vec) {
+        if (vec == null)
+            throw new IllegalArgumentException("The vector should be not null.");
+
+        if (columnSize() != vec.size())
+            throw new CardinalityException(columnSize(), vec.size());
+
+        SparseBlockDistributedMatrix matrixA = this;
+        SparseDistributedVector vectorB = (SparseDistributedVector) vec;
+
+        String cacheName = this.storage().cacheName();
+
+        int rows = this.rowSize();
+
+        SparseDistributedVector vectorC = (SparseDistributedVector) likeVector(rows);
+
+        CacheUtils.bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            Affinity affinity = ignite.affinity(cacheName);
+
+            ClusterNode locNode = ignite.cluster().localNode();
+
+            SparseDistributedVectorStorage storageC = vectorC.storage();
+
+            Map<ClusterNode, Collection<RowColMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
+            Collection<RowColMatrixKey> locKeys = keysCToNodes.get(locNode);
+
+            if (locKeys == null)
+                return;
+
+            locKeys.forEach(key -> {
+                int idx = key.index();
+                Vector Aik = matrixA.getRow(idx);
+                MatrixUtil.toString("Aik", Aik, Aik.size());
+                vectorC.set(idx, Aik.times(vectorB).sum());
+                MatrixUtil.toString("vectorC", vectorC, vectorC.size());
+            });
+
+        });
+
+        return vectorC;
+    }
+
+
+    @Override public Vector getCol(int col) {
+        checkColumnIndex(col);
+
+        Vector res = new SparseDistributedVector(rowSize());
+
+        for (int i = 0; i < rowSize(); i++)
+            res.setX(i, getX(i,col));
+        return res;
+    }
+
+    @Override public Vector getRow(int row) {
+        checkRowIndex(row);
+
+        Vector res = new SparseDistributedVector(columnSize());
+
+        for (int i = 0; i < columnSize(); i++)
+            res.setX(i, getX(row,i));
+        return res;
+    }
     /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         return mapOverValues(v -> val);
@@ -197,7 +265,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        throw new UnsupportedOperationException();
+        return new SparseDistributedVector(crd, StorageConstants.RANDOM_ACCESS_MODE);
     }
 
     /** */

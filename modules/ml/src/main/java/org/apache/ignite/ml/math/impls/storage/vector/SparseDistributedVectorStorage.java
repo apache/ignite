@@ -97,6 +97,8 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         // No eviction.
         cfg.setEvictionPolicy(null);
 
+        cfg.setBackups(0);
+
         // No copying of values.
         cfg.setCopyOnRead(false);
 
@@ -125,7 +127,11 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         // Remote get from the primary node (where given row or column is stored locally).
         return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).call(() -> {
             IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
-            return cache.get(getCacheKey(i));
+            Double result = cache.get(getCacheKey(i));
+            if(result == null){
+                return 0.0;
+            }
+            return result;
         });
     }
 
@@ -247,6 +253,13 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         return uuid;
     }
 
-
+    @Override
+    public double[] data() {
+        double[] result = new double[this.size];
+        for (int i = 0; i < this.size; i++) {
+            result[i] = this.get(i);
+        }
+        return result;
+    }
 
 }

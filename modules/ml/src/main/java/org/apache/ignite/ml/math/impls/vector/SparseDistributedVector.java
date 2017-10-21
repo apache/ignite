@@ -91,7 +91,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
 
     /** */
-    private SparseDistributedVectorStorage storage() {
+    public SparseDistributedVectorStorage storage() {
         return (SparseDistributedVectorStorage)getStorage();
     }
 
