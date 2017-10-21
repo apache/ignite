@@ -1,5 +1,6 @@
 package org.apache.ignite.ml.clustering;
 
+import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
@@ -7,6 +8,8 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -17,13 +20,17 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
 
     private Random rand;
 
-    @Override
-    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k) {
-        return null;
+    public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight,
+                                     double maxCentersDelta, int maxIterations, Long seed) {
+        super(measure, exponentialWeight, maxCentersDelta);
+        this.maxIterations = maxIterations;
+        rand = seed != null ? new Random(seed) : new Random();
     }
 
-    private Vector getWeightsVector(List<Double> weights) {
-        return null;
+    @Override
+    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k) {
+        List<Double> ones = new ArrayList<>(Collections.nCopies(points.rowSize(), 1.0));
+        return cluster(points, k, ones);
     }
 
     private Matrix initializeCenters(Matrix centers, Matrix points, int k, Vector weights) {
@@ -44,7 +51,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             int id = 0;
 
             for (int j = 0; j < numPoints; j++) {
-                counter += costs.getX(i);
+                counter += costs.getX(j);
                 if (counter >= probe) {
                     id = j;
                     break;
@@ -79,8 +86,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             for (int j = 0; j < numPoints; j++) {
                 double invertedFuzzyWeight = 0;
                 for (int k = 0; k < numCenters; k++) {
-                    invertedFuzzyWeight += Math.pow(distances.get(i, j) / distances.get(k, j),
+                    double value = Math.pow(distances.get(i, j) / distances.get(k, j),
                                                     fuzzyMembershipCoefficient);
+                    if (Double.isNaN(value)) {
+                        value = 1.0;
+                    }
+                    invertedFuzzyWeight += value;
                 }
                 double weight = 1.0 / invertedFuzzyWeight * weights.getX(j);
                 membership.setX(i, j, Math.pow(weight, exponentialWeight));

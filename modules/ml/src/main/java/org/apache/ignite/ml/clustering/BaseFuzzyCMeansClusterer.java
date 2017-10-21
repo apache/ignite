@@ -10,6 +10,12 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
     protected double exponentialWeight;
     protected double maxCentersDelta;
 
+    public BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, double maxCentersDelta) {
+        this.measure = measure;
+        this.exponentialWeight = exponentialWeight;
+        this.maxCentersDelta = maxCentersDelta;
+    }
+
     public abstract FuzzyCMeansModel cluster(T points, int k);
 
     /**
