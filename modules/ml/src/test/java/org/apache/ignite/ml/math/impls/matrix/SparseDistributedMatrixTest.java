@@ -212,14 +212,13 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        try {
-            cacheMatrix.copy();
-            fail("UnsupportedOperationException expected.");
+        Matrix copiedMtx = cacheMatrix.copy();
+
+        for (int i = 0; i < cacheMatrix.rowSize(); i++) {
+            for (int j = 0; j < cacheMatrix.columnSize(); j++) {
+                assert copiedMtx.get(i,j) == cacheMatrix.get(i,j);
+            }
         }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
     }
 
     /** */

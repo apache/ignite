@@ -363,6 +363,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));
 
+            System.out.println("Igni " + Ignition.localIgnite().name());
+
             // Local get.
             BlockEntry block = cache.localPeek(key, CachePeekMode.PRIMARY);
 
@@ -375,7 +377,13 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
             block.set(a % block.rowSize(), b % block.columnSize(), v);
 
             // Local put.
-            cache.put(key, block);
+            cache.put(key, block);//<- One put change all values in rowь
+            try{
+                System.out.println(this.get(4,0) + " " + this.get(3,0));
+            } finally {
+
+            }
+
         });
     }
 
@@ -386,8 +394,12 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** */
     private BlockEntry initBlockFor(int x, int y) {
-        int blockRows = rows - x >= maxBlockEdge ? maxBlockEdge : rows - x;
-        int blockCols = cols - y >= maxBlockEdge ? maxBlockEdge : cols - y;
+
+        int blockRows = 0;
+        int blockCols = 0;
+
+        blockRows = rows>= maxBlockEdge ? maxBlockEdge : rows;
+        blockCols = cols>= maxBlockEdge ? maxBlockEdge : cols;
 
         return new BlockEntry(blockRows, blockCols);
     }
@@ -432,6 +444,9 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
         // Atomic transactions only.
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+
+        cfg.setBackups(0);
 
         // No eviction.
         cfg.setEvictionPolicy(null);

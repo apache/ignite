@@ -152,7 +152,12 @@ public final class Functions {
      * @return Function for this operation.
      */
     public static IgniteBiFunction<Double, Double, Double> plusMult(double constant) {
-        return (a, b) -> a + b * constant;
+
+        return (a, b) -> {
+            System.out.println("a = " + a + " b = " + b);
+            return a + b * constant;
+        };
+
     }
 
     /**

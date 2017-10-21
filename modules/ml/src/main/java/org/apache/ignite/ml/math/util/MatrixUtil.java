@@ -85,7 +85,7 @@ public class MatrixUtil {
      * @return Like vector.
      */
     public static Vector likeVector(Matrix matrix, int crd) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapVector(crd);
         else
             return matrix.likeVector(crd);

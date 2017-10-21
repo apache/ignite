@@ -282,7 +282,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row Row index.
      */
-    private void checkRowIndex(int row) {
+    protected void checkRowIndex(int row) {
         if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
     }
@@ -292,7 +292,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param col Column index.
      */
-    private void checkColumnIndex(int col) {
+    protected void checkColumnIndex(int col) {
         if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
     }
@@ -713,7 +713,7 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Vector getRow(int row) {
         checkRowIndex(row);
 
-        Vector res = new DenseLocalOnHeapVector(columnSize());
+        Vector res = new DenseLocalOnHeapVector(columnSize()); //TODO: add ticket incorrect for distributed matrices
 
         for (int i = 0; i < columnSize(); i++)
             res.setX(i, getX(row,i));

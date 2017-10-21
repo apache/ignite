@@ -132,8 +132,6 @@ public class QRDecomposition implements Destroyable {
             q = qTmp;
 
         this.fullRank = fullRank;
-        MatrixUtil.toString("R ", r, cols, rows);
-        MatrixUtil.toString("Q ", q, cols, rows);
     }
 
     /** {@inheritDoc} */
@@ -179,28 +177,36 @@ public class QRDecomposition implements Destroyable {
 
         int cols = mtx.columnSize();
         Matrix r = getR();
-        MatrixUtil.toString("Before singular in QR", r, rows, rows);
+        MatrixUtil.toString("Before singular in QR", r, r.columnSize(), r.rowSize());
         checkSingular(r, threshold, true);
         Matrix x = like(mType, this.cols, cols);
-
+        MatrixUtil.toString("XX", x, x.columnSize(), x.rowSize());
         Matrix qt = getQ().transpose();
-        MatrixUtil.toString("QT", qt, rows, rows);
-        MatrixUtil.toString("mtx", mtx, cols, rows);
+        MatrixUtil.toString("QT", qt, qt.columnSize(), qt.rowSize());
+        MatrixUtil.toString("mtx", mtx, mtx.columnSize(), mtx.rowSize());
         Matrix y = qt.times(mtx);
-        MatrixUtil.toString("y", y, 1, rows);
+        MatrixUtil.toString("y", y, y.columnSize(), y.rowSize());
 
         for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
+            MatrixUtil.toString("X+", x, cols, this.cols);
+/*            Vector vector = x.viewRow(k);
+            MatrixUtil.toString("x", vector, cols);*/
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
-
+            MatrixUtil.toString("X-", x, cols, this.cols);
             if (k == 0)
                 continue;
 
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
             Vector rCol = r.viewColumn(k).viewPart(0, k);
+            MatrixUtil.toString("rCol on iteration k = " + k, rCol, k);
 
-            for (int c = 0; c < cols; c++)
-                y.viewColumn(c).viewPart(0, k).map(rCol, Functions.plusMult(-x.get(k, c)));
+            for (int c = 0; c < cols; c++){
+                Vector part = y.viewColumn(c).viewPart(0, k);
+                part.map(rCol, Functions.plusMult(-x.get(k, c)));
+                MatrixUtil.toString("part on iteration c after mult = " + c, part, k);
+            }
+
         }
 
         return x;
@@ -216,6 +222,7 @@ public class QRDecomposition implements Destroyable {
     public Vector solve(Vector vec) {
         MatrixUtil.toString("vec", vec.likeMatrix(vec.size(), 1).assignColumn(0, vec),  1, vec.size());
         Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
+        MatrixUtil.toString("Result of solving = ", res, res.columnSize(), res.rowSize());
         return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }
 
