@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,14 +30,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 
@@ -208,14 +213,14 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseBlockDistributedMatrix(rows, cols);
 
-        try {
-            cacheMatrix.copy();
-            fail("UnsupportedOperationException expected.");
-        }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
+        cacheMatrix.set(rows-1, cols -1, 1);
+
+
+        Matrix newMatrix =  cacheMatrix.copy();
+        assert newMatrix.columnSize() == cols;
+        assert newMatrix.rowSize() == rows;
+        assert newMatrix.get(rows-1,cols-1) == 1;
+
     }
 
     /** */
@@ -265,14 +270,10 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseBlockDistributedMatrix(rows, cols);
 
-        try {
-            cacheMatrix.likeVector(1);
-            fail("UnsupportedOperationException expected.");
-        }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
+        Vector vector = cacheMatrix.likeVector(1);
+        assert vector.size() == 1;
+        assert vector instanceof SparseDistributedVector;
+
     }
 
     /**
@@ -354,6 +355,26 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
                 else
                     assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, 0, res.get(i, j), PRECISION);
     }
+
+    public void testMatrixVectorTimes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        SparseBlockDistributedMatrix a = new SparseBlockDistributedMatrix(new double[][] {{2.0, 4.0, 0.0}, {-2.0, 1.0, 3.0}, {-1.0, 0.0, 1.0}});
+        SparseDistributedVector b = new SparseDistributedVector(new double[] {1.0, 2.0, -1.0});
+        SparseDistributedVector result = new SparseDistributedVector(new double[] {10, -3.0, -2.0});
+
+
+        Vector calculatedResult = a.times(b);
+
+        for(int i = 0; i < calculatedResult.size(); i++)
+            assertEquals(UNEXPECTED_VAL + " for "+ i, result.get(i), calculatedResult.get(i), PRECISION);
+
+
+    }
+
+
+
+
 
     /** */
     private void initMtx(Matrix m) {
