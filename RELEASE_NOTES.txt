@@ -39,6 +39,7 @@ SQL:
 * CREATE TABLE: Added NOT NULL support.
 * CREATE TABLE: Ability to specify cache, key type and value type names.
 * CREATE TABLE: Added "WRAP_KEY" and "WRAP_VALUE" options to CREATE TABLE command.
+* CREATE TABLE: Added DATA_REGION option.
 * CREATE TABLE: Added WRITE_SYNCHRONIZATION_MODE option.
 * ALTER TABLE: ADD COLUMN support.
 * Added lazy query execution mode (SqlFieldsQuery.setLazy).
