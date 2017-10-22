@@ -710,9 +710,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
                     if (discoCache == null) {
-                        discoCache =
-                                incMinorTopVer && !preventReuse ?
-                                snapshot.discoCache.copy(nextTopVer) :
+                        discoCache = incMinorTopVer && !preventReuse ? snapshot.discoCache.copy(nextTopVer) :
                                 createDiscoCache(nextTopVer,
                                         ctx.state().clusterState(),
                                         locNode,
