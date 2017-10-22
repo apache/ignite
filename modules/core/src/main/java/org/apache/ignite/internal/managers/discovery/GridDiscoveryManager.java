@@ -655,6 +655,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             new AffinityTopologyVersion(topVer, minorTopVer),
                             (ChangeGlobalStateMessage)customMsg,
                             discoCache());
+
+                        preventReuse = true;
                     }
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
