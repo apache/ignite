@@ -711,10 +711,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (verChanged) {
                     if (discoCache == null) {
                         discoCache = incMinorTopVer && !preventReuse ? snapshot.discoCache.copy(nextTopVer) :
-                                createDiscoCache(nextTopVer,
-                                        ctx.state().clusterState(),
-                                        locNode,
-                                        topSnapshot);
+                            createDiscoCache(nextTopVer,
+                                 ctx.state().clusterState(),
+                                 locNode,
+                                 topSnapshot);
                     }
 
                     discoCacheHist.put(nextTopVer, discoCache);
