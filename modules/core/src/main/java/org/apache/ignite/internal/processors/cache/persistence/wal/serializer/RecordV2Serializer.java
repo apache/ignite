@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTai
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.*;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 
@@ -39,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Record V2 serializer.
  * Stores records in following format:
  * <ul>
- * <li>Record type from {@code WALRecord.RecordType} incremented by 1</li>
+ * <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
  * <li>WAL pointer to double check consistency</li>
  * <li>Record length</li>
  * <li>Data</li>
