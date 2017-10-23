@@ -971,6 +971,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareResponse res;
 
         try {
+            // TODO: it seems not needed since primary should already do check.
             if (ctx.cache().cacheValidator() != null) {
                 for (GridCacheContext cctx : caches(req)) {
                     Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);

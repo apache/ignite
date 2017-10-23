@@ -1125,7 +1125,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             IgniteClosure<String, Throwable> validator = cctx.cache().cacheValidator();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
+                if (CU.isSystemCache(cacheCtx.name()))
+                    continue;
+
+                if (cacheCtx.config().getTopologyValidator() != null) {
                     if (m == null)
                         m = new HashMap<>();
 
