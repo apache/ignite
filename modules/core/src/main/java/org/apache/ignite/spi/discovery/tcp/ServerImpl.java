@@ -724,6 +724,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     finally {
                         U.closeQuiet(sock);
                     }
+
+                    U.sleep(200);
                 }
             }
             catch (Throwable t) {
