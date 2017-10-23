@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -41,6 +42,24 @@ namespace Apache.Ignite.Core.Cache.Affinity
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class AffinityKeyMappedAttribute : Attribute
     {
-        // No-op.
+        /// <summary>
+        /// Gets the affinity key field name from attribute.
+        /// </summary>
+        public static string GetFieldNameFromAttribute(Type type)
+        {
+            // TODO: Private fields?
+            var res = type.GetMembers()
+                .Where(x => x.GetCustomAttributes(false).OfType<AffinityKeyMappedAttribute>().Any())
+                .Select(x => x.Name).ToArray();
+
+            if (res.Length > 1)
+            {
+                throw new BinaryObjectException(string.Format(
+                    "Multiple '{0}' attributes found on type '{1}'. There can be only one affinity field.",
+                    typeof(AffinityKeyMappedAttribute).Name, type));
+            }
+
+            return res.SingleOrDefault();
+        }
     }
 }

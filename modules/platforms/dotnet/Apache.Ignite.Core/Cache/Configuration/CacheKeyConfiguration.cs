@@ -20,11 +20,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Configuration defining various aspects of cache keys without explicit usage of annotations on user classes.
     /// </summary>
-    public class CacheKeyConfiguration
+    public sealed class CacheKeyConfiguration
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheKeyConfiguration"/> class.
@@ -39,9 +40,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public CacheKeyConfiguration(Type keyType)
         {
-            TypeName = keyType.FullName;
+            IgniteArgumentCheck.NotNull(keyType, "keyType");
 
-            // TODO: Detect attribute
+            TypeName = keyType.FullName;
+            AffinityKeyFieldName = AffinityKeyMappedAttribute.GetFieldNameFromAttribute(keyType);
         }
 
         /// <summary>
