@@ -19,18 +19,17 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -49,7 +48,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
+public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -74,28 +73,29 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(10 * 1024 * 1024)
+                .setPersistenceEnabled(true)
+                .setMetricsEnabled(true)
+                .setName("dflt-plc"))
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setMaxSize(10 * 1024 * 1024)
+                .setPersistenceEnabled(false)
+                .setMetricsEnabled(true)
+                .setName("no-persistence"))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024)
+            .setMetricsEnabled(true);
 
-        memCfg.setDefaultMemoryPolicyName("dflt-plc");
-
-        MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
-        memPlc.setName("dflt-plc");
-        memPlc.setMaxSize(10 * 1024 * 1024);
-        memPlc.setMetricsEnabled(true);
-
-        memCfg.setMemoryPolicies(memPlc);
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration()
-            .setMetricsEnabled(true).setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setCacheConfiguration(cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1));
+        cfg.setCacheConfiguration(cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
+            cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, "no-persistence"));
 
         return cfg;
     }
@@ -122,7 +122,8 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
         String name,
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
-        int backups
+        int backups,
+        String dataRegName
     ) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -132,6 +133,7 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(backups);
         ccfg.setCacheMode(cacheMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setDataRegionName(dataRegName);
 
         return ccfg;
     }
@@ -150,25 +152,35 @@ public class IgnitePersistenceMetricsSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++)
                 cache.put(i, new Person("first-" + i, "last-" + i));
 
-            {
-                MemoryMetrics memMetrics = ig.memoryMetrics("dflt-plc");
+            IgniteCache<Object, Object> cacheNp = ig.cache("cache-np");
 
-                assertNotNull(memMetrics);
-                assertTrue(memMetrics.getDirtyPages() > 0);
-            }
+            for (int i = 0; i < 10; i++)
+                cacheNp.put(i, new Person("first-" + i, "last-" + i));
+
+            DataRegionMetrics memMetrics = ig.dataRegionMetrics("dflt-plc");
+
+            assertNotNull(memMetrics);
+            assertTrue(memMetrics.getDirtyPages() > 0);
+            assertTrue(memMetrics.getPagesFillFactor() > 0);
+
+            memMetrics = ig.dataRegionMetrics("no-persistence");
+
+            assertNotNull(memMetrics);
+            assertTrue(memMetrics.getTotalAllocatedPages() > 0);
+            assertTrue(memMetrics.getPagesFillFactor() > 0);
 
             ig.context().cache().context().database().waitForCheckpoint("test");
 
-            GridTestUtils.waitForCondition(new PAX() {
+            assertTrue(GridTestUtils.waitForCondition(new PAX() {
                 @Override public boolean applyx() {
-                    PersistenceMetrics pMetrics = ig.persistentStoreMetrics();
+                    DataStorageMetrics pMetrics = ig.dataStorageMetrics();
 
                     assertNotNull(pMetrics);
 
                     return pMetrics.getLastCheckpointTotalPagesNumber() != 0 &&
                         pMetrics.getLastCheckpointDataPagesNumber() != 0;
                 }
-            }, 5_000);
+            }, 10_000));
         }
         finally {
             stopAllGrids();

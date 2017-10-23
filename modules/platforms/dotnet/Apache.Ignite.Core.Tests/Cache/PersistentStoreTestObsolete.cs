@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // Obsolete.
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.IO;
@@ -24,9 +25,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests the persistent store.
+    /// Tests the persistent store. Uses the obsolete API. See <see cref="PersistenceTest"/> for the actual API.
     /// </summary>
-    public class PersistentStoreTest
+    public class PersistentStoreTestObsolete
     {
         /** Temp dir for WAL. */
         private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();

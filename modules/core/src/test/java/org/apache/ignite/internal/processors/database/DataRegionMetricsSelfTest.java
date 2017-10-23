@@ -17,9 +17,9 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -28,9 +28,9 @@ import static java.lang.Thread.sleep;
 /**
  *
  */
-public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
+public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     /** */
-    private MemoryMetricsImpl memMetrics;
+    private DataRegionMetricsImpl memMetrics;
 
     /** */
     private int threadsCnt = 1;
@@ -49,9 +49,9 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration plcCfg = new DataRegionConfiguration();
 
-        memMetrics = new MemoryMetricsImpl(plcCfg);
+        memMetrics = new DataRegionMetricsImpl(plcCfg);
 
         memMetrics.enableMetrics();
     }
@@ -253,7 +253,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch startLatch;
 
         /** */
-        private final MemoryMetricsImpl memMetrics;
+        private final DataRegionMetricsImpl memMetrics;
 
         /** */
         private final int iterationsCnt;
@@ -267,7 +267,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
          * @param iterationsCnt Iterations count.
          * @param delay Delay.
          */
-        private AllocationsIncrementer(CountDownLatch startLatch, MemoryMetricsImpl memMetrics, int iterationsCnt, int delay) {
+        private AllocationsIncrementer(CountDownLatch startLatch, DataRegionMetricsImpl memMetrics, int iterationsCnt, int delay) {
             this.startLatch = startLatch;
             this.memMetrics = memMetrics;
             this.iterationsCnt = iterationsCnt;
@@ -305,7 +305,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch startLatch;
 
         /** */
-        private final MemoryMetrics memMetrics;
+        private final DataRegionMetrics memMetrics;
 
         /** */
         private final int delay;
@@ -315,7 +315,7 @@ public class MemoryMetricsSelfTest extends GridCommonAbstractTest {
          * @param memMetrics Mem metrics.
          * @param delay Delay.
          */
-        private AllocationRateWatcher(CountDownLatch startLatch, MemoryMetrics memMetrics, int delay) {
+        private AllocationRateWatcher(CountDownLatch startLatch, DataRegionMetrics memMetrics, int delay) {
             this.startLatch = startLatch;
             this.memMetrics = memMetrics;
             this.delay = delay;

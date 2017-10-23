@@ -1360,6 +1360,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param templateName Template name.
      * @param cacheName Cache name.
      * @param cacheGroup Cache group name.
+     * @param dataRegion Data region name.
      * @param affinityKey Affinity key column name.
      * @param atomicityMode Atomicity mode.
      * @param writeSyncMode Write synchronization mode.
@@ -1369,7 +1370,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
-        String cacheGroup, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
+        String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
         @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
@@ -1402,6 +1403,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!F.isEmpty(cacheGroup))
             ccfg.setGroupName(cacheGroup);
+
+        if (!F.isEmpty(dataRegion))
+            ccfg.setDataRegionName(dataRegion);
 
         if (atomicityMode != null)
             ccfg.setAtomicityMode(atomicityMode);
@@ -2554,7 +2558,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
         GridCacheSharedContext cctx = ctx.cache().context();
 
-        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode() &&
+            CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 
             try {

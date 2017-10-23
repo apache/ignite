@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -29,12 +29,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
+public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private volatile CacheConfiguration ccfg;
 
     /** */
-    private volatile MemoryConfiguration memCfg;
+    private volatile DataStorageConfiguration memCfg;
 
     /** */
     private static final long DFLT_MEM_PLC_SIZE = 10 * 1024 * 1024;
@@ -47,7 +47,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (memCfg != null)
-            cfg.setMemoryConfiguration(memCfg);
+            cfg.setDataStorageConfiguration(memCfg);
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
@@ -61,12 +61,12 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that proper exception is thrown when MemoryPolicy is misconfigured for cache.
+     * Verifies that proper exception is thrown when DataRegion is misconfigured for cache.
      */
-    public void testMissingMemoryPolicy() throws Exception {
+    public void testMissingDataRegion() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setMemoryPolicyName("nonExistingMemPlc");
+        ccfg.setDataRegionName("nonExistingMemPlc");
 
         try {
             startGrid(0);
@@ -74,31 +74,31 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             String msg = e.getMessage();
 
-            assertTrue("Not expected exception was thrown: " + e, msg.contains("Requested MemoryPolicy is not configured"));
+            assertTrue("Not expected exception was thrown: " + e, msg.contains("Requested DataRegion is not configured"));
 
             return;
         }
 
-        fail("Expected exception was not thrown: missing MemoryPolicy");
+        fail("Expected exception was not thrown: missing DataRegion");
     }
 
     /**
-     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small MemoryPolicy.
+     * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small DataRegion.
      */
-    public void testTooSmallMemoryPolicy() throws Exception {
-        memCfg = new MemoryConfiguration();
+    public void testTooSmallDataRegion() throws Exception {
+        memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
         dfltPlcCfg.setName("dfltPlc");
         dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
         dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
 
-        MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration bigPlcCfg = new DataRegionConfiguration();
         bigPlcCfg.setName("bigPlc");
         bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
 
-        memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
+        memCfg.setDataRegionConfigurations(bigPlcCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -140,22 +140,22 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
      * Verifies that with enough memory allocated adding values to cache doesn't cause any exceptions.
      */
     public void testProperlySizedMemoryPolicy() throws Exception {
-        memCfg = new MemoryConfiguration();
+        memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
         dfltPlcCfg.setName("dfltPlc");
         dfltPlcCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
         dfltPlcCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
 
-        MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration bigPlcCfg = new DataRegionConfiguration();
         bigPlcCfg.setName("bigPlc");
         bigPlcCfg.setMaxSize(BIG_MEM_PLC_SIZE);
 
-        memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
+        memCfg.setDataRegionConfigurations(bigPlcCfg);
+        memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        ccfg.setMemoryPolicyName("bigPlc");
+        ccfg.setDataRegionName("bigPlc");
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -166,7 +166,7 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
                 cache.put(i, "abc");
         }
         catch (Exception e) {
-            fail("With properly sized MemoryPolicy no exceptions are expected to be thrown.");
+            fail("With properly sized DataRegion no exceptions are expected to be thrown.");
         }
     }
 }

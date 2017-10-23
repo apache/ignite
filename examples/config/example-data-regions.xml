@@ -18,7 +18,7 @@
 -->
 
 <!--
-    Ignite configuration with all defaults, enabled p2p deployment and special memory policies.
+    Ignite configuration with all defaults, enabled p2p deployment and special data regions.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,29 +32,27 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <!-- Setting a name of the default memory policy. Required to set only if the default policy's
-                    parameters are overridden like it's done below. -->
-                <property name="defaultMemoryPolicyName" value="Default_Region"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <!--
+                    Default memory region that grows endlessly. A cache is bound to this memory region
+                    unless it sets another one in its CacheConfiguration.
+                -->
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="name" value="Default_Region"/>
+                        <!-- 100 MB memory region with disabled eviction -->
+                        <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+                    </bean>
+                </property>
 
-                <!-- Defining several memory policies for different memory regions -->
-                <property name="memoryPolicies">
+                <!-- Defining several data regions for different memory regions -->
+                <property name="dataRegionConfigurations">
                     <list>
-                        <!--
-                            Default memory region that grows endlessly. A cache is bound to this memory region
-                            unless it sets another one in its CacheConfiguration.
-                        -->
-                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="Default_Region"/>
-                            <!-- 100 MB memory region with disabled eviction -->
-                            <property name="initialSize" value="#{100 * 1024 * 1024}"/>
-                        </bean>
-
                         <!--
                             Memory region of 40 MBs in size with an eviction enabled.
                         -->
-                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                             <property name="name" value="40MB_Region_Eviction"/>
                             <!-- Memory region of 20 MB initial size. -->
                             <property name="initialSize" value="#{20 * 1024 * 1024}"/>
@@ -68,14 +66,14 @@
                             This memory region is backed by a memory-mapped file which names is passed via
                             'swapFilePath' parameter.
                         -->
-                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                             <property name="name" value="30MB_Region_Swapping"/>
                             <!-- Memory region of 15 MB initial size. -->
                             <property name="initialSize" value="#{15 * 1024 * 1024}"/>
                             <!-- Maximum size is 30 MB. -->
                             <property name="maxSize" value="#{30 * 1024 * 1024}"/>
                             <!-- Setting a name of the swapping file. -->
-                            <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
+                            <property name="swapPath" value="dataRegionExampleSwap"/>
                         </bean>
                     </list>
                 </property>
