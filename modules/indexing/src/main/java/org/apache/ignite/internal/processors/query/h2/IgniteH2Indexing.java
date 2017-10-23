@@ -2299,7 +2299,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 else
                     schema = oldSchema;
 
-                schema.incNumCaches();
+                schema.incrementCachesNumber();
             }
         }
 
@@ -2345,7 +2345,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (!isDefaultSchema(schemaName)) {
                 synchronized (schemaMux) {
-                    if (schema.decNumCaches() == 0) {
+                    if (schema.decrementCachesNumber() == 0) {
                         schemas.remove(schemaName);
 
                         try {
