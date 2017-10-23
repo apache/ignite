@@ -82,6 +82,10 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @Override public float getPagesReplaceRate();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).")
+    @Override public float getPagesReplaceAge();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Number of pages residing in physical RAM.")
     @Override public long getPhysicalMemoryPages();
 
