@@ -36,7 +36,8 @@ namespace ignite
                 params(params),
                 resultMeta(),
                 cursor(),
-                rowsAffected()
+                rowsAffected(),
+                rowsAffectedIdx(0)
             {
                 // No-op.
             }
@@ -168,6 +169,10 @@ namespace ignite
                     cursor.reset();
 
                     resultMeta.clear();
+
+                    rowsAffectedIdx = 0;
+
+                    rowsAffected.clear();
                 }
 
                 return result;
@@ -187,7 +192,11 @@ namespace ignite
             SqlResult::Type DataQuery::NextResultSet()
             {
                 if (rowsAffectedIdx + 1 >= rowsAffected.size())
+                {
+                    InternalClose();
+
                     return SqlResult::AI_NO_DATA;
+                }
 
                 SqlResult::Type res = MakeRequestMoreResults();
 

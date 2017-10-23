@@ -35,6 +35,7 @@ namespace ignite
                 params(params),
                 resultMeta(),
                 rowsAffected(),
+                rowsAffectedIdx(0),
                 executed(false)
             {
                 // No-op.
@@ -112,6 +113,8 @@ namespace ignite
             SqlResult::Type BatchQuery::Close()
             {
                 executed = false;
+                rowsAffected.clear();
+                rowsAffectedIdx = 0;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -130,7 +133,10 @@ namespace ignite
             SqlResult::Type BatchQuery::NextResultSet()
             {
                 if (rowsAffectedIdx + 1 >= rowsAffected.size())
+                {
+                    Close();
                     return SqlResult::AI_NO_DATA;
+                }
 
                 ++rowsAffectedIdx;
 
