@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -92,7 +92,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final IgniteConfiguration igniteCfg;
 
     /** */
-    private PersistentStoreConfiguration pstCfg;
+    private DataStorageConfiguration dsCfg;
 
     /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
@@ -109,11 +109,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        PersistentStoreConfiguration pstCfg = igniteCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration dsCfg = igniteCfg.getDataStorageConfiguration();
 
-        assert pstCfg != null : "WAL should not be created if persistence is disabled.";
+        assert dsCfg != null;
 
-        this.pstCfg = pstCfg;
+        this.dsCfg = dsCfg;
     }
 
     /** {@inheritDoc} */
@@ -352,7 +352,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             grpsWithoutIdx.add(grpDesc.groupId());
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
-            pstCfg.getFileIOFactory(), igniteCfg.getMemoryConfiguration());
+            dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 

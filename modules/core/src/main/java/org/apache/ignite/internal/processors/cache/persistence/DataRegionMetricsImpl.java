@@ -16,8 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,7 +28,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class MemoryMetricsImpl implements MemoryMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final IgniteOutClosure<Float> fillFactorProvider;
 
@@ -59,7 +59,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     private volatile HitRateMetrics pageReplaceRate = new HitRateMetrics(60_000, 5);
 
     /** */
-    private final MemoryPolicyConfiguration memPlcCfg;
+    private final DataRegionConfiguration memPlcCfg;
 
     /** */
     private PageMemory pageMem;
@@ -68,24 +68,24 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     private volatile long rateTimeInterval;
 
     /**
-     * @param memPlcCfg MemoryPolicyConfiguration.
+     * @param memPlcCfg DataRegionConfiguration.
     */
-    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this(memPlcCfg, null);
     }
 
     /**
-     * @param memPlcCfg MemoryPolicyConfiguration.
+     * @param memPlcCfg DataRegionConfiguration.
      */
-    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
         this.memPlcCfg = memPlcCfg;
         this.fillFactorProvider = fillFactorProvider;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
-        rateTimeInterval = memPlcCfg.getRateTimeInterval();
+        rateTimeInterval = memPlcCfg.getMetricsRateTimeInterval();
 
-        subInts = memPlcCfg.getSubIntervals();
+        subInts = memPlcCfg.getMetricsSubIntervalCount();
     }
 
     /** {@inheritDoc} */

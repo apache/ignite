@@ -16,29 +16,29 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
- * MBean to expose {@link MemoryMetrics} through JMX interface.
+ * MBean to expose {@link DataRegionMetrics} through JMX interface.
  */
-class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
+class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
-    private final MemoryPolicyConfiguration memPlcCfg;
+    private final DataRegionConfiguration dataRegCfg;
 
     /**
-     * @param memMetrics MemoryMetrics instance to expose through JMX interface.
-     * @param memPlcCfg configuration of memory policy this MX Bean is created for.
+     * @param memMetrics DataRegionMetrics instance to expose through JMX interface.
+     * @param dataRegCfg Configuration of data region this MX Bean is created for.
      */
-    MemoryMetricsMXBeanImpl(MemoryMetricsImpl memMetrics,
-        MemoryPolicyConfiguration memPlcCfg
+    DataRegionMetricsMXBeanImpl(DataRegionMetricsImpl memMetrics,
+        DataRegionConfiguration dataRegCfg
     ) {
         this.memMetrics = memMetrics;
-        this.memPlcCfg = memPlcCfg;
+        this.dataRegCfg = dataRegCfg;
     }
 
     /** {@inheritDoc} */
@@ -116,16 +116,16 @@ class MemoryMetricsMXBeanImpl implements MemoryMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public int getInitialSize() {
-        return (int) (memPlcCfg.getInitialSize() / (1024 * 1024));
+        return (int) (dataRegCfg.getInitialSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
     @Override public int getMaxSize() {
-        return (int) (memPlcCfg.getMaxSize() / (1024 * 1024));
+        return (int) (dataRegCfg.getMaxSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
-    @Override public String getSwapFilePath() {
-        return memPlcCfg.getSwapFilePath();
+    @Override public String getSwapPath() {
+        return dataRegCfg.getSwapPath();
     }
 }

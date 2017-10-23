@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PersistenceMetricsSnapshot implements PersistenceMetrics {
+public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private float walLoggingRate;
 
@@ -62,12 +62,12 @@ public class PersistenceMetricsSnapshot implements PersistenceMetrics {
     /**
      * @param metrics Metrics.
      */
-    public PersistenceMetricsSnapshot(PersistenceMetrics metrics) {
+    public DataStorageMetricsSnapshot(DataStorageMetrics metrics) {
         walLoggingRate = metrics.getWalLoggingRate();
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();
         walFsyncTimeAvg = metrics.getWalFsyncTimeAverage();
-        lastCpDuration = metrics.getLastCheckpointingDuration();
+        lastCpDuration = metrics.getLastCheckpointDuration();
         lastCpLockWaitDuration = metrics.getLastCheckpointLockWaitDuration();
         lastCpMmarkDuration = metrics.getLastCheckpointMarkDuration();
         lastCpPagesWriteDuration = metrics.getLastCheckpointPagesWriteDuration();
@@ -98,7 +98,7 @@ public class PersistenceMetricsSnapshot implements PersistenceMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getLastCheckpointingDuration() {
+    @Override public long getLastCheckpointDuration() {
         return lastCpDuration;
     }
 
@@ -139,6 +139,6 @@ public class PersistenceMetricsSnapshot implements PersistenceMetrics {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PersistenceMetricsSnapshot.class, this);
+        return S.toString(DataStorageMetricsSnapshot.class, this);
     }
 }
