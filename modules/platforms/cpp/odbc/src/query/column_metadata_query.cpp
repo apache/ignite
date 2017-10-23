@@ -289,6 +289,11 @@ namespace ignite
                 return 0;
             }
 
+            SqlResult::Type ColumnMetadataQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
+
             SqlResult::Type ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(schema, table, column);

@@ -264,11 +264,11 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
-             * Next results.
+             * More results.
              *
              * Move to next result set or affected rows number.
              */
-            void NextResults();
+            void MoreResults();
 
             /**
              * Get column attribute.
@@ -581,7 +581,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult::Type InternalNextResults();
+            SqlResult::Type InternalMoreResults();
 
             /**
              * Get column attribute.

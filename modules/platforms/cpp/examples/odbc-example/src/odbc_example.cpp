@@ -566,6 +566,8 @@ int main()
         // Start a node.
         Ignite grid = Ignition::Start(cfg);
 
+        std::cin.get();
+
         SQLHENV env;
 
         // Allocate an environment handle
@@ -599,6 +601,8 @@ int main()
         // Populate caches.
         PopulatePerson(dbc);
         PopulateOrganization(dbc);
+
+        std::cin.get();
 
         QueryData(dbc);
 

@@ -195,7 +195,7 @@ public class OdbcUtils {
         QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;
 
         if (qryCur0.isQuery())
-            return 0;
+            return -1;
 
         Iterator<List<?>> iter = qryCur0.iterator();
 

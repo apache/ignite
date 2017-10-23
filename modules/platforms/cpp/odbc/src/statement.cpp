@@ -824,19 +824,21 @@ namespace ignite
             return currentQuery.get() && currentQuery->DataAvailable();
         }
 
-        void Statement::NextResults()
+        void Statement::MoreResults()
         {
-            IGNITE_ODBC_API_CALL(InternalNextResults());
+            IGNITE_ODBC_API_CALL(InternalMoreResults());
         }
 
-        SqlResult::Type Statement::InternalNextResults()
+        SqlResult::Type Statement::InternalMoreResults()
         {
             if (!currentQuery.get())
-                return SqlResult::AI_NO_DATA;
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-            SqlResult::Type result = currentQuery->Close();
+                return SqlResult::AI_ERROR;
+            }
 
-            return result == SqlResult::AI_SUCCESS ? SqlResult::AI_NO_DATA : result;
+            return currentQuery->NextResultSet();
         }
 
         void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,

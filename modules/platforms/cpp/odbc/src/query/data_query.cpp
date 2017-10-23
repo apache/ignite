@@ -36,7 +36,7 @@ namespace ignite
                 params(params),
                 resultMeta(),
                 cursor(),
-                rowsAffected(0)
+                rowsAffected()
             {
                 // No-op.
             }
@@ -180,7 +180,21 @@ namespace ignite
 
             int64_t DataQuery::AffectedRows() const
             {
-                return rowsAffected;
+                int64_t affected = rowsAffectedIdx < rowsAffected.size() ? rowsAffected[rowsAffectedIdx] : 0;
+                return affected < 0 ? 0 : affected;
+            }
+
+            SqlResult::Type DataQuery::NextResultSet()
+            {
+                if (rowsAffectedIdx + 1 >= rowsAffected.size())
+                    return SqlResult::AI_NO_DATA;
+
+                SqlResult::Type res = MakeRequestMoreResults();
+
+                if (res == SqlResult::AI_SUCCESS)
+                    ++rowsAffectedIdx;
+
+                return res;
             }
 
             SqlResult::Type DataQuery::MakeRequestExecute()
@@ -221,7 +235,7 @@ namespace ignite
                 rowsAffected = rsp.GetAffectedRows();
 
                 LOG_MSG("Query id: " << rsp.GetQueryId());
-                LOG_MSG("Affected Rows: " << rowsAffected);
+                LOG_MSG("Affected Rows list size: " << rowsAffected.size());
 
                 for (size_t i = 0; i < resultMeta.size(); ++i)
                 {
@@ -231,10 +245,9 @@ namespace ignite
                         <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
                 }
 
-                if (rowsAffected > 0)
-                    cursor.reset();
-                else
-                    cursor.reset(new Cursor(rsp.GetQueryId()));
+                cursor.reset(new Cursor(rsp.GetQueryId()));
+
+                rowsAffectedIdx = 0;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -281,6 +294,44 @@ namespace ignite
 
                 QueryFetchRequest req(cursor->GetQueryId(), connection.GetConfiguration().GetPageSize());
                 QueryFetchResponse rsp(*resultPage);
+
+                try
+                {
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                {
+                    LOG_MSG("Error: " << rsp.GetError());
+
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                cursor->UpdateData(resultPage);
+
+                return SqlResult::AI_SUCCESS;
+            }
+
+            SqlResult::Type DataQuery::MakeRequestMoreResults()
+            {
+                std::auto_ptr<ResultPage> resultPage(new ResultPage());
+
+                QueryMoreResultsRequest req(cursor->GetQueryId(), connection.GetConfiguration().GetPageSize());
+                QueryMoreResultsResponse rsp(*resultPage);
 
                 try
                 {
