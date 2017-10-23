@@ -1231,7 +1231,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 9. Unregister explicit locks.
             if (!tx.alternateVersions().isEmpty()) {
                 for (GridCacheVersion ver : tx.alternateVersions())
-                    throw new RuntimeException("[txs]Alternate versions found in transaction!");
+                    idMap.remove(ver);
             }
 
             // 10. Remove Near-2-DHT mappings.
