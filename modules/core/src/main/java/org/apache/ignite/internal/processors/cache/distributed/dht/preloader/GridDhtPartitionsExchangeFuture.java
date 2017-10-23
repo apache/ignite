@@ -1123,6 +1123,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         nextDumpTime = 0;
         dumpCnt = 0;
 
+        if (!locksFut.isDone())
+            throw new RuntimeException("[txs]Finish locks!");
+
         while (true) {
             try {
                 locksFut.get(futTimeout, TimeUnit.MILLISECONDS);
