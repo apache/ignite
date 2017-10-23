@@ -115,6 +115,15 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Handle cache stop.
+     *
+     * @param spaceName Cache name.
+     */
+    public void onCacheStop(String spaceName) {
+        planCache.remove(spaceName);
+    }
+
+    /**
      * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
      *
      * @param spaceName Space name.

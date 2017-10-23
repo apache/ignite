@@ -1367,7 +1367,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cancel = new GridQueryCancel();
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel), cancel);
+            runQueryTwoStep(cctx, twoStepQry, cctx.keepBinary(), enforceJoinOrder, qry.getTimeout(), cancel),
+
+            cancel);
 
         cursor.fieldsMeta(meta);
 
@@ -2038,6 +2040,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (rmv != null) {
             space2schema.remove(emptyIfNull(rmv.spaceName));
             mapQryExec.onCacheStop(ccfg.getName());
+            dmlProc.onCacheStop(rmv.spaceName);
 
             rmv.onDrop();
 
