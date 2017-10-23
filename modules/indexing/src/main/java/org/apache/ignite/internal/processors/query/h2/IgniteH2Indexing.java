@@ -2251,6 +2251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (rmv != null) {
             space2schema.remove(emptyIfNull(rmv.spaceName));
             mapQryExec.onCacheStop(ccfg.getName());
+            dmlProc.onCacheStop(rmv.spaceName);
 
             rmv.onDrop();
 
