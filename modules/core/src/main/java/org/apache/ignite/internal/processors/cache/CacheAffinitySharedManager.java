@@ -429,7 +429,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     desc,
                     startReq.nearCacheConfiguration(),
                     topVer,
-                    startReq.activeAfterStart());
+                    startReq.disabledAfterStart());
 
                 startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
@@ -753,7 +753,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         cacheDesc,
                         nearCfg,
                         evts.topologyVersion(),
-                        req.activeAfterStart());
+                        req.disabledAfterStart());
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
