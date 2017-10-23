@@ -71,10 +71,10 @@ public class DiscoCache {
     private final Map<Integer, List<ClusterNode>> cacheGrpAffNodes;
 
     /** Node map. */
-    private final Map<UUID, ClusterNode> nodeMap;
+    final Map<UUID, ClusterNode> nodeMap;
 
     /** Alive nodes. */
-    private final Set<UUID> alives = new GridConcurrentHashSet<>();
+    final Set<UUID> alives = new GridConcurrentHashSet<>();
 
     /** */
     private final IgniteProductVersion minNodeVer;
@@ -109,7 +109,7 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives,
-        @Nullable IgniteProductVersion minVer) {
+        IgniteProductVersion minVer) {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
@@ -122,18 +122,6 @@ public class DiscoCache {
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
-
-        if (minVer == null) {
-            for (int i = 0; i < allNodes.size(); i++) {
-                ClusterNode node = allNodes.get(i);
-
-                if (minVer == null)
-                    minVer = node.version();
-                else if (node.version().compareTo(minVer) < 0)
-                    minVer = node.version();
-            }
-        }
-
         minNodeVer = minVer;
     }
 
@@ -333,10 +321,10 @@ public class DiscoCache {
      * @param ver Version.
      * @return Copy.
      */
-    public DiscoCache copy(AffinityTopologyVersion ver) {
+    public DiscoCache copy(@Nullable AffinityTopologyVersion ver, @Nullable DiscoveryDataClusterState st) {
         return new DiscoCache(
-            ver,
-            state,
+            ver == null ? topVer : ver,
+            st == null ? state : st,
             loc,
             rmtNodes,
             allNodes,

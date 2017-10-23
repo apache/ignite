@@ -18,8 +18,13 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
+
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -56,5 +61,18 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @param stgy Reuse strategy.
+     * @param topVer New topology version.
+     * @param discoCache Discovery cache
+     *
+     * @return Reused discovery cache if possible.
+     */
+    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return null;
     }
 }

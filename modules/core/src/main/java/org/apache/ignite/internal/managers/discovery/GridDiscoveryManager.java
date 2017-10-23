@@ -69,6 +69,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -77,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -103,6 +105,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -158,7 +161,7 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 /**
  * Discovery SPI manager.
  */
-public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
+public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> implements ReuseDiscoCacheStrategy {
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -600,7 +603,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (snapshots != null)
                     topHist = snapshots;
 
-                boolean verChanged, incMinorTopVer = false, preventReuse = false;
+                boolean verChanged, incMinorTopVer = false;
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
@@ -655,8 +658,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             new AffinityTopologyVersion(topVer, minorTopVer),
                             (ChangeGlobalStateMessage)customMsg,
                             discoCache());
-
-                        preventReuse = true;
                     }
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
@@ -673,8 +674,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             customMsg,
                             new AffinityTopologyVersion(topVer, minorTopVer),
                             node);
-
-                        preventReuse = customMsg instanceof DynamicCacheChangeBatch;
                     }
 
                     if (incMinorTopVer) {
@@ -712,11 +711,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
                     if (discoCache == null) {
-                        discoCache = incMinorTopVer && !preventReuse ? snapshot.discoCache.copy(nextTopVer) :
+                        discoCache = incMinorTopVer ?
+                            customMsg.reuseDiscoCache(GridDiscoveryManager.this, nextTopVer, snapshot.discoCache) :
                             createDiscoCache(nextTopVer,
-                                 ctx.state().clusterState(),
-                                 locNode,
-                                 topSnapshot);
+                                ctx.state().clusterState(),
+                                locNode,
+                                topSnapshot);
                     }
 
                     discoCacheHist.put(nextTopVer, discoCache);
@@ -2209,7 +2209,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topSnapshot Topology snapshot.
      * @return Newly created discovery cache.
      */
-    @NotNull private DiscoCache createDiscoCache(
+    @NotNull DiscoCache createDiscoCache(
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,
@@ -2248,38 +2248,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
-
         Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
 
-        for (ClusterNode node : allNodes) {
-            assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
-            assert !node.isDaemon();
+        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
 
-            for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
-                CacheGroupAffinity grpAff = e.getValue();
-                Integer grpId = e.getKey();
+        IgniteProductVersion minVer = null;
 
-                if (CU.affinityNode(node, grpAff.cacheFilter)) {
-                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
+        for (int i = 0; i < allNodes.size(); i++) {
+            ClusterNode node = allNodes.get(i);
 
-                    if (nodes == null)
-                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
-
-                    nodes.add(node);
-                }
-            }
-
-            for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
-                String cacheName = entry.getKey();
-                CachePredicate filter = entry.getValue();
-
-                if (filter.cacheNode(node)) {
-                    if (!node.isLocal())
-                        rmtNodesWithCaches.add(node);
-
-                    addToMap(allCacheNodes, cacheName, node);
-                }
-            }
+            if (minVer == null)
+                minVer = node.version();
+            else if (node.version().compareTo(minVer) < 0)
+                minVer = node.version();
         }
 
         return new DiscoCache(
@@ -2295,7 +2276,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableMap(cacheGrpAffNodes),
             Collections.unmodifiableMap(nodeMap),
             alives,
-            null);
+            minVer);
     }
 
     /**
@@ -3046,5 +3027,87 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             return clientNodes.get(node.id());
         }
+    }
+
+    /**
+     * Fills affinity node caches.
+     *
+     * @param allNodes All nodes.
+     * @param allCacheNodes All cache nodes.
+     * @param cacheGrpAffNodes Cache group aff nodes.
+     * @param rmtNodesWithCaches Rmt nodes with caches.
+     */
+    private void fillAffinityNodeCaches(List<ClusterNode> allNodes, Map<Integer, List<ClusterNode>> allCacheNodes,
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes, Set<ClusterNode> rmtNodesWithCaches) {
+        for (ClusterNode node : allNodes) {
+            assert node.order() != 0 : "Invalid node order [locNode=" + localNode() + ", node=" + node + ']';
+            assert !node.isDaemon();
+
+            for (Map.Entry<Integer, CacheGroupAffinity> e : registeredCacheGrps.entrySet()) {
+                CacheGroupAffinity grpAff = e.getValue();
+                Integer grpId = e.getKey();
+
+                if (CU.affinityNode(node, grpAff.cacheFilter)) {
+                    List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
+
+                    if (nodes == null)
+                        cacheGrpAffNodes.put(grpId, nodes = new ArrayList<>());
+
+                    nodes.add(node);
+                }
+            }
+
+            for (Map.Entry<String, CachePredicate> entry : registeredCaches.entrySet()) {
+                String cacheName = entry.getKey();
+                CachePredicate filter = entry.getValue();
+
+                if (filter.cacheNode(node)) {
+                    if (!node.isLocal())
+                        rmtNodesWithCaches.add(node);
+
+                    addToMap(allCacheNodes, cacheName, node);
+                }
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoCache apply(DynamicCacheChangeBatch msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        List<ClusterNode> allNodes = discoCache.allNodes();
+        Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
+        Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
+        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
+
+        fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
+
+        return new DiscoCache(
+            topVer,
+            discoCache.state(),
+            discoCache.localNode(),
+            discoCache.remoteNodes(),
+            allNodes,
+            discoCache.serverNodes(),
+            discoCache.daemonNodes(),
+            U.sealList(rmtNodesWithCaches),
+            allCacheNodes,
+            cacheGrpAffNodes,
+            discoCache.nodeMap,
+            discoCache.alives,
+            discoCache.minimumNodeVersion());
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoCache apply(CacheAffinityChangeMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return discoCache.copy(topVer, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoCache apply(SnapshotDiscoveryMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return discoCache.copy(topVer, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public DiscoCache apply(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return discoCache.copy(topVer, ctx.state().clusterState());
     }
 }

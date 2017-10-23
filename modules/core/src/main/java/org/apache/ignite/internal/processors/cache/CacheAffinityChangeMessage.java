@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -151,6 +154,19 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @param stgy Reuse strategy.
+     * @param topVer New topology version.
+     * @param discoCache Discovery cache
+     *
+     * @return Reused discovery cache if possible.
+     */
+    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return stgy.apply(this, topVer, discoCache);
     }
 
     /** {@inheritDoc} */

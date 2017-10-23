@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.marshaller;
 
 import java.util.UUID;
+
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -92,6 +96,19 @@ public class MappingProposedMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @param stgy Reuse strategy.
+     * @param topVer New topology version.
+     * @param discoCache Discovery cache
+     *
+     * @return Reused discovery cache if possible.
+     */
+    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return null;
     }
 
     /** */

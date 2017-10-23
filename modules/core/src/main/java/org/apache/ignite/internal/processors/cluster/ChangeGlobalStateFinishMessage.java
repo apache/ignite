@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
+
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +81,19 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @param stgy Reuse strategy.
+     * @param topVer New topology version.
+     * @param discoCache Discovery cache
+     *
+     * @return Reused discovery cache if possible.
+     */
+    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        return null;
     }
 
     /** {@inheritDoc} */
