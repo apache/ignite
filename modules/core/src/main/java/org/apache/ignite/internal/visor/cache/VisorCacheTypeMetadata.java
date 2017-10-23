@@ -109,7 +109,7 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
             }
 
         // Add JDBC types.
-        if (factory != null && factory instanceof CacheJdbcPojoStoreFactory) {
+        if (factory instanceof CacheJdbcPojoStoreFactory) {
              CacheJdbcPojoStoreFactory jdbcFactory = (CacheJdbcPojoStoreFactory) factory;
 
             JdbcType[] jdbcTypes = jdbcFactory.getTypes();

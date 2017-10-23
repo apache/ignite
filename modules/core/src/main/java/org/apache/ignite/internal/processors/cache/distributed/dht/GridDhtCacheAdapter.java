@@ -247,13 +247,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
-                int hash,
-                CacheObject val
+                int hash
             ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
+                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash);
 
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
+                return new GridDhtCacheEntry(ctx, topVer, key, hash);
             }
         };
     }
@@ -441,7 +440,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Cache entry.
      */
     protected GridDistributedCacheEntry createEntry(KeyCacheObject key) {
-        return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0);
+        return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode());
     }
 
     /** {@inheritDoc} */
@@ -761,6 +760,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
         assert ctx.affinityNode();
 
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
         IgniteInternalFuture<GridCacheEntryInfo> fut =
@@ -851,6 +854,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 sendTtlUpdateRequest(expiryPlc);
             }
         });
+
+        if (statsEnabled) {
+            fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+                @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
+                    if (!req.skipValues() && f.error() == null)
+                        metrics0().addGetTimeNanos(System.nanoTime() - start);
+                }
+            });
+        }
     }
 
     /**
@@ -860,6 +872,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
         assert ctx.affinityNode();
         assert !req.reload() : req;
+
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.fromRemote(req.createTtl(), req.accessTtl());
 
@@ -915,6 +931,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 sendTtlUpdateRequest(expiryPlc);
             }
         });
+
+        if (statsEnabled) {
+            fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+                @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                    if (!req.skipValues() && f.error() == null)
+                        metrics0().addGetTimeNanos(System.nanoTime() - start);
+                }
+            });
+        }
     }
 
     /**
@@ -1242,14 +1267,27 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         final boolean backup,
         final boolean keepBinary,
         final AffinityTopologyVersion topVer) {
+
+        return iterator(localEntriesIteratorEx(primary, backup, topVer), !keepBinary);
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Specified affinity topology version.
+     * @return Local entries iterator.
+     */
+    public Iterator<? extends GridCacheEntryEx> localEntriesIteratorEx(final boolean primary,
+        final boolean backup,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(entries().iterator(), !keepBinary);
+            return entries().iterator();
         else {
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
-            Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {
+            return new Iterator<GridCacheMapEntry>() {
                 private GridCacheMapEntry next;
 
                 private Iterator<GridCacheMapEntry> curIt;
@@ -1306,8 +1344,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     while (partIt.hasNext());
                 }
             };
-
-            return iterator(it, !keepBinary);
         }
     }
 

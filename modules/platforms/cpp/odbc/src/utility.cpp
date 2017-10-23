@@ -83,8 +83,14 @@ namespace ignite
 
             impl::binary::BinaryUtils::ReadInt8Array(reader.GetStream(), mag.data(), static_cast<int32_t>(mag.size()));
 
-            int32_t sign = (scale & 0x80000000) ? -1 : 1;
-            scale = scale & 0x7FFFFFFF;
+            int32_t sign = 1;
+            
+            if (mag[0] < 0)
+            {
+                mag[0] &= 0x7F;
+
+                sign = -1;
+            }
 
             common::Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
 
@@ -97,13 +103,14 @@ namespace ignite
 
             const common::BigInteger &unscaled = decimal.GetUnscaledValue();
 
-            int32_t signFlag = unscaled.GetSign() == -1 ? 0x80000000 : 0;
-
-            writer.WriteInt32(decimal.GetScale() | signFlag);
+            writer.WriteInt32(decimal.GetScale());
 
             common::FixedSizeArray<int8_t> magnitude;
 
             unscaled.MagnitudeToBytes(magnitude);
+
+            if (unscaled.GetSign() == -1)
+                magnitude[0] |= -0x80;
 
             writer.WriteInt32(magnitude.GetSize());
 

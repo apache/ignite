@@ -105,6 +105,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private final long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */

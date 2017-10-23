@@ -150,6 +150,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for write-through behavior. </summary>
         public const bool DefaultWriteThrough = false;
 
+        /// <summary> Default value for <see cref="WriteBehindCoalescing"/>. </summary>
+        public const bool DefaultWriteBehindCoalescing = true;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -202,6 +205,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
+            WriteBehindCoalescing = DefaultWriteBehindCoalescing;
         }
 
         /// <summary>
@@ -269,6 +273,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushFrequency = reader.ReadLongAsTimespan();
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
+            WriteBehindCoalescing = reader.ReadBoolean();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
@@ -326,6 +331,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) WriteBehindFlushFrequency.TotalMilliseconds);
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
+            writer.WriteBoolean(WriteBehindCoalescing);
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
@@ -382,11 +388,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
 
         /// <summary>
-        /// Gets or sets flag indicating whether eviction is synchronized between primary, backup and near nodes.        
+        /// Gets or sets flag indicating whether eviction is synchronized between primary, backup and near nodes.
         /// If this parameter is true and swap is disabled then <see cref="ICache{TK,TV}.LocalEvict"/>
-        /// will involve all nodes where an entry is kept.  
-        /// If this property is set to false then eviction is done independently on different cache nodes.        
-        /// Note that it's not recommended to set this value to true if cache store is configured since it will allow 
+        /// will involve all nodes where an entry is kept.
+        /// If this property is set to false then eviction is done independently on different cache nodes.
+        /// Note that it's not recommended to set this value to true if cache store is configured since it will allow
         /// to significantly improve cache performance.
         /// </summary>
         [DefaultValue(DefaultEvictSynchronized)]
@@ -399,12 +405,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public int EvictSynchronizedKeyBufferSize { get; set; }
 
         /// <summary>
-        /// Gets or sets concurrency level for synchronized evictions. 
-        /// This flag only makes sense with <see cref="EvictSynchronized"/> set to true. 
-        /// When synchronized evictions are enabled, it is possible that local eviction policy will try 
-        /// to evict entries faster than evictions can be synchronized with backup or near nodes. 
-        /// This value specifies how many concurrent synchronous eviction sessions should be allowed 
-        /// before the system is forced to wait and let synchronous evictions catch up with the eviction policy.       
+        /// Gets or sets concurrency level for synchronized evictions.
+        /// This flag only makes sense with <see cref="EvictSynchronized"/> set to true.
+        /// When synchronized evictions are enabled, it is possible that local eviction policy will try
+        /// to evict entries faster than evictions can be synchronized with backup or near nodes.
+        /// This value specifies how many concurrent synchronous eviction sessions should be allowed
+        /// before the system is forced to wait and let synchronous evictions catch up with the eviction policy.
         /// </summary>
         [DefaultValue(DefaultEvictSynchronizedConcurrencyLevel)]
         public int EvictSynchronizedConcurrencyLevel { get; set; }
@@ -416,11 +422,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public TimeSpan EvictSynchronizedTimeout { get; set; }
 
         /// <summary>
-        /// This value denotes the maximum size of eviction queue in percents of cache size 
+        /// This value denotes the maximum size of eviction queue in percents of cache size
         /// in case of distributed cache (replicated and partitioned) and using synchronized eviction
-        /// <para/>        
-        /// That queue is used internally as a buffer to decrease network costs for synchronized eviction. 
-        /// Once queue size reaches specified value all required requests for all entries in the queue 
+        /// <para/>
+        /// That queue is used internally as a buffer to decrease network costs for synchronized eviction.
+        /// Once queue size reaches specified value all required requests for all entries in the queue
         /// are sent to remote nodes and the queue is cleared.
         /// </summary>
         [DefaultValue(DefaultMaxEvictionOverflowRatio)]
@@ -562,7 +568,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Maximum batch size for write-behind cache store operations. 
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
-        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
+        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods.
         /// </summary>
         [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }
@@ -596,8 +602,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets maximum amount of memory available to off-heap storage. Possible values are
-        /// -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage 
-        /// (it's up to user to properly add and remove entries from cache to ensure that off-heap storage 
+        /// -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage
+        /// (it's up to user to properly add and remove entries from cache to ensure that off-heap storage
         /// does not grow indefinitely.
         /// Any positive value specifies the limit of off-heap storage in bytes.
         /// </summary>
@@ -700,7 +706,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public IAffinityFunction AffinityFunction { get; set; }
 
         /// <summary>
-        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations, 
+        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations,
         /// unless <see cref="ICache{TK,TV}.WithExpiryPolicy"/> is called.
         /// <para />
         /// Default is null, which means no expiration.
@@ -712,5 +718,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
         /// </summary>
         public bool EnableStatistics { get; set; }
+
+        /// <summary>
+        /// Gets or sets write coalescing flag for write-behind cache store operations.
+        /// Store operations (get or remove) with the same key are combined or coalesced to single,
+        /// resulting operation to reduce pressure to underlying cache store.
+        /// </summary>
+        [DefaultValue(DefaultWriteBehindCoalescing)]
+        public bool WriteBehindCoalescing { get; set; }
     }
 }
