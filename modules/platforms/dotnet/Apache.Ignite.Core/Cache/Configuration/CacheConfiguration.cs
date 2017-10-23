@@ -795,5 +795,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultSqlIndexMaxInlineSize)]
         public int SqlIndexMaxInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
     }
 }
