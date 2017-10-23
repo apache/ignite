@@ -33,6 +33,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -78,6 +80,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
+            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
         }
 
         /// <summary>
@@ -126,7 +129,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.NetworkSendRetryCount, resCfg.NetworkSendRetryCount);
                 Assert.AreEqual(cfg.NetworkTimeout, resCfg.NetworkTimeout);
                 Assert.AreEqual(cfg.NetworkSendRetryDelay, resCfg.NetworkSendRetryDelay);
-                Assert.AreEqual(cfg.WorkDirectory, resCfg.WorkDirectory);
+                Assert.AreEqual(cfg.WorkDirectory.Trim('\\'), resCfg.WorkDirectory.Trim('\\'));
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
@@ -168,6 +171,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
                 Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
+
+                Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
+
+                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
+                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
+                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
+                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
+                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
+                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
+                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
             }
         }
 
@@ -311,6 +324,27 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the work directory.
+        /// </summary>
+        [Test]
+        public void TestWorkDirectory()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                WorkDirectory = IgniteUtils.GetTempDirectoryName()
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var marshDir = Path.Combine(cfg.WorkDirectory, "marshaller");
+
+                Assert.IsTrue(Directory.Exists(marshDir));
+            }
+
+            Directory.Delete(cfg.WorkDirectory, true);
+        }
+
+        /// <summary>
         /// Tests the ip finders.
         /// </summary>
         /// <param name="ipFinder">The ip finder.</param>
@@ -363,6 +397,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
+            Assert.AreEqual(IgniteConfiguration.DefaultFailureDetectionTimeout, cfg.FailureDetectionTimeout);
         }
 
         /// <summary>
@@ -373,7 +408,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props.Where(p => p.Name != "SelectorsCount"))
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -469,6 +504,15 @@ namespace Apache.Ignite.Core.Tests
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
                     UnacknowledgedMessagesBufferSize = 3450
+                },
+                FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
+                SwapSpaceSpi = new FileSwapSpaceSpi
+                {
+                    ReadStripesNumber = 64,
+                    MaximumWriteQueueSize = 8,
+                    WriteBufferSize = 9,
+                    BaseDirectory = Path.GetTempPath(),
+                    MaximumSparsity = 11.22f
                 }
             };
         }

@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -223,7 +225,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
-        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
+        assertTrue("Unexpected toString: " + str,
+            S.INCLUDE_SENSITIVE ?
+            str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
+            str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
+        );
 
         TestReferenceObject obj1_r = po.deserialize();
 
@@ -884,6 +890,42 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 tx.commit();
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings({ "ThrowableResultOfMethodCallIgnored", "unchecked" })
+    public void testPutWithoutHashCode() throws Exception {
+        final IgniteCache c = jcache(0);
+
+        GridCacheAdapter<Object, Object> cache0 = grid(0).context().cache().internalCache(null);
+
+        cache0.forceKeyCheck();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                c.put(new TestObject(5), 5);
+                return null;
+            }
+        }, IllegalArgumentException.class, "Cache key must override hashCode() and equals() methods: ");
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
+        bldr.setField("val", 5);
+
+        final BinaryObject binKey = bldr.build();
+
+        cache0.forceKeyCheck();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                c.put(binKey, 5);
+                return null;
+            }
+        }, IllegalArgumentException.class, "Cache key created with BinaryBuilder is missing hash code - " +
+            "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

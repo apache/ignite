@@ -242,6 +242,21 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        public override Expression Visit(Expression expression)
+        {
+            var paramExpr = expression as ParameterExpression;
+
+            if (paramExpr != null)
+            {
+                // This happens only with compiled queries, where parameters come from enclosing lambda.
+                AppendParameter(paramExpr);
+                return expression;
+            }
+
+            return base.Visit(expression);
+        }
+
+        /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
             // Count, sum, max, min expect a single field or *

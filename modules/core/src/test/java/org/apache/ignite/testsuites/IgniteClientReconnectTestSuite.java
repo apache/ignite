@@ -18,8 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientConnectAfterCommunicationFailureTest;
 import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
 import org.apache.ignite.internal.IgniteClientReconnectAtomicsTest;
+import org.apache.ignite.internal.IgniteClientReconnectBinaryContexTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
 import org.apache.ignite.internal.IgniteClientReconnectComputeTest;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.IgniteClientReconnectFailoverTest;
 import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
 import org.apache.ignite.internal.IgniteClientReconnectStopTest;
 import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
+import org.apache.ignite.internal.IgniteClientRejoinTest;
 
 /**
  *
@@ -41,10 +44,12 @@ public class IgniteClientReconnectTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Client Reconnect Test Suite");
 
+        suite.addTestSuite(IgniteClientConnectAfterCommunicationFailureTest.class);
         suite.addTestSuite(IgniteClientReconnectStopTest.class);
         suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
         suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);
         suite.addTestSuite(IgniteClientReconnectCacheTest.class);
+        suite.addTestSuite(IgniteClientReconnectBinaryContexTest.class);
         suite.addTestSuite(IgniteClientReconnectContinuousProcessorTest.class);
         suite.addTestSuite(IgniteClientReconnectComputeTest.class);
         suite.addTestSuite(IgniteClientReconnectAtomicsTest.class);
@@ -52,6 +57,7 @@ public class IgniteClientReconnectTestSuite extends TestSuite {
         suite.addTestSuite(IgniteClientReconnectServicesTest.class);
         suite.addTestSuite(IgniteClientReconnectStreamerTest.class);
         suite.addTestSuite(IgniteClientReconnectFailoverTest.class);
+        suite.addTestSuite(IgniteClientRejoinTest.class);
 
         return suite;
     }

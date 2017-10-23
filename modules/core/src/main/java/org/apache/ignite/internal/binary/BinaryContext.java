@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallab
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
@@ -75,12 +77,16 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcess
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -105,6 +111,8 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
@@ -160,6 +168,7 @@ public class BinaryContext {
 
         sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
         sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
 
         sysClss.add(IgfsClientAffinityCallable.class.getName());
         sysClss.add(IgfsClientDeleteCallable.class.getName());
@@ -181,6 +190,14 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
+        if (BinaryUtils.wrapTrees()) {
+            sysClss.add(TreeMap.class.getName());
+            sysClss.add(TreeSet.class.getName());
+        }
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }
@@ -241,6 +258,8 @@ public class BinaryContext {
     public BinaryContext(BinaryMetadataHandler metaHnd, IgniteConfiguration igniteCfg, IgniteLogger log) {
         assert metaHnd != null;
         assert igniteCfg != null;
+
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -309,6 +328,9 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
+        registerPredefinedType(PlatformDotNetSessionData.class, 0);
+        registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
+
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
 
@@ -332,11 +354,17 @@ public class BinaryContext {
      * @param cls Class.
      * @return {@code True} if must be deserialized.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean mustDeserialize(Class cls) {
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null)
-            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null;
+        if (desc == null) {
+            if (BinaryUtils.wrapTrees() && (cls == TreeMap.class || cls == TreeSet.class))
+                return false;
+
+            return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
+                GridQueryProcessor.isGeometryClass(cls);
+        }
         else
             return desc.useOptimizedMarshaller();
     }
@@ -484,7 +512,7 @@ public class BinaryContext {
     }
 
     /**
-     * @return Intenal mpper used as default.
+     * @return Internal mapper used as default.
      */
     public static BinaryInternalMapper defaultMapper() {
         return DFLT_MAPPER;
@@ -585,6 +613,7 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
@@ -637,6 +666,7 @@ public class BinaryContext {
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
@@ -692,6 +722,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -732,6 +763,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -768,12 +800,9 @@ public class BinaryContext {
             registered
         );
 
-        if (!deserialize) {
-            Collection<BinarySchema> schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
+        if (!deserialize)
             metaHnd.addMeta(typeId,
-                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
-        }
+                new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, null, desc.isEnum()).wrap(this));
 
         descByCls.put(cls, desc);
 
@@ -907,7 +936,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryInternalMapper userTypeMapper(int typeId) {
+    BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
         return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
@@ -917,7 +946,7 @@ public class BinaryContext {
      * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryInternalMapper userTypeMapper(String clsName) {
+    BinaryInternalMapper userTypeMapper(String clsName) {
         BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
         if (mapper != null)
@@ -1106,7 +1135,6 @@ public class BinaryContext {
         cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
-        Collection<BinarySchema> schemas = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1131,7 +1159,6 @@ public class BinaryContext {
             );
 
             fieldsMeta = desc.fieldsMeta();
-            schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
             descByCls.put(cls, desc);
 
@@ -1140,7 +1167,7 @@ public class BinaryContext {
             predefinedTypes.put(id, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, null, isEnum).wrap(this));
     }
 
     /**
@@ -1249,6 +1276,27 @@ public class BinaryContext {
         }
 
         return reg;
+    }
+
+    /**
+     * Unregister all binary schemas.
+     */
+    public void unregisterBinarySchemas() {
+        schemas = null;
+    }
+
+    /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
     }
 
     /**

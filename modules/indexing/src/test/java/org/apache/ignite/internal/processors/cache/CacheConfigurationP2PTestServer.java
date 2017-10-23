@@ -35,8 +35,6 @@ public class CacheConfigurationP2PTestServer {
 
         IgniteConfiguration cfg = CacheConfigurationP2PTest.createConfiguration();
 
-        U.setWorkDirectory(null, U.getIgniteHome());
-
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println(CacheConfigurationP2PTest.NODE_START_MSG);
 

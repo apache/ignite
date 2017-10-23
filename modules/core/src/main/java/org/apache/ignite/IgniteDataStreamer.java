@@ -291,7 +291,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on streamer.
      */
-    public IgniteFuture<?> removeData(K key)  throws CacheException, IgniteInterruptedException, IllegalStateException;
+    public IgniteFuture<?> removeData(K key) throws CacheException, IgniteInterruptedException, IllegalStateException;
 
     /**
      * Adds data for streaming on remote node. This method can be called from multiple

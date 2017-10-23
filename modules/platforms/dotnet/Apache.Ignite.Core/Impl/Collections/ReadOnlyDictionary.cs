@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Collections
         /** <inheritdoc /> */
         public bool Remove(TKey key)
         {
-            return _dict.Remove(key);
+            throw GetReadonlyException();
         }
 
         /** <inheritdoc /> */

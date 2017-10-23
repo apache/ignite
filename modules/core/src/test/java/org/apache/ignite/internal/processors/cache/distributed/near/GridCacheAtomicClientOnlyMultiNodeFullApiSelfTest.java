@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -45,6 +46,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -193,7 +195,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        String key = primaryKeysForCache(cache, 1).get(0);
+        final String key = primaryKeysForCache(cache, 1).get(0);
 
         cache.put(key, 1);
 
@@ -204,7 +206,18 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         grid(0).cache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
 
-        Thread.sleep(ttl + 100);
+        boolean wait = waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int i = 0; i < gridCount(); i++) {
+                    if (peek(jcache(i), key) != null)
+                        return false;
+                }
+
+                return true;
+            }
+        }, ttl + 1000);
+
+        assertTrue("Failed to wait for entry expiration.", wait);
 
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));

@@ -46,14 +46,14 @@ void Main()
 	using (var ignite = Ignition.Start(cfg))
 	{
 		// Create and populate organization cache
-		var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs",
+		var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs-linq",
 			new QueryEntity(typeof(int), typeof(Organization))));
 		orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
 		orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
 		orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
 
 		// Create and populate person cache
-		var persons = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof(Person)));
+		var persons = ignite.GetOrCreateCache<int, Person>(new CacheConfiguration("persons-linq", typeof(Person)));
 		persons[1] = new Person { OrgId = 1, Name = "James Wilson" };
 		persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
 		persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };

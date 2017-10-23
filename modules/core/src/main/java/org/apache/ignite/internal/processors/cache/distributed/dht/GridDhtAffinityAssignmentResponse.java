@@ -207,13 +207,13 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         assert affAssignment != null ^ affAssignmentIds != null;
 
         if (affAssignment != null && affAssignmentBytes == null)
-            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
+            affAssignmentBytes = U.marshal(ctx, affAssignment);
 
         if (affAssignmentIds != null && affAssignmentIdsBytes == null)
-            affAssignmentIdsBytes = ctx.marshaller().marshal(affAssignmentIds);
+            affAssignmentIdsBytes = U.marshal(ctx, affAssignmentIds);
 
         if (idealAffAssignment != null && idealAffAssignmentBytes == null)
-            idealAffAssignmentBytes = ctx.marshaller().marshal(idealAffAssignment);
+            idealAffAssignmentBytes = U.marshal(ctx, idealAffAssignment);
     }
 
     /** {@inheritDoc} */
@@ -228,10 +228,10 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
             affAssignment = unmarshalNodes(affAssignmentBytes, ctx, ldr);
 
         if (affAssignmentIdsBytes != null && affAssignmentIds == null)
-            affAssignmentIds = ctx.marshaller().unmarshal(affAssignmentIdsBytes, ldr);
+            affAssignmentIds = U.unmarshal(ctx, affAssignmentIdsBytes, ldr);
 
         if (idealAffAssignmentBytes != null && idealAffAssignment == null)
-            idealAffAssignment = ctx.marshaller().unmarshal(idealAffAssignmentBytes, ldr);
+            idealAffAssignment = U.unmarshal(ctx, idealAffAssignmentBytes, ldr);
     }
 
     /**
@@ -247,7 +247,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         ClassLoader ldr)
         throws IgniteCheckedException
     {
-        List<List<ClusterNode>> affAssignment = ctx.marshaller().unmarshal(bytes,
+        List<List<ClusterNode>> affAssignment = U.unmarshal(ctx, bytes,
             U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.

@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -86,6 +88,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** */
     private int hashCode;
 
+    /** */
+    private boolean isHashCodeSet;
+
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -117,7 +122,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
         this(new BinaryBuilderReader(obj), obj.start());
-
+        isHashCodeSet = !obj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
         reader.registerObject(this);
     }
 
@@ -199,7 +204,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Map<String, Integer> fieldsMeta = null;
 
-            if (reader != null) {
+            if (reader != null && BinaryUtils.hasSchema(flags)) {
                 BinarySchema schema = reader.schema();
 
                 Map<Integer, Object> assignedFldsById;
@@ -329,7 +334,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 reader.position(start + BinaryUtils.length(reader, start));
             }
 
-            writer.postWrite(true, registeredType, hashCode);
+            //noinspection NumberEquality
+            writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -380,13 +386,26 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             if (((BinaryValueWithType)newVal).value() == null)
                 nullFieldVal = true;
         }
+        // Detect Enum and Enum array type.
+        else if (newVal instanceof BinaryEnumObjectImpl)
+            newFldTypeId = GridBinaryMarshaller.ENUM;
+        else if (newVal.getClass().isArray() && newVal.getClass().getComponentType() == BinaryObject.class) {
+            BinaryObject[] arr = (BinaryObject[])newVal;
+
+            newFldTypeId = arr.length > 0 && arr[0] instanceof BinaryEnumObjectImpl ?
+                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
+        }
         else
             newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
 
         if (oldFldTypeName == null) {
             // It's a new field, we have to add it to metadata.
-            if (fieldsMeta == null)
-                fieldsMeta = new HashMap<>();
+            if (fieldsMeta == null) {
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fieldsMeta = new TreeMap<>();
+                else
+                    fieldsMeta = new LinkedHashMap<>();
+            }
 
             fieldsMeta.put(name, newFldTypeId);
         }
@@ -408,8 +427,11 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("UnnecessaryBoxing")
     @Override public BinaryObjectBuilderImpl hashCode(int hashCode) {
         this.hashCode = hashCode;
+
+        isHashCodeSet = true;
 
         return this;
     }
@@ -514,8 +536,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null)
-            assignedVals = new LinkedHashMap<>();
+        if (assignedVals == null) {
+            if (BinaryUtils.FIELDS_SORTED_ORDER)
+                assignedVals = new TreeMap<>();
+            else
+                assignedVals = new LinkedHashMap<>();
+        }
 
         Object oldVal = assignedVals.put(name, val);
 

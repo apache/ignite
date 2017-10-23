@@ -47,8 +47,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.internal.util.SerializableTransient;
+import org.apache.ignite.marshaller.MarshallerUtils;
 
 import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isPrivate;
@@ -165,6 +168,9 @@ class OptimizedClassDescriptor {
 
     /** Proxy interfaces. */
     private Class<?>[] proxyIntfs;
+
+    /** Method returns serializable transient fields. */
+    private Method serTransMtd;
 
     /**
      * Creates descriptor for class.
@@ -440,6 +446,27 @@ class OptimizedClassDescriptor {
                         }
 
                         readObjMtds.add(mtd);
+
+                        final SerializableTransient serTransAn = c.getAnnotation(SerializableTransient.class);
+
+                        // Custom serialization policy for transient fields.
+                        if (serTransAn != null) {
+                            try {
+                                serTransMtd = c.getDeclaredMethod(serTransAn.methodName(), cls, IgniteProductVersion.class);
+
+                                int mod = serTransMtd.getModifiers();
+
+                                if (isStatic(mod) && isPrivate(mod)
+                                    && serTransMtd.getReturnType() == String[].class)
+                                    serTransMtd.setAccessible(true);
+                                else
+                                    // Set method back to null if it has incorrect signature.
+                                    serTransMtd = null;
+                            }
+                            catch (NoSuchMethodException ignored) {
+                                serTransMtd = null;
+                            }
+                        }
 
                         Field[] clsFields0 = c.getDeclaredFields();
 
@@ -797,12 +824,66 @@ class OptimizedClassDescriptor {
                 writeTypeData(out);
 
                 out.writeShort(checksum);
-                out.writeSerializable(obj, writeObjMtds, fields);
+                out.writeSerializable(obj, writeObjMtds, serializableFields(obj.getClass(), obj, null));
 
                 break;
 
             default:
                 throw new IllegalStateException("Invalid class type: " + type);
+        }
+    }
+
+    /**
+     * Gets list of serializable fields. If {@link #serTransMtd} method
+     * returns list of transient fields, they will be added to other fields.
+     * Transient fields that are not included in that list will be normally
+     * ignored.
+     *
+     * @param cls Class.
+     * @param obj Object.
+     * @param ver Job sender version.
+     * @return Serializable fields.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private Fields serializableFields(Class<?> cls, Object obj, IgniteProductVersion ver) {
+        if (serTransMtd == null)
+            return fields;
+
+        try {
+            final String[] transFields = (String[])serTransMtd.invoke(cls, obj, ver);
+
+            if (transFields == null || transFields.length == 0)
+                return fields;
+
+            List<FieldInfo> clsFields = new ArrayList<>();
+
+            clsFields.addAll(fields.fields.get(0).fields);
+
+            for (int i = 0; i < transFields.length; i++) {
+                final String fieldName = transFields[i];
+
+                final Field f = cls.getDeclaredField(fieldName);
+
+                FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
+                    GridUnsafe.objectFieldOffset(f), fieldType(f.getType()));
+
+                clsFields.add(fieldInfo);
+            }
+
+            Collections.sort(clsFields, new Comparator<FieldInfo>() {
+                @Override public int compare(FieldInfo t1, FieldInfo t2) {
+                    return t1.name().compareTo(t2.name());
+                }
+            });
+
+            List<ClassFields> fields = new ArrayList<>();
+
+            fields.add(new ClassFields(clsFields));
+
+            return new Fields(fields);
+        }
+        catch (Exception e) {
+            return fields;
         }
     }
 
@@ -838,7 +919,12 @@ class OptimizedClassDescriptor {
             case SERIALIZABLE:
                 verifyChecksum(in.readShort());
 
-                return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
+                // If no serialize method, then unmarshal as usual.
+                if (serTransMtd != null)
+                    return in.readSerializable(cls, readObjMtds, readResolveMtd,
+                        serializableFields(cls, null, MarshallerUtils.jobSenderVersion()));
+                else
+                    return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
 
             default:
                 assert false : "Unexpected type: " + type;

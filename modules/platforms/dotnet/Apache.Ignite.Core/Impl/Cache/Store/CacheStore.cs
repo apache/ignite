@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 {
     using System.Collections;
     using System.Diagnostics;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
@@ -26,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Interop cache store.
@@ -143,21 +143,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <summary>
         /// Invokes a store operation.
         /// </summary>
-        /// <param name="input">Input stream.</param>
-        /// <param name="cb">Callback.</param>
+        /// <param name="stream">Input stream.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>Invocation result.</returns>
         /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
-        public int Invoke(IBinaryStream input, IUnmanagedTarget cb, Ignite grid)
+        public int Invoke(IBinaryStream stream, Ignite grid)
         {
-            IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
+            IBinaryReader reader = grid.Marshaller.StartUnmarshal(stream,
                 _convertBinary ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
             
             IBinaryRawReader rawReader = reader.GetRawReader();
 
             int opType = rawReader.ReadByte();
 
-            // Setup cache sessoin for this invocation.
+            // Setup cache session for this invocation.
             long sesId = rawReader.ReadLong();
             
             CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
@@ -172,27 +171,79 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 switch (opType)
                 {
                     case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray<object>());
+                    {
+                        var args = rawReader.ReadArray<object>();
+
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        int cnt = 0;
+                        stream.WriteInt(cnt); // Reserve space for count.
+
+                        var writer = grid.Marshaller.StartMarshal(stream);
+
+                        _store.LoadCache((k, v) =>
+                        {
+                            lock (writer) // User-defined store can be multithreaded.
+                            {
+                                writer.WithDetach(w =>
+                                {
+                                    w.WriteObject(k);
+                                    w.WriteObject(v);
+                                });
+
+                                cnt++;
+                            }
+                        }, args);
+
+                        stream.WriteInt(0, cnt);
+
+                        grid.Marshaller.FinishMarshal(writer);
 
                         break;
+                    }
 
                     case OpLoad:
-                        object val = _store.Load(rawReader.ReadObject<object>());
+                    {
+                        var val = _store.Load(rawReader.ReadObject<object>());
 
-                        if (val != null)
-                            WriteObjects(cb, grid, val);
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        var writer = grid.Marshaller.StartMarshal(stream);
+
+                        writer.WriteObject(val);
+
+                        grid.Marshaller.FinishMarshal(writer);
 
                         break;
+                    }
 
                     case OpLoadAll:
+                    {
                         var keys = rawReader.ReadCollection();
 
                         var result = _store.LoadAll(keys);
 
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        stream.WriteInt(result.Count);
+
+                        var writer = grid.Marshaller.StartMarshal(stream);
+
                         foreach (DictionaryEntry entry in result)
-                            WriteObjects(cb, grid, entry.Key, entry.Value);
+                        {
+                            var entry0 = entry;  // Copy modified closure.
+
+                            writer.WithDetach(w =>
+                            {
+                                w.WriteObject(entry0.Key);
+                                w.WriteObject(entry0.Value);
+                            });
+                        }
+
+                        grid.Marshaller.FinishMarshal(writer);
 
                         break;
+                    }
 
                     case OpPut:
                         _store.Write(rawReader.ReadObject<object>(), rawReader.ReadObject<object>());
@@ -237,41 +288,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
             finally
             {
                 _sesProxy.ClearSession();
-            }
-        }
-
-        /// <summary>
-        /// Writes objects to the marshaller.
-        /// </summary>
-        /// <param name="cb">Optional callback.</param>
-        /// <param name="grid">Grid.</param>
-        /// <param name="objects">Objects.</param>
-        private static void WriteObjects(IUnmanagedTarget cb, Ignite grid, params object[] objects)
-        {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
-            {
-                BinaryWriter writer = grid.Marshaller.StartMarshal(stream);
-
-                try
-                {
-                    foreach (var obj in objects)
-                    {
-                        var obj0 = obj;
-
-                        writer.WithDetach(w => w.WriteObject(obj0));
-                    }
-                }
-                finally
-                {
-                    grid.Marshaller.FinishMarshal(writer);
-                }
-
-                if (cb != null)
-                {
-                    stream.SynchronizeOutput();
-
-                    UnmanagedUtils.CacheStoreCallbackInvoke(cb, stream.MemoryPointer);
-                }
             }
         }
     }

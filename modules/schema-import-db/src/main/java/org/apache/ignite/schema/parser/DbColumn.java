@@ -33,17 +33,22 @@ public class DbColumn {
     /** Is {@code NULL} allowed for column in database. */
     private final boolean nullable;
 
+    /** Whether column unsigned. */
+    private final boolean unsigned;
+
     /**
      * @param name Column name.
      * @param type Column JDBC type.
      * @param key {@code true} if this column belongs to primary key.
      * @param nullable {@code true} if {@code NULL } allowed for column in database.
+     * @param unsigned {@code true} if column is unsigned.
      */
-    public DbColumn(String name, int type, boolean key, boolean nullable) {
+    public DbColumn(String name, int type, boolean key, boolean nullable, boolean unsigned) {
         this.name = name;
         this.type = type;
         this.key = key;
         this.nullable = nullable;
+        this.unsigned = unsigned;
     }
 
     /**
@@ -68,9 +73,16 @@ public class DbColumn {
     }
 
     /**
-     * @return nullable {@code true} if {@code NULL } allowed for column in database.
+     * @return {@code true} if {@code NULL } allowed for column in database.
      */
     public boolean nullable() {
         return nullable;
+    }
+
+    /**
+     * @return {@code true} if column is unsigned.
+     */
+    public boolean unsigned() {
+        return unsigned;
     }
 }

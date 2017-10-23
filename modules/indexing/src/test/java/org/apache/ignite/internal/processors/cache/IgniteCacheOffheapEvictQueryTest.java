@@ -87,6 +87,13 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -174,7 +181,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        LT.warn(log, null, e.getMessage());
+                        LT.warn(log, e.getMessage());
 
                         return;
                     }
