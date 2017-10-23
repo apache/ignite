@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteOutOfMemoryPropagationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
@@ -39,6 +40,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
+
+//        TODO enable this test after IGNITE-6753, now it takes too long
+//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
 
         return suite;
     }
