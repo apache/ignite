@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -126,7 +127,12 @@ public class IgniteTxHandler {
 
         if (ctx.cache().cacheValidator() != null) {
             for (GridCacheContext cctx : caches(req)) {
-                Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+                GridDhtTopologyFuture fut = ctx.exchange().exchangeFuture(req.topologyVersion());
+
+                if (fut == null)
+                    fut = cctx.topologyVersionFuture();
+
+                Throwable exc = fut.validateCache(cctx);
 
                 if (exc != null) {
                     GridNearTxPrepareResponse resp = new GridNearTxPrepareResponse(
@@ -971,16 +977,6 @@ public class IgniteTxHandler {
         GridDhtTxPrepareResponse res;
 
         try {
-            // TODO: it seems not needed since primary should already do check.
-            if (ctx.cache().cacheValidator() != null) {
-                for (GridCacheContext cctx : caches(req)) {
-                    Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
-
-                    if (exc != null)
-                        throw new IgniteCheckedException(exc);
-                }
-            }
-
             res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), req.deployInfo() != null);
 
             // Start near transaction first.

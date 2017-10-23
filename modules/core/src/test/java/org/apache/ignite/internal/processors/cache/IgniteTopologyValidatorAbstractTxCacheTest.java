@@ -59,8 +59,9 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
         }
 
         assertEmpty(null); // rolled back
-        assertEmpty(CACHE_NAME_1); // rolled back
-        assertEmpty(CACHE_NAME_2); // rolled back
+
+        getInvalid(CACHE_NAME_1);
+        getInvalid(CACHE_NAME_2);
 
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             putValid(null);
@@ -68,7 +69,7 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
         }
 
         assertEmpty(null); // rolled back
-        assertEmpty(CACHE_NAME_1); // rolled back
+        getInvalid(CACHE_NAME_1); // rolled back
 
         startGrid(1);
 
@@ -94,7 +95,8 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
         }
 
         assertEmpty(null); // rolled back
-        assertEmpty(CACHE_NAME_1); // rolled back
+
+        getInvalid(CACHE_NAME_1);
 
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             putValid(CACHE_NAME_1);

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -1845,7 +1846,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         try {
             if (!isLocal()) {
-                Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+                GridDhtTopologyFuture fut = ctx.shared().exchange().exchangeFuture(req.topologyVersion());
+
+                if (fut == null)
+                    fut = ctx.topologyVersionFuture();
+
+                Throwable exc = fut.validateCache(ctx);
 
                 if (exc != null)
                     throw new IgniteException(exc);
