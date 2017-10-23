@@ -122,7 +122,11 @@ public class ClassesGenerator {
             for (String err : errs)
                 sb.append("    ").append(err).append('\n');
 
-            throw new Exception(sb.toString().trim());
+            String msg = sb.toString().trim();
+
+            System.out.println(msg);
+
+            throw new Exception(msg);
         }
 
         PrintStream out = new PrintStream(new File(basePath,

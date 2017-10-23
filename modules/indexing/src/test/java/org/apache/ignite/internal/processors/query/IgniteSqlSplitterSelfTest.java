@@ -21,9 +21,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -33,10 +35,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -63,8 +63,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestKey.class.getName(), "affKey");
 
@@ -79,6 +79,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         return cfg;
+    }
+
+    @Override
+    protected long getTestTimeout() {
+        return 100_000_000;
     }
 
     /** {@inheritDoc} */
@@ -145,6 +150,47 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
         finally {
             c.destroy();
+        }
+    }
+
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public void testExists() {
+        IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
+            Integer.class, Person2.class));
+        IgniteCache<Integer,Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
+            Integer.class, Person2.class));
+
+        try {
+            GridRandom rnd = new GridRandom();
+
+            Set<Integer> intersects = new HashSet<>();
+
+            for (int i = 0; i < 3000; i++) {
+                int r = rnd.nextInt(3);
+
+                if (r != 0)
+                    x.put(i, new Person2(i, "pers_x_" + i));
+
+                if (r != 1)
+                    y.put(i, new Person2(i, "pers_y_" + i));
+
+                if (r == 2)
+                    intersects.add(i);
+            }
+
+            assertFalse(intersects.isEmpty());
+
+            List<List<?>> res = x.query(new SqlFieldsQuery("select _key from \"x\".Person2 px " +
+                "where exists(select 1 from \"y\".Person2 py where px._key = py._key)")).getAll();
+
+            assertEquals(intersects.size(), res.size());
+
+            for (List<?> row : res)
+                assertTrue(intersects.contains(row.get(0)));
+        }
+        finally {
+            x.destroy();
+            y.destroy();
         }
     }
 
@@ -550,15 +596,15 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 "\"orgRepl\".Organization o",
                 "where p.affKey = o._key", true);
 
-            checkNoBatchedJoin(persPart, "select p._key k1, o._key k2 ",
-                "(select * from \"persPart\".Person2) p",
-                "\"orgPart\".Organization o",
-                "where p._key = o._key", false);
-
-            checkNoBatchedJoin(persPart, "select p._key k1, o._key k2 ",
-                "\"persPart\".Person2 p",
-                "(select * from \"orgPart\".Organization) o",
-                "where p._key = o._key", false);
+            // TODO Now we can not analyze subqueries to decide if we are collocated or not.
+//            checkNoBatchedJoin(persPart, "select p._key k1, o._key k2 ",
+//                "(select * from \"persPart\".Person2) p",
+//                "\"orgPart\".Organization o",
+//                "where p._key = o._key", false);
+//            checkNoBatchedJoin(persPart, "select p._key k1, o._key k2 ",
+//                "\"persPart\".Person2 p",
+//                "(select * from \"orgPart\".Organization) o",
+//                "where p._key = o._key", false);
 
             // Join multiple.
 
@@ -703,6 +749,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 ignite(0).destroyCache(cache.getName());
         }
     }
+
     /**
      * @throws Exception If failed.
      */
@@ -791,26 +838,26 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             false,
             0,
             select +
-                "from " + cache1 + ","  + cache2 + " "+ where);
+                "from " + cache1 + "," + cache2 + " " + where);
 
         checkQueryPlan(cache,
             false,
             0,
             select +
-                "from " + cache2 + ","  + cache1 + " "+ where);
+                "from " + cache2 + "," + cache1 + " " + where);
 
         if (testEnforceJoinOrder) {
             checkQueryPlan(cache,
                 true,
                 0,
                 select +
-                    "from " + cache1 + ","  + cache2 + " "+ where);
+                    "from " + cache1 + "," + cache2 + " " + where);
 
             checkQueryPlan(cache,
                 true,
                 0,
                 select +
-                    "from " + cache2 + ","  + cache1 + " "+ where);
+                    "from " + cache2 + "," + cache1 + " " + where);
         }
     }
 
@@ -825,7 +872,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         boolean enforceJoinOrder,
         int expBatchedJoins,
         String sql,
-        String...expText) {
+        String...expText
+    ) {
         checkQueryPlan(cache,
             enforceJoinOrder,
             expBatchedJoins,
@@ -850,13 +898,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         boolean enforceJoinOrder,
         int expBatchedJoins,
         SqlFieldsQuery qry,
-        String...expText) {
+        String... expText) {
         qry.setEnforceJoinOrder(enforceJoinOrder);
         qry.setDistributedJoins(true);
 
         String plan = queryPlan(cache, qry);
 
-        log.info("Plan: " + plan);
+        log.info("\n  Plan:\n" + plan);
 
         assertEquals("Unexpected number of batched joins in plan [plan=" + plan + ", qry=" + qry + ']',
             expBatchedJoins,
@@ -986,7 +1034,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @param args Arguments.
      * @return Column as list.
      */
-    private static <X> List<X> columnQuery(IgniteCache<?,?> c, String qry, Object... args) {
+    private static <X> List<X> columnQuery(IgniteCache<?, ?> c, String qry, Object... args) {
         return column(0, c.query(new SqlFieldsQuery(qry).setArgs(args)).getAll());
     }
 

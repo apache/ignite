@@ -22,14 +22,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for store session.
     /// </summary>
-    public class CacheStoreSessionTest
+    public sealed class CacheStoreSessionTest
     {
         /** Grid name. */
         private const string IgniteName = "grid";
@@ -47,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Set up routine.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void BeforeTests()
+        public void BeforeTests()
         {
             //TestUtils.JVM_DEBUG = true;
 
@@ -71,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void AfterTests()
+        public void AfterTests()
         {
             Ignition.StopAll(true);
         }
@@ -147,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Dump operations.
         /// </summary>
         /// <param name="dump">Dump.</param>
-        internal static void DumpOperations(ICollection<Operation> dump)
+        private static void DumpOperations(ICollection<Operation> dump)
         {
             _dumps.Add(dump);
         }
@@ -155,6 +154,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Test store implementation.
         /// </summary>
+        // ReSharper disable once UnusedMember.Global
         public class Store : CacheStoreAdapter
         {
             /** Store session. */
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Logged operation.
         /// </summary>
-        internal class Operation
+        private class Operation
         {
             /// <summary>
             /// Constructor.
@@ -244,22 +244,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             /// <summary>
             /// Cache name.
             /// </summary>
-            public string CacheName { get; set; }
+            public string CacheName { get; private set; }
             
             /// <summary>
             /// Operation type.
             /// </summary>
-            public OperationType Type { get; set; }
+            public OperationType Type { get; private set; }
 
             /// <summary>
             /// Key.
             /// </summary>
-            public int Key { get; set; }
+            public int Key { get; private set; }
 
             /// <summary>
             /// Value.
             /// </summary>
-            public int Value { get; set; }
+            public int Value { get; private set; }
 
             /// <summary>
             /// Commit flag.
@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Operation types.
         /// </summary>
-        internal enum OperationType
+        private enum OperationType
         {
             /** Write. */
             Write,

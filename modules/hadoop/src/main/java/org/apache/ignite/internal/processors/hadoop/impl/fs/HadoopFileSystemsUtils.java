@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.fs;
 
+import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsConstants;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,5 +49,14 @@ public class HadoopFileSystemsUtils {
      */
     public static String disableFsCachePropertyName(@Nullable String scheme) {
         return String.format("fs.%s.impl.disable.cache", scheme);
+    }
+
+    /**
+     * Clears Hadoop {@link FileSystem} cache.
+     *
+     * @throws IOException On error.
+     */
+    public static void clearFileSystemCache() throws IOException {
+        FileSystem.closeAll();
     }
 }
