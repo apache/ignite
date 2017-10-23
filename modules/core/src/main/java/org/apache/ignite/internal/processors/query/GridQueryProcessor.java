@@ -66,7 +66,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -246,8 +245,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
                     boolean valMustDeserialize = mustDeserializeBinary(valCls);
 
-                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
-
                     if (keyCls == null)
                         keyCls = Object.class;
 
@@ -258,15 +255,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.tableName(qryEntity.getTableName());
 
                     if (binaryEnabled) {
-                        if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
-                            desc.valueClass(Object.class);
-                        else
+                        if (valMustDeserialize || SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
-
-                        if (!keyMustDeserialize && !SQL_TYPES.contains(keyCls))
-                            desc.keyClass(Object.class);
                         else
+                            desc.valueClass(Object.class);
+
+                        if (keyMustDeserialize || SQL_TYPES.contains(keyCls))
                             desc.keyClass(keyCls);
+                        else
+                            desc.keyClass(Object.class);
                     }
                     else {
                         if (keyCls == null)
@@ -284,7 +281,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.keyTypeName(qryEntity.getKeyType());
                     desc.valueTypeName(qryEntity.getValueType());
 
-                    if (binaryEnabled && keyOrValMustDeserialize) {
+                    if (binaryEnabled && (keyMustDeserialize || valMustDeserialize)) {
                         if (mustDeserializeClss == null)
                             mustDeserializeClss = new ArrayList<>();
 
@@ -295,17 +292,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             mustDeserializeClss.add(valCls);
                     }
 
+                    processMeta(
+                        qryEntity,
+                        desc,
+                        coCtx,
+                        binaryEnabled && !keyMustDeserialize,
+                        binaryEnabled && !valMustDeserialize
+                    );
+
                     TypeId typeId;
                     TypeId altTypeId = null;
 
                     if (valCls == null || (binaryEnabled && (!valMustDeserialize))) {
-                        processBinaryMeta(qryEntity, desc);
-
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
 
                         if (valCls != null)
                             altTypeId = new TypeId(ccfg.getName(), valCls);
+                    }
+                    else {
+                        typeId = new TypeId(ccfg.getName(), valCls);
+                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                    }
 
+                    if (binaryEnabled && !keyMustDeserialize) {
                         if (!cctx.customAffinityMapper() && qryEntity.getKeyType() != null) {
                             // Need to setup affinity key for distributed joins.
                             String affField = ctx.cacheObjects().affinityField(qryEntity.getKeyType());
@@ -315,8 +324,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                     }
                     else {
-                        processClassMeta(qryEntity, desc, coCtx);
-
                         AffinityKeyMapper keyMapper = cctx.config().getAffinityMapper();
 
                         if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
@@ -326,9 +333,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             if (affField != null)
                                 desc.affinityKey(affField);
                         }
-
-                        typeId = new TypeId(ccfg.getName(), valCls);
-                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
@@ -361,8 +365,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
                     boolean valMustDeserialize = mustDeserializeBinary(valCls);
 
-                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
-
                     if (keyCls == null)
                         keyCls = Object.class;
 
@@ -374,15 +376,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.name(simpleValType);
 
                     if (binaryEnabled) {
-                        if (!valMustDeserialize && !SQL_TYPES.contains(valCls))
-                            desc.valueClass(Object.class);
-                        else
+                        if (valMustDeserialize || SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
-
-                        if (!keyMustDeserialize && !SQL_TYPES.contains(keyCls))
-                            desc.keyClass(Object.class);
                         else
+                            desc.valueClass(Object.class);
+
+                        if (keyMustDeserialize || SQL_TYPES.contains(keyCls))
                             desc.keyClass(keyCls);
+                        else
+                            desc.keyClass(Object.class);
                     }
                     else {
                         desc.valueClass(valCls);
@@ -392,7 +394,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.keyTypeName(meta.getKeyType());
                     desc.valueTypeName(meta.getValueType());
 
-                    if (binaryEnabled && keyOrValMustDeserialize) {
+                    if (binaryEnabled && (keyMustDeserialize || valMustDeserialize)) {
                         if (mustDeserializeClss == null)
                             mustDeserializeClss = new ArrayList<>();
 
@@ -1461,13 +1463,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for binary object.
+     * Processes declarative metadata.
      *
      * @param qryEntity Declared metadata.
      * @param d Type descriptor.
+     * @param coCtx Cache object context.
+     * @param useBinaryKey Whether a binary key should be used.
+     * @param useBinaryVal Whether a binary value should be used.
      * @throws IgniteCheckedException If failed.
      */
-    private void processBinaryMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processMeta(
+        QueryEntity qryEntity,
+        TypeDescriptor d,
+        CacheObjectContext coCtx,
+        boolean useBinaryKey,
+        boolean useBinaryVal
+    ) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
@@ -1500,40 +1511,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
-                aliases, isKeyField);
+            boolean isPropBinary = isKeyField != null && isKeyField ? useBinaryKey : useBinaryVal;
 
-            d.addProperty(prop, false);
-        }
-
-        processIndexes(qryEntity, d);
-    }
-
-    /**
-     * Processes declarative metadata for binary object.
-     *
-     * @param qryEntity Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processClassMeta(
-        QueryEntity qryEntity,
-        TypeDescriptor d,
-        CacheObjectContext coCtx
-    ) throws IgniteCheckedException {
-        Map<String,String> aliases = qryEntity.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
-        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
-                d.keyClass(),
-                d.valueClass(),
-                entry.getKey(),
-                U.classForName(entry.getValue(), Object.class),
-                aliases,
-                coCtx);
+            GridQueryProperty prop = isPropBinary ?
+                buildBinaryProperty(
+                    entry.getKey(), U.classForName(entry.getValue(), Object.class, true), aliases, isKeyField
+                ) :
+                buildClassProperty(
+                    d.keyClass(),
+                    d.valueClass(),
+                    entry.getKey(),
+                    U.classForName(entry.getValue(), Object.class),
+                    aliases,
+                    coCtx
+                );
 
             d.addProperty(prop, false);
         }
