@@ -3325,7 +3325,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
-            if (X.hasCause(errs, ConnectException.class, HandshakeException.class))
+            if (!X.hasCause(errs, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                IgniteSpiOperationTimeoutException.class))
                 throw errs;
         }
 
