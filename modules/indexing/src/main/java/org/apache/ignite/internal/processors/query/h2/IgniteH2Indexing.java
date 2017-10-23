@@ -2343,15 +2343,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            synchronized (schemaMux) {
-                if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
-                    schemas.remove(schemaName);
+            if (!isDefaultSchema(schemaName)) {
+                synchronized (schemaMux) {
+                    if (schema.decNumCaches() == 0) {
+                        schemas.remove(schemaName);
 
-                    try {
-                        dropSchema(schemaName);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                        try {
+                            dropSchema(schemaName);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                        }
                     }
                 }
             }
