@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,20 +32,33 @@ public class H2DmlPlanKey {
     /** SQL. */
     private final String sql;
 
+    /** Flags. */
+    private final byte flags;
+
     /**
      * Constructor.
      *
      * @param schemaName Schema name.
      * @param sql SQL.
      */
-    public H2DmlPlanKey(String schemaName, String sql) {
+    public H2DmlPlanKey(String schemaName, String sql, boolean loc, SqlFieldsQuery fieldsQry) {
         this.schemaName = schemaName;
         this.sql = sql;
+
+        if (loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
+            this.flags = 0; // flags only relevant for server side updates.
+        else {
+            this.flags = (byte)(1 +
+                (fieldsQry.isDistributedJoins() ? 2 : 0) +
+                (fieldsQry.isEnforceJoinOrder() ? 4 : 0) +
+                (fieldsQry.isCollocated() ? 8 : 0));
+        }
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * (schemaName != null ? schemaName.hashCode() : 0) + (sql != null ? sql.hashCode() : 0);
+        return 31 * (31 * (schemaName != null ? schemaName.hashCode() : 0) + (sql != null ? sql.hashCode() : 0)) +
+            flags;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +71,7 @@ public class H2DmlPlanKey {
 
         H2DmlPlanKey other = (H2DmlPlanKey)o;
 
-        return F.eq(sql, other.sql) && F.eq(schemaName, other.schemaName);
+        return F.eq(sql, other.sql) && F.eq(schemaName, other.schemaName) && flags == other.flags;
     }
 
     /** {@inheritDoc} */

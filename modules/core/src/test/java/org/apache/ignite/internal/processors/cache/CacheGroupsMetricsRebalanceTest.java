@@ -189,13 +189,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         waitForCondition(new PA() {
             @Override public boolean apply() {
-                return ig2.cache(CACHE1).localMetrics().rebalancingStartTime() != -1L;
+                return ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L;
             }
         }, 5_000);
 
         CacheMetrics metrics = ig2.cache(CACHE1).localMetrics();
 
-        long startTime = metrics.rebalancingStartTime();
+        long startTime = metrics.getRebalancingStartTime();
 
         assertTrue(startTime > 0);
         assertTrue((U.currentTimeMillis() - startTime) < 5000);
@@ -235,7 +235,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        long finishTime = ig2.cache(CACHE1).localMetrics().estimateRebalancingFinishTime();
+        long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
         assertTrue(finishTime > 0);
 

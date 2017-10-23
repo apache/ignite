@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -31,8 +33,8 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCacheP
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 
@@ -41,7 +43,7 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCacheP
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         super.beforeTest();
     }
@@ -50,6 +52,6 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCacheP
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

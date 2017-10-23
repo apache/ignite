@@ -20,13 +20,13 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Data transfer object for {@link MemoryMetrics}
+ * Data transfer object for {@link DataRegionMetrics}
  */
 public class VisorMemoryMetrics extends VisorDataTransferObject {
     /** */
@@ -69,7 +69,7 @@ public class VisorMemoryMetrics extends VisorDataTransferObject {
     /**
      * @param m Metrics instance to create DTO.
      */
-    public VisorMemoryMetrics(MemoryMetrics m) {
+    public VisorMemoryMetrics(DataRegionMetrics m) {
         name = m.getName();
         totalAllocatedPages = m.getTotalAllocatedPages();
         allocationRate = m.getAllocationRate();
