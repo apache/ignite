@@ -77,6 +77,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public float getPagesReplaceAge() {
+        return memMetrics.getPagesReplaceAge();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
         return memMetrics.getPhysicalMemoryPages();
     }
