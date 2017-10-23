@@ -208,7 +208,10 @@ namespace ignite
 
                     out.Synchronize();
 
-                    jobject target = InStreamOutObject(operation, *mem.Get());
+                    IgniteError err;
+                    jobject target = InStreamOutObject(operation, *mem.Get(), err);
+                    IgniteError::ThrowIfNeeded(err);
+
                     std::auto_ptr<common::Cancelable> cancelable(new CancelableImpl(GetEnvironmentPointer(), target));
 
                     return cancelable;

@@ -169,6 +169,32 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
                 ", addr=" + hostAddr + ']');
 
+        registerMBean();
+    }
+
+    /**
+     * Stops this router.
+     */
+    @Override public void stop() {
+        if (srv != null)
+            srv.stop();
+
+        if (client != null)
+            client.stop(true);
+
+        unregisterMBean();
+
+        if (log.isInfoEnabled())
+            log.info("TCP router successfully stopped.");
+    }
+
+    /**
+     * Try to register MBean.
+     */
+    private void registerMBean() {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
         try {
             ObjectName objName = U.registerMBean(
                 ManagementFactory.getPlatformMBeanServer(),
@@ -189,28 +215,23 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
     }
 
     /**
-     * Stops this router.
+     * Unregister MBean.
      */
-    @Override public void stop() {
-        if (srv != null)
-            srv.stop();
+    private void unregisterMBean() {
+        if (mbeanName == null)
+            return;
 
-        if (client != null)
-            client.stop(true);
+        assert !U.IGNITE_MBEANS_DISABLED;
 
-        if (mbeanName != null)
-            try {
-                ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
+        try {
+            ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
 
-                if (log.isDebugEnabled())
-                    log.debug("Unregistered MBean: " + mbeanName);
-            }
-            catch (JMException e) {
-                U.error(log, "Failed to unregister MBean.", e);
-            }
-
-        if (log.isInfoEnabled())
-            log.info("TCP router successfully stopped.");
+            if (log.isDebugEnabled())
+                log.debug("Unregistered MBean: " + mbeanName);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister MBean.", e);
+        }
     }
 
     /**

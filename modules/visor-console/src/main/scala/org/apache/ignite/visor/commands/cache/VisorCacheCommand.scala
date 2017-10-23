@@ -328,12 +328,12 @@ class VisorCacheCommand {
                         ad.getMode,
                         ad.getNodes.size(),
                         (
-                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                             ),
                         (
                             "min: " + ad.getMinimumHits,
@@ -385,13 +385,13 @@ class VisorCacheCommand {
 
                     csT += ("Name(@)", cacheNameVar)
                     csT += ("Nodes", m.size())
-                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) + " / " +
-                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) + " / " +
-                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize))
+                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) + " / " +
+                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) + " / " +
+                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize))
                     csT += ("  Heap size Min/Avg/Max", ad.getMinimumHeapSize + " / " +
                         formatDouble(ad.getAverageHeapSize) + " / " + ad.getMaximumHeapSize)
-                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapSize + " / " +
-                        formatDouble(ad.getAverageOffHeapSize) + " / " + ad.getMaximumOffHeapSize)
+                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapPrimarySize + " / " +
+                        formatDouble(ad.getAverageOffHeapPrimarySize) + " / " + ad.getMaximumOffHeapPrimarySize)
 
                     val ciT = VisorTextTable()
 
@@ -408,9 +408,9 @@ class VisorCacheCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getKeySize + cm.getOffHeapEntriesCount()),
-                                "  Heap: " + cm.getKeySize,
-                                "  Off-Heap: " + cm.getOffHeapEntriesCount(),
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount),
+                                "  Heap: " + cm.getHeapEntriesCount,
+                                "  Off-Heap: " + cm.getOffHeapPrimaryEntriesCount,
                                 "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
                             ),
                             (
@@ -644,12 +644,12 @@ class VisorCacheCommand {
                 mkCacheName(ad.getName),
                 ad.getMode,
                 (
-                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                 ))
         })
 
@@ -839,10 +839,23 @@ object VisorCacheCommand {
 
         cacheT += ("Group", cfg.getGroupName)
         cacheT += ("Dynamic Deployment ID", cfg.getDynamicDeploymentId)
+        cacheT += ("System", bool2Str(cfg.isSystem))
+
         cacheT += ("Mode", cfg.getMode)
         cacheT += ("Atomicity Mode", safe(cfg.getAtomicityMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.isStatisticsEnabled))
         cacheT += ("Management Enabled", bool2Str(cfg.isManagementEnabled))
+
+        cacheT += ("On-heap cache enabled", bool2Str(cfg.isOnheapCacheEnabled))
+        cacheT += ("Partition Loss Policy", cfg.getPartitionLossPolicy)
+        cacheT += ("Query Parallelism", cfg.getQueryParallelism)
+        cacheT += ("Copy On Read", bool2Str(cfg.isCopyOnRead))
+        cacheT += ("Listener Configurations", cfg.getListenerConfigurations)
+        cacheT += ("Load Previous Value", bool2Str(cfg.isLoadPreviousValue))
+        cacheT += ("Memory Policy Name", cfg.getMemoryPolicyName)
+        cacheT += ("Node Filter", cfg.getNodeFilter)
+        cacheT += ("Read From Backup", bool2Str(cfg.isReadFromBackup))
+        cacheT += ("Topology Validator", cfg.getTopologyValidator)
 
         cacheT += ("Time To Live Eager Flag", cfg.isEagerTtl)
 
@@ -860,6 +873,8 @@ object VisorCacheCommand {
         cacheT += ("Rebalance Timeout", rebalanceCfg.getTimeout)
         cacheT += ("Rebalance Delay", rebalanceCfg.getPartitionedDelay)
         cacheT += ("Time Between Rebalance Messages", rebalanceCfg.getThrottle)
+        cacheT += ("Rebalance Batches Count", rebalanceCfg.getBatchesPrefetchCnt)
+        cacheT += ("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder)
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.getPolicy != null))
         cacheT += ("Eviction Policy", safe(evictCfg.getPolicy))
@@ -881,8 +896,9 @@ object VisorCacheCommand {
         cacheT += ("Store Keep Binary", storeCfg.isStoreKeepBinary)
         cacheT += ("Store Read Through", bool2Str(storeCfg.isReadThrough))
         cacheT += ("Store Write Through", bool2Str(storeCfg.isWriteThrough))
+        cacheT += ("Store Write Coalescing", bool2Str(storeCfg.getWriteBehindCoalescing))
 
-        cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.isEnabled))
+        cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.isWriteBehindEnabled))
         cacheT += ("Write-Behind Flush Size", storeCfg.getFlushSize)
         cacheT += ("Write-Behind Frequency", storeCfg.getFlushFrequency)
         cacheT += ("Write-Behind Flush Threads Count", storeCfg.getFlushThreadCount)
@@ -895,8 +911,11 @@ object VisorCacheCommand {
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.getExpiryPolicyFactory))
 
         cacheT +=("Query Execution Time Threshold", queryCfg.getLongQueryWarningTimeout)
-        cacheT +=("Query Schema Name", queryCfg.getSqlSchema)
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.isSqlEscapeAll))
+        cacheT +=("Query Schema Name", queryCfg.getSqlSchema)
+        cacheT +=("Query Indexed Types", queryCfg.getIndexedTypes)
+        cacheT +=("Maximum payload size for offheap indexes", cfg.getSqlIndexMaxInlineSize)
+        cacheT +=("Query Metrics History Size", cfg.getQueryDetailMetricsSize)
 
         val sqlFxs = queryCfg.getSqlFunctionClasses
 

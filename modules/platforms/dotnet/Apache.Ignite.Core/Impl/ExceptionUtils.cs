@@ -111,18 +111,20 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Creates exception according to native code class and message.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
+        /// <param name="igniteInt">The ignite.</param>
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
         /// <param name="stackTrace">Native stack trace.</param>
         /// <param name="reader">Error data reader.</param>
         /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(Ignite ignite, string clsName, string msg, string stackTrace,
+        public static Exception GetException(IIgniteInternal igniteInt, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as immediate inner.
             innerException = new JavaException(clsName, msg, stackTrace, innerException);
+
+            var ignite = igniteInt == null ? null : igniteInt.GetIgnite();
 
             ExceptionFactory ctor;
 
@@ -135,7 +137,8 @@ namespace Apache.Ignite.Core.Impl
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                 {
                     return ctor(clsName, msg,
-                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), ignite);
+                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), 
+                        ignite);
                 }
 
                 return ctor(clsName, msg, innerException, ignite);
@@ -150,12 +153,12 @@ namespace Apache.Ignite.Core.Impl
                     "variable?): " + msg, innerException);
 
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
-                return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
+                return ProcessCachePartialUpdateException(igniteInt, msg, stackTrace, reader);
 
             // Predefined mapping not found - check plugins.
-            if (ignite != null)
+            if (igniteInt != null && igniteInt.PluginProcessor != null)
             {
-                ctor = ignite.PluginProcessor.GetExceptionMapping(clsName);
+                ctor = igniteInt.PluginProcessor.GetExceptionMapping(clsName);
 
                 if (ctor != null)
                 {
@@ -177,8 +180,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(Ignite ignite, string msg, string stackTrace,
-            BinaryReader reader)
+        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg, 
+            string stackTrace, BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
