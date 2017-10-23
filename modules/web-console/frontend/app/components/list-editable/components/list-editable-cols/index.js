@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
+import angular from 'angular';
+
+import cols from './cols.directive.js';
+import row from './row.directive.js';
+
+export default angular
+    .module('list-editable-cols', [
+    ])
+    .directive(cols.name, cols)
+    .directive('listEditableItemView', row)
+    .directive('listEditableItemEdit', row);
