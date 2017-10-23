@@ -15,14 +15,26 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
+/** @returns {ng.IDirective} */
+export default function() {
+    return {
+        require: '?^listEditableCols',
+        /** @param {PcListEditableColsController} ctrl */
+        link(scope, el, attr, ctrl) {
+            if (!ctrl || !ctrl.colDefs.length)
+                return;
+
+            const children = el.children();
+
+            if (children.length !== ctrl.colDefs.length)
+                return;
+
+            if (ctrl.rowClass)
+                el.addClass(ctrl.rowClass);
+
+            ctrl.colDefs.forEach(({ cellClass }, index) => {
+                children[index].classList.add(...(Array.isArray(cellClass) ? cellClass : [cellClass]));
+            });
+        }
+    };
+}
