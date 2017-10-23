@@ -1303,7 +1303,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheObjCtx Cache object context.
      * @param affNode {@code True} if local node affinity node.
      * @param updatesAllowed Updates allowed flag.
-     * @param activeOnStart If true, then we will discard restarting state from proxies. If false then we will change
+     * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will change
      *  state of proxies to restarting
      * @return Cache context.
      * @throws IgniteCheckedException If failed to create cache.
@@ -1316,7 +1316,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheObjectContext cacheObjCtx,
         boolean affNode,
         boolean updatesAllowed,
-        boolean activeOnStart)
+        boolean disabledAfterStart)
         throws IgniteCheckedException {
         assert cfg != null;
 
@@ -1475,7 +1475,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        cache.active(activeOnStart);
+        cache.active(!disabledAfterStart);
 
         cacheCtx.cache(cache);
 
@@ -1699,7 +1699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     desc,
                     t.get2(),
                     exchTopVer,
-                    true);
+                    false);
             }
         }
     }
@@ -1733,7 +1733,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     desc,
                     null,
                     exchTopVer,
-                    true);
+                    false);
             }
         }
 
@@ -1745,7 +1745,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param desc Cache descriptor.
      * @param reqNearCfg Near configuration if specified for client cache start request.
      * @param exchTopVer Current exchange version.
-     * @param activeOnStart If true, then we will discard restarting state from proxies. If false then we will change
+     * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will change
      *  state of proxies to restarting
      * @throws IgniteCheckedException If failed.
      */
@@ -1754,7 +1754,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
-        boolean activeOnStart
+        boolean disabledAfterStart
     ) throws IgniteCheckedException {
         assert !caches.containsKey(startCfg.getName()) : startCfg.getName();
 
@@ -1819,7 +1819,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheObjCtx,
             affNode,
             true,
-            activeOnStart
+            disabledAfterStart
         );
 
         cacheCtx.dynamicDeploymentId(desc.deploymentId());
@@ -1838,7 +1838,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(ccfg.getName());
 
-        if (activeOnStart && proxy != null && proxy.isRestarting())
+        if (!disabledAfterStart && proxy != null && proxy.isRestarting())
             proxy.onRestarted(cacheCtx, cache);
     }
 
@@ -2575,7 +2575,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 sql,
                 failIfExists,
                 failIfNotStarted,
-                true);
+                false);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -2622,12 +2622,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param ccfgList Collection of cache configuration.
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param activeAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
-        boolean checkThreadTx, boolean activeAfterStart) {
-        return dynamicStartCaches(ccfgList, null, failIfExists, checkThreadTx, activeAfterStart);
+        boolean checkThreadTx, boolean disabledAfterStart) {
+        return dynamicStartCaches(ccfgList, null, failIfExists, checkThreadTx, disabledAfterStart);
     }
 
     /**
@@ -2637,7 +2637,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheType Cache type.
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param     activeAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Future that will be completed when all caches are deployed.
      */
     private IgniteInternalFuture<?> dynamicStartCaches(
@@ -2645,7 +2645,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheType cacheType,
         boolean failIfExists,
         boolean checkThreadTx,
-        boolean activeAfterStart
+        boolean disabledAfterStart
     ) {
         if (checkThreadTx)
             checkEmptyTransactions();
@@ -2674,7 +2674,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     false,
                     failIfExists,
                     true,
-                    activeAfterStart);
+                    disabledAfterStart);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -3839,7 +3839,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param sql Whether the cache needs to be created as the result of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
-     * @param activeAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -3852,7 +3852,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted,
-        boolean activeAfterStart
+        boolean disabledAfterStart
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -3862,7 +3862,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.failIfExists(failIfExists);
 
-        req.activeAfterStart(activeAfterStart);
+        req.disabledAfterStart(disabledAfterStart);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);
