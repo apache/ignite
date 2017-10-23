@@ -43,8 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -261,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridSpinBusyLock busyLock;
 
     /** */
-    private ReadWriteLock schemaLock = new ReentrantReadWriteLock();
+    private final Object schemaLock = new Object();
 
     /** */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap8<>();
@@ -2291,9 +2289,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (!isDefaultSchema(schemaName)) {
-            schemaLock.readLock().lock();
-
-            try {
+            synchronized (schemaLock) {
                 H2Schema schema = new H2Schema(schemaName);
 
                 H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
@@ -2304,9 +2300,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     schema = oldSchema;
 
                 schema.incNumCaches();
-            }
-            finally {
-                schemaLock.readLock().unlock();
             }
         }
 
@@ -2350,23 +2343,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
-                schemaLock.writeLock().lock();
+            synchronized (schemaLock) {
+                if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
+                    schemas.remove(schemaName);
 
-                try {
-                    if (schema.numCaches() == 0) {
-                        schemas.remove(schemaName);
-
-                        try {
-                            dropSchema(schemaName);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
-                        }
+                    try {
+                        dropSchema(schemaName);
                     }
-                }
-                finally {
-                    schemaLock.writeLock().unlock();
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                    }
                 }
             }
 
