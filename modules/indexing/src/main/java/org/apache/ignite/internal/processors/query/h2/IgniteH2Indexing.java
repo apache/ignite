@@ -259,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridSpinBusyLock busyLock;
 
     /** */
-    private final Object schemaLock = new Object();
+    private final Object schemaMux = new Object();
 
     /** */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap8<>();
@@ -2289,7 +2289,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (!isDefaultSchema(schemaName)) {
-            synchronized (schemaLock) {
+            synchronized (schemaMux) {
                 H2Schema schema = new H2Schema(schemaName);
 
                 H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
@@ -2343,7 +2343,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            synchronized (schemaLock) {
+            synchronized (schemaMux) {
                 if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
                     schemas.remove(schemaName);
 
