@@ -294,10 +294,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
             SqlIndexMaxInlineSize = reader.ReadInt();
 
-            var count = reader.ReadInt();
-            QueryEntities = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -307,7 +304,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
 
-            count = reader.ReadInt();
+            var count = reader.ReadInt();
 
             if (count > 0)
             {
