@@ -361,7 +361,7 @@ public class DmlStatementsProcessor {
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
         Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
-        int mainCacheId = CU.cacheId(cctx.name());
+        int mainCacheId = cctx.cacheId();
 
         Integer errKeysPos = null;
 

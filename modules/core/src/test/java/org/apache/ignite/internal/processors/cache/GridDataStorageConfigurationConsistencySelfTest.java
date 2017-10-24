@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests a check of memory configuration consistency.
  */
-public class GridMemoryConfigurationConsistencySelfTest extends GridCommonAbstractTest {
+public class GridDataStorageConfigurationConsistencySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -43,12 +43,12 @@ public class GridMemoryConfigurationConsistencySelfTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(discoSpi);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         // Nodes will have different page size.
-        memCfg.setPageSize(MemoryConfiguration.DFLT_PAGE_SIZE * (1 + getTestIgniteInstanceIndex(gridName)));
+        memCfg.setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE * (1 + getTestIgniteInstanceIndex(gridName)));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

@@ -95,6 +95,7 @@
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
+        <module>modules/sqlline</module>
     </modules>
 
     <profiles>
@@ -465,6 +466,22 @@
                                     </descriptors>
                                     <outputDirectory>target/release-package-${ignite.edition}/bin</outputDirectory>
                                     <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>dependencies-sqlline</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-sqlline.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
+                                    <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>

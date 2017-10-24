@@ -379,33 +379,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Writes key-value pair to index.
-     *
-     * @param key Key.
-     * @param partId Partition.
-     * @param prevVal Previous value.
-     * @param prevVer Previous version.
-     * @param val Value.
-     * @param ver Cache entry version.
-     * @param expirationTime Expiration time or 0 if never expires.
-     * @param link Link.
+     * @param newRow New row.
+     * @param prevRow Previous row.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(KeyCacheObject key,
-        int partId,
-        @Nullable CacheObject prevVal,
-        @Nullable GridCacheVersion prevVer,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime,
-        long link)
+    public void store(CacheDataRow newRow, @Nullable CacheDataRow prevRow)
         throws IgniteCheckedException {
-        assert key != null;
-        assert val != null;
         assert enabled();
-
-        if (key instanceof GridCacheInternal)
-            return; // No-op.
+        assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
 
         if (!enterBusy())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -414,15 +395,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (isIndexingSpiEnabled()) {
                 CacheObjectContext coctx = cctx.cacheObjectContext();
 
-                Object key0 = unwrapIfNeeded(key, coctx);
+                Object key0 = unwrapIfNeeded(newRow.key(), coctx);
 
-                Object val0 = unwrapIfNeeded(val, coctx);
+                Object val0 = unwrapIfNeeded(newRow.value(), coctx);
 
-                cctx.kernalContext().indexing().store(cacheName, key0, val0, expirationTime);
+                cctx.kernalContext().indexing().store(cacheName, key0, val0, newRow.expireTime());
             }
 
             if (qryProcEnabled)
-                qryProc.store(cacheName, key, partId, prevVal, prevVer, val, ver, expirationTime, link);
+                qryProc.store(cctx, newRow, prevRow);
         }
         finally {
             invalidateResultCache();
@@ -433,17 +414,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param key Key.
-     * @param partId Partition.
-     * @param val Value.
-     * @param ver Version.
+     * @param prevRow Previous row.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(KeyCacheObject key, int partId, CacheObject val,
-        GridCacheVersion ver) throws IgniteCheckedException {
-        assert key != null;
-
-        if (!QueryUtils.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
+    public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow) throws IgniteCheckedException {
+        if (!QueryUtils.isEnabled(cctx.config()))
             return; // No-op.
 
         if (!enterBusy())
@@ -457,8 +432,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             // val may be null if we have no previous value. We should not call processor in this case.
-            if (qryProcEnabled && val != null)
-                qryProc.remove(cacheName, key, partId, val, ver);
+            if (qryProcEnabled && prevRow != null)
+                qryProc.remove(cctx, prevRow);
         }
         finally {
             invalidateResultCache();
@@ -474,7 +449,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Query future.
      */
     @SuppressWarnings("unchecked")
-    public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
+    CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert qry.query().type() != GridCacheQueryType.SCAN : qry;
 
         if (log.isDebugEnabled())
