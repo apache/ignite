@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -282,6 +281,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             // If this is the primary or backup node for the keys.
             if (n.isLocal()) {
+                final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+                final long start = (statsEnabled)? System.nanoTime() : 0L;
+
                 final GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
                     cache().getDhtAsync(n.id(),
                         -1,
@@ -317,7 +320,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>, Map<K, V>>() {
                     @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
                         try {
-                            return createResultMap(fut.get());
+                            Map<K, V> result = createResultMap(fut.get());
+
+                            if (!skipVals && statsEnabled && fut.error() == null)
+                                cctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+                            return result;
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -436,6 +444,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private boolean localGet(KeyCacheObject key, int part, Map<K, V> locVals) {
         assert cctx.affinityNode() : this;
 
+        boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        long start = (statsEnabled)? System.nanoTime() : 0L;
+
         GridDhtCacheAdapter<K, V> cache = cache();
 
         boolean offheapRead = cctx.offheapRead(expiryPlc, false);
@@ -550,8 +562,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 // Entry not found, do not continue search if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && statsEnabled) {
                         cache.metrics0().onRead(false);
+
+                        cache.metrics0().addGetTimeNanos(System.nanoTime() - start);
+                    }
 
                     return true;
                 }

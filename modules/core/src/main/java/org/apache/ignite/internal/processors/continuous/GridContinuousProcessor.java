@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -567,6 +568,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()))
                 it.remove();
+        }
+
+        // Deregister local handlers.
+        Iterator<Map.Entry<UUID, LocalRoutineInfo>> it2 = locInfos.entrySet().iterator();
+
+        while (it2.hasNext()) {
+            Map.Entry<UUID, LocalRoutineInfo> entry = it2.next();
+
+            GridContinuousHandler hnd = entry.getValue().hnd;
+
+            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName())) {
+                it2.remove();
+
+                assert hnd instanceof CacheContinuousQueryHandler : hnd;
+
+                CacheContinuousQueryHandler hnd0 = (CacheContinuousQueryHandler)hnd;
+
+                unregisterHandler(entry.getKey(), hnd, true);
+
+                CacheContinuousQueryManager qryMgr = ctx.continuousQueries();
+
+                qryMgr.unregisterListener(hnd0.internal(), entry.getKey());
+            }
         }
     }
 

@@ -576,8 +576,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             return TypeKind.POJO;
         }
         catch (ClassNotFoundException e) {
-            throw new CacheException("Can not find class " + type +
-                ", check your classPath or try to use BinaryMarshaller", e);
+            throw new CacheException("Failed to find class " + type +
+                " (make sure the class is present in classPath or use BinaryMarshaller)", e);
         }
     }
 
