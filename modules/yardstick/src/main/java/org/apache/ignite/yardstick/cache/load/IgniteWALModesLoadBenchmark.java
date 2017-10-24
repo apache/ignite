@@ -44,7 +44,7 @@ public class IgniteWALModesLoadBenchmark extends IgniteCacheAbstractBenchmark<In
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         load(cache());
 
-        return true; // Cause benchmark stop.
+        return false; // Cause benchmark stop.
     }
 
     /**
