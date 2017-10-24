@@ -78,6 +78,9 @@
             <pluginConfigurations>
                 <iCachePluginConfiguration type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPluginConfiguration, Apache.Ignite.Core.Tests' />
             </pluginConfigurations>
+            <keyConfiguration>
+                <cacheKeyConfiguration typeName='foo' affinityKeyFieldName='bar' />
+            </keyConfiguration>
         </cacheConfiguration>
         <cacheConfiguration name='secondCache' />
     </cacheConfiguration>

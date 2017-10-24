@@ -581,7 +581,7 @@
                                             </xs:annotation>
                                             <xs:complexType>
                                                 <xs:sequence>
-                                                    <xs:element name="keyConfiguration" maxOccurs="unbounded">
+                                                    <xs:element name="cacheKeyConfiguration" maxOccurs="unbounded">
                                                         <xs:annotation>
                                                             <xs:documentation>Cache key configuration.</xs:documentation>
                                                         </xs:annotation>
