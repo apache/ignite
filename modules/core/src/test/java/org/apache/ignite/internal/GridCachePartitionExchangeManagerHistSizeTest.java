@@ -42,7 +42,7 @@ public class GridCachePartitionExchangeManagerHistSizeTest extends GridCommonAbs
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
+        cfg.setCacheConfiguration(new CacheConfiguration());
 
         return cfg;
     }
