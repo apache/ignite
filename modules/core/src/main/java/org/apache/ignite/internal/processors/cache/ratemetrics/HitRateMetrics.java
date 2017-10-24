@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * <p>Implementation is nonblocking and protected from hits loss.
  * Maximum relative error is 1/{@link #size}.
- * 2^56 - 1 hits per interval can be accumulated without numeric overflow.
+ * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateMetrics {
     /** Bits that store actual hit count. */

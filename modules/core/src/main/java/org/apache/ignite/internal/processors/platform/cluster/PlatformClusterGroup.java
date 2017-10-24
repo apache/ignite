@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
@@ -142,6 +144,14 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_GET_SERVICES = 34;
 
+    /** */
+    private static final int OP_DATA_REGION_METRICS = 35;
+
+    /** */
+    private static final int OP_DATA_REGION_METRICS_BY_NAME = 36;
+
+    /** */
+    private static final int OP_DATA_STORAGE_METRICS = 37;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -183,6 +193,26 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 PersistenceMetrics metrics = prj.ignite().persistentStoreMetrics();
 
                 writePersistentStoreMetrics(writer, metrics);
+
+                break;
+            }
+
+            case OP_DATA_STORAGE_METRICS: {
+                DataStorageMetrics metrics = prj.ignite().dataStorageMetrics();
+
+                writeDataStorageMetrics(writer, metrics);
+
+                break;
+            }
+
+            case OP_DATA_REGION_METRICS: {
+                Collection<DataRegionMetrics> metrics = prj.ignite().dataRegionMetrics();
+
+                writer.writeInt(metrics.size());
+
+                for (DataRegionMetrics m : metrics) {
+                    writeDataRegionMetrics(writer, m);
+                }
 
                 break;
             }
@@ -279,6 +309,22 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 if (metrics != null) {
                     writer.writeBoolean(true);
                     writeMemoryMetrics(writer, metrics);
+                }
+                else {
+                    writer.writeBoolean(false);
+                }
+
+                break;
+            }
+
+            case OP_DATA_REGION_METRICS_BY_NAME: {
+                String name = reader.readString();
+
+                DataRegionMetrics metrics = platformCtx.kernalContext().grid().dataRegionMetrics(name);
+
+                if (metrics != null) {
+                    writer.writeBoolean(true);
+                    writeDataRegionMetrics(writer, metrics);
                 }
                 else {
                     writer.writeBoolean(false);
@@ -479,7 +525,26 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param metrics Metrics.
      */
+    @SuppressWarnings("deprecation")
     private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeString(metrics.getName());
+        writer.writeLong(metrics.getTotalAllocatedPages());
+        writer.writeFloat(metrics.getAllocationRate());
+        writer.writeFloat(metrics.getEvictionRate());
+        writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
+        writer.writeFloat(metrics.getPagesFillFactor());
+    }
+
+    /**
+     * Writes the data region metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    private static void writeDataRegionMetrics(BinaryRawWriter writer, DataRegionMetrics metrics) {
         assert writer != null;
         assert metrics != null;
 
@@ -497,6 +562,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param metrics Metrics
      */
+    @SuppressWarnings("deprecation")
     private void writePersistentStoreMetrics(BinaryRawWriter writer, PersistenceMetrics metrics) {
         assert writer != null;
         assert metrics != null;
@@ -506,6 +572,30 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         writer.writeInt(metrics.getWalArchiveSegments());
         writer.writeFloat(metrics.getWalFsyncTimeAverage());
         writer.writeLong(metrics.getLastCheckpointingDuration());
+        writer.writeLong(metrics.getLastCheckpointLockWaitDuration());
+        writer.writeLong(metrics.getLastCheckpointMarkDuration());
+        writer.writeLong(metrics.getLastCheckpointPagesWriteDuration());
+        writer.writeLong(metrics.getLastCheckpointFsyncDuration());
+        writer.writeLong(metrics.getLastCheckpointTotalPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointDataPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointCopiedOnWritePagesNumber());
+    }
+
+    /**
+     * Writes data storage metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics
+     */
+    private void writeDataStorageMetrics(BinaryRawWriter writer, DataStorageMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeFloat(metrics.getWalLoggingRate());
+        writer.writeFloat(metrics.getWalWritingRate());
+        writer.writeInt(metrics.getWalArchiveSegments());
+        writer.writeFloat(metrics.getWalFsyncTimeAverage());
+        writer.writeLong(metrics.getLastCheckpointDuration());
         writer.writeLong(metrics.getLastCheckpointLockWaitDuration());
         writer.writeLong(metrics.getLastCheckpointMarkDuration());
         writer.writeLong(metrics.getLastCheckpointPagesWriteDuration());

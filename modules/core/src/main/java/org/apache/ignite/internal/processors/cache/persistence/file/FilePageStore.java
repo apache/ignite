@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -60,7 +60,7 @@ public class FilePageStore implements PageStore {
     private final byte type;
 
     /** Database configuration. */
-    protected final MemoryConfiguration dbCfg;
+    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -92,7 +92,7 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, MemoryConfiguration cfg) {
+    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
         this.type = type;
 
         cfgFile = file;

@@ -19,7 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -60,7 +60,10 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *              </property>
  *     }
  * </pre>
+ *
+ * @deprecated Use {@link DataRegionConfiguration} instead.
  */
+@Deprecated
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -119,6 +122,11 @@ public final class MemoryPolicyConfiguration implements Serializable {
      * will return average allocation rate (pages per second) for the last minute.
      */
     private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
+
+    /**
+     * Flag to enable Ignite Native Persistence.
+     */
+    private boolean persistenceEnabled = true;
 
     /**
      * Gets memory policy name.
@@ -290,7 +298,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @return Metrics enabled flag.
      */
@@ -300,7 +308,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
@@ -309,6 +317,24 @@ public final class MemoryPolicyConfiguration implements Serializable {
         this.metricsEnabled = metricsEnabled;
 
         return this;
+    }
+
+    /**
+     * Gets whether Ignite Native Persistence is enabled for this memory policy.
+     *
+     * @return Persistence enabled flag.
+     */
+    public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
+    }
+
+    /**
+     * Sets persistence enabled flag.
+     *
+     * @param persistenceEnabled Persistence enabled flag.
+     */
+    public void setPersistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     /**

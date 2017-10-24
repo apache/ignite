@@ -1478,6 +1478,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
+     * @param node Target node.
+     * @param sock Socket.
+     * @param out Stream to write to.
+     * @param msg Message.
+     * @param timeout Timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(
+        ClusterNode node,
+        Socket sock,
+        OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
+        long timeout) throws IOException, IgniteCheckedException {
+        writeToSocket(sock, out, msg, timeout);
+    }
+
+    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
