@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -351,8 +352,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
             Collection<InetSocketAddress> shuffled = super.resolvedAddresses();
-            ArrayList<InetSocketAddress> res = new ArrayList<>(shuffled);
-            res.sort(new Comparator<InetSocketAddress>() {
+            List<InetSocketAddress> res = new ArrayList<>(shuffled);
+            Collections.sort(res, new Comparator<InetSocketAddress>() {
                 @Override public int compare(InetSocketAddress o1, InetSocketAddress o2) {
                     return o1.toString().compareTo(o2.toString());
                 }
