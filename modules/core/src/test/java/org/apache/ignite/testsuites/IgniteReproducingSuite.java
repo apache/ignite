@@ -29,7 +29,8 @@ public class IgniteReproducingSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
-        suite.addTestSuite(CacheRebalancingSelfTest.class);
+        for (int i = 0; i < 100; i++)
+            suite.addTestSuite(CacheRebalancingSelfTest.class);
 
         return suite;
     }
