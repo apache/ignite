@@ -17,13 +17,15 @@
 
 'use strict';
 
+const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+const MigrateMongoose = require('migrate-mongoose');
 
 const igniteModules = process.env.IGNITE_MODULES ?
-    path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : './ignite_modules';
+    path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : path.join(__dirname, 'ignite_modules');
 
 let injector;
 
@@ -35,7 +37,7 @@ try {
     injector = require(igniteModulesInjector);
 }
 catch (ignore) {
-    injector = require(path.join(__dirname, './injector'));
+    injector = require(path.join(__dirname, 'injector'));
 }
 
 /**
@@ -60,15 +62,6 @@ const _onError = (addr, error) => {
         default:
             throw error;
     }
-};
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-const _onListening = (addr) => {
-    const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-
-    console.log('Start listening on ' + bind);
 };
 
 /**
@@ -98,7 +91,43 @@ const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
         process.send('running');
 };
 
-Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')])
+/**
+ * Run mongo model migration.
+ * 
+ * @param dbConnectionUri Mongo connection url.
+ * @param group Migrations group.
+ * @param migrationsPath Migrations path.
+ */
+const migrate = (dbConnectionUri, group, migrationsPath) => {
+    const migrator = new MigrateMongoose({
+        migrationsPath,
+        dbConnectionUri,
+        autosync: true
+    });
+
+    console.log(`Running ${group} migrations...`);
+
+    return migrator.run('up')
+        .then(() => console.log(`All ${group} migrations finished successfully.`))
+        .catch((err) => {
+            const msg = _.get(err, 'message');
+
+            if (_.startsWith(msg, 'There are no migrations to run') || _.startsWith(msg, 'There are no pending migrations.')) {
+                console.log(`There are no ${group} migrations to run.`);
+
+                return;
+            }
+
+            throw err;
+        });
+};
+
+Promise.all([injector('settings'), injector('mongo')])
+    .then(([{mongoUrl}]) => {
+        return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'))
+            .then(() => migrate(mongoUrl, 'Ignite Modules', path.join(igniteModules, 'migrations')));
+    })
+    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
     .then(init)
     .catch((err) => {
         console.error(err);

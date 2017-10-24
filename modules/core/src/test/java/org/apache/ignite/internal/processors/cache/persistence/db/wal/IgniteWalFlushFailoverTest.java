@@ -24,10 +24,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
@@ -83,23 +82,15 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration()
-                .setName("dfltMemPlc")
-                .setInitialSize(2 * 1024L * 1024L * 1024L);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
+            .setFileIOFactory(new FailingFileIOFactory())
+            .setWalMode(WALMode.BACKGROUND)
+            // Setting WAL Segment size to high values forces flushing by timeout.
+            .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-                .setMemoryPolicies(memPlcCfg)
-                .setDefaultMemoryPolicyName(memPlcCfg.getName());
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
-                .setFileIOFactory(new FailingFileIOFactory())
-                .setWalMode(WALMode.BACKGROUND)
-                // Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
-
-        cfg.setPersistentStoreConfiguration(storeCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
