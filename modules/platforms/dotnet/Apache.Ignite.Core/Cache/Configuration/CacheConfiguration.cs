@@ -799,5 +799,37 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
+
+        /**
+         *    "IsOnheapCacheEnabled",
+            "StoreConcurrentLoadAllThreshold",
+            "isOnheapCacheEnabled",
+            "RebalanceOrder",
+            "RebalanceBatchesPrefetchCount",
+            "MaxQueryIteratorsCount",
+            "QueryDetailMetricsSize",
+            "SqlSchema",
+            "QueryParallelism"*/
+
+        /// <summary>
+        /// Gets or sets a value indicating whether on-heap cache is enabled for the off-heap based page memory.
+        /// </summary>
+        public bool OnheapCacheEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the threshold to use when multiple keys are being loaded from an underlying cache store
+        /// (see <see cref="CacheStoreFactory"/>).
+        /// 
+        /// In the situation when several threads load the same or intersecting set of keys
+        /// and the total number of keys to load is less or equal to this threshold then there will be no
+        /// second call to the storage in order to load a key from thread A if the same key is already being
+        /// loaded by thread B.
+        ///
+        /// The threshold should be controlled wisely. On the one hand if it's set to a big value then the
+        /// interaction with a storage during the load of missing keys will be minimal.On the other hand the big
+        /// value may result in significant performance degradation because it is needed to check
+        /// for every key whether it's being loaded or not.
+        /// </summary>
+        public int StoreConcurrentLoadAllThreshold { get; set; }
     }
 }
