@@ -271,6 +271,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
                 cfg.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
         }
 
         /// <summary>

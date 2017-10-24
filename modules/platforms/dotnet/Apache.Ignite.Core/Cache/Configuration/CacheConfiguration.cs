@@ -146,6 +146,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="StoreConcurrentLoadAllThreshold"/>. </summary>
         public const int DefaultStoreConcurrentLoadAllThreshold = 5;
 
+        /// <summary> Default value for <see cref="RebalanceOrder"/>. </summary>
+        public const int DefaultRebalanceOrder = 0;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
