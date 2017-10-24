@@ -24,3 +24,4 @@ export download from './download.svg';
 export filter from './filter.svg';
 export search from './search.svg';
 export refresh from './refresh.svg';
+export plus from './plus.svg';
