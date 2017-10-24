@@ -464,7 +464,7 @@ final class BinaryMetadataTransport {
 
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
 
-                metadataFileStore.saveMetadata(holder.metadata());
+                metadataFileStore.writeMetadata(holder.metadata());
             }
 
             for (BinaryMetadataUpdatedListener lsnr : binaryUpdatedLsnrs)
