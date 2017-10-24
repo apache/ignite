@@ -98,8 +98,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void TestConfiguration()
         {
             var cfg = _cache1.GetConfiguration();
-
             var keys = cfg.KeyConfiguration;
+            
+            Assert.IsNotNull(keys);
             Assert.AreEqual(2, keys.Count);
 
             Assert.AreEqual(typeof(CacheKey2).FullName, keys.First().TypeName);
