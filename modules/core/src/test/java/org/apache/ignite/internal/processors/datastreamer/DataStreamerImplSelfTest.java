@@ -456,12 +456,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             streamer.addData(1, 1);
         }
 
-        try {
-            streamer.flush();
-        }
-        catch (Exception ex) {
-            return;
-        }
+        streamer.flush();
+
+        streamer.close();
     }
 
     /**
@@ -485,7 +482,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             streamer.flush();
         }
-        catch (Exception ex) {
+        catch (IllegalStateException ex) {
+            assert ex.getMessage().contains("Data streamer has been closed");
+
             return;
         }
 
