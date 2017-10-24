@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             // Verify
             foreach (var type in new[] { typeof(CacheKey), typeof(CacheKeyAttr), 
-                typeof(CacheKeyAttrDynamicRegistration), typeof(CacheKeyAttrOverride), typeof(CacheKey2)})
+                typeof(CacheKeyAttrDynamicRegistration), typeof(CacheKeyAttrOverride)})
             {
                 Assert.AreEqual("AffinityKey", _cache1.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
                 Assert.AreEqual("AffinityKey", _cache2.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
