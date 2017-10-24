@@ -53,9 +53,9 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
-import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
@@ -173,8 +173,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreeSelfTest.class);
         suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
-        suite.addTestSuite(MetadataStorageSelfTest.class);
-        suite.addTestSuite(FreeListImplSelfTest.class);
+        suite.addTestSuite(IndexStorageSelfTest.class);
+        suite.addTestSuite(CacheFreeListImplSelfTest.class);
         suite.addTestSuite(DataRegionMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
 
