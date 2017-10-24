@@ -351,7 +351,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
             Collection<InetSocketAddress> shuffled = super.resolvedAddresses();
-            List<InetSocketAddress> res = new ArrayList<>(shuffled);
+            ArrayList<InetSocketAddress> res = new ArrayList<>(shuffled);
             res.sort(new Comparator<InetSocketAddress>() {
                 @Override public int compare(InetSocketAddress o1, InetSocketAddress o2) {
                     return o1.toString().compareTo(o2.toString());
