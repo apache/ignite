@@ -45,7 +45,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -3440,18 +3443,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasPages;
 
-            boolean hasPartitionsToDestroy;
-
-            IgniteFuture snapFut = null;
-
-            long cpTs = System.currentTimeMillis();
-
-            // This can happen in an unlikely event of two checkpoints happening
-            // within a currentTimeMillis() granularity window.
-            if (cpTs == lastCpTs)
-                cpTs++;
-
-            lastCpTs = cpTs;
+            Future snapFut = null;
 
             checkpointLock.writeLock().lock();
 
@@ -3553,17 +3545,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.cpBeginFut.onDone();
 
-            if (snapFut != null) {
+            if (snapFut != null)
                 try {
                     snapFut.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    log.error("Error occur while waiting for snapshot operation initialization", e);
                 }
-                catch (IgniteException e) {
-                    U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation + "]", e);
-                }
-            }
 
-            if (hasPages || hasPartitionsToDestroy) {
+            if (hasPages) {
                 assert cpPtr != null;
                 assert cp != null;
 
