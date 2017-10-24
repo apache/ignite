@@ -837,6 +837,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [DefaultValue(DefaultStoreConcurrentLoadAllThreshold)]
         public int StoreConcurrentLoadAllThreshold { get; set; }
 
+        /// <summary>
+        /// Gets or sets the cache rebalance order. Caches with bigger RebalanceOrder are rebalanced later than caches
+        /// with smaller RebalanceOrder.
+        /// <para />
+        /// Default is 0, which means unordered rebalance. All caches with RebalanceOrder=0 are rebalanced without any
+        /// delay concurrently.
+        /// <para />
+        /// This parameter is applicable only for caches with <see cref="RebalanceMode"/> of
+        /// <see cref="CacheRebalanceMode.Sync"/> and <see cref="CacheRebalanceMode.Async"/>.
+        /// </summary>
         public int RebalanceOrder { get; set; }
     }
 }
