@@ -34,8 +34,8 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
-    /** */
-    private int numCaches;
+    /** Usage count. */
+    private int usageCnt;
 
     /**
      * Constructor.
@@ -58,8 +58,8 @@ public class H2Schema {
      *
      * @return New value of caches counter.
      */
-    public int incrementCachesNumber() {
-        return ++numCaches;
+    public int incrementUsageCount() {
+        return ++usageCnt;
     }
 
     /**
@@ -67,8 +67,8 @@ public class H2Schema {
      *
      * @return New value of caches counter.
      */
-    public int decrementCachesNumber() {
-        return --numCaches;
+    public int decrementUsageCount() {
+        return --usageCnt;
     }
 
     /**
