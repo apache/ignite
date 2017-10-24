@@ -54,6 +54,11 @@ public class IgniteOutOfMemoryPropagationTest  extends GridCommonAbstractTest {
         assert G.allGrids().isEmpty();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
+
     /**
      *
      */
