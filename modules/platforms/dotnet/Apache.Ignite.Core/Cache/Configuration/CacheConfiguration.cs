@@ -148,6 +148,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="RebalanceOrder"/>. </summary>
         public const int DefaultRebalanceOrder = 0;
 
+        /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
+        public const int DefaultRebalanceBatchesPrefetchCount = 2;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -807,9 +810,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
 
         /**
-         *    "IsOnheapCacheEnabled",
+         *   "IsOnheapCacheEnabled",
             "StoreConcurrentLoadAllThreshold",
-            "isOnheapCacheEnabled",
             "RebalanceOrder",
             "RebalanceBatchesPrefetchCount",
             "MaxQueryIteratorsCount",
@@ -851,5 +853,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultRebalanceOrder)]
         public int RebalanceOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rebalance batches prefetch count.
+        /// <para />
+        /// Source node can provide more than one batch at rebalance start to improve performance.
+        /// Default is <see cref="DefaultRebalanceBatchesPrefetchCount"/>, minimum is 2.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceBatchesPrefetchCount)]
+        public long RebalanceBatchesPrefetchCount { get; set; }
     }
 }
