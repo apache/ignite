@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma warning disable 169
+#pragma warning disable 649
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using Apache.Ignite.Core.Cache.Affinity;
@@ -31,7 +33,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestPropertyAttribute()
         {
-            
+            Assert.IsNull(AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(NoAttr)));
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PublicProperty)));
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PrivateProperty)));
         }
 
         /// <summary>
@@ -40,7 +44,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestFieldAttribute()
         {
-            // TODO: Public, private.
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PublicField)));
+            Assert.AreEqual("_abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PrivateField)));
         }
 
         /// <summary>
@@ -59,6 +64,43 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void TestInheritedMembers()
         {
             
+        }
+
+        private class NoAttr
+        {
+            public string Abc { get; set; }
+        }
+
+        private class PublicProperty
+        {
+            public string Foo { get; set; }
+
+            [AffinityKeyMapped]
+            public string Abc { get; set; }
+        }
+
+        private class PrivateProperty
+        {
+            private string Foo { get; set; }
+
+            [AffinityKeyMapped]
+            private string Abc { get; set; }
+        }
+
+        private class PublicField
+        {
+            public string Foo;
+
+            [AffinityKeyMapped]
+            public string Abc;
+        }
+
+        private class PrivateField
+        {
+            private string _foo;
+
+            [AffinityKeyMapped]
+            private string _abc;
         }
     }
 }
