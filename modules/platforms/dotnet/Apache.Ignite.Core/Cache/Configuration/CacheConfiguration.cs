@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.IO;
     using System.Linq;
     using System.Xml.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 2;
@@ -294,10 +295,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
             SqlIndexMaxInlineSize = reader.ReadInt();
 
-            var count = reader.ReadInt();
-            QueryEntities = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -305,7 +303,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
-            count = reader.ReadInt();
+            KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+
+            var count = reader.ReadInt();
 
             if (count > 0)
             {
@@ -326,6 +326,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
+        {
+            Write(writer);
         }
 
         /// <summary>
@@ -374,20 +383,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteObject(CacheStoreFactory);
             writer.WriteInt(SqlIndexMaxInlineSize);
 
-            if (QueryEntities != null)
-            {
-                writer.WriteInt(QueryEntities.Count);
-
-                foreach (var entity in QueryEntities)
-                {
-                    if (entity == null)
-                        throw new InvalidOperationException("Invalid cache configuration: QueryEntity can't be null.");
-
-                    entity.Write(writer);
-                }
-            }
-            else
-                writer.WriteInt(0);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
@@ -400,6 +396,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            writer.WriteCollectionRaw(KeyConfiguration);
 
             if (PluginConfigurations != null)
             {
@@ -795,5 +793,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultSqlIndexMaxInlineSize)]
         public int SqlIndexMaxInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
     }
 }
