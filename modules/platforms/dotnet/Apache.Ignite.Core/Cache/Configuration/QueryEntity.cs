@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
@@ -434,7 +433,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             visitedTypes.Add(type);
 
-            foreach (var memberInfo in GetFieldsAndProperties(type))
+            foreach (var memberInfo in ReflectionUtils.GetFieldsAndProperties(type))
             {
                 var customAttributes = memberInfo.Key.GetCustomAttributes(true);
 
@@ -484,33 +483,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
 
             visitedTypes.Remove(type);
-        }
-
-        /// <summary>
-        /// Gets the fields and properties.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns></returns>
-        private static IEnumerable<KeyValuePair<MemberInfo, Type>> GetFieldsAndProperties(Type type)
-        {
-            Debug.Assert(type != null);
-
-            if (type.IsPrimitive)
-                yield break;
-
-            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                                              BindingFlags.DeclaredOnly;
-
-            while (type != typeof (object) && type != null)
-            {
-                foreach (var fieldInfo in type.GetFields(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
-
-                foreach (var propertyInfo in type.GetProperties(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
-
-                type = type.BaseType;
-            }
         }
 
         /// <summary>

@@ -18,8 +18,11 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Specifies cache key field to be used to determine a node on which given cache key will be stored.
@@ -47,8 +50,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         public static string GetFieldNameFromAttribute(Type type)
         {
-            // TODO: Private fields?
-            var res = type.GetMembers()
+            Debug.Assert(type != null);
+
+            var res = ReflectionUtils.GetFieldsAndProperties(type)
+                .Select(x => x.Key)
                 .Where(x => x.GetCustomAttributes(false).OfType<AffinityKeyMappedAttribute>().Any())
                 .Select(x => x.Name).ToArray();
 
