@@ -885,5 +885,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultQueryDetailMetricsSize)]
         public int QueryDetailMetricsSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SQL schema.
+        /// Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+        /// <para />
+        /// Quoted <see cref="Name"/> is used by default.
+        /// </summary>
+        public string SqlSchema { get; set; }
     }
 }
