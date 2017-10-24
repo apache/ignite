@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultRebalanceOrder = 0;
 
         /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
-        public const int DefaultRebalanceBatchesPrefetchCount = 2;
+        public const long DefaultRebalanceBatchesPrefetchCount = 2;
 
         /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
         public const int DefaultMaxQueryIteratorsCount = 1024;
