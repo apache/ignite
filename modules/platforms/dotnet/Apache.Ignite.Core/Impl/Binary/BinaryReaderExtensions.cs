@@ -102,8 +102,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the collection.
         /// </summary>
-        public static ICollection<T> ReadCollectionRaw<T>(this IBinaryRawReader reader,
-            Func<IBinaryRawReader, T> factory)
+        public static ICollection<T> ReadCollectionRaw<T, TReader>(this TReader reader,
+            Func<TReader, T> factory) where TReader : IBinaryRawReader
         {
             Debug.Assert(reader != null);
             Debug.Assert(factory != null);
