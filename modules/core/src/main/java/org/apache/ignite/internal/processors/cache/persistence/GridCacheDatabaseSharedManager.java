@@ -46,9 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -1431,7 +1429,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             clearFuts.add(entry.getKey().clearAsync((grpId, pageIdg) -> grpIds.contains(grpId), false));
         }
-
         for (IgniteInternalFuture<Void> clearFut : clearFuts) {
             try {
                 clearFut.get();
@@ -3443,8 +3440,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasPages;
 
-            Future snapFut = null;
-
             checkpointLock.writeLock().lock();
 
             try {
@@ -3486,7 +3481,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     lsnr.onCheckpointBegin(ctx0);
 
                 if (curr.nextSnapshot)
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+                    snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal() || !grp.walEnabled())
@@ -3544,13 +3539,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             curr.cpBeginFut.onDone();
-
-            if (snapFut != null)
-                try {
-                    snapFut.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    log.error("Error occur while waiting for snapshot operation initialization", e);
-                }
 
             if (hasPages) {
                 assert cpPtr != null;
