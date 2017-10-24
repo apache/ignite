@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.Future;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -70,11 +72,11 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
-    public boolean onMarkCheckPointBegin(
+    public Future<?> onMarkCheckPointBegin(
         T snapshotOperation,
         PartitionAllocationMap map
     ) throws IgniteCheckedException {
-        return false;
+        return null;
     }
 
     /**
