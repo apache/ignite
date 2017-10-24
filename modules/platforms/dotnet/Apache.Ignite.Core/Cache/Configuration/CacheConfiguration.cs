@@ -154,6 +154,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
         public const int DefaultMaxQueryIteratorsCount = 1024;
 
+        /// <summary> Default value for <see cref="QueryDetailMetricsSize"/>. </summary>
+        public const int DefaultQueryDetailMetricsSize = 0;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -874,5 +877,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultMaxQueryIteratorsCount)]
         public int MaxQueryIteratorsCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the query detail metrics to be stored in memory.
+        /// <para />
+        /// 0 means disabled metrics.
+        /// </summary>
+        [DefaultValue(DefaultQueryDetailMetricsSize)]
+        public int QueryDetailMetricsSize { get; set; }
     }
 }

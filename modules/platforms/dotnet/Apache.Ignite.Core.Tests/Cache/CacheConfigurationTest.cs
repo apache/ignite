@@ -274,6 +274,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
             Assert.AreEqual(CacheConfiguration.DefaultMaxQueryIteratorsCount, cfg.MaxQueryIteratorsCount);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryDetailMetricsSize, cfg.QueryDetailMetricsSize);
         }
 
         /// <summary>
