@@ -20,12 +20,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Configuration defining various aspects of cache keys without explicit usage of annotations on user classes.
     /// </summary>
-    public sealed class CacheKeyConfiguration
+    public sealed class CacheKeyConfiguration : IBinaryRawWriteAware
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheKeyConfiguration"/> class.
@@ -57,5 +58,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <see cref="BinaryTypeConfiguration.AffinityKeyFieldName"/>.
         /// </summary>
         public string AffinityKeyFieldName { get; set; }
+
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        void IBinaryRawWriteAware.WriteBinary(IBinaryRawWriter writer)
+        {
+            writer.WriteString(TypeName);
+            writer.WriteString(AffinityKeyFieldName);
+        }
     }
 }

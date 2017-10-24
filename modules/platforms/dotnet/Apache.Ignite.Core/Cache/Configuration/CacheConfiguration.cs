@@ -401,6 +401,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
 
+            writer.WriteCollectionRaw(KeyConfiguration);
+
             if (PluginConfigurations != null)
             {
                 writer.WriteInt(PluginConfigurations.Count);
