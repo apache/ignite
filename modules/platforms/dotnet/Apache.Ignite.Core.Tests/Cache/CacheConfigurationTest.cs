@@ -670,7 +670,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 MaxQueryIteratorsCount = 512,
                 QueryDetailMetricsSize = 100,
                 QueryParallelism = 16,
-                SqlSchema = "foo"
+                SqlSchema = "foo" + name
             };
         }
         /// <summary>
