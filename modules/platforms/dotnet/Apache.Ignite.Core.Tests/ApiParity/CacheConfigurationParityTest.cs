@@ -58,8 +58,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             "NodeFilter",  // IGNITE-2890
 
-            "KeyConfiguration",  // IGNITE-6704
-
             // IGNITE-6705
             "IsOnheapCacheEnabled",
             "StoreConcurrentLoadAllThreshold",
