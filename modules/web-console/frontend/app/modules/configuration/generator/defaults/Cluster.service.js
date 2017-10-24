@@ -314,7 +314,7 @@ const DFLT_CLUSTER = {
     dataStorageConfiguration: {
         systemCacheInitialSize: 41943040,
         systemCacheMaxSize: 104857600,
-        pageSize: 2048,
+        pageSize: 4096,
         storagePath: 'db',
         dataRegionConfigurations: {
             name: 'default',

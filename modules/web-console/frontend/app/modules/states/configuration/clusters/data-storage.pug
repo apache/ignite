@@ -34,7 +34,7 @@ include /app/helpers/jade/mixins
             .col-sm-6
                 .settings-row
                     +number-min-max('Page size:', model + '.pageSize', '"DataStorageConfigurationPageSize"',
-                    'true', '2048', '1024', '16384', 'Every memory region is split on pages of fixed size')
+                    'true', '4096', '1024', '16384', 'Every memory region is split on pages of fixed size')
                 .settings-row
                     +number('Concurrency level:', model + '.concurrencyLevel', '"DataStorageConfigurationConcurrencyLevel"',
                     'true', 'availableProcessors', '2', 'The number of concurrent segments in Ignite internal page mapping tables')

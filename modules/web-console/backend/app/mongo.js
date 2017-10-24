@@ -333,6 +333,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
         evictionFilter: String,
         memoryPolicyName: String,
+        dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
         topologyValidator: String
     });
