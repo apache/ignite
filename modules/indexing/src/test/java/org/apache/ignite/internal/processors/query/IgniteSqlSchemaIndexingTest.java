@@ -113,10 +113,10 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
-        //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //https://issues.apache.org/jira/browse/IGNITE-1094
-
+        //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
+        //TODO: https://issues.apache.org/jira/browse/IGNITE-1094
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 final CacheConfiguration cfg = cacheConfig("cache1", true, Integer.class, Fact.class)
