@@ -29,6 +29,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary> 
         /// <param name="writer">Writer.</param>
         /// <exception cref="System.IO.IOException">If write failed.</exception>
-        void WriteBinary(IBinaryRawWriter writer);
+        void Write(IBinaryRawWriter writer);
     }
 }

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public sealed class QueryEntity : IQueryEntityInternal
+    public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAware
     {
         /** */
         private Type _keyType;
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this instance.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware.Write(IBinaryRawWriter writer)
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);

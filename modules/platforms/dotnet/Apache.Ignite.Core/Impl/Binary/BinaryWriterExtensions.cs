@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
                     }
 
-                    x.WriteBinary(writer);
+                    x.Write(writer);
                 }
             }
             else

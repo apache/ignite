@@ -376,20 +376,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteObject(CacheStoreFactory);
             writer.WriteInt(SqlIndexMaxInlineSize);
 
-            if (QueryEntities != null)
-            {
-                writer.WriteInt(QueryEntities.Count);
-
-                foreach (var entity in QueryEntities)
-                {
-                    if (entity == null)
-                        throw new InvalidOperationException("Invalid cache configuration: QueryEntity can't be null.");
-
-                    entity.Write(writer);
-                }
-            }
-            else
-                writer.WriteInt(0);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
