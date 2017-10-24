@@ -35,11 +35,15 @@ public class OdbcQueryResults {
     /** Current result set. */
     private OdbcResultSet currentResultSet;
 
+    /** Current result set index. */
+    private int currentResultSetIdx;
+
     /**
      * @param cursors Result set cursors.
      */
     OdbcQueryResults(List<FieldsQueryCursor<List<?>>> cursors) {
         this.cursors = cursors;
+        this.currentResultSetIdx = 0;
 
         rowsAffected = new ArrayList<>(cursors.size());
 
@@ -96,9 +100,9 @@ public class OdbcQueryResults {
     public boolean nextResultSet() {
         currentResultSet = null;
 
-        if (!cursors.isEmpty()) {
-            currentResultSet = new OdbcResultSet(cursors.get(0));
-            cursors.remove(0);
+        if (currentResultSetIdx != cursors.size()) {
+            currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx));
+            ++currentResultSetIdx;
         }
 
         return currentResultSet != null;

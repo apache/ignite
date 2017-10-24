@@ -557,19 +557,27 @@ struct QueriesTestSuiteFixture
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        SQLLEN affected = 0;
-        ret = SQLRowCount(stmt, &affected);
+        SQLLEN totallyAffected = 0;
 
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        do
+        {
+            SQLLEN affected = 0;
+            ret = SQLRowCount(stmt, &affected);
 
-        BOOST_CHECK_EQUAL(affected, expectedToAffect);
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        BOOST_CHECKPOINT("Getting next result set");
-        ret = SQLMoreResults(stmt);
+            totallyAffected += affected;
 
-        if (ret != SQL_NO_DATA)
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_CHECKPOINT("Getting next result set");
+
+            ret = SQLMoreResults(stmt);
+
+            if (ret != SQL_SUCCESS && ret != SQL_NO_DATA)
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        } while (ret != SQL_NO_DATA);
+
+        BOOST_CHECK_EQUAL(totallyAffected, expectedToAffect);
 
         BOOST_CHECKPOINT("Resetting parameters.");
         ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
