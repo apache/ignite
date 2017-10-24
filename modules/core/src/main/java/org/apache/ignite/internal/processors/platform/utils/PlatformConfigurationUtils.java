@@ -927,6 +927,19 @@ public class PlatformConfigurationUtils {
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
 
+        CacheKeyConfiguration[] keys = ccfg.getKeyConfiguration();
+
+        if (keys != null) {
+            writer.writeInt(keys.length);
+
+            for (CacheKeyConfiguration key : keys) {
+                writer.writeString(key.getTypeName());
+                writer.writeString(key.getAffinityKeyFieldName());
+            }
+        } else {
+            writer.writeInt(0);
+        }
+
         CachePluginConfiguration[] plugins = ccfg.getPluginConfigurations();
         if (plugins != null) {
             int cnt = 0;
