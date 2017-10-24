@@ -94,7 +94,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walLoggingRate.getRate()) / rateTimeInterval;
+        return ((float)walLoggingRate.getRate() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -102,7 +102,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walWritingRate.getRate()) / rateTimeInterval;
+        return ((float)walWritingRate.getRate() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */

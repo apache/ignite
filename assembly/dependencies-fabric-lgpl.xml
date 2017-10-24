@@ -135,6 +135,8 @@
                 <exclude>org.apache.ignite:ignite-web-agent</exclude>
                 <exclude>org.apache.ignite:ignite-dev-utils</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
+                <exclude>org.apache.ignite:ignite-compatibility</exclude>
+                <exclude>org.apache.ignite:ignite-sqlline</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
