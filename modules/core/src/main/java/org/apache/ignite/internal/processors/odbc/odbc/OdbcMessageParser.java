@@ -328,8 +328,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param affectedRows Affected rows.
      */
     private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
-        if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0)
-            writer.writeLong(affectedRows.iterator().next());
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0) {
+            long summ = 0;
+            
+            for (Long value : affectedRows)
+                summ += value == null ? 0 : value;
+
+            writer.writeLong(summ);
+        }
         else {
             writer.writeInt(affectedRows.size());
             for (Long value : affectedRows)
