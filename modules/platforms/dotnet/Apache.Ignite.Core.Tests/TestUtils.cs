@@ -420,16 +420,6 @@ namespace Apache.Ignite.Core.Tests
 
             var type = x.GetType();
 
-            Assert.AreEqual(type, y.GetType());
-
-            propertyPath = propertyPath ?? type.Name;
-
-            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
-            {
-                Assert.AreEqual(x, y, propertyPath);
-                return;
-            }
-
             if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
             {
                 var xCol = ((IEnumerable)x).OfType<object>().ToList();
@@ -442,6 +432,16 @@ namespace Apache.Ignite.Core.Tests
                     AssertReflectionEqual(xCol[i], yCol[i], propertyPath, ignoredProperties);
                 }
 
+                return;
+            }
+
+            Assert.AreEqual(type, y.GetType());
+
+            propertyPath = propertyPath ?? type.Name;
+
+            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
+            {
+                Assert.AreEqual(x, y, propertyPath);
                 return;
             }
 
