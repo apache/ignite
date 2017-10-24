@@ -51,7 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 
 /**
- *
+ * Tests EVT_CACHE_REBALANCE_PART_DATA_LOST events.
  */
 public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
     /** Cache name. */
@@ -120,12 +120,6 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
         }
     };
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        latch = new CountDownLatch(expEvts);
-        cnt = new AtomicInteger(0);
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -150,6 +144,9 @@ public class GridLostPartitionRebalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkEvents() throws Exception {
+        latch = new CountDownLatch(expEvts);
+        cnt = new AtomicInteger(0);
+
         List<Ignite> srvrs = new ArrayList<>();
 
         // Client router. It always up, so client is guaranteed to get

@@ -245,6 +245,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             return;
         }
 
+        GridDhtTopologyFuture exchFut = cctx.shared().exchange().exchangeFuture(topVer);
+
+        if (exchFut == null)
+            exchFut = cctx.topologyVersionFuture();
+
+        Throwable exc = exchFut.validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
+
+            return;
+        }
+
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
 
         final int keysSize = keys.size();

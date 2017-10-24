@@ -48,6 +48,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -871,6 +871,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
+        if (ctx != null && ctx.cache().cacheValidator() != null)
+            validateCaches(p);
+
         if (!p.isQuery()) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
@@ -1287,7 +1290,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         runs.put(run.id(), run);
 
         try {
-            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, cancel);
+            PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
+
+            if (ctx != null && ctx.cache().cacheValidator() != null) {
+                Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+
+                validateCaches(p);
+            }
+
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, stmt, conn, sql, params, 0, cancel);
 
             return new KeyValIterator(rs);
         }
@@ -1633,7 +1644,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
 
-        if(tableAlias != null)
+        if (tableAlias != null)
             t = tableAlias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
@@ -2925,6 +2936,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Collections.addAll(res, row);
 
             return res;
+        }
+    }
+
+    /**
+     * @param p Prepared.
+     */
+    private void validateCaches(Prepared p) throws IgniteCheckedException {
+        Set<GridH2Table> tbls = GridSqlQueryParser.getTables(p);
+
+        if (!F.isEmpty(tbls)) {
+            for (GridH2Table tbl : tbls) {
+                if (tbl != null) {
+                    GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
+
+                    Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+                    if (exc != null)
+                        throw new IgniteCheckedException(exc);
+                }
+            }
         }
     }
 

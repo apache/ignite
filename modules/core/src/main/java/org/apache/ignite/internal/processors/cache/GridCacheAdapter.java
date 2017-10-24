@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -728,6 +729,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (modes.primary || modes.backup) {
             AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
+            validateCache(topVer);
+
             GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
             if (modes.swap)
@@ -772,6 +775,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             if (!ctx.isLocal()) {
                 AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+                validateCache(topVer);
 
                 int part = ctx.affinity().partition(cacheKey);
 
@@ -851,6 +856,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             return null;
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If validation failed.
+     */
+    private void validateCache(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        if (isLocal())
+            return;
+
+        GridDhtTopologyFuture fut = ctx.shared().exchange().exchangeFuture(topVer);
+
+        if (fut == null)
+            fut = ctx.topologyVersionFuture();
+
+        Throwable exc = fut.validateCache(ctx);
+
+        if (exc != null)
+            throw new IgniteCheckedException(exc);
     }
 
     /**
@@ -1872,6 +1895,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     tx.topologyVersion();
 
                 int keysSize = keys.size();
+
+                if (!isLocal()) {
+                    GridDhtTopologyFuture fut = ctx.shared().exchange().exchangeFuture(topVer);
+
+                    if (fut == null)
+                        fut = ctx.topologyVersionFuture();
+
+                    Throwable exc = fut.validateCache(ctx);
+
+                    if (exc != null)
+                        return new GridFinishedFuture<>(exc);
+                }
 
                 final Map<K1, V1> map = keysSize == 1 ?
                     (Map<K1, V1>)new IgniteBiTuple<>() :
