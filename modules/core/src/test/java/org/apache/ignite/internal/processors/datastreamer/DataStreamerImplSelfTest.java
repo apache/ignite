@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -435,81 +436,32 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientEventsNotCausingRemaps() throws Exception {
-        startGrids(2);
+        Ignite ignite = startGrids(2);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        final AtomicBoolean stopped = new AtomicBoolean(false);
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
-        final IgniteInternalFuture<?> streamer = multithreadedAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                try (final Ignite client = startGrid(getConfiguration("client").setClientMode(true))) {
-                    client.getOrCreateCache(cacheConfiguration());
+        ((DataStreamerImpl)streamer).maxRemapCount(3);
 
-                    try (final IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        int i = 0;
-                        long j = 0L;
+        streamer.addData(1, 1);
 
-                        assertTrue(streamer instanceof DataStreamerImpl);
+        for (int topChanges = 0; topChanges < 30; topChanges++) {
+            IgniteEx node = startGrid(getConfiguration("flapping-client").setClientMode(true));
 
-                        ((DataStreamerImpl)streamer).maxRemapCount(3);
-
-                        while (!stopped.get()) {
-                            streamer.addData(i++, j++);
-
-                            if (i > 1000) {
-                                latch.countDown();
-                                i = 0;
-
-                                try {
-                                    Thread.sleep(300);
-                                }
-                                catch (InterruptedException ignore) {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return null;
-            }
-        }, 1, "streamer-thread");
-
-        latch.await();
-
-        boolean isStreamerFailed = false;
-
-        int topChanges = 0;
-
-        while (topChanges < 30 && !isStreamerFailed) {
-            final Ignite node = startGrid(optimize(getConfiguration("flapping-client").setClientMode(true)));
-
-            node.getOrCreateCache(cacheConfiguration()).get(0);
-
-            Thread.sleep(200);
-
-            topChanges++;
-
-            isStreamerFailed = streamer.isCancelled();
+            streamer.addData(1, 1);
 
             node.close();
 
-            if (!isStreamerFailed) {
-                topChanges++;
-
-                Thread.sleep(200);
-            }
-
-            isStreamerFailed = streamer.isCancelled();
+            streamer.addData(1, 1);
         }
 
-        stopped.set(true);
-
-        assertFalse("Streamer fails after remaps: " + topChanges, isStreamerFailed);
-
-        if (!isStreamerFailed)
-            streamer.get();
+        try {
+            streamer.flush();
+        }
+        catch (Exception ex) {
+            return;
+        }
     }
 
     /**
@@ -518,7 +470,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testServerEventsCauseRemaps() throws Exception {
         Ignite ignite = startGrids(2);
 
-        ignite.createCache(DEFAULT_CACHE_NAME);
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 

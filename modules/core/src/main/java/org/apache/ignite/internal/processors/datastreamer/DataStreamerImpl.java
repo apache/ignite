@@ -344,13 +344,23 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
-                if (needRemap) {
-                    for (Entry<UUID, Buffer> e : bufMappings.entrySet()) {
-                        Buffer buf = e.getValue();
+                AffinityTopologyVersion topVer = null;
 
-                        for (PerStripeBuffer stripe : buf.stripes) {
-                            synchronized (stripe) {
-                                stripe.needRemap = true;
+                if (evt instanceof DiscoveryCustomEvent)
+                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
+                else
+                    topVer = new AffinityTopologyVersion(((DiscoveryEvent) evt).topologyVersion());
+
+                for (Entry<UUID, Buffer> e : bufMappings.entrySet()) {
+                    Buffer buf = e.getValue();
+
+                    for (PerStripeBuffer stripe : buf.stripes) {
+                        synchronized (stripe) {
+                            if (stripe.batchTopVer != null) {
+                                if (needRemap)
+                                    stripe.needRemap = true;
+                                else if (!stripe.needRemap)
+                                    stripe.batchTopVer = topVer;
                             }
                         }
                     }
@@ -1487,7 +1497,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     needRemap = b.needRemap;
                 }
 
-                if (!allowOverwrite() && needRemap && !topVer.equals(curBatchTopVer)) {
+                if (!allowOverwrite() && (needRemap || !topVer.equals(curBatchTopVer))) {
                     for (int i = 0; i < stripes.length; i++) {
                         PerStripeBuffer b0 = stripes[i];
 
@@ -1496,7 +1506,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             // Another thread might already renew the batch
                             AffinityTopologyVersion bTopVer = b0.batchTopVer;
 
-                            if (bTopVer != null && b0.needRemap && topVer.compareTo(bTopVer) > 0) {
+                            if (bTopVer != null && (b0.needRemap || topVer.compareTo(bTopVer) > 0)) {
                                 GridFutureAdapter<Object> bFut = b0.curFut;
 
                                 b0.renewBatch(remap);
