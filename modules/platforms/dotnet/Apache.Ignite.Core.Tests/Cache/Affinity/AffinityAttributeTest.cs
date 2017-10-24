@@ -19,12 +19,14 @@
 #pragma warning disable 649
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Affinity;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests the <see cref="AffinityKeyMappedAttribute"/>.
     /// </summary>
+    [SuppressMessage("ReSharper", "UnusedMember.Local")]
     public class AffinityAttributeTest
     {
         /// <summary>
@@ -35,7 +37,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             Assert.IsNull(AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(NoAttr)));
             Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PublicProperty)));
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(InheritPublicProperty)));
             Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PrivateProperty)));
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(InheritPrivateProperty)));
         }
 
         /// <summary>
@@ -46,6 +50,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PublicField)));
             Assert.AreEqual("_abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(PrivateField)));
+            Assert.AreEqual("Abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(InheritPublicField)));
+            Assert.AreEqual("_abc", AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(InheritPrivateField)));
         }
 
         /// <summary>
@@ -53,15 +59,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// </summary>
         [Test]
         public void TestMultipleAttributes()
-        {
-            
-        }
-
-        /// <summary>
-        /// Tests inherited members.
-        /// </summary>
-        [Test]
-        public void TestInheritedMembers()
         {
             
         }
@@ -101,6 +98,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             [AffinityKeyMapped]
             private string _abc;
+        }
+
+        private class InheritPublicProperty : PublicProperty
+        {
+            // No-op.
+        }
+
+        private class InheritPrivateProperty : PrivateProperty
+        {
+            // No-op.
+        }
+
+        private class InheritPublicField : PublicField
+        {
+            // No-op.
+        }
+
+        private class InheritPrivateField : PrivateField
+        {
+            // No-op.
         }
     }
 }
