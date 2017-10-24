@@ -143,7 +143,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     private boolean loadPrevVal;
 
     /** Name of {@link DataRegionConfiguration} for this cache */
-    private String memPlcName;
+    private String dataRegName;
 
     /** Maximum inline size for sql indexes. */
     private int sqlIdxMaxInlineSize;
@@ -219,7 +219,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = compactClass(ccfg.getEvictionFilter());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
-        memPlcName = ccfg.getDataRegionName();
+        dataRegName = ccfg.getDataRegionName();
         sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
         nodeFilter = compactClass(ccfg.getNodeFilter());
         qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
@@ -462,8 +462,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return {@link DataRegionConfiguration} name.
      */
+    @Deprecated
     public String getMemoryPolicyName() {
-        return memPlcName;
+        return dataRegName;
     }
 
     /**
@@ -551,7 +552,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, evictFilter);
         U.writeString(out, lsnrConfigurations);
         out.writeBoolean(loadPrevVal);
-        U.writeString(out, memPlcName);
+        U.writeString(out, dataRegName);
         out.writeInt(sqlIdxMaxInlineSize);
         U.writeString(out, nodeFilter);
         out.writeInt(qryDetailMetricsSz);
@@ -595,7 +596,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = U.readString(in);
         lsnrConfigurations = U.readString(in);
         loadPrevVal = in.readBoolean();
-        memPlcName = U.readString(in);
+        dataRegName = U.readString(in);
         sqlIdxMaxInlineSize = in.readInt();
         nodeFilter = U.readString(in);
         qryDetailMetricsSz = in.readInt();
