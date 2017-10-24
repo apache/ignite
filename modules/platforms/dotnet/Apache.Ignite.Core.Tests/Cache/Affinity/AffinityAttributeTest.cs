@@ -20,6 +20,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using NUnit.Framework;
 
@@ -60,7 +61,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestMultipleAttributes()
         {
-            
+            var ex = Assert.Throws<BinaryObjectException>(() =>
+                AffinityKeyMappedAttribute.GetFieldNameFromAttribute(typeof(MultipleAttributes)));
+
+            Assert.AreEqual(string.Format(
+                "Multiple 'AffinityKeyMappedAttribute' attributes found on type '{0}'. There can be only one " +
+                "affinity field.", typeof(MultipleAttributes).FullName), ex.Message);
         }
 
         private class NoAttr
@@ -118,6 +124,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private class InheritPrivateField : PrivateField
         {
             // No-op.
+        }
+
+        private class MultipleAttributes : PublicProperty
+        {
+            [AffinityKeyMapped]
+            public int Baz { get; set; }
         }
     }
 }
