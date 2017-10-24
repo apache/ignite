@@ -305,6 +305,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
+            KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+
             count = reader.ReadInt();
 
             if (count > 0)
