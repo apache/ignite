@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -90,6 +91,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+
         super.beforeTestsStarted();
 
         startGrids(SRVS);
@@ -108,11 +111,13 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         stopAllGrids();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+        return TEST_TIME + 3 * 60_000;
     }
 
     /**
@@ -198,6 +203,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int nodeIdx = restartNodeIdx.getAndIncrement();
 
+                    Thread.currentThread().setName("restart-thread-" + nodeIdx);
+
                     boolean clientMode = clientNode.compareAndSet(false, true);
 
                     while (U.currentTimeMillis() < stopTime) {
@@ -219,7 +226,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        while (!syncFut.isDone())
+                        while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
                             checkGet(cache);
 
                         checkGet(cache);

@@ -470,10 +470,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param svc Service.
      * @param cacheName Cache name.
-     * @param  affKey Affinity key.
+     * @param affKey Affinity key.
      * @return Future.
      */
-    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName, Object affKey) {
+    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, Service svc, String cacheName,
+        Object affKey) {
         A.notNull(affKey, "affKey");
 
         ServiceConfiguration cfg = new ServiceConfiguration();
@@ -1131,7 +1132,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
-             ctxs = locSvcs.get(name);
+            ctxs = locSvcs.get(name);
         }
 
         if (ctxs == null)
@@ -1174,9 +1175,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         while (true) {
             GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
 
-             Collection<ClusterNode> nodes;
+            Collection<ClusterNode> nodes;
 
-             // Call node filter outside of transaction.
+            // Call node filter outside of transaction.
             if (affKey == null) {
                 nodes = ctx.discovery().nodes(topVer);
 
@@ -1555,7 +1556,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
 
                 return cache.context().itHolder().iterator(iter,
-                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
                         @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
                             return new CacheEntryImpl<>(e.getKey(), e.getValue());
                         }
@@ -1782,15 +1783,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         try {
             AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer)){
-                    if (log.isInfoEnabled())
-                        log.info("Will calculate new service deployment assignment (new service has been deployed) [" +
-                            "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');reassign(dep, topVer);}
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer)) {
+                if (log.isInfoEnabled())
+                    log.info("Will calculate new service deployment assignment (new service has been deployed) [" +
+                        "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
+                reassign(dep, topVer);
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
             AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
@@ -1831,6 +1834,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private class TopologyListener implements DiscoveryEventListener {
         /** */
         private volatile AffinityTopologyVersion currTopVer = null;
+
         /** {@inheritDoc} */
         @Override public void onEvent(final DiscoveryEvent evt, final DiscoCache discoCache) {
             if (!busyLock.enterBusy())
@@ -2065,7 +2069,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             undeploy(e.getKey().name());
     }
 
-
     /**
      * @param name Name.
      */
@@ -2078,11 +2081,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ctxs = locSvcs.remove(name);
         }
 
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    if (log.isInfoEnabled())
-                        log.info("Undeploying services [svc=" + name +
-                            ", ctxs=" + ctxs + ']');cancel(ctxs, ctxs.size());
+        if (ctxs != null) {
+            synchronized (ctxs) {
+                if (log.isInfoEnabled())
+                    log.info("Undeploying services [svc=" + name +
+                        ", ctxs=" + ctxs + ']');
+                cancel(ctxs, ctxs.size());
 
             }
         }

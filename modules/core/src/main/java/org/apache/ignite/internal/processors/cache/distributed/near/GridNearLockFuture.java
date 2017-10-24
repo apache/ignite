@@ -100,6 +100,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private final Collection<KeyCacheObject> keys;
 
     /** Future ID. */
