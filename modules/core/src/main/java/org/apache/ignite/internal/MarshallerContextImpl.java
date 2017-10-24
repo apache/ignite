@@ -279,6 +279,8 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         cache.put(typeId, new MappedName(clsName, true));
 
+        fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+
         return true;
     }
 
