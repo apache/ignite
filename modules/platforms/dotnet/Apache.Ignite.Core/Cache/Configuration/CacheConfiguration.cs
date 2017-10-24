@@ -157,6 +157,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="QueryDetailMetricsSize"/>. </summary>
         public const int DefaultQueryDetailMetricsSize = 0;
 
+        /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
+        public const int DefaultQueryParallelism = 1;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -209,6 +212,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceOrder = DefaultRebalanceOrder;
             RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
             MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
+            QueryParallelism = DefaultQueryParallelism;
         }
 
         /// <summary>
@@ -400,6 +404,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
             writer.WriteInt(SqlIndexMaxInlineSize);
+
+            /**
+ *   "IsOnheapCacheEnabled",
+    "StoreConcurrentLoadAllThreshold",
+    "RebalanceOrder",
+    "RebalanceBatchesPrefetchCount",
+    "MaxQueryIteratorsCount",
+    "QueryDetailMetricsSize",
+    "SqlSchema",
+    "QueryParallelism"*/
+
+
 
             writer.WriteCollectionRaw(QueryEntities);
 
@@ -818,16 +834,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
 
-        /**
-         *   "IsOnheapCacheEnabled",
-            "StoreConcurrentLoadAllThreshold",
-            "RebalanceOrder",
-            "RebalanceBatchesPrefetchCount",
-            "MaxQueryIteratorsCount",
-            "QueryDetailMetricsSize",
-            "SqlSchema",
-            "QueryParallelism"*/
-
         /// <summary>
         /// Gets or sets a value indicating whether on-heap cache is enabled for the off-heap based page memory.
         /// </summary>
@@ -893,5 +899,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Quoted <see cref="Name"/> is used by default.
         /// </summary>
         public string SqlSchema { get; set; }
+
+        /// <summary>
+        /// Gets or sets the desired query parallelism within a single node.
+        /// Query executor may or may not use this hint, depending on estimated query cost.
+        /// <para />
+        /// Default is <see cref="DefaultQueryParallelism"/>.
+        /// </summary>
+        [DefaultValue(DefaultQueryParallelism)]
+        public int QueryParallelism { get; set; }
     }
 }
