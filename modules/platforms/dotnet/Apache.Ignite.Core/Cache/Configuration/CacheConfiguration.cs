@@ -316,6 +316,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
             SqlIndexMaxInlineSize = reader.ReadInt();
+            OnheapCacheEnabled = reader.ReadBoolean();
+            StoreConcurrentLoadAllThreshold = reader.ReadInt();
+            RebalanceOrder = reader.ReadInt();
+            RebalanceBatchesPrefetchCount = reader.ReadLong();
+            MaxQueryIteratorsCount = reader.ReadInt();
+            QueryDetailMetricsSize = reader.ReadInt();
+            QueryParallelism = reader.ReadInt();
+            SqlSchema = reader.ReadString();
 
             QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
@@ -404,18 +412,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
             writer.WriteInt(SqlIndexMaxInlineSize);
-
-            /**
- *   "IsOnheapCacheEnabled",
-    "StoreConcurrentLoadAllThreshold",
-    "RebalanceOrder",
-    "RebalanceBatchesPrefetchCount",
-    "MaxQueryIteratorsCount",
-    "QueryDetailMetricsSize",
-    "SqlSchema",
-    "QueryParallelism"*/
-
-
+            writer.WriteBoolean(OnheapCacheEnabled);
+            writer.WriteInt(StoreConcurrentLoadAllThreshold);
+            writer.WriteInt(RebalanceOrder);
+            writer.WriteLong(RebalanceBatchesPrefetchCount);
+            writer.WriteInt(MaxQueryIteratorsCount);
+            writer.WriteInt(QueryDetailMetricsSize);
+            writer.WriteInt(QueryParallelism);
+            writer.WriteString(SqlSchema);
 
             writer.WriteCollectionRaw(QueryEntities);
 
