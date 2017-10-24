@@ -757,7 +757,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
-                },
+                }, 
+                OnheapCacheEnabled = true,  // Required with eviction policy
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,
