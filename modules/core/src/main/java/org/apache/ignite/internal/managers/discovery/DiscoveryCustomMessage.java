@@ -93,9 +93,10 @@ public interface DiscoveryCustomMessage extends Serializable {
 
     /**
      * Creates new discovery cache in most efficient way for current message type on topology change.
+     *
      * @param stgy Current cache.
      * @param topVer New topology version.
-     * @param discoCache @return New cache or null if message always reuses current cache.
+     * @param discoCache @return New cache or null if not applicable.
      */
     public @Nullable DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy, AffinityTopologyVersion topVer,
         DiscoCache discoCache);
