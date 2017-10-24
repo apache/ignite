@@ -189,7 +189,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private volatile boolean cancelled;
 
     /** Cancellation reason. */
-    private final AtomicReference<Throwable> cancellationReason = new AtomicReference<>();
+    private volatile Throwable cancellationReason = null;
 
     /** Fail counter. */
     private final LongAdder8 failCntr = new LongAdder8();
@@ -213,8 +213,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 failCntr.increment();
 
-                synchronized (cancellationReason) {
-                    cancellationReason.compareAndSet(null, err);
+                synchronized (DataStreamerImpl.this) {
+                    if(cancellationReason == null)
+                        cancellationReason = err;
 
                     cancelled = true;
                 }
@@ -1000,7 +1001,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Throws stream closed exception.
      */
     private void closedException() {
-        throw new IllegalStateException("Data streamer has been closed.", cancellationReason.get());
+        throw new IllegalStateException("Data streamer has been closed.", cancellationReason);
     }
 
     /**
