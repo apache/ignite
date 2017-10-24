@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -228,6 +229,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public int AffinityKey { get; set; }
         }
 
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
         private class CacheKey2
         {
             public int Key { get; set; }
