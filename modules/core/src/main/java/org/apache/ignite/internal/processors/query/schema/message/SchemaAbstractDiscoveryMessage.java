@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -55,17 +55,10 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
         return id;
     }
 
-    /**
-     * {@inheritDoc}
-     * @param stgy Reuse strategy.
-     * @param topVer New topology version.
-     * @param discoCache Discovery cache
-     *
-     * @return Reused discovery cache if possible.
-     */
-    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache reuseDiscoCache(GridKernalContext ctx,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /**

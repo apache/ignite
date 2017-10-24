@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.ReuseDiscoCacheStrategy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -105,17 +105,10 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * {@inheritDoc}
-     * @param stgy Reuse strategy.
-     * @param topVer New topology version.
-     * @param discoCache Discovery cache
-     *
-     * @return Reused discovery cache if possible.
-     */
-    @Nullable @Override public DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy,
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache reuseDiscoCache(GridKernalContext ctx,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

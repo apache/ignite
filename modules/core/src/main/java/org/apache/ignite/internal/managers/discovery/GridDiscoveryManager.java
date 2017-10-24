@@ -161,7 +161,7 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 /**
  * Discovery SPI manager.
  */
-public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> implements ReuseDiscoCacheStrategy {
+public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -660,14 +660,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> imple
                             discoCache());
                     }
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
-                        ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
+                        final ChangeGlobalStateFinishMessage finishMsg = (ChangeGlobalStateFinishMessage)customMsg;
 
-                        discoCache = createDiscoCache(snapshot.topVer,
-                            ctx.state().clusterState(),
-                            locNode,
-                            topSnapshot);
+                        ctx.state().onStateFinishMessage(finishMsg);
 
-                        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
+                        topSnap.set(new Snapshot(snapshot.topVer, (discoCache =
+                            finishMsg.reuseDiscoCache(ctx, snapshot.topVer, snapshot.discoCache))));
                     }
                     else {
                         incMinorTopVer = ctx.cache().onCustomEvent(
@@ -712,7 +710,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> imple
                 if (verChanged) {
                     if (discoCache == null) {
                         discoCache = incMinorTopVer ?
-                            customMsg.reuseDiscoCache(GridDiscoveryManager.this, nextTopVer, snapshot.discoCache) :
+                            customMsg.reuseDiscoCache(ctx, nextTopVer, snapshot.discoCache) :
                             createDiscoCache(nextTopVer,
                                 ctx.state().clusterState(),
                                 locNode,
@@ -3071,8 +3069,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> imple
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache apply(DynamicCacheChangeBatch msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+    /**
+     * Reuses discovery cache for {@link DynamicCacheChangeBatch}
+     *
+     * @param msg Message.
+     * @param topVer Topology version.
+     * @param discoCache Disco cache.
+     */
+    public DiscoCache reuseDiscoCache(DynamicCacheChangeBatch msg, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
         List<ClusterNode> allNodes = discoCache.allNodes();
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
@@ -3096,18 +3101,51 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> imple
             discoCache.minimumNodeVersion());
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache apply(CacheAffinityChangeMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+    /**
+     * Reuses discovery cache for {@link CacheAffinityChangeMessage}
+     *
+     * @param msg Message.
+     * @param topVer Topology version.
+     * @param discoCache Disco cache.
+     */
+    public DiscoCache reuseDiscoCache(CacheAffinityChangeMessage msg, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
         return discoCache.copy(topVer, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache apply(SnapshotDiscoveryMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+    /**
+     * Reuses discovery cache for {@link SnapshotDiscoveryMessage}
+     *
+     * @param msg Message.
+     * @param topVer Topology version.
+     * @param discoCache Disco cache.
+     */
+    public DiscoCache reuseDiscoCache(SnapshotDiscoveryMessage msg, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
         return discoCache.copy(topVer, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public DiscoCache apply(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+    /**
+     * Reuses discovery cache for {@link ChangeGlobalStateMessage}
+     *
+     * @param msg Message.
+     * @param topVer Topology version.
+     * @param discoCache Disco cache.
+     */
+    public DiscoCache reuseDiscoCache(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
+        return discoCache.copy(topVer, ctx.state().clusterState());
+    }
+
+    /**
+     * Reuses discovery cache for {@link ChangeGlobalStateFinishMessage}
+     *
+     * @param msg Message.
+     * @param topVer Topology version.
+     * @param discoCache Disco cache.
+     */
+    public DiscoCache reuseDiscoCache(ChangeGlobalStateFinishMessage msg, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
         return discoCache.copy(topVer, ctx.state().clusterState());
     }
 }

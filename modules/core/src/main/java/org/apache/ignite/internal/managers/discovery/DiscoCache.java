@@ -319,11 +319,13 @@ public class DiscoCache {
      * Returns copy of discovery cache suitable for further reuse.
      *
      * @param ver Version.
+     * @param st State.
+     *
      * @return Copy.
      */
-    public DiscoCache copy(@Nullable AffinityTopologyVersion ver, @Nullable DiscoveryDataClusterState st) {
+    public DiscoCache copy(AffinityTopologyVersion ver, @Nullable DiscoveryDataClusterState st) {
         return new DiscoCache(
-            ver == null ? topVer : ver,
+            ver,
             st == null ? state : st,
             loc,
             rmtNodes,

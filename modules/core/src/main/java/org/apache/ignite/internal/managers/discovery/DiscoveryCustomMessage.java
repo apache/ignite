@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -92,12 +93,14 @@ public interface DiscoveryCustomMessage extends Serializable {
     public boolean isMutable();
 
     /**
-     * Creates new discovery cache in most efficient way for current message type on topology change.
+     * Reuses current discovery cache in most efficient way for given message type.
      *
-     * @param stgy Current cache.
+     * @param ctx Context.
      * @param topVer New topology version.
-     * @param discoCache @return New cache or null if not applicable.
+     * @param discoCache @return Reused discovery cache.
+     *
+     * @throws UnsupportedOperationException If message doesn't support discovery cache reuse.
      */
-    public @Nullable DiscoCache reuseDiscoCache(ReuseDiscoCacheStrategy stgy, AffinityTopologyVersion topVer,
-        DiscoCache discoCache);
+    public DiscoCache reuseDiscoCache(GridKernalContext ctx, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) throws UnsupportedOperationException;
 }
