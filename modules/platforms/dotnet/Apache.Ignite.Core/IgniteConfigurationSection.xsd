@@ -575,6 +575,32 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="keyConfiguration" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Cache key configuration collection.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="cacheKeyConfiguration" maxOccurs="unbounded">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Cache key configuration.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="typeName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Key type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="affinityKeyFieldName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Affinity key field name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
                                         <xs:element name="pluginConfigurations" minOccurs="0">
                                             <xs:annotation>
                                                 <xs:documentation>Cache plugin configurations.</xs:documentation>

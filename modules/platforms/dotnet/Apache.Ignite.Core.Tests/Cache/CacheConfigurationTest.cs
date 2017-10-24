@@ -329,6 +329,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
                     y.PluginConfigurations.Select(p => p.GetType()));
             }
+
+            TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
         }
 
         /// <summary>
@@ -635,7 +637,15 @@ namespace Apache.Ignite.Core.Tests.Cache
 #pragma warning restore 618
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() },
-                SqlIndexMaxInlineSize = 10000
+                SqlIndexMaxInlineSize = 10000,
+                KeyConfiguration = new[]
+                {
+                    new CacheKeyConfiguration
+                    {
+                        TypeName = "foobar",
+                        AffinityKeyFieldName = "barbaz"
+                    }
+                }
             };
         }
         /// <summary>
