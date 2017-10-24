@@ -269,6 +269,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
+                cfg.StoreConcurrentLoadAllThreshold);
         }
 
         /// <summary>

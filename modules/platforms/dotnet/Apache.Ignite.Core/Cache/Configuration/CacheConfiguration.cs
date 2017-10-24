@@ -143,6 +143,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
         public const int DefaultSqlIndexMaxInlineSize = -1;
 
+        /// <summary> Default value for <see cref="StoreConcurrentLoadAllThreshold"/>. </summary>
+        public const int DefaultStoreConcurrentLoadAllThreshold = 5;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -191,6 +194,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
             SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
+            StoreConcurrentLoadAllThreshold = DefaultStoreConcurrentLoadAllThreshold;
         }
 
         /// <summary>
@@ -830,6 +834,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// value may result in significant performance degradation because it is needed to check
         /// for every key whether it's being loaded or not.
         /// </summary>
+        [DefaultValue(DefaultStoreConcurrentLoadAllThreshold)]
         public int StoreConcurrentLoadAllThreshold { get; set; }
+
+        public int RebalanceOrder { get; set; }
     }
 }
