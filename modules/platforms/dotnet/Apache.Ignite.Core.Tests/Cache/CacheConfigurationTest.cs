@@ -167,6 +167,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check put-get
             cache[1] = new Entity { Foo = 1 };
             Assert.AreEqual(1, cache[1].Foo);
+
+            // Check another config
+            cacheName = Guid.NewGuid().ToString();
+            cfg = GetCustomCacheConfiguration2(cacheName);
+
+            cache = _ignite.CreateCache<int, Entity>(cfg);
+            AssertConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
         /// <summary>
