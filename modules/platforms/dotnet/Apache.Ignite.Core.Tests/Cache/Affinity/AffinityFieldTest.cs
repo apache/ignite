@@ -50,7 +50,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration("default")
             {
-                CacheMode = CacheMode.Partitioned
+                CacheMode = CacheMode.Partitioned,
+                KeyConfiguration = new[]
+                {
+                    new CacheKeyConfiguration(typeof(CacheKey2)) {AffinityKeyFieldName = "AffinityKey"},
+                    new CacheKeyConfiguration{TypeName = "Baz", AffinityKeyFieldName = "Bar"}
+                }
             });
             _cache2 = grid2.GetCache<object, string>("default");
         }
@@ -74,14 +79,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             _cache1.Put(new CacheKey(), string.Empty);
             _cache1.Put(new CacheKeyAttr(), string.Empty);
             _cache1.Put(new CacheKeyAttrOverride(), string.Empty);
+            _cache1.Put(new CacheKey2(), string.Empty);
 
             // Verify
             foreach (var type in new[] { typeof(CacheKey), typeof(CacheKeyAttr), 
-                typeof(CacheKeyAttrDynamicRegistration), typeof(CacheKeyAttrOverride)})
+                typeof(CacheKeyAttrDynamicRegistration), typeof(CacheKeyAttrOverride), typeof(CacheKey2)})
             {
                 Assert.AreEqual("AffinityKey", _cache1.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
                 Assert.AreEqual("AffinityKey", _cache2.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
             }
+        }
+
+        /// <summary>
+        /// Tests the cache configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _cache1.GetConfiguration();
+
+            var keys = cfg.KeyConfiguration;
+            Assert.AreEqual(2, keys.Count);
+
+            Assert.AreEqual(typeof(CacheKey2).FullName, keys.First().TypeName);
+            Assert.AreEqual("AffinityKey", keys.First().AffinityKeyFieldName);
+
+            Assert.AreEqual("Baz", keys.Last().TypeName);
+            Assert.AreEqual("Bar", keys.Last().AffinityKeyFieldName);
         }
 
         /// <summary>
@@ -202,6 +226,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             [AffinityKeyMapped] public int Key { get; set; }
             public int AffinityKey { get; set; }
+        }
+
+        private class CacheKey2
+        {
+            public int Key { get; set; }
+            public int AffinityKey2 { get; set; }
         }
     }
 }
