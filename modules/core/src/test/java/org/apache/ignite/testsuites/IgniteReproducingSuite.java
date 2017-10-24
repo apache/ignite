@@ -18,19 +18,24 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
  * This empty suite may be used in case it is needed to run
- * some test subset to reproduce an issue.
+ * some test subset to reproduce an issue.<br>
+ *
+ * You may launch and check results on
+ * https://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgniteReproducingSuite
+ *
+ * This suite is not included into main build
  */
 public class IgniteReproducingSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
-        for (int i = 0; i < 100; i++)
-            suite.addTestSuite(CacheRebalancingSelfTest.class);
+        //uncomment to add some test
+        //for (int i = 0; i < 100; i++)
+        //    suite.addTestSuite();
 
         return suite;
     }
