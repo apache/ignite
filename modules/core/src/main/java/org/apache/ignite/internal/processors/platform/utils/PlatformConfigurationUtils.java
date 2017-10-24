@@ -227,11 +227,13 @@ public class PlatformConfigurationUtils {
         int keyCnt = in.readInt();
 
         if (keyCnt > 0) {
-            ArrayList<CacheKeyConfiguration> keys = new ArrayList<>(keyCnt);
+            CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
 
             for (int i = 0; i < keyCnt; i++) {
-                keys.add(new CacheKeyConfiguration(in.readString(), in.readString()));
+                keys[i] = new CacheKeyConfiguration(in.readString(), in.readString());
             }
+
+            ccfg.setKeyConfiguration(keys);
         }
 
         int pluginCnt = in.readInt();
