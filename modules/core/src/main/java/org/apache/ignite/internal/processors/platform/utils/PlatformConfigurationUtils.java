@@ -39,6 +39,7 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -222,6 +223,16 @@ public class PlatformConfigurationUtils {
 
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
+
+        int keyCnt = in.readInt();
+
+        if (keyCnt > 0) {
+            ArrayList<CacheKeyConfiguration> keys = new ArrayList<>(keyCnt);
+
+            for (int i = 0; i < keyCnt; i++) {
+                keys.add(new CacheKeyConfiguration(in.readString(), in.readString()));
+            }
+        }
 
         int pluginCnt = in.readInt();
 

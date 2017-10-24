@@ -38,7 +38,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheKeyConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="CacheKeyConfiguration"/> class, using specified type to look
+        /// for <see cref="AffinityKeyMappedAttribute"/>.
         /// </summary>
         public CacheKeyConfiguration(Type keyType)
         {
