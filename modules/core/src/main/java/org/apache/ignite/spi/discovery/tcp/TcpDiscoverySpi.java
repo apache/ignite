@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -41,6 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
@@ -1598,6 +1600,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
                     "long GC pauses on remote node) [curTimeout=" + timeout +
                     ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
+            if (X.hasCause(e, StreamCorruptedException.class)) {
+                // Lets check StreamCorruptedException for SSL Alert message
+                // Sample SSL Alert message: 15:03:03:00:02:02:0a
+                // 15 = Alert
+                // 03:03 = SSL version
+                // 00:02 = payload length
+                // 02:0a = critical (02) / unexpected message (0a)
+                // So, check message for "invalid stream header: 150X0X00"
+
+                StreamCorruptedException cause = X.cause(e, StreamCorruptedException.class);
+                String msg = (cause != null) ? cause.getMessage() : null;
+                if (msg != null && msg.matches("invalid stream header: 150\\d0\\d00"))
+                    cause.initCause(new SSLException("detected SSL alarm in StreamCorruptedException"));
+            }
             throw e;
         }
         finally {
