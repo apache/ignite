@@ -276,6 +276,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultMaxQueryIteratorsCount, cfg.MaxQueryIteratorsCount);
             Assert.AreEqual(CacheConfiguration.DefaultQueryDetailMetricsSize, cfg.QueryDetailMetricsSize);
             Assert.IsNull(cfg.SqlSchema);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryParallelism, cfg.QueryParallelism);
         }
 
         /// <summary>
