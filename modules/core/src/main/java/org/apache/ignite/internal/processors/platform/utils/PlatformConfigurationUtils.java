@@ -202,16 +202,14 @@ public class PlatformConfigurationUtils {
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
         ccfg.setSqlIndexMaxInlineSize(in.readInt());
-
-        OnheapCacheEnabled = reader.ReadBoolean();
-        StoreConcurrentLoadAllThreshold = reader.ReadInt();
-        RebalanceOrder = reader.ReadInt();
-        RebalanceBatchesPrefetchCount = reader.ReadLong();
-        MaxQueryIteratorsCount = reader.ReadInt();
-        QueryDetailMetricsSize = reader.ReadInt();
-        QueryParallelism = reader.ReadInt();
-        SqlSchema = reader.ReadString();
-
+        ccfg.setOnheapCacheEnabled(in.readBoolean());
+        ccfg.setStoreConcurrentLoadAllThreshold(in.readInt());
+        ccfg.setRebalanceOrder(in.readInt());
+        ccfg.setRebalanceBatchesPrefetchCount(in.readLong());
+        ccfg.setMaxQueryIteratorsCount(in.readInt());
+        ccfg.setQueryDetailMetricsSize(in.readInt());
+        ccfg.setQueryParallelism(in.readInt());
+        ccfg.setSqlSchema(in.readString());
 
         int qryEntCnt = in.readInt();
 
@@ -913,6 +911,14 @@ public class PlatformConfigurationUtils {
             writer.writeObject(null);
 
         writer.writeInt(ccfg.getSqlIndexMaxInlineSize());
+        writer.writeBoolean(ccfg.isOnheapCacheEnabled());
+        writer.writeInt(ccfg.getStoreConcurrentLoadAllThreshold());
+        writer.writeInt(ccfg.getRebalanceOrder());
+        writer.writeLong(ccfg.getRebalanceBatchesPrefetchCount());
+        writer.writeInt(ccfg.getMaxQueryIteratorsCount());
+        writer.writeInt(ccfg.getQueryDetailMetricsSize());
+        writer.writeInt(ccfg.getQueryParallelism());
+        writer.writeString(ccfg.getSqlSchema());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
