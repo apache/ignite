@@ -49,6 +49,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -56,7 +57,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
@@ -1117,6 +1117,20 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         builder.setField("objectField", new GridBinaryTestClasses.Company());
 
         builder.build();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoFieldsObject() throws Exception {
+        BinaryObjectBuilder builder = binaries().builder("SomeType");
+
+        BinaryObject bo = builder.build();
+
+        BinaryField field = builder.setField("unused", 1).build()
+            .type().field("unused");
+
+        field.value(bo);
     }
 
     /**

@@ -280,6 +280,9 @@ public class BinaryFieldImpl implements BinaryFieldEx {
 
         BinarySchema schema = schemas.schema(schemaId);
 
+        if (schemaId == 0)
+            return BinarySchema.ORDER_NOT_FOUND;
+
         if (schema == null) {
             schema = obj.createSchema();
 
