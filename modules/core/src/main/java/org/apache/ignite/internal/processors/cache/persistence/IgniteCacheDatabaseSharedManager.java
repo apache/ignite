@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -574,10 +573,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!F.isEmpty(memMetricsMap)) {
             DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
 
-            if (memMetrics == null)
-                return null;
-            else
-                return new DataRegionMetricsSnapshot(memMetrics);
+            return memMetrics == null ? null : new DataRegionMetricsSnapshot(memMetrics);
         }
         else
             return null;
@@ -794,7 +790,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionConfiguration plcCfg = memPlc.config();
 
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
             return;
 
         long memorySize = plcCfg.getMaxSize();
@@ -851,7 +847,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
-        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || CU.isPersistenceEnabled(cctx.gridConfig()))
+        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plc.isPersistenceEnabled())
             return new NoOpPageEvictionTracker();
 
         assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();
@@ -885,12 +881,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return null;
 
         final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-        final String folderName;
 
-        if(folderSettings.isCompatible())
-            folderName = String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_");
-        else
-            folderName = folderSettings.folderName();
+        final String folderName = folderSettings.isCompatible() ?
+            String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_") :
+            folderSettings.folderName();
 
         return buildPath(path, folderName);
     }
