@@ -97,4 +97,6 @@ public interface GridClusterStateProcessor extends GridProcessor {
      * @param req State change request.
      */
     void onStateChangeExchangeDone(StateChangeRequest req);
+
+    void onStateRestored(@Nullable BaselineTopology blt);
 }

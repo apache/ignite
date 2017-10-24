@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -120,6 +121,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -141,6 +143,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -162,6 +165,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
     private static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
+
+    private static final String METASTORE_BASELINE_TOPOLOGY_KEY = "metastoreBltKey";
 
     /** Default checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024;
@@ -364,27 +369,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return fut;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        super.initDataRegions(memCfg);
-
-        addDataRegion(
-            memCfg,
-            createDataRegionConfiguration(memCfg),
-            METASTORE_DATA_REGION_NAME
-        );
-    }
-
     /**
-     * @param storagCfg Data storage configuration.
+     * @param storageCfg Data storage configuration.
      * @return Data region configuration.
      */
-    private DataRegionConfiguration createDataRegionConfiguration(DataStorageConfiguration storagCfg) {
+    private DataRegionConfiguration createDataRegionConfiguration(DataStorageConfiguration storageCfg) {
         DataRegionConfiguration cfg = new DataRegionConfiguration();
 
         cfg.setName(METASTORE_DATA_REGION_NAME);
-        cfg.setInitialSize(storagCfg.getSystemRegionInitialSize());
-        cfg.setMaxSize(storagCfg.getSystemRegionMaxSize());
+        cfg.setInitialSize(storageCfg.getSystemRegionInitialSize());
+        cfg.setMaxSize(storageCfg.getSystemRegionMaxSize());
         cfg.setPersistenceEnabled(true);
         return cfg;
     }
@@ -429,6 +423,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persStoreMetrics.wal(cctx.wal());
 
             // Here we can get data from metastorage
+            kernalCtx.state().onStateRestored(restoreBaselineTopology());
         }
     }
 
@@ -447,6 +442,72 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             );
 
         checkpointPageBufSize = checkpointBufferSize(cctx.kernalContext().config());
+    }
+
+    @Nullable private BaselineTopology restoreBaselineTopology() throws IgniteCheckedException {
+        BaselineTopology blt = null;
+
+        try {
+            DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+
+            DataRegionConfiguration plcCfg = createDataRegionConfiguration(memCfg);
+
+            File allocPath = buildAllocPath(plcCfg);
+
+            DirectMemoryProvider memProvider = allocPath == null ?
+                new UnsafeMemoryProvider(log) :
+                new MappedFileMemoryProvider(
+                    log,
+                    allocPath);
+
+            DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(plcCfg);
+
+            PageMemoryEx storePageMem = (PageMemoryEx)createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
+
+            DataRegion regCfg = new DataRegion(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
+
+            CheckpointStatus status = readCheckpointStatus();
+
+            cctx.pageStore().initializeForMetastorage();
+
+            storePageMem.start();
+
+            restoreMemory(status, true, storePageMem);
+
+            metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
+
+            metaStorage.init(this);
+
+            MetastorageDataRow row = metaStorage.getData(METASTORE_BASELINE_TOPOLOGY_KEY);
+
+            if (row != null)
+                blt = new JdkMarshaller().unmarshal(row.value(), getClass().getClassLoader());
+
+            metaStorage = null;
+
+            storePageMem.stop();
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException(e);
+        }
+        catch (Throwable ex) {
+            //TODO: allow read-only MetaStorage to work without initialized files.
+            return null;
+        }
+
+        return blt;
+    }
+
+    private void saveBaselineTopology(@Nullable BaselineTopology blt) throws IgniteCheckedException {
+        assert metaStorage != null;
+
+        if (blt == null)
+            metaStorage.removeData(METASTORE_BASELINE_TOPOLOGY_KEY);
+        else {
+            byte[] bytes = new JdkMarshaller().marshal(blt);
+
+            metaStorage.putData(METASTORE_BASELINE_TOPOLOGY_KEY, bytes);
+        }
     }
 
     /**
@@ -514,14 +575,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             registrateMetricsMBean();
         }
 
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+        saveBaselineTopology(blt);
+
         super.onActivate(ctx);
-
-        if (!cctx.localNode().isClient()) {
-            cctx.pageStore().initializeForMetastorage();
-
-            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
-        }
     }
 
     /** {@inheritDoc} */
@@ -636,8 +694,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
             WALPointer restore = restoreMemory(status);
-
-            metaStorage.init(this);
 
             cctx.wal().resumeLogging(restore);
 

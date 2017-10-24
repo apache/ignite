@@ -112,6 +112,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
+
+        initDataRegions(memCfg);
     }
 
     /**
@@ -942,8 +944,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
-
-        initDataRegions(memCfg);
 
         registerMetricsMBeans();
 

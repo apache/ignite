@@ -67,7 +67,8 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
 
         IgniteEx srv = grid(0);
 
-        srv.active(true);
+        // TODO: final implementation should work with srv.active(true);
+        srv.activeEx(true, srv.cluster().nodes());
 
         createAndFillCache(srv);
 

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -162,10 +163,24 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override @Nullable public IgniteInternalFuture<Boolean> onLocalJoin(DiscoCache discoCache) {
-        if (globalState.transition()) {
-            joinFut = new TransitionOnJoinWaitFuture(globalState, discoCache);
+        final DiscoveryDataClusterState state = globalState;
+
+        if (state.transition()) {
+            joinFut = new TransitionOnJoinWaitFuture(state, discoCache);
 
             return joinFut;
+        }
+        else if (!ctx.clientNode() && !ctx.isDaemon() && !state.active() && state.baselineTopology() != null &&
+            state.baselineTopology().isSatisfied(discoCache.serverNodes())) {
+            return joinFut.chain(new IgniteClosureX<IgniteInternalFuture<Boolean>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<Boolean> arg) throws IgniteCheckedException {
+                    Boolean res = arg.get();
+
+                    changeGlobalState0(true, state.baselineTopology());
+
+                    return res;
+                }
+            });
         }
 
         return null;
@@ -304,9 +319,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      * @return {@code True} if state change from message can be applied to the current state.
      */
     private static boolean isApplicable(ChangeGlobalStateMessage msg, DiscoveryDataClusterState state) {
-        if (!state.active() && !msg.activate())
-            return false;
-
         if (msg.activate() != state.active())
             return true;
 
@@ -407,8 +419,15 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         DiscoveryDataClusterState state = (DiscoveryDataClusterState)data.commonData();
 
-        if (state != null)
+        if (state != null) {
+            DiscoveryDataClusterState curState = globalState;
+
+            if (curState != null && curState.baselineTopology() != null && state.baselineTopology() != null &&
+                !BaselineTopology.equals(curState.baselineTopology(), state.baselineTopology()))
+                throw new IgniteException("Baseline topology mismatch: " + curState.baselineTopology() + " " + state.baselineTopology());
+
             globalState = state;
+        }
     }
 
     /** {@inheritDoc} */
@@ -419,6 +438,13 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
         Collection<ClusterNode> baselineNodes) {
+        BaselineTopology blt = BaselineTopology.build(baselineNodes);
+
+        return changeGlobalState0(activate, blt);
+    }
+
+    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
+            BaselineTopology blt) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -431,8 +457,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(activate) +
                 " cluster (must invoke the method outside of an active transaction)."));
         }
-
-        BaselineTopology blt = BaselineTopology.build(baselineNodes);
 
         DiscoveryDataClusterState curState = globalState;
 
@@ -729,6 +753,16 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                     }
                 });
             }
+        }
+    }
+
+    @Override public void onStateRestored(BaselineTopology blt) {
+        DiscoveryDataClusterState state = globalState;
+
+        if (!state.active() && !state.transition() && state.baselineTopology() == null) {
+            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, blt);
+
+            globalState = newState;
         }
     }
 
