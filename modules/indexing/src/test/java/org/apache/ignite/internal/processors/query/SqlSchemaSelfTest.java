@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -230,11 +230,23 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomSchemaConcurrentUse() throws Exception {
-        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new QueryEntityTester(100, 0));
+        final AtomicInteger maxIdx = new AtomicInteger();
 
-        new QueryEntityTester(100, 100).run();
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 100; i++) {
+                    int idx = maxIdx.incrementAndGet();
+                    
+                    String tbl = "Person" + idx;
 
-        fut.get();
+                    IgniteCache<Long, Person> cache = registerQueryEntity(tbl, "PersonCache" + idx);
+
+                    testQueryEntity(cache, tbl);
+
+                    cache.destroy();
+                }
+            }
+        }, 4, "schema-test");
     }
 
     /**
@@ -293,38 +305,6 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
             .setName(CACHE_PERSON_2)
             .setIndexedTypes(PersonKey.class, Person.class)
             .setSqlSchema(QueryUtils.DFLT_SCHEMA));
-    }
-
-    /**
-     *
-     */
-    private class QueryEntityTester implements Runnable {
-        /** */
-        private int numTbls;
-        /** */
-        private int off;
-
-        /**
-         * @param numTbls Number of tables to create.
-         * @param off Table index offset.
-         */
-        QueryEntityTester(int numTbls, int off) {
-            this.numTbls = numTbls;
-            this.off = off;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            for (int i = off; i < off + numTbls; i++) {
-                String tbl = "Person" + i;
-
-                IgniteCache<Long, Person> cache = registerQueryEntity(tbl, "PersonCache" + i);
-
-                testQueryEntity(cache, tbl);
-
-                cache.destroy();
-            }
-        }
     }
 
     /**

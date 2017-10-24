@@ -54,18 +54,11 @@ public class H2Schema {
     }
 
     /**
-     * @return Number of caches having this schema.
-     */
-    public int numCaches() {
-        return numCaches;
-    }
-
-    /**
      * Increments counter for number of caches having this schema.
      *
      * @return New value of caches counter.
      */
-    public int incNumCaches() {
+    public int incrementCachesNumber() {
         return ++numCaches;
     }
 
@@ -74,7 +67,7 @@ public class H2Schema {
      *
      * @return New value of caches counter.
      */
-    public int decNumCaches() {
+    public int decrementCachesNumber() {
         return --numCaches;
     }
 

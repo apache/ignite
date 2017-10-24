@@ -259,7 +259,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridSpinBusyLock busyLock;
 
     /** */
-    private final Object schemaLock = new Object();
+    private final Object schemaMux = new Object();
 
     /** */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap8<>();
@@ -2289,7 +2289,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContext<?, ?> cctx)
         throws IgniteCheckedException {
         if (!isDefaultSchema(schemaName)) {
-            synchronized (schemaLock) {
+            synchronized (schemaMux) {
                 H2Schema schema = new H2Schema(schemaName);
 
                 H2Schema oldSchema = schemas.putIfAbsent(schemaName, schema);
@@ -2299,7 +2299,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 else
                     schema = oldSchema;
 
-                schema.incNumCaches();
+                schema.incrementCachesNumber();
             }
         }
 
@@ -2343,15 +2343,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
 
-            synchronized (schemaLock) {
-                if (schema.decNumCaches() == 0 && !isDefaultSchema(schemaName)) {
-                    schemas.remove(schemaName);
+            if (!isDefaultSchema(schemaName)) {
+                synchronized (schemaMux) {
+                    if (schema.decrementCachesNumber() == 0) {
+                        schemas.remove(schemaName);
 
-                    try {
-                        dropSchema(schemaName);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                        try {
+                            dropSchema(schemaName);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
+                        }
                     }
                 }
             }
