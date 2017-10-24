@@ -39,13 +39,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <licenses>
-        <license>
-            <name>Modified BSD License</name>
-            <url>http://opensource.org/licenses/BSD-3-Clause</url>
-        </license>
-    </licenses>
-
     <dependencies>
         <dependency>
             <groupId>sqlline</groupId>
