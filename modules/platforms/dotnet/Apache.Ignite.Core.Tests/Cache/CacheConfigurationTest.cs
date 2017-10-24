@@ -339,6 +339,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
+
+            Assert.AreEqual(x.OnheapCacheEnabled, y.OnheapCacheEnabled);
+            Assert.AreEqual(x.StoreConcurrentLoadAllThreshold, y.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(x.RebalanceOrder, y.RebalanceOrder);
+            Assert.AreEqual(x.RebalanceBatchesPrefetchCount, y.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(x.MaxQueryIteratorsCount, y.MaxQueryIteratorsCount);
+            Assert.AreEqual(x.QueryDetailMetricsSize, y.QueryDetailMetricsSize);
+            Assert.AreEqual(x.QueryParallelism, y.QueryParallelism);
+            Assert.AreEqual(x.SqlSchema, y.SqlSchema);
         }
 
         /// <summary>
@@ -653,7 +662,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TypeName = "foobar",
                         AffinityKeyFieldName = "barbaz"
                     }
-                }
+                },
+                OnheapCacheEnabled = true,
+                StoreConcurrentLoadAllThreshold = 7,
+                RebalanceOrder = 3,
+                RebalanceBatchesPrefetchCount = 4,
+                MaxQueryIteratorsCount = 512,
+                QueryDetailMetricsSize = 100,
+                QueryParallelism = 16,
+                SqlSchema = "foo"
             };
         }
         /// <summary>

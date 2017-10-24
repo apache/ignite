@@ -203,6 +203,16 @@ public class PlatformConfigurationUtils {
 
         ccfg.setSqlIndexMaxInlineSize(in.readInt());
 
+        OnheapCacheEnabled = reader.ReadBoolean();
+        StoreConcurrentLoadAllThreshold = reader.ReadInt();
+        RebalanceOrder = reader.ReadInt();
+        RebalanceBatchesPrefetchCount = reader.ReadLong();
+        MaxQueryIteratorsCount = reader.ReadInt();
+        QueryDetailMetricsSize = reader.ReadInt();
+        QueryParallelism = reader.ReadInt();
+        SqlSchema = reader.ReadString();
+
+
         int qryEntCnt = in.readInt();
 
         if (qryEntCnt > 0) {
