@@ -67,7 +67,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Exceptions caught during collecting events from nodes. */
     private Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
-    /** All memory metrics collected from nodes. */
+    /** All data region metrics collected from nodes. */
     private Map<UUID, Collection<VisorMemoryMetrics>> memoryMetrics = new HashMap<>();
 
     /** Exceptions caught during collecting memory metrics from nodes. */
@@ -188,7 +188,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     }
 
     /**
-     * @return All memory metrics collected from nodes.
+     * @return All data region metrics collected from nodes.
      */
     public Map<UUID, Collection<VisorMemoryMetrics>> getMemoryMetrics() {
         return memoryMetrics;

@@ -51,6 +51,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private Dictionary<string, string> _aliasMap;
 
+        /** */
         private ICollection<QueryAlias> _aliases;
 
         /// <summary>
@@ -241,9 +242,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             var count = reader.ReadInt();
             Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x =>
-                    new QueryField(reader.ReadString(), reader.ReadString()) {IsKeyField = reader.ReadBoolean()})
-                    .ToList();
+                : Enumerable.Range(0, count).Select(x => new QueryField(reader)).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -271,9 +270,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 foreach (var field in Fields)
                 {
-                    writer.WriteString(field.Name);
-                    writer.WriteString(field.FieldTypeName);
-                    writer.WriteBoolean(field.IsKeyField);
+                    field.Write(writer);
                 }
             }
             else
@@ -456,11 +453,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
                             attr.IndexGroups)
                         {
-                            InlineSize = attr.IndexInlineSize
+                            InlineSize = attr.IndexInlineSize,
                         });
                     }
 
-                    fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
+                    fields.Add(new QueryField(columnName, memberInfo.Value)
+                    {
+                        IsKeyField = isKey,
+                        NotNull = attr.NotNull
+                    });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
                 }

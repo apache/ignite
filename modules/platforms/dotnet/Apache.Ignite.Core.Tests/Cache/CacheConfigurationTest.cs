@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+#pragma warning disable 618
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     MemoryPolicies = new[]
@@ -83,6 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         }
                     }
                 },
+#pragma warning restore 618
                 SpringConfigUrl = "Config\\cache-default.xml"
             };
 
@@ -297,7 +299,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+#pragma warning disable 618
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+#pragma warning restore 618
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
             Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
@@ -511,6 +515,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
+            Assert.AreEqual(x.NotNull, y.NotNull);
         }
 
         /// <summary>
@@ -572,7 +577,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
                 CacheStoreFactory = new CacheStoreFactoryTest(),
-                ReadThrough = true,
+                ReadThrough = false,
                 WriteThrough = true,
                 WriteBehindCoalescing = false,
                 GroupName = "someGroup",
@@ -587,7 +592,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         {
                             new QueryField("length", typeof(int)), 
                             new QueryField("name", typeof(string)) {IsKeyField = true},
-                            new QueryField("location", typeof(string)),
+                            new QueryField("location", typeof(string)) {NotNull = true},
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]
@@ -625,7 +630,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+#pragma warning disable 618
                 MemoryPolicyName = "myMemPolicy",
+#pragma warning restore 618
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() },
                 SqlIndexMaxInlineSize = 10000

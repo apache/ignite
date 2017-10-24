@@ -27,8 +27,9 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -71,13 +72,15 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg(TMPL_NAME));
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
-        pCfg.setCheckpointingFrequency(1000);
+        pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(100 * 1024 * 1024));
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        pCfg.setCheckpointFrequency(1000);
 
-        cfg.setActiveOnStart(true);
+        cfg.setDataStorageConfiguration(pCfg);
 
         return cfg;
     }
@@ -208,6 +211,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         node.active(true);
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
+
+        node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
     }
 
     /** */

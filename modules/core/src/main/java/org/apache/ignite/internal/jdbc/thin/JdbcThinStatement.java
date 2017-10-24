@@ -56,6 +56,9 @@ public class JdbcThinStatement implements Statement {
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
 
+    /** Schema name. */
+    private final String schema;
+
     /** Closed flag. */
     private boolean closed;
 
@@ -91,12 +94,14 @@ public class JdbcThinStatement implements Statement {
      *
      * @param conn JDBC connection.
      * @param resHoldability Result set holdability.
+     * @param schema Schema name.
      */
-    JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
+    JdbcThinStatement(JdbcThinConnection conn, int resHoldability, String schema) {
         assert conn != null;
 
         this.conn = conn;
         this.resHoldability = resHoldability;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
@@ -128,7 +133,7 @@ public class JdbcThinStatement implements Statement {
 
         currQueryId = conn.nextQueryId();
 
-        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(currQueryId, stmtType, conn.getSchema(), pageSize,
+        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(currQueryId, stmtType, schema, pageSize,
             maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
         assert res0 != null;

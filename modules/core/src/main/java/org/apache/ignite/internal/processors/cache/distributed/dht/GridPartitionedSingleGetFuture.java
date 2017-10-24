@@ -703,16 +703,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return false;
 
         if (canRemap) {
-            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
+            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
                 Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
             cctx.affinity().affinityReadyFuture(updTopVer).listen(
                 new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            fut.get();
-
-                            remap(updTopVer);
+                            remap(fut.get());
                         }
                         catch (IgniteCheckedException e) {
                             onDone(e);

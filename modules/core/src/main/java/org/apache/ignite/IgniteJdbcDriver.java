@@ -331,6 +331,12 @@ public class IgniteJdbcDriver implements Driver {
     /** Whether DML streaming will overwrite existing cache entries. */
     private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
 
+    /** Allow queries with multiple statements. */
+    private static final String PARAM_MULTIPLE_STMTS = "multipleStatementsAllowed";
+
+    /** Skip reducer on update property name. */
+    private static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -375,6 +381,12 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Whether DML streaming will overwrite existing cache entries. */
     public static final String PROP_STREAMING_ALLOW_OVERWRITE = PROP_PREFIX + PARAM_STREAMING_ALLOW_OVERWRITE;
+
+    /** Allow query with multiple statements. */
+    public static final String PROP_MULTIPLE_STMTS = PROP_PREFIX + PARAM_MULTIPLE_STMTS;
+
+    /** Skip reducer on update update property name. */
+    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -447,7 +459,9 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
             new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(JdbcThinUtils.PROP_LAZY), ""),
-            new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), "")
+            new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
+            new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 w =>
                 {
                     w.WriteObjectDetached(key);
-                    w.WriteInt(EncodePeekModes(modes));
+                    w.WriteInt(IgniteUtils.EncodePeekModes(modes));
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
                 _readException);
@@ -808,7 +808,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task<int> GetSizeAsync(params CachePeekMode[] modes)
         {
-            var modes0 = EncodePeekModes(modes);
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
 
             return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
         }
@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
         {
-            var modes0 = EncodePeekModes(modes);
+            var modes0 = IgniteUtils.EncodePeekModes(modes);
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
@@ -1147,7 +1147,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(CachePeekMode[] peekModes)
         {
-            return new CacheEnumerable<TK, TV>(this, EncodePeekModes(peekModes));
+            return new CacheEnumerable<TK, TV>(this, IgniteUtils.EncodePeekModes(peekModes));
         }
 
         /** <inheritdoc /> */
@@ -1186,22 +1186,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         protected override T Unmarshal<T>(IBinaryStream stream)
         {
             return Marshaller.Unmarshal<T>(stream, _flagKeepBinary);
-        }
-
-        /// <summary>
-        /// Encodes the peek modes into a single int value.
-        /// </summary>
-        private static int EncodePeekModes(CachePeekMode[] modes)
-        {
-            int modesEncoded = 0;
-
-            if (modes != null)
-            {
-                foreach (var mode in modes)
-                    modesEncoded |= (int) mode;
-            }
-
-            return modesEncoded;
         }
 
         /// <summary>

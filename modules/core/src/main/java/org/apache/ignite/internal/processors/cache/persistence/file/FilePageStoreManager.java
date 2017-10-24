@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -91,9 +93,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final IgniteConfiguration igniteCfg;
 
     /** */
-    private PersistentStoreConfiguration pstCfg;
+    private DataStorageConfiguration dsCfg;
 
-    /** Absolute directory for file page store */
+    /** Absolute directory for file page store. Includes consistent id based folder. */
     private File storeWorkDir;
 
     /** */
@@ -108,38 +110,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public FilePageStoreManager(GridKernalContext ctx) {
         igniteCfg = ctx.config();
 
-        PersistentStoreConfiguration pstCfg = igniteCfg.getPersistentStoreConfiguration();
+        DataStorageConfiguration dsCfg = igniteCfg.getDataStorageConfiguration();
 
-        assert pstCfg != null : "WAL should not be created if persistence is disabled.";
+        assert dsCfg != null;
 
-        this.pstCfg = pstCfg;
+        this.dsCfg = dsCfg;
     }
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode())
+        final GridKernalContext ctx = cctx.kernalContext();
+        if (ctx.clientNode())
             return;
 
-        String consId = U.maskForFileName(cctx.kernalContext().discovery().consistentId().toString());
+        final PdsFolderSettings folderSettings = ctx.pdsFolderResolver().resolveFolders();
 
-        if (pstCfg.getPersistentStorePath() != null) {
-            File workDir0 = new File(pstCfg.getPersistentStorePath());
-
-            if (!workDir0.isAbsolute())
-                workDir0 = U.resolveWorkDirectory(
-                    igniteCfg.getWorkDirectory(),
-                    pstCfg.getPersistentStorePath(),
-                    false
-                );
-
-            storeWorkDir = new File(workDir0, consId);
-        }
-        else
-            storeWorkDir = new File(U.resolveWorkDirectory(
-                igniteCfg.getWorkDirectory(),
-                DFLT_STORE_DIR,
-                false
-            ), consId);
+        storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
     }
@@ -367,7 +353,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             grpsWithoutIdx.add(grpDesc.groupId());
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
-            pstCfg.getFileIOFactory(), igniteCfg.getMemoryConfiguration());
+            dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
         FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
@@ -404,43 +390,52 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             File lockF = new File(cacheWorkDir, IgniteCacheSnapshotManager.SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME);
 
-            if (lockF.exists()) {
-                Path tmp = cacheWorkDir.toPath().getParent().resolve(cacheWorkDir.getName() + ".tmp");
+            Path cacheWorkDirPath = cacheWorkDir.toPath();
+
+            Path tmp = cacheWorkDirPath.getParent().resolve(cacheWorkDir.getName() + ".tmp");
+
+            if (Files.exists(tmp) && Files.isDirectory(tmp) &&
+                    Files.exists(tmp.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER))) {
+
+                U.warn(log, "Ignite node crashed during the snapshot restore process " +
+                    "(there is a snapshot restore lock file left for cache). But old version of cache was saved. " +
+                    "Trying to restore it. Cache - [" + cacheWorkDir.getAbsolutePath() + ']');
+
+                U.delete(cacheWorkDir);
+
+                try {
+                    Files.move(tmp, cacheWorkDirPath, StandardCopyOption.ATOMIC_MOVE);
+
+                    cacheWorkDirPath.resolve(IgniteCacheSnapshotManager.TEMP_FILES_COMPLETENESS_MARKER).toFile().delete();
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException(e);
+                }
+            }
+            else if (lockF.exists()) {
+                U.warn(log, "Ignite node crashed during the snapshot restore process " +
+                    "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
+                    "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
 
                 boolean deleted = U.delete(cacheWorkDir);
 
-                if (Files.exists(tmp) && Files.isDirectory(tmp)) {
-                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                        "(there is a snapshot restore lock file left for cache). But old version of cache was saved. " +
-                        "Trying to restore it. Cache - [" + cacheWorkDir.getAbsolutePath() + ']');
-
-                    try {
-                        Files.move(tmp, cacheWorkDir.toPath());
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCheckedException(e);
-                    }
-                }
-                else {
-                    U.warn(log, "Ignite node crashed during the snapshot restore process " +
-                        "(there is a snapshot restore lock file left for cache). Will remove both the lock file and " +
-                        "incomplete cache directory [cacheDir=" + cacheWorkDir.getAbsolutePath() + ']');
-
-                    if (!deleted)
-                        throw new IgniteCheckedException("Failed to remove obsolete cache working directory " +
-                            "(remove the directory manually and make sure the work folder has correct permissions): " +
-                            cacheWorkDir.getAbsolutePath());
-
-                    cacheWorkDir.mkdirs();
-                }
-
-                if (!cacheWorkDir.exists())
-                    throw new IgniteCheckedException("Failed to initialize cache working directory " +
-                        "(failed to create, make sure the work folder has correct permissions): " +
+                if (!deleted)
+                    throw new IgniteCheckedException("Failed to remove obsolete cache working directory " +
+                        "(remove the directory manually and make sure the work folder has correct permissions): " +
                         cacheWorkDir.getAbsolutePath());
+
+                cacheWorkDir.mkdirs();
             }
             else
                 dirExisted = true;
+
+            if (!cacheWorkDir.exists())
+                throw new IgniteCheckedException("Failed to initialize cache working directory " +
+                    "(failed to create, make sure the work folder has correct permissions): " +
+                    cacheWorkDir.getAbsolutePath());
+
+            if (Files.exists(tmp))
+                U.delete(tmp);
         }
 
         return dirExisted;
@@ -551,7 +546,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return Store work dir.
+     * @return Store work dir. Includes consistent-id based folder
      */
     public File workDir() {
         return storeWorkDir;

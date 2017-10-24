@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +35,9 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -43,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -51,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
@@ -104,6 +109,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Lazy query execution flag. */
     private final boolean lazy;
 
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
+
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -126,12 +134,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param protocolVer Protocol version.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd,
-        GridSpinBusyLock busyLock, int maxCursors, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean replicatedOnly, boolean autoCloseCursors, boolean lazy,
-        ClientListenerProtocolVersion protocolVer) {
+    public JdbcRequestHandler(GridKernalContext ctx, JdbcConnectionHandler connHnd, GridSpinBusyLock busyLock, int maxCursors,
+        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
+        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.connHnd = connHnd;
         this.busyLock = busyLock;
@@ -142,6 +150,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -289,14 +298,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case SELECT_STATEMENT_TYPE:
-                    qry = new JdbcSqlFieldsQuery(sql, true);
+                    qry = new SqlFieldsQueryEx(sql, true);
 
                     break;
 
                 default:
                     assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
 
-                    qry = new JdbcSqlFieldsQuery(sql, false);
+                    qry = new SqlFieldsQueryEx(sql, false);
+
+                    if (skipReducerOnUpdate)
+                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());
@@ -320,7 +332,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setSchema(schemaName);
 
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
-                protocolVer.compareTo(JdbcConnectionContext.VER_2_3_1) < 0 ||
+                protocolVer.compareTo(JdbcConnectionContext.VER_2_3_0) < 0 ||
                     req.expectedStatementType() != JdbcStatementType.ANY_STATEMENT_TYPE);
 
             if (results.size() == 1) {
@@ -543,7 +555,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (q.sql() != null)
                     sql = q.sql();
 
-                SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, false);
+                SqlFieldsQuery qry = new SqlFieldsQueryEx(sql, false);
 
                 qry.setArgs(q.args());
 
@@ -626,9 +638,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new HashSet<>();
+            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -639,11 +652,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                        if (!matches(field.getKey(), req.columnName()))
+                        String colName = field.getKey();
+
+                        if (!matches(colName, req.columnName()))
                             continue;
 
-                        JdbcColumnMeta columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue());
+                        JdbcColumnMeta columnMeta;
+
+                        if (protocolVer.compareTo(VER_2_3_0) >= 0) {
+                            GridQueryProperty prop = table.property(colName);
+
+                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue(), !prop.notNull());
+                        }
+                        else
+                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -651,7 +675,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            JdbcMetaColumnsResult res = new JdbcMetaColumnsResult(meta);
+            JdbcMetaColumnsResult res;
+
+            if (protocolVer.compareTo(VER_2_3_0) >= 0)
+                res = new JdbcMetaColumnsResultV2(meta);
+            else
+                res = new JdbcMetaColumnsResult(meta);
 
             return new JdbcResponse(res);
         }
