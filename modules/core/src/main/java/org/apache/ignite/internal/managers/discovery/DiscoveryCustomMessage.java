@@ -97,7 +97,8 @@ public interface DiscoveryCustomMessage extends Serializable {
      *
      * @param ctx Context.
      * @param topVer New topology version.
-     * @param discoCache @return Reused discovery cache.
+     * @param discoCache Current discovery cache.
+     * @return Reused discovery cache.
      *
      * @throws UnsupportedOperationException If message doesn't support discovery cache reuse.
      */
