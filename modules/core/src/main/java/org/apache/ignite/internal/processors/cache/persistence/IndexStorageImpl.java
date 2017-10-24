@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Metadata storage.
  */
-public class MetadataStorage implements MetaStore {
+public class IndexStorageImpl implements IndexStorage {
     /** Max index name length (bytes num) */
     public static final int MAX_IDX_NAME_LEN = 255;
 
@@ -69,7 +69,7 @@ public class MetadataStorage implements MetaStore {
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      */
-    public MetadataStorage(
+    public IndexStorageImpl(
         final PageMemory pageMem,
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,

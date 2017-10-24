@@ -110,6 +110,17 @@ public interface DataRegionMetrics {
     public float getPagesReplaceRate();
 
     /**
+     * Gets average age (in milliseconds) for the pages being replaced from the disk storage.
+     * This number effectively represents the average time between the moment when a page is read
+     * from the disk and the time when the page is evicted. Note that if a page is never evicted, it does
+     * not contribute to this metric.
+     * This metric is enabled only for Ignite nodes with enabled persistence.
+     *
+     * @return Replaced pages age in milliseconds.
+     */
+    public float getPagesReplaceAge();
+
+    /**
      * Gets total number of pages currently loaded to the RAM. When persistence is disabled, this metric is equal
      * to {@link #getTotalAllocatedPages()}.
      *

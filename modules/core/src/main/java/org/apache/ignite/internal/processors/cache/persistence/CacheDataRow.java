@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Cache data row.
  */
-public interface CacheDataRow extends CacheSearchRow {
+public interface CacheDataRow extends CacheSearchRow, Storable {
     /**
      * @return Cache value.
      */
