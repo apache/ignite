@@ -1266,11 +1266,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (X.hasCause(e, StreamCorruptedException.class)) {
-                    if (--sslConnectAttempts == 0)
-                        throw new IgniteException("Unable to establish plain connection. " +
-                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
 
-                    continue;
+                    if (log.isDebugEnabled())
+                        log.debug("It seems that rmtAddr=" + addr + " is not Ignite server");
+
+
+                    break;
                 }
 
                 if (timeoutHelper.checkFailureTimeoutReached(e))
