@@ -151,6 +151,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
         public const int DefaultRebalanceBatchesPrefetchCount = 2;
 
+        /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
+        public const int DefaultMaxQueryIteratorsCount = 1024;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -200,6 +203,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             PartitionLossPolicy = DefaultPartitionLossPolicy;
             SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
             StoreConcurrentLoadAllThreshold = DefaultStoreConcurrentLoadAllThreshold;
+            RebalanceOrder = DefaultRebalanceOrder;
+            RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
+            MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
         }
 
         /// <summary>
@@ -862,5 +868,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultRebalanceBatchesPrefetchCount)]
         public long RebalanceBatchesPrefetchCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of active query iterators.
+        /// </summary>
+        [DefaultValue(DefaultMaxQueryIteratorsCount)]
+        public int MaxQueryIteratorsCount { get; set; }
     }
 }

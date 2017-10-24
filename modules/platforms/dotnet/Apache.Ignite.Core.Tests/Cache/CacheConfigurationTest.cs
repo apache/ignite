@@ -273,6 +273,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cfg.StoreConcurrentLoadAllThreshold);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(CacheConfiguration.DefaultMaxQueryIteratorsCount, cfg.MaxQueryIteratorsCount);
         }
 
         /// <summary>
