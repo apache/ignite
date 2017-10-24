@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.IO;
     using System.Linq;
     using System.Xml.Serialization;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -850,6 +849,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This parameter is applicable only for caches with <see cref="RebalanceMode"/> of
         /// <see cref="CacheRebalanceMode.Sync"/> and <see cref="CacheRebalanceMode.Async"/>.
         /// </summary>
+        [DefaultValue(DefaultRebalanceOrder)]
         public int RebalanceOrder { get; set; }
     }
 }
