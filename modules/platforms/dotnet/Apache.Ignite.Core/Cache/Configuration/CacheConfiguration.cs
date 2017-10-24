@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.IO;
     using System.Linq;
     using System.Xml.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 2;
@@ -325,6 +326,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
+        {
+            Write(writer);
         }
 
         /// <summary>

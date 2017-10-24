@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this instance.
         /// </summary>
-        void IBinaryRawWriteAware.Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer)
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);

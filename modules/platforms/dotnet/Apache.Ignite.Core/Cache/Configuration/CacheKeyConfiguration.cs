@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this object to the given writer.
         /// </summary>
-        void IBinaryRawWriteAware.Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer)
         {
             writer.WriteString(TypeName);
             writer.WriteString(AffinityKeyFieldName);

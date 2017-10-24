@@ -302,6 +302,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
+            writer.WriteCollectionRaw(CacheConfiguration);
             var caches = CacheConfiguration;
 
             if (caches == null)

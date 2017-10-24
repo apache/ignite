@@ -22,13 +22,21 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <summary>
     /// Represents an object that can write itself to a raw binary writer.
     /// </summary>
-    internal interface IBinaryRawWriteAware
+    internal interface IBinaryRawWriteAware<in T> where T : IBinaryRawWriter
     {
         /// <summary>
         /// Writes this object to the given writer.
         /// </summary> 
         /// <param name="writer">Writer.</param>
         /// <exception cref="System.IO.IOException">If write failed.</exception>
-        void Write(IBinaryRawWriter writer);
+        void Write(T writer);
+    }
+
+    /// <summary>
+    /// Represents an object that can write itself to a raw binary writer.
+    /// </summary>
+    internal interface IBinaryRawWriteAware : IBinaryRawWriteAware<IBinaryRawWriter>
+    {
+        // No-op.
     }
 }
