@@ -189,7 +189,6 @@ namespace Apache.Ignite.Core.Configuration
 
             StoragePath = reader.ReadString();
             CheckpointFrequency = reader.ReadLongAsTimespan();
-            CheckpointPageBufferSize = reader.ReadLong();
             CheckpointThreads = reader.ReadInt();
             LockWaitTime = reader.ReadLongAsTimespan();
             WalHistorySize = reader.ReadInt();
@@ -239,7 +238,6 @@ namespace Apache.Ignite.Core.Configuration
 
             writer.WriteString(StoragePath);
             writer.WriteTimeSpanAsLong(CheckpointFrequency);
-            writer.WriteLong(CheckpointPageBufferSize);
             writer.WriteInt(CheckpointThreads);
             writer.WriteTimeSpanAsLong(LockWaitTime);
             writer.WriteInt(WalHistorySize);
@@ -306,13 +304,6 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:03:00")]
         public TimeSpan CheckpointFrequency { get; set; }
-
-        /// <summary>
-        /// Gets or sets the size of the checkpointing page buffer.
-        /// <para />
-        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
-        /// </summary>
-        public long CheckpointPageBufferSize { get; set; }
 
         /// <summary>
         /// Gets or sets the number of threads for checkpointing.
