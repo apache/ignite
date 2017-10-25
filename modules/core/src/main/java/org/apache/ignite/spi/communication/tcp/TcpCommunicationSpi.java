@@ -3012,6 +3012,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
+        if (log.isDebugEnabled())
+            log.debug("Addresses resolved from attributes [rmtNode=" + node.id() + ", addrs=" + addrs +
+                ", isRmtAddrsExist=" + isRmtAddrsExist + ']');
+
         if (filterReachableAddresses) {
             Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
 
@@ -3041,7 +3045,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             if (log.isDebugEnabled())
-                log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+                log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs + ']');
         }
 
         return addrs;
@@ -3074,6 +3078,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             int lastWaitingTimeout = 1;
 
             while (client == null) { // Reconnection on handshake timeout.
+                if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping local address [addr=" + addr +
+                            ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
+                            ", node=" + node + ']');
+                    continue;
+                }
+
                 boolean needWait = false;
 
                 try {
