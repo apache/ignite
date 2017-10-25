@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+#pragma warning disable 618
                 MemoryConfiguration = new MemoryConfiguration
                 {
                     MemoryPolicies = new[]
@@ -83,6 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         }
                     }
                 },
+#pragma warning restore 618
                 SpringConfigUrl = "Config\\cache-default.xml"
             };
 
@@ -297,7 +299,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
             Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+#pragma warning disable 618
             Assert.AreEqual(x.MemoryPolicyName, y.MemoryPolicyName);
+#pragma warning restore 618
             Assert.AreEqual(x.PartitionLossPolicy, y.PartitionLossPolicy);
             Assert.AreEqual(x.WriteBehindCoalescing, y.WriteBehindCoalescing);
             Assert.AreEqual(x.GroupName, y.GroupName);
@@ -325,6 +329,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
                     y.PluginConfigurations.Select(p => p.GetType()));
             }
+
+            TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
         }
 
         /// <summary>
@@ -626,10 +632,20 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
                 EnableStatistics = true,
+#pragma warning disable 618
                 MemoryPolicyName = "myMemPolicy",
+#pragma warning restore 618
                 PartitionLossPolicy = PartitionLossPolicy.ReadOnlySafe,
                 PluginConfigurations = new[] { new MyPluginConfiguration() },
-                SqlIndexMaxInlineSize = 10000
+                SqlIndexMaxInlineSize = 10000,
+                KeyConfiguration = new[]
+                {
+                    new CacheKeyConfiguration
+                    {
+                        TypeName = "foobar",
+                        AffinityKeyFieldName = "barbaz"
+                    }
+                }
             };
         }
         /// <summary>

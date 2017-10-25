@@ -31,8 +31,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -81,7 +81,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private final PageEvictionTracker evictionTracker;
@@ -313,7 +313,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
      * @param memMetrics Memory metrics.
-     * @param memPlc Memory policy.
+     * @param memPlc Data region.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -323,8 +323,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
-        MemoryMetricsImpl memMetrics,
-        MemoryPolicy memPlc,
+        DataRegionMetricsImpl memMetrics,
+        DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,

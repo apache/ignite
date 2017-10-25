@@ -98,14 +98,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         reuseList = new ReuseListImpl(grp.groupId(),
             grp.cacheOrGroupName(),
-            grp.memoryPolicy().pageMemory(),
+            grp.dataRegion().pageMemory(),
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated());
 
         RootPage metastoreRoot = metas.treeRoot;
 
-        metaStore = new MetadataStorage(grp.memoryPolicy().pageMemory(),
+        metaStore = new MetadataStorage(grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
@@ -131,7 +131,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 pendingEntries = new PendingEntriesTree(
                     grp,
                     name,
-                    grp.memoryPolicy().pageMemory(),
+                    grp.dataRegion().pageMemory(),
                     pendingRootPage.pageId().pageId(),
                     reuseList,
                     pendingRootPage.isAllocated()
@@ -153,7 +153,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        assert grp.memoryPolicy().pageMemory() instanceof PageMemoryEx;
+        assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
         reuseList.saveMetadata();
 
@@ -190,7 +190,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
-            PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
             if (size > 0 || updCntr > 0) {
@@ -442,7 +442,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             saveStoreMetadata(store, null, false, true);
 
-            PageMemoryEx pageMemory = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+            PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
 
             int tag = pageMemory.invalidate(grp.groupId(), p);
 
@@ -516,7 +516,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private Metas getOrAllocateCacheMetas() throws IgniteCheckedException {
-        PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
         IgniteWriteAheadLogManager wal = ctx.wal();
 
         int grpId = grp.groupId();
@@ -935,8 +935,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     freeList = new FreeListImpl(
                         grp.groupId(),
                         grp.cacheOrGroupName() + "-" + partId,
-                        grp.memoryPolicy().memoryMetrics(),
-                        grp.memoryPolicy(),
+                        grp.dataRegion().memoryMetrics(),
+                        grp.dataRegion(),
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
@@ -962,7 +962,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
-                    PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree);
 
@@ -1056,7 +1056,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Partition metas.
          */
         private Metas getOrAllocatePartitionMetas() throws IgniteCheckedException {
-            PageMemoryEx pageMem = (PageMemoryEx)grp.memoryPolicy().pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = ctx.wal();
 
             int grpId = grp.groupId();

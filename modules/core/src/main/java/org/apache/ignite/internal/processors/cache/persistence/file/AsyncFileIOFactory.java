@@ -33,20 +33,34 @@ public class AsyncFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Thread local channel future holder. */
+    private transient volatile ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = initHolder();
+
     /** {@inheritDoc} */
     @Override public FileIO create(File file) throws IOException {
         return create(file, CREATE, READ, WRITE);
     }
 
-    /** */
-    private ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
-        @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
-            return new AsyncFileIO.ChannelOpFuture();
-        }
-    };
-
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+        if (holder == null) {
+            synchronized (this) {
+                if (holder == null)
+                    holder = initHolder();
+            }
+        }
+
         return new AsyncFileIO(file, holder, modes);
+    }
+
+    /**
+     * Initializes thread local channel future holder.
+     */
+    private ThreadLocal<AsyncFileIO.ChannelOpFuture> initHolder() {
+        return new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
+            @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
+                return new AsyncFileIO.ChannelOpFuture();
+            }
+        };
     }
 }

@@ -21,8 +21,8 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -207,7 +207,7 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-ps", "--pageSize"}, description = "Page size")
-    private int pageSize = MemoryConfiguration.DFLT_PAGE_SIZE;
+    private int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;
 
     /** */
     @Parameter(names = {"-sl", "--stringLength"}, description = "Test string length")
@@ -265,7 +265,7 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return {@code True} if need set {@link PersistentStoreConfiguration}.
+     * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
     public boolean persistentStoreEnabled() {
         return persistentStoreEnabled;
