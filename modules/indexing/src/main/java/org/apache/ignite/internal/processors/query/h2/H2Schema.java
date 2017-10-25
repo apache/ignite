@@ -40,6 +40,9 @@ public class H2Schema {
     /** */
     private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
+    /** Usage count. */
+    private int usageCnt;
+
     /**
      * Constructor.
      *
@@ -61,6 +64,24 @@ public class H2Schema {
      */
     public GridUnsafeMemory offheap() {
         return offheap;
+    }
+
+    /**
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
+     */
+    public int incrementUsageCount() {
+        return ++usageCnt;
+    }
+
+    /**
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
+     */
+    public int decrementUsageCount() {
+        return --usageCnt;
     }
 
     /**
