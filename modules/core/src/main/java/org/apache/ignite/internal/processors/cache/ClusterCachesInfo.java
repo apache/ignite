@@ -102,6 +102,9 @@ class ClusterCachesInfo {
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = Collections.emptyList();
 
     /** */
+    private List<GridCacheAdapter> locJoinStopCaches = Collections.emptyList();
+
+    /** */
     private Map<String, T2<CacheConfiguration, NearCacheConfiguration>> locCfgsForActivation = Collections.emptyMap();
 
     /** */
@@ -810,6 +813,28 @@ class ClusterCachesInfo {
     }
 
     /**
+     * Called from cache processor.
+     *
+     * @param caches Caches to stop
+     */
+    public void cachesToStopOnLocalJoin(Collection<GridCacheAdapter> caches) {
+        locJoinStopCaches = new ArrayList(caches);
+    }
+
+    /**
+     * Called from exchange worker.
+     *
+     * @return Caches to be stopped before this node starts.
+     */
+    public List<GridCacheAdapter> cachesToStopOnLocalJoin() {
+        List<GridCacheAdapter> caches = locJoinStopCaches;
+
+        locJoinStopCaches = Collections.emptyList();
+
+        return caches;
+    }
+
+    /**
      * @param joinedNodeId Joined node ID.
      * @return {@code True} if there are new caches received from joined node.
      */
@@ -1081,10 +1106,10 @@ class ClusterCachesInfo {
 
         gridData = new GridData(joinDiscoData, cachesData, conflictErr);
 
-        if (!disconnectedState())
-            initStartCachesForLocalJoin(false);
+        if (disconnectedState())
+            initRestartCachesAfterDisconnect();
         else
-            locJoinStartCaches = Collections.emptyList();
+            initStartCachesForLocalJoin(false);
     }
 
     /**
@@ -1095,6 +1120,7 @@ class ClusterCachesInfo {
      */
     private void initStartCachesForLocalJoin(boolean firstNode) {
         assert F.isEmpty(locJoinStartCaches) : locJoinStartCaches;
+        assert F.isEmpty(locCfgsForActivation) : locCfgsForActivation;
 
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
@@ -1147,6 +1173,31 @@ class ClusterCachesInfo {
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
+            }
+        }
+    }
+
+    /**
+     * Re-initialize collection with caches to be start:
+     * {@code locJoinStartCaches} or {@code locCfgsForActivation} if cluster is inactive.
+     */
+    private void initRestartCachesAfterDisconnect() {
+        assert F.isEmpty(locJoinStartCaches) : locJoinStartCaches;
+        assert F.isEmpty(locCfgsForActivation) : locCfgsForActivation;
+
+        if (joinDiscoData != null) {
+            locJoinStartCaches = new ArrayList<>();
+            locCfgsForActivation = new HashMap<>();
+
+            boolean active = ctx.state().clusterState().active();
+
+            ClusterCachesReconnectResult result = onReconnected(active, false);
+            for (DynamicCacheDescriptor desc : result.reusedCaches().values()) {
+                if (active)
+                    locJoinStartCaches.add(new T2<>(desc, (NearCacheConfiguration)null));
+                else
+                    locCfgsForActivation.put(desc.cacheName(),
+                        new T2<>(desc.cacheConfiguration(), (NearCacheConfiguration)null));
             }
         }
     }
@@ -1644,6 +1695,8 @@ class ClusterCachesInfo {
 
         Set<String> stoppedCaches = new HashSet<>();
         Set<Integer> stoppedCacheGrps = new HashSet<>();
+        Map<String, DynamicCacheDescriptor> restartedCaches = new HashMap<>();
+        Set<Integer> restartedCacheGrps = new HashSet<>();
 
         if (!active) {
             joinOnTransition = transition;
@@ -1668,44 +1721,43 @@ class ClusterCachesInfo {
                 CacheGroupDescriptor locDesc = e.getValue();
 
                 CacheGroupDescriptor desc;
-                boolean stopped = true;
+                boolean surviveReconnect;
 
                 if (locDesc.sharedGroup()) {
                     desc = cacheGroupByName(locDesc.groupName());
 
-                    if (desc != null && desc.deploymentId().equals(locDesc.deploymentId()))
-                        stopped = false;
+                    surviveReconnect = false;
                 }
                 else {
                     desc = nonSharedCacheGroupByCacheName(locDesc.config().getName());
 
-                    if (desc != null &&
-                        (surviveReconnect(locDesc.config().getName()) || desc.deploymentId().equals(locDesc.deploymentId())))
-                        stopped = false;
+                    surviveReconnect = surviveReconnect(locDesc.config().getName());
                 }
 
-                if (stopped)
-                    stoppedCacheGrps.add(locDesc.groupId());
-                else
+                if (desc != null && (surviveReconnect || desc.deploymentId().equals(locDesc.deploymentId())))
                     assert locDesc.groupId() == desc.groupId();
+                else if (desc != null && cacheConfigurationsCompatible(desc.config(), locDesc.config()))
+                    restartedCacheGrps.add(locDesc.groupId());
+                else
+                    stoppedCacheGrps.add(locDesc.groupId());
             }
 
             for (Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.caches.entrySet()) {
-                DynamicCacheDescriptor desc = e.getValue();
-
+                DynamicCacheDescriptor locDesc = e.getValue();
                 String cacheName = e.getKey();
 
-                boolean stopped;
+                if (surviveReconnect(cacheName))
+                    continue;
 
-                if (!surviveReconnect(cacheName)) {
-                    DynamicCacheDescriptor newDesc = registeredCaches.get(cacheName);
+                DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
 
-                    stopped = newDesc == null || !desc.deploymentId().equals(newDesc.deploymentId());
-                }
+                if (desc != null && desc.deploymentId().equals(locDesc.deploymentId()))
+                    assert locDesc.groupId() == desc.groupId();
+
+                else if (desc != null
+                    && cacheConfigurationsCompatible(desc.cacheConfiguration(), locDesc.cacheConfiguration()))
+                    restartedCaches.put(cacheName, locDesc);
                 else
-                    stopped = false;
-
-                if (stopped)
                     stoppedCaches.add(cacheName);
             }
 
@@ -1720,9 +1772,14 @@ class ClusterCachesInfo {
             clientReconnectReqs = null;
         }
 
-        cachesOnDisconnect = null;
+        return new ClusterCachesReconnectResult(stoppedCacheGrps, stoppedCaches, restartedCacheGrps, restartedCaches);
+    }
 
-        return new ClusterCachesReconnectResult(stoppedCacheGrps, stoppedCaches);
+    /** */
+    public void reconnect() {
+        assert disconnectedState();
+
+        cachesOnDisconnect = null;
     }
 
     /**
@@ -1738,6 +1795,24 @@ class ClusterCachesInfo {
      */
     private boolean surviveReconnect(String cacheName) {
         return CU.isUtilityCache(cacheName);
+    }
+
+    /**
+     * Heuristic to determine if both configuration correspond to the same cache.
+     *
+     * @param cacheCfg Incoming cache.
+     * @param locCacheCfg Local cache.
+     * @return {@code True} if compatible (same cache).
+     */
+    private boolean cacheConfigurationsCompatible(CacheConfiguration cacheCfg, CacheConfiguration locCacheCfg) {
+        return (cacheCfg.getName() == null ? locCacheCfg.getName() == null
+            : cacheCfg.getName().equals(cacheCfg.getName()))
+            && (cacheCfg.getGroupName() == null ? locCacheCfg.getGroupName() == null
+            : cacheCfg.getGroupName().equals(locCacheCfg.getGroupName()))
+            && cacheCfg.getQueryEntities() == null ? locCacheCfg.getQueryEntities() == null
+            : cacheCfg.getQueryEntities().equals(locCacheCfg.getQueryEntities())
+            && cacheCfg.getCacheMode() == locCacheCfg.getCacheMode()
+            && cacheCfg.getAtomicityMode() == locCacheCfg.getAtomicityMode();
     }
 
     /**

@@ -980,17 +980,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param stoppedCaches List where stopped cache should be added.
+     * @param restartPending {@code true} if cache proxy will be restarted after reconnect.
+     * @return Cache adapter.
      */
-    private void stopCacheOnReconnect(GridCacheContext cctx, List<GridCacheAdapter> stoppedCaches) {
+    private GridCacheAdapter stopCacheOnReconnect(GridCacheContext cctx, boolean restartPending) {
         cctx.gate().reconnected(true);
 
         sharedCtx.removeCacheContext(cctx);
-
         caches.remove(cctx.name());
-        jCacheProxies.remove(cctx.name());
 
-        stoppedCaches.add(cctx.cache());
+        if (restartPending) {
+            IgniteCacheProxyImpl proxy = jCacheProxies.get(cctx.name());
+
+            if (proxy != null) {
+                proxy.restart();
+            }
+        }
+        else
+            jCacheProxies.remove(cctx.name());
+
+        return cctx.cache();
     }
 
     /** {@inheritDoc} */
@@ -1008,9 +1017,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (final GridCacheAdapter cache : caches.values()) {
             boolean stopped = reconnectRes.stoppedCacheGroups().contains(cache.context().groupId())
                 || reconnectRes.stoppedCaches().contains(cache.name());
+            boolean reused = reconnectRes.reusedCacheGroups().contains(cache.context().groupId())
+                || reconnectRes.reusedCaches().containsKey(cache.name());
 
-            if (stopped)
-                stopCacheOnReconnect(cache.context(), stoppedCaches);
+            if (stopped || reused) {
+                stoppedCaches.add(stopCacheOnReconnect(cache.context(), reused));
+            }
             else {
                 cache.onReconnected();
 
@@ -1030,10 +1042,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        final Set<Integer> stoppedGrps = reconnectRes.stoppedCacheGroups();
-
         for (CacheGroupContext grp : cacheGrps.values()) {
-            if (stoppedGrps.contains(grp.groupId()))
+            if (reconnectRes.stoppedCacheGroups().contains(grp.groupId())
+                || reconnectRes.reusedCacheGroups().contains(grp.groupId()))
                 cacheGrps.remove(grp.groupId());
             else
                 grp.onReconnected();
@@ -1044,25 +1055,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : reconnected)
             cache.context().gate().reconnected(false);
 
-        IgniteInternalFuture<?> stopFut = null;
+        cachesInfo.cachesToStopOnLocalJoin(stoppedCaches);
 
-        if (!stoppedCaches.isEmpty()) {
-            stopFut = ctx.closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    for (GridCacheAdapter cache : stoppedCaches) {
-                        CacheGroupContext grp = cache.context().group();
+        cachesInfo.reconnect();
 
-                        onKernalStop(cache, true);
-                        stopCache(cache, true, false);
-
-                        if (!grp.hasCaches())
-                            stopCacheGroup(grp);
-                    }
-                }
-            });
-        }
-
-        return stopFut;
+        return null;
     }
 
     /**
@@ -1949,6 +1946,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (cacheCtx.startTopologyVersion().equals(startTopVer) ) {
+                IgniteCacheProxyImpl proxy = jCacheProxies.get(cacheCtx.name());
+
+                if (proxy != null) {
+                    if (proxy.isRestarting())
+                        proxy.onRestarted(cacheCtx, cache);
+                }
+                else
                 if (!jCacheProxies.containsKey(cacheCtx.name()))
                     jCacheProxies.putIfAbsent(cacheCtx.name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
 
@@ -2165,6 +2169,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (fut != null)
             fut.onDone(false, err);
+    }
+
+    /**
+     * @param cache Cache being stopped.
+     */
+    public void completeCacheStop(GridCacheAdapter cache) {
+        CacheGroupContext grp = cache.context().group();
+
+        onKernalStop(cache, true);
+        stopCache(cache, true, false);
+
+        if (!grp.hasCaches())
+            stopCacheGroup(grp);
     }
 
     /**
@@ -3844,6 +3861,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
+    }
+
+    public List<GridCacheAdapter> cachesToStopOnLocalJoin() {
+        return cachesInfo.cachesToStopOnLocalJoin();
     }
 
     /**

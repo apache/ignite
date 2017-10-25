@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -707,6 +708,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void initCachesOnLocalJoin() throws IgniteCheckedException {
         cctx.activate();
+
+        List<GridCacheAdapter> cachesToStop =
+            cctx.cache().cachesToStopOnLocalJoin();
+
+        for (GridCacheAdapter cache : cachesToStop)
+            cctx.cache().completeCacheStop(cache);
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches =
             cctx.cache().cachesToStartOnLocalJoin();

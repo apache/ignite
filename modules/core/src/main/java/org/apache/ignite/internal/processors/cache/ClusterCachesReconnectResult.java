@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,14 +31,24 @@ class ClusterCachesReconnectResult {
     /** */
     private final Set<String> stoppedCaches;
 
+    /** */
+    private final Set<Integer> reusedCacheGrps;
+
+    /** */
+    private final Map<String, DynamicCacheDescriptor> reusedCaches;
+
     /**
      * @param stoppedCacheGrps Stopped cache groups.
      * @param stoppedCaches Stopped caches.
+     * @param reusedCacheGrps Reused cache groups with configurations.
+     * @param reusedCaches Reused caches with configurations.
      */
-    ClusterCachesReconnectResult(Set<Integer> stoppedCacheGrps,
-        Set<String> stoppedCaches) {
+    ClusterCachesReconnectResult(Set<Integer> stoppedCacheGrps, Set<String> stoppedCaches,
+        Set<Integer> reusedCacheGrps, Map<String, DynamicCacheDescriptor> reusedCaches) {
         this.stoppedCacheGrps = stoppedCacheGrps;
         this.stoppedCaches = stoppedCaches;
+        this.reusedCacheGrps = reusedCacheGrps;
+        this.reusedCaches = reusedCaches;
     }
 
     /**
@@ -52,6 +63,20 @@ class ClusterCachesReconnectResult {
      */
     Set<String> stoppedCaches() {
         return stoppedCaches;
+    }
+
+    /**
+     * @return Restarted cache groups.
+     */
+    Set<Integer> reusedCacheGroups() {
+        return reusedCacheGrps;
+    }
+
+    /**
+     * @return Restarted caches.
+     */
+    Map<String, DynamicCacheDescriptor> reusedCaches() {
+        return reusedCaches;
     }
 
     /** {@inheritDoc} */

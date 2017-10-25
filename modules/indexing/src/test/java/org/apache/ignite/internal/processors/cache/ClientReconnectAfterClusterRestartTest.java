@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -117,7 +118,11 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             Ignite client = startGrid(1);
 
+            assertEquals(Arrays.asList(CACHE_PARAMS), new ArrayList(client.cacheNames()));
+
             checkTopology(2);
+
+            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
 
             client.events().localListen(new IgnitePredicate<Event>() {
 
@@ -175,13 +180,13 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             info("Pre-insert");
 
+            assertEquals(Arrays.asList(CACHE_PARAMS), new ArrayList(client.cacheNames()));
+
             streamer = client.dataStreamer("PPRB_PARAMS");
             streamer.allowOverwrite(true);
             streamer.keepBinary(true);
             streamer.perNodeBufferSize(10000);
             streamer.perNodeParallelOperations(100);
-
-            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
 
             builder = client.binary().builder("PARAMS");
             builder.setField("ID", 2L);
@@ -205,7 +210,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
             obj = builder.build();
 
             //streamer.addData(3L, obj);
-            cache.put(3L, obj);
+            client.getOrCreateCache(CACHE_PARAMS).withKeepBinary().put(3L, obj);
 
             builder = client.binary().builder("PARAMS");
             builder.setField("ID", 4L);

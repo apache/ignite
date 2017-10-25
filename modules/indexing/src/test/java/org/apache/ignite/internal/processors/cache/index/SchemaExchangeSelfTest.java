@@ -427,7 +427,7 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         IgniteFuture reconnFut = null;
 
-        try {   
+        try {
             node2.cache(CACHE_NAME);
 
             fail();
@@ -493,16 +493,12 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
     private static void assertTypes(IgniteEx node, Class... clss) {
         Map<String, QueryTypeDescriptorImpl> types = types(node, CACHE_NAME);
 
-        if (F.isEmpty(clss))
-            assertTrue(types.isEmpty());
-        else {
-            assertEquals(clss.length, types.size());
+        assertEquals(clss.length, types.size());
 
-            for (Class cls : clss) {
-                String tblName = tableName(cls);
+        for (Class cls : clss) {
+            String tblName = tableName(cls);
 
-                assertTrue(types.containsKey(tblName));
-            }
+            assertTrue(types.containsKey(tblName));
         }
     }
 
