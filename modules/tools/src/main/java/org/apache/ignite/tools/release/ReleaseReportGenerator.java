@@ -60,7 +60,7 @@ import org.json.simple.parser.ParseException;
  */
 public class ReleaseReportGenerator {
     /** Issue fields list for return from Jira search */
-    private final static String[] jiraFields = new String[] {"key", "summary", "description", "customfield_11050"};
+    private final static String[] jiraFields = new String[] {"key", "summary"};
 
     /** Release report json tempate path */
     private static String templatePath = "./report_template.json";
