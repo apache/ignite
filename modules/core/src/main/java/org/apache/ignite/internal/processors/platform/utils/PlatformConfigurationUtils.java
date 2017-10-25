@@ -1648,7 +1648,6 @@ public class PlatformConfigurationUtils {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
-                .setCheckpointPageBufferSize(in.readLong())
                 .setCheckpointThreads(in.readInt())
                 .setLockWaitTime((int) in.readLong())
                 .setWalHistorySize(in.readInt())
@@ -1743,7 +1742,6 @@ public class PlatformConfigurationUtils {
 
             w.writeString(cfg.getStoragePath());
             w.writeLong(cfg.getCheckpointFrequency());
-            w.writeLong(cfg.getCheckpointPageBufferSize());
             w.writeInt(cfg.getCheckpointThreads());
             w.writeLong(cfg.getLockWaitTime());
             w.writeInt(cfg.getWalHistorySize());

@@ -173,9 +173,6 @@ public class DataStorageConfiguration implements Serializable {
     private long lockWaitTime = DFLT_LOCK_WAIT_TIME;
 
     /** */
-    private long checkpointPageBufSize;
-
-    /** */
     private int checkpointThreads = DFLT_CHECKPOINT_THREADS;
 
     /** Checkpoint write order. */
@@ -423,32 +420,6 @@ public class DataStorageConfiguration implements Serializable {
 
         return this;
     }
-
-    /**
-     * Gets amount of memory allocated for a checkpoint temporary buffer.
-     *
-     * @return Checkpoint page buffer size in bytes or {@code 0} for Ignite
-     *      to choose the buffer size automatically.
-     */
-    public long getCheckpointPageBufferSize() {
-        return checkpointPageBufSize;
-    }
-
-    /**
-     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
-     * copies of pages that are being written to disk and being update in parallel while the checkpoint is in
-     * progress.
-     *
-     * @param checkpointPageBufSize Checkpoint page buffer size in bytes or {@code 0} for Ignite to
-     *      choose the buffer size automatically.
-     * @return {@code this} for chaining.
-     */
-    public DataStorageConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
-        this.checkpointPageBufSize = checkpointPageBufSize;
-
-        return this;
-    }
-
 
     /**
      * Gets a number of threads to use for the checkpoint purposes.
