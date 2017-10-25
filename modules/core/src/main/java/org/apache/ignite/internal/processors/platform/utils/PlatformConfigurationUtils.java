@@ -39,6 +39,7 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -201,6 +202,18 @@ public class PlatformConfigurationUtils {
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
         ccfg.setSqlIndexMaxInlineSize(in.readInt());
+        ccfg.setOnheapCacheEnabled(in.readBoolean());
+        ccfg.setStoreConcurrentLoadAllThreshold(in.readInt());
+        ccfg.setRebalanceOrder(in.readInt());
+        ccfg.setRebalanceBatchesPrefetchCount(in.readLong());
+        ccfg.setMaxQueryIteratorsCount(in.readInt());
+        ccfg.setQueryDetailMetricsSize(in.readInt());
+        ccfg.setQueryParallelism(in.readInt());
+
+        String sqlSchema = in.readString();
+        if (sqlSchema != null) {
+            ccfg.setSqlSchema(sqlSchema);
+        }
 
         int qryEntCnt = in.readInt();
 
@@ -222,6 +235,18 @@ public class PlatformConfigurationUtils {
 
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
+
+        int keyCnt = in.readInt();
+
+        if (keyCnt > 0) {
+            CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
+
+            for (int i = 0; i < keyCnt; i++) {
+                keys[i] = new CacheKeyConfiguration(in.readString(), in.readString());
+            }
+
+            ccfg.setKeyConfiguration(keys);
+        }
 
         int pluginCnt = in.readInt();
 
@@ -890,6 +915,14 @@ public class PlatformConfigurationUtils {
             writer.writeObject(null);
 
         writer.writeInt(ccfg.getSqlIndexMaxInlineSize());
+        writer.writeBoolean(ccfg.isOnheapCacheEnabled());
+        writer.writeInt(ccfg.getStoreConcurrentLoadAllThreshold());
+        writer.writeInt(ccfg.getRebalanceOrder());
+        writer.writeLong(ccfg.getRebalanceBatchesPrefetchCount());
+        writer.writeInt(ccfg.getMaxQueryIteratorsCount());
+        writer.writeInt(ccfg.getQueryDetailMetricsSize());
+        writer.writeInt(ccfg.getQueryParallelism());
+        writer.writeString(ccfg.getSqlSchema());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
@@ -915,6 +948,19 @@ public class PlatformConfigurationUtils {
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
+
+        CacheKeyConfiguration[] keys = ccfg.getKeyConfiguration();
+
+        if (keys != null) {
+            writer.writeInt(keys.length);
+
+            for (CacheKeyConfiguration key : keys) {
+                writer.writeString(key.getTypeName());
+                writer.writeString(key.getAffinityKeyFieldName());
+            }
+        } else {
+            writer.writeInt(0);
+        }
 
         CachePluginConfiguration[] plugins = ccfg.getPluginConfigurations();
         if (plugins != null) {

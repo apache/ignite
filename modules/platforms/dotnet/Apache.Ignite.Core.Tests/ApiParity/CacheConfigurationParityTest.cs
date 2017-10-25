@@ -56,19 +56,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Properties that are missing on .NET side. */
         private static readonly string[] MissingProperties =
         {
-            "NodeFilter",  // IGNITE-2890
-
-            "KeyConfiguration",  // IGNITE-6704
-
-            // IGNITE-6705
-            "IsOnheapCacheEnabled",
-            "StoreConcurrentLoadAllThreshold",
-            "RebalanceOrder",
-            "RebalanceBatchesPrefetchCount",
-            "MaxQueryIteratorsCount",
-            "QueryDetailMetricsSize",
-            "SqlSchema",
-            "QueryParallelism"
+            "NodeFilter"  // IGNITE-2890
         };
 
         /// <summary>
