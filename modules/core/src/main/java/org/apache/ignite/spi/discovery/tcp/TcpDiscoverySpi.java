@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -394,6 +395,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** Local node addresses. */
     private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+
+    /** Ssl pattern for StreamCorruptedException. */
+    private static Pattern sslPtrn = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
     /** */
     protected IgniteSpiContext spiCtx;
@@ -1600,7 +1604,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
                     "long GC pauses on remote node) [curTimeout=" + timeout +
                     ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
-            if (X.hasCause(e, StreamCorruptedException.class)) {
+            StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
+
+            if (streamCorruptedCause != null) {
                 // Lets check StreamCorruptedException for SSL Alert message
                 // Sample SSL Alert message: 15:03:03:00:02:02:0a
                 // 15 = Alert
@@ -1609,10 +1615,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
                 // 02:0a = critical (02) / unexpected message (0a)
                 // So, check message for "invalid stream header: 150X0X00"
 
-                StreamCorruptedException cause = X.cause(e, StreamCorruptedException.class);
-                String msg = (cause != null) ? cause.getMessage() : null;
-                if (msg != null && msg.matches("invalid stream header: 150\\d0\\d00"))
-                    cause.initCause(new SSLException("detected SSL alarm in StreamCorruptedException"));
+                String msg = streamCorruptedCause.getMessage();
+                if (msg != null && sslPtrn.matcher(msg).matches())
+                    streamCorruptedCause.initCause(new SSLException("detected SSL Alarm in StreamCorruptedException"));
             }
             throw e;
         }
