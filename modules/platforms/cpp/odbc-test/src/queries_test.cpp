@@ -2226,7 +2226,34 @@ BOOST_AUTO_TEST_CASE(TestMultipleStatements)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    //
+    long res = 0;
+
+    BOOST_CHECKPOINT("Binding column");
+    ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &res, 0, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    for (long i = 0; i < stmtCnt; ++i)
+    {
+        ret = SQLFetch(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        BOOST_CHECK_EQUAL(res, i);
+
+        ret = SQLFetch(stmt);
+
+        BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
+
+        ret = SQLMoreResults(stmt);
+
+        if (i < stmtCnt - 1 && !SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        else if (i == stmtCnt - 1)
+            BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

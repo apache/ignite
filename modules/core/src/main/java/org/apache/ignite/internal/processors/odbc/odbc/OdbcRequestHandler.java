@@ -53,6 +53,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.MORE_RESULTS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC_BATCH;
@@ -158,6 +159,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case META_PARAMS:
                     return getParamsMeta((OdbcQueryGetParamsMetaRequest)req);
+
+                case MORE_RESULTS:
+                    return moreResults((OdbcQueryMoreResultsRequest)req);
             }
 
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
@@ -384,7 +388,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             boolean lastPage = !set.hasUnfetchedRows();
 
             // Automatically closing cursor if no more data is available.
-            if (lastPage)
+            if (!results.hasUnfetchedRows())
                 CloseCursor(results, queryId);
 
             OdbcQueryFetchResult res = new OdbcQueryFetchResult(queryId, items, lastPage);
@@ -537,6 +541,44 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * {@link OdbcQueryMoreResultsRequest} command handler.
+     *
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private ClientListenerResponse moreResults(OdbcQueryMoreResultsRequest req) {
+        try {
+            long queryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(queryId);
+
+            if (results == null)
+                return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
+                    "Failed to find query with ID: " + queryId);
+
+            results.nextResultSet();
+
+            OdbcResultSet set = results.currentResultSet();
+
+            List<Object> items = set.fetch(req.pageSize());
+
+            boolean lastPage = !set.hasUnfetchedRows();
+
+            // Automatically closing cursor if no more data is available.
+            if (!results.hasUnfetchedRows())
+                CloseCursor(results, queryId);
+
+            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(queryId, items, lastPage);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }

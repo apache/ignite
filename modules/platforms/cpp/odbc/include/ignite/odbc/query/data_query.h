@@ -181,6 +181,9 @@ namespace ignite
 
                 /** Rows affected index. */
                 size_t rowsAffectedIdx;
+
+                /** Cached next result page. */
+                std::auto_ptr<ResultPage> cachedNextPage;
             };
         }
     }

@@ -165,6 +165,15 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
+            case OdbcRequest.MORE_RESULTS: {
+                long queryId = reader.readLong();
+                int pageSize = reader.readInt();
+
+                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
+
+                break;
+            }
+
             default:
                 throw new IgniteException("Unknown ODBC command: [cmd=" + cmd + ']');
         }
@@ -278,6 +287,33 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 }
             }
         }
+        else if (res0 instanceof OdbcQueryMoreResultsResult) {
+            OdbcQueryMoreResultsResult res = (OdbcQueryMoreResultsResult) res0;
+
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.queryId());
+
+            writer.writeLong(res.queryId());
+
+            Collection<?> items0 = res.items();
+
+            assert items0 != null;
+
+            writer.writeBoolean(res.last());
+
+            writer.writeInt(items0.size());
+
+            for (Object row0 : items0) {
+                if (row0 != null) {
+                    Collection<?> row = (Collection<?>)row0;
+
+                    writer.writeInt(row.size());
+
+                    for (Object obj : row)
+                        SqlListenerUtils.writeObject(writer, obj, true);
+                }
+            }
+        }
         else if (res0 instanceof OdbcQueryCloseResult) {
             OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
 
@@ -330,7 +366,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0) {
             long summ = 0;
-            
+
             for (Long value : affectedRows)
                 summ += value == null ? 0 : value;
 

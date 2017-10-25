@@ -37,7 +37,8 @@ namespace ignite
                 resultMeta(),
                 cursor(),
                 rowsAffected(),
-                rowsAffectedIdx(0)
+                rowsAffectedIdx(0),
+                cachedNextPage()
             {
                 // No-op.
             }
@@ -80,10 +81,15 @@ namespace ignite
 
                 if (cursor->NeedDataUpdate())
                 {
-                    SqlResult::Type result = MakeRequestFetch();
+                    if (cachedNextPage.get())
+                        cursor->UpdateData(cachedNextPage);
+                    else
+                    {
+                        SqlResult::Type result = MakeRequestFetch();
 
-                    if (result != SqlResult::AI_SUCCESS)
-                        return result;
+                        if (result != SqlResult::AI_SUCCESS)
+                            return result;
+                    }
                 }
 
                 if (!cursor->HasData())
@@ -330,6 +336,9 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                LOG_MSG("Page size:    " << resultPage->GetSize());
+                LOG_MSG("Page is last: " << resultPage->IsLast());
+
                 cursor->UpdateData(resultPage);
 
                 return SqlResult::AI_SUCCESS;
@@ -368,7 +377,11 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                cursor->UpdateData(resultPage);
+                LOG_MSG("Page size:    " << resultPage->GetSize());
+                LOG_MSG("Page is last: " << resultPage->IsLast());
+
+                cachedNextPage = resultPage;
+                cursor.reset(new Cursor(rsp.GetQueryId()));
 
                 return SqlResult::AI_SUCCESS;
             }
