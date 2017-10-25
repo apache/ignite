@@ -1123,7 +1123,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testNoFieldsObject() throws Exception {
-        BinaryObjectBuilder builder = binaries().builder("SomeType");
+        BinaryObjectBuilder builder = binaries().builder("SomeType4");
 
         BinaryObject bo = builder.build();
 
