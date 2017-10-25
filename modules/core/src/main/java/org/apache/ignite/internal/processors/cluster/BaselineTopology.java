@@ -140,7 +140,7 @@ public class BaselineTopology implements Serializable {
 
         BaselineTopology topology = (BaselineTopology)o;
 
-        return nodeMap != null ? nodeMap.equals(topology.nodeMap) : topology.nodeMap == null;
+        return nodeMap != null ? nodeMap.keySet().equals(topology.nodeMap.keySet()) : topology.nodeMap == null;
     }
 
     /** {@inheritDoc} */

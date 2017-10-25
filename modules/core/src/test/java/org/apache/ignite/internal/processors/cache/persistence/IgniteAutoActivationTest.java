@@ -59,6 +59,14 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
         GridTestUtils.deleteDbFiles();
     }
 
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        GridTestUtils.deleteDbFiles();
+    }
+
     /**
      *
      */
@@ -67,12 +75,11 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
 
         IgniteEx srv = grid(0);
 
-        // TODO: final implementation should work with srv.active(true);
-        srv.activeEx(true, srv.cluster().nodes());
+        srv.active(true);
 
         createAndFillCache(srv);
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         //note: no call for activation after grid restart
         startGrids(3);

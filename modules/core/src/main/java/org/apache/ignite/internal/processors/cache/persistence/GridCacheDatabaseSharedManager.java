@@ -369,6 +369,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return fut;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        super.initDataRegions(memCfg);
+
+        addDataRegion(
+            memCfg,
+            createDataRegionConfiguration(memCfg),
+            METASTORE_DATA_REGION_NAME
+        );
+    }
+
     /**
      * @param storageCfg Data storage configuration.
      * @return Data region configuration.
@@ -490,10 +501,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
         }
-        catch (Throwable ex) {
-            //TODO: allow read-only MetaStorage to work without initialized files.
-            return null;
-        }
 
         return blt;
     }
@@ -575,11 +582,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             registrateMetricsMBean();
         }
 
-        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
-
-        saveBaselineTopology(blt);
-
         super.onActivate(ctx);
+
+        if (!cctx.localNode().isClient()) {
+            cctx.pageStore().initializeForMetastorage();
+
+            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
+
+            metaStorage.init(this);
+
+            BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+            saveBaselineTopology(blt);
+        }
     }
 
     /** {@inheritDoc} */

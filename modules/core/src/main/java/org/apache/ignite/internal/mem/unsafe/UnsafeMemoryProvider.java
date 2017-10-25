@@ -57,13 +57,15 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void shutdown() {
-        for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
-            DirectMemoryRegion chunk = it.next();
+        if (regions != null) {
+            for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
+                DirectMemoryRegion chunk = it.next();
 
-            GridUnsafe.freeMemory(chunk.address());
+                GridUnsafe.freeMemory(chunk.address());
 
-            // Safety.
-            it.remove();
+                // Safety.
+                it.remove();
+            }
         }
     }
 

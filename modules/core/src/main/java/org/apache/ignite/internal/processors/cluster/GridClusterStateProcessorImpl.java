@@ -172,15 +172,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
         else if (!ctx.clientNode() && !ctx.isDaemon() && !state.active() && state.baselineTopology() != null &&
             state.baselineTopology().isSatisfied(discoCache.serverNodes())) {
-            return joinFut.chain(new IgniteClosureX<IgniteInternalFuture<Boolean>, Boolean>() {
-                @Override public Boolean applyx(IgniteInternalFuture<Boolean> arg) throws IgniteCheckedException {
-                    Boolean res = arg.get();
-
-                    changeGlobalState0(true, state.baselineTopology());
-
-                    return res;
-                }
-            });
+            changeGlobalState0(true, state.baselineTopology());
         }
 
         return null;

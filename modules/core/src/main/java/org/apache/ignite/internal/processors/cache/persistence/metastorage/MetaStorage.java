@@ -59,20 +59,31 @@ public class MetaStorage implements DbCheckpointListener {
 
     /** */
     private final IgniteWriteAheadLogManager wal;
+
     /** */
     private final DataRegion dataRegion;
+
     /** */
     private MetastorageTree tree;
+
     /** */
     private AtomicLong rmvId = new AtomicLong();
+
     /** */
     private DataRegionMetricsImpl regionMetrics;
+
     /** */
     private boolean readOnly;
+
+    /** */
+    private boolean empty;
+
     /** */
     private RootPage treeRoot;
+
     /** */
     private RootPage reuseListRoot;
+
     /** */
     private FreeListImpl freeList;
 
@@ -94,16 +105,19 @@ public class MetaStorage implements DbCheckpointListener {
     public void init(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
         getOrAllocateMetas();
 
-        freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
-            regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-            reuseListRoot.isAllocated());
+        if (!empty) {
+            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
+                regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
+                reuseListRoot.isAllocated());
 
-        MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
+            MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
-        tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-            freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+            tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
+                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
 
-        ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
+            if (!readOnly)
+                ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
+        }
     }
 
     /** */
@@ -126,6 +140,9 @@ public class MetaStorage implements DbCheckpointListener {
 
     /** */
     public MetastorageDataRow getData(String key) throws IgniteCheckedException {
+        if (empty)
+            return null;
+
         MetastorageDataRow row = tree.findOne(new MetastorageDataRow(key, null));
 
         return row;
@@ -154,59 +171,77 @@ public class MetaStorage implements DbCheckpointListener {
         long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
         long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);
         try {
-            boolean allocated = false;
-            long pageAddr = pageMem.writeLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
+            if (readOnly) {
+                long pageAddr = pageMem.readLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
 
-            try {
-                long treeRoot, reuseListRoot;
+                try {
+                    if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                        empty = true;
 
-                if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
-                    // Initialize new page.
-                    if (readOnly)
-                        throw new IgniteCheckedException("metastorage is not initialized");
+                        return;
+                    }
 
-                    PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
-
-                    io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
-
-                    treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
-                    reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
-
-                    assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
-                    assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;
-
-                    io.setTreeRoot(pageAddr, treeRoot);
-                    io.setReuseListRoot(pageAddr, reuseListRoot);
-
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
-                        wal.log(new MetaPageInitRecord(
-                            METASTORAGE_CACHE_ID,
-                            partMetaId,
-                            io.getType(),
-                            io.getVersion(),
-                            treeRoot,
-                            reuseListRoot
-                        ));
-
-                    allocated = true;
-                }
-                else {
                     PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
 
-                    treeRoot = io.getTreeRoot(pageAddr);
-                    reuseListRoot = io.getReuseListRoot(pageAddr);
-
-                    assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                        U.hexLong(treeRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
-                    assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                        U.hexLong(reuseListRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                    treeRoot = new RootPage(new FullPageId(io.getTreeRoot(pageAddr), METASTORAGE_CACHE_ID), false);
+                    reuseListRoot = new RootPage(new FullPageId(io.getReuseListRoot(pageAddr), METASTORAGE_CACHE_ID), false);
                 }
-
-                this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), allocated);
-                this.reuseListRoot = new RootPage(new FullPageId(reuseListRoot, METASTORAGE_CACHE_ID), allocated);
+                finally {
+                    pageMem.readUnlock(METASTORAGE_CACHE_ID, partId, partMetaPage);
+                }
             }
-            finally {
-                pageMem.writeUnlock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage, null, allocated);
+            else {
+                boolean allocated = false;
+                long pageAddr = pageMem.writeLock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage);
+
+                try {
+                    long treeRoot, reuseListRoot;
+
+                    if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                        // Initialize new page.
+                        PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
+
+                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
+
+                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
+                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
+
+                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
+                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;
+
+                        io.setTreeRoot(pageAddr, treeRoot);
+                        io.setReuseListRoot(pageAddr, reuseListRoot);
+
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
+                            wal.log(new MetaPageInitRecord(
+                                METASTORAGE_CACHE_ID,
+                                partMetaId,
+                                io.getType(),
+                                io.getVersion(),
+                                treeRoot,
+                                reuseListRoot
+                            ));
+
+                        allocated = true;
+                    }
+                    else {
+                        PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
+
+                        treeRoot = io.getTreeRoot(pageAddr);
+                        reuseListRoot = io.getReuseListRoot(pageAddr);
+
+                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
+                            U.hexLong(treeRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
+                            U.hexLong(reuseListRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                    }
+
+                    this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), allocated);
+                    this.reuseListRoot = new RootPage(new FullPageId(reuseListRoot, METASTORAGE_CACHE_ID), allocated);
+                }
+                finally {
+                    pageMem.writeUnlock(METASTORAGE_CACHE_ID, partMetaId, partMetaPage, null, allocated);
+                }
             }
         }
         finally {
