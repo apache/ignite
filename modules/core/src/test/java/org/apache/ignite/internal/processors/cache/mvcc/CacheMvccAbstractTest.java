@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -157,6 +158,71 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         CacheCoordinatorsProcessor.coordinatorAssignClosure(null);
 
         super.afterTest();
+    }
+
+    /**
+     * @param cfgC Optional closure applied to cache configuration.
+     * @throws Exception If failed.
+     */
+    final void cacheRecreate(@Nullable IgniteInClosure<CacheConfiguration> cfgC) throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        final int PARTS = 64;
+
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+
+        if (cfgC != null)
+            cfgC.apply(ccfg);
+
+        IgniteCache<Integer, MvccTestAccount> cache = (IgniteCache)srv0.createCache(ccfg);
+
+        for (int k = 0; k < PARTS * 2; k++) {
+            assertNull(cache.get(k));
+
+            int vals = k % 3 + 1;
+
+            for (int v = 0; v < vals; v++)
+                cache.put(k, new MvccTestAccount(v, 1));
+
+            assertEquals(vals - 1, cache.get(k).val);
+        }
+
+        srv0.destroyCache(cache.getName());
+
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+
+        if (cfgC != null)
+            cfgC.apply(ccfg);
+
+        cache = (IgniteCache)srv0.createCache(ccfg);
+
+        for (int k = 0; k < PARTS * 2; k++) {
+            assertNull(cache.get(k));
+
+            int vals = k % 3 + 2;
+
+            for (int v = 0; v < vals; v++)
+                cache.put(k, new MvccTestAccount(v + 100, 1));
+
+            assertEquals(vals - 1 + 100, cache.get(k).val);
+        }
+
+        srv0.destroyCache(cache.getName());
+
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+
+        IgniteCache<Long, Long> cache0 = (IgniteCache)srv0.createCache(ccfg);
+
+        for (long k = 0; k < PARTS * 2; k++) {
+            assertNull(cache0.get(k));
+
+            int vals = (int)(k % 3 + 2);
+
+            for (long v = 0; v < vals; v++)
+                cache0.put(k, v);
+
+            assertEquals((long)(vals - 1), (Object)cache0.get(k));
+        }
     }
 
     /**
@@ -332,13 +398,15 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     Map<Integer, Integer> lastUpdateCntrs = new HashMap<>();
 
+                    SqlFieldsQuery sumQry = new SqlFieldsQuery("select sum(val) from MvccTestAccount");
+
                     while (!stop.get()) {
                         while (keys.size() < ACCOUNTS)
                             keys.add(rnd.nextInt(ACCOUNTS));
 
                         TestCache<Integer, MvccTestAccount> cache = randomCache(caches, rnd);
 
-                        Map<Integer, MvccTestAccount> accounts;
+                        Map<Integer, MvccTestAccount> accounts = null;
 
                         try {
                             switch (readMode) {
@@ -378,13 +446,25 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                         for (List<?> row : cache.cache.query(qry)) {
                                             Integer id = (Integer)row.get(0);
-                                            Integer val = (Integer)row.get(0);
+                                            Integer val = (Integer)row.get(1);
 
                                             MvccTestAccount old = accounts.put(id, new MvccTestAccount(val, 1));
 
                                             assertNull(old);
                                         }
                                     }
+
+                                    break;
+                                }
+
+                                case SQL_SUM: {
+                                    List<List<?>> res = cache.cache.query(sumQry).getAll();
+
+                                    assertEquals(1, res.size());
+
+                                    BigDecimal sum = (BigDecimal)res.get(0).get(0);
+
+                                    assertEquals(ACCOUNT_START_VAL * ACCOUNTS, sum.intValue());
 
                                     break;
                                 }
@@ -400,29 +480,31 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             cache.readUnlock();
                         }
 
-                        if (!withRmvs)
-                            assertEquals(ACCOUNTS, accounts.size());
+                        if (accounts != null) {
+                            if (!withRmvs)
+                                assertEquals(ACCOUNTS, accounts.size());
 
-                        int sum = 0;
+                            int sum = 0;
 
-                        for (int i = 0; i < ACCOUNTS; i++) {
-                            MvccTestAccount account = accounts.get(i);
+                            for (int i = 0; i < ACCOUNTS; i++) {
+                                MvccTestAccount account = accounts.get(i);
 
-                            if (account != null) {
-                                sum += account.val;
+                                if (account != null) {
+                                    sum += account.val;
 
-                                Integer cntr = lastUpdateCntrs.get(i);
+                                    Integer cntr = lastUpdateCntrs.get(i);
 
-                                if (cntr != null)
-                                    assertTrue(cntr <= account.updateCnt);
+                                    if (cntr != null)
+                                        assertTrue(cntr <= account.updateCnt);
 
-                                lastUpdateCntrs.put(i, cntr);
+                                    lastUpdateCntrs.put(i, cntr);
+                                }
+                                else
+                                    assertTrue(withRmvs);
                             }
-                            else
-                                assertTrue(withRmvs);
-                        }
 
-                        assertEquals(ACCOUNTS * ACCOUNT_START_VAL, sum);
+                            assertEquals(ACCOUNTS * ACCOUNT_START_VAL, sum);
+                        }
                     }
 
                     if (idx == 0) {
@@ -713,7 +795,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param node Node.
      * @throws Exception If failed.
      */
-    final void checkActiveQueriesCleanup(Ignite node) throws Exception {
+    protected final void checkActiveQueriesCleanup(Ignite node) throws Exception {
         final CacheCoordinatorsProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
 
         assertTrue("Active queries not cleared: " + node.name(), GridTestUtils.waitForCondition(
@@ -827,7 +909,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         SCAN,
 
         /** */
-        SQL_ALL
+        SQL_ALL,
+
+        /** */
+        SQL_SUM
     }
 
     /**

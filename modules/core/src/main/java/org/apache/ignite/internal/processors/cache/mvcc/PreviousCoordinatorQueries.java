@@ -26,9 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -165,7 +163,7 @@ class PreviousCoordinatorQueries {
      */
     void onQueryDone(UUID nodeId, long crdVer, long cntr) {
         assert crdVer != 0;
-        assert cntr != CacheCoordinatorsProcessor.COUNTER_NA;
+        assert cntr != CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
 
         synchronized (this) {
             MvccCounter mvccCntr = new MvccCounter(crdVer, cntr);

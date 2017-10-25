@@ -124,10 +124,17 @@ public class H2PkHashIndex extends GridH2IndexBase {
     @SuppressWarnings("StatementWithEmptyBody")
     @Override public GridH2Row put(GridH2Row row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
-
         assert false;
 
         throw DbException.getUnsupportedException("put");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
     }
 
     /** {@inheritDoc} */
@@ -197,7 +204,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             try {
                 CacheDataRow dataRow = cursor.get();
 
-                return tbl.rowDescriptor().createRow(dataRow);
+                return tbl.rowDescriptor().createRow(dataRow, null);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

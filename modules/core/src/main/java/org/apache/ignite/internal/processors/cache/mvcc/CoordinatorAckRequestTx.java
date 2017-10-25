@@ -60,7 +60,7 @@ public class CoordinatorAckRequestTx implements MvccCoordinatorMessage {
 
     /** {@inheritDoc} */
     long queryCounter() {
-        return CacheCoordinatorsProcessor.COUNTER_NA;
+        return CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

@@ -200,6 +200,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        return put(row) != null;
+    }
+
     /**
      * @param row Row.
      * @param rowId Row id.

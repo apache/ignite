@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeMvccFilterClosure;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -198,6 +199,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Existing row or {@code null}.
      */
     public abstract GridH2Row put(GridH2Row row);
+
+    /**
+     * @param row Row.
+     * @return {@code True} if replaced existing row.
+     */
+    public abstract boolean putx(GridH2Row row);
 
     /**
      * Remove row from index.
@@ -426,7 +433,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     // This is the first request containing all the search rows.
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), qctx.filter());
+                    src = new RangeSource(msg.bounds(), msg.segment(), qctx.filter(), qctx.mvccFilter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -1469,20 +1476,28 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         final IndexingQueryFilter filter;
 
+        /** */
+        private final H2TreeMvccFilterClosure mvccFilter;
+
         /** Iterator. */
         Iterator<GridH2Row> iter = emptyIterator();
 
         /**
          * @param bounds Bounds.
+         * @param segment Segment.
          * @param filter Filter.
+         * @param mvccFilter Mvcc filter.
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
             int segment,
-            IndexingQueryFilter filter
+            IndexingQueryFilter filter,
+            H2TreeMvccFilterClosure mvccFilter
         ) {
             this.segment = segment;
             this.filter = filter;
+            this.mvccFilter = mvccFilter;
+
             boundsIter = bounds.iterator();
         }
 
@@ -1540,7 +1555,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 IgniteTree t = treeForRead(segment);
 
-                iter = new CursorIteratorWrapper(doFind0(t, first, true, last, filter));
+                iter = new CursorIteratorWrapper(doFind0(t, first, last, filter, mvccFilter));
 
                 if (!iter.hasNext()) {
                     // We have to return empty range here.
@@ -1565,17 +1580,17 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /**
      * @param t Tree.
      * @param first Lower bound.
-     * @param includeFirst Whether lower bound should be inclusive.
      * @param last Upper bound always inclusive.
      * @param filter Filter.
+     * @param mvccFilter Mvcc filter.
      * @return Iterator over rows in given range.
      */
     protected GridCursor<GridH2Row> doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
-        boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        IndexingQueryFilter filter,
+        H2TreeMvccFilterClosure mvccFilter) {
         throw new UnsupportedOperationException();
     }
 

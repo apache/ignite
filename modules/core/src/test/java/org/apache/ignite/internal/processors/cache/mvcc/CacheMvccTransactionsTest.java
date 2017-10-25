@@ -36,26 +36,24 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.TestCacheNodeExcludingFilter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -270,6 +268,13 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheRecreate() throws Exception {
+        cacheRecreate(null);
     }
 
     /**
@@ -3626,6 +3631,67 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                     checkRow(cctx, row, key0, vers.get(v + 1).get1());
             }
         }
+
+        KeyCacheObject key = cctx.toCacheKeyObject(KEYS);
+
+        cache.put(key, 0);
+
+        cache.remove(key);
+
+        cctx.offheap().mvccRemoveAll((GridCacheMapEntry)cctx.cache().entryEx(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpiration() throws Exception {
+        final IgniteEx node = startGrid(0);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));
+
+        final IgniteCache expiryCache =
+            cache.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.SECONDS, 1)));
+
+        for (int i = 0; i < 10; i++)
+            expiryCache.put(1, i);
+
+        assertTrue("Failed to wait for expiration", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return expiryCache.localPeek(1) == null;
+            }
+        }, 5000));
+
+        for (int i = 0; i < 11; i++) {
+            if (i % 2 == 0)
+                expiryCache.put(1, i);
+            else
+                expiryCache.remove(1);
+        }
+
+        assertTrue("Failed to wait for expiration", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return expiryCache.localPeek(1) == null;
+            }
+        }, 5000));
+
+        expiryCache.put(1, 1);
+
+        assertTrue("Failed to wait for expiration", GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    GridCacheContext cctx = node.context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME));
+
+                    KeyCacheObject key = cctx.toCacheKeyObject(1);
+
+                    return cctx.offheap().read(cctx, key) == null;
+                }
+                catch (Exception e) {
+                    fail();
+
+                    return false;
+                }
+            }
+        }, 5000));
     }
 
     /**

@@ -73,9 +73,9 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr) {
-        if (rowData != CacheDataRowAdapter.RowData.KEY_ONLY && versionForRemovedValue(crdVer)) {
-            if (rowData == CacheDataRowAdapter.RowData.NO_KEY)
-                return MvccDataRow.removedRowNoKey(partId, cacheId, crdVer, mvccCntr);
+        if (versionForRemovedValue(crdVer)) {
+            if (rowData == CacheDataRowAdapter.RowData.NO_KEY || rowData == CacheDataRowAdapter.RowData.LINK_ONLY)
+                return MvccDataRow.removedRowNoKey(link, partId, cacheId, crdVer, mvccCntr);
             else
                 rowData = CacheDataRowAdapter.RowData.KEY_ONLY;
         }

@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.assertMvccVersionValid;
 
 /**
  *
@@ -34,6 +33,13 @@ public class MvccDataRow extends DataRow {
     private long mvccCntr;
 
     /**
+     *
+     */
+    private MvccDataRow() {
+        // No-op.
+    }
+
+    /**
      * @param grp Context.
      * @param hash Key hash.
      * @param link Link.
@@ -42,24 +48,17 @@ public class MvccDataRow extends DataRow {
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      */
-    MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
+    public MvccDataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, long crdVer, long mvccCntr) {
         super(grp, hash, link, part, rowData);
 
-        assert unmaskCoordinatorVersion(crdVer) > 0 : crdVer;
-        assert mvccCntr != CacheCoordinatorsProcessor.COUNTER_NA;
+        assertMvccVersionValid(crdVer, mvccCntr);
 
         this.crdVer = crdVer;
         this.mvccCntr = mvccCntr;
     }
 
     /**
-     *
-     */
-    private MvccDataRow() {
-        // No-op.
-    }
-
-    /**
+     * @param link Link.
      * @param part Partition.
      * @param cacheId Cache ID.
      * @param crdVer Mvcc coordinator version.
@@ -67,12 +66,14 @@ public class MvccDataRow extends DataRow {
      * @return Row.
      */
     static MvccDataRow removedRowNoKey(
+        long link,
         int part,
         int cacheId,
         long crdVer,
         long mvccCntr) {
         MvccDataRow row = new MvccDataRow();
 
+        row.link = link;
         row.cacheId = cacheId;
         row.part = part;
         row.crdVer = crdVer;

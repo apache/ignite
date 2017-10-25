@@ -284,6 +284,11 @@ public class GridH2MetaTable extends TableBase {
                     throw new IllegalStateException("Index: " + idx);
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean indexSearchRow() {
+            return false; // TODO IGNITE-3478, check meta table with mvcc.
+        }
     }
 
     /**

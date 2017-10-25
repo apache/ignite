@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -213,6 +216,53 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         checkCursor(tree.find(null, null), map.values().iterator());
         checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testFindWithClosure() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+        TreeMap<Long, Long> map = new TreeMap<>();
+
+        long size = CNT * CNT;
+
+        for (long i = 1; i <= size; i++) {
+            tree.put(i);
+            map.put(i, i);
+        }
+
+        checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(Collections.<Long>emptySet()), null),
+            Collections.<Long>emptyList().iterator());
+
+        checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(map.keySet()), null),
+            map.values().iterator());
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 100; i++) {
+            Long val = rnd.nextLong(size) + 1;
+
+            checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(Collections.singleton(val)), null),
+                Collections.singleton(val).iterator());
+        }
+
+        for (int i = 0; i < 200; i++) {
+            long vals = rnd.nextLong(size) + 1;
+
+            TreeSet<Long> exp = new TreeSet<>();
+
+            for (long k = 0; k < vals; k++)
+                exp.add(rnd.nextLong(size) + 1);
+
+            checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
+
+            checkCursor(tree.find(0L, null, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
+
+            checkCursor(tree.find(0L, size, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
+
+            checkCursor(tree.find(null, size, new TestTreeFindFilteredClosure(exp), null), exp.iterator());
+        }
     }
 
     /**
@@ -625,12 +675,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param tree
-     * @param lower
-     * @param upper
-     * @param exp
-     * @param expFound
-     * @throws IgniteCheckedException
+     * @param tree Tree.
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param exp Value to find.
+     * @param expFound {@code True} if value should be found.
+     * @throws IgniteCheckedException If failed.
      */
     private void checkIterate(TestTree tree, long lower, long upper, Long exp, boolean expFound)
         throws IgniteCheckedException {
@@ -641,6 +691,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals(expFound, c.found);
     }
 
+    /**
+     * @param tree Tree.
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @param c Closure.
+     * @param expFound {@code True} if value should be found.
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkIterateC(TestTree tree, long lower, long upper, TestTreeRowClosure c, boolean expFound)
         throws IgniteCheckedException {
         c.found = false;
@@ -1307,7 +1365,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIterateConcurrentPutRemove() throws Exception {
-        findOneBoundedConcurrentPutRemove();
+        iterateConcurrentPutRemove();
     }
 
     /**
@@ -1316,7 +1374,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     public void testIterateConcurrentPutRemove_1() throws Exception {
         MAX_PER_PAGE = 1;
 
-        findOneBoundedConcurrentPutRemove();
+        iterateConcurrentPutRemove();
     }
 
     /**
@@ -1325,7 +1383,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     public void testIterateConcurrentPutRemove_5() throws Exception {
         MAX_PER_PAGE = 5;
 
-        findOneBoundedConcurrentPutRemove();
+        iterateConcurrentPutRemove();
     }
 
     /**
@@ -1334,13 +1392,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     public void testIteratePutRemove_10() throws Exception {
         MAX_PER_PAGE = 10;
 
-        findOneBoundedConcurrentPutRemove();
+        iterateConcurrentPutRemove();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void findOneBoundedConcurrentPutRemove() throws Exception {
+    private void iterateConcurrentPutRemove() throws Exception {
         final TestTree tree = createTestTree(true);
 
         final int KEYS = 10_000;
@@ -1474,7 +1532,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testConcurrentGrowDegenerateTreeAndConcurrentRemove() throws Exception {
         //calculate tree size when split happens
@@ -2132,6 +2190,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         private Long val;
 
+
         /** {@inheritDoc} */
         @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
             throws IgniteCheckedException {
@@ -2140,6 +2199,29 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             val = io.getLookupRow(tree, pageAddr, idx);
 
             return false;
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestTreeFindFilteredClosure implements BPlusTree.TreeRowClosure<Long, Long> {
+        /** */
+        private final Set<Long> vals;
+
+        /**
+         * @param vals Values to allow in filter.
+         */
+        TestTreeFindFilteredClosure(Set<Long> vals) {
+            this.vals = vals;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
+            throws IgniteCheckedException {
+            Long val = io.getLookupRow(tree, pageAddr, idx);
+
+            return vals.contains(val);
         }
     }
 }

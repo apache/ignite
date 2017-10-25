@@ -70,7 +70,7 @@ public class GridH2PlainRowFactory extends RowFactory {
         /**
          * @param key Key.
          */
-        public RowKey(Value key) {
+        RowKey(Value key) {
             this.key = key;
         }
 
@@ -89,6 +89,11 @@ public class GridH2PlainRowFactory extends RowFactory {
         @Override public void setValue(int idx, Value v) {
             assert idx == 0 : idx;
             key = v;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean indexSearchRow() {
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -138,6 +143,11 @@ public class GridH2PlainRowFactory extends RowFactory {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean indexSearchRow() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(RowPair.class, this);
         }
@@ -171,6 +181,11 @@ public class GridH2PlainRowFactory extends RowFactory {
         /** {@inheritDoc} */
         @Override public void setValue(int idx, Value v) {
             vals[idx] = v;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean indexSearchRow() {
+            return true;
         }
 
         /** {@inheritDoc} */

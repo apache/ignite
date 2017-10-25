@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 
 /**
@@ -62,7 +62,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
         if (storeMvccVersion()) {
             assert unmaskCoordinatorVersion(row.mvccCoordinatorVersion()) > 0 : row;
-            assert row.mvccCounter() != COUNTER_NA : row;
+            assert row.mvccCounter() != MVCC_COUNTER_NA : row;
 
             PageUtils.putLong(pageAddr, off, row.mvccCoordinatorVersion());
             off += 8;
@@ -82,7 +82,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvccCntr = getMvccCounter(pageAddr, idx);
 
             assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
-            assert mvccCntr != COUNTER_NA;
+            assert mvccCntr != MVCC_COUNTER_NA;
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
@@ -128,7 +128,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
 
             assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
-            assert mvccCntr != COUNTER_NA;
+            assert mvccCntr != MVCC_COUNTER_NA;
 
             PageUtils.putLong(dstPageAddr, off, mvccTopVer);
             off += 8;

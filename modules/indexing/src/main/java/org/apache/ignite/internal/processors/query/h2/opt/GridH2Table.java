@@ -28,6 +28,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -399,15 +401,16 @@ public class GridH2Table extends TableBase {
      * otherwise value and expiration time will be updated or new row will be added.
      *
      * @param row Row.
+     * @param newVer Version of new mvcc value inserted for the same key.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheDataRow row, boolean rmv)
+    public boolean update(CacheDataRow row, @Nullable MvccCoordinatorVersion newVer, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row h2Row = desc.createRow(row);
+        GridH2Row h2Row = desc.createRow(row, newVer);
 
         if (rmv)
             return doUpdate(h2Row, true);
@@ -454,6 +457,8 @@ public class GridH2Table extends TableBase {
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     private boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
+        assert !cctx.mvccEnabled() || row.mvccCounter() != CacheCoordinatorsProcessor.MVCC_COUNTER_NA : row;
+
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         lock(false);
@@ -466,10 +471,25 @@ public class GridH2Table extends TableBase {
             if (!del) {
                 assert rowFactory == null || row.link() != 0 : row;
 
-                GridH2Row old = pk.put(row); // Put to PK.
+                GridH2Row old;
 
-                if (old == null)
-                    size.increment();
+                // Put to PK.
+                if (cctx.mvccEnabled()) {
+                    boolean replaced = pk.putx(row);
+
+                    assert replaced == (row.newMvccCoordinatorVersion() != 0);
+
+                    old = null;
+
+                    if (!replaced)
+                        size.increment();
+                }
+                else {
+                    old = pk.put(row);
+
+                    if (old == null)
+                        size.increment();
+                }
 
                 int len = idxs.size();
 
@@ -536,17 +556,24 @@ public class GridH2Table extends TableBase {
     private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old, boolean tmp) {
         assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
-        GridH2Row old2 = idx.put(row);
+        if (idx.ctx.mvccEnabled()) {
+            boolean replaced = idx.putx(row);
 
-        if (old2 != null) { // Row was replaced in index.
-            if (!tmp) {
-                if (!eq(pk, old2, old))
-                    throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                        "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
-            }
+            assert replaced == (row.newMvccCoordinatorVersion() != 0);
         }
-        else if (old != null) // Row was not replaced, need to remove manually.
-            idx.removex(old);
+        else {
+            GridH2Row old2 = idx.put(row);
+
+            if (old2 != null) { // Row was replaced in index.
+                if (!tmp) {
+                    if (!eq(pk, old2, old))
+                        throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                                "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
+                }
+            }
+            else if (old != null) // Row was not replaced, need to remove manually.
+                idx.removex(old);
+        }
     }
 
     /**

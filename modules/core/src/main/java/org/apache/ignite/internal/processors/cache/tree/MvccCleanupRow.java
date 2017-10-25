@@ -15,18 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.io;
+package org.apache.ignite.internal.processors.cache.tree;
+
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 
 /**
- * Leaf page for H2 row references.
+ * Row contains only link.
  */
-public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
+public class MvccCleanupRow extends MvccSearchRow {
+    /** */
+    private final long link;
+
     /**
-     * @param type Page type.
-     * @param ver Page format version.
-     * @param payloadSize Payload size.
+     * @param cacheId Cache ID.
+     * @param key Key.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
+     * @param link Link.
      */
-    H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8, payloadSize);
+    MvccCleanupRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr, long link) {
+        super(cacheId, key, crdVer, mvccCntr);
+
+        assert link != 0L;
+
+        this.link = link;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
     }
 }

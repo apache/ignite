@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.assertMvccVersionValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.versionForRemovedValue;
 
@@ -51,7 +51,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     private GridLongList activeTxs;
 
     /** */
-    private List<CacheSearchRow> cleanupRows;
+    private List<MvccCleanupRow> cleanupRows;
 
     /** */
     private final MvccCoordinatorVersion mvccVer;
@@ -66,7 +66,9 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
      * @param key Key.
      * @param val Value.
      * @param ver Version.
+     * @param expireTime Expire time.
      * @param mvccVer Mvcc version.
+     * @param needOld {@code True} if need previous value.
      * @param part Partition.
      * @param cacheId Cache ID.
      */
@@ -109,7 +111,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     /**
      * @return Rows which are safe to cleanup.
      */
-    public List<CacheSearchRow> cleanupRows() {
+    public List<MvccCleanupRow> cleanupRows() {
         return cleanupRows;
     }
 
@@ -175,8 +177,6 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
                     if (needOld)
                         oldRow = ((CacheDataTree)tree).getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
                 }
-                res = versionForRemovedValue(rowCrdVerMasked) ?
-                    UpdateResult.PREV_NULL : UpdateResult.PREV_NOT_NULL;
             }
         }
 
@@ -199,26 +199,25 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
 
             int cmp;
 
+            long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
+
             if (crdVer == rowCrdVer)
-                cmp = Long.compare(mvccVer.cleanupVersion(), rowIo.getMvccCounter(pageAddr, idx));
+                cmp = Long.compare(mvccVer.cleanupVersion(), rowCntr);
             else
                 cmp = 1;
 
             if (cmp >= 0) {
                 // Do not cleanup oldest version.
                 if (canCleanup) {
-                    CacheSearchRow row = io.getLookupRow(tree, pageAddr, idx);
-
-                    assert row.link() != 0 && row.mvccCounter() != CacheCoordinatorsProcessor.COUNTER_NA : row;
+                    assert assertMvccVersionValid(rowCrdVer, rowCntr);
 
                     // Should not be possible to cleanup active tx.
-                    assert rowCrdVer != crdVer
-                        || !mvccVer.activeTransactions().contains(row.mvccCounter());
+                    assert rowCrdVer != crdVer || !mvccVer.activeTransactions().contains(rowCntr);
 
                     if (cleanupRows == null)
                         cleanupRows = new ArrayList<>();
 
-                    cleanupRows.add(row);
+                    cleanupRows.add(new MvccCleanupRow(cacheId, key, rowCrdVerMasked, rowCntr, rowIo.getLink(pageAddr, idx)));
                 }
                 else
                     canCleanup = true;

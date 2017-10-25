@@ -15,18 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.io;
+package org.apache.ignite.internal.processors.query.h2.opt;
+
+import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
+import org.h2.result.Row;
 
 /**
- * Leaf page for H2 row references.
+ *
  */
-public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
+public interface GridH2SearchRow extends Row {
     /**
-     * @param type Page type.
-     * @param ver Page format version.
-     * @param payloadSize Payload size.
+     * @return Mvcc coordinator version.
      */
-    H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8, payloadSize);
-    }
+    public long mvccCoordinatorVersion();
+
+    /**
+     * @return Mvcc counter.
+     */
+    public long mvccCounter();
+
+    /**
+     * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
+     */
+    public boolean indexSearchRow();
 }

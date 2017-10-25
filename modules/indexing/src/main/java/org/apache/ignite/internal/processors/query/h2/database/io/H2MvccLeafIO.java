@@ -17,16 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+
 /**
- * Leaf page for H2 row references.
+ *
  */
-public class H2ExtrasLeafIO extends AbstractH2ExtrasLeafIO {
+public class H2MvccLeafIO extends AbstractH2LeafIO {
+    /** */
+    public static final IOVersions<H2MvccLeafIO> VERSIONS = new IOVersions<>(
+        new H2MvccLeafIO(1)
+    );
+
     /**
-     * @param type Page type.
      * @param ver Page format version.
-     * @param payloadSize Payload size.
      */
-    H2ExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 8, payloadSize);
+    private H2MvccLeafIO(int ver) {
+        super(T_H2_MVCC_REF_LEAF, ver, 40);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean storeMvccInfo() {
+        return true;
     }
 }

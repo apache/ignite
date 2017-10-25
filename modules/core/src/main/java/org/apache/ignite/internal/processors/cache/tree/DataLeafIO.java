@@ -59,6 +59,6 @@ public final class DataLeafIO extends AbstractDataLeafIO {
 
     /** {@inheritDoc} */
     @Override public long getMvccCounter(long pageAddr, int idx) {
-        return CacheCoordinatorsProcessor.COUNTER_NA;
+        return CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
     }
 }

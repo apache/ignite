@@ -884,12 +884,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param upper Upper bound.
+     * @param c Filter closure.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(null, upper, x);
+    private GridCursor<T> findLowerUnbounded(L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+        ForwardCursor cursor = new ForwardCursor(null, upper, c, x);
 
         long firstPageId;
 
@@ -946,13 +947,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
+        return find(lower, upper, null, x);
+    }
+
+    /**
+     * @param lower Lower bound inclusive or {@code null} if unbounded.
+     * @param upper Upper bound inclusive or {@code null} if unbounded.
+     * @param c Filter closure.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
             if (lower == null)
-                return findLowerUnbounded(upper, x);
+                return findLowerUnbounded(upper, c, x);
 
-            ForwardCursor cursor = new ForwardCursor(lower, upper, x);
+            ForwardCursor cursor = new ForwardCursor(lower, upper, c, x);
 
             cursor.find();
 
@@ -4751,14 +4764,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private int row = -1;
 
+        /** */
+        private final TreeRowClosure<L, T> c;
+
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
+         * @param c Filter closure.
          * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
          */
-        ForwardCursor(L lowerBound, L upperBound, Object x) {
+        ForwardCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> c, Object x) {
             super(lowerBound, upperBound);
 
+            this.c = c;
             this.x = x;
         }
 
@@ -4782,15 +4800,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (rows == EMPTY)
                 rows = (T[])new Object[cnt];
 
-            for (int i = 0; i < cnt; i++) {
-                T r = getRow(io, pageAddr, startIdx + i, x);
+            int resCnt = 0;
 
-                rows = GridArrays.set(rows, i, r);
+            for (int i = 0; i < cnt; i++) {
+                int itemIdx = startIdx + i;
+
+                if (c == null || c.apply(BPlusTree.this, io, pageAddr, itemIdx)) {
+                    T r = getRow(io, pageAddr, itemIdx, x);
+
+                    rows = GridArrays.set(rows, resCnt++, r);
+                }
             }
 
-            GridArrays.clearTail(rows, cnt);
+            GridArrays.clearTail(rows, resCnt);
 
-            return true;
+            return resCnt > 0;
         }
 
         /** {@inheritDoc} */

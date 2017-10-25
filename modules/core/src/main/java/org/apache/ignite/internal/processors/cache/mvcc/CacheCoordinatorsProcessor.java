@@ -75,10 +75,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     /** */
-    public static final long COUNTER_NA = 0L;
+    public static final long MVCC_COUNTER_NA = 0L;
 
     /** */
-    public static final long START_VER = 1L;
+    public static final long MVCC_START_CNTR = 1L;
 
     /** */
     private static final boolean STAT_CNTRS = false;
@@ -99,7 +99,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     private volatile MvccCoordinator curCrd;
 
     /** */
-    private final AtomicLong mvccCntr = new AtomicLong(START_VER);
+    private final AtomicLong mvccCntr = new AtomicLong(MVCC_START_CNTR);
 
     /** */
     private final GridAtomicLong committedCntr = new GridAtomicLong(1L);
@@ -145,6 +145,18 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
      */
     public CacheCoordinatorsProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /**
+     * @param crdVer Mvcc coordinator version.
+     * @param cntr Counter.
+     * @return Always {@code true}.
+     */
+    public static boolean assertMvccVersionValid(long crdVer, long cntr) {
+        assert unmaskCoordinatorVersion(crdVer) > 0;
+        assert cntr != MVCC_COUNTER_NA;
+
+        return true;
     }
 
     /**
@@ -651,7 +663,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     private void processCoordinatorTxAckRequest(UUID nodeId, CoordinatorAckRequestTx msg) {
         onTxDone(msg.txCounter());
 
-        if (msg.queryCounter() != COUNTER_NA) {
+        if (msg.queryCounter() != MVCC_COUNTER_NA) {
             if (msg.queryCoordinatorVersion() == 0)
                 onQueryDone(nodeId, msg.queryCounter());
             else
@@ -824,7 +836,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
             else
                 qryCnt.incrementAndGet();
 
-            res.init(futId, crdVer, mvccCntr, COUNTER_NA);
+            res.init(futId, crdVer, mvccCntr, MVCC_COUNTER_NA);
 
             return res;
         }
@@ -909,7 +921,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
 //            }
 //        }
 //
-//        res.init(futId, crdVer, mvccCntr, COUNTER_NA);
+//        res.init(futId, crdVer, mvccCntr, MVCC_COUNTER_NA);
 //
 //        return res;
     }
@@ -1197,7 +1209,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
          * @param res Response.
          */
         void onResponse(MvccCoordinatorVersionResponse res) {
-            assert res.counter() != COUNTER_NA;
+            assert res.counter() != MVCC_COUNTER_NA;
 
             if (lsnr != null)
                 lsnr.onMvccResponse(crd.nodeId(), res);

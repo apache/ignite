@@ -29,7 +29,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -118,7 +120,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                     page.isAllocated(),
                     cols,
                     inlineIdxs,
-                    computeInlineSize(inlineIdxs, inlineSize)) {
+                    computeInlineSize(inlineIdxs, inlineSize),
+                    cctx.mvccEnabled()) {
                     @Override public int compareValues(Value v1, Value v2) {
                         return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                     }
@@ -165,20 +168,33 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            IndexingQueryFilter f = threadLocalFilter();
+            assert lower == null || lower instanceof GridH2SearchRow : lower;
+            assert upper == null || upper instanceof GridH2SearchRow : upper;
+
             IndexingQueryCacheFilter p = null;
+            H2TreeMvccFilterClosure mvccFilter = null;
 
-            if (f != null) {
-                String cacheName = getTable().cacheName();
+            GridH2QueryContext qctx = GridH2QueryContext.get();
 
-                p = f.forCache(cacheName);
+            if (qctx != null) {
+                IndexingQueryFilter f = qctx.filter();
+
+                if (f != null) {
+                    String cacheName = getTable().cacheName();
+
+                    p = f.forCache(cacheName);
+                }
+
+                mvccFilter = qctx.mvccFilter();
             }
 
             int seg = threadLocalSegment();
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper), p);
+            assert !cctx.mvccEnabled() || mvccFilter != null;
+
+            return new H2Cursor(tree.find((GridH2SearchRow)lower, (GridH2SearchRow)upper, mvccFilter, null), p);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -205,7 +221,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
+    @Override public boolean putx(GridH2Row row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -213,7 +229,28 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return tree.remove(row);
+            return tree.putx(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+        finally {
+            InlineIndexHelper.clearCurrentInlineIndexes();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridH2Row remove(SearchRow row) {
+        assert row instanceof GridH2SearchRow : row;
+
+        try {
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+
+            int seg = segmentForRow(row);
+
+            H2Tree tree = treeForRead(seg);
+
+            return tree.remove((GridH2SearchRow)row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -225,6 +262,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void removex(SearchRow row) {
+        assert row instanceof GridH2SearchRow : row;
+
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -232,7 +271,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            tree.removex(row);
+            tree.removex((GridH2SearchRow)row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -282,6 +321,17 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            if (cctx.mvccEnabled()) {
+                GridH2QueryContext qctx = GridH2QueryContext.get();
+
+                assert qctx != null;
+
+                H2TreeMvccFilterClosure mvccFilter = qctx.mvccFilter();
+
+                assert mvccFilter != null;
+                // TODO IGNITE-3478 (support filter for first/last)
+            }
+
             GridH2Row row = b ? tree.findFirst(): tree.findLast();
 
             return new SingleRowCursor(row);
@@ -321,11 +371,13 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override protected GridCursor<GridH2Row> doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
-        boolean includeFirst,
         @Nullable SearchRow last,
-        IndexingQueryFilter filter) {
+        IndexingQueryFilter filter,
+        H2TreeMvccFilterClosure mvccFilter) {
         try {
-            GridCursor<GridH2Row> range = t.find(first, last);
+            assert !cctx.mvccEnabled() || mvccFilter != null;
+
+            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, mvccFilter, null);
 
             if (range == null)
                 return EMPTY_CURSOR;
