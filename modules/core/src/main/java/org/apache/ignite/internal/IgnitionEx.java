@@ -2779,7 +2779,9 @@ public class IgnitionEx {
      */
     private static void convertLegacyDataStorageConfigurationToNew(
         IgniteConfiguration cfg) throws IgniteCheckedException {
-        boolean persistenceEnabled = cfg.getPersistentStoreConfiguration() != null;
+        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
+
+        boolean persistenceEnabled = psCfg != null;
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
@@ -2814,6 +2816,9 @@ public class IgnitionEx {
                 region.setSwapPath(mpc.getSwapFilePath());
                 region.setMetricsEnabled(mpc.isMetricsEnabled());
 
+                if (persistenceEnabled)
+                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+
                 if (mpc.getName() == null) {
                     throw new IgniteCheckedException(new IllegalArgumentException(
                         "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
@@ -2829,7 +2834,8 @@ public class IgnitionEx {
         }
 
         if (!optionalDataRegions.isEmpty())
-            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(new DataRegionConfiguration[optionalDataRegions.size()]));
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
+                new DataRegionConfiguration[optionalDataRegions.size()]));
 
         if (!customDfltPlc) {
             if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
@@ -2848,10 +2854,7 @@ public class IgnitionEx {
         }
 
         if (persistenceEnabled) {
-            PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
-
             dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
-            dsCfg.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
             dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
             dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
             dsCfg.setFileIOFactory(psCfg.getFileIOFactory());

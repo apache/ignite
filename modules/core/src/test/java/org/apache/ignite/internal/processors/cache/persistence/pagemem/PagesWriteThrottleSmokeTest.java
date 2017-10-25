@@ -78,12 +78,12 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(400 * 1024 * 1024)
+                .setCheckpointPageBufferSize(200 * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
             .setCheckpointFrequency(20_000)
-            .setCheckpointPageBufferSize(200 * 1000 * 1000)
             .setWriteThrottlingEnabled(true)
             .setCheckpointThreads(1)
             .setFileIOFactory(new SlowCheckpointFileIOFactory());
