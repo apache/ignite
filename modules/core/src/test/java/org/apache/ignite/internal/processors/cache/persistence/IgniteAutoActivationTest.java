@@ -79,6 +79,7 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
 
         createAndFillCache(srv);
 
+        // TODO: final implementation should work with cancel == true.
         stopAllGrids(false);
 
         //note: no call for activation after grid restart
