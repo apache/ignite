@@ -94,17 +94,13 @@ public class OdbcQueryResults {
 
     /**
      * Move to next result set.
-     * @return {@code true} if there is another result set, and {@code false}
-     *  if there are no result sets available anymore.
      */
-    public boolean nextResultSet() {
+    public void nextResultSet() {
         currentResultSet = null;
 
         if (currentResultSetIdx != cursors.size()) {
             currentResultSet = new OdbcResultSet(cursors.get(currentResultSetIdx));
             ++currentResultSetIdx;
         }
-
-        return currentResultSet != null;
     }
 }

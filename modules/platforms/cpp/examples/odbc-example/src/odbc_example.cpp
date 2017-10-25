@@ -102,7 +102,6 @@ void PrintOdbcResultSet(SQLHSTMT stmt)
             std::cout << std::setw(16) << std::left << columns[i].buffer << " ";
 
         std::cout << std::endl;
-	break;
     }
 }
 
@@ -164,15 +163,13 @@ void GetDataWithOdbc(SQLHDBC dbc, const std::string& query)
     else
         std::cerr << "Failed to execute query: " << GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
 
-    if (!SQL_SUCCEEDED(SQLFreeStmt(stmt, SQL_CLOSE)))
-        std::cerr << "Failed to close statement handle: " << GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
     // Releasing statement handle.
     SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
 
 /**
  * Populate Person cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulatePerson(SQLHDBC dbc)
@@ -390,7 +387,7 @@ void PopulatePerson(SQLHDBC dbc)
 
 /**
  * Populate Organization cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulateOrganization(SQLHDBC dbc)
@@ -528,7 +525,7 @@ void DeletePerson(SQLHDBC dbc, int64_t key)
 
 /**
  * Query tables.
- * 
+ *
  * @param dbc Database connection.
  */
 void QueryData(SQLHDBC dbc)
@@ -555,7 +552,7 @@ void QueryData(SQLHDBC dbc)
  *
  * @return Exit code.
  */
-int main() 
+int main()
 {
     IgniteConfiguration cfg;
 
@@ -565,8 +562,6 @@ int main()
     {
         // Start a node.
         Ignite grid = Ignition::Start(cfg);
-
-        std::cin.get();
 
         SQLHENV env;
 
@@ -601,8 +596,6 @@ int main()
         // Populate caches.
         PopulatePerson(dbc);
         PopulateOrganization(dbc);
-
-        std::cin.get();
 
         QueryData(dbc);
 

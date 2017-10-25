@@ -196,8 +196,6 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         return params;
     }
 
-
-
     /** {@inheritDoc} */
     @Override public byte[] encode(ClientListenerResponse msg0) {
         assert msg0 != null;

@@ -189,7 +189,7 @@ public class OdbcUtils {
     /**
      * Get affected rows for statement.
      * @param qryCur Cursor.
-     * @return Number of table rows affected.
+     * @return Number of table rows affected, if the query is DML, and -1 otherwise.
      */
     public static long rowsAffected(QueryCursor<List<?>> qryCur) {
         QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;

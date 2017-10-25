@@ -37,7 +37,8 @@ public class OdbcQueryExecuteResult {
      * @param columnsMetadata Columns metadata.
      * @param affectedRows Affected rows.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata, Collection<Long> affectedRows) {
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata,
+        Collection<Long> affectedRows) {
         this.queryId = queryId;
         this.columnsMetadata = columnsMetadata;
         this.affectedRows = affectedRows;
