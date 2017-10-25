@@ -1127,10 +1127,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObject bo = builder.build();
 
-        BinaryField field = builder.setField("unused", 1).build()
-            .type().field("unused");
+        BinaryField field = builder.setField("field", 1).build().type().field("field");
 
-        field.value(bo);
+        assertFalse(bo.hasField("field"));
+
+        assertNull(field.value(bo));
     }
 
     /**
