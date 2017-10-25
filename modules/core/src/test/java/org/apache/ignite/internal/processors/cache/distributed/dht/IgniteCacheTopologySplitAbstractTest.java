@@ -25,6 +25,7 @@ import java.net.SocketTimeoutException;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -45,6 +46,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbstractTest {
 
+    /** Topology version before segmentation */
+    protected long splitTopVer;
+
     /** Segmentation state. */
     private volatile boolean segmented;
 
@@ -64,16 +68,15 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
     }
 
     /**
-     * Trigger segmentation and wait for results. Should be called on stable topology.
+     * Trigger segmentation. Should be called on stable topology.
      *
-     * @throws InterruptedException If interrupted while waiting.
      * @throws IgniteCheckedException On error.
      */
-    protected void splitAndWait() throws InterruptedException, IgniteCheckedException {
+    protected void split() throws IgniteCheckedException {
         if (log.isInfoEnabled())
-            log.info(">>> Simulating split");
+            log.info("Simulating split");
 
-        long topVer = grid(0).cluster().topologyVersion();
+        splitTopVer = grid(0).cluster().topologyVersion();
 
         // Trigger segmentation.
         segmented = true;
@@ -84,7 +87,14 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
             comm.blockMessages(new SegmentBlocker(ignite.cluster().localNode()));
         }
+    }
 
+    /**
+     * Wait for segmentation results. Should be called after {@link #split()}
+     *
+     * @throws InterruptedException If interrupted while waiting.
+     */
+    protected void awaitSegmentation() throws InterruptedException {
         Collection<Ignite> seg0 = F.view(G.allGrids(), new IgnitePredicate<Ignite>() {
             @Override public boolean apply(Ignite ignite) {
                 return segment(ignite.cluster().localNode()) == 0;
@@ -97,26 +107,51 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             }
         });
 
-        for (Ignite grid : seg0)
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg1.size()).get();
+        try {
+            for (Ignite grid : seg0)
+                ((IgniteKernal)grid).context().discovery().topologyFuture(splitTopVer + seg1.size()).get();
 
-        for (Ignite grid : seg1)
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg0.size()).get();
+            for (Ignite grid : seg1)
+                ((IgniteKernal)grid).context().discovery().topologyFuture(splitTopVer + seg0.size()).get();
 
-        // awaitPartitionMapExchange won't work because coordinator is wrong for second segment.
-        for (Ignite grid : G.allGrids())
-            ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
+            // awaitPartitionMapExchange won't work because coordinator is wrong for second segment.
+            for (Ignite grid : G.allGrids())
+                ((IgniteKernal)grid).context().cache().context().exchange().lastTopologyFuture().get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for exchange", e);
+        }
 
         if (log.isInfoEnabled())
-            log.info(">>> Finished waiting for split");
+            log.info("Finished waiting for split");
+    }
+
+    /**
+     * Trigger segmentation and wait for results. Should be called on stable topology.
+     *
+     * @throws InterruptedException If interrupted while waiting.
+     * @throws IgniteCheckedException On error.
+     */
+    protected void splitAndWait() throws InterruptedException, IgniteCheckedException {
+        split();
+        awaitSegmentation();
     }
 
     /**
      * Restore initial state
      */
     protected void unsplit() {
+        unsplit(true);
+    }
+
+    /**
+     * Restore initial state
+     *
+     * @param sendMessages Send blocked messages after restoring from a split
+     */
+    protected void unsplit(boolean sendMessages) {
         if (log.isInfoEnabled())
-            log.info(">>> Restoring from split");
+            log.info("Restoring from split [sendMessages=" + sendMessages + ']');
 
         segmented = false;
 
@@ -124,7 +159,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             TestRecordingCommunicationSpi comm = (TestRecordingCommunicationSpi)
                 ignite.configuration().getCommunicationSpi();
 
-            comm.stopBlock();
+            comm.stopBlock(sendMessages);
         }
     }
 
@@ -156,6 +191,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
      * Discovery SPI which can simulate network split.
      */
     protected class SplitTcpDiscoverySpi extends TcpDiscoverySpi {
+
         /**
          * @param sockAddr Remote socket address.
          * @return Segmented status.
@@ -246,6 +282,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
     /**  */
     protected class SegmentBlocker implements IgniteBiPredicate<ClusterNode, Message> {
+
         /**  */
         private final ClusterNode locNode;
 
