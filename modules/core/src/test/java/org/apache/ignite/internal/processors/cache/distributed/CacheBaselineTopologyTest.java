@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.CacheException;
@@ -298,6 +299,77 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assert ignite.affinity(CACHE_NAME).primaryPartitions(newIgnite.cluster().localNode()).length > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPrimaryLeft() throws Exception {
+        startGrids(NODE_COUNT);
+
+        awaitPartitionMapExchange();
+
+        IgniteEx ig = grid(0);
+
+        ig.activeEx(true, ig.cluster().nodes());
+
+        IgniteCache<Integer, Integer> cache =
+            ig.createCache(
+                new CacheConfiguration<Integer, Integer>()
+                    .setName(CACHE_NAME)
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setBackups(1)
+                    .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                    .setReadFromBackup(true)
+            );
+
+        int key = 1;
+
+        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+
+        assert affNodes.size() == 2;
+
+        int primaryIdx = -1;
+
+        IgniteEx primary = null;
+        IgniteEx backup = null;
+
+        for (int i = 0; i < NODE_COUNT; i++) {
+            if (grid(i).localNode().equals(affNodes.get(0))) {
+                primaryIdx = i;
+                primary = grid(i);
+            }
+            else if (grid(i).localNode().equals(affNodes.get(1)))
+                backup = grid(i);
+        }
+
+        assert primary != null;
+        assert backup != null;
+
+        Integer val1 = 1;
+        Integer val2 = 2;
+
+        cache.put(key, val1);
+
+        assertEquals(val1, primary.cache(CACHE_NAME).get(key));
+        assertEquals(val1, backup.cache(CACHE_NAME).get(key));
+
+        primary.close();
+
+        assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
+
+        cache.put(key, val2);
+
+        assertEquals(val2, backup.cache(CACHE_NAME).get(key));
+
+        primary = startGrid(primaryIdx);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(primary.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
+
+        assertEquals(val2, primary.cache(CACHE_NAME).get(key));
+        assertEquals(val2, backup.cache(CACHE_NAME).get(key));
     }
 
 }
