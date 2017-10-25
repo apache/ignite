@@ -56,7 +56,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
 
 
-        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+//        TODO enable this test after IGNITE-6753, now it takes too long
+//        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
 
         return suite;
     }
