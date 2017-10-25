@@ -51,7 +51,9 @@
         <iLifecycleHandler type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
     </lifecycleHandlers>
     <cacheConfiguration>
-        <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'>
+        <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false' partitionLossPolicy='ReadWriteAll' groupName='fooGroup'
+                            onheapCacheEnabled='true' storeConcurrentLoadAllThreshold='8' rebalanceOrder='9' rebalanceBatchesPrefetchCount='10' maxQueryIteratorsCount='11' queryDetailMetricsSize='12'
+                            queryParallelism='13' sqlSchema='mySchema'>
             <queryEntities>
                 <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>
                     <fields>
