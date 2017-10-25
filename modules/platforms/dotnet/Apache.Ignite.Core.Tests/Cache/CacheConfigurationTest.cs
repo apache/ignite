@@ -167,6 +167,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check put-get
             cache[1] = new Entity { Foo = 1 };
             Assert.AreEqual(1, cache[1].Foo);
+
+            // Check another config
+            cacheName = Guid.NewGuid().ToString();
+            cfg = GetCustomCacheConfiguration2(cacheName);
+
+            cache = _ignite.CreateCache<int, Entity>(cfg);
+            AssertConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
         /// <summary>
@@ -269,6 +276,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
+                cfg.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
+            Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(CacheConfiguration.DefaultMaxQueryIteratorsCount, cfg.MaxQueryIteratorsCount);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryDetailMetricsSize, cfg.QueryDetailMetricsSize);
+            Assert.IsNull(cfg.SqlSchema);
+            Assert.AreEqual(CacheConfiguration.DefaultQueryParallelism, cfg.QueryParallelism);
         }
 
         /// <summary>
@@ -331,6 +346,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
+
+            Assert.AreEqual(x.OnheapCacheEnabled, y.OnheapCacheEnabled);
+            Assert.AreEqual(x.StoreConcurrentLoadAllThreshold, y.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(x.RebalanceOrder, y.RebalanceOrder);
+            Assert.AreEqual(x.RebalanceBatchesPrefetchCount, y.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(x.MaxQueryIteratorsCount, y.MaxQueryIteratorsCount);
+            Assert.AreEqual(x.QueryDetailMetricsSize, y.QueryDetailMetricsSize);
+            Assert.AreEqual(x.QueryParallelism, y.QueryParallelism);
+            Assert.AreEqual(x.SqlSchema, y.SqlSchema);
         }
 
         /// <summary>
@@ -645,7 +669,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TypeName = "foobar",
                         AffinityKeyFieldName = "barbaz"
                     }
-                }
+                },
+                OnheapCacheEnabled = true,
+                StoreConcurrentLoadAllThreshold = 7,
+                RebalanceOrder = 3,
+                RebalanceBatchesPrefetchCount = 4,
+                MaxQueryIteratorsCount = 512,
+                QueryDetailMetricsSize = 100,
+                QueryParallelism = 16,
+                SqlSchema = "foo" + name
             };
         }
         /// <summary>
@@ -725,7 +757,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
-                },
+                }, 
+                OnheapCacheEnabled = true,  // Required with eviction policy
                 AffinityFunction = new RendezvousAffinityFunction
                 {
                     Partitions = 113,

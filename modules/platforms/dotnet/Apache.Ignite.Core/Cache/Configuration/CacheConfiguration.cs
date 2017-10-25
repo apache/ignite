@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.IO;
     using System.Linq;
     using System.Xml.Serialization;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -143,6 +142,24 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
         public const int DefaultSqlIndexMaxInlineSize = -1;
 
+        /// <summary> Default value for <see cref="StoreConcurrentLoadAllThreshold"/>. </summary>
+        public const int DefaultStoreConcurrentLoadAllThreshold = 5;
+
+        /// <summary> Default value for <see cref="RebalanceOrder"/>. </summary>
+        public const int DefaultRebalanceOrder = 0;
+
+        /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
+        public const long DefaultRebalanceBatchesPrefetchCount = 2;
+
+        /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
+        public const int DefaultMaxQueryIteratorsCount = 1024;
+
+        /// <summary> Default value for <see cref="QueryDetailMetricsSize"/>. </summary>
+        public const int DefaultQueryDetailMetricsSize = 0;
+
+        /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
+        public const int DefaultQueryParallelism = 1;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -191,6 +208,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
             SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
+            StoreConcurrentLoadAllThreshold = DefaultStoreConcurrentLoadAllThreshold;
+            RebalanceOrder = DefaultRebalanceOrder;
+            RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
+            MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
+            QueryParallelism = DefaultQueryParallelism;
         }
 
         /// <summary>
@@ -294,6 +316,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
             SqlIndexMaxInlineSize = reader.ReadInt();
+            OnheapCacheEnabled = reader.ReadBoolean();
+            StoreConcurrentLoadAllThreshold = reader.ReadInt();
+            RebalanceOrder = reader.ReadInt();
+            RebalanceBatchesPrefetchCount = reader.ReadLong();
+            MaxQueryIteratorsCount = reader.ReadInt();
+            QueryDetailMetricsSize = reader.ReadInt();
+            QueryParallelism = reader.ReadInt();
+            SqlSchema = reader.ReadString();
 
             QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
@@ -382,6 +412,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
             writer.WriteInt(SqlIndexMaxInlineSize);
+            writer.WriteBoolean(OnheapCacheEnabled);
+            writer.WriteInt(StoreConcurrentLoadAllThreshold);
+            writer.WriteInt(RebalanceOrder);
+            writer.WriteLong(RebalanceBatchesPrefetchCount);
+            writer.WriteInt(MaxQueryIteratorsCount);
+            writer.WriteInt(QueryDetailMetricsSize);
+            writer.WriteInt(QueryParallelism);
+            writer.WriteString(SqlSchema);
 
             writer.WriteCollectionRaw(QueryEntities);
 
@@ -799,5 +837,80 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether on-heap cache is enabled for the off-heap based page memory.
+        /// </summary>
+        public bool OnheapCacheEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the threshold to use when multiple keys are being loaded from an underlying cache store
+        /// (see <see cref="CacheStoreFactory"/>).
+        /// 
+        /// In the situation when several threads load the same or intersecting set of keys
+        /// and the total number of keys to load is less or equal to this threshold then there will be no
+        /// second call to the storage in order to load a key from thread A if the same key is already being
+        /// loaded by thread B.
+        ///
+        /// The threshold should be controlled wisely. On the one hand if it's set to a big value then the
+        /// interaction with a storage during the load of missing keys will be minimal.On the other hand the big
+        /// value may result in significant performance degradation because it is needed to check
+        /// for every key whether it's being loaded or not.
+        /// </summary>
+        [DefaultValue(DefaultStoreConcurrentLoadAllThreshold)]
+        public int StoreConcurrentLoadAllThreshold { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache rebalance order. Caches with bigger RebalanceOrder are rebalanced later than caches
+        /// with smaller RebalanceOrder.
+        /// <para />
+        /// Default is 0, which means unordered rebalance. All caches with RebalanceOrder=0 are rebalanced without any
+        /// delay concurrently.
+        /// <para />
+        /// This parameter is applicable only for caches with <see cref="RebalanceMode"/> of
+        /// <see cref="CacheRebalanceMode.Sync"/> and <see cref="CacheRebalanceMode.Async"/>.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceOrder)]
+        public int RebalanceOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rebalance batches prefetch count.
+        /// <para />
+        /// Source node can provide more than one batch at rebalance start to improve performance.
+        /// Default is <see cref="DefaultRebalanceBatchesPrefetchCount"/>, minimum is 2.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceBatchesPrefetchCount)]
+        public long RebalanceBatchesPrefetchCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of active query iterators.
+        /// </summary>
+        [DefaultValue(DefaultMaxQueryIteratorsCount)]
+        public int MaxQueryIteratorsCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the query detail metrics to be stored in memory.
+        /// <para />
+        /// 0 means disabled metrics.
+        /// </summary>
+        [DefaultValue(DefaultQueryDetailMetricsSize)]
+        public int QueryDetailMetricsSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SQL schema.
+        /// Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+        /// <para />
+        /// Quoted <see cref="Name"/> is used by default.
+        /// </summary>
+        public string SqlSchema { get; set; }
+
+        /// <summary>
+        /// Gets or sets the desired query parallelism within a single node.
+        /// Query executor may or may not use this hint, depending on estimated query cost.
+        /// <para />
+        /// Default is <see cref="DefaultQueryParallelism"/>.
+        /// </summary>
+        [DefaultValue(DefaultQueryParallelism)]
+        public int QueryParallelism { get; set; }
     }
 }
