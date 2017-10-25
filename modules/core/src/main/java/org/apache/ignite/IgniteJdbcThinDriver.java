@@ -30,9 +30,12 @@ import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
  * JDBC driver thin implementation for In-Memory Data Grid.
@@ -179,18 +182,7 @@ public class IgniteJdbcThinDriver implements Driver {
     @Override public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException {
         parseUrl(url, info);
 
-        List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
-            new JdbcDriverPropertyInfo("Hostname", info.getProperty(JdbcThinUtils.PROP_HOST), ""),
-            new JdbcDriverPropertyInfo("Port number", info.getProperty(JdbcThinUtils.PROP_PORT), ""),
-            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS), ""),
-            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER), ""),
-            new JdbcDriverPropertyInfo("Collocated", info.getProperty(JdbcThinUtils.PROP_COLLOCATED), ""),
-            new JdbcDriverPropertyInfo("Replicated only", info.getProperty(JdbcThinUtils.PROP_REPLICATED_ONLY), ""),
-            new JdbcDriverPropertyInfo("Lazy query execution flag", info.getProperty(JdbcThinUtils.PROP_LAZY),""),
-            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(JdbcThinUtils.PROP_SKIP_REDUCER_ON_UPDATE),"")
-        );
-
-        return props.toArray(new DriverPropertyInfo[0]);
+        return ConnectionPropertiesImpl.getDriverPropertyInfo(info);
     }
 
     /** {@inheritDoc} */
@@ -285,7 +277,7 @@ public class IgniteJdbcThinDriver implements Driver {
             if (key.isEmpty() || val.isEmpty())
                 throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param);
 
-            props.setProperty(JdbcThinUtils.PROP_PREFIX + key, val);
+            props.setProperty(PROP_PREFIX + key, val);
         }
     }
 }
