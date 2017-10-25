@@ -390,7 +390,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         U.writeString(out, storagePath);
         out.writeLong(checkpointFreq);
         out.writeLong(lockWaitTime);
-        out.writeLong(checkpointPageBufSize);
+        out.writeLong(0);
         out.writeInt(checkpointThreads);
         U.writeEnum(out, checkpointWriteOrder);
         out.writeInt(walHistSize);

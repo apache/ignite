@@ -1826,6 +1826,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isMetricsEnabled());
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
+        w.writeLong(cfg.getCheckpointPageBufferSize());
     }
 
     /**
@@ -1847,7 +1848,8 @@ public class PlatformConfigurationUtils {
                 .setEmptyPagesPoolSize(r.readInt())
                 .setMetricsEnabled(r.readBoolean())
                 .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong());
+                .setMetricsRateTimeInterval(r.readLong())
+                .setCheckpointPageBufferSize(r.readLong());
     }
 
     /**
