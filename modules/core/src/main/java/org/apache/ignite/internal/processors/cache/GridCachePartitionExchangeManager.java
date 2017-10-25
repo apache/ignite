@@ -703,7 +703,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     @Nullable public GridDhtPartitionsExchangeFuture exchangeFuture(AffinityTopologyVersion topVer) {
-        for (GridDhtPartitionsExchangeFuture fut : exchFuts) {
+        for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
             if (fut.topologyVersion().equals(topVer))
                 return fut;
         }
