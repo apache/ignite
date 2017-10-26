@@ -32,6 +32,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareMvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareMvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
@@ -226,10 +228,16 @@ public abstract class PageIO {
     public static final short T_DATA_REF_MVCC_LEAF = 22;
 
     /** */
-    public static final short T_H2_MVCC_REF_LEAF = 23;
+    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 23;
 
     /** */
-    public static final short T_H2_MVCC_REF_INNER = 24;
+    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 24;
+
+    /** */
+    public static final short T_H2_MVCC_REF_LEAF = 25;
+
+    /** */
+    public static final short T_H2_MVCC_REF_INNER = 26;
 
     /** */
     private final int ver;
@@ -585,6 +593,12 @@ public abstract class PageIO {
 
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_DATA_REF_MVCC_INNER:
+                return (Q)CacheIdAwareMvccDataInnerIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_DATA_REF_MVCC_LEAF:
+                return (Q)CacheIdAwareMvccDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_MVCC_INNER:
                 return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);

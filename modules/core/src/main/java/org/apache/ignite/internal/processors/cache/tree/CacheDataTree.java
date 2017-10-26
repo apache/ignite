@@ -89,7 +89,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     private static IOVersions<? extends AbstractDataInnerIO> innerIO(CacheGroupContext grp) {
         if (grp.mvccEnabled())
-            return MvccDataInnerIO.VERSIONS;
+            return grp.sharedGroup() ? CacheIdAwareMvccDataInnerIO.VERSIONS : MvccDataInnerIO.VERSIONS;
 
         return grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS;
     }
@@ -100,7 +100,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      */
     private static IOVersions<? extends AbstractDataLeafIO> leafIO(CacheGroupContext grp) {
         if (grp.mvccEnabled())
-            return MvccDataLeafIO.VERSIONS;
+            return grp.sharedGroup() ? CacheIdAwareMvccDataLeafIO.VERSIONS : MvccDataLeafIO.VERSIONS;
 
         return grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS;
     }

@@ -1506,7 +1506,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1526,9 +1526,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     partId,
                     cacheId);
 
-                if (grp.sharedGroup() && updateRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    updateRow.cacheId(cctx.cacheId());
-
                 dataTree.iterate(updateRow, new MvccKeyMinVersionBound(cacheId, key), updateRow);
 
                 MvccUpdateRow.UpdateResult res = updateRow.updateResult();
@@ -1541,7 +1538,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return null;
                 }
                 else {
-                    rowStore.addRow(updateRow);
+                    if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
+                        updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
+
+                        rowStore.addRow(updateRow);
+
+                        updateRow.cacheId(cacheId);
+                    }
+                    else
+                        rowStore.addRow(updateRow);
 
                     boolean old = dataTree.putx(updateRow);
 
@@ -1584,7 +1589,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1599,9 +1604,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     needOld,
                     partId,
                     cacheId);
-
-                if (grp.sharedGroup() && updateRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                    updateRow.cacheId(cctx.cacheId());
 
                 dataTree.iterate(updateRow, new MvccKeyMinVersionBound(cacheId, key), updateRow);
 
@@ -1620,8 +1622,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     long rmvRowLink = cleanup(cctx, updateRow.cleanupRows(), true);
 
-                    if (rmvRowLink == 0)
-                        rowStore.addRow(updateRow);
+                    if (rmvRowLink == 0) {
+                        if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
+                            updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
+
+                            rowStore.addRow(updateRow);
+
+                            updateRow.cacheId(cacheId);
+                        }
+                        else
+                            rowStore.addRow(updateRow);
+                    }
                     else
                         updateRow.link(rmvRowLink);
 

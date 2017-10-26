@@ -273,6 +273,64 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testWithCacheGroups() throws Exception {
+        Ignite srv0 = startGrid(0);
+
+        List<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        for (int c = 0; c < 3; c++) {
+            CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT);
+
+            ccfg.setName("cache-" + c);
+            ccfg.setGroupName("grp1");
+
+            ccfgs.add(ccfg);
+        }
+
+        srv0.createCaches(ccfgs);
+
+        final int PUTS = 5;
+
+        for (int i = 0; i < PUTS; i++) {
+            for (int c = 0; c < 3; c++) {
+                IgniteCache cache = srv0.cache("cache-" + c);
+
+                Map<Integer, Integer> vals = new HashMap<>();
+
+                for (int k = 0; k < 10; k++) {
+                    cache.put(k, i);
+
+                    vals.put(k, i);
+
+                    assertEquals(i, cache.get(k));
+                }
+
+                assertEquals(vals, cache.getAll(vals.keySet()));
+            }
+        }
+
+        for (int c = 0; c < 3; c++) {
+            IgniteCache cache = srv0.cache("cache-" + c);
+
+            Map<Integer, Integer> vals = new HashMap<>();
+
+            for (int k = 0; k < 10; k++) {
+                if (k % 2 == 0)
+                    vals.put(k, PUTS - 1);
+                else {
+                    cache.remove(k);
+
+                    assertNull(cache.get(k));
+                }
+            }
+
+            assertEquals(vals, cache.getAll(vals.keySet()));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCacheRecreate() throws Exception {
         cacheRecreate(null);
     }

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.assertMvccVersionValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
 
 /**
@@ -44,7 +45,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     }
 
     /** {@inheritDoc} */
-    @Override public void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
+    @Override public final void storeByOffset(long pageAddr, int off, CacheSearchRow row) {
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());
@@ -72,10 +73,10 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     }
 
     /** {@inheritDoc} */
-    @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
-        int cacheId = getCacheId(pageAddr, idx);
-        int hash = getHash(pageAddr, idx);
+    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
         long link = getLink(pageAddr, idx);
+        int hash = getHash(pageAddr, idx);
+        int cacheId = getCacheId(pageAddr, idx);
 
         if (storeMvccVersion()) {
             long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
@@ -96,7 +97,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     }
 
     /** {@inheritDoc} */
-    @Override public void store(long dstPageAddr,
+    @Override public final void store(long dstPageAddr,
         int dstIdx,
         BPlusIO<CacheSearchRow> srcIo,
         long srcPageAddr,
@@ -104,8 +105,9 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     {
         RowLinkIO rowIo = ((RowLinkIO)srcIo);
 
-        int hash = rowIo.getHash(srcPageAddr, srcIdx);
         long link =rowIo.getLink(srcPageAddr, srcIdx);
+        int hash = rowIo.getHash(srcPageAddr, srcIdx);
+
         int off = offset(dstIdx);
 
         PageUtils.putLong(dstPageAddr, off, link);
@@ -124,13 +126,12 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            long mvccTopVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvccCrdVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
             long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
 
-            assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
-            assert mvccCntr != MVCC_COUNTER_NA;
+            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
 
-            PageUtils.putLong(dstPageAddr, off, mvccTopVer);
+            PageUtils.putLong(dstPageAddr, off, mvccCrdVer);
             off += 8;
 
             PageUtils.putLong(dstPageAddr, off, mvccCntr);
@@ -138,14 +139,14 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink(long pageAddr, int idx) {
+    @Override public final long getLink(long pageAddr, int idx) {
         assert idx < getCount(pageAddr) : idx;
 
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 
     /** {@inheritDoc} */
-    @Override public int getHash(long pageAddr, int idx) {
+    @Override public final int getHash(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 8);
     }
 
