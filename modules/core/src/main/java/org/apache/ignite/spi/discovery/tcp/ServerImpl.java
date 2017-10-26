@@ -1267,6 +1267,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (X.hasCause(e, StreamCorruptedException.class)) {
+                    // StreamCorruptedException could be caused by remote node failover
+                    if (connectAttempts < 2) {
+                        connectAttempts++;
+
+                        continue;
+                    }
+
                     if (log.isDebugEnabled())
                         log.debug("Connect failed with StreamCorruptedException, skip address: " + addr);
 
