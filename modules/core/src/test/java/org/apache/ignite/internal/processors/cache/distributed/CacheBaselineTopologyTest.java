@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -487,7 +488,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         startGrids(NODE_COUNT);
 
@@ -495,9 +496,18 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         primary = grid(primaryIdx);
         backup = grid(backupIdx);
 
-        ig.activeEx(true, ig.cluster().nodes());
+        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return grid(0).active();
+            }
+        }, 10_000);
 
-//        assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
+        assert activated;
+
+        assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
+
+        assertEquals(val2, primary.cache(CACHE_NAME).get(key));
+        assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
         primary.cache(CACHE_NAME).rebalance().get();
 
