@@ -501,6 +501,10 @@
             content: '';
         }
     }
+
+    .ui-grid-selection-row-header-buttons::before {
+        opacity: 1;
+    }
 }
 
 .ui-grid--ignite.ui-grid-disabled-group-selection {

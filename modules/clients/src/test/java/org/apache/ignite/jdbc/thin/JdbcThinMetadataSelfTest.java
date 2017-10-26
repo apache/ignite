@@ -260,6 +260,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
 
+            ResultSetMetaData rsMeta = rs.getMetaData();
+
+            assert rsMeta.getColumnCount() == 24 : "Invalid columns count: " + rsMeta.getColumnCount();
+
             assert rs != null;
 
             Collection<String> names = new ArrayList<>(2);
@@ -279,24 +283,34 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0; // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 } else if ("ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;
+                    assert rs.getInt(11) == 1;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("YES");
                 } else if ("AGE".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
                 else if ("_KEY".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
                     assert "OTHER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
                 else if ("_VAL".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
                     assert "OTHER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
 
                 cnt++;

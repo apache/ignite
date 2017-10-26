@@ -23,10 +23,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 

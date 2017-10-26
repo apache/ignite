@@ -24,15 +24,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -66,16 +65,18 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(4000L * 1024 * 1024)
+                .setCheckpointPageBufferSize(1000L * 1000 * 1000)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointFrequency(20_000)
+            .setWriteThrottlingEnabled(true);
 
-        dbCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
-            .setMaxSize(4000L * 1024 * 1024)
-            .setName("dfltMemPlc")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -85,13 +86,6 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(1000L * 1000 * 1000)
-                .setWriteThrottlingEnabled(true));
 
         cfg.setConsistentId(gridName);
 
@@ -155,8 +149,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                     while (run.get()) {
                         long dirtyPages = 0;
 
-                        for (MemoryMetrics m : ig.memoryMetrics())
-                            if (m.getName().equals("dfltMemPlc"))
+                        for (DataRegionMetrics m : ig.dataRegionMetrics())
+                            if (m.getName().equals("dfltDataRegion"))
                                 dirtyPages = m.getDirtyPages();
 
                         long cpBufPages = 0;
@@ -170,7 +164,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         try {
                             cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
-                                .memoryPolicy("dfltMemPlc").pageMemory()).checkpointBufferPagesCount();
+                                .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();

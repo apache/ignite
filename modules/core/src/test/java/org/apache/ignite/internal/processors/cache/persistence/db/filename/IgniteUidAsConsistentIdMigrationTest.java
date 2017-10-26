@@ -27,10 +27,9 @@ import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -129,7 +128,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         if (configuredConsistentId != null)
             cfg.setConsistentId(configuredConsistentId);
 
-        final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
+        final DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         if (placeStorageInTemp) {
             final File tempDir = new File(System.getProperty("java.io.tmpdir"));
@@ -138,19 +137,16 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
             pstWalStoreCustomPath = new File(tempDir, "WalStore");
             pstWalArchCustomPath = new File(tempDir, "WalArchive");
 
-            psCfg.setPersistentStorePath(pstStoreCustomPath.getAbsolutePath());
-            psCfg.setWalStorePath(pstWalStoreCustomPath.getAbsolutePath());
-            psCfg.setWalArchivePath(pstWalArchCustomPath.getAbsolutePath());
+            dsCfg.setStoragePath(pstStoreCustomPath.getAbsolutePath());
+            dsCfg.setWalPath(pstWalStoreCustomPath.getAbsolutePath());
+            dsCfg.setWalArchivePath(pstWalArchCustomPath.getAbsolutePath());
         }
 
-        cfg.setPersistentStoreConfiguration(psCfg);
+        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(32 * 1024 * 1024)
+            .setPersistenceEnabled(true));
 
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
-        final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
-
-        memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
-        memCfg.setMemoryPolicies(memPolCfg);
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         if (strLog != null)
             cfg.setGridLogger(strLog);
@@ -665,8 +661,8 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
         assertDirectoryExist("binary_meta", subDirName);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_STORE_PATH, subDirName);
-        assertDirectoryExist(PersistentStoreConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
+        assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
         assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
     }
 
