@@ -255,6 +255,8 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         if (evtType == EVT_NODE_METRICS_UPDATED || evtType == EVT_DISCOVERY_CUSTOM_EVT)
             return;
 
+        // TODO: IGNITE-3478 handle inactive state.
+
         MvccCoordinator crd;
 
         if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
@@ -269,7 +271,8 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
                 if (crdC != null) {
                     crdNode = crdC.apply(nodes);
 
-                    log.info("Assigned coordinator using test closure: " + crd);
+                    if (log.isInfoEnabled())
+                        log.info("Assigned coordinator using test closure: " + crd);
                 }
                 else {
                     // Expect nodes are sorted by order.
@@ -282,11 +285,12 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                crd = crdNode != null ? new
-                    MvccCoordinator(crdNode.id(), coordinatorVersion(topVer), new AffinityTopologyVersion(topVer, 0)) : null;
+                crd = crdNode != null ? new MvccCoordinator(crdNode.id(), coordinatorVersion(topVer), new AffinityTopologyVersion(topVer, 0)) : null;
 
-                if (crd != null)
-                    log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode +']');
+                if (crd != null) {
+                    if (log.isInfoEnabled())
+                        log.info("Assigned mvcc coordinator [crd=" + crd + ", crdNode=" + crdNode + ']');
+                }
                 else
                     U.warn(log, "New mvcc coordinator was not assigned [topVer=" + topVer + ']');
             }
@@ -1130,10 +1134,15 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     {
         assert ctx.localNodeId().equals(curCrd.nodeId());
 
-        log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
-            ", topVer=" + topVer + ']');
+        MvccCoordinator crd = discoCache.mvccCoordinator();
 
-        crdVer = coordinatorVersion(topVer.topologyVersion());
+        assert crd != null;
+
+        crdVer = crd.coordinatorVersion();
+
+        log.info("Initialize local node as mvcc coordinator [node=" + ctx.localNodeId() +
+            ", topVer=" + topVer +
+            ", crdVer=" + crdVer + ']');
 
         prevCrdQueries.init(activeQueries, discoCache, ctx.discovery());
 

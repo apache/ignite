@@ -300,13 +300,13 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         client = true;
 
-        Ignite srv0 = startGrid(SRVS);
+        Ignite client = startGrid(SRVS);
 
         final int NODES = SRVS + 1;
 
         CacheConfiguration ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 512);
 
-        srv0.createCache(ccfg);
+        client.createCache(ccfg);
 
         final long stopTime = System.currentTimeMillis() + 5000;
 
@@ -1295,6 +1295,15 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      */
     public void testPutAllGetAll_ClientServer_Backups0() throws Exception {
         putAllGetAll(null, 4, 2, 0, 64);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllGetAll_ClientServer_Backups0_Persistence() throws Exception {
+        persistence = true;
+
+        testPutAllGetAll_ClientServer_Backups0();
     }
 
     /**
@@ -3131,6 +3140,9 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         for (int i = 0; i < 4; i++) {
             startGrid(i);
 
+            if (persistence && i == 0)
+                ignite(i).active(true);
+
             checkCoordinatorsConsistency(i + 1);
         }
 
@@ -3151,6 +3163,15 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         awaitPartitionMapExchange();
 
         checkCoordinatorsConsistency(5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMvccCoordinatorInfoConsistency_Persistence() throws Exception {
+        persistence = true;
+
+        testMvccCoordinatorInfoConsistency();
     }
 
     /**

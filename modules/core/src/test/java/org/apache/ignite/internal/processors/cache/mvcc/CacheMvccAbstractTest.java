@@ -45,8 +45,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -93,7 +95,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     static final long DFLT_TEST_TIME = 30_000;
 
     /** */
-    protected static final int PAGE_SIZE = MemoryConfiguration.DFLT_PAGE_SIZE;
+    protected static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
 
     /** */
     protected static final int SRVS = 4;
@@ -106,6 +108,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected String nodeAttr;
+
+    /** */
+    protected boolean persistence;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -125,11 +130,20 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         if (nodeAttr != null)
             cfg.setUserAttributes(F.asMap(nodeAttr, true));
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-        memCfg.setPageSize(PAGE_SIZE);
+        storageCfg.setWalMode(WALMode.LOG_ONLY);
+        storageCfg.setPageSize(PAGE_SIZE);
 
-        cfg.setMemoryConfiguration(memCfg);
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+
+        regionCfg.setPersistenceEnabled(persistence);
+
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+
+        cfg.setDataStorageConfiguration(storageCfg);
+
+        cfg.setConsistentId(gridName);
 
         return cfg;
     }
@@ -144,6 +158,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         CacheCoordinatorsProcessor.coordinatorAssignClosure(null);
+
+        GridTestUtils.deleteDbFiles();
     }
 
     /** {@inheritDoc} */
@@ -156,6 +172,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         }
 
         CacheCoordinatorsProcessor.coordinatorAssignClosure(null);
+
+        GridTestUtils.deleteDbFiles();
 
         super.afterTest();
     }

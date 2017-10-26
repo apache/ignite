@@ -23,9 +23,9 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -56,13 +56,19 @@ public class CacheMvccClusterRestartTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(100 * 1024 * 1024);
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-        cfg.setMemoryConfiguration(memCfg);
+        storageCfg.setWalMode(WALMode.LOG_ONLY);
+        storageCfg.setPageSize(1024);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+
+        regionCfg.setPersistenceEnabled(true);
+        regionCfg.setMaxSize(100 * 1024 * 1024);
+
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+
+        cfg.setDataStorageConfiguration(storageCfg);
 
         return cfg;
     }

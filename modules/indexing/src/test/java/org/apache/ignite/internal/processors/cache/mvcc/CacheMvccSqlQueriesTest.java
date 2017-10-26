@@ -80,6 +80,15 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testAccountsTxSql_SingleNode_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxSql_SingleNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAccountsTxSumSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64, new InitIndexing(Integer.class, MvccTestAccount.class), false, ReadMode.SQL_SUM);
     }
@@ -89,6 +98,15 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
      */
     public void testAccountsTxSql_WithRemoves_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64, new InitIndexing(Integer.class, MvccTestAccount.class), true, ReadMode.SQL_ALL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxSql_WithRemoves_SingleNode_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxSql_WithRemoves_SingleNode();
     }
 
     /**
