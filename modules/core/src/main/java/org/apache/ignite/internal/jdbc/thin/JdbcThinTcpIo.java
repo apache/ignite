@@ -95,41 +95,8 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Host. */
-    private final String host;
-
-    /** Port. */
-    private final int port;
-
-    /** Distributed joins. */
-    private final boolean distributedJoins;
-
-    /** Enforce join order. */
-    private final boolean enforceJoinOrder;
-
-    /** Collocated flag. */
-    private final boolean collocated;
-
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
-    /** Lazy execution query flag. */
-    private final boolean lazy;
-
-    /** Flag to automatically close server cursor. */
-    private final boolean autoCloseServerCursor;
-
-    /** Executes update queries on server nodes. */
-    private final boolean skipReducerOnUpdate;
-
-    /** Socket send buffer. */
-    private final int sockSndBuf;
-
-    /** Socket receive buffer. */
-    private final int sockRcvBuf;
-
-    /** TCP no delay flag. */
-    private final boolean tcpNoDelay;
+    /** Connection properties. */
+    private final ConnectionProperties connProps;
 
     /** Endpoint. */
     private IpcClientTcpEndpoint endpoint;
@@ -149,34 +116,10 @@ public class JdbcThinTcpIo {
     /**
      * Constructor.
      *
-     * @param host Host.
-     * @param port Port.
-     * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce join order flag.
-     * @param collocated Collocated flag.
-     * @param replicatedOnly Replicated only flag.
-     * @param autoCloseServerCursor Flag to automatically close server cursors.
-     * @param lazy Lazy execution query flag.
-     * @param sockSndBuf Socket send buffer.
-     * @param sockRcvBuf Socket receive buffer.
-     * @param tcpNoDelay TCP no delay flag.
-     * @param skipReducerOnUpdate Executes update queries on ignite server nodes.
+     * @param connProps Connection properties.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
-        boolean tcpNoDelay, boolean skipReducerOnUpdate) {
-        this.host = host;
-        this.port = port;
-        this.distributedJoins = distributedJoins;
-        this.enforceJoinOrder = enforceJoinOrder;
-        this.collocated = collocated;
-        this.replicatedOnly = replicatedOnly;
-        this.autoCloseServerCursor = autoCloseServerCursor;
-        this.lazy = lazy;
-        this.sockSndBuf = sockSndBuf;
-        this.sockRcvBuf = sockRcvBuf;
-        this.tcpNoDelay = tcpNoDelay;
-        this.skipReducerOnUpdate = skipReducerOnUpdate;
+    JdbcThinTcpIo(ConnectionProperties connProps) {
+        this.connProps = connProps;
     }
 
     /**
@@ -186,16 +129,16 @@ public class JdbcThinTcpIo {
     public void start() throws SQLException, IOException {
         Socket sock = new Socket();
 
-        if (sockSndBuf != 0)
-            sock.setSendBufferSize(sockSndBuf);
+        if (connProps.getSocketSendBuffer() != 0)
+            sock.setSendBufferSize(connProps.getSocketSendBuffer());
 
-        if (sockRcvBuf != 0)
-            sock.setReceiveBufferSize(sockRcvBuf);
+        if (connProps.getSocketReceiveBuffer() != 0)
+            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
 
-        sock.setTcpNoDelay(tcpNoDelay);
+        sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
-            sock.connect(new InetSocketAddress(host, port));
+            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
 
             endpoint = new IpcClientTcpEndpoint(sock);
 
@@ -203,8 +146,8 @@ public class JdbcThinTcpIo {
             in = new BufferedInputStream(endpoint.inputStream());
         }
         catch (IOException | IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + host + ", port=" + port + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
         handshake(CURRENT_VER);
@@ -229,13 +172,13 @@ public class JdbcThinTcpIo {
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
-        writer.writeBoolean(lazy);
-        writer.writeBoolean(skipReducerOnUpdate);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
+        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         send(writer.array());
 
@@ -299,11 +242,11 @@ public class JdbcThinTcpIo {
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
         send(writer.array());
 
@@ -430,180 +373,6 @@ public class JdbcThinTcpIo {
         return data;
     }
 
-//    /**
-//     * @return
-//     * @throws SQLException
-//     */
-//    private SSLSocketFactory getSSLSocketFactoryDefaultOrConfigured() throws SQLException {
-//        String clientCertificateKeyStoreUrl = mysqlIO.connection.getClientCertificateKeyStoreUrl();
-//        String clientCertificateKeyStorePassword = mysqlIO.connection.getClientCertificateKeyStorePassword();
-//        String clientCertificateKeyStoreType = mysqlIO.connection.getClientCertificateKeyStoreType();
-//        String trustCertificateKeyStoreUrl = mysqlIO.connection.getTrustCertificateKeyStoreUrl();
-//        String trustCertificateKeyStorePassword = mysqlIO.connection.getTrustCertificateKeyStorePassword();
-//        String trustCertificateKeyStoreType = mysqlIO.connection.getTrustCertificateKeyStoreType();
-//
-//        if (F.isEmpty(clientCertificateKeyStoreUrl)) {
-//            clientCertificateKeyStoreUrl = System.getProperty("javax.net.ssl.keyStore");
-//            clientCertificateKeyStorePassword = System.getProperty("javax.net.ssl.keyStorePassword");
-//            clientCertificateKeyStoreType = System.getProperty("javax.net.ssl.keyStoreType");
-//            if (F.isEmpty(clientCertificateKeyStoreType)) {
-//                clientCertificateKeyStoreType = "JKS";
-//            }
-//            // check URL
-//            if (!F.isEmpty(clientCertificateKeyStoreUrl)) {
-//                try {
-//                    new URL(clientCertificateKeyStoreUrl);
-//                } catch (MalformedURLException e) {
-//                    clientCertificateKeyStoreUrl = "file:" + clientCertificateKeyStoreUrl;
-//                }
-//            }
-//        }
-//
-//        if (F.isEmpty(trustCertificateKeyStoreUrl)) {
-//            trustCertificateKeyStoreUrl = System.getProperty("javax.net.ssl.trustStore");
-//            trustCertificateKeyStorePassword = System.getProperty("javax.net.ssl.trustStorePassword");
-//            trustCertificateKeyStoreType = System.getProperty("javax.net.ssl.trustStoreType");
-//            if (F.isEmpty(trustCertificateKeyStoreType)) {
-//                trustCertificateKeyStoreType = "JKS";
-//            }
-//            // check URL
-//            if (!F.isEmpty(trustCertificateKeyStoreUrl)) {
-//                try {
-//                    new URL(trustCertificateKeyStoreUrl);
-//                } catch (MalformedURLException e) {
-//                    trustCertificateKeyStoreUrl = "file:" + trustCertificateKeyStoreUrl;
-//                }
-//            }
-//        }
-//
-//        TrustManagerFactory tmf;
-//        KeyManagerFactory kmf;
-//
-//        KeyManager[] kms = null;
-//        List<TrustManager> tms = new ArrayList<>();
-//
-//        try {
-//            tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-//            kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-//        } catch (NoSuchAlgorithmException nsae) {
-//            throw SQLError.createSQLException(
-//                "Default algorithm definitions for TrustManager and/or KeyManager are invalid.  Check java security properties file.",
-//                SQL_STATE_BAD_SSL_PARAMS, 0, false, mysqlIO.getExceptionInterceptor());
-//        }
-//
-//        if (!F.isEmpty(clientCertificateKeyStoreUrl)) {
-//            InputStream ksIS = null;
-//            try {
-//                if (!F.isEmpty(clientCertificateKeyStoreType)) {
-//                    KeyStore clientKeyStore = KeyStore.getInstance(clientCertificateKeyStoreType);
-//                    URL ksURL = new URL(clientCertificateKeyStoreUrl);
-//                    char[] password = (clientCertificateKeyStorePassword == null) ? new char[0] : clientCertificateKeyStorePassword.toCharArray();
-//                    ksIS = ksURL.openStream();
-//                    clientKeyStore.load(ksIS, password);
-//                    kmf.init(clientKeyStore, password);
-//                    kms = kmf.getKeyManagers();
-//                }
-//            } catch (UnrecoverableKeyException uke) {
-//                throw SQLError.createSQLException("Could not recover keys from client keystore.  Check password?", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                    mysqlIO.getExceptionInterceptor());
-//            } catch (NoSuchAlgorithmException nsae) {
-//                throw SQLError.createSQLException("Unsupported keystore algorithm [" + nsae.getMessage() + "]", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                    mysqlIO.getExceptionInterceptor());
-//            } catch (KeyStoreException kse) {
-//                throw SQLError.createSQLException("Could not create KeyStore instance [" + kse.getMessage() + "]", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                    mysqlIO.getExceptionInterceptor());
-//            } catch (CertificateException nsae) {
-//                throw SQLError.createSQLException("Could not load client" + clientCertificateKeyStoreType + " keystore from " + clientCertificateKeyStoreUrl,
-//                    mysqlIO.getExceptionInterceptor());
-//            } catch (MalformedURLException mue) {
-//                throw SQLError.createSQLException(clientCertificateKeyStoreUrl + " does not appear to be a valid URL.", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                    mysqlIO.getExceptionInterceptor());
-//            } catch (IOException ioe) {
-//                SQLException sqlEx = SQLError.createSQLException("Cannot open " + clientCertificateKeyStoreUrl + " [" + ioe.getMessage() + "]",
-//                    SQL_STATE_BAD_SSL_PARAMS, 0, false, mysqlIO.getExceptionInterceptor());
-//                sqlEx.initCause(ioe);
-//
-//                throw sqlEx;
-//            } finally {
-//                if (ksIS != null) {
-//                    try {
-//                        ksIS.close();
-//                    } catch (IOException e) {
-//                        // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
-//                    }
-//                }
-//            }
-//        }
-//
-//        InputStream trustStoreIS = null;
-//        try {
-//            KeyStore trustKeyStore = null;
-//
-//            if (!F.isEmpty(trustCertificateKeyStoreUrl) && !F.isEmpty(trustCertificateKeyStoreType)) {
-//                trustStoreIS = new URL(trustCertificateKeyStoreUrl).openStream();
-//                char[] trustStorePassword = (trustCertificateKeyStorePassword == null) ? new char[0] : trustCertificateKeyStorePassword.toCharArray();
-//
-//                trustKeyStore = KeyStore.getInstance(trustCertificateKeyStoreType);
-//                trustKeyStore.load(trustStoreIS, trustStorePassword);
-//            }
-//
-//            tmf.init(trustKeyStore); // (trustKeyStore == null) initializes the TrustManagerFactory with the default truststore.
-//
-//            // building the customized list of TrustManagers from original one if it's available
-//            TrustManager[] origTms = tmf.getTrustManagers();
-//            final boolean verifyServerCert = mysqlIO.connection.getVerifyServerCertificate();
-//
-//            for (TrustManager tm : origTms) {
-//                // wrap X509TrustManager or put original if non-X509 TrustManager
-//                tms.add(tm instanceof X509TrustManager ? new X509TrustManagerWrapper((X509TrustManager) tm, verifyServerCert) : tm);
-//            }
-//
-//        } catch (MalformedURLException e) {
-//            throw SQLError.createSQLException(trustCertificateKeyStoreUrl + " does not appear to be a valid URL.", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                mysqlIO.getExceptionInterceptor());
-//        } catch (KeyStoreException e) {
-//            throw SQLError.createSQLException("Could not create KeyStore instance [" + e.getMessage() + "]", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                mysqlIO.getExceptionInterceptor());
-//        } catch (NoSuchAlgorithmException e) {
-//            throw SQLError.createSQLException("Unsupported keystore algorithm [" + e.getMessage() + "]", SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                mysqlIO.getExceptionInterceptor());
-//        } catch (CertificateException e) {
-//            throw SQLError.createSQLException("Could not load trust" + trustCertificateKeyStoreType + " keystore from " + trustCertificateKeyStoreUrl,
-//                SQL_STATE_BAD_SSL_PARAMS, 0, false, mysqlIO.getExceptionInterceptor());
-//        } catch (IOException e) {
-//            SQLException sqlEx = SQLError.createSQLException("Cannot open " + trustCertificateKeyStoreType + " [" + e.getMessage() + "]",
-//                SQL_STATE_BAD_SSL_PARAMS, 0, false, mysqlIO.getExceptionInterceptor());
-//            sqlEx.initCause(e);
-//            throw sqlEx;
-//        } finally {
-//            if (trustStoreIS != null) {
-//                try {
-//                    trustStoreIS.close();
-//                } catch (IOException e) {
-//                    // can't close input stream, but keystore can be properly initialized so we shouldn't throw this exception
-//                }
-//            }
-//        }
-//
-//        // if original TrustManagers are not available then putting one X509TrustManagerWrapper which take care only about expiration check
-//        if (tms.size() == 0) {
-//            tms.add(new X509TrustManagerWrapper());
-//        }
-//
-//        try {
-//            SSLContext sslContext = SSLContext.getInstance("TLS");
-//
-//            sslContext.init(kms, tms.toArray(new TrustManager[tms.size()]), null);
-//
-//            return sslContext.getSocketFactory();
-//        } catch (NoSuchAlgorithmException nsae) {
-//            throw SQLError.createSQLException("TLS is not a valid SSL protocol.", SQL_STATE_BAD_SSL_PARAMS, 0, false, mysqlIO.getExceptionInterceptor());
-//        } catch (KeyManagementException kme) {
-//            throw SQLError.createSQLException("KeyManagementException: " + kme.getMessage(), SQL_STATE_BAD_SSL_PARAMS, 0, false,
-//                mysqlIO.getExceptionInterceptor());
-//        }
-//    }
-
     /**
      * Close the client IO.
      */
@@ -622,59 +391,10 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Distributed joins flag.
+     * @return Connection properties.
      */
-    public boolean distributedJoins() {
-        return distributedJoins;
-    }
-
-    /**
-     * @return Enforce join order flag.
-     */
-    public boolean enforceJoinOrder() {
-        return enforceJoinOrder;
-    }
-
-    /**
-     * @return Collocated flag.
-     */
-    public boolean collocated() {
-        return collocated;
-    }
-
-    /**
-     * @return Replicated only flag.
-     */
-    public boolean replicatedOnly() {
-        return replicatedOnly;
-    }
-
-    /**
-     * @return Auto close server cursors flag.
-     */
-    public boolean autoCloseServerCursor() {
-        return autoCloseServerCursor;
-    }
-
-    /**
-     * @return Socket send buffer size.
-     */
-    public int socketSendBuffer() {
-        return sockSndBuf;
-    }
-
-    /**
-     * @return Socket receive buffer size.
-     */
-    public int socketReceiveBuffer() {
-        return sockRcvBuf;
-    }
-
-    /**
-     * @return TCP no delay flag.
-     */
-    public boolean tcpNoDelay() {
-        return tcpNoDelay;
+    public ConnectionProperties connectionProperties() {
+        return connProps;
     }
 
     /**
@@ -682,19 +402,5 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
-    }
-
-    /**
-     * @return Lazy query execution flag.
-     */
-    public boolean lazy() {
-        return lazy;
-    }
-
-    /**
-     * @return Server side update flag.
-     */
-    public boolean skipReducerOnUpdate() {
-        return skipReducerOnUpdate;
     }
 }
