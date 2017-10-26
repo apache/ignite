@@ -418,6 +418,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      *
      */
     static class BooleanProperty extends ConnectionProperty{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Bool choices. */
         private static final String [] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
 
