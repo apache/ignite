@@ -51,8 +51,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?" +
-        JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR + "=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?autoCloseServerCursor=true";
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
