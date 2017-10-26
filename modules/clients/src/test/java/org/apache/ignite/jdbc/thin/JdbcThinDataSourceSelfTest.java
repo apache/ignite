@@ -145,12 +145,12 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = ids.getConnection()) {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "cliIo");
 
-            assertFalse(io.autoCloseServerCursor());
-            assertFalse(io.collocated());
-            assertFalse(io.enforceJoinOrder());
-            assertFalse(io.lazy());
-            assertFalse(io.distributedJoins());
-            assertFalse(io.replicatedOnly());
+            assertFalse(io.connectionProperties().isAutoCloseServerCursor());
+            assertFalse(io.connectionProperties().isCollocated());
+            assertFalse(io.connectionProperties().isEnforceJoinOrder());
+            assertFalse(io.connectionProperties().isLazy());
+            assertFalse(io.connectionProperties().isDistributedJoins());
+            assertFalse(io.connectionProperties().isReplicatedOnly());
         }
 
         ids.setAutoCloseServerCursor(true);
@@ -163,12 +163,12 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = ids.getConnection()) {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "cliIo");
 
-            assertTrue(io.autoCloseServerCursor());
-            assertTrue(io.collocated());
-            assertTrue(io.enforceJoinOrder());
-            assertTrue(io.lazy());
-            assertTrue(io.distributedJoins());
-            assertTrue(io.replicatedOnly());
+            assertTrue(io.connectionProperties().isAutoCloseServerCursor());
+            assertTrue(io.connectionProperties().isCollocated());
+            assertTrue(io.connectionProperties().isEnforceJoinOrder());
+            assertTrue(io.connectionProperties().isLazy());
+            assertTrue(io.connectionProperties().isDistributedJoins());
+            assertTrue(io.connectionProperties().isReplicatedOnly());
         }
     }
 
@@ -183,7 +183,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = ids.getConnection()) {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "cliIo");
 
-            assertTrue(io.tcpNoDelay());
+            assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
         ids.setTcpNoDelay(false);
@@ -191,7 +191,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = ids.getConnection()) {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "cliIo");
 
-            assertFalse(io.tcpNoDelay());
+            assertFalse(io.connectionProperties().isTcpNoDelay());
         }
     }
 
@@ -208,30 +208,30 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = ids.getConnection()) {
             JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, JdbcThinConnection.class, "cliIo");
 
-            assertEquals(111, io.socketReceiveBuffer());
-            assertEquals(111, io.socketReceiveBuffer());
+            assertEquals(111, io.connectionProperties().getSocketReceiveBuffer());
+            assertEquals(111, io.connectionProperties().getSocketSendBuffer());
         }
 
-        ids.setSocketReceiveBuffer(-1);
-
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
+                ids.setSocketReceiveBuffer(-1);
+
                 ids.getConnection();
 
                 return null;
             }
-        }, SQLException.class, "Property cannot be negative [name=socketReceiveBuffer, value=-1]");
-
-        ids.setSocketReceiveBuffer(1024);
-        ids.setSocketSendBuffer(-1);
+        }, SQLException.class, "Property cannot be lower then 0 [name=socketReceiveBuffer, value=-1]");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
+                ids.setSocketReceiveBuffer(1024);
+                ids.setSocketSendBuffer(-1);
+
                 ids.getConnection();
 
                 return null;
             }
-        }, SQLException.class, "Property cannot be negative [name=socketSendBuffer, value=-1]");
+        }, SQLException.class, "Property cannot be lower then 0 [name=socketSendBuffer, value=-1]");
     }
 
     /**

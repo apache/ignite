@@ -99,15 +99,17 @@ public class JdbcThinConnection implements Connection {
      *
      * @param url Connection URL.
      * @param schema Schema name.
-     * @param connProps Connection properties.
+     * @param props Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, String schema, ConnectionProperties connProps) throws SQLException {
+    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
         assert url != null;
-        assert connProps != null;
 
         this.url = url;
-        this.connProps = connProps;
+
+        connProps = new ConnectionPropertiesImpl();
+
+        ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;

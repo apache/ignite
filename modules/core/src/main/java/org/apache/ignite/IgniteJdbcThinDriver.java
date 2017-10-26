@@ -157,11 +157,7 @@ public class IgniteJdbcThinDriver implements Driver {
 
         String schema = parseUrl(url, props);
 
-        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
-
-        connProps.init(props);
-
-        return new JdbcThinConnection(url, schema, connProps);
+        return new JdbcThinConnection(url, schema, props);
     }
 
     /** {@inheritDoc} */

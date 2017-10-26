@@ -227,7 +227,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @param props Environment properties.
      * @throws SQLException On error.
      */
-    public void init(Properties props) throws SQLException {
+    void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
         for (ConnectionProperty aPropsArray : propsArray)
@@ -257,6 +257,20 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         cpi.init(props);
 
         return cpi.getDriverPropertyInfo();
+    }
+
+    /**
+     * @return Properties set contains connection parameters.
+     */
+    Properties storeToProperties() {
+        Properties props = new Properties();
+
+        for (ConnectionProperty prop : propsArray) {
+            if (prop.valueObject() != null)
+                props.setProperty(PROP_PREFIX + prop.getName(), prop.valueObject());
+        }
+
+        return props;
     }
 
     /**
@@ -436,6 +450,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         BooleanProperty(String name, String desc, boolean dfltVal, boolean required) {
             super(name, desc, dfltVal, boolChoices, required);
+
+            val = dfltVal;
         }
 
         /**
@@ -497,6 +513,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         NumberProperty(String name, String desc, Number dfltVal, boolean required, Number min, Number max) {
             super(name, desc, dfltVal, null, required);
 
+            val = dfltVal;
+
             range = new Number[] {min, max};
         }
 
@@ -523,7 +541,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
-            return val.toString();
+            return String.valueOf(val);
         }
 
         /**
@@ -575,7 +593,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return Property value.
          */
         int value() {
-            return val.intValue();
+            return val != null ? val.intValue() : (int)dfltVal;
         }
     }
 
@@ -600,6 +618,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         StringProperty(String name, String desc, String dfltVal, String [] choices, boolean required,
             PropertyValidator validator) {
             super(name, desc, dfltVal, choices, required, validator);
+
+            if (dfltVal != null)
+                val = dfltVal;
         }
 
         /**
@@ -618,7 +639,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            val = str == null ? (String)dfltVal : str;
+            val = str;
         }
 
         /** {@inheritDoc} */

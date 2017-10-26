@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * JDBC result set metadata implementation.
  */
-public class JdbcThinDataSource extends ConnectionPropertiesImpl implements DataSource, Serializable {
+public class JdbcThinDataSource extends ConnectionPropertiesImpl implements DataSource {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,9 +47,7 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
-        Properties props = exposeAsProperties();
-
-        return IgniteJdbcThinDriver.register().connect(getUrl(), props);
+        return IgniteJdbcThinDriver.register().connect(getUrl(), storeToProperties());
     }
 
     /** {@inheritDoc} */
