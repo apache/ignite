@@ -102,6 +102,9 @@ include /app/helpers/jade/mixins
                                             +number('Metrics rate time interval:', dfltRegionModel + '.metricsRateTimeInterval', '"DfltRegionRateTimeInterval" + $index',
                                             'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
                                         .details-row
+                                            +number('Checkpoint page buffer:', dfltRegionModel + '.checkpointPageBufferSize', '"DfltCheckpointPageBufferSize" + $index',
+                                                'true', '0', '0', 'Amount of memory allocated for a checkpoint temporary buffer in bytes')
+                                        .details-row
                                             +checkbox('Metrics enabled', dfltRegionModel + '.metricsEnabled', '"DfltRegionMetricsEnabled" + $index',
                                             'Whether memory metrics are enabled by default on node startup')
                                         .details-row
@@ -156,6 +159,9 @@ include /app/helpers/jade/mixins
                                         .settings-row
                                             +number('Metrics rate time interval:', 'model.metricsRateTimeInterval', '"DataRegionRateTimeInterval" + $index',
                                                 'true', '60000', '1000', 'Time interval for allocation rate and eviction rate monitoring purposes')
+                                        .details-row
+                                            +number('Checkpoint page buffer:', 'model.checkpointPageBufferSize', '"DataRegionCheckpointPageBufferSize" + $index',
+                                                'true', '0', '0', 'Amount of memory allocated for a checkpoint temporary buffer in bytes')
                                         .settings-row
                                             +checkbox('Metrics enabled', 'model.metricsEnabled', '"DataRegionMetricsEnabled" + $index',
                                             'Whether memory metrics are enabled by default on node startup')

@@ -136,7 +136,7 @@
             <listener type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyEventListener' />
         </localEventListener>
     </localEventListeners>
-    <dataStorageConfiguration alwaysWriteFullPages="false" checkpointFrequency="00:00:01" checkpointPageBufferSize="2"
+    <dataStorageConfiguration alwaysWriteFullPages="false" checkpointFrequency="00:00:01"
                               checkpointThreads="3" concurrencyLevel="4" lockWaitTime="00:00:05" metricsEnabled="true"
                               pageSize="6" storagePath="cde" metricsRateTimeInterval="00:00:07"
                               metricsSubIntervalCount="8" systemRegionInitialSize="9" systemRegionMaxSize="10" 
@@ -147,11 +147,11 @@
         <dataRegionConfigurations>
             <dataRegionConfiguration emptyPagesPoolSize="1" evictionThreshold="2" initialSize="3" metricsEnabled="true"
                                      maxSize="4" name="reg2" pageEvictionMode="RandomLru" metricsRateTimeInterval="00:00:01"
-                                     metricsSubIntervalCount="5" swapPath="swap" />
+                                     metricsSubIntervalCount="5" swapPath="swap" checkpointPageBufferSize="7" />
         </dataRegionConfigurations>
         <defaultDataRegionConfiguration emptyPagesPoolSize="2" evictionThreshold="3" initialSize="4"
                                         maxSize="5" metricsEnabled="false" name="reg1" pageEvictionMode="Disabled"
                                         metricsRateTimeInterval="00:00:03" metricsSubIntervalCount="6"
-                                        swapPath="swap2" />
+                                        swapPath="swap2" checkpointPageBufferSize="8" />
     </dataStorageConfiguration>
 </igniteConfiguration>

@@ -1622,6 +1622,11 @@
                                             <xs:documentation>Enable disk persistence for this region.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1690,6 +1695,11 @@
                                                         <xs:documentation>Enable disk persistence for this region.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
+                                                <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
                                             </xs:complexType>                                            
                                         </xs:element>
                                     </xs:sequence>
@@ -1704,11 +1714,6 @@
                         <xs:attribute name="checkpointFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="checkpointPageBufferSize" type="xs:long">
-                            <xs:annotation>
-                                <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="checkpointThreads" type="xs:int">
