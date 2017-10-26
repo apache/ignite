@@ -400,6 +400,9 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     ret = true;
                 }
 
+                if (topVer.compareTo(this.topVer) > 0)
+                    this.topVer = topVer;
+
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
                     cctx.events().addEvent(
                         partition(),
