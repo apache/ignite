@@ -606,6 +606,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         StringProperty(String name, String desc, String dfltVal, String [] choices, boolean required,
             PropertyValidator validator) {
             super(name, desc, dfltVal, choices, required, validator);
+
+            val = dfltVal;
         }
 
         /**
@@ -624,7 +626,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            val = str == null ? (String)dfltVal : str;
+            val = str;
         }
 
         /** {@inheritDoc} */
