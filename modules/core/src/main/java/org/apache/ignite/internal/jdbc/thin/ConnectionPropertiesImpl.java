@@ -227,7 +227,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @param props Environment properties.
      * @throws SQLException On error.
      */
-    public void init(Properties props) throws SQLException {
+    void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
         for (ConnectionProperty aPropsArray : propsArray)
@@ -436,6 +436,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         BooleanProperty(String name, String desc, boolean dfltVal, boolean required) {
             super(name, desc, dfltVal, boolChoices, required);
+
+            val = dfltVal;
         }
 
         /**
@@ -497,6 +499,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         NumberProperty(String name, String desc, Number dfltVal, boolean required, Number min, Number max) {
             super(name, desc, dfltVal, null, required);
 
+            assert dfltVal != null;
+
+            val = dfltVal;
+
             range = new Number[] {min, max};
         }
 
@@ -523,7 +529,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
-            return val.toString();
+            return String.valueOf(val);
         }
 
         /**
