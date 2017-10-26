@@ -179,10 +179,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         return writeThrough;
     }
 
-    private boolean isReadWriteThroughEnabled() {
-        return writeThrough || readThrough;
-    }
-
     /**
      * Creates a wrapped cache store if write-behind cache is configured.
      *
@@ -881,7 +877,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         sesHolder.set(ses);
 
-        notifySessionListeners(ses, op, writeBehindStoreInitiator);
+        notifyCacheStoreSessionListeners(ses, op, writeBehindStoreInitiator);
     }
 
     /**
@@ -890,7 +886,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      * @param writeBehindStoreInitiator {@code true} if method call is initiated by {@link GridCacheWriteBehindStore}.
      * @throws IgniteCheckedException If failed.
      */
-    private void notifySessionListeners(SessionData ses, @Nullable StoreOperation op,
+    private void notifyCacheStoreSessionListeners(SessionData ses, @Nullable StoreOperation op,
         boolean writeBehindStoreInitiator) throws IgniteCheckedException {
         try {
             boolean notifyLsnrs = false;
