@@ -262,10 +262,12 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
-        private final boolean maskPageId;
+        /** Indicates whether partition ID should be masked from page ID. */
+        private final boolean maskPartId;
 
-        RemoveRowHandler(boolean maskPageId) {
-            this.maskPageId = maskPageId;
+        /** */
+        RemoveRowHandler(boolean maskPartId) {
+            this.maskPartId = maskPartId;
         }
 
         @Override public Long run(
@@ -299,7 +301,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                        pageId = maskPageId ? maskPartitionId(pageId) : pageId;
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -314,13 +316,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
-    }
-
-    /**
-     * @param unmaskedPageId Unmasked page id.
-     */
-    private long maskPartitionId(long unmaskedPageId) {
-        return unmaskedPageId & ~((-1L << 32) & (~(-1L << 48)));
     }
 
     /**
