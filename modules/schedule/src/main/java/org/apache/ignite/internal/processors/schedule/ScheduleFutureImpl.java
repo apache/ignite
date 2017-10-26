@@ -928,7 +928,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb,
             Executor exec) {
             return ref.chainAsync(doneCb, exec);
-    }
+        }
     }
 
     /** {@inheritDoc} */
