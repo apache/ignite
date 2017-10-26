@@ -966,10 +966,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             initAddresses();
 
-            Serializable cfgId = ignite.configuration().getConsistentId();
+            final Serializable cfgId = ignite.configuration().getConsistentId();
 
             if (cfgId == null) {
-                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
                 Collections.sort(sortedAddrs);
 
@@ -1475,6 +1475,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
      */
     protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
         // No-op, intended for usage in tests.
+    }
+
+    /**
+     * @param node Target node.
+     * @param sock Socket.
+     * @param out Stream to write to.
+     * @param msg Message.
+     * @param timeout Timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(
+        ClusterNode node,
+        Socket sock,
+        OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
+        long timeout) throws IOException, IgniteCheckedException {
+        writeToSocket(sock, out, msg, timeout);
     }
 
     /**

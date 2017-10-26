@@ -31,10 +31,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -54,6 +53,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -63,7 +63,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Slow checkpoint enabled. */
-    private final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
+    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
@@ -75,16 +75,20 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(400 * 1024 * 1024)
+                .setCheckpointPageBufferSize(200 * 1000 * 1000)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointFrequency(20_000)
+            .setWriteThrottlingEnabled(true)
+            .setCheckpointThreads(1)
+            .setFileIOFactory(new SlowCheckpointFileIOFactory());
 
-        dbCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
-            .setMaxSize(400 * 1024 * 1024)
-            .setName("dfltMemPlc")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -94,15 +98,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(200 * 1000 * 1000)
-                .setWriteThrottlingEnabled(true)
-                .setCheckpointingThreads(1)
-                .setFileIOFactory(new SlowCheckpointFileIOFactory()));
 
         cfg.setConsistentId(gridName);
 
@@ -277,14 +272,14 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 
     /**
      * Create File I/O that emulates poor checkpoint write speed.
      */
-    private class SlowCheckpointFileIOFactory implements FileIOFactory {
+    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

@@ -119,6 +119,9 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
     /** List of service configurations. */
     private List<VisorServiceConfiguration> srvcCfgs;
 
+    /** Configuration of data storage. */
+    private VisorDataStorageConfiguration dataStorage;
+
     /**
      * Default constructor.
      */
@@ -153,11 +156,11 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
         txCfg = new VisorTransactionConfiguration(c.getTransactionConfiguration());
 
-        if (c.getMemoryConfiguration() != null)
-            memCfg = new VisorMemoryConfiguration(c.getMemoryConfiguration());
+        if (c.getDataStorageConfiguration() != null)
+            memCfg = null;
 
-        if (c.getPersistentStoreConfiguration() != null)
-            psCfg = new VisorPersistentStoreConfiguration(c.getPersistentStoreConfiguration());
+        if (c.getDataStorageConfiguration() != null)
+            psCfg = null;
 
         storeSesLsnrs = compactArray(c.getCacheStoreSessionListenerFactories());
         warmupClos = compactClass(c.getWarmupClosure());
@@ -180,6 +183,8 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
             sqlConnCfg = new VisorSqlConnectorConfiguration(scc);
 
         srvcCfgs = VisorServiceConfiguration.list(c.getServiceConfiguration());
+
+        dataStorage = new VisorDataStorageConfiguration(c.getDataStorageConfiguration());
     }
 
     /**
@@ -357,6 +362,18 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         return srvcCfgs;
     }
 
+    /**
+     * @return Configuration of data storage.
+     */
+    public VisorDataStorageConfiguration getDataStorageConfiguration() {
+        return dataStorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(basic);
@@ -384,6 +401,7 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         out.writeObject(hadoopCfg);
         out.writeObject(sqlConnCfg);
         U.writeCollection(out, srvcCfgs);
+        out.writeObject(dataStorage);
     }
 
     /** {@inheritDoc} */
@@ -413,6 +431,9 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
         hadoopCfg = (VisorHadoopConfiguration)in.readObject();
         sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
         srvcCfgs = U.readList(in);
+
+        if (protoVer == V2)
+            dataStorage = (VisorDataStorageConfiguration)in.readObject();
     }
 
     /** {@inheritDoc} */

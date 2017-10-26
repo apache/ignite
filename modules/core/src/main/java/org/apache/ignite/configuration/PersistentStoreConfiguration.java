@@ -25,7 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Configures Apache Ignite Persistent store.
+ * @deprecated Use {@link DataStorageConfiguration} instead.
  */
+@Deprecated
 public class PersistentStoreConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -144,7 +146,7 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Factory to provide I/O interface for files */
     private FileIOFactory fileIOFactory =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
-        new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
+            new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate

@@ -81,6 +81,9 @@ public class JdbcThinUtils {
     /** Parameter: Automatically close server cursor. */
     public static final String PARAM_AUTO_CLOSE_SERVER_CURSOR = "autoCloseServerCursor";
 
+    /** Parameter: execute update query in distributed mode on ignite server nodes. */
+    public static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
+
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
@@ -107,6 +110,9 @@ public class JdbcThinUtils {
 
     /** Automatically close server cursor. */
     public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
+
+    /** Executes update queries on ignite server nodes in distributed mode. */
+    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
 
     /** Default port. */
     public static final int DFLT_PORT = ClientConnectorConfiguration.DFLT_PORT;

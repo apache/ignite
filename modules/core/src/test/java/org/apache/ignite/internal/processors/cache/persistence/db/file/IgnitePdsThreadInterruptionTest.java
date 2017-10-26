@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
 
-import java.util.concurrent.atomic.AtomicReference;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test what interruptions of writing threads do not affect PDS.
@@ -57,9 +57,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(storeConfiguration());
-
-        cfg.setMemoryConfiguration(memoryConfiguration());
+        cfg.setDataStorageConfiguration(memoryConfiguration());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
 
@@ -67,36 +65,19 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Store config.
-     */
-    private PersistentStoreConfiguration storeConfiguration() {
-        PersistentStoreConfiguration cfg = new PersistentStoreConfiguration();
-
-        cfg.setWalMode(WALMode.LOG_ONLY);
-
-        cfg.setWalFsyncDelayNanos(0);
-
-        cfg.setFileIOFactory(new AsyncFileIOFactory());
-
-        return cfg;
-    }
-
-    /**
      * @return Memory config.
      */
-    private MemoryConfiguration memoryConfiguration() {
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        // memPlcCfg.setPageEvictionMode(RANDOM_LRU); TODO Fix NPE on start.
-        memPlcCfg.setName("dfltMemPlc");
-
-        memCfg.setPageSize(PAGE_SIZE);
-        memCfg.setConcurrencyLevel(1);
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        return memCfg;
+    private DataStorageConfiguration memoryConfiguration() {
+        return new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setName("dfltMemPlc")
+                .setPersistenceEnabled(true)
+                /*.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU) TODO: fix NPE on start */)
+            .setPageSize(PAGE_SIZE)
+            .setConcurrencyLevel(1)
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalFsyncDelayNanos(0)
+            .setFileIOFactory(new AsyncFileIOFactory());
     }
 
     /**
@@ -200,6 +181,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

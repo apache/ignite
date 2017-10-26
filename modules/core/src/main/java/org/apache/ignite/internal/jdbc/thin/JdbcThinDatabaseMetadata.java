@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
@@ -311,7 +310,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsMultipleResultSets() throws SQLException {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -794,26 +793,31 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         conn.ensureNotClosed();
 
         final List<JdbcColumnMeta> meta = Arrays.asList(
-            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
-            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
-            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
-            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
-            new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),
-            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
-            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),
-            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class),
-            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),
-            new JdbcColumnMeta(null, null, "NULLABLE", Short.class),
-            new JdbcColumnMeta(null, null, "REMARKS", String.class),
-            new JdbcColumnMeta(null, null, "COLUMN_DEF", String.class),
-            new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class),
-            new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Integer.class),
-            new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class),
-            new JdbcColumnMeta(null, null, "SCOPE_CATLOG", String.class),
-            new JdbcColumnMeta(null, null, "SCOPE_SCHEMA", String.class),
-            new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),
-            new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class),
-            new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class));
+            new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),      // 1
+            new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),    // 2
+            new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),     // 3
+            new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),    // 4
+            new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),       // 5
+            new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),      // 6
+            new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),   // 7
+            new JdbcColumnMeta(null, null, "BUFFER_LENGTH ", Integer.class), // 8
+            new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class), // 9
+            new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),  // 10
+            new JdbcColumnMeta(null, null, "NULLABLE", Short.class),        // 11
+            new JdbcColumnMeta(null, null, "REMARKS", String.class),        // 12
+            new JdbcColumnMeta(null, null, "COLUMN_DEF", String.class),     // 13
+            new JdbcColumnMeta(null, null, "SQL_DATA_TYPE", Integer.class), // 14
+            new JdbcColumnMeta(null, null, "SQL_DATETIME_SUB", Integer.class), // 15
+            new JdbcColumnMeta(null, null, "CHAR_OCTET_LENGTH", Integer.class), // 16
+            new JdbcColumnMeta(null, null, "ORDINAL_POSITION", Integer.class), // 17
+            new JdbcColumnMeta(null, null, "IS_NULLABLE", String.class),    // 18
+            new JdbcColumnMeta(null, null, "SCOPE_CATLOG", String.class),   // 19
+            new JdbcColumnMeta(null, null, "SCOPE_SCHEMA", String.class),   // 20
+            new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),    // 21
+            new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class), // 22
+            new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class), // 23
+            new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN ", String.class) // 24
+        );
 
         if (!validCatalogPattern(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
@@ -836,26 +840,30 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     private List<Object> columnRow(JdbcColumnMeta colMeta, int pos) {
         List<Object> row = new ArrayList<>(20);
 
-        row.add((String)null);
-        row.add(colMeta.schemaName());
-        row.add(colMeta.tableName());
-        row.add(colMeta.columnName());
-        row.add(colMeta.dataType());
-        row.add(colMeta.dataTypeName());
-        row.add((Integer)null);
-        row.add((Integer)null);
-        row.add(10);
-        row.add(JdbcUtils.nullable(colMeta.columnName(), colMeta.dataTypeClass()) ? 1 : 0 );
-        row.add((String)null);
-        row.add((String)null);
-        row.add(Integer.MAX_VALUE);
-        row.add(pos);
-        row.add("YES");
-        row.add((String)null);
-        row.add((String)null);
-        row.add((String)null);
-        row.add((Short)null);
-        row.add("NO");
+        row.add((String)null);                  // 1. TABLE_CAT
+        row.add(colMeta.schemaName());          // 2. TABLE_SCHEM
+        row.add(colMeta.tableName());           // 3. TABLE_NAME
+        row.add(colMeta.columnName());          // 4. COLUMN_NAME
+        row.add(colMeta.dataType());            // 5. DATA_TYPE
+        row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
+        row.add((Integer)null);                 // 7. COLUMN_SIZE
+        row.add((Integer)null);                 // 8. BUFFER_LENGTH
+        row.add((Integer)null);                 // 9. DECIMAL_DIGITS
+        row.add(10);                            // 10. NUM_PREC_RADIX
+        row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
+        row.add((String)null);                  // 12. REMARKS
+        row.add((String)null);                  // 13. COLUMN_DEF
+        row.add(colMeta.dataType());            // 14. SQL_DATA_TYPE
+        row.add((Integer)null);                 // 15. SQL_DATETIME_SUB
+        row.add(Integer.MAX_VALUE);             // 16. CHAR_OCTET_LENGTH
+        row.add(pos);                           // 17. ORDINAL_POSITION
+        row.add(colMeta.isNullable() ? "YES" : "NO"); // 18. IS_NULLABLE
+        row.add((String)null);                  // 19. SCOPE_CATALOG
+        row.add((String)null);                  // 20. SCOPE_SCHEMA
+        row.add((String)null);                  // 21. SCOPE_TABLE
+        row.add((Short)null);                   // 22. SOURCE_DATA_TYPE
+        row.add("NO");                          // 23. IS_AUTOINCREMENT
+        row.add("NO");                          // 23. IS_GENERATEDCOLUMN
 
         return row;
     }

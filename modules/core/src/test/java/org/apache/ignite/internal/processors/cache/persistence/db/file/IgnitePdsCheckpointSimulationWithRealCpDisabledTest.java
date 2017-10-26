@@ -37,9 +37,9 @@ import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -77,6 +77,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  * Test simulated chekpoints,
  * Disables integrated check pointer thread
@@ -104,15 +106,12 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setCheckpointingFrequency(500)
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setCheckpointFrequency(500)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setAlwaysWriteFullPages(true)
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
         );
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -161,7 +160,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Otherwise we will violate page store integrity rules.
         ig.cache(cacheName).put(0, 0);
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         IgniteBiTuple<Map<FullPageId, Integer>, WALPointer> res;
 
@@ -190,7 +189,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         dbMgr.enableCheckpoints(false).get();
 
-        mem = shared.database().memoryPolicy(null).pageMemory();
+        mem = shared.database().dataRegion(null).pageMemory();
 
         verifyReads(res.get1(), mem, res.get2(), shared.wal());
     }
@@ -212,7 +211,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false);
 
-        PageMemory mem = shared.database().memoryPolicy(null).pageMemory();
+        PageMemory mem = shared.database().dataRegion(null).pageMemory();
 
         IgniteWriteAheadLogManager wal = shared.wal();
 
@@ -413,7 +412,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         int cacheId = sharedCtx.cache().cache(cacheName).context().cacheId();
 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
-        PageMemory pageMem = sharedCtx.database().memoryPolicy(null).pageMemory();
+        PageMemory pageMem = sharedCtx.database().dataRegion(null).pageMemory();
         IgniteWriteAheadLogManager wal = sharedCtx.wal();
 
         db.enableCheckpoints(false).get();
@@ -518,7 +517,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false);
 
-        PageMemoryEx mem = (PageMemoryEx) dbMgr.memoryPolicy(null).pageMemory();
+        PageMemoryEx mem = (PageMemoryEx) dbMgr.dataRegion(null).pageMemory();
 
         ig.context().cache().context().database().checkpointReadLock();
 
@@ -981,6 +980,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      *
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

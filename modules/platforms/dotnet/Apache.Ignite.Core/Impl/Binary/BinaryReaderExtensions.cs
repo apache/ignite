@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -58,15 +59,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>TimeSpan.</returns>
         public static TimeSpan ReadLongAsTimespan(this IBinaryRawReader reader)
         {
-            long ms = reader.ReadLong();
-
-            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
-                return TimeSpan.MaxValue;
-
-            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
-                return TimeSpan.MinValue;
-
-            return TimeSpan.FromMilliseconds(ms);
+            return BinaryUtils.LongToTimeSpan(reader.ReadLong());
         }
 
         /// <summary>
@@ -104,6 +97,32 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return default(T);
 
             return obj is T ? (T) obj : ((ObjectInfoHolder) obj).CreateInstance<T>();
+        }
+
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
+        public static ICollection<T> ReadCollectionRaw<T, TReader>(this TReader reader,
+            Func<TReader, T> factory) where TReader : IBinaryRawReader
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory != null);
+
+            int count = reader.ReadInt();
+
+            if (count <= 0)
+            {
+                return null;
+            }
+
+            var res = new List<T>(count);
+
+            for (var i = 0; i < count; i++)
+            {
+                res.Add(factory(reader));
+            }
+
+            return res;
         }
     }
 }
