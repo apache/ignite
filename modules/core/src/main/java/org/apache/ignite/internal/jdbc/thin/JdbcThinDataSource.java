@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * JDBC result set metadata implementation.
  */
-public class JdbcThinDataSource implements DataSource, Serializable {
+public class JdbcThinDataSource extends ConnectionPropertiesImpl implements DataSource, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,39 +41,6 @@ public class JdbcThinDataSource implements DataSource, Serializable {
 
     /** Schema name. */
     private String schema;
-
-    /** Host. */
-    private String host;
-
-    /** Port. */
-    private int port;
-
-    /** Distributed joins. */
-    private boolean distributedJoins;
-
-    /** Enforce join order. */
-    private boolean enforceJoinOrder;
-
-    /** Collocated flag. */
-    private boolean collocated;
-
-    /** Replicated only flag. */
-    private boolean replicatedOnly;
-
-    /** Lazy execution query flag. */
-    private boolean lazy;
-
-    /** Flag to automatically close server cursor. */
-    private boolean autoCloseServerCursor;
-
-    /** TCP_NODELAY flag. */
-    private boolean tcpNoDelay = true;
-
-    /** Socket send buffer size. */
-    private int sockSendBuff;
-
-    /** Socket receive buffer size. */
-    private int sockRecvBuff;
 
     /** Login timeout. */
     private int loginTimeout;
@@ -153,13 +120,13 @@ public class JdbcThinDataSource implements DataSource, Serializable {
         if (url != null)
             return url;
         else {
-            if (F.isEmpty(host))
+            if (F.isEmpty(getHost()))
                 return null;
 
-            StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX).append(host);
+            StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX).append(getHost());
 
-            if (port > 0)
-                sbUrl.append(':').append(port);
+            if (getPort() > 0)
+                sbUrl.append(':').append(getPort());
 
             if (!F.isEmpty(schema))
                 sbUrl.append('/').append(schema);
@@ -188,189 +155,5 @@ public class JdbcThinDataSource implements DataSource, Serializable {
      */
     public void setSchema(String schema) {
         this.schema = schema;
-    }
-
-    /**
-     * @return Ignite host to connect.
-     */
-    public String getHost() {
-        return host;
-    }
-
-    /**
-     * @param host Ignite host to connect.
-     */
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    /**
-     * @return Connection port.
-     */
-    public int getPort() {
-        return port;
-    }
-
-    /**
-     * @param port Connection port.
-     */
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    /**
-     * @return Distribute join flag (SQL hint).
-     * @see SqlFieldsQuery#isDistributedJoins()
-     */
-    public boolean isDistributedJoins() {
-        return distributedJoins;
-    }
-
-    /**
-     * @param distributedJoins Distributed join flag (SQL hint).
-     * @see SqlFieldsQuery#setDistributedJoins(boolean)
-     */
-    public void setDistributedJoins(boolean distributedJoins) {
-        this.distributedJoins = distributedJoins;
-    }
-
-    /**
-     * @return Enforce join order flag (SQL hint).
-     * @see SqlFieldsQuery#isEnforceJoinOrder()
-     */
-    public boolean isEnforceJoinOrder() {
-        return enforceJoinOrder;
-    }
-
-    /**
-     * @param enforceJoinOrder Enforce join order flag (SQL hint).
-     * @see SqlFieldsQuery#setEnforceJoinOrder(boolean)
-     */
-    public void setEnforceJoinOrder(boolean enforceJoinOrder) {
-        this.enforceJoinOrder = enforceJoinOrder;
-    }
-
-    /**
-     * @return Collocated query flag (SQL hint).
-     * @see SqlFieldsQuery#isCollocated()
-     */
-    public boolean isCollocated() {
-        return collocated;
-    }
-
-    /**
-     * @param collocated Collocated query flag (SQL hint).
-     * @see SqlFieldsQuery#setCollocated(boolean)
-     */
-    public void setCollocated(boolean collocated) {
-        this.collocated = collocated;
-    }
-
-    /**
-     * @return Replicated only flag (SQL hint).
-     * @see SqlFieldsQuery#isReplicatedOnly()
-     */
-    public boolean isReplicatedOnly() {
-        return replicatedOnly;
-    }
-
-    /**
-     * @param replicatedOnly Replicated only flag (SQL hint).
-     * @see SqlFieldsQuery#setReplicatedOnly(boolean)
-     */
-    public void setReplicatedOnly(boolean replicatedOnly) {
-        this.replicatedOnly = replicatedOnly;
-    }
-
-    /**
-     * @return Lazy query execution flag (SQL hint).
-     * @see SqlFieldsQuery#isLazy()
-     */
-    public boolean isLazy() {
-        return lazy;
-    }
-
-    /**
-     * @param lazy Lazy query execution flag (SQL hint).
-     * @see SqlFieldsQuery#setLazy(boolean)
-     */
-    public void setLazy(boolean lazy) {
-        this.lazy = lazy;
-    }
-
-    /**
-     * @return Auto close cursor on the server flag.
-     */
-    public boolean isAutoCloseServerCursor() {
-        return autoCloseServerCursor;
-    }
-
-    /**
-     * @param autoCloseServerCursor Auto close cursor on the server flag.
-     */
-    public void setAutoCloseServerCursor(boolean autoCloseServerCursor) {
-        this.autoCloseServerCursor = autoCloseServerCursor;
-    }
-
-    /**
-     * @return TCP_NODELAY flag.
-     */
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    /**
-     * @param tcpNoDelay TCP_NODELAY flag.
-     */
-    public void setTcpNoDelay(boolean tcpNoDelay) {
-        this.tcpNoDelay = tcpNoDelay;
-    }
-
-    /**
-     * @return Socket send buffer size.
-     */
-    public int getSocketSendBuffer() {
-        return sockSendBuff;
-    }
-
-    /**
-     * @param sockSendBuff Socket send buffer size.
-     */
-    public void setSocketSendBuffer(int sockSendBuff) {
-        this.sockSendBuff = sockSendBuff;
-    }
-
-    /**
-     * @return Socket receive buffer size.
-     */
-    public int getSocketReceiveBuffer() {
-        return sockRecvBuff;
-    }
-
-    /**
-     * @param socketRecvBuffer Socket receive buffer size.
-     */
-    public void setSocketReceiveBuffer(int socketRecvBuffer) {
-        this.sockRecvBuff = socketRecvBuffer;
-    }
-
-    /**
-     * @return Properties
-     */
-    private Properties exposeAsProperties() {
-        Properties props = new Properties();
-
-        props.setProperty(JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS, Boolean.toString(autoCloseServerCursor));
-        props.setProperty(JdbcThinUtils.PROP_DISTRIBUTED_JOINS, Boolean.toString(distributedJoins));
-        props.setProperty(JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER, Boolean.toString(enforceJoinOrder));
-        props.setProperty(JdbcThinUtils.PROP_COLLOCATED, Boolean.toString(collocated));
-        props.setProperty(JdbcThinUtils.PROP_REPLICATED_ONLY, Boolean.toString(replicatedOnly));
-        props.setProperty(JdbcThinUtils.PROP_LAZY, Boolean.toString(autoCloseServerCursor));
-        props.setProperty(JdbcThinUtils.PROP_TCP_NO_DELAY, Boolean.toString(tcpNoDelay));
-
-        props.setProperty(JdbcThinUtils.PROP_SOCK_SND_BUF, Integer.toString(sockSendBuff));
-        props.setProperty(JdbcThinUtils.PROP_SOCK_RCV_BUF, Integer.toString(sockRecvBuff));
-
-        return props;
     }
 }

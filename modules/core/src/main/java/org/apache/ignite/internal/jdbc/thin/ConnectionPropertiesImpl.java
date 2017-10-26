@@ -490,16 +490,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param desc Description.
          * @param dfltVal Default value.
          * @param required {@code true} if the property is required.
-         */
-        NumberProperty(String name, String desc, Number dfltVal, boolean required) {
-            super(name, desc, dfltVal, null, required);
-        }
-
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param dfltVal Default value.
-         * @param required {@code true} if the property is required.
          * @param min Lower bound of allowed range.
          * @param max Upper bound of allowed range.
          */
