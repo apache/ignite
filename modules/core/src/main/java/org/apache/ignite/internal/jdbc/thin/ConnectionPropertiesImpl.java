@@ -513,6 +513,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         NumberProperty(String name, String desc, Number dfltVal, boolean required, Number min, Number max) {
             super(name, desc, dfltVal, null, required);
 
+            assert dfltVal != null;
+
             val = dfltVal;
 
             range = new Number[] {min, max};
@@ -593,7 +595,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return Property value.
          */
         int value() {
-            return val != null ? val.intValue() : (int)dfltVal;
+            return val.intValue();
         }
     }
 
@@ -619,8 +621,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             PropertyValidator validator) {
             super(name, desc, dfltVal, choices, required, validator);
 
-            if (dfltVal != null)
-                val = dfltVal;
+            val = dfltVal;
         }
 
         /**
