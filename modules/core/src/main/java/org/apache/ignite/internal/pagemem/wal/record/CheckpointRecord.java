@@ -43,6 +43,13 @@ public class CheckpointRecord extends WALRecord {
     private WALPointer cpMark;
 
     /**
+     * .
+     */
+    public CheckpointRecord() {
+        this(UUID.randomUUID(), null);
+    }
+
+    /**
      * @param cpMark Checkpoint mark.
      */
     public CheckpointRecord(@Nullable WALPointer cpMark) {
@@ -112,6 +119,13 @@ public class CheckpointRecord extends WALRecord {
      */
     public boolean end() {
         return end;
+    }
+
+    /**
+     * Setter for set safe replay pointer.
+     */
+    public void checkpointMark(WALPointer cpMark) {
+        this.cpMark = cpMark;
     }
 
     /**

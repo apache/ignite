@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +41,21 @@ public class ConsistentIdMapper {
      */
     public ConsistentIdMapper(GridDiscoveryManager discoveryManager) {
         this.discoveryManager = discoveryManager;
+    }
+
+    /**
+     * Map topology version to list of consistent id.
+     *
+     * @param topVer Topology version.
+     * @return List of consistent ids.
+     */
+    public List<Object> mapToConsistentId(AffinityTopologyVersion topVer) {
+        List<Object> constIds = new ArrayList<>();
+
+        for (ClusterNode node : discoveryManager.serverNodes(topVer))
+            constIds.add(node.consistentId());
+
+        return constIds;
     }
 
     /**

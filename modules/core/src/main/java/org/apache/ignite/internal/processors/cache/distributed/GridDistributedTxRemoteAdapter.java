@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -391,6 +392,54 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         try {
             cctx.tm().prepareTx(this, null);
 
+            if (cctx.wal() != null) {
+                Collection<IgniteTxEntry> writeEntries = writeEntries();
+                Collection<IgniteTxEntry> readEntries = readEntries();
+
+                List<DataEntry> entries = new ArrayList<>(writeEntries.size() + readEntries.size());
+
+                for (IgniteTxEntry en : writeEntries) {
+                    entries.add(new DataEntry(
+                        en.cacheId(),
+                        en.key(),
+                        en.value(),
+                        en.op(),
+                        nearXidVersion(),
+                        writeVersion(),
+                        0,
+                        en.key().partition(),
+                        en.updateCounter())
+                    );
+                }
+
+                for (IgniteTxEntry en : readEntries) {
+                    entries.add(new DataEntry(
+                        en.cacheId(),
+                        en.key(),
+                        en.value(),
+                        en.op(),
+                        nearXidVersion(),
+                        writeVersion(),
+                        0,
+                        en.key().partition(),
+                        en.updateCounter())
+                    );
+                }
+
+                DataRecord dataRec = new DataRecord(entries);
+
+                try {
+                    WALPointer ptr = cctx.wal().log(dataRec);
+
+                    cctx.wal().fsync(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log DataRecord: " + dataRec, e);
+
+                    throw new IgniteException("Failed to log DataRecord: " + dataRec, e);
+                }
+            }
+
             if (pessimistic() || isSystemInvalidate())
                 state(PREPARED);
         }
@@ -741,6 +790,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+                            //TODO????
                             if (!near() && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
 

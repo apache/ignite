@@ -394,6 +394,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 fut.complete();
             else
                 fut.prepare(req);
+
+            if (fut.tx().onePhaseCommit())
+                state(PREPARED);
         }
         catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);

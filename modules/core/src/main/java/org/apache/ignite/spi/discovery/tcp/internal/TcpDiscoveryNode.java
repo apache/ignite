@@ -67,6 +67,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     private UUID id;
 
     /** Consistent ID. */
+    @GridToStringInclude
     private Object consistentId;
 
     /** Node attributes. */

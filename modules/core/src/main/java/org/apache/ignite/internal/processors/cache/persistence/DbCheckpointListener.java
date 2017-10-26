@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 
 /**
@@ -29,7 +30,7 @@ public interface DbCheckpointListener {
      */
     public interface Context {
         /**
-         *
+         * @return Flag indicate that next checkpoint for snapshot.
          */
         public boolean nextSnapshot();
 
@@ -42,6 +43,11 @@ public interface DbCheckpointListener {
          * @param cacheOrGrpName Cache or group name.
          */
         public boolean needToSnapshot(String cacheOrGrpName);
+
+        /**
+         * @return Checkpoint record.
+         */
+        public CheckpointRecord checkpointRecord();
     }
 
     /**

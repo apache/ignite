@@ -144,7 +144,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
 
-                return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
+                return 16 + 1 + (walPtr == null ? 0 : 16) + cacheStatesSize + 1;
 
             case META_PAGE_INIT:
                 return /*cache ID*/4 + /*page ID*/8 + /*ioType*/2  + /*ioVer*/2 +  /*tree root*/8 + /*reuse root*/8;
@@ -315,7 +315,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long msb = in.readLong();
                 long lsb = in.readLong();
                 boolean hasPtr = in.readByte() != 0;
-                int idx = hasPtr ? in.readInt() : 0;
+                long idx = hasPtr ? in.readLong() : 0;
                 int offset = hasPtr ? in.readInt() : 0;
                 int len = hasPtr ? in.readInt() : 0;
 

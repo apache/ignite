@@ -33,13 +33,18 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -81,6 +86,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -94,6 +100,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -693,6 +700,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
+        if (X.hasCause(err, NodeStoppingException.class))
+            return false;
+
         ERR_UPD.compareAndSet(this, null, err);
 
         // Must clear prepare future before response is sent or listeners are notified.
@@ -1224,6 +1234,54 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
+
+            if (cctx.wal() != null) {
+                Collection<IgniteTxEntry> writeEntries = tx.writeEntries();
+                Collection<IgniteTxEntry> readEntries = tx.readEntries();
+
+                List<DataEntry> entries = new ArrayList<>(writeEntries.size() + readEntries.size());
+
+                for (IgniteTxEntry en : writeEntries) {
+                    entries.add(new DataEntry(
+                        en.cacheId(),
+                        en.key(),
+                        en.value(),
+                        en.op(),
+                        tx.nearXidVersion(),
+                        tx.writeVersion(),
+                        0,
+                        en.key().partition(),
+                        en.updateCounter())
+                    );
+                }
+
+                for (IgniteTxEntry en : readEntries) {
+                    entries.add(new DataEntry(
+                        en.cacheId(),
+                        en.key(),
+                        en.value(),
+                        en.op(),
+                        tx.nearXidVersion(),
+                        tx.writeVersion(),
+                        0,
+                        en.key().partition(),
+                        en.updateCounter())
+                    );
+                }
+
+                DataRecord dataRec = new DataRecord(entries);
+
+                try {
+                    WALPointer ptr = cctx.wal().log(dataRec);
+
+                    cctx.wal().fsync(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to log DataRecord: " + dataRec, e);
+
+                    throw new IgniteException("Failed to log DataRecord: " + dataRec, e);
+                }
+            }
 
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {

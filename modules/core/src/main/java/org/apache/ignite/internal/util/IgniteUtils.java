@@ -193,8 +193,10 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -10171,6 +10173,19 @@ public abstract class IgniteUtils {
             y /= 2;
 
         return (int)y;
+    }
+
+    public static int compareTo(WALPointer pnt1, WALPointer pnt2) {
+        if (pnt1 == null || pnt2 == null)
+            throw new IllegalArgumentException("Argument can not be null, " + pnt1 + " " + pnt2);
+
+        if (!(pnt1 instanceof FileWALPointer) || !(pnt2 instanceof FileWALPointer))
+            throw new UnsupportedOperationException("Unsupported compare operation for " + pnt1 + " and " + pnt2);
+
+        FileWALPointer point1 = (FileWALPointer)pnt1;
+        FileWALPointer point2 = (FileWALPointer)pnt2;
+
+        return point1.compareTo(point2);
     }
 
     /**

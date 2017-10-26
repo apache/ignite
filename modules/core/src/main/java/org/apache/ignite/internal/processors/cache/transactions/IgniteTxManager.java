@@ -36,11 +36,14 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -68,8 +71,13 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -122,7 +130,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 /**
  * Cache transaction manager.
  */
-public class IgniteTxManager extends GridCacheSharedManagerAdapter {
+public class IgniteTxManager extends GridCacheSharedManagerAdapter implements DbCheckpointListener, IgniteChangeGlobalStateSupport {
     /** Default maximum number of transactions that have completed. */
     private static final int DFLT_MAX_COMPLETED_TX_CNT = 262144; // 2^18
 
@@ -159,7 +167,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Per-ID map. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
 
-    /** Per-ID map for near transactions. */
+    /** Per-ID map for near remote transactions (near cache). */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
     /** Deadlock detection futures. */
@@ -283,6 +291,79 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        IgniteCacheDatabaseSharedManager psMgr = kctx.cache().context().database();
+
+        if (psMgr instanceof GridCacheDatabaseSharedManager) {
+            GridCacheDatabaseSharedManager psMgr0 = (GridCacheDatabaseSharedManager)psMgr;
+
+            psMgr0.addCheckpointListener(this);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        IgniteCacheDatabaseSharedManager psMgr = kctx.cache().context().database();
+
+        if (psMgr instanceof GridCacheDatabaseSharedManager) {
+            GridCacheDatabaseSharedManager psMgr0 = (GridCacheDatabaseSharedManager)psMgr;
+
+            psMgr0.removeCheckpointListener(this);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        CheckpointRecord rec = ctx.checkpointRecord();
+
+        FileWALPointer pntCandidate = null;
+
+        FileWALPointer systemPtrCandidate = findCandidate(sysThreadMap.values());
+        FileWALPointer userPtrCandidate = findCandidate(idMap.values());
+
+        if (systemPtrCandidate == null && userPtrCandidate == null)
+            return;
+
+        if (systemPtrCandidate != null && userPtrCandidate == null)
+            rec.checkpointMark(systemPtrCandidate);
+        else if (systemPtrCandidate == null && userPtrCandidate != null)
+            rec.checkpointMark(userPtrCandidate);
+        else if (userPtrCandidate.compareTo(systemPtrCandidate) < 0)
+            rec.checkpointMark(userPtrCandidate);
+        else
+            rec.checkpointMark(systemPtrCandidate);
+    }
+
+    /**
+     *
+     */
+    private FileWALPointer findCandidate(Collection<IgniteInternalTx> txs) {
+        FileWALPointer pntCandidate = null;
+
+        for (IgniteInternalTx tx : txs)
+            if (tx instanceof IgniteTxAdapter) {
+                IgniteTxAdapter txAdapter = (IgniteTxAdapter)tx;
+
+                WALPointer ptr = txAdapter.prepPtr;
+
+                if (ptr != null && ptr instanceof FileWALPointer) {
+                    FileWALPointer ptr0 = (FileWALPointer)ptr;
+
+                    if (pntCandidate == null) {
+                        pntCandidate = ptr0;
+
+                        continue;
+                    }
+
+                    if (ptr0.compareTo(pntCandidate) < 0)
+                        pntCandidate = ptr0;
+                }
+            }
+
+        return pntCandidate;
     }
 
     /**

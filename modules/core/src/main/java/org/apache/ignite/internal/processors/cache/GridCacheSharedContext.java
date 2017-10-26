@@ -224,6 +224,8 @@ public class GridCacheSharedContext<K, V> {
         if (walMgr != null)
             stateAwareMgrs.add(walMgr);
 
+        stateAwareMgrs.add(txMgr);
+
         stateAwareMgrs.add(dbMgr);
 
         stateAwareMgrs.add(snpMgr);

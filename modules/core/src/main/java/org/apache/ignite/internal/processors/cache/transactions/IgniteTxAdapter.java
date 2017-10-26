@@ -45,6 +45,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -251,6 +252,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
+
+    /** Prepare wal point. */
+    protected volatile WALPointer prepPtr;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1105,7 +1109,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (cctx.wal() != null && cctx.tm().logTxRecords()) {
                 // Log tx state change to WAL.
-                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                if (state == PREPARING || state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
                     assert txNodes != null || state == ROLLED_BACK;
 
                     Map<Object, Collection<Object>> participatingNodes = consistentIdMapper
@@ -1120,7 +1124,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     );
 
                     try {
-                        cctx.wal().log(txRecord);
+                        WALPointer ptr = cctx.wal().log(txRecord);
+
+                        if (state == PREPARING)
+                            prepPtr = ptr;
+                        else if (state == COMMITTED || state == ROLLED_BACK)
+                            prepPtr = null;
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log TxRecord: " + txRecord, e);
