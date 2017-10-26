@@ -24,10 +24,10 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -69,9 +69,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
-        cfg.setMemoryConfiguration(createDbConfig());
+        cfg.setDataStorageConfiguration(createDbConfig());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
 
@@ -81,19 +79,20 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     /**
      * @return DB config.
      */
-    private MemoryConfiguration createDbConfig() {
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
+    private DataStorageConfiguration createDbConfig() {
+        final DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setInitialSize(MEMORY_LIMIT);
         memPlcCfg.setMaxSize(MEMORY_LIMIT);
         memPlcCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setPersistenceEnabled(true);
 
         memCfg.setPageSize(PAGE_SIZE);
         memCfg.setConcurrencyLevel(NUMBER_OF_SEGMENTS);
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalMode(WALMode.LOG_ONLY);
 
         return memCfg;
     }
@@ -290,7 +289,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         final IgniteCacheDatabaseSharedManager db = sharedCtx.database();
 
-        return db.memoryPolicy(null).pageMemory();
+        return db.dataRegion(null).pageMemory();
     }
 
     /**

@@ -93,7 +93,12 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\CheckpointWriteOrder.cs" />
+    <Compile Include="Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\DataRegionConfiguration.cs" />
+    <Compile Include="Configuration\DataStorageConfiguration.cs" />
     <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
     <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
     <Compile Include="Cache\IMemoryMetrics.cs" />
@@ -105,7 +110,11 @@
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Datastream\DataStreamerDefaults.cs" />
+    <Compile Include="IDataRegionMetrics.cs" />
+    <Compile Include="IDataStorageMetrics.cs" />
+    <Compile Include="Configuration\WalMode.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\Binary\IBinaryRawWriteAware.cs" />
     <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
@@ -113,6 +122,7 @@
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\Client\ClientStatus.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
+    <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />
     <Compile Include="Impl\Client\ClientOp.cs" />
@@ -120,6 +130,7 @@
     <Compile Include="Impl\Client\ClientSocket.cs" />
     <Compile Include="Impl\Client\IgniteClient.cs" />
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
+    <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
     <Compile Include="Impl\PlatformJniTarget.cs" />
@@ -431,7 +442,6 @@
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
@@ -604,6 +614,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Data\" />
     <Folder Include="Impl\Common\JavaObjects\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

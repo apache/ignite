@@ -28,10 +28,9 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -156,24 +155,24 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
-        if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
-            MemoryConfiguration memCfg = c.getMemoryConfiguration();
+        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
+            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
 
             if (memCfg == null) {
-                memCfg = new MemoryConfiguration();
+                memCfg = new DataStorageConfiguration();
 
-                c.setMemoryConfiguration(memCfg);
+                c.setDataStorageConfiguration(memCfg);
             }
 
             memCfg.setPageSize(args.getPageSize());
         }
 
         if (args.persistentStoreEnabled()) {
-            PersistentStoreConfiguration pcCfg = new PersistentStoreConfiguration();
+            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
 
             c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
-            c.setPersistentStoreConfiguration(pcCfg);
+            c.setDataStorageConfiguration(pcCfg);
         }
 
         ignite = IgniteSpring.start(c, appCtx);

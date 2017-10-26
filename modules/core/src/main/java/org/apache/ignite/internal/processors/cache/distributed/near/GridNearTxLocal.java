@@ -2682,7 +2682,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 
                                 try {
-                                    cacheCtx.shared().database().ensureFreeSpace(cacheCtx.memoryPolicy());
+                                    cacheCtx.shared().database().ensureFreeSpace(cacheCtx.dataRegion());
 
                                     EntryGetResult verVal = entry.versionedValue(cacheVal,
                                         ver,

@@ -92,6 +92,14 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @return JDBC connection.
+     * @throws SQLException On error.
+     */
+    protected Connection createConnection() throws SQLException {
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -108,7 +116,7 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1");
+        conn = createConnection();
     }
 
     /** {@inheritDoc} */

@@ -71,8 +71,12 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("PadRight", "rpad", typeof (int)),
             GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
 
-            GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
-                GetFunc("regexp_replace")),
+            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
+            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string), 
+                typeof(RegexOptions)),
+            GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string)),
+            GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string), typeof(RegexOptions)),
+
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)},
                 (e, v) => VisitFunc(e, v, "formatdatetime", ", 'en', 'UTC'")),
 
@@ -117,6 +121,13 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Truncate", typeof (decimal)),
         }.ToDictionary(x => x.Key, x => x.Value);
 
+        /// <summary> RegexOptions transformations. </summary>
+        private static readonly Dictionary<RegexOptions, string> RegexOptionFlags = new Dictionary<RegexOptions, string>
+        {
+            { RegexOptions.IgnoreCase, "i" },
+            { RegexOptions.Multiline, "m" }
+        };
+
         /// <summary>
         /// Visits the property call expression.
         /// </summary>
@@ -150,6 +161,37 @@ namespace Apache.Ignite.Linq.Impl
                     mtd.DeclaringType == null ? "static" : mtd.DeclaringType.FullName, mtd));
 
             del(expression, visitor);
+        }
+
+        /// <summary>
+        /// Visits the constant call expression.
+        /// </summary>
+        public static bool VisitConstantCall(ConstantExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            if (expression.Type != typeof(RegexOptions))
+            {
+                return false;
+            }
+
+            var regexOptions = expression.Value as RegexOptions? ?? RegexOptions.None;
+            var result = string.Empty;
+            foreach (var option in RegexOptionFlags)
+            {
+                if (regexOptions.HasFlag(option.Key))
+                {
+                    result += option.Value;
+                    regexOptions &= ~option.Key;
+                }
+            }
+
+            if (regexOptions != RegexOptions.None)
+            {
+                throw new NotSupportedException(string.Format("RegexOptions.{0} is not supported", regexOptions));
+            }
+
+            visitor.AppendParameter(result);
+
+            return true;
         }
 
         /// <summary>
@@ -299,6 +341,15 @@ namespace Apache.Ignite.Linq.Impl
             params Type[] argTypes)
         {
             return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
+        }
+
+        /// <summary>
+        /// Gets the Regex method.
+        /// </summary>
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetRegexMethod(string name, string sqlName,
+            params Type[] argTypes)
+        {
+            return GetMethod(typeof(Regex), name, argTypes, GetFunc(sqlName));
         }
 
         /// <summary>

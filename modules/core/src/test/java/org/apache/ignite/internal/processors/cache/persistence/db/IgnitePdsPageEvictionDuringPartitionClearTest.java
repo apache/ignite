@@ -25,10 +25,9 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -60,26 +59,12 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
         cfg.setCacheConfiguration(ccfg);
 
         // Intentionally set small page cache size.
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(70 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setInitialSize(70 * 1024 * 1024);
-        memPlcCfg.setMaxSize(70 * 1024 * 1024);
-
-        memPlcCfg.setName("dfltMemPlc");
-
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-
-        memCfg.setDefaultMemoryPolicyName(memPlcCfg.getName());
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }

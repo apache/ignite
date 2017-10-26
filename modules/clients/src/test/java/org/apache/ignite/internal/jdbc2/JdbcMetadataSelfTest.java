@@ -220,6 +220,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(rs);
 
+            assertEquals(24, rs.getMetaData().getColumnCount());
+
             Collection<String> names = new ArrayList<>(2);
 
             names.add("NAME");
@@ -237,14 +239,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
                 } else if ("AGE".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
                 } else if ("ORGID".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
+                    assertEquals(1, rs.getInt(11)); // nullable column by index
+                    assertEquals("YES", rs.getString("IS_NULLABLE"));
                 }
 
                 cnt++;
@@ -271,10 +279,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
                 } else if ("name".equals(name)) {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
+                    assertEquals(1, rs.getInt(11)); // nullable column by index
+                    assertEquals("YES", rs.getString("IS_NULLABLE"));
                 }
 
                 cnt++;
