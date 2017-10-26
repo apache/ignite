@@ -139,6 +139,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.thread.IgniteThread;
@@ -2268,7 +2269,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasPages;
 
-            Future snapFut = null;
+            IgniteFuture snapFut = null;
 
             checkpointLock.writeLock().lock();
 
@@ -2355,8 +2356,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (snapFut != null)
                 try {
                     snapFut.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    log.error("Error occur while waiting for snapshot operation initialization", e);
+                } catch (IgniteException e) {
+                    U.error(log,"Error occur while waiting for snapshot operation initialization", e);
                 }
 
             if (hasPages) {
