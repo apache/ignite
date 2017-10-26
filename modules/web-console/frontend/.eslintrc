@@ -6,20 +6,21 @@ plugins:
 env:
     es6: true
     browser: true
-
-ecmaFeatures:
-    arrowFunctions: true
-    blockBindings: true
-    classes: true
-    defaultParams: true
-    destructuring: true
-    module: true
-    objectLiteralComputedProperties: true
-    objectLiteralShorthandMethods: true
-    objectLiteralShorthandProperties: true
-    spread: true
-    templateStrings: true
-    experimentalObjectRestSpread: true
+parserOptions:
+    sourceType: module
+    ecmaFeatures:
+        arrowFunctions: true
+        blockBindings: true
+        classes: true
+        defaultParams: true
+        destructuring: true
+        module: true
+        objectLiteralComputedProperties: true
+        objectLiteralShorthandMethods: true
+        objectLiteralShorthandProperties: true
+        spread: true
+        templateStrings: true
+        experimentalObjectRestSpread: true
 
 globals:
     _: true
@@ -29,10 +30,6 @@ globals:
     window: true
     global: true
     angular: true
-    $generatorCommon: true
-    $generatorSpring: true
-    $generatorJava: true
-    $generatorOptional: true
     saveAs: true
     process: true
     require: true
@@ -63,7 +60,7 @@ rules:
     guard-for-in: 1
     handle-callback-err: 0
     id-length: [2, {"min": 1, "max": 60}]
-    indent: [2, 4, {"SwitchCase": 1}]
+    indent: [2, 4, {"SwitchCase": 1, "MemberExpression": "off", "CallExpression": {"arguments": "off"}}]
     key-spacing: [2, { "beforeColon": false, "afterColon": true }]
     lines-around-comment: 0
     linebreak-style: [0, "unix"]
@@ -138,7 +135,7 @@ rules:
     no-path-concat: 0
     no-plusplus: 0
     no-process-env: 0
-    no-process-exit: 1
+    no-process-exit: 0
     no-proto: 2
     no-redeclare: 2
     no-regex-spaces: 1
@@ -198,6 +195,3 @@ rules:
     wrap-regex: 0
     yoda: [2, "never"]
     babel/semi: 2
-
-parserOptions:
-    sourceType: module

@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteBinary;
-import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,6 +52,18 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException In case of error.
      */
     public void addMeta(int typeId, final BinaryType newMeta) throws IgniteException;
+
+    /**
+     * Adds metadata locally without triggering discovery exchange.
+     *
+     * Must be used only during startup and only if it is guaranteed that all nodes have the same copy
+     * of BinaryType.
+     *
+     * @param typeId Type ID.
+     * @param newMeta New meta data.
+     * @throws IgniteException In case of error.
+     */
+    public void addMetaLocally(int typeId, final BinaryType newMeta) throws IgniteException;
 
     /**
      * @param typeId Type ID.

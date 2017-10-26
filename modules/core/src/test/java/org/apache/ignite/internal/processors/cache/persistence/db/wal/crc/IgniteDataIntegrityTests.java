@@ -21,11 +21,11 @@ import junit.framework.TestCase;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
@@ -38,8 +38,8 @@ public class IgniteDataIntegrityTests extends TestCase {
     /** File input. */
     private FileInput fileInput;
 
-    /** Random access file. */
-    private RandomAccessFile randomAccessFile;
+    /** Buffer expander. */
+    private ByteBufferExpander expBuf;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
@@ -48,11 +48,13 @@ public class IgniteDataIntegrityTests extends TestCase {
         File file = File.createTempFile("integrity", "dat");
         file.deleteOnExit();
 
-        randomAccessFile = new RandomAccessFile(file, "rw");
+        expBuf = new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN);
+
+        FileIOFactory factory = new RandomAccessFileIOFactory();
 
         fileInput = new FileInput(
-            new RandomAccessFileIO(randomAccessFile),
-            new ByteBufferExpander(1024, ByteOrder.BIG_ENDIAN)
+                factory.create(file),
+                expBuf
         );
 
         ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -66,8 +68,16 @@ public class IgniteDataIntegrityTests extends TestCase {
             buf.putInt(PureJavaCrc32.calcCrc32(buf, 12));
         }
 
-        randomAccessFile.write(buf.array());
-        randomAccessFile.getFD().sync();
+        buf.rewind();
+
+        fileInput.io().write(buf);
+        fileInput.io().force();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void tearDown() throws Exception {
+        fileInput.io().close();
+        expBuf.close();
     }
 
     /**
@@ -108,27 +118,82 @@ public class IgniteDataIntegrityTests extends TestCase {
     }
 
     /**
+     *
+     */
+    public void testExpandBuffer() {
+        ByteBufferExpander expBuf = new ByteBufferExpander(24, ByteOrder.nativeOrder());
+
+        ByteBuffer b1 = expBuf.buffer();
+
+        b1.put((byte)1);
+        b1.putInt(2);
+        b1.putLong(3L);
+
+        assertEquals(13, b1.position());
+        assertEquals(24, b1.limit());
+
+        ByteBuffer b2 = expBuf.expand(32);
+
+        assertEquals(13, b2.position());
+        assertEquals(24, b2.limit());
+
+        b2.rewind();
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(13, b2.position());
+        assertEquals(24, b2.limit());
+        assertEquals(32, b2.capacity());
+
+        b2.limit(b2.capacity());
+
+        b2.putInt(4);
+        b2.putInt(5);
+        b2.putInt(6);
+
+        assertEquals(25, b2.position());
+        assertEquals(32, b2.limit());
+        assertEquals(32, b2.capacity());
+
+        b2.flip();
+
+        assertEquals(0, b2.position());
+        assertEquals((byte)1, b2.get());
+        assertEquals(2, b2.getInt());
+        assertEquals(3L, b2.getLong());
+        assertEquals(4, b2.getInt());
+        assertEquals(5, b2.getInt());
+        assertEquals(6, b2.getInt());
+        assertEquals(25, b2.limit());
+        assertEquals(32, b2.capacity());
+    }
+
+    /**
      * @param rangeFrom Range from.
      * @param rangeTo Range to.
      */
     private void toggleOneRandomBit(int rangeFrom, int rangeTo) throws IOException {
         int pos = ThreadLocalRandom.current().nextInt(rangeFrom, rangeTo);
-        randomAccessFile.seek(pos);
+        fileInput.io().position(pos);
 
-        byte b = randomAccessFile.readByte();
+        byte[] buf = new byte[1];
 
-        b ^=  (1 << 3);
+        fileInput.io().read(buf, 0, 1);
 
-        randomAccessFile.seek(pos);
-        randomAccessFile.writeByte(b);
-        randomAccessFile.getFD().sync();
+        buf[0] ^= (1 << 3);
+
+        fileInput.io().position(pos);
+        fileInput.io().write(buf, 0, 1);
+        fileInput.io().force();
     }
 
     /**
      *
      */
     private void checkIntegrity() throws Exception {
-        randomAccessFile.seek(0);
+        fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
             try(FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {

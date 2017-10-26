@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Tests for schemas.
@@ -186,6 +189,101 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cache.query(
             new SqlFieldsQuery("SELECT id, name, orgId FROM \"PUBLIC\".Person").setSchema(CACHE_PERSON_2)
+        ).getAll().size());
+    }
+
+    /**
+     * Test simple query.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCustomSchemaName() throws Exception {
+        IgniteCache<Long, Person> cache = registerQueryEntity("Person", CACHE_PERSON);
+
+        testQueryEntity(cache, "Person");
+    }
+
+    /**
+     * Test multiple caches having the same schema.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCustomSchemaMultipleCaches() throws Exception {
+        for (int i = 1; i <= 3; i++) {
+            String tbl = "Person" + i;
+
+            IgniteCache<Long, Person> cache = registerQueryEntity(tbl, "PersonCache" + i);
+
+            testQueryEntity(cache, tbl);
+        }
+
+        for (int i = 1; i < 3; i++) {
+            IgniteCache<Long, Person> cache = node.cache("PersonCache" + i);
+
+            testQueryEntity(cache, "Person" + i);
+        }
+    }
+
+    /**
+     * Test concurrent schema creation and destruction.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCustomSchemaConcurrentUse() throws Exception {
+        final AtomicInteger maxIdx = new AtomicInteger();
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < 100; i++) {
+                    int idx = maxIdx.incrementAndGet();
+                    
+                    String tbl = "Person" + idx;
+
+                    IgniteCache<Long, Person> cache = registerQueryEntity(tbl, "PersonCache" + idx);
+
+                    testQueryEntity(cache, tbl);
+
+                    cache.destroy();
+                }
+            }
+        }, 4, "schema-test");
+    }
+
+    /**
+     * @param tbl Table name.
+     * @param cacheName Cache name.
+     * @return Cache with registered query entity.
+     */
+    private IgniteCache<Long, Person> registerQueryEntity(String tbl, String cacheName) {
+        QueryEntity qe = new QueryEntity()
+            .setValueType(Person.class.getName())
+            .setKeyType(Long.class.getName())
+            .setValueFieldName("_value")
+            .setKeyFieldName("id")
+            .addQueryField("id", Long.class.getName(), null)
+            .addQueryField("_value", Person.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("orgId", Long.class.getName(), null);
+
+        qe.setTableName(tbl);
+
+        return node.createCache(new CacheConfiguration<Long, Person>()
+            .setName(cacheName)
+            .setQueryEntities(Collections.singletonList(qe))
+            .setSqlSchema("TEST"));
+    }
+
+    /**
+     * Uses SQL to retrieve data from cache.
+     *
+     * @param cache Cache.
+     * @param tbl Table.
+     */
+    private void testQueryEntity(IgniteCache<Long, Person> cache, String tbl) {
+        cache.put(1L, new Person("Vasya", 2));
+
+        assertEquals(1, node.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery(String.format("SELECT id, name, orgId FROM TEST.%s where (id = %d)", tbl, 1)), false
         ).getAll().size());
     }
 

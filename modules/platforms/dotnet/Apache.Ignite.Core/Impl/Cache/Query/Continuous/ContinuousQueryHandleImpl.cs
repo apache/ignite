@@ -28,8 +28,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
     using CQU = ContinuousQueryUtils;
 
     /// <summary>
@@ -67,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         private readonly long _hnd;
 
         /** Native query. */
-        private readonly IUnmanagedTarget _nativeQry;
+        private readonly IPlatformTargetInternal _nativeQry;
 
         /** Initial query cursor. */
         private volatile IQueryCursor<ICacheEntry<TK, TV>> _initialQueryCursor;
@@ -84,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// <param name="createTargetCb">The initialization callback.</param>
         /// <param name="initialQry">The initial query.</param>
         public ContinuousQueryHandleImpl(ContinuousQuery<TK, TV> qry, Marshaller marsh, bool keepBinary,
-            Func<Action<BinaryWriter>, IUnmanagedTarget> createTargetCb, QueryBase initialQry)
+            Func<Action<BinaryWriter>, IPlatformTargetInternal> createTargetCb, QueryBase initialQry)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
@@ -138,10 +136,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                 });
 
                 // 4. Initial query.
-                var nativeInitialQryCur = UU.TargetOutObject(_nativeQry, 0);
+                var nativeInitialQryCur = _nativeQry.OutObjectInternal(0);
                 _initialQueryCursor = nativeInitialQryCur == null
                     ? null
-                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _marsh, _keepBinary);
+                    : new QueryCursor<TK, TV>(nativeInitialQryCur, _keepBinary);
             }
             catch (Exception)
             {
@@ -225,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
                 try
                 {
-                    UU.TargetInLongOutLong(_nativeQry, 0, 0);
+                    _nativeQry.InLongOutLong(0, 0);
                 }
                 finally
                 {
