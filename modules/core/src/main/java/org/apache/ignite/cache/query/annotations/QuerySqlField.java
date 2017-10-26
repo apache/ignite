@@ -57,6 +57,13 @@ public @interface QuerySqlField {
     boolean descending() default false;
 
     /**
+     * Specifies whether the specified field can be {@code null}.
+     *
+     * @return {@code True} if the field is not allowed to accept {@code null} values.
+     */
+    boolean notNull() default false;
+
+    /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,
      * whenever index should be created on more than one field. All fields within the same
      * group will belong to the same index.

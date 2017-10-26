@@ -52,6 +52,9 @@ public class QueryEntityTypeDescriptor {
     private final Map<String, QueryEntityIndexDescriptor> indexes = new HashMap<>();
 
     /** */
+    private Set<String> notNullFields = new HashSet<>();
+
+    /** */
     private QueryEntityIndexDescriptor fullTextIdx;
 
     /** */
@@ -172,6 +175,22 @@ public class QueryEntityTypeDescriptor {
 
         if (key)
             keyProps.add(name);
+    }
+
+    /**
+     * Adds a notNull field.
+     *
+     * @param field notNull field.
+     */
+    public void addNotNullField(String field) {
+        notNullFields.add(field);
+    }
+
+    /**
+     * @return notNull fields.
+     */
+    public Set<String> notNullFields() {
+        return notNullFields;
     }
 
     /**
