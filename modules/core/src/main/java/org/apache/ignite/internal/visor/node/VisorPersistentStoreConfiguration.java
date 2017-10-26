@@ -103,7 +103,6 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         persistenceStorePath = cfg.getStoragePath();
         checkpointingFreq = cfg.getCheckpointFrequency();
         lockWaitTime = cfg.getLockWaitTime();
-        checkpointingPageBufSize = cfg.getCheckpointPageBufferSize();
         checkpointingThreads = cfg.getCheckpointThreads();
         walHistSize = cfg.getWalHistorySize();
         walSegments = cfg.getWalSegments();
