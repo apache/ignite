@@ -88,13 +88,13 @@ module.exports.factory = function(_) {
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
-         * @param {String} tokens Active tokens.
+         * @param {Object} accounts Active accounts.
          * @param {String} demoEnabled Demo enabled.
          */
-        constructor(socket, tokens, demoEnabled) {
+        constructor(socket, accounts, demoEnabled) {
             Object.assign(this, {
                 socket,
-                tokens,
+                accounts,
                 cluster: null,
                 demo: {
                     enabled: demoEnabled,

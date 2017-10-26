@@ -102,11 +102,11 @@ module.exports.factory = (_, socketio, configure, errors, mongo) => {
         }
 
         /**
-         * @param {String} token
+         * @param {String} account
          * @param {Array.<Socket>} [socks]
          */
-        agentStats(token, socks = this._browserSockets.get(token)) {
-            return this._agentHnd.agents(token)
+        agentStats(account, socks = this._browserSockets.get(account)) {
+            return this._agentHnd.agents(account)
                 .then((agentSocks) => {
                     const stat = _.reduce(agentSocks, (acc, agentSock) => {
                         acc.count += 1;
