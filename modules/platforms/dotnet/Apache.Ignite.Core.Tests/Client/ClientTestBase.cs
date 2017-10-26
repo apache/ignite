@@ -64,6 +64,8 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Ignition.Start(cfg);
             }
+
+            Client = GetClient();
         }
 
         /// <summary>
@@ -83,6 +85,11 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             GetCache<int>().RemoveAll();
         }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        public IIgniteClient Client { get; set; }
 
         /// <summary>
         /// Gets the cache.

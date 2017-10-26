@@ -237,6 +237,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
             TableName = reader.ReadString();
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
 
             var count = reader.ReadInt();
             Fields = count == 0
@@ -249,9 +251,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
-
-            KeyFieldName = reader.ReadString();
-            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
@@ -262,6 +261,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
             writer.WriteString(TableName);
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
 
             if (Fields != null)
             {
@@ -303,9 +304,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
-
-            writer.WriteString(KeyFieldName);
-            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>

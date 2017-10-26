@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -325,6 +326,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         public long GetSize(params CachePeekMode[] modes)
         {
             return DoOutInOp(ClientOp.CacheGetSize, w => WritePeekModes(modes, w), s => s.ReadLong());
+        }
+
+        /** <inheritDoc /> */
+        public CacheConfiguration GetConfiguration()
+        {
+            return DoOutInOp(ClientOp.CacheGetConfiguration, null, s => ClientCacheConfigurationSerializer.Read(s));
         }
 
         /// <summary>

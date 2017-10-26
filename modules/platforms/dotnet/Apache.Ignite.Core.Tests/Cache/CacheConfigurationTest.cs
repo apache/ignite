@@ -571,7 +571,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Gets the custom cache configuration.
         /// </summary>
-        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        public static CacheConfiguration GetCustomCacheConfiguration(string name = null)
         {
             return new CacheConfiguration
             {
@@ -600,10 +600,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceTimeout = TimeSpan.FromSeconds(16),
                 SqlEscapeAll = true,
                 WriteBehindBatchSize = 18,
-                WriteBehindEnabled = false,
+                WriteBehindEnabled = true,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
                 CacheStoreFactory = new CacheStoreFactoryTest(),
-                ReadThrough = false,
+                ReadThrough = true,
                 WriteThrough = true,
                 WriteBehindCoalescing = false,
                 GroupName = "someGroup",
