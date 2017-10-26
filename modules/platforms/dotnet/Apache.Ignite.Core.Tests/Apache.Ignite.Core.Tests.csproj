@@ -69,6 +69,13 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataStorageConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\IgniteConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ParityTest.cs" />
+    <Compile Include="ApiParity\CacheConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryDateTimeTest.cs" />
     <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
@@ -79,6 +86,7 @@
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />

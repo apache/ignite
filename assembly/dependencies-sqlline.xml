@@ -38,20 +38,13 @@
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
-                        <directory>target</directory>
-                        <outputDirectory>include/sqlline</outputDirectory>
-                        <includes>
-                            <include>*.jar</include>
-                        </includes>
-                        <excludes>
-                            <exclude>*-tests.jar</exclude>
-                            <exclude>*-javadoc.jar</exclude>
-                            <exclude>*-sources.jar</exclude>
-                        </excludes>
-                    </fileSet>
-                    <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>include/sqlline</outputDirectory>
+                    </fileSet>
+
+                    <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>include/licenses</outputDirectory>
                     </fileSet>
 
                     <fileSet>

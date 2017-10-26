@@ -3434,7 +3434,6 @@ public abstract class IgniteUtils {
 
         return e;
     }
-
     /**
      * Deletes file or directory with all sub-directories and files.
      *
@@ -3443,40 +3442,49 @@ public abstract class IgniteUtils {
      *      {@code false} otherwise
      */
     public static boolean delete(@Nullable File file) {
-        if (file == null)
-            return false;
+        return file != null && delete(file.toPath());
+    }
 
-        boolean res = true;
+    /**
+     * Deletes file or directory with all sub-directories and files.
+     *
+     * @param path File or directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted,
+     *      {@code false} otherwise
+     */
+    public static boolean delete(Path path) {
+        if (Files.isDirectory(path)) {
+            try {
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    for (Path innerPath : stream) {
+                        boolean res = delete(innerPath);
 
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-
-            if (files != null && files.length > 0) {
-                for (File file1 : files) {
-                    if (file1.isDirectory())
-                        res &= delete(file1);
-                    else if (file1.getName().endsWith("jar")) {
-                        try {
-                            // Why do we do this?
-                            new JarFile(file1, false).close();
-                        }
-                        catch (IOException ignore) {
-                            // Ignore it here...
-                        }
-
-                        res &= file1.delete();
+                        if (!res)
+                            return false;
                     }
-                    else
-                        res &= file1.delete();
                 }
+            } catch (IOException e) {
+                return false;
             }
-
-            res &= file.delete();
         }
-        else
-            res = file.delete();
 
-        return res;
+        if (path.endsWith("jar")) {
+            try {
+                // Why do we do this?
+                new JarFile(path.toString(), false).close();
+            }
+            catch (IOException ignore) {
+                // Ignore it here...
+            }
+        }
+
+        try {
+            Files.delete(path);
+
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**

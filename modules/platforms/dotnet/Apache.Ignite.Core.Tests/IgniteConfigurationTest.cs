@@ -543,7 +543,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultTlbSize, cfg.WalThreadLocalBufferSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointFrequency, cfg.CheckpointFrequency);
             Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointThreads, cfg.CheckpointThreads);
-            Assert.AreEqual(default(long), cfg.CheckpointPageBufferSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
             Assert.AreEqual(DataStorageConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
@@ -580,6 +579,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataRegionConfiguration.DefaultPersistenceEnabled, cfg.PersistenceEnabled);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsRateTimeInterval, cfg.MetricsRateTimeInterval);
             Assert.AreEqual(DataRegionConfiguration.DefaultMetricsSubIntervalCount, cfg.MetricsSubIntervalCount);
+            Assert.AreEqual(default(long), cfg.CheckpointPageBufferSize);
         }
 
         /// <summary>
@@ -769,7 +769,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     AlwaysWriteFullPages = true,
                     CheckpointFrequency = TimeSpan.FromSeconds(25),
-                    CheckpointPageBufferSize = 28 * 1024 * 1024,
                     CheckpointThreads = 2,
                     LockWaitTime = TimeSpan.FromSeconds(5),
                     StoragePath = Path.GetTempPath(),
@@ -804,7 +803,8 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = IgniteUtils.GetTempDirectoryName()
+                        SwapPath = IgniteUtils.GetTempDirectoryName(),
+                        CheckpointPageBufferSize = 28 * 1024 * 1024
                     },
                     DataRegionConfigurations = new[]
                     {

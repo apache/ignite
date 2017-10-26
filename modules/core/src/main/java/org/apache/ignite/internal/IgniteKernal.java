@@ -2863,7 +2863,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
-                true).get();
+                true,
+                false).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 
@@ -2953,7 +2954,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 false,
-                true).get();
+                true,
+                false).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 

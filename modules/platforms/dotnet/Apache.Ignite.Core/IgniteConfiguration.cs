@@ -302,17 +302,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            var caches = CacheConfiguration;
-
-            if (caches == null)
-                writer.WriteInt(0);
-            else
-            {
-                writer.WriteInt(caches.Count);
-
-                foreach (var cache in caches)
-                    cache.Write(writer);
-            }
+            writer.WriteCollectionRaw(CacheConfiguration);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -623,10 +613,7 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
