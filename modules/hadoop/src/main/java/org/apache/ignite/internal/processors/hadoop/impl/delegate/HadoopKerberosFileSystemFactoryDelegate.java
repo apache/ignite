@@ -83,11 +83,13 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
         A.ensure(proxy0.getReloginInterval() >= 0, "reloginInterval cannot not be negative.");
 
         reloginInterval = proxy0.getReloginInterval();
-
         String keyTabLocation = proxy0.getKeyTab();
         String principalName = proxy0.getKeyTabPrincipal();
+
         try {
+            // Replace _HOST with FDQN.
             principalName = SecurityUtil.getServerPrincipal(principalName, U.getLocalHost());
+
             UserGroupInformation.setConfiguration(cfg);
             UserGroupInformation.loginUserFromKeytab(principalName, keyTabLocation);
         }
