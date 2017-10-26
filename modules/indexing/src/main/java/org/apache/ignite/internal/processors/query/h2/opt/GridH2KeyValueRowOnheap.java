@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.message.DbException;
-import org.h2.result.Row;
-import org.h2.result.SearchRow;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -48,10 +45,6 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     protected final GridH2RowDescriptor desc;
 
     /** */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    protected long expirationTime;
-
-    /** */
     private Value key;
 
     /** */
@@ -67,30 +60,24 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
      * Constructor.
      *
      * @param desc Row descriptor.
-     * @param key Key.
+     * @param row Row.
      * @param keyType Key type.
-     * @param val Value.
      * @param valType Value type.
-     * @param expirationTime Expiration time.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
-        int valType, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+    public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, CacheDataRow row, int keyType, int valType)
+        throws IgniteCheckedException {
+        super(row);
+
         this.desc = desc;
-        this.expirationTime = expirationTime;
 
-        this.key = desc.wrap(key, keyType);
+        this.key = desc.wrap(row.key(), keyType);
 
-        if (val != null)
-            this.val = desc.wrap(val, valType);
+        if (row.value() != null)
+            this.val = desc.wrap(row.value(), valType);
 
-        if (ver != null)
-            this.ver = desc.wrap(ver, Value.JAVA_OBJECT);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long expireTime() {
-        return expirationTime;
+        if (row.version() != null)
+            this.ver = desc.wrap(row.version(), Value.JAVA_OBJECT);
     }
 
     /** {@inheritDoc} */

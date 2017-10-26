@@ -100,7 +100,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             clo.apply(ignite);
         }
 
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
+        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
     }
 
     /**
