@@ -968,8 +968,6 @@ public class GridH2Table extends TableBase {
         Boolean insertHack = INSERT_HACK.get();
 
         if (insertHack != null && insertHack) {
-            // Perform a hack for
-
             StackTraceElement[] elems = Thread.currentThread().getStackTrace();
 
             StackTraceElement elem = elems[2];
@@ -1013,14 +1011,9 @@ public class GridH2Table extends TableBase {
         if (idxInsert < 0)
             return false;
 
-        int idxInto = sql.indexOf("into");
+        int idxInto = sql.indexOf("into", idxInsert);
 
-        if (idxInto < 0 || idxInto < idxInsert)
-            return false;
-
-        int idxValues = sql.indexOf("values");
-
-        if (idxValues < 0 || idxValues < idxInto)
+        if (idxInto < 0)
             return false;
 
         return true;
