@@ -20,6 +20,7 @@ package org.apache.ignite.ml;
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
+import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,7 +31,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     MathImplMainTestSuite.class,
     RegressionsTestSuite.class,
-    ClusteringTestSuite.class
+    ClusteringTestSuite.class,
+    DecisionTreesTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCache;
@@ -33,7 +34,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -60,7 +60,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /** Amount of columns in the matrix. */
     private int cols;
     /** Matrix uuid. */
-    private IgniteUuid uuid;
+    private UUID uuid;
     /** Block size about 8 KB of data. */
     private int maxBlockEdge = MAX_BLOCK_SIZE;
 
@@ -95,7 +95,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
         cache = newCache();
 
-        uuid = IgniteUuid.randomUuid();
+        uuid = UUID.randomUUID();
     }
 
     /**
@@ -141,7 +141,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         out.writeInt(cols);
         out.writeInt(blocksInRow);
         out.writeInt(blocksInCol);
-        U.writeGridUuid(out, uuid);
+        out.writeObject(uuid);
         out.writeUTF(cache.getName());
     }
 
@@ -151,7 +151,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         cols = in.readInt();
         blocksInRow = in.readInt();
         blocksInCol = in.readInt();
-        uuid = U.readGridUuid(in);
+        uuid = (UUID)in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -220,7 +220,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      *
      * @return storage UUID.
      */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 
