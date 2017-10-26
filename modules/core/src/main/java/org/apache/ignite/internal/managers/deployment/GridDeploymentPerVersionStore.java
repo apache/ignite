@@ -544,8 +544,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         // New deployment was added while outside of synchronization.
                         // Need to recheck it again.
-                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d))
-                            retry = true;
+                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d)) {
+                            Map<UUID, IgniteUuid> parties = d.participants();
+
+                            if (parties == null || parties.get(meta.senderNodeId()) == null)
+                                retry = true;
+                        }
                     }
 
                     if (retry) {
