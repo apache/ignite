@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc.suite;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
+import org.apache.ignite.internal.jdbc2.JdbcClobTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
 import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
@@ -111,6 +112,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStatementBatchingSelfTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcErrorsSelfTest.class));
 
+        suite.addTest(new TestSuite(JdbcClobTest.class));
         suite.addTest(new TestSuite(JdbcBlobTest.class));
         suite.addTest(new TestSuite(org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class));
 
