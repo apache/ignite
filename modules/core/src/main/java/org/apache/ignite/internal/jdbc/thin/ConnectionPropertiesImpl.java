@@ -227,7 +227,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @param props Environment properties.
      * @throws SQLException On error.
      */
-    protected void init(Properties props) throws SQLException {
+    public void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
         for (ConnectionProperty aPropsArray : propsArray)
@@ -262,7 +262,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    interface PropertyValidator extends Serializable {
+    private interface PropertyValidator extends Serializable {
         /**
          * @param val String representation of the property value to validate.
          * @throws SQLException On validation fails.
@@ -273,7 +273,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    abstract static class ConnectionProperty implements Serializable {
+    private abstract static class ConnectionProperty implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -286,8 +286,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** Default value. */
         protected Object dfltVal;
 
-        /** An array of possible values if the value may be selected
-         * from a particular set of values; otherwise null
+        /**
+         * An array of possible values if the value may be selected
+         * from a particular set of values; otherwise null.
          */
         protected String [] choices;
 
@@ -304,7 +305,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param choices Possible values.
          * @param required {@code true} if the property is required.
          */
-        public ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required) {
+        ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required) {
             this.name = name;
             this.desc= desc;
             this.dfltVal = dfltVal;
@@ -320,7 +321,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param required {@code true} if the property is required.
          * @param validator Property validator.
          */
-        public ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required,
+        ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required,
             PropertyValidator validator) {
             this.name = name;
             this.desc= desc;
@@ -417,7 +418,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    static class BooleanProperty extends ConnectionProperty{
+    private static class BooleanProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -475,7 +476,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    abstract static class NumberProperty extends ConnectionProperty implements Serializable {
+    private abstract static class NumberProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -549,7 +550,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    static class IntegerProperty extends NumberProperty implements Serializable {
+    private static class IntegerProperty extends NumberProperty {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -581,7 +582,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    static class StringProperty extends ConnectionProperty implements Serializable {
+    private static class StringProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -612,15 +613,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @return Property value.
          */
         String value() {
-            return  val;
+            return val;
         }
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            if (str == null)
-                val = (String)dfltVal;
-            else
-                val = str;
+            val = str == null ? (String)dfltVal : str;
         }
 
         /** {@inheritDoc} */
