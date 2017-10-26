@@ -96,7 +96,8 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
         catch (IOException ioe) {
             if (principalName.equals("_HOST")) {
                 throw new IgniteException("Failed to get local host name.", ioe);
-            } else {
+            }
+            else {
                 throw new IgniteException("Failed login from keytab [keyTab=" + keyTabLocation +
                     ", keyTabPrincipal=" + principalName + ']', ioe);
             }
