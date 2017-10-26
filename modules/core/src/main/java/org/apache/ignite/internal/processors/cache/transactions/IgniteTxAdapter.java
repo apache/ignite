@@ -1110,7 +1110,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (cctx.wal() != null && cctx.tm().logTxRecords()) {
                 // Log tx state change to WAL.
                 if (state == PREPARING || state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    assert txNodes != null || state == ROLLED_BACK;
+                    assert txNodes != null || state == ROLLED_BACK || state == PREPARING;
 
                     Map<Object, Collection<Object>> participatingNodes = consistentIdMapper
                         .mapToConsistentIds(topVer, txNodes);

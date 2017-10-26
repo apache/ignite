@@ -360,8 +360,8 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
                 debugLog = debugBuffer.toString();
 
             log.info("Recovery scan future is done (constId:" + localNodeConstId +
-                "), init pointer " + res.getInitPnt() + " tx will be rollBacked " + res.getSkipTxEntries() +
-                (debugLog != null ? "\n" + debugLog : ""));
+                "), init pointer " + res.getInitPnt() + " tx will be rollBacked (" + res.getSkipTxEntries().size() +
+                ") " + res.getSkipTxEntries() + (debugLog != null ? "\n" + debugLog : ""));
         }
 
         return super.onDone(res, err);

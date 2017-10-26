@@ -42,6 +42,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -84,7 +87,7 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
         int it = 10;
 
         for (int i = 0; i < it; i++) {
-            runTest(6, 10);
+            runTest(3, 4);
 
             System.out.println(">>> iteration " + i);
 
@@ -98,17 +101,11 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void runTest(final int nodes, int threads) throws Exception {
-        IgniteEx ig = (IgniteEx)startGrids(nodes);
-
-        IgniteConfiguration igCfg = getConfiguration(getTestIgniteInstanceName(nodes));
-
-        igCfg.setClientMode(true);
-
-        final IgniteEx igClient = startGrid(igCfg);
+        final IgniteEx ig = (IgniteEx)startGrids(nodes);
 
         ig.active(true);
 
-        assertEquals(nodes + 1, ig.cluster().nodes().size());
+        assertEquals(nodes, ig.cluster().nodes().size());
 
         CacheConfiguration<Long, Account> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -121,7 +118,7 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
         final int accounts = 1_000;
         final int balance = 100_000;
 
-        load(igClient, accounts, balance);
+        load(ig, accounts, balance);
 
         GridCompoundFuture<?, ?> txFut = new GridCompoundFuture<>();
 
@@ -140,7 +137,7 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                     long txCommited = 0;
                     long txFail = 0;
 
-                    IgniteCache<Long, Account> c = igClient.cache(CACHE_NAME);
+                    IgniteCache<Long, Account> c = ig.cache(CACHE_NAME);
 
                     while (true) {
                         if (U.currentTimeMillis() > stopTime) {
@@ -157,20 +154,20 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
                         switch (r.nextInt(3)) {
                             case 0:
-                                ti = TransactionIsolation.REPEATABLE_READ;
+                                ti = REPEATABLE_READ;
 
                                 break;
                             case 1:
-                                ti = TransactionIsolation.READ_COMMITTED;
+                                ti = READ_COMMITTED;
 
                                 break;
                             case 2:
-                                ti = TransactionIsolation.SERIALIZABLE;
+                                ti = SERIALIZABLE;
                         }
 
                         assert ti != null;
 
-                        try (Transaction tx = igClient.transactions().txStart(tc, ti)) {
+                        try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             long id1 = r.nextInt(accounts);
 
                             long id2;
@@ -204,7 +201,7 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                         }
                     }
                 }
-            });
+            }, "tx-runner-" + i);
 
             txFut.add(f);
         }
@@ -227,7 +224,9 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                     }
                 }
 
-                for (int i = 0; i <= nodes; i++) {
+                System.out.println("Stop time reached " + stopTime + " nodes will be stopped.");
+
+                for (int i = 0; i < nodes; i++) {
                     final int node = i;
 
                     final IgniteEx ignite = grid(node);
@@ -257,17 +256,11 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
         stopFut.get();
 
-        ig = (IgniteEx)startGrids(nodes);
+        IgniteEx ig0 = (IgniteEx)startGrids(nodes);
 
-        igCfg = getConfiguration("persistence.IgnitePdsTxCrashRecoveryMultiJvmTest" + nodes);
+        ig0.active(true);
 
-        igCfg.setClientMode(true);
-
-        final IgniteEx client0 = startGrid(igCfg);
-
-        ig.active(true);
-
-        check(client0, accounts, balance);
+        check(ig0, accounts, balance);
     }
 
     /**

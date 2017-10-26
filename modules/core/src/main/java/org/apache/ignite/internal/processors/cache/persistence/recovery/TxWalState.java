@@ -77,8 +77,6 @@ public class TxWalState {
 
             preparing.put(txVer, txHolder);
         }
-        else
-            txHolder.merge(tx.participatingNodes());
 
         txHolder.preparing++;
     }
@@ -104,10 +102,14 @@ public class TxWalState {
         if (txHolderPrepared == null){
             txHolderPreparing.prepared = 1;
 
+            txHolderPrepared = txHolderPreparing;
+
             this.prepared.put(txVer, txHolderPreparing);
         }
         else
             txHolderPrepared.prepared++;
+
+        txHolderPrepared.merge(tx.participatingNodes());
     }
 
     /**
