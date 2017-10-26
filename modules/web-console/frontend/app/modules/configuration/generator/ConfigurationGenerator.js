@@ -1345,7 +1345,7 @@ export default class IgniteConfigurationGenerator {
     static dataRegionConfiguration(dataRegionCfg) {
         const plcBean = new Bean('org.apache.ignite.configuration.DataRegionConfiguration', 'dataRegionCfg', dataRegionCfg, clusterDflts.dataStorageConfiguration.dataRegionConfigurations);
 
-        return plcBean.stringProperty('name')
+        plcBean.stringProperty('name')
             .longProperty('initialSize')
             .longProperty('maxSize')
             .stringProperty('swapPath')
@@ -1354,8 +1354,11 @@ export default class IgniteConfigurationGenerator {
             .intProperty('emptyPagesPoolSize')
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
+            .longProperty('checkpointPageBufferSize')
             .boolProperty('metricsEnabled')
             .boolProperty('persistenceEnabled');
+
+        return plcBean;
     }
 
     // Generate data storage configuration.
@@ -1957,8 +1960,11 @@ export default class IgniteConfigurationGenerator {
     // Generate cache memory group.
     static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         // Since ignite 2.0
-        if (available('2.0.0'))
+        if (available(['2.0.0', '2.3.0']))
             ccfg.stringProperty('memoryPolicyName');
+
+        if (available('2.3.0'))
+            ccfg.stringProperty('dataRegionName');
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0'])) {
