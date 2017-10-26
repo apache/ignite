@@ -202,6 +202,18 @@ public class PlatformConfigurationUtils {
             ccfg.setCacheStoreFactory(new PlatformDotNetCacheStoreFactoryNative(storeFactory));
 
         ccfg.setSqlIndexMaxInlineSize(in.readInt());
+        ccfg.setOnheapCacheEnabled(in.readBoolean());
+        ccfg.setStoreConcurrentLoadAllThreshold(in.readInt());
+        ccfg.setRebalanceOrder(in.readInt());
+        ccfg.setRebalanceBatchesPrefetchCount(in.readLong());
+        ccfg.setMaxQueryIteratorsCount(in.readInt());
+        ccfg.setQueryDetailMetricsSize(in.readInt());
+        ccfg.setQueryParallelism(in.readInt());
+
+        String sqlSchema = in.readString();
+        if (sqlSchema != null) {
+            ccfg.setSqlSchema(sqlSchema);
+        }
 
         int qryEntCnt = in.readInt();
 
@@ -903,6 +915,14 @@ public class PlatformConfigurationUtils {
             writer.writeObject(null);
 
         writer.writeInt(ccfg.getSqlIndexMaxInlineSize());
+        writer.writeBoolean(ccfg.isOnheapCacheEnabled());
+        writer.writeInt(ccfg.getStoreConcurrentLoadAllThreshold());
+        writer.writeInt(ccfg.getRebalanceOrder());
+        writer.writeLong(ccfg.getRebalanceBatchesPrefetchCount());
+        writer.writeInt(ccfg.getMaxQueryIteratorsCount());
+        writer.writeInt(ccfg.getQueryDetailMetricsSize());
+        writer.writeInt(ccfg.getQueryParallelism());
+        writer.writeString(ccfg.getSqlSchema());
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
@@ -1648,7 +1668,6 @@ public class PlatformConfigurationUtils {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
-                .setCheckpointPageBufferSize(in.readLong())
                 .setCheckpointThreads(in.readInt())
                 .setLockWaitTime((int) in.readLong())
                 .setWalHistorySize(in.readInt())
@@ -1743,7 +1762,6 @@ public class PlatformConfigurationUtils {
 
             w.writeString(cfg.getStoragePath());
             w.writeLong(cfg.getCheckpointFrequency());
-            w.writeLong(cfg.getCheckpointPageBufferSize());
             w.writeInt(cfg.getCheckpointThreads());
             w.writeLong(cfg.getLockWaitTime());
             w.writeInt(cfg.getWalHistorySize());
@@ -1808,6 +1826,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isMetricsEnabled());
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
+        w.writeLong(cfg.getCheckpointPageBufferSize());
     }
 
     /**
@@ -1829,7 +1848,8 @@ public class PlatformConfigurationUtils {
                 .setEmptyPagesPoolSize(r.readInt())
                 .setMetricsEnabled(r.readBoolean())
                 .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong());
+                .setMetricsRateTimeInterval(r.readLong())
+                .setCheckpointPageBufferSize(r.readLong());
     }
 
     /**

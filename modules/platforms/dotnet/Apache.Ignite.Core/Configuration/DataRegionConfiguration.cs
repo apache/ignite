@@ -104,6 +104,7 @@ namespace Apache.Ignite.Core.Configuration
             MetricsEnabled = reader.ReadBoolean();
             MetricsSubIntervalCount = reader.ReadInt();
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
+            CheckpointPageBufferSize = reader.ReadLong();
         }
 
         /// <summary>
@@ -122,6 +123,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(MetricsEnabled);
             writer.WriteInt(MetricsSubIntervalCount);
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
+            writer.WriteLong(CheckpointPageBufferSize);
         }
 
         /// <summary>
@@ -209,5 +211,11 @@ namespace Apache.Ignite.Core.Configuration
             Justification = "Consistency with Java config")]
         public int MetricsSubIntervalCount { get; set; }
 
+        /// <summary>
+        /// Gets or sets the size of the checkpointing page buffer.
+        /// <para />
+        /// Default is <c>0</c>: Ignite will choose buffer size automatically.
+        /// </summary>
+        public long CheckpointPageBufferSize { get; set; }
     }
 }

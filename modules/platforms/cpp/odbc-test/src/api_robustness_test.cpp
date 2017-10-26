@@ -976,26 +976,31 @@ BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
 
 BOOST_AUTO_TEST_CASE(TestSQLGetDiagRec)
 {
-    // There are no checks because we do not really care what is the result of these
-    // calls as long as they do not cause segmentation fault.
-
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
-
-    // Should fail.
-    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
-
-    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
     SQLCHAR state[ODBC_BUFFER_SIZE];
     SQLINTEGER nativeError = 0;
     SQLCHAR message[ODBC_BUFFER_SIZE];
     SQLSMALLINT messageLen = 0;
 
-    // Everithing is ok
-    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), &messageLen);
+    // Generating error.
+    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
+    // Everithing is ok.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), &messageLen);
     BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
 
+    // Should return error.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, -1, &messageLen);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    // Should return message length.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, 1, &messageLen);
+    BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS_WITH_INFO);
+
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, 0, &nativeError, message, sizeof(message), &messageLen);
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, 0, message, sizeof(message), &messageLen);
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, 0, sizeof(message), &messageLen);

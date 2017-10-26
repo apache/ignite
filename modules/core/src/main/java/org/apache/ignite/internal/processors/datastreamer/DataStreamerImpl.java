@@ -195,6 +195,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@code True} if data loader has been cancelled. */
     private volatile boolean cancelled;
 
+    /** Cancellation reason. */
+    private volatile Throwable cancellationReason = null;
+
     /** Fail counter. */
     private final LongAdder8 failCntr = new LongAdder8();
 
@@ -217,7 +220,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 failCntr.increment();
 
-                cancelled = true;
+                synchronized (DataStreamerImpl.this) {
+                    if(cancellationReason == null)
+                        cancellationReason = err;
+
+                    cancelled = true;
+                }
             }
         }
     };
@@ -406,12 +414,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (disconnectErr != null)
                 throw disconnectErr;
 
-            throw new IllegalStateException("Data streamer has been closed.");
+            closedException();
         }
         else if (cancelled) {
             busyLock.leaveBusy();
 
-            throw new IllegalStateException("Data streamer has been closed.");
+            closedException();
         }
     }
 
@@ -893,7 +901,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                             @Override public void run() {
                                                 try {
                                                     if (cancelled)
-                                                        throw new IllegalStateException("DataStreamer closed.");
+                                                        closedException();
 
                                                     load0(entriesForNode, resFut, activeKeys, remaps + 1);
                                                 }
@@ -994,6 +1002,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
+    }
+
+    /**
+     * Throws stream closed exception.
+     */
+    private void closedException() {
+        throw new IllegalStateException("Data streamer has been closed.", cancellationReason);
     }
 
     /**
