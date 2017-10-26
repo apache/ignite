@@ -30,8 +30,4 @@ public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailove
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
-
-    @Override public void testNodeRestart(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1593");
-    }
 }

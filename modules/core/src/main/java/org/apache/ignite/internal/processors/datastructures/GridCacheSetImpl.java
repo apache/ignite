@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -403,23 +404,58 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * @return Closeable iterator.
+     * Execute cache iterator query.
+     *
+     * @return Query future.
      */
-    private GridCloseableIterator<T> iterator0() {
+    @SuppressWarnings("unchecked")
+    private CacheQueryFuture execIterQuery() {
         try {
-            WeakReferenceCloseableIterator<T> it = separated ? separatedCacheIterator() : sharedCacheIterator();
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
+                new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
-            if (rmvd) {
-                ctx.itHolder().removeIterator(it);
+            Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
-                checkRemoved();
-            }
+            qry.projection(ctx.grid().cluster().forNodes(nodes));
 
-            return it;
+            return qry.execute();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    private GridCloseableIterator<T> iterator0() {
+        final CacheQueryFuture fut = execIterQuery();
+
+        CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
+            ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+                @Override protected T convert(Map.Entry<T, ?> e) {
+                    return e.getKey();
+                }
+
+                @Override protected void remove(T item) {
+                    GridCacheSetImpl.this.remove(item);
+                }
+            }, new IgniteOutClosure() {
+                @Override public CacheQueryFuture<Map.Entry<T, ?>> apply() {
+                    return execIterQuery();
+                }
+            });
+
+        if (rmvd) {
+            try {
+                ctx.itHolder().removeIterator(it);
+            } catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+
+            checkRemoved();
+        }
+
+        return it;
     }
 
     /**

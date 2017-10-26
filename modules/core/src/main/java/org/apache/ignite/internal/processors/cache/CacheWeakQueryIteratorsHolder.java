@@ -29,6 +29,10 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.CacheException;
 
 /**
  * @param <V> Type for cache query future.
@@ -54,11 +58,13 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param fut Query to iterate.
      * @param convert Cache iterator converter.
      * @param <T> Type for the iterator.
+     * @param onInitErr Init fail callback closure.
      * @return Iterator over the cache.
      */
     public <T> WeakReferenceCloseableIterator<T> iterator(final CacheQueryFuture<V> fut,
-        CacheIteratorConverter<T, V> convert) {
-        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
+                                                          CacheIteratorConverter<T, V> convert,
+                                                          IgniteOutClosure<CacheQueryFuture<V>> onInitErr) {
+        WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert, onInitErr);
 
         AutoCloseable old = refs.put(it.weakReference(), fut);
 
@@ -142,7 +148,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         private static final long serialVersionUID = 0L;
 
         /** Query future. */
-        private final CacheQueryFuture<V> fut;
+        private CacheQueryFuture<V> fut;
 
         /** Weak reference. */
         private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
@@ -159,16 +165,23 @@ public class CacheWeakQueryIteratorsHolder<V> {
         /** Current item. */
         private T cur;
 
+        /** Initialization error call back. */
+        private IgniteOutClosure<CacheQueryFuture<V>> initErr;
+
         /**
          * @param fut GridCacheQueryFuture to iterate.
+         * @param onInitErr Init fail callback closure.
          * @param convert Converter.
          */
-        WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
+        WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert,
+                                IgniteOutClosure<CacheQueryFuture<V>> onInitErr) {
             this.fut = fut;
 
             this.weakRef = new WeakReference<>(this, refQueue);
 
             this.convert = convert;
+
+            this.initErr = onInitErr;
         }
 
         /** {@inheritDoc} */
@@ -241,7 +254,19 @@ public class CacheWeakQueryIteratorsHolder<V> {
          */
         private void init() throws IgniteCheckedException {
             if (!init) {
-                V futNext = fut.next();
+                V futNext;
+
+                try {
+                    futNext = fut.next();
+                } catch (CacheException e) {
+                    fut = initErr.apply();
+
+                    AutoCloseable old = refs.put(weakRef, fut);
+
+                    assert old != null;
+
+                    futNext = fut.next();
+                }
 
                 next = futNext != null ? convert.convert(futNext) : null;
 
