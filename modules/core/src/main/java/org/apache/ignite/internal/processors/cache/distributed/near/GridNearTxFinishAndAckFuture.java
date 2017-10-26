@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.TxMvccInfo;
@@ -41,6 +42,11 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteLogger logger() {
+        return finishFut.context().logger(GridNearTxFinishAndAckFuture.class);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean commit() {
         return finishFut.commit();
     }
@@ -52,6 +58,15 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
 
             finishFut.listen(new IgniteInClosure<GridNearTxFinishFuture>() {
                 @Override public void apply(final GridNearTxFinishFuture fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+
+                        return;
+                    }
+
                     GridNearTxLocal tx = fut.tx();
 
                     IgniteInternalFuture<Void> ackFut = null;

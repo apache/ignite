@@ -350,6 +350,59 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNearTxNodeFailureSimple() throws Exception {
+        testSpi = true;
+
+        final int SRVS = 3;
+
+        startGridsMultiThreaded(SRVS);
+
+        client = true;
+
+        Ignite client = startGrid(SRVS);
+
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            FULL_SYNC, 2, DFLT_PARTITION_COUNT);
+
+        final IgniteCache cache = client.createCache(ccfg);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(client);
+
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                if (msg instanceof GridNearTxFinishRequest || msg instanceof CoordinatorAckRequestTx) {
+                    info("Block message [node=" + node.id() + ", msg=" + msg + ']');
+
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                try {
+                    cache.put(primaryKey(jcache(1)), 1);
+                }
+                catch (Exception e) {
+                    info("Ignore error: " + e);
+                }
+
+                return null;
+            }
+        });
+
+        spi.waitForBlocked();
+
+        stopGrid(SRVS);
+
+        fut.get();
+    }
+
+    /**
      * @param tx If {@code true} tests reads inside transaction.
      * @throws Exception If failed.
      */

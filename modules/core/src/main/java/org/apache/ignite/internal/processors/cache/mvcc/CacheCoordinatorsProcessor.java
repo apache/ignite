@@ -147,6 +147,11 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
+    }
+
     /**
      * @param crdVer Mvcc coordinator version.
      * @param cntr Counter.
@@ -1342,6 +1347,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
             return "CacheCoordinatorDiscoveryListener[]";
         }
     }
+
     /**
      *
      */
@@ -1396,6 +1402,7 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
             return "CoordinatorMessageListener[]";
         }
     }
+
     /**
      *
      */
