@@ -133,18 +133,6 @@ import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
-    /*
-     * Static initializer.
-     */
-    static {
-        try {
-            DriverManager.registerDriver(new IgniteJdbcThinDriver());
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to register " + IgniteJdbcThinDriver.class.getName(), e);
-        }
-    }
-
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
@@ -170,7 +158,11 @@ public class IgniteJdbcThinDriver implements Driver {
 
         String schema = parseUrl(url, props);
 
-        return new JdbcThinConnection(url, props, schema);
+        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
+
+        connProps.init(props);
+
+        return new JdbcThinConnection(url, schema, connProps);
     }
 
     /** {@inheritDoc} */
