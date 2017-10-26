@@ -40,7 +40,7 @@ namespace Apache.Ignite.Examples.ThinClient
     public class ThinClientQueryExample
     {
         /// <summary> Cache name. </summary>
-        private const string CacheName = "default-cache";
+        private const string CacheName = "thinClientCache";
 
         [STAThread]
         public static void Main()
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Examples.ThinClient
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query client example started.");
 
-                ICacheClient<int, Employee> cache = igniteClient.GetCache<int, Employee>(CacheName);
+                ICacheClient<int, Employee> cache = igniteClient.GetOrCreateCache<int, Employee>(CacheName);
 
                 // Populate cache with sample data entries.
                 PopulateCache(cache);
