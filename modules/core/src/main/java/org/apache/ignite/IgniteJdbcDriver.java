@@ -329,7 +329,6 @@ public class IgniteJdbcDriver implements Driver {
     /** Enforce join order property name. */
     public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
 
-
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
 

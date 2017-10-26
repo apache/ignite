@@ -174,7 +174,7 @@ public class JdbcStatement implements Statement {
      * @param sql SQL query.
      * @param args Update arguments.
      * @return Number of affected items.
-     * @throws SQLException
+     * @throws SQLException On failed.
      */
     int doUpdate(String sql, Object[] args) throws SQLException {
         if (F.isEmpty(sql))

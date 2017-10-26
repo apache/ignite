@@ -309,7 +309,7 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         /**
          * @param uuid UUID..
          * @param finished Finished.
-         * @param isQry
+         * @param isQry Query flag; {@code true} is case the result is result set of SELECT query. Otherwise false.
          * @param rows Rows.
          * @param cols Columns.
          * @param tbls Tables.
