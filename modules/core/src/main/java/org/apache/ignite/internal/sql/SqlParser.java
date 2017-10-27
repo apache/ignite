@@ -159,9 +159,6 @@ public class SqlParser {
         cmd.tableName(tblQName.name());
 
         // Process column list.
-        if (!lex.shift())
-            throw errorUnexpectedToken(lex, "(");
-
         processIndexColumnList(cmd);
 
         return cmd;
@@ -173,6 +170,9 @@ public class SqlParser {
      * @param cmd Command.
      */
     private void processIndexColumnList(SqlCreateIndexCommand cmd) {
+        if (!lex.shift())
+            throw errorUnexpectedToken(lex, "(");
+
         if (lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT )
             throw errorUnexpectedToken(lex, "(");
 
