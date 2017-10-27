@@ -43,6 +43,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // Full config: has unsupported properties.
             var cfg = CacheConfigurationTest.GetCustomCacheConfiguration("bar");
+            cfg.ReadThrough = true;
+            cfg.WriteBehindEnabled = true;
             
             TestSerializeDeserializeUnspported(cfg, "AffinityFunction");
             cfg.AffinityFunction = null;
