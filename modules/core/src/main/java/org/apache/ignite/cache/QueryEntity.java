@@ -134,7 +134,7 @@ public class QueryEntity implements Serializable {
      * @param valCls Value type.
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
-        this(convert(processKeyAndValueClasses(keyCls,valCls)));
+        this(convert(processKeyAndValueClasses(keyCls, valCls)));
     }
 
     /**
@@ -353,6 +353,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets table name for this query entity.
+     *
      * @param tableName table name
      */
     public void setTableName(String tableName) {
@@ -382,6 +383,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Utility method for building query entities programmatically.
+     *
      * @param fullName Full name of the field.
      * @param type Type of the field.
      * @param alias Field alias.
@@ -468,6 +470,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(idxs))
             entity.setIndexes(idxs);
+
+        if (!F.isEmpty(desc.notNullFields()))
+            entity.setNotNullFields(desc.notNullFields());
 
         return entity;
     }
@@ -591,6 +596,9 @@ public class QueryEntity implements Serializable {
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
+            if (sqlAnn.notNull())
+                desc.addNotNullField(prop.fullName());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -611,7 +619,6 @@ public class QueryEntity implements Serializable {
         if (txtAnn != null)
             desc.addFieldToTextIndex(prop.fullName());
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {

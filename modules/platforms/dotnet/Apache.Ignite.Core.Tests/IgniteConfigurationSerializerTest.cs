@@ -287,7 +287,6 @@ namespace Apache.Ignite.Core.Tests
             var ds = cfg.DataStorageConfiguration;
             Assert.IsFalse(ds.AlwaysWriteFullPages);
             Assert.AreEqual(TimeSpan.FromSeconds(1), ds.CheckpointFrequency);
-            Assert.AreEqual(2, ds.CheckpointPageBufferSize);
             Assert.AreEqual(3, ds.CheckpointThreads);
             Assert.AreEqual(4, ds.ConcurrencyLevel);
             Assert.AreEqual(TimeSpan.FromSeconds(5), ds.LockWaitTime);
@@ -321,6 +320,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(5, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap", dr.SwapPath);
             Assert.IsTrue(dr.MetricsEnabled);
+            Assert.AreEqual(7, dr.CheckpointPageBufferSize);
 
             dr = ds.DefaultDataRegionConfiguration;
             Assert.AreEqual(2, dr.EmptyPagesPoolSize);
@@ -927,7 +927,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     AlwaysWriteFullPages = true,
                     CheckpointFrequency = TimeSpan.FromSeconds(25),
-                    CheckpointPageBufferSize = 28 * 1024 * 1024,
                     CheckpointThreads = 2,
                     LockWaitTime = TimeSpan.FromSeconds(5),
                     StoragePath = Path.GetTempPath(),
@@ -962,7 +961,8 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = Path.GetTempPath()
+                        SwapPath = Path.GetTempPath(),
+                        CheckpointPageBufferSize = 7
                     },
                     DataRegionConfigurations = new[]
                     {

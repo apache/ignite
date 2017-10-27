@@ -1345,7 +1345,7 @@ export default class IgniteConfigurationGenerator {
     static dataRegionConfiguration(dataRegionCfg) {
         const plcBean = new Bean('org.apache.ignite.configuration.DataRegionConfiguration', 'dataRegionCfg', dataRegionCfg, clusterDflts.dataStorageConfiguration.dataRegionConfigurations);
 
-        return plcBean.stringProperty('name')
+        plcBean.stringProperty('name')
             .longProperty('initialSize')
             .longProperty('maxSize')
             .stringProperty('swapPath')
@@ -1354,8 +1354,11 @@ export default class IgniteConfigurationGenerator {
             .intProperty('emptyPagesPoolSize')
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
+            .longProperty('checkpointPageBufferSize')
             .boolProperty('metricsEnabled')
             .boolProperty('persistenceEnabled');
+
+        return plcBean;
     }
 
     // Generate data storage configuration.
