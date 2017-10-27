@@ -166,7 +166,10 @@ public abstract class WALRecord {
         PARTITION_DESTROY,
 
         /** Snapshot record. */
-        SNAPSHOT;
+        SNAPSHOT,
+
+        /** Metastore data record. */
+        METASTORE_DATA_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

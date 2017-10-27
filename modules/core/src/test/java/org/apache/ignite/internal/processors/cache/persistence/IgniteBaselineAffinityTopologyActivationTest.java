@@ -138,7 +138,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         createAndFillCache(srv);
 
         // TODO: final implementation should work with cancel == true.
-        stopAllGrids(false);
+        stopAllGrids();
 
         //note: no call for activation after grid restart
         startGrids(3);

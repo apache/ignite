@@ -92,6 +92,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -110,7 +111,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -489,10 +489,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             metaStorage.init(this);
 
-            MetastorageDataRow row = metaStorage.getData(METASTORE_BASELINE_TOPOLOGY_KEY);
+            applyLastUpdates(status, true);
 
-            if (row != null)
-                blt = new JdkMarshaller().unmarshal(row.value(), getClass().getClassLoader());
+            byte[] value = metaStorage.getData(METASTORE_BASELINE_TOPOLOGY_KEY);
+
+            if (value != null)
+                blt = new JdkMarshaller().unmarshal(value, getClass().getClassLoader());
 
             metaStorage = null;
 
@@ -714,6 +716,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.wal().resumeLogging(restore);
 
             cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
+
+            saveBaselineTopology(blt);
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
@@ -1255,7 +1261,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                applyLastUpdates(status);
+                applyLastUpdates(status, false);
             }
             finally {
                 checkpointReadUnlock();
@@ -1819,12 +1825,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed to apply updates.
      * @throws StorageException If IO exception occurred while reading write-ahead log.
      */
-    private void applyLastUpdates(CheckpointStatus status) throws IgniteCheckedException {
+    private void applyLastUpdates(CheckpointStatus status, boolean metastoreOnly) throws IgniteCheckedException {
         if (log.isInfoEnabled())
             log.info("Applying lost cache updates since last checkpoint record [lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
-        cctx.kernalContext().query().skipFieldLookup(true);
+        if (!metastoreOnly)
+            cctx.kernalContext().query().skipFieldLookup(true);
 
         long start = U.currentTimeMillis();
         int applied = 0;
@@ -1839,6 +1846,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 switch (rec.type()) {
                     case DATA_RECORD:
+                        if (metastoreOnly)
+                            continue;
+
                         DataRecord dataRec = (DataRecord)rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
@@ -1854,10 +1864,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PART_META_UPDATE_STATE:
+                        if (metastoreOnly)
+                            continue;
+
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
                         partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
                             new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+
+                        break;
+
+                    case METASTORE_DATA_RECORD:
+                        MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)rec;
+
+                        metaStorage.applyUpdate(metastoreDataRecord.key(), metastoreDataRecord.value());
 
                         break;
 
@@ -1866,10 +1886,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            restorePartitionState(partStates);
+            if (!metastoreOnly)
+                restorePartitionState(partStates);
         }
         finally {
-            cctx.kernalContext().query().skipFieldLookup(false);
+            if (!metastoreOnly)
+                cctx.kernalContext().query().skipFieldLookup(false);
         }
 
         if (log.isInfoEnabled())

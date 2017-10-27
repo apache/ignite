@@ -922,13 +922,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < cnt; i++) {
-                byte[] d1 = storage0.getData(String.valueOf(i)).value();
+                byte[] d1 = storage0.getData(String.valueOf(i));
                 assertEquals(3, d1.length);
                 assertEquals((byte)(i % 256), d1[0]);
                 assertEquals(2, d1[1]);
                 assertEquals(3, d1[2]);
 
-                byte[] d2 = storage1.getData(String.valueOf(i)).value();
+                byte[] d2 = storage1.getData(String.valueOf(i));
                 assertEquals(i + 3, d2.length);
                 assertEquals(1, d2[0]);
                 assertEquals(2, d2[1]);
@@ -965,7 +965,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 storage.removeData(String.valueOf(i));
 
             for (int i = 10; i < cnt; i++) {
-                byte[] d1 = storage.getData(String.valueOf(i)).value();
+                byte[] d1 = storage.getData(String.valueOf(i));
                 assertEquals(3, d1.length);
                 assertEquals(1, d1[0]);
                 assertEquals(2, d1[1]);
@@ -1002,7 +1002,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 storage.putData(String.valueOf(i), new byte[] {2, 2, 3, 4});
 
             for (int i = 0; i < cnt; i++) {
-                byte[] d1 = storage.getData(String.valueOf(i)).value();
+                byte[] d1 = storage.getData(String.valueOf(i));
                 assertEquals(4, d1.length);
                 assertEquals(2, d1[0]);
                 assertEquals(2, d1[1]);
@@ -1035,9 +1035,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
 
             for (int i = 0; i < cnt; i++) {
-                MetastorageDataRow row = storage.getData(String.valueOf(i));
-                assert row != null;
-                assert row.value().length == 3;
+                byte[] value = storage.getData(String.valueOf(i));
+                assert value != null;
+                assert value.length == 3;
             }
 
             stopGrid(0);
@@ -1053,8 +1053,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             assert storage != null;
 
             for (int i = 0; i < cnt; i++) {
-                MetastorageDataRow row = storage.getData(String.valueOf(i));
-                assert row != null;
+                byte[] value = storage.getData(String.valueOf(i));
+                assert value != null;
             }
         }
         finally {

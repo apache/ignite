@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -163,6 +164,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
+
+            case METASTORE_DATA_RECORD:
+                MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
+
+                return  4 + metastoreDataRec.key().getBytes().length + 4 + metastoreDataRec.value().length;
 
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -387,6 +393,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 res = new DataRecord(entries, 0L);
 
                 break;
+
+            case METASTORE_DATA_RECORD:
+                int strLen = in.readInt();
+
+                byte[] strBytes = new byte[strLen];
+
+                in.readFully(strBytes);
+
+                String key = new String(strBytes);
+
+                int valLen = in.readInt();
+
+                byte[] val = new byte[valLen];
+
+                in.readFully(val);
+
+                return new MetastoreDataRecord(key, val);
 
             case HEADER_RECORD:
                 long magic = in.readLong();
@@ -908,6 +931,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     putDataEntry(buf, dataEntry);
+
+                break;
+
+            case METASTORE_DATA_RECORD:
+                MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)record;
+
+                byte[] strBytes = metastoreDataRecord.key().getBytes();
+
+                buf.putInt(strBytes.length);
+                buf.put(strBytes);
+                buf.putInt(metastoreDataRecord.value().length);
+                buf.put(metastoreDataRecord.value());
 
                 break;
 
