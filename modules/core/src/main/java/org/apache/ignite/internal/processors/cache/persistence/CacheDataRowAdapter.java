@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.MVCC_COUNTER_NA;
 
 /**
  * Cache data row adapter.
@@ -575,13 +576,18 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
-        return 0;
+        return MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

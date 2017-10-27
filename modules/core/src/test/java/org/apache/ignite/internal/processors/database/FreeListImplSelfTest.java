@@ -437,6 +437,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void mvccVersion(long crdVer, long mvccCntr) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean removed() {
             return false;
         }

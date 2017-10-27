@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheDataRow {
     /** Row. */
-    private CacheDataRow row;
+    protected final CacheDataRow row;
 
     /**
      * @param row Row.

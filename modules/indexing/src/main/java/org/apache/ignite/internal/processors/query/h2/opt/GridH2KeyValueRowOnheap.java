@@ -102,6 +102,11 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        row.mvccVersion(crdVer, mvccCntr);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return false;
     }

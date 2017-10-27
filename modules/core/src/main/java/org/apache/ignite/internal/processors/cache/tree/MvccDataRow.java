@@ -93,6 +93,12 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public void mvccVersion(long crdVer, long mvccCntr) {
+        this.crdVer = crdVer;
+        this.mvccCntr = mvccCntr;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccDataRow.class, this, "super", super.toString());
     }

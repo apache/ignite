@@ -819,6 +819,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void mvccVersion(long crdVer, long mvccCntr) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public int hash() {
             return entry.key().hashCode();
         }
