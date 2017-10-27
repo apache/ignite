@@ -123,7 +123,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAsciiChars()
         {
-            var allowedFiles = new[] {"BinaryStringTest.cs", "BinarySelfTest.cs", "CacheDmlQueriesTest.cs"};
+            var allowedFiles = new[]
+            {
+                "BinaryStringTest.cs",
+                "BinarySelfTest.cs", 
+                "CacheDmlQueriesTest.cs",
+                "CacheTest.cs"
+            };
 
             var srcFiles = GetDotNetSourceDir()
                 .GetFiles("*.cs", SearchOption.AllDirectories)
