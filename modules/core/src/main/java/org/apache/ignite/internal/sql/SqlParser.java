@@ -19,6 +19,9 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCommand;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
+import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+
 /**
  * SQL parser.
  */
@@ -42,20 +45,33 @@ public class SqlParser {
      */
     public SqlCommand nextCommand() {
         while (true) {
-            SqlLexerTokenType tokenTyp = lex.shiftAndGet();
-
-            if (tokenTyp == null)
+            if (!lex.shift())
                 return null;
 
-            switch (tokenTyp) {
-                case DEFAULT:
-                    // TODO
-
-                    break;
-
+            switch (lex.tokenType()) {
                 case SEMICOLON:
                     // Empty command, skip.
                     continue;
+
+                case DEFAULT:
+                    switch (lex.tokenFirstChar()) {
+                        case 'C':
+                            if (matches(CREATE))
+                                return processCreate();
+
+                            break;
+
+                        case 'D':
+                            if (matches(DROP))
+                                return processDrop();
+
+                            break;
+
+                        default:
+                            throw exceptionUnexpectedToken();
+                    }
+
+                    throw exceptionUnexpectedToken();
 
                 case QUOTED:
                 case MINUS:
@@ -63,14 +79,44 @@ public class SqlParser {
                 case COMMA:
                 case PARENTHESIS_LEFT:
                 case PARENTHESIS_RIGHT:
-                    throw exception("Unexpected character: " + lex.token());
-
                 default:
-                    assert false : "Should never reach this place.";
-
-                    throw exception("Unexpected token: " + lex.token());
+                    throw exceptionUnexpectedToken();
             }
         }
+    }
+
+    /**
+     * Process CREATE keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processCreate() {
+        // TODO
+
+        return null;
+    }
+
+    /**
+     * Process DROP keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processDrop() {
+        // TODO
+
+        return null;
+    }
+
+    /**
+     * Check if current lexer token matches expected.
+     *
+     * @param expToken Expected token.
+     * @return {@code True} if matches.
+     */
+    private boolean matches(String expToken) {
+        String token = lex.token();
+
+        return expToken.equals(token);
     }
 
     /**
@@ -88,5 +134,14 @@ public class SqlParser {
      */
     private SqlParseException exception(String msg) {
         return new SqlParseException(lex.input(), lex.tokenStartPosition(), msg);
+    }
+
+    /**
+     * Create generic parse exception due to unexpected token.
+     *
+     * @return Excpetion.
+     */
+    private SqlParseException exceptionUnexpectedToken() {
+        throw exception("Unexpected token: " + lex.token());
     }
 }

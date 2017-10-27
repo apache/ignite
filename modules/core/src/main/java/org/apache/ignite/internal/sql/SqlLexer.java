@@ -32,9 +32,6 @@ public class SqlLexer {
     /** Input characters. */
     private final char[] inputChars;
 
-    /**  Strict flag. */
-    private final boolean strict;
-
     /** Current position. */
     private int pos;
 
@@ -59,13 +56,11 @@ public class SqlLexer {
      * Constructor.
      *
      * @param input Input.
-     * @param strict Whether to throw an exception in case of any violation.
      */
-    public SqlLexer(String input, boolean strict) {
+    public SqlLexer(String input) {
         assert input != null;
 
         this.input = input;
-        this.strict = strict;
 
         // Additional slot for look-ahead convenience.
         inputChars = new char[input.length() + 1];
@@ -77,7 +72,7 @@ public class SqlLexer {
     /**
      * Shift lexer to the next position.
      *
-     * @return {@code True} if more tokens are available.
+     * @return {@code True} if next token was found, {@code false} in case of end-of-file.
      */
     public boolean shift() {
         while (!eod()) {
@@ -114,10 +109,7 @@ public class SqlLexer {
                 case '\"':
                     while (true) {
                         if (eod()) {
-                            if (strict)
-                                throw new SqlParseException(input, tokenStartPos0, "Unclosed quoted identifier.");
-                            else
-                                break;
+                            throw new SqlParseException(input, tokenStartPos0, "Unclosed quoted identifier.");
                         }
 
                         char c1 = inputChars[pos];
@@ -196,6 +188,13 @@ public class SqlLexer {
      */
     public String token() {
         return token;
+    }
+
+    /**
+     * @return First character of the current token.
+     */
+    public char tokenFirstChar() {
+        return token.charAt(0);
     }
 
     /**
