@@ -17,8 +17,5 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.trainers.Trainer;
-
-public abstract class GroupTrainer<M extends Model, T> implements Trainer<M, T> {
+public class GroupTrainingTask {
 }
