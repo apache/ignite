@@ -22,7 +22,7 @@ import java.util.HashMap;
 /**
  * SQL lexer.
  */
-public class SqlLexer {
+public class SqlLexer implements SqlParserToken {
     /** Simple token types. */
     private static final HashMap<Character, SqlLexerTokenType> SIMPLE_TOKEN_TYPS = new HashMap<>();
 
@@ -81,6 +81,31 @@ public class SqlLexer {
         this.tokenPos = other.tokenPos;
         this.token = other.token;
         this.tokenTyp = other.tokenTyp;
+    }
+
+    /**
+     * Get next token without lexer state change.
+     *
+     * @return Next token or {@code null} of end is reached.
+     */
+    public SqlParserToken lookAhead() {
+        int pos0  = pos;
+        String token0 = token;
+        int tokenPos0 = tokenPos;
+        SqlLexerTokenType tokenTyp0 = tokenTyp;
+
+        try {
+            if (shift())
+                return new SqlParserTokenImpl(token, tokenPos, tokenTyp);
+
+            return null;
+        }
+        finally {
+            pos = pos0;
+            token = token0;
+            tokenPos = tokenPos0;
+            tokenTyp = tokenTyp0;
+        }
     }
 
     /**
@@ -187,37 +212,22 @@ public class SqlLexer {
         return new SqlLexer(this);
     }
 
-    /**
-     * @return {@code True} if end of data is reached.
-     */
-    private boolean eod() {
-        return pos == inputChars.length - 1;
-    }
-
-    /**
-     * @return Current token.
-     */
+    /** {@inheritDoc} */
     public String token() {
         return token;
     }
 
-    /**
-     * @return First character of the current token.
-     */
+    /** {@inheritDoc} */
     public char tokenFirstChar() {
         return token.charAt(0);
     }
 
-    /**
-     * @return Current token start position.
-     */
+    /** {@inheritDoc} */
     public int tokenPosition() {
         return tokenPos;
     }
 
-    /**
-     * @return Token type.
-     */
+    /** {@inheritDoc} */
     public SqlLexerTokenType tokenType() {
         return tokenTyp;
     }
@@ -227,5 +237,12 @@ public class SqlLexer {
      */
     public String input() {
         return input;
+    }
+
+    /**
+     * @return {@code True} if end of data is reached.
+     */
+    private boolean eod() {
+        return pos == inputChars.length - 1;
     }
 }
