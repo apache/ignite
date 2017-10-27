@@ -22,7 +22,11 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -33,32 +37,25 @@ import javax.sql.DataSource;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
  */
-public class CacheStoreSessionListenerReadWriteThroughDisabled extends GridCacheAbstractSelfTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     protected int gridCount() {
-        return 1;
+        return 2;
     }
+
+    /** */
+    protected final int CNT = 100;
 
     /** {@inheritDoc} */
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
-
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
 
@@ -67,31 +64,90 @@ public class CacheStoreSessionListenerReadWriteThroughDisabled extends GridCache
         cacheCfg.setReadThrough(false);
         cacheCfg.setWriteThrough(false);
 
+        cacheCfg.setBackups(0);
+
         return cacheCfg;
+    }
+
+    /** {@inheritDoc} */
+    protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     public void testLookup() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        cache.get(new Random().nextInt());
+        Random r = new Random();
+
+        for (int i = 0; i < CNT; ++i)
+            cache.get(r.nextInt());
+    }
+
+    public void testBatchLookup() throws Exception {
+        IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Random r = new Random();
+
+        Set values = new HashSet();
+
+        for (int i = 0; i < CNT; ++i)
+            values.add(r.nextInt());
+
+        cache.getAll(values);
     }
 
     public void testUpdate() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        int key = new Random().nextInt();
+        Random r = new Random();
 
-        cache.put(key, key);
+        for (int i = 0; i < CNT; ++i)
+            cache.put(r.nextInt(), "test-value");
+    }
+
+    public void testBatchUpdate() throws Exception {
+        IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Random r = new Random();
+
+        Map values = new TreeMap();
+
+        for (int i = 0; i < CNT; ++i)
+            values.put(r.nextInt(), "test-value");
+
+        cache.putAll(values);
     }
 
     public void testRemove() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        int key = new Random().nextInt();
+        Random r = new Random();
 
-        cache.put(key, key);
+        for (int i = 0; i < CNT; ++i) {
+            int key = r.nextInt();
 
-        cache.remove(key);
+            cache.put(key, "test-value");
+
+            cache.remove(key);
+        }
+    }
+
+    public void testBatchRemove() throws Exception {
+        IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Random r = new Random();
+
+        Set values = new HashSet();
+
+        for (int i = 0; i < CNT; ++i) {
+            int key = r.nextInt();
+
+            cache.put(key, "test-value");
+
+            values.add(key);
+        }
+
+        cache.removeAll(values);
     }
 
     public static class CacheStroreSessionFactory implements Factory<TestCacheStoreSessionListener> {
