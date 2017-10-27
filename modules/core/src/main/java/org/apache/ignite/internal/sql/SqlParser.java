@@ -20,10 +20,12 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
+import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 
@@ -105,8 +107,13 @@ public class SqlParser {
      */
     private SqlCommand processCreate() {
         if (lex.shift()) {
+            SqlCommand cmd = null;
+
             if (matchesKeyword(lex, INDEX))
-                return new SqlCreateIndexCommand().parse(lex);
+                cmd = new SqlCreateIndexCommand();
+
+            if (cmd != null)
+                return cmd.parse(lex);
         }
 
         throw errorUnexpectedToken(lex, INDEX);
@@ -119,8 +126,15 @@ public class SqlParser {
      */
     private SqlCommand processDrop() {
         if (lex.shift()) {
+            SqlCommand cmd = null;
+
             if (matchesKeyword(lex, INDEX))
-                return new SqlDropIndexCommand().parse(lex);
+                cmd = new SqlDropIndexCommand();
+            else if (matchesKeyword(lex, TABLE))
+                cmd = new SqlDropTableCommand();
+
+            if (cmd != null)
+                return cmd.parse(lex);
         }
 
         throw errorUnexpectedToken(lex, INDEX);

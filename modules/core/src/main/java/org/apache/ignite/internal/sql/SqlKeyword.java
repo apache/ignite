@@ -21,32 +21,35 @@ package org.apache.ignite.internal.sql;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: ASC. */
+    public static final String ASC = "ASC";
+
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
+
+    /** Keyword: DESC. */
+    public static final String DESC = "DESC";
 
     /** Keyword: DROP. */
     public static final String DROP = "DROP";
 
-    /** Keyword: INDEX. */
-    public static final String INDEX = "INDEX";
-
-    /** Keyword: ON. */
-    public static final String ON = "ON";
+    /** Keyword: EXISTS. */
+    public static final String EXISTS = "EXISTS";
 
     /** Keyword: IF. */
     public static final String IF = "IF";
 
+    /** Keyword: INDEX. */
+    public static final String INDEX = "INDEX";
+
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
-    /** Keyword: EXISTS. */
-    public static final String EXISTS = "EXISTS";
+    /** Keyword: ON. */
+    public static final String ON = "ON";
 
-    /** Keyword: ASC. */
-    public static final String ASC = "ASC";
-
-    /** Keyword: DESC. */
-    public static final String DESC = "DESC";
+    /** Keyword: TABLE. */
+    public static final String TABLE = "TABLE";
 
     /**
      * Private constructor.
