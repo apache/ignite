@@ -47,7 +47,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Primary' here, not 'Near Cache'.
+ * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
