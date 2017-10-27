@@ -484,7 +484,7 @@ public class CacheGroupContext {
      * @return {@code True} if fast eviction is allowed.
      */
     public boolean allowFastEviction() {
-        return ctx.database().persistenceEnabled() && !queriesEnabled();
+        return persistenceEnabled() && !queriesEnabled();
     }
 
     /**
