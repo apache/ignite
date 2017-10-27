@@ -25,6 +25,8 @@ public class SqlLexerTest {
 //            System.out.println(lex.token() + " -> " + lex.tokenType());
 
 
-        System.out.println(new SqlParser("DROP INDEX IF EXISTS a.a;").nextCommand());
+        //System.out.println(new SqlParser("DROP INDEX IF EXISTS a.a;").nextCommand());
+
+        System.out.println(new SqlParser("CREATE INDEX IF NOT EXISTS a ON b.c(d DESC, e)").nextCommand());
     }
 }

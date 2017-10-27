@@ -135,7 +135,7 @@ public class SqlParser {
             skipIfMatchesKeyword(NOT);
             skipIfMatchesKeyword(EXISTS);
 
-            cmd.ifNotExists();
+            cmd.ifNotExists(true);
 
             if (!lex.shift())
                 throw errorUnexpectedToken(lex, "[name]");
