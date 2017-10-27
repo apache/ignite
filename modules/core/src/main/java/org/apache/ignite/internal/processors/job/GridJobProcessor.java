@@ -444,7 +444,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridJobSiblingsResponse res = null;
 
@@ -1568,7 +1568,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
                     }
                     finally {
-                        if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+                        if (checkPartMapping && !cctx.affinity().primaryByPartition(partId, topVer).id().equals(ctx.localNodeId()))
                             throw new IgniteException("Failed partition reservation. " +
                                 "Partition is not primary on the node. [partition=" + partId + ", cacheName=" + cctx.name() +
                                 ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');
@@ -1769,6 +1769,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 maxFinishedJobsTime.setIfGreater(execTime);
 
                 if (jobAlwaysActivate) {
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+                    
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
                 }
@@ -1780,6 +1785,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+
                     try {
                         handleCollisions();
                     }
@@ -1787,11 +1797,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
-
-                if (!activeJobs.remove(worker.getJobId(), worker))
-                    cancelledJobs.remove(worker.getJobId(), worker);
-
-                heldJobs.remove(worker.getJobId());
             }
         }
     }
@@ -1842,7 +1847,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobSessionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1858,7 +1863,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobCancelListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1876,7 +1881,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobExecutionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 

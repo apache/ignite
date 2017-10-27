@@ -64,6 +64,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
 
+    /** Exception. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Exception err;
+
+    /** */
+    private byte[] errBytes;
+
     /** */
     private boolean client;
 
@@ -150,22 +158,38 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     }
 
     /**
+     * @param ex Exception.
+     */
+    public void setError(Exception ex) {
+        this.err = ex;
+    }
+
+    /**
+     * @return Not null exception if exchange processing failed.
+     */
+    @Nullable public Exception getError() {
+        return err;
+    }
+
+    /**
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionMap2> partitions() {
         return parts;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        boolean marshal = (parts != null && partsBytes == null) || (partCntrs != null && partCntrsBytes == null);
+        boolean marshal = (parts != null && partsBytes == null) ||
+            (partCntrs != null && partCntrsBytes == null) ||
+            (err != null && errBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
+            byte[] errBytes0 = null;
 
             if (parts != null && partsBytes == null)
                 partsBytes0 = U.marshal(ctx, parts);
@@ -173,15 +197,20 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partCntrs != null && partCntrsBytes == null)
                 partCntrsBytes0 = U.marshal(ctx, partCntrs);
 
+            if (err != null && errBytes == null)
+                errBytes0 = U.marshal(ctx, err);
+
             if (compress) {
                 assert !compressed();
 
                 try {
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
+                    byte[] exBytesZip = U.zip(errBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
+                    errBytes0 = exBytesZip;
 
                     compressed(true);
                 }
@@ -192,6 +221,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
+            errBytes = errBytes0;
         }
     }
 
@@ -211,6 +241,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 partCntrs = U.unmarshalZip(ctx.marshaller(), partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
                 partCntrs = U.unmarshal(ctx, partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
+
+        if (errBytes != null && err == null) {
+            if (compressed())
+                err = U.unmarshalZip(ctx.marshaller(), errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
         if (dupPartsData != null) {
@@ -262,12 +299,18 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
@@ -306,7 +349,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 8:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,6 +357,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 9:
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
@@ -333,7 +384,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

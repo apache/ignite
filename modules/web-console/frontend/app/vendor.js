@@ -25,6 +25,7 @@ import 'angular-strap/dist/angular-strap.tpl';
 import 'angular-socket-io';
 import 'angular-retina';
 import 'angular-ui-router';
+import 'angular-translate';
 import 'ui-router-metatags/dist/ui-router-metatags';
 import 'angular-smart-table';
 import 'angular-ui-grid/ui-grid';

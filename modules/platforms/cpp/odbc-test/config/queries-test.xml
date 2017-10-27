@@ -85,6 +85,43 @@
                         </list>
                     </property>
                 </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache2"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Long"/>
+                                <property name="valueType" value="ComplexType"/>
+
+                                <property name="fields">
+                                    <map>
+                                        <entry key="i32Field" value="java.lang.Integer"/>
+                                        <entry key="objField" value="TestObject"/>
+                                        <entry key="strField" value="java.lang.String"/>
+                                    </map>
+                                </property>
+
+                                <property name="keyFields">
+                                    <list></list>
+                                </property>
+
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <constructor-arg value="i32Field"/>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
 

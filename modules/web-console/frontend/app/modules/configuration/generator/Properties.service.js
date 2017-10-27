@@ -20,7 +20,7 @@ import StringBuilder from './StringBuilder';
 /**
  * Properties generation entry point.
  */
-export default class PropertiesGenerator {
+export default class IgnitePropertiesGenerator {
     _collectProperties(bean) {
         const props = [];
 

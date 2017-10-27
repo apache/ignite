@@ -105,6 +105,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private final long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -145,6 +146,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
 
+    /** TTL for create operation. */
+    private final long createTtl;
+
     /** TTL for read operation. */
     private final long accessTtl;
 
@@ -164,6 +168,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore Skip store flag.
@@ -175,6 +180,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         boolean read,
         boolean retval,
         long timeout,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -189,6 +195,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
@@ -312,14 +319,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     null,
                     threadId,
                     lockVer,
-                    timeout,
                     true,
                     tx.entry(txKey).locked(),
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
                     false,
-                    null);
+                    null,
+                    false);
 
                 cand.topologyVersion(topVer);
             }
@@ -332,14 +339,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     null,
                     threadId,
                     lockVer,
-                    timeout,
                     true,
                     false,
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
                     false,
-                    null);
+                    null,
+                    false);
 
                 cand.topologyVersion(topVer);
             }
@@ -482,8 +489,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<Boolean> fut = future(i);
 
                 if (!isMini(fut))
@@ -926,6 +935,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         inTx() && tx.syncMode() == FULL_SYNC,
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
+                                        read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
                                         skipStore,
                                         keepBinary,
@@ -1102,7 +1112,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /**
      * Locks given keys directly through dht cache.
-     *  @param keys Collection of keys.
+     * @param keys Collection of keys.
      * @param topVer Topology version to lock on.
      */
     private void lockLocally(
@@ -1121,6 +1131,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             read,
             retval,
             timeout,
+            createTtl,
             accessTtl,
             filter,
             skipStore,
@@ -1193,7 +1204,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         boolean explicit = false;
 
         for (KeyCacheObject key : keys) {
-            if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+            if (!cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
                 for (KeyCacheObject k : keys)
                     cctx.mvcc().removeExplicitLock(threadId, cctx.txKey(k), lockVer);
@@ -1277,7 +1288,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
-        ClusterNode primary = cctx.affinity().primary(key, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +

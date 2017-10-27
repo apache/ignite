@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -131,6 +132,16 @@ public interface IgniteInternalFuture<R> {
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
+
+    /**
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param exec Executor to run callback.
+     * @return Chained future that finishes after this future completes and done callback is called.
+     */
+    public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
 
     /**
      * @return Error value if future has already been completed with error.

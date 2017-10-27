@@ -82,14 +82,14 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             ver,
             1,
             ver,
-            0,
             true,
             true,
             true,
             true,
             true,
             true,
-            null
+            null,
+            false
         );
 
         c.setOwner();
@@ -123,14 +123,14 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             ver,
             1,
             ver,
-            0,
             false,
             false,
             false,
             false,
             false,
             false,
-            null
+            null,
+            false
         );
 
         short flags = c.flags();

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,6 +64,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean fields;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private String clause;
 
     /** */
@@ -121,7 +123,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private int taskHash;
 
     /** Partition. */
-    private int part;
+    private int part = -1;
 
     /** */
     private AffinityTopologyVersion topVer;
@@ -478,8 +480,8 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /**
      * @return partition.
      */
-    @Nullable public Integer partition() {
-        return part == -1 ? null : part;
+    public int partition() {
+        return part;
     }
 
     /** {@inheritDoc} */

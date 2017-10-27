@@ -16,7 +16,7 @@
  */
 
 const guest = ['login'];
-const becomed = ['profile', 'configuration', 'query'];
+const becomed = ['profile', 'configuration', 'query', 'demo'];
 const user = becomed.concat(['logout']);
 const admin = user.concat(['admin_page']);
 

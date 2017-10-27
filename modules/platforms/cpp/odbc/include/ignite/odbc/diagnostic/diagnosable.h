@@ -45,14 +45,14 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
 
                 /**
                  * Get diagnostic record.
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
 
                 /**
                  * Add new status record.

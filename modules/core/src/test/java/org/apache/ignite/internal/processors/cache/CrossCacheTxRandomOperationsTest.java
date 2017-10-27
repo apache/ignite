@@ -86,6 +86,11 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 6 * 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -170,9 +175,17 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheMode Cache mode.
+     * @param writeSync Write synchronization mode.
+     * @param fairAff Fair affinity flag.
+     * @param ignite Node to use.
+     * @param name Cache name.
      */
-    protected void createCache(CacheMode cacheMode, CacheWriteSynchronizationMode writeSync, boolean fairAff,
-        Ignite ignite, String name) {
+    protected void createCache(CacheMode cacheMode,
+        CacheWriteSynchronizationMode writeSync,
+        boolean fairAff,
+        Ignite ignite,
+        String name) {
         ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, fairAff));
     }
 
@@ -269,9 +282,18 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
             boolean checkData = fullSync && !optimistic;
 
+            long stopTime = System.currentTimeMillis() + 10_000;
+
             for (int i = 0; i < 10_000; i++) {
-                if (i % 100 == 0)
+                if (i % 100 == 0) {
+                    if (System.currentTimeMillis() > stopTime) {
+                        log.info("Stop on timeout, iteration: " + i);
+
+                        break;
+                    }
+
                     log.info("Iteration: " + i);
+                }
 
                 boolean rollback = i % 10 == 0;
 

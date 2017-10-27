@@ -17,16 +17,17 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.util.Map;
-import java.util.List;
-import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 
 /**
  * Provides a convenient way to create a permission set.
@@ -57,8 +58,11 @@ public class SecurityPermissionSetBuilder {
     /** Task permissions.*/
     private Map<String, Collection<SecurityPermission>> taskPerms = new HashMap<>();
 
+    /** Service permissions.*/
+    private Map<String, Collection<SecurityPermission>> srvcPerms = new HashMap<>();
+
     /** System permissions.*/
-    private List<SecurityPermission> sysPerms = new ArrayList<>();
+    private Set<SecurityPermission> sysPerms = new HashSet<>();
 
     /** Default allow all.*/
     private boolean dfltAllowAll;
@@ -95,6 +99,21 @@ public class SecurityPermissionSetBuilder {
         validate(toCollection("TASK_"), perms);
 
         append(taskPerms, name, toCollection(perms));
+
+        return this;
+    }
+
+    /**
+     * Append permission set form {@link org.apache.ignite.IgniteServices service} with {@code name}.
+     *
+     * @param name  String for map some service to permission set.
+     * @param perms Permissions.
+     * @return SecurityPermissionSetBuilder refer to same permission builder.
+     */
+    public SecurityPermissionSetBuilder appendServicePermissions(String name, SecurityPermission... perms) {
+        validate(toCollection("SERVICE_"), perms);
+
+        append(srvcPerms, name, toCollection(perms));
 
         return this;
     }
@@ -175,7 +194,7 @@ public class SecurityPermissionSetBuilder {
     private final <T> Collection<T> toCollection(T... perms) {
         assert perms != null;
 
-        Collection<T> col = new ArrayList<>(perms.length);
+        Collection<T> col = U.newHashSet(perms.length);
 
         Collections.addAll(col, perms);
 
@@ -215,7 +234,8 @@ public class SecurityPermissionSetBuilder {
         permSet.setDefaultAllowAll(dfltAllowAll);
         permSet.setCachePermissions(unmodifiableMap(cachePerms));
         permSet.setTaskPermissions(unmodifiableMap(taskPerms));
-        permSet.setSystemPermissions(unmodifiableList(sysPerms));
+        permSet.setServicePermissions(unmodifiableMap(srvcPerms));
+        permSet.setSystemPermissions(unmodifiableSet(sysPerms));
 
         return permSet;
     }

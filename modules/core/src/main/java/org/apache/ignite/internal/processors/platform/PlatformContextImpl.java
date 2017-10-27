@@ -361,7 +361,7 @@ public class PlatformContextImpl implements PlatformContext {
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
-                    Map<String, Integer> fields = PlatformUtils.readMap(reader,
+                    Map<String, Integer> fields = PlatformUtils.readLinkedMap(reader,
                         new PlatformReaderBiClosure<String, Integer>() {
                             @Override public IgniteBiTuple<String, Integer> read(BinaryRawReaderEx reader) {
                                 return F.t(reader.readString(), reader.readInt());
