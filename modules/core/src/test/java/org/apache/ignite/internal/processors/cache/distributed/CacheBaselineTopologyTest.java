@@ -480,7 +480,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             cache = ig.cache(CACHE_NAME);
         }
 
-        primary.close();
+        stopGrid(primaryIdx, false);
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
@@ -504,7 +504,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert activated;
 
-        assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
+//        assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
