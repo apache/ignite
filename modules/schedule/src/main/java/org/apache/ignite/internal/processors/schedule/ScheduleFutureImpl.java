@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -35,6 +36,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.util.future.AsyncFutureListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -589,15 +591,42 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     }
 
     /** {@inheritDoc} */
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr, Executor exec) {
+        A.notNull(lsnr, "lsnr");
+        A.notNull(exec, "exec");
+
+        listen(new AsyncFutureListener<>(lsnr, exec));
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
+        A.notNull(doneCb, "doneCb");
+
+        return chain(doneCb, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb, Executor exec) {
+        A.notNull(doneCb, "");
+        A.notNull(exec, "exec");
+
+        return chain(doneCb, exec);
+    }
+
+    /**
+     * @param doneCb Done callback.
+     * @param exec Executor.
+     * @return Chained future.
+     */
+    private <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<R>, T> doneCb, @Nullable Executor exec) {
         final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
             @Override public String toString() {
                 return "ChainFuture[orig=" + ScheduleFutureImpl.this + ", doneCb=" + doneCb + ']';
             }
         };
 
-        listen(new CI1<IgniteFuture<R>>() {
+        IgniteInClosure<? super IgniteFuture<R>> lsnr = new CI1<IgniteFuture<R>>() {
             @Override public void apply(IgniteFuture<R> fut0) {
                 try {
                     fut.onDone(doneCb.apply(fut0));
@@ -617,7 +646,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                     throw e;
                 }
             }
-        });
+        };
+
+        if (exec != null)
+            lsnr = new AsyncFutureListener<>(lsnr, exec);
+
+        listen(lsnr);
 
         return new IgniteFutureImpl<>(fut);
     }
@@ -881,8 +915,19 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         /** {@inheritDoc} */
+        @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<R>> lsnr, Executor exec) {
+            ref.listenAsync(lsnr, exec);
+        }
+
+        /** {@inheritDoc} */
         @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb) {
             return ref.chain(doneCb);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<R>, T> doneCb,
+            Executor exec) {
+            return ref.chainAsync(doneCb, exec);
         }
     }
 
