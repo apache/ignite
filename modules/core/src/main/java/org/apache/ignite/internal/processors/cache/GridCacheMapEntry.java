@@ -822,6 +822,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             wasNew = isNew();
         }
 
+        // TODO IGNITE-3478: tests reload with mvcc enabled.
+
         String taskName = cctx.kernalContext().job().currentTaskName();
 
         // Check before load.
@@ -3253,7 +3255,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime));
+        cctx.offheap().invoke(cctx, key, localPartition(), new UpdateClosure(this, val, ver, expireTime));
     }
 
     /**

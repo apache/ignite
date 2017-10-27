@@ -3774,6 +3774,22 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testChangeExpireTime() throws Exception {
+        final IgniteEx node = startGrid(0);
+
+        IgniteCache cache = node.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 64));
+
+        cache.put(1, 1);
+
+        final IgniteCache expiryCache =
+            cache.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(TimeUnit.SECONDS, 1)));
+
+        expiryCache.get(1);
+    }
+
+    /**
      * @param cctx Context.
      * @param row Row.
      * @param expKey Expected row key.
