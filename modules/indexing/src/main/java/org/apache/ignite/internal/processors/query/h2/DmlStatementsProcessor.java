@@ -120,6 +120,8 @@ public class DmlStatementsProcessor {
      * @param spaceName Cache name.
      */
     public void onCacheStop(String spaceName) {
+        spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
+
         planCache.remove(spaceName);
     }
 
