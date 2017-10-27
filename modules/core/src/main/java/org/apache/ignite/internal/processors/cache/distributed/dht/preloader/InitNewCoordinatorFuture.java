@@ -149,7 +149,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
             if (log.isInfoEnabled()) {
                 log.info("Try restore exchange result [allNodes=" + awaited +
-                    ", joined=" + joinedNodes.keySet() +  ']');
+                    ", joined=" + joinedNodes.keySet() +
+                    ", nodes=" + nodes +
+                    ", disco=" + discoCache.allNodes() + ']');
             }
 
             if (!nodes.isEmpty()) {
