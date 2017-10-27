@@ -190,7 +190,7 @@ public class BaselineTopology implements Serializable {
      * @param blt Blt.
      */
     public boolean isCompatibleWith(BaselineTopology blt) {
-        return topologyHash == blt.topologyHash;
+        return blt == null || topologyHash == blt.topologyHash;
     }
 
     /**

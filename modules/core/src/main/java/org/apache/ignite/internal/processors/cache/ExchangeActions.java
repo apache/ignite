@@ -205,6 +205,13 @@ public class ExchangeActions {
     }
 
     /**
+     * @return {@code True} if has baseline topology change request.
+     */
+    public boolean changedBaseline() {
+        return stateChangeReq != null && !stateChangeReq.activeChanged();
+    }
+
+    /**
      * @return Cluster state change request.
      */
     @Nullable public StateChangeRequest stateChangeRequest() {
