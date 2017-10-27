@@ -26,7 +26,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -468,8 +467,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * @param prevAddr If reconnect is in progress, then previous address of the router the client was connected to
-     * and {@code null} otherwise.
+     * @param recon {@code True} if reconnects.
      * @param timeout Timeout.
      * @return Opened socket or {@code null} if timeout.
      * @throws InterruptedException If interrupted.
@@ -477,9 +475,9 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @see TcpDiscoverySpi#joinTimeout
      */
     @SuppressWarnings("BusyWait")
-    @Nullable private T2<SocketStream, Boolean> joinTopology(InetSocketAddress prevAddr, long timeout)
+    @Nullable private T2<SocketStream, Boolean> joinTopology(boolean recon, long timeout)
         throws IgniteSpiException, InterruptedException {
-        List<InetSocketAddress> addrs = null;
+        Collection<InetSocketAddress> addrs = null;
 
         long startTime = U.currentTimeMillis();
 
@@ -488,7 +486,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 throw new InterruptedException();
 
             while (addrs == null || addrs.isEmpty()) {
-                addrs = new ArrayList<>(spi.resolvedAddresses());
+                addrs = spi.resolvedAddresses();
 
                 if (!F.isEmpty(addrs)) {
                     if (log.isDebugEnabled())
@@ -508,25 +506,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            // process failed node last
-            if (prevAddr != null) {
-                int idx = addrs.indexOf(prevAddr);
-
-                if (idx != -1)
-                    Collections.swap(addrs, idx, 0);
-            }
-
             Collection<InetSocketAddress> addrs0 = new ArrayList<>(addrs);
+
+            Iterator<InetSocketAddress> it = addrs.iterator();
 
             boolean wait = false;
 
-            for (int i = addrs.size() - 1; i >= 0; i--) {
+            while (it.hasNext()) {
                 if (Thread.currentThread().isInterrupted())
                     throw new InterruptedException();
 
-                InetSocketAddress addr = addrs.get(i);
-
-                boolean recon = prevAddr != null;
+                InetSocketAddress addr = it.next();
 
                 T3<SocketStream, Integer, Boolean> sockAndRes;
 
@@ -540,7 +530,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 if (sockAndRes == null) {
-                    addrs.remove(i);
+                    it.remove();
 
                     continue;
                 }
@@ -862,8 +852,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<IgniteSpiThread> threads() {
-        return Arrays.asList(sockWriter, msgWorker);
+    @Override protected IgniteSpiThread workerThread() {
+        return msgWorker;
     }
 
     /**
@@ -1349,20 +1339,15 @@ class ClientImpl extends TcpDiscoveryImpl {
         private boolean clientAck;
 
         /** */
-        private final boolean join;
-
-        /** */
-        private final InetSocketAddress prevAddr;
+        private boolean join;
 
         /**
          * @param join {@code True} if reconnects during join.
-         * @param prevAddr Address of the node, that this client was previously connected to.
          */
-        protected Reconnector(boolean join, InetSocketAddress prevAddr) {
+        protected Reconnector(boolean join) {
             super(spi.ignite().name(), "tcp-client-disco-reconnector", log);
 
             this.join = join;
-            this.prevAddr = prevAddr;
         }
 
         /**
@@ -1392,7 +1377,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 while (true) {
-                    T2<SocketStream, Boolean> joinRes = joinTopology(prevAddr, timeout);
+                    T2<SocketStream, Boolean> joinRes = joinTopology(true, timeout);
 
                     if (joinRes == null) {
                         if (join) {
@@ -1627,10 +1612,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
-                            Socket sock = currSock.sock;
-
-                            InetSocketAddress prevAddr = new InetSocketAddress(sock.getInetAddress(), sock.getPort());
-
                             currSock = null;
 
                             boolean join = joinLatch.getCount() > 0;
@@ -1659,7 +1640,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                     assert reconnector == null;
 
-                                    reconnector = new Reconnector(join, prevAddr);
+                                    final Reconnector reconnector = new Reconnector(join);
+                                    this.reconnector = reconnector;
                                     reconnector.start();
                                 }
                             }
@@ -1830,7 +1812,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             T2<SocketStream, Boolean> joinRes;
             try {
-                joinRes = joinTopology(null, spi.joinTimeout);
+                joinRes = joinTopology(false, spi.joinTimeout);
             }
             catch (IgniteSpiException e) {
                 joinError(e);

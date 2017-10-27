@@ -292,7 +292,7 @@ abstract class TcpDiscoveryImpl {
      *
      * @return Worker thread.
      */
-    protected abstract Collection<IgniteSpiThread> threads();
+    protected abstract IgniteSpiThread workerThread();
 
     /**
      * @throws IgniteSpiException If failed.
