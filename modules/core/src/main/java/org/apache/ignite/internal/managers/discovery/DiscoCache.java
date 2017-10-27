@@ -338,6 +338,7 @@ public class DiscoCache {
             ver,
             state == null ? this.state : state,
             loc,
+            mvccCrd,
             rmtNodes,
             allNodes,
             srvNodes,
