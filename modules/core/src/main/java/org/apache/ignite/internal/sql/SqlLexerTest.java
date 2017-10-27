@@ -19,11 +19,12 @@ package org.apache.ignite.internal.sql;
 
 public class SqlLexerTest {
     public static void main(String[] args) {
-        //SqlLexer lex = new SqlLexer("-- some comment \nalter table _вася ADD coLumn \"test\"");
+//        SqlLexer lex = new SqlLexer("CREATE INDEX a_idx ON PUBLIC.\"tEst\" (col1 ASC, COl2, \"coooL4\")");
+//
+//        while (lex.shift())
+//            System.out.println(lex.token() + " -> " + lex.tokenType());
 
-        SqlLexer lex = new SqlLexer("CREATE INDEX a_idx ON PUBLIC.\"tEst\" (col1 ASC, COl2, \"coooL4\")");
 
-        while (lex.shift())
-            System.out.println(lex.token() + " -> " + lex.tokenType());
+        System.out.println(new SqlParser("DROP INDEX IF EXISTS a.a;").nextCommand());
     }
 }

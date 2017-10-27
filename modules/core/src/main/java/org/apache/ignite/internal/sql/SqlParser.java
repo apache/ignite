@@ -152,6 +152,9 @@ public class SqlParser {
                 skipIfMatchesKeyword(EXISTS);
 
                 cmd.ifExists(true);
+
+                if (!lex.shift())
+                    throw errorUnexpectedToken(lex, "[qualified name]");
             }
 
             SqlQualifiedName qName = processQualifiedName();
@@ -161,8 +164,8 @@ public class SqlParser {
 
             return cmd;
         }
-
-        throw errorUnexpectedToken(lex, "[qualified name]", IF);
+        else
+            throw errorUnexpectedToken(lex, "[qualified name]", IF);
     }
 
     /**
@@ -171,7 +174,7 @@ public class SqlParser {
      * @return Qualified name.
      */
     private SqlQualifiedName processQualifiedName() {
-        if (isIdentifier()) {
+        if (isIdentifier(lex.tokenType())) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
@@ -181,7 +184,7 @@ public class SqlParser {
             if (forkedLex.shift() && forkedLex.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift(); // Skip dot.
 
-                if (lex.shift() && isIdentifier())
+                if (lex.shift() && isIdentifier(lex.tokenType()))
                     return res.schemaName(first).name(lex.token());
                 else
                     throw errorUnexpectedToken(lex, "[name]");
@@ -194,10 +197,11 @@ public class SqlParser {
     }
 
     /**
+     * @param tokenTyp Ttoken type.
      * @return {@code True} if we are standing on possible identifier.
      */
-    private boolean isIdentifier() {
-        return lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED;
+    private boolean isIdentifier(SqlLexerTokenType tokenTyp) {
+        return tokenTyp == SqlLexerTokenType.DEFAULT || tokenTyp == SqlLexerTokenType.QUOTED;
     }
 
     /**

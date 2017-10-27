@@ -60,6 +60,6 @@ public class SqlParseException extends IgniteException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlParseException.class, this);
+        return S.toString(SqlParseException.class, this, "msg", getMessage());
     }
 }
