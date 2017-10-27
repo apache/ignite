@@ -23,12 +23,10 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -1037,6 +1035,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var elemType = val.GetType().GetElementType();
 
+                Debug.Assert(elemType != null);
+
                 var typeId = ObjTypeId;
 
                 if (elemType != typeof(object))
@@ -1333,9 +1333,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the string hash code using Java algorithm.
+        /// Gets the string hash code using Java algorithm, converting English letters to lower case.
         /// </summary>
-        public static int GetStringHashCode(string val)
+        public static int GetStringHashCodeLowerCase(string val)
         {
             if (val == null)
                 return 0;
@@ -1347,6 +1347,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // ReSharper disable once LoopCanBeConvertedToQuery (performance)
                 foreach (var c in val)
                     hash = 31 * hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
+        private static int GetStringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+
+            int hash = 0;
+
+            unchecked
+            {
+                // ReSharper disable once LoopCanBeConvertedToQuery (performance)
+                foreach (var c in val)
+                    hash = 31 * hash + c;
             }
 
             return hash;
@@ -1447,7 +1467,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (id == 0)
-                id = GetStringHashCode(fieldName);
+                id = GetStringHashCodeLowerCase(fieldName);
 
             if (id == 0)
                 throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
