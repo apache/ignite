@@ -32,6 +32,9 @@ public class SqlLexer {
     /** Input characters. */
     private final char[] inputChars;
 
+    /**  Strict flag. */
+    private final boolean strict;
+
     /** Current position. */
     private int pos;
 
@@ -56,11 +59,13 @@ public class SqlLexer {
      * Constructor.
      *
      * @param input Input.
+     * @param strict Whether to throw an exception in case of any violation.
      */
-    public SqlLexer(String input) {
+    public SqlLexer(String input, boolean strict) {
         assert input != null;
 
         this.input = input;
+        this.strict = strict;
 
         // Additional slot for look-ahead convenience.
         inputChars = new char[input.length() + 1];
@@ -108,8 +113,12 @@ public class SqlLexer {
 
                 case '\"':
                     while (true) {
-                        if (eod())
-                            throw new RuntimeException();
+                        if (eod()) {
+                            if (strict)
+                                throw new SqlParseException(input, tokenStartPos0, "Unclosed quoted identifier.");
+                            else
+                                break;
+                        }
 
                         char c1 = inputChars[pos];
 
