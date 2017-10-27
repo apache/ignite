@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.sql;
 
-public class SqlLexerTest {
-    public static void main(String[] args) {
-        //SqlLexer lex = new SqlLexer("-- some comment \nalter table _вася ADD coLumn \"test\"");
+/**
+ * Lexer token type.
+ */
+public enum SqlLexerTokenType {
+    /** Standard word. */
+    DEFAULT,
 
-        SqlLexer lex = new SqlLexer("CREATE INDEX a_idx ON PUBLIC.\"tEst\"");
+    /** Quoted phrase. */
+    QUOTED,
 
-        while (lex.shift())
-            System.out.println(lex.token() + " -> " + lex.tokenType());
-    }
+    /** Minus sign. */
+    MINUS,
+
+    /** Dot. */
+    DOT
 }

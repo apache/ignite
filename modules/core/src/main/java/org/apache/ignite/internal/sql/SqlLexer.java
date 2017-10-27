@@ -36,6 +36,9 @@ public class SqlLexer {
     /** Current token. */
     private String token;
 
+    /** Token type. */
+    private SqlLexerTokenType tokenTyp;
+
     /**
      * Constructor.
      *
@@ -62,6 +65,7 @@ public class SqlLexer {
         while (!eod()) {
             String token0 = null;
             int tokenStartPos0 = pos;
+            SqlLexerTokenType tokenTyp0 = null;
 
             char c = inputChars[pos++];
 
@@ -83,6 +87,8 @@ public class SqlLexer {
                     else {
                         // Minus.
                         token0 = "-";
+
+                        tokenTyp0 = SqlLexerTokenType.MINUS;
                     }
 
                     break;
@@ -102,6 +108,15 @@ public class SqlLexer {
 
                     token0 = input.substring(tokenStartPos0 + 1, pos - 1);
 
+                    tokenTyp0 = SqlLexerTokenType.QUOTED;
+
+                    break;
+
+                case '.':
+                    token0 = ".";
+
+                    tokenTyp0 = SqlLexerTokenType.DOT;
+
                     break;
 
                 default:
@@ -118,11 +133,14 @@ public class SqlLexer {
                     }
 
                     token0 = input.substring(tokenStartPos0, pos).toUpperCase();
+
+                    tokenTyp0 = SqlLexerTokenType.DEFAULT;
             }
 
             if (token0 != null) {
                 token = token0;
                 tokenStartPos = tokenStartPos0;
+                tokenTyp = tokenTyp0;
 
                 return true;
             }
@@ -162,5 +180,12 @@ public class SqlLexer {
      */
     public int tokenStartPosition() {
         return tokenStartPos;
+    }
+
+    /**
+     * @return Token type.
+     */
+    public SqlLexerTokenType tokenType() {
+        return tokenTyp;
     }
 }
