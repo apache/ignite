@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
@@ -39,7 +40,14 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                Assert.IsTrue(Directory.Exists(IgniteHome.Resolve(null)));
+                var home = IgniteHome.Resolve(null);
+                Assert.IsTrue(Directory.Exists(home));
+
+                // Invalid home.
+                var cfg = new IgniteConfiguration {IgniteHome = @"c:\foo\bar"};
+                var ex = Assert.Throws<IgniteException>(() => IgniteHome.Resolve(new IgniteConfiguration(cfg)));
+                Assert.AreEqual(string.Format(
+                    "IgniteConfiguration.IgniteHome is not valid: '{0}'", cfg.IgniteHome), ex.Message);
             }
             finally
             {

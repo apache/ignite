@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public bool NeedsTestDll { get; private set; }
 
         /** Name */
-        public string Name { get; private set; }
+        public Type ExampleType { get; private set; }
 
         /// <summary>
         /// Runs this example.
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                     ConfigPath = GetConfigPath(sourceCode),
                     NeedsTestDll = sourceCode.Contains("-assembly="),
                     _runAction = GetRunAction(type),
-                    Name = type.Name
+                    ExampleType = type
                 };
             }
         }
@@ -119,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public override string ToString()
         {
             // This will be displayed in TeamCity and R# test runner
-            return Name;
+            return ExampleType.Name;
         }
     }
 }

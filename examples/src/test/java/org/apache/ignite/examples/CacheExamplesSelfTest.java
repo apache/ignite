@@ -27,7 +27,7 @@ import org.apache.ignite.examples.datagrid.CacheQueryDdlExample;
 import org.apache.ignite.examples.datagrid.CacheQueryDmlExample;
 import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.datagrid.CacheTransactionExample;
-import org.apache.ignite.examples.datagrid.MemoryPoliciesExample;
+import org.apache.ignite.examples.datagrid.DataRegionsExample;
 import org.apache.ignite.examples.datagrid.starschema.CacheStarSchemaExample;
 import org.apache.ignite.examples.datagrid.store.CacheLoadOnlyStoreExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicLongExample;
@@ -195,7 +195,7 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMemoryPolicyExample() throws Exception {
-        MemoryPoliciesExample.main(EMPTY_ARGS);
+    public void testDataRegionExample() throws Exception {
+        DataRegionsExample.main(EMPTY_ARGS);
     }
 }

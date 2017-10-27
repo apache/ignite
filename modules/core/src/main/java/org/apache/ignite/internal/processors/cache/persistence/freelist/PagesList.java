@@ -180,8 +180,6 @@ public abstract class PagesList extends DataStructure {
 
                             assert nextId != pageId :
                                 "Loop detected [next=" + U.hexLong(nextId) + ", cur=" + U.hexLong(pageId) + ']';
-
-
                         }
                         finally {
                             readUnlock(pageId, page, pageAddr);
@@ -354,9 +352,8 @@ public abstract class PagesList extends DataStructure {
      * @param pageId Page ID.
      * @param page Page absolute pointer.
      * @param pageAddr Page address.
-     * @throws IgniteCheckedException If failed.
      */
-    private void releaseAndClose(long pageId, long page, long pageAddr) throws IgniteCheckedException {
+    private void releaseAndClose(long pageId, long page, long pageAddr) {
         if (page != 0L) {
             try {
                 // No special WAL record because we most likely changed the whole page.
@@ -924,7 +921,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket index.
      * @return Page for take.
      */
-    private Stripe getPageForTake(int bucket) throws IgniteCheckedException {
+    private Stripe getPageForTake(int bucket) {
         Stripe[] tails = getBucket(bucket);
 
         if (tails == null || bucketsSize[bucket].get() == 0)

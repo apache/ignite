@@ -1493,6 +1493,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(desc != null);
 
+            if (!desc.UserType && (fields == null || fields.Count == 0))
+            {
+                // System types with no fields (most of them) do not need to be sent.
+                // AffinityKey is an example of system type with metadata.
+                return;
+            }
+
             if (_metas == null)
             {
                 _metas = new Dictionary<int, BinaryType>(1)
