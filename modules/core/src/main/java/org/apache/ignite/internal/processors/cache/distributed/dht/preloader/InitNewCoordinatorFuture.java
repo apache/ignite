@@ -113,6 +113,10 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
                         nodes.add(node);
                     }
+                    else {
+                        if (log.isInfoEnabled() && !node.isLocal())
+                            log.info("Skikpping node for state restore: " + node);
+                    }
                 }
 
                 if (exchFut.context().mergeExchanges() && !curDiscoCache.version().equals(discoCache.version())) {
