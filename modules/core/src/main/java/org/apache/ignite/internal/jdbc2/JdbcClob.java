@@ -68,15 +68,7 @@ public class JdbcClob implements Clob {
 
     /** {@inheritDoc} */
     @Override public Reader getCharacterStream(long pos, long len) throws SQLException {
-        ensureNotClosed();
-
-        if (pos < 1 || len < 0 || pos - 1 + len > chars.length())
-            throw new SQLException("Invalid argument. Position should be greater than zero. Length should not be " +
-                "negative. Position + length should not exceed data length [pos=" + pos + ", len=" + len + ']');
-
-        String partialView = chars.substring((int)pos - 1, (int)(pos - 1 + len));
-
-        return new StringReader(partialView);
+        return new StringReader(getSubString(pos, (int)len));
     }
 
     /** {@inheritDoc} */
