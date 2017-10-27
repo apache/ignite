@@ -42,6 +42,7 @@ import javax.cache.integration.CacheWriter;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -123,6 +124,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_VALIDATOR;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -198,6 +200,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
+
+    /** */
+    private IgniteClosure<String, Throwable> validator;
 
     /**
      * @param ctx Kernal context.
@@ -319,6 +324,27 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Cannot set both cache writer factory and cache store factory " +
                     "for cache: " + U.maskName(cfg.getName()));
         }
+
+        try {
+            String validatorClsName = IgniteSystemProperties.getString(IGNITE_CACHE_VALIDATOR, null);
+
+            if (validatorClsName != null) {
+                ClassLoader ldr = U.resolveClassLoader(cacheObjCtx.kernalContext().config());
+
+                Class<?> validatorCls = ldr.loadClass(validatorClsName);
+
+                if (IgniteClosure.class.isAssignableFrom(validatorCls))
+                    validator = (IgniteClosure<String, Throwable>)validatorCls.newInstance();
+
+                if (validator != null)
+                    cacheObjCtx.kernalContext().resource().injectGeneric(validator);
+            }
+        }
+        catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+            throw new IgniteCheckedException("Unable to instantiate cache validator defined by "
+                + IGNITE_CACHE_VALIDATOR + " system property", e);
+        }
+
     }
 
     /**
@@ -3866,6 +3892,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static String unmaskNull(String name) {
         // Intentional identity equality.
         return name == NULL_NAME ? null : name;
+    }
+
+    /**
+     * Cache validator.
+     */
+    public IgniteClosure<String, Throwable> cacheValidator() {
+        return validator;
     }
 
     /**

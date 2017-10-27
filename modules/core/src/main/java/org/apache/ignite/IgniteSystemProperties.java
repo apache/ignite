@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
@@ -599,6 +600,11 @@ public final class IgniteSystemProperties {
 
     /** Ignite marshaller cache reread pause. */
     public static final String IGNITE_MARSHALLER_CACHE_REREAD_PAUSE = "IGNITE_MARSHALLER_CACHE_REREAD_PAUSE";
+
+    /** Class name of the closure {@link IgniteClosure<String, Throwable>} that
+     * will be invoked once per topology and validates cache. If it returns or throws exception,
+     * that means cache is invalid.*/
+    public static final String IGNITE_CACHE_VALIDATOR = "IGNITE_CACHE_VALIDATOR";
 
     /**
      * Enforces singleton.

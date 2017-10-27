@@ -22,12 +22,15 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -1060,6 +1063,48 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * @param stmt Prepared statement.
+     * @return Tables set.
+     */
+    public static Set<GridH2Table> getTables(Prepared stmt) {
+        Set<GridH2Table> res = new HashSet<>();
+
+        Set<Table> tbls = null;
+
+        if (stmt instanceof Query)
+            tbls = ((Query)stmt).getTables();
+
+        else if (stmt instanceof Merge)
+            tbls = Collections.singleton(MERGE_TABLE.get((Merge)stmt));
+
+        else if (stmt instanceof Insert)
+            tbls = Collections.singleton(INSERT_TABLE.get((Insert)stmt));
+
+        else if (stmt instanceof Delete) {
+            TableFilter filter = DELETE_FROM.get((Delete)stmt);
+
+            if (filter != null)
+                tbls = Collections.singleton(filter.getTable());
+        }
+
+        else if (stmt instanceof Update) {
+            TableFilter filter = UPDATE_TARGET.get((Update)stmt);
+
+            if (filter != null)
+                tbls = Collections.singleton(filter.getTable());
+        }
+
+        if (tbls != null) {
+            for (Table table : tbls) {
+                if (table instanceof GridH2Table)
+                    res.add((GridH2Table)table);
+            }
+        }
+
+        return res;
     }
 
     /**

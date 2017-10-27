@@ -699,6 +699,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @param topVer Topology version.
+     * @return Exchange future.
+     */
+    @Nullable public GridDhtPartitionsExchangeFuture exchangeFuture(AffinityTopologyVersion topVer) {
+        for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
+            if (fut.topologyVersion().equals(topVer))
+                return fut;
+        }
+
+        return null;
+    }
+
+    /**
      * @return {@code True} if pending future queue is empty.
      */
     public boolean hasPendingExchange() {

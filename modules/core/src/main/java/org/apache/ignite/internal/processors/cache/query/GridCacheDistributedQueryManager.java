@@ -34,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -219,6 +220,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     threads.put(req.id(), Thread.currentThread());
 
                     try {
+                        GridDhtTopologyFuture fut = cctx.shared().exchange().exchangeFuture(req.topologyVersion());
+
+                        if (fut == null)
+                            fut = cctx.topologyVersionFuture();
+
+                        Throwable exc = fut.validateCache(cctx);
+
+                        if (exc != null)
+                            throw new IgniteCheckedException(exc);
+
                         GridCacheQueryInfo info = distributedQueryInfo(sndId, req);
 
                         if (info == null)

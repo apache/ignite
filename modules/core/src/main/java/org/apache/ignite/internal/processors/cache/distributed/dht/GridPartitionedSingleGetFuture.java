@@ -207,6 +207,16 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @SuppressWarnings("unchecked")
     private void map(AffinityTopologyVersion topVer) {
+        GridDhtTopologyFuture exchFut = cctx.topologyVersionFuture();
+
+        Throwable exc = exchFut.validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
+
+            return;
+        }
+
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -1851,6 +1852,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = null;
 
         try {
+            if (!isLocal()) {
+                GridDhtTopologyFuture fut = ctx.shared().exchange().exchangeFuture(req.topologyVersion());
+
+                if (fut == null)
+                    fut = ctx.topologyVersionFuture();
+
+                Throwable exc = fut.validateCache(ctx);
+
+                if (exc != null)
+                    throw new IgniteException(exc);
+            }
+
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
             List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());

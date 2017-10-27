@@ -256,6 +256,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         final AffinityTopologyVersion topVer
     ) {
+        Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
+
+            return;
+        }
+
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {

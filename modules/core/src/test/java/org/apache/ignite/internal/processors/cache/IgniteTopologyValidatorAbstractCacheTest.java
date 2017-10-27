@@ -119,10 +119,13 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      */
     protected void getInvalid(String cacheName) {
         try {
-            assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
-        }
-        catch (CacheException ignored) {
+            grid(0).cache(cacheName).get(KEY_VAL);
+
             assert false : "topology validation broken";
+        }
+        catch (CacheException ex) {
+            assert ex.getCause() instanceof IgniteCheckedException &&
+                ex.getCause().getMessage().contains("cache topology is not valid");
         }
     }
 

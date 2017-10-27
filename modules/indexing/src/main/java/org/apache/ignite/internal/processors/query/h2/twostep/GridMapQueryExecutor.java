@@ -554,7 +554,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new QueryResults(reqId, qrys.size(), mainCctx);
+            qr = new QueryResults(reqId, qrys.size(), mainCctx, cacheIds);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -649,6 +649,12 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
+                    // Validate cache
+                    Throwable exc = qr.validateCaches();
+
+                    if (exc != null)
+                        throw exc;
+
                     // Send the first page.
                     sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
 
@@ -741,8 +747,17 @@ public class GridMapQueryExecutor {
             sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
         else if (qr.canceled)
             sendError(node, req.queryRequestId(), new QueryCancelledException());
-        else
-            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+        else {
+            Throwable exc = qr.validateCaches();
+
+            if (exc == null)
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+            else {
+                nodeRess.remove(req.queryRequestId(), req.segmentId(), qr);
+
+                sendError(node, req.queryRequestId(), new CacheException(exc.getMessage(), exc));
+            }
+        }
     }
 
     /**
@@ -971,17 +986,23 @@ public class GridMapQueryExecutor {
         private final GridCacheContext<?,?> cctx;
 
         /** */
+        private final List<Integer> cacheIds;
+
+        /** */
         private volatile boolean canceled;
 
         /**
          * @param qryReqId Query request ID.
          * @param qrys Number of queries.
          * @param cctx Cache context.
+         * @param cacheIds Cache IDs.
          */
         @SuppressWarnings("unchecked")
-        private QueryResults(long qryReqId, int qrys, GridCacheContext<?, ?> cctx) {
+        private QueryResults(long qryReqId, int qrys, GridCacheContext<?, ?> cctx,
+            List<Integer> cacheIds) {
             this.qryReqId = qryReqId;
             this.cctx = cctx;
+            this.cacheIds = cacheIds;
 
             results = new AtomicReferenceArray<>(qrys);
             cancels = new GridQueryCancel[qrys];
@@ -1048,6 +1069,27 @@ public class GridMapQueryExecutor {
                         cancel.cancel();
                 }
             }
+        }
+
+        /**
+         * Validate caches.
+         *
+         * @return {@link Throwable} if cache is not valid or {@code null} otherwise.
+         */
+        Throwable validateCaches() {
+            // Validate cache
+            for (Integer cacheId : cacheIds) {
+                GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
+
+                if (!cctx.isLocal()) {
+                    Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+                    if (exc != null)
+                        return exc;
+                }
+            }
+
+            return null;
         }
     }
 
