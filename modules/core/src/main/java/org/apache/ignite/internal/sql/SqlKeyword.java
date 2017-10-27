@@ -30,6 +30,9 @@ public class SqlKeyword {
     /** Keyword: INDEX. */
     public static final String INDEX = "INDEX";
 
+    /** Keyword: ON. */
+    public static final String ON = "ON";
+
     /** Keyword: IF. */
     public static final String IF = "IF";
 
@@ -38,6 +41,12 @@ public class SqlKeyword {
 
     /** Keyword: EXISTS. */
     public static final String EXISTS = "EXISTS";
+
+    /** Keyword: ASC. */
+    public static final String ASC = "ASC";
+
+    /** Keyword: DESC. */
+    public static final String DESC = "DESC";
 
     /**
      * Private constructor.

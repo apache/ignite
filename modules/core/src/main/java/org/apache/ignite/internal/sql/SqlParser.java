@@ -20,13 +20,18 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
+import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
+import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 
 /**
@@ -120,9 +125,92 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCreateIndexCommand processCreateIndex() {
-        // TODO
+        if (!lex.shift())
+            throw errorUnexpectedToken(lex, "[name]", IF);
 
-        return null;
+        SqlCreateIndexCommand cmd = new SqlCreateIndexCommand();
+
+        // Process IF NOT EXISTS.
+        if (matchesKeyword(IF)) {
+            skipIfMatchesKeyword(NOT);
+            skipIfMatchesKeyword(EXISTS);
+
+            cmd.ifNotExists();
+
+            if (!lex.shift())
+                throw errorUnexpectedToken(lex, "[name]");
+        }
+
+        // Process index name.
+        String idxName = processName();
+
+        cmd.indexName(idxName);
+
+        // Skip ON.
+        skipIfMatchesKeyword(ON);
+
+        // Process table name.
+        if (!lex.shift())
+            throw errorUnexpectedToken(lex, "[qualified name]");
+
+        SqlQualifiedName tblQName = processQualifiedName();
+
+        cmd.schemaName(tblQName.schemaName());
+        cmd.tableName(tblQName.name());
+
+        // Opening parenthesis.
+        if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT )
+            throw errorUnexpectedToken(lex, "(");
+
+        boolean lastCol = false;
+
+        while (!lastCol) {
+            if (!lex.shift())
+                throw errorUnexpectedToken(lex, "[name]");
+
+            SqlIndexColumn col = processIndexColumn();
+
+            cmd.addColumn(col);
+
+            if (!lex.shift())
+                throw errorUnexpectedToken(lex, ",", ")");
+
+            switch (lex.tokenType()) {
+                case COMMA:
+                    break;
+
+                case PARENTHESIS_RIGHT:
+                    lastCol = true;
+
+                    break;
+
+                default:
+                    throw errorUnexpectedToken(lex, ",", ")");
+            }
+        }
+
+        return cmd;
+    }
+
+    /**
+     * Process index column.
+     *
+     * @return Index column.
+     */
+    private SqlIndexColumn processIndexColumn() {
+        String name = processName();
+        boolean desc = false;
+
+        SqlLexer forkerLex = lex.fork();
+
+        if (forkerLex.shift() && (matchesKeyword(forkerLex, ASC) || matchesKeyword(forkerLex, DESC))) {
+            lex.shift();
+
+            if (matchesKeyword(DESC))
+                desc = true;
+        }
+
+        return new SqlIndexColumn().name(name).descending(desc);
     }
 
     /**
@@ -145,27 +233,26 @@ public class SqlParser {
      * @return Command.
      */
     private SqlDropIndexCommand processDropIndex() {
-        if (lex.shift()) {
-            SqlDropIndexCommand cmd = new SqlDropIndexCommand();
-
-            if (matchesKeyword(IF)) {
-                skipIfMatchesKeyword(EXISTS);
-
-                cmd.ifExists(true);
-
-                if (!lex.shift())
-                    throw errorUnexpectedToken(lex, "[qualified name]");
-            }
-
-            SqlQualifiedName qName = processQualifiedName();
-
-            cmd.schemaName(qName.schemaName());
-            cmd.indexName(qName.name());
-
-            return cmd;
-        }
-        else
+        if (!lex.shift())
             throw errorUnexpectedToken(lex, "[qualified name]", IF);
+
+        SqlDropIndexCommand cmd = new SqlDropIndexCommand();
+
+        if (matchesKeyword(IF)) {
+            skipIfMatchesKeyword(EXISTS);
+
+            cmd.ifExists(true);
+
+            if (!lex.shift())
+                throw errorUnexpectedToken(lex, "[qualified name]");
+        }
+
+        SqlQualifiedName idxQName = processQualifiedName();
+
+        cmd.schemaName(idxQName.schemaName());
+        cmd.indexName(idxQName.name());
+
+        return cmd;
     }
 
     /**
@@ -184,16 +271,30 @@ public class SqlParser {
             if (forkedLex.shift() && forkedLex.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift(); // Skip dot.
 
-                if (lex.shift() && isIdentifier(lex.tokenType()))
-                    return res.schemaName(first).name(lex.token());
-                else
+                if (!lex.shift())
                     throw errorUnexpectedToken(lex, "[name]");
+
+                String second = processName();
+
+                return res.schemaName(first).name(second);
             }
             else
                 return res.name(first);
         }
 
         throw errorUnexpectedToken(lex, "[qualified name]");
+    }
+
+    /**
+     * Process name.
+     *
+     * @return Name.
+     */
+    private String processName() {
+        if (isIdentifier(lex.tokenType()))
+            return lex.token();
+        else
+            throw errorUnexpectedToken(lex, "[name]");
     }
 
     /**
@@ -211,6 +312,17 @@ public class SqlParser {
      * @return {@code True} if matches.
      */
     private boolean matchesKeyword(String expKeyword) {
+        return matchesKeyword(lex, expKeyword);
+    }
+
+    /**
+     * Check if current lexer token matches expected.
+     *
+     * @param lex Lexer.
+     * @param expKeyword Expected keyword.
+     * @return {@code True} if matches.
+     */
+    private static boolean matchesKeyword(SqlLexer lex, String expKeyword) {
         if (lex.tokenType() != SqlLexerTokenType.DEFAULT)
             return false;
 
