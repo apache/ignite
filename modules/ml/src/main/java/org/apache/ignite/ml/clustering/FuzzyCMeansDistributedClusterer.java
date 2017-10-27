@@ -81,7 +81,9 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                 new ArrayList<>());
     }
 
-    public void chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers, )
+    public void chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers) {
+
+    }
 
     public void initializeCenters(SparseDistributedMatrix points, int k) {
         int pointsNumber = points.rowSize();

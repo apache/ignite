@@ -33,6 +33,38 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         return cluster(points, k, ones);
     }
 
+    @Override
+    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points,
+                                    int k, List<Double> weights) throws MathIllegalArgumentException, ConvergenceException {
+        Matrix centers = new DenseLocalOnHeapMatrix(k, points.columnSize());
+        Matrix distances = new DenseLocalOnHeapMatrix(k, points.rowSize());
+        Matrix membership = new DenseLocalOnHeapMatrix(k, points.rowSize());
+        Vector weightsVector = new DenseLocalOnHeapVector(weights.size());
+        for (int i = 0; i < weights.size(); i++) {
+            weightsVector.setX(i, weights.get(i));
+        }
+
+        initializeCenters(centers, points, k, weightsVector);
+
+        int iteration = 0;
+        boolean finished = false;
+        while (iteration < maxIterations && !finished) {
+            calculateDistances(distances, points, centers);
+            calculateMembership(membership, distances, weightsVector);
+            Matrix newCenters = calculateNewCenters(points, membership);
+
+            finished = isFinished(centers, newCenters);
+            centers = newCenters;
+            iteration++;
+        }
+
+        Vector[] centersArray = new Vector[k];
+        for (int i = 0; i < k; i++) {
+            centersArray[i] = centers.getRow(i);
+        }
+        return new FuzzyCMeansModel(centersArray, measure);
+    }
+
     private Matrix initializeCenters(Matrix centers, Matrix points, int k, Vector weights) {
         //int dimensions = points.columnSize();
         int numPoints = points.rowSize();
@@ -87,7 +119,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
                 double invertedFuzzyWeight = 0;
                 for (int k = 0; k < numCenters; k++) {
                     double value = Math.pow(distances.get(i, j) / distances.get(k, j),
-                                                    fuzzyMembershipCoefficient);
+                            fuzzyMembershipCoefficient);
                     if (Double.isNaN(value)) {
                         value = 1.0;
                     }
@@ -121,36 +153,5 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         }
 
         return true;
-    }
-
-    @Override
-    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k, List<Double> weights) throws MathIllegalArgumentException, ConvergenceException {
-        Matrix centers = new DenseLocalOnHeapMatrix(k, points.columnSize());
-        Matrix distances = new DenseLocalOnHeapMatrix(k, points.rowSize());
-        Matrix membership = new DenseLocalOnHeapMatrix(k, points.rowSize());
-        Vector weightsVector = new DenseLocalOnHeapVector(weights.size());
-        for (int i = 0; i < weights.size(); i++) {
-            weightsVector.setX(i, weights.get(i));
-        }
-
-        initializeCenters(centers, points, k, weightsVector);
-
-        int iteration = 0;
-        boolean finished = false;
-        while (iteration < maxIterations && !finished) {
-            calculateDistances(distances, points, centers);
-            calculateMembership(membership, distances, weightsVector);
-            Matrix newCenters = calculateNewCenters(points, membership);
-
-            finished = isFinished(centers, newCenters);
-            centers = newCenters;
-            iteration++;
-        }
-
-        Vector[] centersArray = new Vector[k];
-        for (int i = 0; i < k; i++) {
-            centersArray[i] = centers.getRow(i);
-        }
-        return new FuzzyCMeansModel(centersArray, measure);
     }
 }

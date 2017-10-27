@@ -54,4 +54,57 @@ public class FuzzyCMeansClustererTest {
             System.out.println(center.getX(1));
         }
     }
+
+    @Test
+    public void correctOneCentreOfSimilarPoints() {
+        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+                2, 0.01, 10, null);
+
+        double[][] points = new double[][] {{3.3}, {3.3}, {3.3}, {3,3}};
+
+        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+
+        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, 1);
+        Vector[] centers = model.centers();
+        assertEquals(3.3, centers[0].getX(0), 2);
+    }
+
+    @Test
+    public void centresOfSimilarPoints() {
+        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+                2, 0.01, 10, null);
+
+        double[][] points = new double[][] {{3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}};
+
+        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+
+        int k = 2;
+        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
+        Vector[] centers = model.centers();
+        for (int i = 0; i < k; i++) {
+            Vector center = model.centers()[i];
+            System.out.print(center.getX(0));
+            System.out.print(' ');
+            System.out.println(center.getX(1));
+        }
+    }
+
+    @Test
+    public void twoCenters() {
+        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+                2, 0.01, 10, null);
+
+        double[][] points = new double[][] {{10, 10}, {10, -10}, {-10, -10}, {-10, 10}};
+
+        Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
+
+        int k = 2;
+        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
+        for (int i = 0; i < k; i++) {
+            Vector center = model.centers()[i];
+            System.out.print(center.getX(0));
+            System.out.print(' ');
+            System.out.println(center.getX(1));
+        }
+    }
 }
