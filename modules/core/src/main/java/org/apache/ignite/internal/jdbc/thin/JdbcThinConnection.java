@@ -92,31 +92,30 @@ public class JdbcThinConnection implements Connection {
     private JdbcThinDatabaseMetadata metadata;
 
     /** Connection properties. */
-    private ConnectionPropertiesImpl connProps;
+    private ConnectionProperties connProps;
 
     /**
      * Creates new connection.
      *
      * @param url Connection URL.
-     * @param props Additional properties.
      * @param schema Schema name.
+     * @param props Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, Properties props, String schema) throws SQLException {
+    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
         assert url != null;
-        assert props != null;
 
         this.url = url;
+
+        connProps = new ConnectionPropertiesImpl();
+
+        ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
         this.schema = normalizeSchema(schema);
-
-
-        connProps = new ConnectionPropertiesImpl();
-        connProps.init(props);
 
         try {
             cliIo = new JdbcThinTcpIo(connProps);
