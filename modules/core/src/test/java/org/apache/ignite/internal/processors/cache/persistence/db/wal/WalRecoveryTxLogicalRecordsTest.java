@@ -38,9 +38,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -107,20 +107,20 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(pageSize);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        dbCfg.setWalHistorySize(WAL_HIST_SIZE);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
-        pCfg.setWalHistorySize(WAL_HIST_SIZE);
+        dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(100 * 1024 * 1024)
+            .setPersistenceEnabled(true));
 
         if (checkpointFreq != null)
-            pCfg.setCheckpointingFrequency(checkpointFreq);
+            dbCfg.setCheckpointFrequency(checkpointFreq);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 

@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -52,6 +53,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
@@ -77,6 +79,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -2069,6 +2072,42 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testFailedNodeRestoreConnection() throws Exception {
+        try {
+            TestRestoreConnectedSpi.startTest = false;
+
+            for (int i = 1; i < 5; i++) {
+                nodeSpi.set(new TestRestoreConnectedSpi(3));
+
+                startGrid(i);
+            }
+
+            awaitPartitionMapExchange();
+
+            info("Start fail test");
+
+            TestRestoreConnectedSpi.startTest = true;
+
+            waitNodeStop(getTestIgniteInstanceName(3));
+
+            U.sleep(5000);
+
+            for (int i = 1; i < 5; i++) {
+                if (i != 3) {
+                    Ignite node = ignite(i);
+
+                    assertEquals(3, node.cluster().nodes().size());
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -2167,6 +2206,77 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
     private static class Employee { }
+
+    /**
+     *
+     */
+    private static class TestRestoreConnectedSpi extends TcpDiscoverySpi {
+        /** */
+        static volatile boolean startTest;
+
+        /** */
+        private long sleepEndTime;
+
+        /** */
+        private long errNodeOrder;
+
+        /** */
+        private ClusterNode errNext;
+
+        /**
+         * @param errNodeOrder
+         */
+        TestRestoreConnectedSpi(long errNodeOrder) {
+            this.errNodeOrder = errNodeOrder;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(ClusterNode node,
+            Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
+                if (node.order() == errNodeOrder) {
+                    log.info("Fail write on message send [node=" + node.id() + ", msg=" + msg + ']');
+
+                    throw new SocketTimeoutException();
+                }
+                else if (locNode.order() == errNodeOrder) {
+                    if (sleepEndTime == 0) {
+                        errNext = node;
+
+                        sleepEndTime = System.currentTimeMillis() + 3000;
+                    }
+
+                    long sleepTime = sleepEndTime - System.currentTimeMillis();
+
+                    if (sleepTime > 0) {
+                        log.info("Start sleep on message send: " + msg);
+
+                        try {
+                            U.sleep(sleepTime);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            log.error("Interrupted on socket write: " + e, e);
+
+                            throw new IOException(e);
+                        }
+
+                        log.info("Stop sleep on message send: " + msg);
+
+                        if (node.equals(errNext)) {
+                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
+
+                            throw new SocketTimeoutException();
+                        }
+                    }
+                }
+            }
+
+            super.writeToSocket(node, sock, out, msg, timeout);
+        }
+    }
 
     /**
      *

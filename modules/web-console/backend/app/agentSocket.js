@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-socket',
-    inject: ['require(lodash)', 'require(zlib)']
+    inject: ['require(lodash)']
 };
 
 /**
@@ -79,10 +79,9 @@ class Command {
 
 /**
  * @param _
- * @param zlib
  * @returns {AgentSocket}
  */
-module.exports.factory = function(_, zlib) {
+module.exports.factory = function(_) {
     /**
      * Connected agent descriptor.
      */
@@ -136,21 +135,7 @@ module.exports.factory = function(_, zlib) {
                     if (resErr)
                         return reject(resErr);
 
-                    if (res.zipped) {
-                        // TODO IGNITE-6127 Temporary solution until GZip support for socket.io-client-java.
-                        // See: https://github.com/socketio/socket.io-client-java/issues/312
-                        // We can GZip manually for now.
-                        zlib.gunzip(new Buffer(res.data, 'base64'), (unzipErr, unzipped) => {
-                            if (unzipErr)
-                                return reject(unzipErr);
-
-                            res.data = unzipped.toString();
-
-                            resolve(res);
-                        });
-                    }
-                    else
-                        resolve(res);
+                    resolve(res);
                 })
             );
         }

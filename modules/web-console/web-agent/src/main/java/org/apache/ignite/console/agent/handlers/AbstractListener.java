@@ -20,6 +20,7 @@ package org.apache.ignite.console.agent.handlers;
 import io.socket.client.Ack;
 import io.socket.emitter.Emitter;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -39,6 +40,9 @@ import static org.apache.ignite.console.agent.AgentUtils.toJSON;
  * Base class for web socket handlers.
  */
 abstract class AbstractListener implements Emitter.Listener {
+    /** UTF8 charset. */
+    private static final Charset UTF8 = Charset.forName("UTF-8");
+
     /** */
     private ExecutorService pool;
 
@@ -81,7 +85,7 @@ abstract class AbstractListener implements Emitter.Listener {
                                 Base64OutputStream b64os = new Base64OutputStream(baos);
                                 GZIPOutputStream gzip = new GZIPOutputStream(b64os);
 
-                                gzip.write(restRes.getData().getBytes());
+                                gzip.write(restRes.getData().getBytes(UTF8));
 
                                 gzip.close();
 

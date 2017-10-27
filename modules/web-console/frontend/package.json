@@ -18,7 +18,9 @@
     }
   ],
   "license": "Apache-2.0",
-  "keywords": "grid",
+  "keywords": [
+    "Apache Ignite Web console"
+  ],
   "homepage": "https://ignite.apache.org/",
   "engines": {
     "npm": "3.x.x",
@@ -30,6 +32,7 @@
     "win32"
   ],
   "dependencies": {
+    "@uirouter/angularjs": "1.0.5",
     "angular": "1.5.11",
     "angular-acl": "0.1.8",
     "angular-animate": "1.5.11",
@@ -47,8 +50,7 @@
     "angular-touch": "1.5.11",
     "angular-translate": "2.15.2",
     "angular-tree-control": "0.2.28",
-    "angular-ui-grid": "4.0.6",
-    "@uirouter/angularjs": "1.0.5",
+    "angular-ui-grid": "4.0.7",
     "babel-core": "6.25.0",
     "babel-eslint": "7.2.3",
     "babel-loader": "7.1.1",
@@ -76,10 +78,12 @@
     "html-webpack-plugin": "2.29.0",
     "jquery": "3.2.1",
     "json-loader": "0.5.7",
+    "json-bigint": "0.2.3",
     "jszip": "3.1.4",
     "lodash": "4.17.4",
     "node-sass": "4.5.3",
     "nvd3": "1.8.4",
+    "pako": "1.0.6",
     "progress-bar-webpack-plugin": "1.10.0",
     "pug-html-loader": "1.1.0",
     "pug-loader": "2.3.0",

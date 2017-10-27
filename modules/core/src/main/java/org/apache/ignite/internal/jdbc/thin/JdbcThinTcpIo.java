@@ -49,11 +49,14 @@ public class JdbcThinTcpIo {
     /** Version 2.1.0. */
     private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
 
+    /** Version 2.1.5: added "lazy" flag. */
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
+
     /** Version 2.3.1. */
-    private static final ClientListenerProtocolVersion VER_2_3_1 = ClientListenerProtocolVersion.create(2, 3, 1);
+    private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_1;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -97,6 +100,9 @@ public class JdbcThinTcpIo {
     /** Flag to automatically close server cursor. */
     private final boolean autoCloseServerCursor;
 
+    /** Executes update queries on server nodes. */
+    private final boolean skipReducerOnUpdate;
+
     /** Socket send buffer. */
     private final int sockSndBuf;
 
@@ -135,10 +141,11 @@ public class JdbcThinTcpIo {
      * @param sockSndBuf Socket send buffer.
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
+     * @param skipReducerOnUpdate Executes update queries on ignite server nodes.
      */
     JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
         boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
-        boolean tcpNoDelay) {
+        boolean tcpNoDelay, boolean skipReducerOnUpdate) {
         this.host = host;
         this.port = port;
         this.distributedJoins = distributedJoins;
@@ -150,6 +157,7 @@ public class JdbcThinTcpIo {
         this.sockSndBuf = sockSndBuf;
         this.sockRcvBuf = sockRcvBuf;
         this.tcpNoDelay = tcpNoDelay;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
     }
 
     /**
@@ -180,22 +188,25 @@ public class JdbcThinTcpIo {
                 SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
-        handshake();
+        handshake(CURRENT_VER);
     }
 
     /**
+     * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
+     *
+     * @param ver JDBC client version.
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    public void handshake() throws IOException, SQLException {
+    public void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
         writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
-        writer.writeShort(CURRENT_VER.major());
-        writer.writeShort(CURRENT_VER.minor());
-        writer.writeShort(CURRENT_VER.maintenance());
+        writer.writeShort(ver.major());
+        writer.writeShort(ver.minor());
+        writer.writeShort(ver.maintenance());
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
@@ -205,6 +216,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(replicatedOnly);
         writer.writeBoolean(autoCloseServerCursor);
         writer.writeBoolean(lazy);
+        writer.writeBoolean(skipReducerOnUpdate);
 
         send(writer.array());
 
@@ -238,7 +250,9 @@ public class JdbcThinTcpIo {
 
             ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_0.equals(srvProtocolVer))
+            if (VER_2_1_5.equals(srvProtocolVer))
+                handshake(VER_2_1_5);
+            else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
@@ -482,5 +496,12 @@ public class JdbcThinTcpIo {
      */
     public boolean lazy() {
         return lazy;
+    }
+
+    /**
+     * @return Server side update flag.
+     */
+    public boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
     }
 }

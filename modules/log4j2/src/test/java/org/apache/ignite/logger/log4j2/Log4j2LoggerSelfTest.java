@@ -44,6 +44,13 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Override protected void setUp() throws Exception {
+        Log4J2Logger.cleanup();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testFileConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 

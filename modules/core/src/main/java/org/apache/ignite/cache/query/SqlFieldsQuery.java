@@ -369,6 +369,13 @@ public class SqlFieldsQuery extends Query<List<?>> {
         return this;
     }
 
+    /**
+     * @return Copy of this query.
+     */
+    public SqlFieldsQuery copy() {
+        return new SqlFieldsQuery(this);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlFieldsQuery.class, this);

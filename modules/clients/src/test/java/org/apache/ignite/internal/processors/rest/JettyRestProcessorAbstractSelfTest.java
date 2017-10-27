@@ -711,12 +711,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testDeactivateActivate() throws Exception {
-
         assertClusterState(true);
 
         changeClusterState(false);
-
         changeClusterState(true);
+
+        initCache();
     }
 
     /**
