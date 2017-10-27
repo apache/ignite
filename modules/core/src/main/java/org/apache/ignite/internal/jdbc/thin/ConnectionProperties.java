@@ -145,4 +145,74 @@ public interface ConnectionProperties {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
+
+    /**
+     * @return Use SSL flag.
+     */
+    public boolean isUseSSL();
+
+    /**
+     * @param useSSL Use SSL flag.
+     */
+    public void setUseSSL(boolean useSSL);
+
+    /**
+     * @return Client certificate KeyStore URL.
+     */
+    public String getClientCertificateKeyStoreUrl();
+
+    /**
+     * @param url Client certificate KeyStore URL.
+     */
+    public void setClientCertificateKeyStoreUrl(String url);
+
+    /**
+     * @return Client certificate KeyStore password.
+     */
+    public String getClientCertificateKeyStorePassword();
+
+    /**
+     * @param passwd Client certificate KeyStore password.
+     */
+    public void setClientCertificateKeyStorePassword(String passwd);
+
+    /**
+     * @return Client certificate KeyStore type.
+     */
+    public String getClientCertificateKeyStoreType();
+
+    /**
+     * @param ksType Client certificate KeyStore type.
+     */
+    public void setClientCertificateKeyStoreType(String ksType);
+
+    /**
+     * @return Trusted certificate KeyStore URL.
+     */
+    public String getTrustCertificateKeyStoreUrl();
+
+    /**
+     * @param url Trusted certificate KeyStore URL.
+     */
+    public void setTrustCertificateKeyStoreUrl(String url);
+
+    /**
+     * @return Trusted certificate KeyStore password.
+     */
+    public String getTrustCertificateKeyStorePassword();
+
+    /**
+     * @param passwd Trusted certificate KeyStore password.
+     */
+    public void setTrustCertificateKeyStorePassword(String passwd);
+
+    /**
+     * @return Trusted certificate KeyStore type.
+     */
+    public String getTrustCertificateKeyStoreType();
+
+    /**
+     * @param ksType Trusted certificate KeyStore type.
+     */
+    public void getTrustCertificateKeyStoreType(String ksType);
 }
