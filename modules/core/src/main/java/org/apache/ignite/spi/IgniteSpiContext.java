@@ -31,6 +31,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -294,6 +295,12 @@ public interface IgniteSpiContext {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+
+    /**
+     * @param node Node.
+     * @param discoData Disco data.
+     */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.

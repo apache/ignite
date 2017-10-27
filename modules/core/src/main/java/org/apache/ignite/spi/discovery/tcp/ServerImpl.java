@@ -3532,36 +3532,43 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                IgniteNodeValidationResult err;
+
+                err = spi.getSpiContext().validateNode(node);
+
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
 
                 if (err != null) {
+                    final IgniteNodeValidationResult err0 = err;
+
                     if (log.isDebugEnabled())
                         log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
 
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
-                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
+                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
 
                                 if (!ping) {
                                     if (log.isDebugEnabled())
                                         log.debug("Conflicting node has already left, need to wait for event. " +
                                             "Will ignore join request for now since it will be recent [req=" + msg +
-                                            ", err=" + err.message() + ']');
+                                            ", err=" + err0.message() + ']');
 
                                     // Ignore join request.
                                     return;
                                 }
 
-                                LT.warn(log, err.message());
+                                LT.warn(log, err0.message());
 
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(err.message());
+                                    log.debug(err0.message());
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(err.nodeId(), err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(err0.nodeId(), err0.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())

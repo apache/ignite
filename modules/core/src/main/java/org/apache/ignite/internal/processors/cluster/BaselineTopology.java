@@ -45,11 +45,18 @@ public class BaselineTopology implements Serializable {
     /** Key - node consistent ID, value - node attribute map. */
     private final Map<Object, Map<String, Object>> nodeMap;
 
+    /** */
+    private long topologyHash;
+
+    /** */
+    private final List<Long> baselineHistory;
+
     /**
      * @param nodeMap Map of node consistent ID to it's attrubites.
      */
     public BaselineTopology(Map<Object, Map<String, Object>> nodeMap) {
         this.nodeMap = nodeMap;
+        baselineHistory = new ArrayList<>();
     }
 
     /**
@@ -177,5 +184,41 @@ public class BaselineTopology implements Serializable {
             nodeMap.put(node.consistentId(), node.attributes());
 
         return new BaselineTopology(nodeMap);
+    }
+
+    /**
+     * @param blt Blt.
+     */
+    public boolean isCompatibleWith(BaselineTopology blt) {
+        return topologyHash == blt.topologyHash;
+    }
+
+    /**
+     * @param nodes Nodes.
+     */
+    public boolean updateHistory(Collection<ClusterNode> nodes) {
+        long newTopHash = calculateTopologyHash(nodes);
+
+        if (topologyHash != newTopHash) {
+            topologyHash = newTopHash;
+
+            baselineHistory.add(topologyHash);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param nodes Nodes.
+     */
+    private long calculateTopologyHash(Collection<ClusterNode> nodes) {
+        long res = 0;
+
+        for (ClusterNode node : nodes)
+            res += (long) node.consistentId().hashCode();
+
+        return res;
     }
 }

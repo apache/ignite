@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -27,16 +28,27 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 /**
  *
  */
-public class IgniteAutoActivationTest extends GridCommonAbstractTest {
+public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbstractTest {
+    /** */
+    private String consId;
+
+    /** Entries count to add to cache. */
+    private static final int ENTRIES_COUNT = 100;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (consId != null)
+            cfg.setConsistentId(consId);
 
         MemoryConfiguration memCfg = new MemoryConfiguration();
         memCfg.setPageSize(1024);
@@ -59,12 +71,58 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
         GridTestUtils.deleteDbFiles();
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         GridTestUtils.deleteDbFiles();
+    }
+
+    /**
+     * Verifies scenario when parts of grid were activated independently they are not allowed to join
+     * into the same grid again (due to risks of incompatible data modifications).
+     */
+    public void testBaselineTopologyValidation() throws Exception {
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        startGridWithConsistentId("C").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("C").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+
+        try {
+            startGridWithConsistentId("C");
+        }
+        catch (IgniteCheckedException e) {
+            if (e.getCause() != null && e.getCause().getCause() != null) {
+                Throwable rootCause = e.getCause().getCause();
+
+                if (!(rootCause instanceof IgniteSpiException) || !rootCause.getMessage().contains("not compatible"))
+                    Assert.fail("Unexpected ignite exception was thrown: " + e);
+            }
+            else
+                throw e;
+        }
+    }
+
+    /** */
+    private Ignite startGridWithConsistentId(String consId) throws Exception {
+        this.consId = consId;
+
+        return startGrid(consId);
     }
 
     /**
@@ -92,31 +150,7 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
         checkDataInCache(srv);
     }
 
-    /**
-     * Verifies scenario when user activates grid manually before reaching previously established BaselineTopology.
-     */
-    public void testBaselineTopologyReplacement() throws Exception {
-        startGrids(3);
-
-        IgniteEx srv = grid(0);
-
-        srv.active(true);
-
-        createAndFillCache(srv);
-
-        stopAllGrids();
-
-        startGrids(2);
-
-        srv = grid(0);
-
-        srv.active(true);
-
-        checkDataInCache(srv);
-    }
-
-    private static final int ENTRIES_COUNT = 100;
-
+    /** */
     private void checkDataInCache(IgniteEx srv) {
         IgniteCache<Object, Object> cache = srv.cache(DEFAULT_CACHE_NAME);
 
@@ -129,6 +163,7 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private void createAndFillCache(Ignite srv) {
         IgniteCache cache = srv.getOrCreateCache(cacheConfiguration());
 
@@ -136,6 +171,7 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
             cache.put(i, new TestValue(i, "str" + i));
     }
 
+    /** */
     private void awaitActivation(Ignite srv) throws Exception {
         //TODO busy spinning for now, need to introduce an API to await for automatic activation
         int awaitCntr = 0;
@@ -148,9 +184,7 @@ public class IgniteAutoActivationTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private CacheConfiguration cacheConfiguration() {
         return new CacheConfiguration()
             .setName(DEFAULT_CACHE_NAME)

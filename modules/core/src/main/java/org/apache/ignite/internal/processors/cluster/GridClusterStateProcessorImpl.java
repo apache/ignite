@@ -63,6 +63,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
@@ -402,6 +403,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addJoiningNodeData(discoveryDataType().ordinal(), globalState);
+    }
+
+    /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(STATE_PROC.ordinal()))
             dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
@@ -430,7 +436,16 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
         Collection<ClusterNode> baselineNodes) {
-        BaselineTopology blt = BaselineTopology.build(baselineNodes);
+        BaselineTopology blt;
+
+        if (activate && baselineNodes != null
+            && !globalState.active() && globalState.baselineTopology() != null) {
+            blt = globalState.baselineTopology();
+
+            blt.updateHistory(baselineNodes);
+        }
+        else
+            blt = BaselineTopology.build(baselineNodes);
 
         return changeGlobalState0(activate, blt);
     }
@@ -518,6 +533,23 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
 
         return wrapStateChangeFuture(startedFut, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+        if (globalState == null || globalState.baselineTopology() == null || discoData.joiningNodeData() == null)
+            return null;
+
+        BaselineTopology joiningNodeBlt = ((DiscoveryDataClusterState) discoData.joiningNodeData()).baselineTopology();
+        BaselineTopology clusterBlt = globalState.baselineTopology();
+
+        if (!clusterBlt.isCompatibleWith(joiningNodeBlt)) {
+            String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster.";
+
+            return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
+
+        return null;
     }
 
     /**
