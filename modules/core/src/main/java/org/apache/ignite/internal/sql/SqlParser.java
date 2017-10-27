@@ -20,13 +20,14 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 
 /**
  * SQL parser.
@@ -80,12 +81,12 @@ public class SqlParser {
                     if (cmd != null) {
                         // If there is something behind the command, this is a syntax error.
                         if (lex.shift() && lex.tokenType() != SqlLexerTokenType.SEMICOLON)
-                            throw unexpectedToken();
+                            throw errorUnexpectedToken(lex);
 
                         return cmd;
                     }
                     else
-                        throw unexpectedToken();
+                        throw errorUnexpectedToken(lex);
 
                 case QUOTED:
                 case MINUS:
@@ -94,7 +95,7 @@ public class SqlParser {
                 case PARENTHESIS_LEFT:
                 case PARENTHESIS_RIGHT:
                 default:
-                    throw unexpectedToken();
+                    throw errorUnexpectedToken(lex);
             }
         }
     }
@@ -110,7 +111,7 @@ public class SqlParser {
                 return processCreateIndex();
         }
 
-        throw unexpectedToken(INDEX);
+        throw errorUnexpectedToken(lex, INDEX);
     }
 
     /**
@@ -135,7 +136,7 @@ public class SqlParser {
                 return processDropIndex();
         }
 
-        throw unexpectedToken(INDEX);
+        throw errorUnexpectedToken(lex, INDEX);
     }
 
     /**
@@ -153,34 +154,43 @@ public class SqlParser {
                 cmd.ifExists(true);
             }
 
-            if (isIdentifier()) {
-                String schemaName = null;
-                String idxName = lex.token();
+            SqlQualifiedName qName = processQualifiedName();
 
-                lex.mark();
-
-                if (lex.shift()) {
-                    if (lex.tokenType() == SqlLexerTokenType.DOT) {
-                        if (!lex.shift() || !isIdentifier())
-                            throw unexpectedToken("[index name]");
-                        else {
-                            schemaName = idxName;
-                            idxName = lex.token();
-                        }
-
-                    }
-                    else
-                        lex.rollbackToMark();
-                }
-
-                cmd.schemaName(schemaName);
-                cmd.indexName(idxName);
-            }
+            cmd.schemaName(qName.schemaName());
+            cmd.indexName(qName.name());
 
             return cmd;
         }
 
-        throw unexpectedToken("[index name]", IF);
+        throw errorUnexpectedToken(lex, "[qualified name]", IF);
+    }
+
+    /**
+     * Process qualified name.
+     *
+     * @return Qualified name.
+     */
+    private SqlQualifiedName processQualifiedName() {
+        if (isIdentifier()) {
+            SqlQualifiedName res = new SqlQualifiedName();
+
+            String first = lex.token();
+
+            SqlLexer forkedLex = lex.fork();
+
+            if (forkedLex.shift() && forkedLex.tokenType() == SqlLexerTokenType.DOT) {
+                lex.shift(); // Skip dot.
+
+                if (lex.shift() && isIdentifier())
+                    return res.schemaName(first).name(lex.token());
+                else
+                    throw errorUnexpectedToken(lex, "[name]");
+            }
+            else
+                return res.name(first);
+        }
+
+        throw errorUnexpectedToken(lex, "[qualified name]");
     }
 
     /**
@@ -188,18 +198,6 @@ public class SqlParser {
      */
     private boolean isIdentifier() {
         return lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED;
-    }
-
-    /**
-     * Skip token if it matches expected keyword.
-     *
-     * @param expKeyword Expected keyword.
-     */
-    private void skipIfMatchesKeyword(String expKeyword) {
-        if (lex.shift() && matchesKeyword(expKeyword))
-            return;
-
-        throw unexpectedToken(expKeyword);
     }
 
     /**
@@ -218,51 +216,21 @@ public class SqlParser {
     }
 
     /**
+     * Skip token if it matches expected keyword.
+     *
+     * @param expKeyword Expected keyword.
+     */
+    private void skipIfMatchesKeyword(String expKeyword) {
+        if (lex.shift() && matchesKeyword(expKeyword))
+            return;
+
+        throw errorUnexpectedToken(lex, expKeyword);
+    }
+
+    /**
      * @return Original SQL.
      */
     public String sql() {
         return lex.input();
-    }
-
-    /**
-     * Create parse exception referring to current lexer position.
-     *
-     * @param msg Message.
-     * @return Exception.
-     */
-    private SqlParseException exception(String msg) {
-        return new SqlParseException(lex.input(), lex.tokenPosition(), msg);
-    }
-
-    /**
-     * Create generic parse exception due to unexpected token.
-     *
-     * @param expTokens Expected tokens (if any).
-     * @return Exception.
-     */
-    private SqlParseException unexpectedToken(String... expTokens) {
-        String token = lex.token();
-
-        StringBuilder msg = new StringBuilder(
-            token == null ? "Unexpected end of command" : "Unexpected token: " + token);
-
-        if (!F.isEmpty(expTokens)) {
-            msg.append(" (expected: ");
-
-            boolean first = true;
-
-            for (String expToken : expTokens) {
-                if (first)
-                    first = false;
-                else
-                    msg.append(", ");
-
-                msg.append(expToken);
-            }
-
-            msg.append(")");
-        }
-
-        throw exception(msg.toString());
     }
 }

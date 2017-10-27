@@ -44,21 +44,6 @@ public class SqlLexer {
     /** Token type. */
     private SqlLexerTokenType tokenTyp;
 
-    /** Marked flag. */
-    private boolean marked;
-
-    /** Marked current position. */
-    private int markPos;
-
-    /** Marked current token start. */
-    private int markTokenPos;
-
-    /** Marked current token. */
-    private String markToken;
-
-    /** Marked token type. */
-    private SqlLexerTokenType markTokenTyp;
-
     static {
         SIMPLE_TOKEN_TYPS.put('.', SqlLexerTokenType.DOT);
         SIMPLE_TOKEN_TYPS.put(',', SqlLexerTokenType.COMMA);
@@ -85,34 +70,17 @@ public class SqlLexer {
     }
 
     /**
-     * Mark current position.
+     * Copying constructor.
+     *
+     * @param other Other instance.
      */
-    public void mark() {
-        markPos = pos;
-        markTokenTyp = tokenTyp;
-        markToken = token;
-        markTokenPos = tokenPos;
-
-        marked = true;
-    }
-
-    /**
-     * Rollback to previously marked position.
-     */
-    public void rollbackToMark() {
-        if (marked) {
-            pos = markPos;
-            tokenTyp = markTokenTyp;
-            token = markToken;
-            tokenPos = markTokenPos;
-
-            markPos = 0;
-            markTokenTyp = null;
-            markToken = null;
-            markTokenPos = 0;
-        }
-        else
-            throw new IllegalStateException("Mark was not called previously.");
+    private SqlLexer(SqlLexer other) {
+        this.input = other.input;
+        this.inputChars = other.inputChars;
+        this.pos = other.pos;
+        this.tokenPos = other.tokenPos;
+        this.token = other.token;
+        this.tokenTyp = other.tokenTyp;
     }
 
     /**
@@ -211,15 +179,12 @@ public class SqlLexer {
     }
 
     /**
-     * Shift lexer and get the next token type or {@code null} if none available.
+     * Fork lexer.
      *
-     * @return Next token type or {@code null}.
+     * @return New lexer.
      */
-    public SqlLexerTokenType shiftAndGet() {
-        if (shift())
-            return tokenTyp;
-        else
-            return null;
+    public SqlLexer fork() {
+        return new SqlLexer(this);
     }
 
     /**
