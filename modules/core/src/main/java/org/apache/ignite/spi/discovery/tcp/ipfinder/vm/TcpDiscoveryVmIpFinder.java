@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-　
+
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
-　
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,9 +33,9 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
-　
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_DISCOVERY_ADDRESSES;
-　
+
 /**
  * IP Finder which works only with pre-configured list of IP addresses specified
  * via {@link #setAddresses(Collection)} method. By default, this IP finder is
@@ -50,31 +50,31 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_DISCOVERY_ADDR
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
  */
-public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
-　
+
     /** Addresses. */
     @GridToStringInclude
     private Collection<InetSocketAddress> addrs;
-　
-    /** True if there are no wrong ip address or at least one. */
-    private boolean firstWrongAddr = true;
-　
+
+    /** True if there are no wrong ip addresses. */
+    private boolean allAddrCorrect = true;
+
     /**
      * Initialize from system property.
      */
     {
         String ips = IgniteSystemProperties.getString(IGNITE_TCP_DISCOVERY_ADDRESSES);
-　
+
         if (!F.isEmpty(ips)) {
             Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();
-　
+
             for (String s : ips.split(",")) {
                 if (!F.isEmpty(s)) {
                     s = s.trim();
-　
+
                     if (!F.isEmpty(s)) {
                         try {
                             addrsList.addAll(address(s));
@@ -85,20 +85,20 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                     }
                 }
             }
-　
+
             addrs = addrsList;
         }
         else
             addrs = new LinkedHashSet<>();
     }
-　
+
     /**
      * Constructs new IP finder.
      */
     public TcpDiscoveryVmIpFinder() {
         // No-op.
     }
-　
+
     /**
      * Constructs new IP finder.
      *
@@ -108,7 +108,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     public TcpDiscoveryVmIpFinder(boolean shared) {
         setShared(shared);
     }
-　
+
     /**
      * Parses provided values and initializes the internal collection of addresses.
      * <p>
@@ -137,19 +137,19 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     @IgniteSpiConfiguration(optional = true)
     public synchronized TcpDiscoveryVmIpFinder setAddresses(Collection<String> addrs) throws IgniteSpiException {
-　
+
         if (F.isEmpty(addrs))
             return this;
-　
+
         Collection<InetSocketAddress> newAddrs = new LinkedHashSet<>();
-　
+
         for (String ipStr : addrs)
             newAddrs.addAll(address(ipStr));
         this.addrs = newAddrs;
-　
+
         return this;
     }
-　
+
     /**
      * Creates address from string.
      *
@@ -159,19 +159,19 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @throws IgniteSpiException If failed.
      */
     private Collection<InetSocketAddress> address(String ipStr) throws IgniteSpiException {
-　
+
         ipStr = ipStr.trim();
-　
+
         String errMsg = "Failed to parse provided address: " + ipStr;
-　
+
         int colonCnt = ipStr.length() - ipStr.replace(":", "").length();
-　
+
         if (colonCnt > 1) {
             // IPv6 address (literal IPv6 addresses are enclosed in square brackets, for example
             // https://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443).
             if (ipStr.startsWith("[")) {
                 ipStr = ipStr.substring(1);
-　
+
                 if (ipStr.contains("]:"))
                     return addresses(ipStr, "\\]\\:", errMsg);
                 else if (ipStr.endsWith("]"))
@@ -187,16 +187,15 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
             else if (ipStr.indexOf(':') >= 0)
                 return addresses(ipStr, "\\:", errMsg);
         }
-　
+
         InetSocketAddress inetSockAddr = new InetSocketAddress(ipStr, 0);
-        if (U.isWindows() && inetSockAddr.isUnresolved() && firstWrongAddr) {
-            logWrongAddress(inetSockAddr);
-            firstWrongAddr = false;
-        }
+
+        logFirstInvalidAddress(inetSockAddr);
+
         // Provided address does not contain port (will use default one).
         return Collections.singleton(inetSockAddr);
     }
-　
+
     /**
      * Creates address from string with port information.
      *
@@ -208,31 +207,28 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     private Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
         throws IgniteSpiException {
-　
+
         String[] tokens = ipStr.split(regexDelim);
-　
+
         if (tokens.length == 2) {
             String addrStr = tokens[0];
             String portStr = tokens[1];
-　
+
             if (portStr.contains("..")) {
                 try {
                     int port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
                     int port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
-　
+
                     if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
                         throw new IgniteSpiException(errMsg);
-　
+
                     Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
-　
-                    // Upper bound included.
+
                     for (int i = port1; i <= port2; i++) {
                         InetSocketAddress inetSockAddr = new InetSocketAddress(addrStr, i);
                         res.add(inetSockAddr);
-                        if (U.isWindows() && inetSockAddr.isUnresolved() && firstWrongAddr) {
-                            logWrongAddress(inetSockAddr);
-                            firstWrongAddr = false;
-                        }
+
+                        logFirstInvalidAddress(inetSockAddr);
                     }
                     return res;
                 }
@@ -244,10 +240,9 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                 try {
                     int port = Integer.parseInt(portStr);
                     InetSocketAddress inetSockAddr = new InetSocketAddress(addrStr, port);
-                    if (U.isWindows() && inetSockAddr.isUnresolved() && firstWrongAddr) {
-                        logWrongAddress(inetSockAddr);
-                        firstWrongAddr = false;
-                    }
+
+                    logFirstInvalidAddress(inetSockAddr);
+
                     return Collections.singleton(inetSockAddr);
                 }
                 catch (IllegalArgumentException e) {
@@ -258,45 +253,52 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         else
             throw new IgniteSpiException(errMsg);
     }
-　
-    /** {@inheritDoc} */
-    public void logWrongAddress(InetSocketAddress wrongInetSockAddr) {
-        log.warning(String.format("Wrong ip address in Windows OS [%s]." +
-            " Connection can take a lot of time. If there are any other addresses, " +
-            "check your address list in ipFinder.", wrongInetSockAddr.getHostName() + ":"
-            + wrongInetSockAddr.getPort()));
+
+    /**
+     * Logging information about wrong socket address if it's necessary.
+     *
+     * @param wrongInetSockAddr InetSocketAddress that can be wrong..
+     */
+    private void logFirstInvalidAddress(InetSocketAddress wrongInetSockAddr) {
+        if (U.isWindows() && wrongInetSockAddr.isUnresolved() && allAddrCorrect) {
+            log.warning(String.format("Wrong ip address in Windows OS [%s]." +
+                    " Connection can take a lot of time. If there are any other addresses, " +
+                    "check your address list in ipFinder.", wrongInetSockAddr.getHostName() + ":"
+                    + wrongInetSockAddr.getPort()));
+            allAddrCorrect = false;
+        }
     }
-　
+
     /** {@inheritDoc} */
     @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
         return Collections.unmodifiableCollection(addrs);
     }
-　
+
     /** {@inheritDoc} */
     @Override public synchronized void registerAddresses(Collection<InetSocketAddress> addrs) {
         assert !F.isEmpty(addrs);
-　
+
         this.addrs = new LinkedHashSet<>(this.addrs);
-　
+
         this.addrs.addAll(addrs);
     }
-　
+
     /** {@inheritDoc} */
     @Override public synchronized void unregisterAddresses(Collection<InetSocketAddress> addrs) {
         assert !F.isEmpty(addrs);
-　
+
         this.addrs = new LinkedHashSet<>(this.addrs);
-　
+
         this.addrs.removeAll(addrs);
     }
-　
+
     /** {@inheritDoc} */
     @Override public TcpDiscoveryVmIpFinder setShared(boolean shared) {
         super.setShared(shared);
-　
+
         return this;
     }
-　
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryVmIpFinder.class, this, "super", super.toString());
