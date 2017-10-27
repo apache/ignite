@@ -157,6 +157,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
 
+    /** Maximum size for exchange history. Default value is {@code 1000}.*/
+    public static final String IGNITE_EXCHANGE_HISTORY_SIZE = "IGNITE_EXCHANGE_HISTORY_SIZE";
+
     /**
      * Name of the system property defining name of command line program.
      */

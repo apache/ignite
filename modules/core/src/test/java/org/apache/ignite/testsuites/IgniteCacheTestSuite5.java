@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
@@ -74,6 +75,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
 
         suite.addTestSuite(ExternalizableKeyValueTest.class);
+
+        suite.addTestSuite(GridCachePartitionExchangeManagerHistSizeTest.class);
 
         return suite;
     }
