@@ -492,6 +492,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onNodeStop(IgniteCheckedException e) {
+        super.onDone(tx, e);
+    }
+
     /**
      *
      */

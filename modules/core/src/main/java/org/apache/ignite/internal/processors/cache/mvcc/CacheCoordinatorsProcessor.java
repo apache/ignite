@@ -227,6 +227,8 @@ public class CacheCoordinatorsProcessor extends GridProcessorAdapter {
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
         discoData = (CacheCoordinatorsDiscoveryData)data.commonData();
 
+        log.info("Received mvcc coordinator on node join: " + discoData.coordinator());
+
         assert discoData != null;
     }
 

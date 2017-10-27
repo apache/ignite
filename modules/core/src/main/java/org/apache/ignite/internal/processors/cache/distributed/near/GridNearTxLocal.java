@@ -3274,6 +3274,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         commitNearTxLocalAsync().get();
     }
 
+    /**
+     * @return Transaction commit future.
+     */
     private NearTxFinishFuture commitFuture() {
         GridNearTxFinishFuture fut = new GridNearTxFinishFuture<>(cctx, this, true);
 
@@ -3330,6 +3333,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     if (!(e instanceof NodeStoppingException))
                         fut0.finish(false, true);
+                    else
+                        fut0.onNodeStop(e);
                 }
             }
         });

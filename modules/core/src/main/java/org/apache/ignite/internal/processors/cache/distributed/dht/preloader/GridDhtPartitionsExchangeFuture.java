@@ -577,6 +577,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (exchLog.isInfoEnabled()) {
                 exchLog.info("Started exchange init [topVer=" + topVer +
                     ", mvccCrd=" + mvccCrd +
+                    ", mvccCrdChange=" + mvccCrdChange +
                     ", crd=" + crdNode +
                     ", evt=" + IgniteUtils.gridEventName(firstDiscoEvt.type()) +
                     ", evtNode=" + firstDiscoEvt.eventNode().id() +
@@ -2263,7 +2264,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (exchCtx.mergeExchanges() && !exchCtx.newMvccCoordinator()) {
+            if (exchCtx.mergeExchanges()) {
                 if (log.isInfoEnabled())
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
@@ -2338,7 +2339,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (exchCtx.newMvccCoordinator())
                     exchCtx.addActiveQueries(e.getKey(), msg.activeQueries());
                 else
-                    assert msg.activeQueries() == null;
+                    assert msg.activeQueries() == null : msg;
 
                 // Apply update counters after all single messages are received.
                 for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {

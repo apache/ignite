@@ -110,6 +110,11 @@ public class GridNearTxFinishAndAckFuture extends GridFutureAdapter<IgniteIntern
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onNodeStop(IgniteCheckedException e) {
+        super.onDone(finishFut.tx(), e);
+    }
+
     /**
      * @param fut Future.
      */

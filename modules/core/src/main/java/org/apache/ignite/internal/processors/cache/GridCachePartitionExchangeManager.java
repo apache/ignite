@@ -1999,12 +1999,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         break;
                     }
+
                     if (!curFut.context().supportsMergeExchanges(node)) {
                         if (log.isInfoEnabled())
                             log.info("Stop merge, node does not support merge: " + node);
 
                         break;
                     }
+
                     if (evt.type() == EVT_NODE_JOINED && cctx.cache().hasCachesReceivedFromJoin(node)) {
                         if (log.isInfoEnabled())
                             log.info("Stop merge, received caches from node: " + node);
