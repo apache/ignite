@@ -174,10 +174,7 @@ public class SqlParser {
      * @param cmd Command.
      */
     private void processIndexColumnList(SqlCreateIndexCommand cmd) {
-        if (!lex.shift())
-            throw errorUnexpectedToken(lex, "(");
-
-        if (lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT )
+        if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
             throw errorUnexpectedToken(lex, "(");
 
         boolean lastCol = false;
