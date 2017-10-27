@@ -24,6 +24,8 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
+import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 
 /**
@@ -103,10 +105,10 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processCreate() {
-        lex.shift();
-
-        if (matchesKeyword(INDEX))
-            return processCreateIndex();
+        if (lex.shift()) {
+            if (matchesKeyword(INDEX))
+                return processCreateIndex();
+        }
 
         throw unexpectedToken(INDEX);
     }
@@ -128,10 +130,10 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processDrop() {
-        lex.shift();
-
-        if (matchesKeyword(INDEX))
-            return processDropIndex();
+        if (lex.shift()) {
+            if (matchesKeyword(INDEX))
+                return processDropIndex();
+        }
 
         throw unexpectedToken(INDEX);
     }
@@ -142,24 +144,50 @@ public class SqlParser {
      * @return Command.
      */
     private SqlDropIndexCommand processDropIndex() {
-        // TODO
+        if (lex.shift()) {
+            SqlDropIndexCommand res = new SqlDropIndexCommand();
 
-        return null;
+            if (matchesKeyword(IF)) {
+                skipIfMatchesKeyword(EXISTS);
+
+                res.ifExists(true);
+            }
+
+            // TODO: Read qualified index name!
+            if (lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED)
+                res.indexName(lex.token());
+            else
+                throw unexpectedToken("[index name]");
+        }
+
+        throw unexpectedToken("[index name]", IF);
+    }
+
+    /**
+     * Skip token if it matches expected keyword.
+     *
+     * @param expKeyword Expected keyword.
+     */
+    private void skipIfMatchesKeyword(String expKeyword) {
+        if (lex.shift() && matchesKeyword(expKeyword))
+            return;
+
+        throw unexpectedToken(expKeyword);
     }
 
     /**
      * Check if current lexer token matches expected.
      *
-     * @param expToken Expected token.
+     * @param expKeyword Expected keyword.
      * @return {@code True} if matches.
      */
-    private boolean matchesKeyword(String expToken) {
+    private boolean matchesKeyword(String expKeyword) {
         if (lex.tokenType() != SqlLexerTokenType.DEFAULT)
             return false;
 
         String token = lex.token();
 
-        return expToken.equals(token);
+        return expKeyword.equals(token);
     }
 
     /**
@@ -186,7 +214,10 @@ public class SqlParser {
      * @return Exception.
      */
     private SqlParseException unexpectedToken(String... expTokens) {
-        StringBuilder msg = new StringBuilder("Unexpected token: " + lex.token());
+        String token = lex.token();
+
+        StringBuilder msg = new StringBuilder(
+            token == null ? "Unexpected end of command" : "Unexpected token: " + token);
 
         if (!F.isEmpty(expTokens)) {
             msg.append(" (expected: ");
