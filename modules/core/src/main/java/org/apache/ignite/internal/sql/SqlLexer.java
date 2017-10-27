@@ -36,13 +36,28 @@ public class SqlLexer {
     private int pos;
 
     /** Current token start. */
-    private int tokenStartPos;
+    private int tokenPos;
 
     /** Current token. */
     private String token;
 
     /** Token type. */
     private SqlLexerTokenType tokenTyp;
+
+    /** Marked flag. */
+    private boolean marked;
+
+    /** Marked current position. */
+    private int markPos;
+
+    /** Marked current token start. */
+    private int markTokenPos;
+
+    /** Marked current token. */
+    private String markToken;
+
+    /** Marked token type. */
+    private SqlLexerTokenType markTokenTyp;
 
     static {
         SIMPLE_TOKEN_TYPS.put('.', SqlLexerTokenType.DOT);
@@ -67,6 +82,37 @@ public class SqlLexer {
 
         for (int i = 0; i < input.length(); i++)
             inputChars[i] = input.charAt(i);
+    }
+
+    /**
+     * Mark current position.
+     */
+    public void mark() {
+        markPos = pos;
+        markTokenTyp = tokenTyp;
+        markToken = token;
+        markTokenPos = tokenPos;
+
+        marked = true;
+    }
+
+    /**
+     * Rollback to previously marked position.
+     */
+    public void rollbackToMark() {
+        if (marked) {
+            pos = markPos;
+            tokenTyp = markTokenTyp;
+            token = markToken;
+            tokenPos = markTokenPos;
+
+            markPos = 0;
+            markTokenTyp = null;
+            markToken = null;
+            markTokenPos = 0;
+        }
+        else
+            throw new IllegalStateException("Mark was not called previously.");
     }
 
     /**
@@ -154,7 +200,7 @@ public class SqlLexer {
 
             if (tokenTyp0 != null) {
                 token = token0;
-                tokenStartPos = tokenStartPos0;
+                tokenPos = tokenStartPos0;
                 tokenTyp = tokenTyp0;
 
                 return true;
@@ -200,8 +246,8 @@ public class SqlLexer {
     /**
      * @return Current token start position.
      */
-    public int tokenStartPosition() {
-        return tokenStartPos;
+    public int tokenPosition() {
+        return tokenPos;
     }
 
     /**

@@ -145,22 +145,49 @@ public class SqlParser {
      */
     private SqlDropIndexCommand processDropIndex() {
         if (lex.shift()) {
-            SqlDropIndexCommand res = new SqlDropIndexCommand();
+            SqlDropIndexCommand cmd = new SqlDropIndexCommand();
 
             if (matchesKeyword(IF)) {
                 skipIfMatchesKeyword(EXISTS);
 
-                res.ifExists(true);
+                cmd.ifExists(true);
             }
 
-            // TODO: Read qualified index name!
-            if (lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED)
-                res.indexName(lex.token());
-            else
-                throw unexpectedToken("[index name]");
+            if (isIdentifier()) {
+                String schemaName = null;
+                String idxName = lex.token();
+
+                lex.mark();
+
+                if (lex.shift()) {
+                    if (lex.tokenType() == SqlLexerTokenType.DOT) {
+                        if (!lex.shift() || !isIdentifier())
+                            throw unexpectedToken("[index name]");
+                        else {
+                            schemaName = idxName;
+                            idxName = lex.token();
+                        }
+
+                    }
+                    else
+                        lex.rollbackToMark();
+                }
+
+                cmd.schemaName(schemaName);
+                cmd.indexName(idxName);
+            }
+
+            return cmd;
         }
 
         throw unexpectedToken("[index name]", IF);
+    }
+
+    /**
+     * @return {@code True} if we are standing on possible identifier.
+     */
+    private boolean isIdentifier() {
+        return lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED;
     }
 
     /**
@@ -204,7 +231,7 @@ public class SqlParser {
      * @return Exception.
      */
     private SqlParseException exception(String msg) {
-        return new SqlParseException(lex.input(), lex.tokenStartPosition(), msg);
+        return new SqlParseException(lex.input(), lex.tokenPosition(), msg);
     }
 
     /**
