@@ -21,6 +21,9 @@ package org.apache.ignite.internal.sql;
  * Plain immutable parser token.
  */
 public class SqlParserTokenImpl implements SqlParserToken {
+    /** SQL. */
+    private final String sql;
+
     /** Token. */
     private final String token;
 
@@ -33,14 +36,21 @@ public class SqlParserTokenImpl implements SqlParserToken {
     /**
      * Constructor.
      *
+     * @param sql Original SQL.
      * @param token Token.
      * @param tokenPos Token position.
      * @param tokenTyp Token type.
      */
-    public SqlParserTokenImpl(String token, int tokenPos, SqlLexerTokenType tokenTyp) {
+    public SqlParserTokenImpl(String sql, String token, int tokenPos, SqlLexerTokenType tokenTyp) {
+        this.sql = sql;
         this.token = token;
         this.tokenPos = tokenPos;
         this.tokenTyp = tokenTyp;
+    }
+
+    /** {@inheritDoc} */
+    public String sql() {
+        return sql;
     }
 
     /** {@inheritDoc} */

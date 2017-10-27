@@ -22,6 +22,11 @@ package org.apache.ignite.internal.sql;
  */
 public interface SqlParserToken {
     /**
+     * @return Original SQL.
+     */
+    public String sql();
+
+    /**
      * @return Current token.
      */
     public String token();

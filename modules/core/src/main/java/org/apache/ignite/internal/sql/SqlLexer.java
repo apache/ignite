@@ -27,7 +27,7 @@ public class SqlLexer implements SqlParserToken {
     private static final HashMap<Character, SqlLexerTokenType> SIMPLE_TOKEN_TYPS = new HashMap<>();
 
     /** Original input. */
-    private final String input;
+    private final String sql;
 
     /** Input characters. */
     private final char[] inputChars;
@@ -55,32 +55,18 @@ public class SqlLexer implements SqlParserToken {
     /**
      * Constructor.
      *
-     * @param input Input.
+     * @param sql Input.
      */
-    public SqlLexer(String input) {
-        assert input != null;
+    public SqlLexer(String sql) {
+        assert sql != null;
 
-        this.input = input;
+        this.sql = sql;
 
         // Additional slot for look-ahead convenience.
-        inputChars = new char[input.length() + 1];
+        inputChars = new char[sql.length() + 1];
 
-        for (int i = 0; i < input.length(); i++)
-            inputChars[i] = input.charAt(i);
-    }
-
-    /**
-     * Copying constructor.
-     *
-     * @param other Other instance.
-     */
-    private SqlLexer(SqlLexer other) {
-        this.input = other.input;
-        this.inputChars = other.inputChars;
-        this.pos = other.pos;
-        this.tokenPos = other.tokenPos;
-        this.token = other.token;
-        this.tokenTyp = other.tokenTyp;
+        for (int i = 0; i < sql.length(); i++)
+            inputChars[i] = sql.charAt(i);
     }
 
     /**
@@ -96,7 +82,7 @@ public class SqlLexer implements SqlParserToken {
 
         try {
             if (shift())
-                return new SqlParserTokenImpl(token, tokenPos, tokenTyp);
+                return new SqlParserTokenImpl(sql, token, tokenPos, tokenTyp);
 
             return null;
         }
@@ -148,7 +134,7 @@ public class SqlLexer implements SqlParserToken {
                 case '\"':
                     while (true) {
                         if (eod()) {
-                            throw new SqlParseException(input, tokenStartPos0, "Unclosed quoted identifier.");
+                            throw new SqlParseException(sql, tokenStartPos0, "Unclosed quoted identifier.");
                         }
 
                         char c1 = inputChars[pos];
@@ -159,7 +145,7 @@ public class SqlLexer implements SqlParserToken {
                             break;
                     }
 
-                    token0 = input.substring(tokenStartPos0 + 1, pos - 1);
+                    token0 = sql.substring(tokenStartPos0 + 1, pos - 1);
                     tokenTyp0 = SqlLexerTokenType.QUOTED;
 
                     break;
@@ -187,7 +173,7 @@ public class SqlLexer implements SqlParserToken {
                         pos++;
                     }
 
-                    token0 = input.substring(tokenStartPos0, pos).toUpperCase();
+                    token0 = sql.substring(tokenStartPos0, pos).toUpperCase();
                     tokenTyp0 = SqlLexerTokenType.DEFAULT;
             }
 
@@ -203,13 +189,9 @@ public class SqlLexer implements SqlParserToken {
         return false;
     }
 
-    /**
-     * Fork lexer.
-     *
-     * @return New lexer.
-     */
-    public SqlLexer fork() {
-        return new SqlLexer(this);
+    /** {@inheritDoc} */
+    public String sql() {
+        return sql;
     }
 
     /** {@inheritDoc} */
@@ -230,13 +212,6 @@ public class SqlLexer implements SqlParserToken {
     /** {@inheritDoc} */
     public SqlLexerTokenType tokenType() {
         return tokenTyp;
-    }
-
-    /**
-     * @return Input.
-     */
-    public String input() {
-        return input;
     }
 
     /**
