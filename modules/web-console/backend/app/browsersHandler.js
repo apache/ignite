@@ -303,7 +303,7 @@ module.exports.factory = (_, socketio, configure, errors, mongo) => {
                         this.agentListeners(sock);
                         this.nodeListeners(sock);
 
-                        this.agentStats(sock.request.user.token, [sock]);
+                        this.agentStats(sock.request.user, [sock]);
                         this.emitNotification(sock);
                     });
                 });

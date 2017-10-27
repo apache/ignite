@@ -48,10 +48,10 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         get(account) {
-            let sockets = this.sockets.get(account._id);
+            let sockets = this.sockets.get(account._id.toString());
 
             if (_.isEmpty(sockets))
-                this.sockets.set(account._id, sockets = []);
+                this.sockets.set(account._id.toString(), sockets = []);
 
             return sockets;
         }
@@ -219,10 +219,10 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             });
 
             sock.on('disconnect', () => {
-                _.forEach(accounts, ({token}) => {
-                    _.pull(this._agentSockets.get(token), agentSocket);
+                _.forEach(accounts, (account) => {
+                    _.pull(this._agentSockets.get(account), agentSocket);
 
-                    this._browsersHnd.agentStats(token);
+                    this._browsersHnd.agentStats(account);
                 });
             });
 
@@ -232,8 +232,8 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                 if (_.isNil(agentSocket.cluster)) {
                     agentSocket.cluster = cluster;
 
-                    _.forEach(accounts, ({token}) => {
-                        this._browsersHnd.agentStats(token);
+                    _.forEach(accounts, (account) => {
+                        this._browsersHnd.agentStats(account);
                     });
                 }
                 else
@@ -243,8 +243,8 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             sock.on('cluster:disconnected', () => {
                 agentSocket.cluster = null;
 
-                _.forEach(accounts, ({token}) => {
-                    this._browsersHnd.agentStats(token);
+                _.forEach(accounts, (account) => {
+                    this._browsersHnd.agentStats(account);
                 });
             });
 
