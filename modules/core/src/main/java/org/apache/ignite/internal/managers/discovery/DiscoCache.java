@@ -71,10 +71,10 @@ public class DiscoCache {
     private final Map<Integer, List<ClusterNode>> cacheGrpAffNodes;
 
     /** Node map. */
-    private final Map<UUID, ClusterNode> nodeMap;
+    final Map<UUID, ClusterNode> nodeMap;
 
     /** Alive nodes. */
-    private final Set<UUID> alives = new GridConcurrentHashSet<>();
+    final Set<UUID> alives = new GridConcurrentHashSet<>();
 
     /** */
     private final IgniteProductVersion minNodeVer;
@@ -98,6 +98,7 @@ public class DiscoCache {
      * @param cacheGrpAffNodes Affinity nodes by cache group ID.
      * @param nodeMap Node map.
      * @param alives Alive nodes.
+     * @param minNodeVer Minimum node version.
      */
     DiscoCache(
         AffinityTopologyVersion topVer,
@@ -112,7 +113,8 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<UUID> alives) {
+        Set<UUID> alives,
+        IgniteProductVersion minNodeVer) {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
@@ -126,19 +128,7 @@ public class DiscoCache {
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
-
-        IgniteProductVersion minVer = null;
-
-        for (int i = 0; i < allNodes.size(); i++) {
-            ClusterNode node = allNodes.get(i);
-
-            if (minVer == null)
-                minVer = node.version();
-            else if (node.version().compareTo(minVer) < 0)
-                minVer = node.version();
-        }
-
-        minNodeVer = minVer;
+        this.minNodeVer = minNodeVer;
     }
 
     /**
@@ -336,6 +326,29 @@ public class DiscoCache {
      */
     private List<ClusterNode> emptyIfNull(List<ClusterNode> nodes) {
         return nodes == null ? Collections.<ClusterNode>emptyList() : nodes;
+    }
+
+    /**
+     * @param ver Topology version.
+     * @param state Not {@code null} state if need override state, otherwise current state is used.
+     * @return Copy of discovery cache with new version.
+     */
+    public DiscoCache copy(AffinityTopologyVersion ver, @Nullable DiscoveryDataClusterState state) {
+        return new DiscoCache(
+            ver,
+            state == null ? this.state : state,
+            loc,
+            mvccCrd,
+            rmtNodes,
+            allNodes,
+            srvNodes,
+            daemonNodes,
+            rmtNodesWithCaches,
+            allCacheNodes,
+            cacheGrpAffNodes,
+            nodeMap,
+            alives,
+            minNodeVer);
     }
 
     /** {@inheritDoc} */
