@@ -158,8 +158,22 @@ public class SqlParser {
         cmd.schemaName(tblQName.schemaName());
         cmd.tableName(tblQName.name());
 
-        // Opening parenthesis.
-        if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT )
+        // Process column list.
+        if (!lex.shift())
+            throw errorUnexpectedToken(lex, "(");
+
+        processIndexColumnList(cmd);
+
+        return cmd;
+    }
+
+    /**
+     * Process index column list.
+     *
+     * @param cmd Command.
+     */
+    private void processIndexColumnList(SqlCreateIndexCommand cmd) {
+        if (lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT )
             throw errorUnexpectedToken(lex, "(");
 
         boolean lastCol = false;
@@ -188,8 +202,6 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex, ",", ")");
             }
         }
-
-        return cmd;
     }
 
     /**
