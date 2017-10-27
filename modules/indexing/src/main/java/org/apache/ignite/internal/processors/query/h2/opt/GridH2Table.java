@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
@@ -65,6 +66,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * H2 Table implementation.
  */
 public class GridH2Table extends TableBase {
+    /** Insert hack flag. */
+    private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -984,5 +988,61 @@ public class GridH2Table extends TableBase {
         finally {
             unlock(true);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Column[] getColumns() {
+        Boolean insertHack = INSERT_HACK.get();
+
+        if (insertHack != null && insertHack) {
+            StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+
+            StackTraceElement elem = elems[2];
+
+            if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
+                Column[] columns0 = new Column[columns.length - 3];
+
+                System.arraycopy(columns, 3, columns0, 0, columns0.length);
+
+                return columns0;
+            }
+        }
+
+        return columns;
+    }
+
+    /**
+     * Set insert hack flag.
+     *
+     * @param val Value.
+     */
+    public static void insertHack(boolean val) {
+        INSERT_HACK.set(val);
+    }
+
+    /**
+     * Check whether insert hack is required. This is true in case statement contains "INSERT INTO ... VALUES".
+     *
+     * @param sql SQL statement.
+     * @return {@code True} if target combination is found.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    public static boolean insertHackRequired(String sql) {
+        if (F.isEmpty(sql))
+            return false;
+
+        sql = sql.toLowerCase();
+
+        int idxInsert = sql.indexOf("insert");
+
+        if (idxInsert < 0)
+            return false;
+
+        int idxInto = sql.indexOf("into", idxInsert);
+
+        if (idxInto < 0)
+            return false;
+
+        return true;
     }
 }
