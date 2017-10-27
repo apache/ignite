@@ -12,6 +12,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import javax.cache.Cache;
@@ -31,8 +32,14 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     private long seed;
     private int kMeansMaxIterations;
 
-    public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight, double maxCentersDelta) {
+    public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight, double maxCentersDelta,
+                                           Long seed, int initializationSteps, int kMeansMaxIterations) {
         super(measure, exponentialWeight, maxCentersDelta);
+
+        this.seed = seed != null ? seed : new Random().nextLong();
+        this.initializationSteps = initializationSteps;
+        this.kMeansMaxIterations = kMeansMaxIterations;
+        random = new Random(this.seed);
     }
 
     private ConcurrentHashMap<Integer, Double> getNewCosts(String cacheName, IgniteUuid uuid,
@@ -68,9 +75,9 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     Integer index = vectorWithIndex.getKey().index();
                     Vector vector = VectorUtils.fromMap(vectorWithIndex.getValue(), false);
 
-                    double probability = costs.get(index) * 2.0 * k / costsSum;
+                    double probability = (costs.get(index) * 2.0 * k) / costsSum;
 
-                    if (new Random(seed ^ index).nextDouble() < probability) {
+                    if (new Random(seed * (index + 1)).nextDouble() < probability) {
                         centers.add(vector);
                     }
 
@@ -89,9 +96,10 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
             return new ConcurrentHashMap<>();
         }
 
-        return CacheUtils.distributedFold(cacheName, (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
-                ConcurrentHashMap<Integer, Integer>,
-                ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, counts) -> {
+        return CacheUtils.distributedFold(cacheName,
+                (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
+                                  ConcurrentHashMap<Integer, Integer>,
+                                  ConcurrentHashMap<Integer, Integer>>)(vectorWithIndex, counts) -> {
                     Vector vector = VectorUtils.fromMap(vectorWithIndex.getValue(), false);
 
                     int nearest = 0;
@@ -134,15 +142,16 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         return clusterer.cluster(centersMatrix, k).centers();
     }
 
-    public void initializeCenters(SparseDistributedMatrix points, int k) {
+    public Vector[] initializeCenters(SparseDistributedMatrix points, int k) {
         int pointsNumber = points.rowSize();
 
-        Vector firstCenter = points.viewRow(random.nextInt());
+        Vector firstCenter = points.viewRow(random.nextInt(pointsNumber));
 
         List<Vector> centers = new ArrayList<>();
         List<Vector> newCenters = new ArrayList<>();
 
         centers.add(firstCenter);
+        newCenters.add(firstCenter);
 
         ConcurrentHashMap<Integer, Double> costs = new ConcurrentHashMap<>();
 
@@ -164,10 +173,134 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
             step++;
         }
+
+        return chooseKCenters(cacheName, uuid, centers, k);
+    }
+
+    public MembershipsAndSums calculateMembership(SparseDistributedMatrix points, Vector[] centers) {
+        String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
+        IgniteUuid uuid = points.getUUID();
+        double fuzzyMembershipCoefficient = 2 / (exponentialWeight - 1);
+
+        return CacheUtils.distributedFold(cacheName,
+                (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
+                        MembershipsAndSums,
+                        MembershipsAndSums>)(vectorWithIndex, membershipsAndSums) -> {
+                    Integer index = vectorWithIndex.getKey().index();
+                    Vector point = VectorUtils.fromMap(vectorWithIndex.getValue(), false);
+                    Vector distances = new DenseLocalOnHeapVector(centers.length);
+                    Vector pointMemberships = new DenseLocalOnHeapVector(centers.length);
+
+                    for (int i = 0; i < centers.length; i++) {
+                        distances.setX(i, distance(centers[i], point));
+                    }
+
+                    for (int i = 0; i < centers.length; i++) {
+                        double invertedFuzzyWeight = 0.0;
+                        for (int j = 0; j < centers.length; j++) {
+                            double value = Math.pow(distances.getX(i) / distances.getX(j), fuzzyMembershipCoefficient);
+                            if (Double.isNaN(value)) {
+                                value = 1.0;
+                            }
+                            invertedFuzzyWeight += value;
+                        }
+                        double membership = Math.pow(1.0 / invertedFuzzyWeight, exponentialWeight);
+                        pointMemberships.setX(i, membership);
+                    }
+
+                    membershipsAndSums.memberships.put(index, pointMemberships);
+                    membershipsAndSums.membershipSums = membershipsAndSums.membershipSums.plus(pointMemberships);
+
+                    return membershipsAndSums;
+                },
+                key -> key.matrixId().equals(uuid),
+                (mem1, mem2) -> {
+                    mem1.merge(mem2);
+                    return mem1;
+                },
+                new MembershipsAndSums(centers.length));
+    }
+
+    public Vector[] calculateNewCenters(SparseDistributedMatrix points, MembershipsAndSums membershipsAndSums, int k) {
+        String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
+        IgniteUuid uuid = points.getUUID();
+
+        DenseLocalOnHeapVector[] centerSumsArray = new DenseLocalOnHeapVector[k];
+        for (int i = 0; i < k; i++) {
+            centerSumsArray[i] = new DenseLocalOnHeapVector(points.columnSize());
+        }
+
+        Vector[] centers = CacheUtils.distributedFold(cacheName,
+                (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
+                                  Vector[],
+                                  Vector[]>)(vectorWithIndex, centerSums) -> {
+                    Integer index = vectorWithIndex.getKey().index();
+                    Vector point = MatrixUtil.localCopyOf(VectorUtils.fromMap(vectorWithIndex.getValue(), false));
+                    Vector pointMemberships = membershipsAndSums.memberships.get(index);
+
+                    for (int i = 0; i < k; i++) {
+                        Vector weightedPoint = point.times(pointMemberships.getX(i));
+                        centerSums[i] = centerSums[i].plus(weightedPoint);
+                    }
+
+                    return centerSums;
+                },
+                key -> key.matrixId().equals(uuid),
+                (sums1, sums2) -> {
+                    for (int i = 0; i < k; i++) {
+                        sums1[i] = sums1[i].plus(sums2[i]);
+                    }
+                    return sums1;
+                },
+                centerSumsArray);
+
+        for (int i = 0; i < k; i++) {
+            centers[i] = centers[i].divide(membershipsAndSums.membershipSums.getX(i));
+        }
+
+        return centers;
+    }
+
+    private boolean isFinished(Vector[] centers, Vector[] newCenters) {
+        int numCenters = centers.length;
+
+        for (int i = 0; i < numCenters; i++) {
+            if (distance(centers[i], newCenters[i]) > maxCentersDelta) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
     public FuzzyCMeansModel cluster(SparseDistributedMatrix points, int k) {
-        return null;
+        Vector[] centers = initializeCenters(points, k);
+
+        boolean finished = false;
+        while (!finished) {
+            MembershipsAndSums newMembershipsAndSums = calculateMembership(points, centers);
+            Vector[] newCenters = calculateNewCenters(points, newMembershipsAndSums, k);
+
+            finished = isFinished(centers, newCenters);
+
+            centers = newCenters;
+        }
+
+        return new FuzzyCMeansModel(centers, measure);
+    }
+
+    private class MembershipsAndSums {
+        public ConcurrentHashMap<Integer, Vector> memberships = new ConcurrentHashMap<>();
+        public Vector membershipSums;
+
+        public MembershipsAndSums(int k) {
+            membershipSums = new DenseLocalOnHeapVector(k);
+        }
+
+        public void merge(MembershipsAndSums another) {
+            memberships.putAll(another.memberships);
+            membershipSums = membershipSums.plus(another.membershipSums);
+        }
     }
 }

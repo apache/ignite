@@ -12,7 +12,7 @@ import java.util.Comparator;
 
 import static org.junit.Assert.*;
 
-public class FuzzyCMeansClustererTest {
+public class FuzzyCMeansLocalClustererTest {
     @Test
     public void equalWeightsOneDimension() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
