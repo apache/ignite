@@ -21,4 +21,15 @@ package org.apache.ignite.internal.sql;
  * SQL parser.
  */
 public class SqlParser {
+    /** Original SQL. */
+    private final String sql;
+
+    /**
+     * Constructor.
+     *
+     * @param sql Original SQL.
+     */
+    public SqlParser(String sql) {
+        this.sql = sql;
+    }
 }

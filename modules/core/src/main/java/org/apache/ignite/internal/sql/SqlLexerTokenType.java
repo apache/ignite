@@ -31,5 +31,17 @@ public enum SqlLexerTokenType {
     MINUS,
 
     /** Dot. */
-    DOT
+    DOT,
+
+    /** Comma. */
+    COMMA,
+
+    /** Parenthesis: left. */
+    PARENTHESIS_LEFT,
+
+    /** Parenthesis: right. */
+    PARENTHESIS_RIGHT,
+
+    /** Semicolon. */
+    SEMICOLON
 }

@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.util.HashMap;
+
 /**
  * SQL lexer.
  */
 public class SqlLexer {
+    /** Simple token types. */
+    private static final HashMap<Character, SqlLexerTokenType> SIMPLE_TOKEN_TYPS = new HashMap<>();
+
     /** Original input. */
     private final String input;
 
@@ -38,6 +43,14 @@ public class SqlLexer {
 
     /** Token type. */
     private SqlLexerTokenType tokenTyp;
+
+    static {
+        SIMPLE_TOKEN_TYPS.put('.', SqlLexerTokenType.DOT);
+        SIMPLE_TOKEN_TYPS.put(',', SqlLexerTokenType.COMMA);
+        SIMPLE_TOKEN_TYPS.put(';', SqlLexerTokenType.SEMICOLON);
+        SIMPLE_TOKEN_TYPS.put('(', SqlLexerTokenType.PARENTHESIS_LEFT);
+        SIMPLE_TOKEN_TYPS.put(')', SqlLexerTokenType.PARENTHESIS_RIGHT);
+    }
 
     /**
      * Constructor.
@@ -63,8 +76,9 @@ public class SqlLexer {
      */
     public boolean shift() {
         while (!eod()) {
-            String token0 = null;
             int tokenStartPos0 = pos;
+
+            String token0 = null;
             SqlLexerTokenType tokenTyp0 = null;
 
             char c = inputChars[pos++];
@@ -87,7 +101,6 @@ public class SqlLexer {
                     else {
                         // Minus.
                         token0 = "-";
-
                         tokenTyp0 = SqlLexerTokenType.MINUS;
                     }
 
@@ -107,15 +120,17 @@ public class SqlLexer {
                     }
 
                     token0 = input.substring(tokenStartPos0 + 1, pos - 1);
-
                     tokenTyp0 = SqlLexerTokenType.QUOTED;
 
                     break;
 
                 case '.':
-                    token0 = ".";
-
-                    tokenTyp0 = SqlLexerTokenType.DOT;
+                case ',':
+                case ';':
+                case '(':
+                case ')':
+                    token0 = Character.toString(c);
+                    tokenTyp0 = SIMPLE_TOKEN_TYPS.get(c);
 
                     break;
 
@@ -133,11 +148,10 @@ public class SqlLexer {
                     }
 
                     token0 = input.substring(tokenStartPos0, pos).toUpperCase();
-
                     tokenTyp0 = SqlLexerTokenType.DEFAULT;
             }
 
-            if (token0 != null) {
+            if (tokenTyp0 != null) {
                 token = token0;
                 tokenStartPos = tokenStartPos0;
                 tokenTyp = tokenTyp0;
