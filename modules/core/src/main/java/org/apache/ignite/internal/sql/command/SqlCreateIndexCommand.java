@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParserToken;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -24,10 +27,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
+import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
+import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
+import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+import static org.apache.ignite.internal.sql.SqlKeyword.ON;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+
 /**
  * CREATE INDEX command.
  */
-public class SqlCreateIndexCommand extends SqlCommand {
+public class SqlCreateIndexCommand implements SqlCommand {
     /** Schema name. */
     private String schemaName;
 
@@ -69,16 +84,6 @@ public class SqlCreateIndexCommand extends SqlCommand {
     }
 
     /**
-     * @param tblName Table name.
-     * @return This instance.
-     */
-    public SqlCreateIndexCommand tableName(String tblName) {
-        this.tblName = tblName;
-
-        return this;
-    }
-
-    /**
      * @return Index name.
      */
     public String indexName() {
@@ -86,30 +91,10 @@ public class SqlCreateIndexCommand extends SqlCommand {
     }
 
     /**
-     * @param idxName Index name.
-     * @return This instance.
-     */
-    public SqlCreateIndexCommand indexName(String idxName) {
-        this.idxName = idxName;
-
-        return this;
-    }
-
-    /**
      * @return IF NOT EXISTS flag.
      */
     public boolean ifNotExists() {
         return ifNotExists;
-    }
-
-    /**
-     * @param ifNotExists IF NOT EXISTS flag.
-     * @return This instance.
-     */
-    public SqlCreateIndexCommand ifNotExists(boolean ifNotExists) {
-        this.ifNotExists = ifNotExists;
-
-        return this;
     }
 
     /**
@@ -123,13 +108,99 @@ public class SqlCreateIndexCommand extends SqlCommand {
      * @param col Column.
      * @return This instance.
      */
-    public SqlCreateIndexCommand addColumn(SqlIndexColumn col) {
+    private SqlCreateIndexCommand addColumn(SqlIndexColumn col) {
         if (cols == null)
             cols = new LinkedList<>();
 
         cols.add(col);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlCommand parse(SqlLexer lex) {
+        processCreateIndexIfExists(lex);
+
+        idxName = parseIdentifier(lex, IF);
+
+        skipIfMatchesKeyword(lex, ON);
+
+        SqlQualifiedName tblQName = parseQualifiedIdentifier(lex);
+
+        schemaName = tblQName.schemaName();
+        tblName = tblQName.name();
+
+        parseIndexColumnList(lex);
+
+        return this;
+    }
+
+    /**
+     * @param lex Lexer.
+     */
+    private void processCreateIndexIfExists(SqlLexer lex) {
+        SqlParserToken token = lex.lookAhead();
+
+        if (token != null && matchesKeyword(token, IF)) {
+            lex.shift();
+
+            skipIfMatchesKeyword(lex, NOT);
+            skipIfMatchesKeyword(lex, EXISTS);
+
+            ifNotExists = true;
+        }
+    }
+
+    /*
+     * @param lex Lexer.
+     */
+    private void parseIndexColumnList(SqlLexer lex) {
+        if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
+            throw errorUnexpectedToken(lex, "(");
+
+        boolean lastCol = false;
+
+        while (!lastCol) {
+            SqlIndexColumn col = perseIndexColumn(lex);
+
+            addColumn(col);
+
+            if (!lex.shift())
+                throw errorUnexpectedToken(lex, ",", ")");
+
+            switch (lex.tokenType()) {
+                case COMMA:
+                    break;
+
+                case PARENTHESIS_RIGHT:
+                    lastCol = true;
+
+                    break;
+
+                default:
+                    throw errorUnexpectedToken(lex, ",", ")");
+            }
+        }
+    }
+
+    /**
+     * @param lex Lexer.
+     * @return Index column.
+     */
+    private SqlIndexColumn perseIndexColumn(SqlLexer lex) {
+        String name = parseIdentifier(lex);
+        boolean desc = false;
+
+        SqlParserToken nextToken = lex.lookAhead();
+
+        if (nextToken != null && (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC))) {
+            lex.shift();
+
+            if (matchesKeyword(lex, DESC))
+                desc = true;
+        }
+
+        return new SqlIndexColumn(name, desc);
     }
 
     /** {@inheritDoc} */

@@ -17,9 +17,17 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.internal.sql.SqlLexer;
+
 /**
  * Generic SQL command.
  */
-public class SqlCommand {
-    // No-op.
+public interface SqlCommand {
+    /**
+     * Parse command.
+     *
+     * @param lex Lexer.
+     * @return This instance.
+     */
+    public SqlCommand parse(SqlLexer lex);
 }

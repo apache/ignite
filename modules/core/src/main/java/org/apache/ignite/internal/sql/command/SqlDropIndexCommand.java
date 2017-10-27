@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlParserToken;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
+import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
  * DROP INDEX command.
  */
-public class SqlDropIndexCommand extends SqlCommand {
+public class SqlDropIndexCommand implements SqlCommand {
     /** Schema name. */
     private String schemaName;
 
@@ -40,30 +48,10 @@ public class SqlDropIndexCommand extends SqlCommand {
     }
 
     /**
-     * @param schemaName Schema name.
-     * @return This instance.
-     */
-    public SqlDropIndexCommand schemaName(String schemaName) {
-        this.schemaName = schemaName;
-
-        return this;
-    }
-
-    /**
      * @return Index name.
      */
     public String indexName() {
         return idxName;
-    }
-
-    /**
-     * @param idxName Index name.
-     * @return This instance.
-     */
-    public SqlDropIndexCommand indexName(String idxName) {
-        this.idxName = idxName;
-
-        return this;
     }
 
     /**
@@ -73,14 +61,33 @@ public class SqlDropIndexCommand extends SqlCommand {
         return ifExists;
     }
 
-    /**
-     * @param ifExists IF EXISTS flag.
-     * @return This instance.
-     */
-    public SqlDropIndexCommand ifExists(boolean ifExists) {
-        this.ifExists = ifExists;
+    /** {@inheritDoc} */
+    @Override public SqlCommand parse(SqlLexer lex) {
+        parseIfExists(lex);
+
+        SqlQualifiedName idxQName = parseQualifiedIdentifier(lex, IF);
+
+        schemaName = idxQName.schemaName();
+        idxName = idxQName.name();
 
         return this;
+    }
+
+    /**
+     * Process IF EXISTS for DROP INDEX.
+     *
+     * @param lex Lexer.
+     */
+    private void parseIfExists(SqlLexer lex) {
+        SqlParserToken token = lex.lookAhead();
+
+        if (token != null && matchesKeyword(token, IF)) {
+            lex.shift();
+
+            skipIfMatchesKeyword(lex, EXISTS);
+
+            ifExists = true;
+        }
     }
 
     /** {@inheritDoc} */

@@ -92,6 +92,35 @@ public class SqlParserUtils {
     }
 
     /**
+     * Check if current lexer token matches expected.
+     *
+     * @param lex Lexer.
+     * @param expKeyword Expected keyword.
+     * @return {@code True} if matches.
+     */
+    public static boolean matchesKeyword(SqlParserToken lex, String expKeyword) {
+        if (lex.tokenType() != SqlLexerTokenType.DEFAULT)
+            return false;
+
+        String token = lex.token();
+
+        return expKeyword.equals(token);
+    }
+
+    /**
+     * Skip token if it matches expected keyword.
+     *
+     * @param lex Lexer.
+     * @param expKeyword Expected keyword.
+     */
+    public static void skipIfMatchesKeyword(SqlLexer lex, String expKeyword) {
+        if (lex.shift() && SqlParserUtils.matchesKeyword(lex, expKeyword))
+            return;
+
+        throw errorUnexpectedToken(lex, expKeyword);
+    }
+
+    /**
      * Create parse exception referring to current lexer position.
      *
      * @param token Token.

@@ -5,12 +5,23 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Index column definition.
  */
-public class SqlIndexColumn extends SqlCommand {
+public class SqlIndexColumn {
     /** Column name. */
-    private String name;
+    private final String name;
 
     /** Descending flag. */
-    private boolean desc;
+    private final boolean desc;
+
+    /**
+     * Constructor.
+     *
+     * @param name Column name.
+     * @param desc Descending flag.
+     */
+    public SqlIndexColumn(String name, boolean desc) {
+        this.name = name;
+        this.desc = desc;
+    }
 
     /**
      * @return Column name.
@@ -20,30 +31,10 @@ public class SqlIndexColumn extends SqlCommand {
     }
 
     /**
-     * @param name Column name.
-     * @return This instance.
-     */
-    public SqlIndexColumn name(String name) {
-        this.name = name;
-
-        return this;
-    }
-
-    /**
      * @return Descending flag.
      */
     public boolean descending() {
         return desc;
-    }
-
-    /**
-     * @param desc CDescending flag.
-     * @return This instance.
-     */
-    public SqlIndexColumn descending(boolean desc) {
-        this.desc = desc;
-
-        return this;
     }
 
     /** {@inheritDoc} */
