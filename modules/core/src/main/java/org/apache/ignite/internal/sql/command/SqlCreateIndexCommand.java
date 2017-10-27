@@ -119,6 +119,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
+        // TODO: FULLTEXT, SPATIAL.
+        // TODO: INLINE SIZE
+
         processCreateIndexIfExists(lex);
 
         idxName = parseIdentifier(lex, IF);
