@@ -164,13 +164,13 @@ public class SqlLexer {
     }
 
     /**
-     * Shift lexer and get the next token or {@code null} if none available.
+     * Shift lexer and get the next token type or {@code null} if none available.
      *
-     * @return Next token or {@code null}.
+     * @return Next token type or {@code null}.
      */
-    public String shiftAndGet() {
+    public SqlLexerTokenType shiftAndGet() {
         if (shift())
-            return token;
+            return tokenTyp;
         else
             return null;
     }
@@ -201,5 +201,12 @@ public class SqlLexer {
      */
     public SqlLexerTokenType tokenType() {
         return tokenTyp;
+    }
+
+    /**
+     * @return Input.
+     */
+    public String input() {
+        return input;
     }
 }
