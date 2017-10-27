@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 
 /**
  * SQL parser.
@@ -54,24 +58,32 @@ public class SqlParser {
                     continue;
 
                 case DEFAULT:
+                    SqlCommand cmd = null;
+
                     switch (lex.tokenFirstChar()) {
                         case 'C':
-                            if (matches(CREATE))
-                                return processCreate();
+                            if (matchesKeyword(CREATE))
+                                cmd = processCreate();
 
                             break;
 
                         case 'D':
-                            if (matches(DROP))
-                                return processDrop();
+                            if (matchesKeyword(DROP))
+                                cmd = processDrop();
 
                             break;
-
-                        default:
-                            throw exceptionUnexpectedToken();
                     }
 
-                    throw exceptionUnexpectedToken();
+
+                    if (cmd != null) {
+                        // If there is something behind the command, this is a syntax error.
+                        if (lex.shift() && lex.tokenType() != SqlLexerTokenType.SEMICOLON)
+                            throw unexpectedToken();
+
+                        return cmd;
+                    }
+                    else
+                        throw unexpectedToken();
 
                 case QUOTED:
                 case MINUS:
@@ -80,7 +92,7 @@ public class SqlParser {
                 case PARENTHESIS_LEFT:
                 case PARENTHESIS_RIGHT:
                 default:
-                    throw exceptionUnexpectedToken();
+                    throw unexpectedToken();
             }
         }
     }
@@ -91,6 +103,20 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processCreate() {
+        lex.shift();
+
+        if (matchesKeyword(INDEX))
+            return processCreateIndex();
+
+        throw unexpectedToken(INDEX);
+    }
+
+    /**
+     * Process CREATE INDEX command.
+     *
+     * @return Command.
+     */
+    private SqlCreateIndexCommand processCreateIndex() {
         // TODO
 
         return null;
@@ -102,6 +128,20 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processDrop() {
+        lex.shift();
+
+        if (matchesKeyword(INDEX))
+            return processDropIndex();
+
+        throw unexpectedToken(INDEX);
+    }
+
+    /**
+     * Process DROP INDEX command.
+     *
+     * @return Command.
+     */
+    private SqlDropIndexCommand processDropIndex() {
         // TODO
 
         return null;
@@ -113,7 +153,10 @@ public class SqlParser {
      * @param expToken Expected token.
      * @return {@code True} if matches.
      */
-    private boolean matches(String expToken) {
+    private boolean matchesKeyword(String expToken) {
+        if (lex.tokenType() != SqlLexerTokenType.DEFAULT)
+            return false;
+
         String token = lex.token();
 
         return expToken.equals(token);
@@ -139,9 +182,29 @@ public class SqlParser {
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @return Excpetion.
+     * @param expTokens Expected tokens (if any).
+     * @return Exception.
      */
-    private SqlParseException exceptionUnexpectedToken() {
-        throw exception("Unexpected token: " + lex.token());
+    private SqlParseException unexpectedToken(String... expTokens) {
+        StringBuilder msg = new StringBuilder("Unexpected token: " + lex.token());
+
+        if (!F.isEmpty(expTokens)) {
+            msg.append(" (expected: ");
+
+            boolean first = true;
+
+            for (String expToken : expTokens) {
+                if (first)
+                    first = false;
+                else
+                    msg.append(", ");
+
+                msg.append(expToken);
+            }
+
+            msg.append(")");
+        }
+
+        throw exception(msg.toString());
     }
 }
