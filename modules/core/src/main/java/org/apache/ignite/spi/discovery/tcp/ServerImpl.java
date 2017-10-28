@@ -2500,6 +2500,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
         private TcpDiscoveryNode next;
 
+        /** Mutex for methods changing the next. */
+        private final Object nextMux = new Object();
+
         /** Pending messages. */
         private final PendingMessages pendingMsgs = new PendingMessages();
 
@@ -2799,7 +2802,19 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to send
          */
         @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
-        private synchronized void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
+        private void sendMessageAcrossRing(TcpDiscoveryAbstractMessage msg) {
+            synchronized (nextMux) {
+                sendMessageAcrossRing0(msg);
+            }
+        }
+
+        /**
+         * Sends message across the ring.
+         *
+         * @param msg Message to send
+         */
+        @SuppressWarnings({"BreakStatementWithLabel", "LabeledStatement", "ContinueStatementWithLabel"})
+        private void sendMessageAcrossRing0(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
 
             assert ring.hasRemoteNodes();
@@ -4556,6 +4571,17 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Node left message.
          */
         private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
+            synchronized (nextMux) {
+                processNodeLeftMessage0(msg);
+            }
+        }
+
+        /**
+         * Processes node left message.
+         *
+         * @param msg Node left message.
+         */
+        private void processNodeLeftMessage0(TcpDiscoveryNodeLeftMessage msg) {
             assert msg != null;
 
             UUID locNodeId = getLocalNodeId();
