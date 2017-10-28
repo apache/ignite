@@ -6269,8 +6269,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!(msg instanceof TcpDiscoveryNodeAddedMessage) &&
                             ring.node(msg.senderNodeId()) == null) {
 
-                            if (log.isDebugEnabled())
-                                log.debug("Ignore message from unknown node [msg=" + msg +
+                            if (log.isInfoEnabled())
+                                log.info("Ignore message from unknown node [msg=" + msg +
                                     ", senderNodeId=" + msg.senderNodeId() + ']');
                             break;
                         }
@@ -6772,7 +6772,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
+                if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0())
+                    return;
+
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
+
+                if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0())
+                    return;
 
                 if (msg == null)
                     noMessageLoop();
