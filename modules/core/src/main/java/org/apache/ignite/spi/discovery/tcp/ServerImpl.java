@@ -5642,12 +5642,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            while (true) {
+            while (!isInterrupted()) {
                 Thread.sleep(msgWorker.connCheckFreq);
+
+                if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0())
+                    return;
 
                 if (ring.hasRemoteServerNodes())
                     msgWorker.sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
             }
+            if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0()) {
+                if (log.isDebugEnabled())
+                    log.debug("ConnChecker thread exiting");
+            }
+            else
+                U.error(log, "ConnChecker thread exit abnormally, the local node will be failed by the next node");
         }
     }
 
