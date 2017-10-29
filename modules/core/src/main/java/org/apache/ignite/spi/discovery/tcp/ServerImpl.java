@@ -139,6 +139,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAILED_NODES_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -206,6 +207,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Statistics printer thread. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private StatisticsPrinter statsPrinter;
+
+    private final Set<UUID> recentFailedNodeIds = new GridBoundedLinkedHashSet<>(getInteger(
+        IGNITE_FAILED_NODES_HISTORY_SIZE, 1000));
 
     /** Failed nodes (but still in topology). */
     private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
@@ -530,6 +534,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             // Clear stored data.
             leavingNodes.clear();
             failedNodes.clear();
+            recentFailedNodeIds.clear();
 
             spiState = DISCONNECTED;
         }
@@ -2007,13 +2012,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
+                    if (recentFailedNodeIds.contains(sndId)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ignore message failed nodes, sender node was recently failed [nodeId=" +
+                                sndId + ']');
+                        return;
+                    }
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                         if (failedNode.id().equals(sndId)) {
                             if (log.isDebugEnabled()) {
-                                log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" + sndId +
-                                    ", failedNodes=" + msgFailedNodes + ']');
+                                log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" +
+                                    sndId + ", failedNodes=" + msgFailedNodes + ']');
                             }
-
                             return;
                         }
                     }
@@ -2028,6 +2038,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         boolean added = false;
 
                         synchronized (mux) {
+                            recentFailedNodeIds.add(failedNode.id());
+
                             if (!failedNodes.containsKey(failedNode)) {
                                 failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
 
@@ -2707,15 +2719,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             spi.stats.onMessageProcessingStarted(msg);
 
-            if (!(msg instanceof TcpDiscoveryNodeAddedMessage) &&
-                !(msg instanceof TcpDiscoveryJoinRequestMessage) &&
-                msg.senderNodeId() != null && ring.node(msg.senderNodeId()) == null) {
-
-                U.warn(ServerImpl.this.log, "Ignore message from unknown node [senderNodeId=" + msg.senderNodeId()
-                    + ", msg=" + msg + ']');
-            }
-
-            else if (msg instanceof TcpDiscoveryJoinRequestMessage)
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
                 processJoinRequestMessage((TcpDiscoveryJoinRequestMessage)msg);
 
             else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
@@ -3295,6 +3299,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 synchronized (mux) {
                     for (TcpDiscoveryNode failedNode : failedNodes) {
+                        recentFailedNodeIds.add(failedNode.id());
+
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
                             ServerImpl.this.failedNodes.put(failedNode, locNodeId);
                     }
@@ -4742,7 +4748,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     assert creatorId != null : msg;
 
                     synchronized (mux) {
-                        contains = failedNodes.containsKey(sndNode) || ring.node(creatorId) == null;
+                        contains = recentFailedNodeIds.contains(sndId) || failedNodes.containsKey(sndNode) ||
+                            ring.node(creatorId) == null;
                     }
 
                     if (contains) {
@@ -4775,6 +4782,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!skipUpdateFailedNodes) {
                     synchronized (mux) {
+                        recentFailedNodeIds.add(failedNodeId);
+
                         if (!failedNodes.containsKey(failedNode))
                             failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
                     }
@@ -5853,6 +5862,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     this.nodeId = nodeId;
 
                     synchronized (mux) {
+                        if (recentFailedNodeIds.contains(nodeId)) {
+                            if (log.isInfoEnabled())
+                                log.info("Ignore handshake request from recently failed node [nodeId=" + nodeId + ']');
+
+                            U.closeQuiet(sock);
+
+                            return;
+                        }
                         for (TcpDiscoveryNode n : failedNodes.keySet()) {
                             if (n.id().equals(nodeId)) {
                                 if (log.isInfoEnabled())

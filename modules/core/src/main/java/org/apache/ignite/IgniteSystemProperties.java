@@ -458,6 +458,9 @@ public final class IgniteSystemProperties {
     /** Maximum size for discovery messages history. */
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
+    /** Maximum size for recently failed nodes history. */
+    public static final String IGNITE_FAILED_NODES_HISTORY_SIZE = "IGNITE_FAILED_NODES_HISTORY_SIZE";
+
     /** Maximum number of discovery message history used to support client reconnect. */
     public static final String IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE =
         "IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE";
