@@ -6772,7 +6772,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
+                if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0())
+                    return;
+
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
+
+                if (spiStateCopy() == DISCONNECTING || spi.isNodeStopping0())
+                    return;
 
                 if (msg == null)
                     noMessageLoop();
