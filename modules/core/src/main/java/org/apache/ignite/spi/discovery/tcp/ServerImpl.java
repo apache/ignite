@@ -2707,7 +2707,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             spi.stats.onMessageProcessingStarted(msg);
 
-            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+            if (!(msg instanceof TcpDiscoveryNodeAddedMessage) &&
+                !(msg instanceof TcpDiscoveryJoinRequestMessage) &&
+                msg.senderNodeId() != null && ring.node(msg.senderNodeId()) == null) {
+
+                U.warn(ServerImpl.this.log, "Ignore message from unknown node [senderNodeId=" + msg.senderNodeId()
+                    + ", msg=" + msg + ']');
+            }
+
+            else if (msg instanceof TcpDiscoveryJoinRequestMessage)
                 processJoinRequestMessage((TcpDiscoveryJoinRequestMessage)msg);
 
             else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
@@ -5844,14 +5852,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     this.nodeId = nodeId;
 
-                    for (TcpDiscoveryNode n : failedNodes.keySet()) {
-                        if (n.id().equals(nodeId)) {
-                            if (log.isInfoEnabled())
-                                log.info("Ignore handshake request from failed node [nodeId=" + nodeId + ']');
+                    synchronized (mux) {
+                        for (TcpDiscoveryNode n : failedNodes.keySet()) {
+                            if (n.id().equals(nodeId)) {
+                                if (log.isInfoEnabled())
+                                    log.info("Ignore handshake request from failed node [nodeId=" + nodeId + ']');
 
-                            U.closeQuiet(sock);
+                                U.closeQuiet(sock);
 
-                            return ;
+                                return;
+                            }
                         }
                     }
 
@@ -6184,15 +6194,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
 
                         TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;
-
-                        if (!(msg instanceof TcpDiscoveryNodeAddedMessage) &&
-                            ring.node(msg.senderNodeId()) == null) {
-
-                            if (log.isInfoEnabled())
-                                log.info("Ignore message from unknown node [msg=" + msg +
-                                    ", senderNodeId=" + msg.senderNodeId() + ']');
-                            break;
-                        }
 
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
                             metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
