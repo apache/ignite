@@ -5926,7 +5926,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (TcpDiscoveryNode n : failedNodes.keySet()) {
                         if (n.id().equals(nodeId)) {
                             if (log.isInfoEnabled())
-                                log.info("Ignoring handshake request from failed node [nodeId=" + nodeId + ']');
+                                log.info("Ignore handshake request from failed node [nodeId=" + nodeId + ']');
 
                             U.closeQuiet(sock);
 
@@ -6269,8 +6269,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!(msg instanceof TcpDiscoveryNodeAddedMessage) &&
                             ring.node(msg.senderNodeId()) == null) {
 
-                            if (log.isDebugEnabled())
-                                log.debug("Ignore message from unknown node [msg=" + msg +
+                            if (log.isInfoEnabled())
+                                log.info("Ignore message from unknown node [msg=" + msg +
                                     ", senderNodeId=" + msg.senderNodeId() + ']');
                             break;
                         }
