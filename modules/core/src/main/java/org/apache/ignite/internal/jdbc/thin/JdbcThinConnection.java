@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.jdbc2.JdbcBlob;
+import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -498,14 +500,14 @@ public class JdbcThinConnection implements Connection {
     @Override public Clob createClob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob("");
     }
 
     /** {@inheritDoc} */
     @Override public Blob createBlob() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(new byte[0]);
     }
 
     /** {@inheritDoc} */

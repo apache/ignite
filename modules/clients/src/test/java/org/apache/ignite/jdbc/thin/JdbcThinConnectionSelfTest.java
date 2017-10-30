@@ -1374,16 +1374,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createClob();
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+
+            assertNotNull(conn.createClob());
 
             conn.close();
 
@@ -1404,16 +1396,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateBlob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            // Unsupported
-            GridTestUtils.assertThrows(log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        return conn.createBlob();
-                    }
-                },
-                SQLFeatureNotSupportedException.class,
-                "SQL-specific types are not supported"
-            );
+
+            assertNotNull(conn.createBlob());
 
             conn.close();
 

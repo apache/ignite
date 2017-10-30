@@ -18,6 +18,9 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -40,11 +43,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstractSelfTest {
+    /** UTF 16 character set name. */
+    private static final String UTF_16 = "UTF-16"; // RAWTOHEX function use UTF-16 for conversion strings to byte arrays.
+
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, blob, clob from Person";
 
     /** Connection. */
     protected Connection conn;
@@ -134,6 +140,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
+        e.addQueryField("blob", byte[].class.getName(), null);
+        e.addQueryField("clob", String.class.getName(), null);
 
         ccfg.setQueryEntities(Collections.singletonList(e));
 
@@ -175,6 +183,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
+        e.addQueryField("blob", byte[].class.getName(), null);
+        e.addQueryField("clob", String.class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -186,6 +196,54 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
      */
     CacheConfiguration cacheConfig() {
         return nonBinCacheConfig();
+    }
+
+    /**
+     * @param str String.
+     */
+    static byte[] getBytes(String str) {
+        try {
+            return str.getBytes(UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param blob Blob.
+     */
+    static byte[] getBytes(Blob blob) {
+        try {
+            return blob.getBytes(1, (int)blob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     */
+    static String str(byte[] arr) {
+        try {
+            return new String(arr, UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param clob Clob.
+     */
+    static String str(Clob clob) {
+        try {
+            return clob.getSubString(1, (int)clob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -209,6 +267,14 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         @QuerySqlField
         private final int age;
 
+        /** Blob. */
+        @QuerySqlField
+        private final byte[] blob;
+
+        /** Clob. */
+        @QuerySqlField
+        private final String clob;
+
         /**
          * @param id ID.
          * @param firstName First name.
@@ -224,6 +290,8 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
             this.firstName = firstName;
             this.lastName = lastName;
             this.age = age;
+            this.blob = getBytes(lastName);
+            this.clob = firstName + " " + lastName;
         }
 
         /** {@inheritDoc} */
