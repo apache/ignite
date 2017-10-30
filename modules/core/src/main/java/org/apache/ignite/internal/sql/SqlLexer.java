@@ -72,7 +72,7 @@ public class SqlLexer implements SqlParserToken {
     /**
      * Get next token without lexer state change.
      *
-     * @return Next token or {@code null} of end is reached.
+     * @return Next token.
      */
     public SqlParserToken lookAhead() {
         int pos0  = pos;
@@ -83,8 +83,8 @@ public class SqlLexer implements SqlParserToken {
         try {
             if (shift())
                 return new SqlParserTokenImpl(sql, token, tokenPos, tokenTyp);
-
-            return null;
+            else
+                return new SqlParserTokenImpl(sql, null, tokenPos, SqlLexerTokenType.EOF);
         }
         finally {
             pos = pos0;

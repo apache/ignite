@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteException;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * SQL keyword constants.
@@ -30,17 +29,59 @@ public class SqlKeyword {
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
 
+    /** Keyword: BIGINT */
+    public static final String BIGINT = "BIGINT";
+
+    /** Keyword: BIT. */
+    public static final String BIT = "BIT";
+
+    /** Keyword: BOOL. */
+    public static final String BOOL = "BOOL";
+
+    /** Keyword: BOOLEAN. */
+    public static final String BOOLEAN = "BOOLEAN";
+
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
 
+    /** Keyword: CHAR. */
+    public static final String CHAR = "CHAR";
+
+    /** Keyword: CHARACTER. */
+    public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: DATE. */
+    public static final String DATE = "DATE";
+
+    /** Keyword: DATETIME. */
+    public static final String DATETIME = "DATETIME";
+
+    /** Keyword: DEC. */
+    public static final String DEC = "DEC";
+
+    /** Keyword: DECIMAL. */
+    public static final String DECIMAL = "DECIMAL";
+
     /** Keyword: DESC. */
     public static final String DESC = "DESC";
+
+    /** Keyword: DOUBLE. */
+    public static final String DOUBLE = "DOUBLE";
 
     /** Keyword: DROP. */
     public static final String DROP = "DROP";
 
     /** Keyword: EXISTS. */
     public static final String EXISTS = "EXISTS";
+
+    /** Keyword: FLOAT. */
+    public static final String FLOAT = "FLOAT";
+
+    /** Keyword: FLOAT4. */
+    public static final String FLOAT4 = "FLOAT4";
+
+    /** Keyword: FLOAT8. */
+    public static final String FLOAT8 = "FLOAT8";
 
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
@@ -51,23 +92,98 @@ public class SqlKeyword {
     /** Keyword: INDEX. */
     public static final String INDEX = "INDEX";
 
+    /** Keyword: INT. */
+    public static final String INT = "INT";
+
+    /** Keyword: INT2. */
+    public static final String INT2 = "INT2";
+
+    /** Keyword: INT4. */
+    public static final String INT4 = "INT4";
+
+    /** Keyword: INT8. */
+    public static final String INT8 = "INT8";
+
+    /** Keyword: INTEGER. */
+    public static final String INTEGER = "INTEGER";
+
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
+
+    /** Keyword: LONGVARCHAR. */
+    public static final String LONGVARCHAR = "LONGVARCHAR";
+
+    /** Keyword: MEDIUMINT. */
+    public static final String MEDIUMINT = "MEDIUMINT";
+
+    /** Keyword: NCHAR. */
+    public static final String NCHAR = "NCHAR";
 
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
+    /** Keyword: NUMBER. */
+    public static final String NUMBER = "NUMBER";
+
+    /** Keyword: NUMERIC. */
+    public static final String NUMERIC = "NUMERIC";
+
+    /** Keyword: NVARCHAR. */
+    public static final String NVARCHAR = "NVARCHAR";
+
+    /** Keyword: NVARCHAR2. */
+    public static final String NVARCHAR2 = "NVARCHAR2";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
 
+    /** Keyword: PRECISION. */
+    public static final String PRECISION = "PRECISION";
+
     /** Keyword: PRIMARY. */
     public static final String PRIMARY = "PRIMARY";
+
+    /** Keyword: REAL. */
+    public static final String REAL = "REAL";
+
+    /** Keyword: SIGNED. */
+    public static final String SIGNED = "SIGNED";
+
+    /** Keyword: SMALLDATETIME. */
+    public static final String SMALLDATETIME = "SMALLDATETIME";
+
+    /** Keyword: SMALLINT. */
+    public static final String SMALLINT = "SMALLINT";
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
+
+    /** Keyword: TIME. */
+    public static final String TIME = "TIME";
+
+    /** Keyword: TIMESTAMP. */
+    public static final String TIMESTAMP = "TIMESTAMP";
+
+    /** Keyword: TINYINT. */
+    public static final String TINYINT = "TINYINT";
+
+    /** Keyword: UUID. */
+    public static final String UUID = "UUID";
+
+    /** Keyword: VARCHAR. */
+    public static final String VARCHAR = "VARCHAR";
+
+    /** Keyword: VARCHAR2. */
+    public static final String VARCHAR2 = "VARCHAR2";
+
+    /** Keyword: VARCHAR_CASESENSITIVE. */
+    public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
+
+    /** Keyword: YEAR. */
+    public static final String YEAR = "YEAR";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

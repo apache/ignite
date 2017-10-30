@@ -21,34 +21,45 @@ package org.apache.ignite.internal.sql.command;
  * SQL column type.
  */
 public enum SqlColumnType {
-
-    INT,
-
+    /** Boolean. */
     BOOLEAN,
 
+    /** Byte. */
     BYTE,
 
+    /** Short. */
     SHORT,
 
+    /** Integer. */
+    INT,
+
+    /** Long. */
     LONG,
 
-    DECIMAL,
-
-    DOUBLE,
-
+    /** Float. */
     FLOAT,
 
-    DATE,
+    /** Double. */
+    DOUBLE,
 
-    TIME,
+    /** Decimal. */
+    DECIMAL,
 
-    TIMESTAMP,
-
-    BINARY,
-
-    VARCHAR,
-
+    /** Char. */
     CHAR,
 
+    /** Varchar. */
+    VARCHAR,
+
+    /** Date. */
+    DATE,
+
+    /** Time. */
+    TIME,
+
+    /** Timestamp. */
+    TIMESTAMP,
+
+    /** UUID. */
     UUID
 }

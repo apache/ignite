@@ -29,14 +29,14 @@ import java.util.LinkedList;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
-import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
-import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
@@ -129,9 +129,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        // TODO: INLINE SIZE
-
-        parseIfNotExists(lex);
+        ifNotExists = parseIfNotExists(lex);
 
         idxName = parseIdentifier(lex, IF);
 
@@ -147,22 +145,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return this;
     }
 
-    /**
-     * @param lex Lexer.
-     */
-    private void parseIfNotExists(SqlLexer lex) {
-        SqlParserToken token = lex.lookAhead();
-
-        if (token != null && matchesKeyword(token, IF)) {
-            lex.shift();
-
-            skipIfMatchesKeyword(lex, NOT);
-            skipIfMatchesKeyword(lex, EXISTS);
-
-            ifNotExists = true;
-        }
-    }
-
     /*
      * @param lex Lexer.
      */
@@ -170,26 +152,11 @@ public class SqlCreateIndexCommand implements SqlCommand {
         if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
             throw errorUnexpectedToken(lex, "(");
 
-        boolean lastCol = false;
-
-        while (!lastCol) {
+        while (true) {
             perseIndexColumn(lex);
 
-            if (!lex.shift())
-                throw errorUnexpectedToken(lex, ",", ")");
-
-            switch (lex.tokenType()) {
-                case COMMA:
-                    break;
-
-                case PARENTHESIS_RIGHT:
-                    lastCol = true;
-
-                    break;
-
-                default:
-                    throw errorUnexpectedToken(lex, ",", ")");
-            }
+            if (skipCommaOrRightParenthesis(lex))
+                break;
         }
     }
 
@@ -202,7 +169,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         SqlParserToken nextToken = lex.lookAhead();
 
-        if (nextToken != null && (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC))) {
+        if (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC)) {
             lex.shift();
 
             if (matchesKeyword(lex, DESC))

@@ -29,11 +29,11 @@ public class SqlColumn {
     /** Column type. */
     private final SqlColumnType typ;
 
-    /** Precision. */
-    private final int precision;
-
     /** Scale. */
     private final int scale;
+
+    /** Precision. */
+    private final int precision;
 
     /**
      * Constructor.
@@ -53,7 +53,7 @@ public class SqlColumn {
      * @param precision Precision.
      */
     public SqlColumn(String name, SqlColumnType typ, int precision) {
-        this(name, typ, precision, 0);
+        this(name, typ, 0, precision);
     }
 
     /**
@@ -64,11 +64,11 @@ public class SqlColumn {
      * @param precision Precision.
      * @param scale Scale.
      */
-    public SqlColumn(String name, SqlColumnType typ, int precision, int scale) {
+    public SqlColumn(String name, SqlColumnType typ, int scale, int precision) {
         this.name = name;
         this.typ = typ;
-        this.precision = precision;
         this.scale = scale;
+        this.precision = precision;
     }
 
     /**
@@ -86,17 +86,17 @@ public class SqlColumn {
     }
 
     /**
-     * @return Precision.
-     */
-    public int precision() {
-        return precision;
-    }
-
-    /**
      * @return Scale.
      */
     public int scale() {
         return scale;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return precision;
     }
 
     /** {@inheritDoc} */

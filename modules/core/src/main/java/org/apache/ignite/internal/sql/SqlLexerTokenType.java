@@ -28,20 +28,49 @@ public enum SqlLexerTokenType {
     QUOTED,
 
     /** Minus sign. */
-    MINUS,
+    MINUS("-"),
 
     /** Dot. */
-    DOT,
+    DOT("."),
 
     /** Comma. */
-    COMMA,
+    COMMA(","),
 
     /** Parenthesis: left. */
-    PARENTHESIS_LEFT,
+    PARENTHESIS_LEFT("("),
 
     /** Parenthesis: right. */
-    PARENTHESIS_RIGHT,
+    PARENTHESIS_RIGHT(")"),
 
     /** Semicolon. */
-    SEMICOLON
+    SEMICOLON(";"),
+
+    /** End of string. */
+    EOF;
+    
+    /** Character. */
+    private final String c;
+
+    /**
+     * Constructor.
+     */
+    SqlLexerTokenType() {
+        this(null);
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param c Corresponding character.
+     */
+    SqlLexerTokenType(String c) {
+        this.c = c;
+    }
+
+    /**
+     * @return Character.
+     */
+    public String character() {
+        return c;
+    }
 }

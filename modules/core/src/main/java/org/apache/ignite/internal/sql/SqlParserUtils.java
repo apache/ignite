@@ -20,10 +20,94 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
+import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+
 /**
  * Parser utility methods.
  */
 public class SqlParserUtils {
+    /**
+     * Parse IF EXISTS statement.
+     *
+     * @param lex Lexer.
+     * @return {@code True} if statement is found.
+     */
+    public static boolean parseIfExists(SqlLexer lex) {
+        SqlParserToken token = lex.lookAhead();
+
+        if (matchesKeyword(token, IF)) {
+            lex.shift();
+
+            skipIfMatchesKeyword(lex, EXISTS);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse IF NOT EXISTS statement.
+     *
+     * @param lex Lexer.
+     * @return {@code True} if statement is found.
+     */
+    public static boolean parseIfNotExists(SqlLexer lex) {
+        SqlParserToken token = lex.lookAhead();
+
+        if (matchesKeyword(token, IF)) {
+            lex.shift();
+
+            skipIfMatchesKeyword(lex, NOT);
+            skipIfMatchesKeyword(lex, EXISTS);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Skip commr or right parenthesis.
+     *
+     * @param lex Lexer.
+     * @return {@code True} if right parenthesis is found.
+     */
+    public static boolean skipCommaOrRightParenthesis(SqlLexer lex) {
+        if (lex.shift()) {
+            switch (lex.tokenType()) {
+                case COMMA:
+                    return false;
+
+                case PARENTHESIS_RIGHT:
+                    return true;
+            }
+        }
+
+        throw errorUnexpectedToken(lex, ",", ")");
+    }
+
+    /**
+     * Parse integer value.
+     *
+     * @param lex Lexer.
+     * @return Integer value.
+     */
+    public static int parseInt(SqlLexer lex) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            try {
+                return Integer.parseInt(lex.token());
+            }
+            catch (NumberFormatException e) {
+                // No-op.
+            }
+        }
+
+        throw errorUnexpectedToken(lex, "[number]");
+    }
+
     /**
      * Process name.
      *
@@ -53,7 +137,7 @@ public class SqlParserUtils {
 
             SqlParserToken nextToken = lex.lookAhead();
 
-            if (nextToken != null && nextToken.tokenType() == SqlLexerTokenType.DOT) {
+            if (nextToken.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift();
 
                 String second = parseIdentifier(lex);
@@ -118,10 +202,23 @@ public class SqlParserUtils {
      * @param expKeyword Expected keyword.
      */
     public static void skipIfMatchesKeyword(SqlLexer lex, String expKeyword) {
-        if (lex.shift() && SqlParserUtils.matchesKeyword(lex, expKeyword))
+        if (lex.shift() && matchesKeyword(lex, expKeyword))
             return;
 
         throw errorUnexpectedToken(lex, expKeyword);
+    }
+
+    /**
+     * Skip next token if it matches expected type.
+     *
+     * @param lex Lexer.
+     * @param tokenTyp Expected token type.
+     */
+    public static void skipIfMatches(SqlLexer lex, SqlLexerTokenType tokenTyp) {
+        if (lex.shift() && F.eq(lex.tokenType(), tokenTyp))
+            return;
+
+        throw errorUnexpectedToken(lex, tokenTyp.character());
     }
 
     /**

@@ -18,14 +18,11 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlParserToken;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
-import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
  * Drop table command.
@@ -63,7 +60,7 @@ public class SqlDropTableCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        parseIfExists(lex);
+        ifExists = parseIfExists(lex);
 
         SqlQualifiedName idxQName = parseQualifiedIdentifier(lex, IF);
 
@@ -71,23 +68,6 @@ public class SqlDropTableCommand implements SqlCommand {
         tblName = idxQName.name();
 
         return this;
-    }
-
-    /**
-     * Process IF EXISTS for DROP INDEX.
-     *
-     * @param lex Lexer.
-     */
-    private void parseIfExists(SqlLexer lex) {
-        SqlParserToken token = lex.lookAhead();
-
-        if (token != null && matchesKeyword(token, IF)) {
-            lex.shift();
-
-            skipIfMatchesKeyword(lex, EXISTS);
-
-            ifExists = true;
-        }
     }
 
     /** {@inheritDoc} */
