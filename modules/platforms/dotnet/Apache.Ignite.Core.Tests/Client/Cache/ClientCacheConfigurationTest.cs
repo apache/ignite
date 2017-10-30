@@ -103,6 +103,55 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests <see cref="CacheConfiguration"/> to <see cref="CacheClientConfiguration"/> and reverse conversion.
+        /// </summary>
+        [Test]
+        public void TestConfigConversion()
+        {
+            // Copy ctor.
+            var clientCfg = new CacheClientConfiguration(
+                CacheConfigurationTest.GetCustomCacheConfiguration("z"), true);
+
+            AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(clientCfg));
+
+            // Convert to server cfg.
+            var serverCfg = clientCfg.ToCacheConfiguration();
+            AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(serverCfg, false));
+        }
+
+        /// <summary>
+        /// Tests the constructors.
+        /// </summary>
+        [Test]
+        public void TestConstructors()
+        {
+            // Default property values.
+            var clientCfg = new CacheClientConfiguration();
+            var defCfg = new CacheClientConfiguration(new CacheConfiguration(), false);
+
+            AssertClientConfigsAreEqual(defCfg, clientCfg);
+
+            // Name.
+            clientCfg = new CacheClientConfiguration("foo");
+            Assert.AreEqual("foo", clientCfg.Name);
+
+            clientCfg.Name = null;
+            AssertClientConfigsAreEqual(defCfg, clientCfg);
+
+            // Query entities.
+            clientCfg = new CacheClientConfiguration("bar", typeof(QueryPerson));
+            Assert.AreEqual("bar", clientCfg.Name);
+            var qe = clientCfg.QueryEntities.Single();
+            Assert.AreEqual(typeof(QueryPerson), qe.ValueType);
+            Assert.AreEqual("Name", qe.Fields.Single().Name);
+
+            clientCfg = new CacheClientConfiguration("baz", new QueryEntity(typeof(QueryPerson)));
+            qe = clientCfg.QueryEntities.Single();
+            Assert.AreEqual(typeof(QueryPerson), qe.ValueType);
+            Assert.AreEqual("Name", qe.Fields.Single().Name);
+        }
+
+        /// <summary>
         /// Tests the serialization/deserialization of <see cref="CacheConfiguration"/>.
         /// </summary>
         private static void TestSerializeDeserializeUnspported(CacheConfiguration cfg, string propName)
@@ -150,6 +199,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 stream.Seek(0, SeekOrigin.Begin);
                 return new CacheClientConfiguration(stream);
             }
+        }
+
+        private class QueryPerson
+        {
+            [QuerySqlField]
+            // ReSharper disable once UnusedMember.Local
+            public string Name { get; set; }
         }
     }
 }
