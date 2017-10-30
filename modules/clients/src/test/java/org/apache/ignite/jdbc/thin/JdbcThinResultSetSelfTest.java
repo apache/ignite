@@ -830,30 +830,6 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
         checkNotSupported(new RunnableX() {
             @Override public void runx() throws Exception {
-                rs.getBlob(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getBlob("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getClob(1);
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
-                rs.getClob("id");
-            }
-        });
-
-        checkNotSupported(new RunnableX() {
-            @Override public void runx() throws Exception {
                 rs.getCharacterStream(1);
             }
         });
