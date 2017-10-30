@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -561,13 +560,31 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      *
      * @param parser Parser to use.
      * @param lsnr Listener.
+     * @return Started server.
+     * @throws Exception If failed.
+     */
+    protected final GridNioServer<?> startServer(GridNioParser parser,
+        GridNioServerListener lsnr,
+        @Nullable Integer queueLimit)
+        throws Exception {
+        return startServer(parser, lsnr, queueLimit, null, null);
+    }
+
+    /**
+     * Starts server with specified arguments.
+     *
+     * @param parser Parser to use.
+     * @param lsnr Listener.
      * @param queueLimit Optional send queue limit.
      * @return Started server.
      * @throws Exception If failed.
      */
     protected final GridNioServer<?> startServer(GridNioParser parser,
         GridNioServerListener lsnr,
-        @Nullable Integer queueLimit) throws Exception {
+        @Nullable Integer queueLimit,
+        @Nullable Long writeTimeout,
+        @Nullable Long idleTimeout
+    ) throws Exception {
         for (int i = 0; i < 10; i++) {
             int srvPort = port++;
 
@@ -576,6 +593,12 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                 if (queueLimit != null)
                     builder.sendQueueLimit(queueLimit);
+
+                if (writeTimeout != null)
+                    builder.writeTimeout(writeTimeout);
+
+                if (idleTimeout != null)
+                    builder.idleTimeout(idleTimeout);
 
                 GridNioServer<?> srvr = builder.build();
 
@@ -940,9 +963,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        final GridNioServer<?> srvr = startServer(new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        final GridNioServer<?> srvr = startServer(new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr, null, null, 1000L);
 
-        srvr.idleTimeout(1000);
 
         try {
             multithreaded(new Runnable() {
@@ -1008,16 +1030,9 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        final GridNioServer<?> srvr = startServer(new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr);
+        final GridNioServer<?> srvr = startServer(new GridBufferedParser(true, ByteOrder.nativeOrder()), lsnr, null, 500L, null);
 
-        // Set flag using reflection.
-        Field f = srvr.getClass().getDeclaredField("skipWrite");
-
-        f.setAccessible(true);
-
-        f.set(srvr, true);
-
-        srvr.writeTimeout(500);
+        srvr.skipWrite(true);
 
         try {
             multithreaded(new Runnable() {

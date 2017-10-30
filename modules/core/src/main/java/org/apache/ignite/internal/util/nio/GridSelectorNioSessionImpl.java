@@ -68,7 +68,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     private final IgniteLogger log;
 
     /** */
-    private List<GridNioServer.SessionChangeRequest> pendingStateChanges;
+    private List<SessionChangeRequest> pendingStateChanges;
 
     /** */
     final AtomicBoolean procWrite = new AtomicBoolean();
@@ -183,7 +183,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
      * @param fut Move future.
      * @return {@code True} if session move was scheduled.
      */
-    boolean offerMove(GridNioWorker from, GridNioServer.SessionChangeRequest fut) {
+    boolean offerMove(GridNioWorker from, SessionChangeRequest fut) {
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -202,7 +202,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     /**
      * @param fut Future.
      */
-    void offerStateChange(GridNioServer.SessionChangeRequest fut) {
+    void offerStateChange(SessionChangeRequest fut) {
         synchronized (this) {
             if (log.isDebugEnabled())
                 log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
@@ -230,7 +230,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
             if (log.isDebugEnabled())
                 log.debug("Started moving [ses=" + this + ", from=" + moveFrom + ']');
 
-            List<GridNioServer.SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
+            List<SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
 
             worker = null;
 

@@ -169,7 +169,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
 
         GridNioServer nioSrvr = U.field(commSpi, "nioSrvr");
 
-        GridTestUtils.setFieldValue(nioSrvr, "skipRead", true);
+        nioSrvr.skipRead(true);
 
         // Initiate messages for client.
         for (int i = 0; i < 100; i++)

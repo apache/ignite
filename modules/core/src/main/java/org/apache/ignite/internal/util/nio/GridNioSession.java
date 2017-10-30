@@ -46,14 +46,33 @@ public interface GridNioSession {
      *
      * @return Total count of bytes sent.
      */
-    public long bytesSent();
+    public long bytesSentTotal();
+
+    /**
+     * Gets the count of bytes sent since last rebalancing.
+     *
+     * @return Total count of bytes received.
+     */
+    public long bytesSentSinceRebalancing();
 
     /**
      * Gets the total count of bytes received since the session was created.
      *
      * @return Total count of bytes received.
      */
-    public long bytesReceived();
+    public long bytesReceivedTotal();
+
+    /**
+     * Gets the count of bytes received since last rebalancing.
+     *
+     * @return Total count of bytes received.
+     */
+    public long bytesReceivedSinceRebalancing();
+
+    /**
+     * Resets session counters.
+     */
+    public void reset();
 
     /**
      * Gets the time when the session was created.

@@ -69,13 +69,25 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public long bytesSent() {
+    @Override public long bytesSentTotal() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long bytesReceived() {
+    @Override public long bytesReceivedTotal() {
         return 0;
+    }
+
+    @Override public long bytesSentSinceRebalancing() {
+        return 0;
+    }
+
+    @Override public long bytesReceivedSinceRebalancing() {
+        return 0;
+    }
+
+    @Override public void reset() {
+
     }
 
     /** {@inheritDoc} */

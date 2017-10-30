@@ -175,33 +175,27 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public long bytesSent() {
+    @Override public long bytesSentTotal() {
         return bytesSent;
     }
 
     /** {@inheritDoc} */
-    @Override public long bytesReceived() {
+    @Override public long bytesReceivedTotal() {
         return bytesRcvd;
     }
 
-    /**
-     * @return Sent bytes since last NIO sessions balancing.
-     */
-    public long bytesSent0() {
+    /** {@inheritDoc} */
+    @Override public long bytesSentSinceRebalancing() {
         return bytesSent0;
     }
 
-    /**
-     * @return Received bytes since last NIO sessions balancing.
-     */
-    public long bytesReceived0() {
+    /** {@inheritDoc} */
+    @Override public long bytesReceivedSinceRebalancing() {
         return bytesRcvd0;
     }
 
-    /**
-     *
-     */
-    public void reset0() {
+    /** {@inheritDoc} */
+    @Override public void reset() {
         bytesSent0 = 0;
         bytesRcvd0 = 0;
     }

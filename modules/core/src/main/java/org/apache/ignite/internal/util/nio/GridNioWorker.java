@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,21 +29,52 @@ interface GridNioWorker {
     /**
      * @param req Change request.
      */
-    public void offer(GridNioServer.SessionChangeRequest req);
+    public void offer(SessionChangeRequest req);
 
     /**
      * @param reqs Change requests.
      */
-    public void offer(Collection<GridNioServer.SessionChangeRequest> reqs);
+    public void offer(Collection<SessionChangeRequest> reqs);
 
     /**
      * @param ses Session.
      * @return Session state change requests.
      */
-    @Nullable public List<GridNioServer.SessionChangeRequest> clearSessionRequests(GridNioSession ses);
+    @Nullable public List<SessionChangeRequest> clearSessionRequests(GridNioSession ses);
 
     /**
      * @param ses Session to register write interest for.
      */
     public void registerWrite(GridSelectorNioSessionImpl ses);
+
+    /**
+     * Resets the worker counters.
+     */
+    void reset();
+
+    /**
+     * @return Worker sessions.
+     */
+    <T extends GridNioSession> Set<T> sessions();
+
+    /**
+     * Bytes received since rebalancing.
+     */
+    long bytesReceivedSinceRebalancing();
+
+    /**
+     * Bytes sent since rebalancing.
+     */
+    long bytesSentSinceRebalancing();
+
+    /**
+     * Bytes received total.
+     */
+    long bytesReceivedTotal();
+
+    /**
+     * Bytes sent since total.
+     */
+    long bytesSentTotal();
+
 }

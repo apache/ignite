@@ -266,9 +266,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
                 .directMode(false)
+                .idleTimeout(cfg.getIdleTimeout())
                 .build();
-
-            srv.idleTimeout(cfg.getIdleTimeout());
 
             srv.start();
 

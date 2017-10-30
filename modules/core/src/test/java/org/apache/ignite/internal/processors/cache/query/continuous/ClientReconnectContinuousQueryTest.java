@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -196,6 +195,6 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
         GridNioServer nioSrvr = U.field(commSpi, "nioSrvr");
 
-        GridTestUtils.setFieldValue(nioSrvr, "skipRead", skip);
+        nioSrvr.skipRead(skip);
     }
 }

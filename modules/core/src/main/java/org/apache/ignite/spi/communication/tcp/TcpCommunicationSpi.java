@@ -2312,6 +2312,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
                         .readWriteSelectorsAssign(usePairedConnections)
+                        .idleTimeout(idleConnTimeout)
                         .build();
 
                 boundTcpPort = port;
@@ -2322,11 +2323,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         "[port=" + boundTcpPort +
                         ", locHost=" + locHost +
                         ", selectorsCnt=" + selectorsCnt +
-                        ", selectorSpins=" + srvr.selectorSpins() +
                         ", pairedConn=" + usePairedConnections + ']');
                 }
-
-                srvr.idleTimeout(idleConnTimeout);
 
                 return srvr;
             }

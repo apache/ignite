@@ -287,7 +287,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
 
         // Prevent node1 from send
-        GridTestUtils.setFieldValue(srv1, "skipWrite", true);
+        srv1.skipWrite(true);
 
         final GridNioSession ses0 = communicationSession(spi0);
 
@@ -315,7 +315,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
-        GridTestUtils.setFieldValue(srv1, "skipWrite", false);
+        srv1.skipWrite(false);
 
         for (int i = 0; i < 100; i++)
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0));
