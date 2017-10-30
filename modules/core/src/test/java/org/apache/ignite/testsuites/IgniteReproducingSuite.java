@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
@@ -34,8 +35,8 @@ public class IgniteReproducingSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
         //uncomment to add some test
-        //for (int i = 0; i < 100; i++)
-        //    suite.addTestSuite();
+        for (int i = 0; i < 100; i++)
+            suite.addTestSuite(IgniteCacheGroupsTest.class);
 
         return suite;
     }
