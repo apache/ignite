@@ -141,22 +141,6 @@ public class SqlCreateTableCommand implements SqlCommand {
         return pkColNames != null ? pkColNames : Collections.<String>emptySet();
     }
 
-    /**
-     * @param col Column.
-     * @return This instance.
-     */
-    private SqlCreateTableCommand addColumn(SqlColumn col) {
-        if (cols == null) {
-            cols = new LinkedList<>();
-            colNames = new HashSet<>();
-        }
-
-        cols.add(col);
-        colNames.add(col.name());
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
@@ -338,7 +322,7 @@ public class SqlCreateTableCommand implements SqlCommand {
             }
 
             if (col != null) {
-                addColumn(col);
+                addColumn(lex, col);
 
                 SqlParserToken next = lex.lookAhead();
 
@@ -360,6 +344,21 @@ public class SqlCreateTableCommand implements SqlCommand {
         }
 
         throw errorUnexpectedToken(lex, "[column_type]");
+    }
+
+    /**
+     * @param col Column.
+     */
+    private void addColumn(SqlLexer lex, SqlColumn col) {
+        if (cols == null) {
+            cols = new LinkedList<>();
+            colNames = new HashSet<>();
+        }
+
+        if (!colNames.add(col.name()))
+            throw error(lex, "Column already defined: " + col.name());
+
+        cols.add(col);
     }
 
     /**
