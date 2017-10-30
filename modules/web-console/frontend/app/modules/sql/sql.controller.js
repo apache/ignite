@@ -864,7 +864,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         });
 
                         return cachesAcc;
-                    }, []), 'label');
+                    }, []), (cache) => cache.label.toLowerCase());
 
                     // Reset to first cache in case of stopped selected.
                     const cacheNames = _.map($scope.caches, (cache) => cache.value);
