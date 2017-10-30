@@ -36,6 +36,9 @@ public class SqlKeyword {
     /** Keyword: EXISTS. */
     public static final String EXISTS = "EXISTS";
 
+    /** Keyword: FULLTEXT. */
+    public static final String FULLTEXT = "FULLTEXT";
+
     /** Keyword: IF. */
     public static final String IF = "IF";
 
@@ -47,6 +50,9 @@ public class SqlKeyword {
 
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: SPATIAL. */
+    public static final String SPATIAL = "SPATIAL";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";

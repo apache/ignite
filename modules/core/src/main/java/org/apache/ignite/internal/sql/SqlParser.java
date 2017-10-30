@@ -24,7 +24,9 @@ import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+import static org.apache.ignite.internal.sql.SqlKeyword.FULLTEXT;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
+import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
@@ -111,12 +113,18 @@ public class SqlParser {
 
             if (matchesKeyword(lex, INDEX))
                 cmd = new SqlCreateIndexCommand();
+            else if (matchesKeyword(lex, SPATIAL)) {
+                if (lex.shift() && matchesKeyword(lex, INDEX))
+                    cmd = new SqlCreateIndexCommand().spatial(true);
+                else
+                    throw errorUnexpectedToken(lex, INDEX);
+            }
 
             if (cmd != null)
                 return cmd.parse(lex);
         }
 
-        throw errorUnexpectedToken(lex, INDEX);
+        throw errorUnexpectedToken(lex, INDEX, SPATIAL);
     }
 
     /**

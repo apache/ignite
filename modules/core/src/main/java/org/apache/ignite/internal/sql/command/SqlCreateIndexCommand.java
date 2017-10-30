@@ -55,6 +55,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /** IF NOT EXISTS flag. */
     private boolean ifNotExists;
 
+    /** Spatial index flag. */
+    private boolean spatial;
+
     /** Columns. */
     @GridToStringInclude
     private Collection<SqlIndexColumn> cols;
@@ -64,16 +67,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
      */
     public String schemaName() {
         return schemaName;
-    }
-
-    /**
-     * @param schemaName Schema name.
-     * @return This instance.
-     */
-    public SqlCreateIndexCommand schemaName(String schemaName) {
-        this.schemaName = schemaName;
-
-        return this;
     }
 
     /**
@@ -98,6 +91,23 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
+     * @return Spatial index flag.
+     */
+    public boolean spatial() {
+        return spatial;
+    }
+
+    /**
+     * @param spatial Spatial index flag.
+     * @return This instance.
+     */
+    public SqlCreateIndexCommand spatial(boolean spatial) {
+        this.spatial = spatial;
+
+        return this;
+    }
+
+    /**
      * @return Columns.
      */
     public Collection<SqlIndexColumn> columns() {
@@ -119,7 +129,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        // TODO: FULLTEXT, SPATIAL.
         // TODO: INLINE SIZE
 
         processCreateIndexIfExists(lex);
