@@ -44,7 +44,7 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 @GridCommonTest(group = "Distributed Models")
 public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 1;
+    private static final int NODE_COUNT = 3;
     /** Precision. */
     private static final double PRECISION = 0.0;
     /** Grid instance. */
@@ -292,9 +292,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
         BlockMatrixStorage storage = (BlockMatrixStorage)res.getStorage();
-
-        System.out.println(storage.getBlockId(96, 96));
-        System.out.println(storage.get(96, 96));
 
         for(int i = 0; i < size; i++)
             for(int j = 0; j < size; j++)

@@ -87,10 +87,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         this.rows = rows;
         this.cols = cols;
 
-        //cols % maxBlockEdge > 0 ? 1 : 0
-
-        this.blocksInRow = cols % maxBlockEdge == 0 ? cols / maxBlockEdge : cols / maxBlockEdge + 1;
-        this.blocksInCol = rows % maxBlockEdge == 0 ? rows / maxBlockEdge : rows / maxBlockEdge + 1;
+        this.blocksInRow = rows % maxBlockEdge == 0 ? rows / maxBlockEdge : rows / maxBlockEdge + 1;
+        this.blocksInCol = cols % maxBlockEdge == 0 ? cols / maxBlockEdge : cols / maxBlockEdge + 1;
 
         cache = newCache();
 
@@ -198,32 +196,6 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         cache.clearAll(getAllKeys());
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + cols;
-        res = res * 37 + rows;
-        res = res * 37 + uuid.hashCode();
-        res = res * 37 + cache.hashCode();
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-
-        BlockMatrixStorage that = (BlockMatrixStorage)obj;
-
-        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
-            && (cache != null ? cache.equals(that.cache) : that.cache == null);
-    }
-
     /**
      * Get storage UUID.
      *
@@ -299,6 +271,32 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + cols;
+        res = res * 37 + rows;
+        res = res * 37 + uuid.hashCode();
+        res = res * 37 + cache.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        BlockMatrixStorage that = (BlockMatrixStorage)obj;
+
+        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
+    }
+
     /**
      *
      */
@@ -313,10 +311,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
             int colSize = blockId.get1() == (blocksInCol - 1) ? rows % maxBlockEdge : maxBlockEdge;
             int rowSize = blockId.get2() == (blocksInRow -1 ) ? cols % maxBlockEdge : maxBlockEdge;
 
-//            entry = new BlockEntry(rowSize, colSize);
-            System.out.printf(">>> Init block for %d x %d %n", blockId.get1() , blockId.get2());
             entry = new BlockEntry(rowSize, colSize);
-            System.out.printf(">>> Block size is [%dx%d]%n", entry.rowSize(), entry.columnSize());
         }
 
         return entry;
@@ -364,7 +359,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** */
     public IgnitePair<Long> getBlockId(int x, int y) {
-        return new IgnitePair((long)x / maxBlockEdge, (long)y / maxBlockEdge);
+        return new IgnitePair<>((long)x / maxBlockEdge, (long)y / maxBlockEdge);
     }
 
     /** */

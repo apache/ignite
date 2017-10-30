@@ -107,7 +107,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
         CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
-            Affinity affinity = ignite.affinity(cacheName);
+            Affinity<BlockMatrixKey> affinity = ignite.affinity(cacheName);
 
             IgniteCache<BlockMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
