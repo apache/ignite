@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
 import org.jetbrains.annotations.Nullable;
@@ -46,10 +47,12 @@ public class GroupTrainerTask<S, G, U extends Serializable> extends ComputeTaskA
 
     public GroupTrainerTask(UUID trainingUUID,
         IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, U>> worker,
+        IgniteBinaryOperator<U> reducer,
         String cacheName,
         S data) {
         this.trainingUUID = trainingUUID;
         this.worker = worker;
+        this.reducer = reducer;
         this.cacheName = cacheName;
         this.data = data;
     }
@@ -71,6 +74,7 @@ public class GroupTrainerTask<S, G, U extends Serializable> extends ComputeTaskA
 
     @Nullable @Override
     public U reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.stream().map(res -> (U)res.getData()).reduce();
+        // TODO: safe rewrite.
+        return results.stream().map(res -> (U)res.getData()).reduce(reducer).get();
     }
 }

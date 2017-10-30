@@ -39,6 +39,7 @@ public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJo
     private Ignite ignite;
     IgniteCache<GroupTrainerCacheKey, G> cache;
     S data;
+    IgniteSupplier<Integer> keySupplier;
 
     public LocalTrainingJob(IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, U>> worker,
         UUID trainingUUID, String cacheName,
