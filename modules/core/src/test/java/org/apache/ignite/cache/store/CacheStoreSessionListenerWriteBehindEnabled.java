@@ -25,11 +25,7 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import javax.cache.Cache;
@@ -43,12 +39,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
-import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * This class tests that calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
@@ -63,7 +56,7 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
     protected final static int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** */
-    private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<>());
+    private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<OperationType>());
 
     /** */
     private static final AtomicInteger entryCnt = new AtomicInteger();
@@ -85,7 +78,7 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         cacheCfg.setWriteThrough(true);
 
         cacheCfg.setWriteBehindEnabled(true);
-        cacheCfg.setWriteBehindBatchSize(CNT*2);
+        cacheCfg.setWriteBehindBatchSize(CNT * 2);
         cacheCfg.setWriteBehindFlushFrequency(WRITE_BEHIND_FLUSH_FREQUENCY);
 
         cacheCfg.setBackups(0);
