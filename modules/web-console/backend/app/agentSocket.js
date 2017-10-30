@@ -89,18 +89,30 @@ module.exports.factory = function(_) {
         /**
          * @param {Socket} socket Socket for interaction.
          * @param {Object} accounts Active accounts.
+         * @param {String} tokens Active tokens.
          * @param {String} demoEnabled Demo enabled.
          */
-        constructor(socket, accounts, demoEnabled) {
+        constructor(socket, accounts, tokens, demoEnabled) {
             Object.assign(this, {
-                socket,
                 accounts,
                 cluster: null,
                 demo: {
                     enabled: demoEnabled,
                     browserSockets: []
-                }
+                },
+                socket,
+                tokens
             });
+        }
+
+        resetToken(oldToken) {
+            _.pull(this.tokens, oldToken);
+
+            this.emitEvent('agent:reset:token', oldToken)
+                .then(() => {
+                    if (_.isEmpty(this.tokens) && this.socket.connected)
+                        this.socket.close();
+                });
         }
 
         /**

@@ -205,12 +205,13 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
          *
          * @param {Socket} sock
          * @param {Array.<mongo.Account>} accounts
+         * @param {Array.<String>} tokens
          * @param {boolean} demoEnabled
          *
          * @private
          */
-        onConnect(sock, accounts, demoEnabled) {
-            const agentSocket = new AgentSocket(sock, accounts, demoEnabled);
+        onConnect(sock, accounts, tokens, demoEnabled) {
+            const agentSocket = new AgentSocket(sock, accounts, tokens, demoEnabled);
 
             _.forEach(accounts, (account) => {
                 this._agentSockets.add(account, agentSocket);
@@ -252,7 +253,8 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         getAccounts(tokens) {
-            return mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec();
+            return mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
+                .then((accounts) => ({accounts, activeTokens: _.uniq(_.map(accounts, 'token'))}));
         }
 
         /**
@@ -284,15 +286,13 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                             }
 
                             return this.getAccounts(tokens)
-                                .then((accounts) => {
-                                    const activeTokens = _.uniq(_.map(accounts, 'token'));
-
+                                .then(({accounts, activeTokens}) => {
                                     if (_.isEmpty(activeTokens))
                                         return cb(`Failed to authenticate with token(s): ${tokens.join(',')}. Please reload agent archive or check settings`);
 
                                     cb(null, activeTokens);
 
-                                    return this.onConnect(sock, accounts, disableDemo);
+                                    return this.onConnect(sock, accounts, activeTokens, disableDemo);
                                 })
                                 // TODO IGNITE-1379 send error to web master.
                                 .catch(() => cb(`Invalid token(s): ${tokens.join(',')}. Please reload agent archive or check settings`));
@@ -342,9 +342,9 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             if (_.isNil(this.io))
                 return;
 
-            const sockets = this._agentSockets.get(account);
+            const agentSockets = this._agentSockets.get(account);
 
-            _.forEach(sockets, (socket) => socket._emit('agent:reset:token', account.token));
+            _.forEach(agentSockets, (sock) => sock.resetToken(account.token));
         }
     }
 

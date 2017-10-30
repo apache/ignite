@@ -57,7 +57,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * API to translate REST requests to Ignite cluster.
  */
-public class RestExecutor {
+public class RestExecutor implements AutoCloseable {
     /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
@@ -90,7 +90,7 @@ public class RestExecutor {
     /**
      * Stop HTTP client.
      */
-    public void stop() {
+    public void close() {
         if (httpClient != null) {
             httpClient.dispatcher().executorService().shutdown();
 

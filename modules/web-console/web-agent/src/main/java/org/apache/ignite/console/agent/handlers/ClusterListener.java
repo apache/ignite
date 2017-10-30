@@ -31,15 +31,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +53,9 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 /**
  * API to transfer topology from Ignite cluster available by node-uri.
  */
-public class ClusterListener {
+public class ClusterListener implements AutoCloseable {
     /** */
-    private static final Logger log = LoggerFactory.getLogger(ClusterListener.class);
+    private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(ClusterListener.class));
 
     /** */
     private static final String EVENT_CLUSTER_CONNECTED = "cluster:connected";
@@ -127,7 +130,7 @@ public class ClusterListener {
      * @param nids Cluster nodes IDs.
      */
     private void clusterConnect(Collection<UUID> nids) {
-        log.info("Connection successfully established to cluster with nodes: {}", F.viewReadOnly(nids, ID2ID8));
+        log.info("Connection successfully established to cluster with nodes: " + F.viewReadOnly(nids, ID2ID8));
 
         client.emit(EVENT_CLUSTER_CONNECTED, toJSON(nids));
     }
@@ -178,17 +181,11 @@ public class ClusterListener {
         };
     }
 
-    /**
-     * Stop broadcast topology to server-side.
-     */
-    public Emitter.Listener stop() {
-        return new Emitter.Listener() {
-            @Override public void call(Object... args) {
-                refreshTask.cancel(true);
+    /** {@inheritDoc} */
+    public void close() {
+        refreshTask.cancel(true);
 
-                watch();
-            }
-        };
+        pool.shutdownNow();
     }
 
     /** */
@@ -264,7 +261,7 @@ public class ClusterListener {
                         TopologySnapshot newTop = new TopologySnapshot(nodes);
 
                         if (newTop.differentCluster(top))
-                            log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
+                            log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
 
                         top = newTop;
 
@@ -273,7 +270,7 @@ public class ClusterListener {
                         break;
 
                     default:
-                        log.warn(res.getError());
+                        LT.warn(log, res.getError());
 
                         clusterDisconnect();
                 }
@@ -306,7 +303,7 @@ public class ClusterListener {
                         if (top.differentCluster(newTop)) {
                             clusterDisconnect();
 
-                            log.info("Connection successfully established to cluster with nodes: {}", newTop.nid8());
+                            log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
 
                             watch();
                         }
@@ -318,7 +315,7 @@ public class ClusterListener {
                         break;
 
                     default:
-                        log.warn(res.getError());
+                        LT.warn(log, res.getError());
 
                         clusterDisconnect();
                 }

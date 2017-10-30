@@ -44,10 +44,9 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
-import org.apache.ignite.console.agent.handlers.DemoListener;
+import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
-import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.json.JSONArray;
@@ -368,12 +367,9 @@ public class AgentLauncher {
         }
 
         final Socket client = IO.socket(uri, opts);
-        final RestExecutor restExecutor = new RestExecutor(cfg.nodeUri());
 
-        try {
-            final ClusterListener clusterLsnr = new ClusterListener(client, restExecutor);
-            final DemoListener demoHnd = new DemoListener(client, restExecutor);
-
+        try (RestExecutor restExecutor = new RestExecutor(cfg.nodeUri());
+             ClusterListener clusterLsnr = new ClusterListener(client, restExecutor)) {
             Emitter.Listener onConnect = new Emitter.Listener() {
                 @Override public void call(Object... args) {
                     log.info("Connection established.");
@@ -469,10 +465,6 @@ public class AgentLauncher {
                 .on(EVENT_ERROR, onError)
                 .on(EVENT_DISCONNECT, onDisconnect)
                 .on(EVENT_LOG_WARNING, onLogWarning)
-                .on(EVENT_CLUSTER_BROADCAST_START, clusterLsnr.start())
-                .on(EVENT_CLUSTER_BROADCAST_STOP, clusterLsnr.stop())
-                .on(EVENT_DEMO_BROADCAST_START, demoHnd.start())
-                .on(EVENT_DEMO_BROADCAST_STOP, demoHnd.stop())
                 .on(EVENT_RESET_TOKENS, new Emitter.Listener() {
                     @Override public void call(Object... args) {
                         String tok = String.valueOf(args[0]);
@@ -499,8 +491,6 @@ public class AgentLauncher {
             latch.await();
         }
         finally {
-            restExecutor.stop();
-
             client.close();
         }
     }
