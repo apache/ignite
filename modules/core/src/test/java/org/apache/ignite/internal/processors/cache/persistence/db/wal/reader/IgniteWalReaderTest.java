@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -68,8 +70,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -77,6 +82,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.genNewStyleSubfolderName;
@@ -114,6 +120,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** Custom wal mode. */
     private WALMode customWalMode;
+
+    /** Clear properties in afterTest method() */
+    private boolean clearProperties;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -159,6 +168,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        if (clearProperties)
+            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+
         if (deleteAfter)
             deleteWorkFiles();
     }
@@ -202,12 +214,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final File walArchiveDirWithConsistentId = new File(walArchive, subfolderName);
         final File walWorkDirWithConsistentId = new File(wal, subfolderName);
-
-        final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
-        final File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
-        final File marshaller = U.resolveWorkDirectory(workDir, "marshaller", false);
-
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE, binaryMetaWithConsId, marshaller);
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
         final int cntArchiveDir = iterateAndCount(factory.iteratorArchiveDirectory(walArchiveDirWithConsistentId));
 
         log.info("Total records loaded using directory : " + cntArchiveDir);
@@ -460,8 +467,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             binaryMetaWithConsId,
             marshallerMapping);
 
-        final BiConsumer<Object, Object> objConsumer = new BiConsumer<Object, Object>() {
-            @Override public void accept(Object key, Object val) {
+        final IgniteBiInClosure<Object, Object> objConsumer = new IgniteBiInClosure<Object, Object>() {
+            @Override public void apply(Object key, Object val) {
                 boolean rmv = remove(ctrlMap, key, val);
                 if (!rmv)
                     log.error("Unable to remove Key and value from control Map K:[" + key + "] V: [" + val + "]");
@@ -510,8 +517,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final String subfolderName,
         final int minCntEntries,
         final int minTxCnt,
-        @Nullable final BiConsumer<Object, Object> objConsumer,
-        @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
+        @Nullable final IgniteBiInClosure<Object, Object> objConsumer,
+        @Nullable final IgniteInClosure<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
         final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
         final File wal = new File(db, "wal");
@@ -611,11 +618,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final File binaryMetaWithNodeSubfolder = new File(binaryMeta, subfolderName);
         final File marshallerMapping = U.resolveWorkDirectory(workDir, "marshaller", false);
 
-        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
-            binaryMetaWithNodeSubfolder,
-            marshallerMapping);
-        final BiConsumer<Object, Object> objConsumer = new BiConsumer<Object, Object>() {
-            @Override public void accept(Object key, Object val) {
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
+        final IgniteBiInClosure<Object, Object> objConsumer = new IgniteBiInClosure<Object, Object>() {
+            @Override public void apply(Object key, Object val) {
                 log.info("K: [" + key + ", " +
                     (key != null ? key.getClass().getName() : "?") + "]" +
                     " V: [" + val + ", " +
@@ -629,8 +634,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         };
 
-        final Consumer<DataRecord> toStrChecker = new Consumer<DataRecord>() {
-            @Override public void accept(DataRecord record) {
+        final IgniteInClosure<DataRecord> toStrChecker = new IgniteInClosure<DataRecord>() {
+            @Override public void apply(DataRecord record) {
                 String strRepresentation = record.toString();
                 for (Iterator<String> iter = ctrlStringsToSearch.iterator(); iter.hasNext(); ) {
                     final String next = iter.next();
@@ -652,8 +657,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             binaryMetaWithNodeSubfolder,
             marshallerMapping,
             true);
-        final BiConsumer<Object, Object> binObjConsumer = new BiConsumer<Object, Object>() {
-            @Override public void accept(Object key, Object val) {
+        final IgniteBiInClosure<Object, Object> binObjConsumer = new IgniteBiInClosure<Object, Object>() {
+            @Override public void apply(Object key, Object val) {
                 log.info("K(KeepBinary): [" + key + ", " +
                     (key != null ? key.getClass().getName() : "?") + "]" +
                     " V(KeepBinary): [" + val + ", " +
@@ -700,8 +705,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         };
 
-        final Consumer<DataRecord> binObjToStrChecker = new Consumer<DataRecord>() {
-            @Override public void accept(DataRecord record) {
+        final IgniteInClosure<DataRecord> binObjToStrChecker = new IgniteInClosure<DataRecord>() {
+            @Override public void apply(DataRecord record) {
                 String strRepresentation = record.toString();
                 for (Iterator<String> iter = ctrlStringsForBinaryObjSearch.iterator(); iter.hasNext(); ) {
                     final String next = iter.next();
@@ -764,7 +769,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
 
         final String workDir = U.defaultWorkDirectory();
-        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
 
         scanIterateAndCount(factory, workDir, subfolderName, totalEntries, 0, null, null);
     }
@@ -787,7 +792,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
 
         final String workDir = U.defaultWorkDirectory();
-        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
 
         scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, null);
     }
@@ -859,13 +864,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopGrid("node0");
 
         final String workDir = U.defaultWorkDirectory();
-        final IgniteWalIteratorFactory factory = createWalIteratorFactory(subfolderName, workDir);
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
 
         final StringBuilder builder = new StringBuilder();
         final Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
-        scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, new Consumer<DataRecord>() {
-            @Override public void accept(DataRecord dataRecord) {
+        scanIterateAndCount(factory, workDir, subfolderName, 0, 0, null, new IgniteInClosure<DataRecord>() {
+            @Override public void apply(DataRecord dataRecord) {
                 final List<DataEntry> entries = dataRecord.writeEntries();
 
                 builder.append("{");
@@ -902,14 +907,116 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param subfolderName Subfolder name.
+     * Tests transaction generation and WAL for putAll cache operation.
+     * @throws Exception if failed.
+     */
+    public void testPutAllTx() throws Exception {
+        final Ignite ignite = startGrid("node0");
+        startGrid(1);
+
+        ignite.active(true);
+
+        final Map<Object, IndexedObject> map = new TreeMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            map.put(i, new IndexedObject(i));
+
+        ignite.cache(CACHE_NAME).putAll(map);
+
+        ignite.active(false);
+
+        final String subfolderName = genDbSubfolderName(ignite, 0);
+
+        stopAllGrids();
+
+        final String workDir = U.defaultWorkDirectory();
+        final IgniteWalIteratorFactory factory = createWalIteratorFactory(workDir, subfolderName);
+
+        final StringBuilder builder = new StringBuilder();
+        final Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
+
+        scanIterateAndCount(factory, workDir, subfolderName, 1000, 1, null, new IgniteInClosure<DataRecord>() {
+            @Override public void apply(DataRecord dataRecord) {
+                final List<DataEntry> entries = dataRecord.writeEntries();
+
+                builder.append("{");
+                for (DataEntry entry : entries) {
+                    final GridCacheOperation op = entry.op();
+                    final Integer cnt = operationsFound.get(op);
+
+                    operationsFound.put(op, cnt == null ? 1 : (cnt + 1));
+
+                    if (entry instanceof UnwrapDataEntry) {
+                        final UnwrapDataEntry entry1 = (UnwrapDataEntry)entry;
+
+                        builder.append(entry1.op()).append(" for ").append(entry1.unwrappedKey());
+                        final GridCacheVersion ver = entry.nearXidVersion();
+
+                        builder.append(", ");
+
+                        if (ver != null)
+                            builder.append("tx=").append(ver).append(", ");
+                    }
+                }
+
+                builder.append("}\n");
+            }
+        });
+
+        final Integer createsFound = operationsFound.get(CREATE);
+
+        if (log.isInfoEnabled())
+            log.info(builder.toString());
+
+        assertTrue("Create operations should be found in log: " + operationsFound,
+            createsFound != null && createsFound > 0);
+    }
+
+    /**
+     * Tests transaction generation and WAL for putAll cache operation.
+     * @throws Exception if failed.
+     */
+    public void testTxRecordsReadWoBinaryMeta() throws Exception {
+        clearProperties = true;
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
+
+        final Ignite ignite = startGrid("node0");
+        ignite.active(true);
+
+        final Map<Object, IndexedObject> map = new TreeMap<>();
+
+        for (int i = 0; i < 1000; i++)
+            map.put(i, new IndexedObject(i));
+
+        ignite.cache(CACHE_NAME).putAll(map);
+
+        ignite.active(false);
+
+        final String workDir = U.defaultWorkDirectory();
+        final String subfolderName = genDbSubfolderName(ignite, 0);
+        stopAllGrids();
+
+        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
+            PAGE_SIZE,
+            null,
+            null,
+            false);
+
+        //todo: if we remove WAL iterator here, test is failed
+        factory = createWalIteratorFactory(workDir, subfolderName);
+
+        scanIterateAndCount(factory, workDir, subfolderName, 1000, 1, null, null);
+    }
+
+    /**
      * @param workDir Work directory.
+     * @param subfolderName Subfolder name.
      * @return WAL iterator factory.
      * @throws IgniteCheckedException If failed.
      */
     @NotNull private IgniteWalIteratorFactory createWalIteratorFactory(
-        String subfolderName,
-        String workDir
+        final String workDir,
+        final String subfolderName
     ) throws IgniteCheckedException {
         final File binaryMeta = U.resolveWorkDirectory(workDir, "binary_meta", false);
         final File binaryMetaWithConsId = new File(binaryMeta, subfolderName);
@@ -918,7 +1025,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         return new IgniteWalIteratorFactory(log,
             PAGE_SIZE,
             binaryMetaWithConsId,
-            marshallerMapping);
+            marshallerMapping,
+            false);
     }
 
     /**
@@ -943,8 +1051,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     private Map<GridCacheVersion, Integer> iterateAndCountDataRecord(
         final WALIterator walIter,
-        @Nullable final BiConsumer<Object, Object> cacheObjHnd,
-        @Nullable final Consumer<DataRecord> dataRecordHnd) throws IgniteCheckedException {
+        @Nullable final IgniteBiInClosure<Object, Object> cacheObjHnd,
+        @Nullable final IgniteInClosure<DataRecord> dataRecordHnd) throws IgniteCheckedException {
 
         final Map<GridCacheVersion, Integer> entriesUnderTxFound = new HashMap<>();
 
@@ -957,7 +1065,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     final DataRecord dataRecord = (DataRecord)walRecord;
 
                     if (dataRecordHnd != null)
-                        dataRecordHnd.accept(dataRecord);
+                        dataRecordHnd.apply(dataRecord);
                     final List<DataEntry> entries = dataRecord.writeEntries();
 
                     for (DataEntry entry : entries) {
@@ -990,7 +1098,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             "; Value: " + unwrappedValObj);
 
                         if (cacheObjHnd != null && (unwrappedKeyObj != null || unwrappedValObj != null))
-                            cacheObjHnd.accept(unwrappedKeyObj, unwrappedValObj);
+                            cacheObjHnd.apply(unwrappedKeyObj, unwrappedValObj);
 
                         final Integer entriesUnderTx = entriesUnderTxFound.get(globalTxId);
                         entriesUnderTxFound.put(globalTxId, entriesUnderTx == null ? 1 : entriesUnderTx + 1);
@@ -1006,36 +1114,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         }
         return entriesUnderTxFound;
-    }
-
-    /**
-     * Represents an operation that accepts a single input argument and returns no
-     * result.
-     *
-     * @param <T>
-     */
-    private interface Consumer<T> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument
-         */
-        public void accept(T t);
-    }
-
-    /**
-     * Represents an operation that accepts two input arguments and returns no
-     * result.
-     *
-     * @param <T>
-     */
-    private interface BiConsumer<T, U> {
-        /**
-         * Performs this operation on the given argument.
-         *
-         * @param t the input argument
-         */
-        public void accept(T t, U u);
     }
 
     /** Enum for cover binaryObject enum save/load */
