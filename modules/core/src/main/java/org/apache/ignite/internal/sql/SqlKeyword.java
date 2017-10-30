@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.IgniteException;
+
+import java.lang.reflect.Field;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * SQL keyword constants.
  */
@@ -62,6 +68,34 @@ public class SqlKeyword {
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
+
+    /** All keywords. */
+    private static final HashSet<String> KEYWORDS;
+
+    static {
+        KEYWORDS = new HashSet<>();
+
+        try {
+            for (Field field : SqlKeyword.class.getDeclaredFields()) {
+                String val = (String)field.get(null);
+
+                KEYWORDS.add(val);
+            }
+        }
+        catch (ReflectiveOperationException e) {
+            throw new IgniteException("Failed to initialize keywords collection.", e);
+        }
+    }
+
+    /**
+     * Check if string is a keyword.
+     *
+     * @param str String.
+     * @return {@code True} if it is a keyword.
+     */
+    public static boolean isKeyword(String str) {
+        return KEYWORDS.contains(str);
+    }
 
     /**
      * Private constructor.

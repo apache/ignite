@@ -176,7 +176,8 @@ public class SqlCreateTableCommand implements SqlCommand {
     private void parseColumnOrConstraint(SqlLexer lex) {
         SqlParserToken next = lex.lookAhead();
 
-        // TODO: Throw errors on unsupported features (keywords!!!).
+        if (next == null)
+            throw errorUnexpectedToken(lex, PRIMARY, "[column definition]");
 
         if (matchesKeyword(next, PRIMARY))
             parsePrimaryKeyConstraint(lex);

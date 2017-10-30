@@ -78,8 +78,12 @@ public class SqlParserUtils {
             case DEFAULT:
                 char c = token.tokenFirstChar();
 
-                if ((c >= 'A' && c <= 'Z') || c == '_')
+                if ((c >= 'A' && c <= 'Z') || c == '_') {
+                    if (SqlKeyword.isKeyword(token.token()))
+                        throw error(token, "Identifier is expected, but keyword is found: " + token.token());
+
                     return true;
+                }
 
                 throw error(token, "Illegal identifier name: " + token.token());
 
