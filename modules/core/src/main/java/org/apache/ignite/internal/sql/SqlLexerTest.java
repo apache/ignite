@@ -27,6 +27,6 @@ public class SqlLexerTest {
 
         //System.out.println(new SqlParser("DROP INDEX IF EXISTS a.a;").nextCommand());
 
-        System.out.println(new SqlParser("CREATE INDEX IF NOT EXISTS a ON b.c(d DESC, e)").nextCommand());
+        System.out.println(new SqlParser("CREATE TABLE t (a VARCHAR, b TINYINT, PRIMARY KEY (a))").nextCommand());
     }
 }

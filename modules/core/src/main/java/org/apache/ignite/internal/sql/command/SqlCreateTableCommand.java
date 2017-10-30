@@ -340,6 +340,21 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (col != null) {
                 addColumn(col);
 
+                SqlParserToken next = lex.lookAhead();
+
+                if (matchesKeyword(next, PRIMARY)) {
+                    if (pkColNames != null)
+                        throw error(lex, "PRIMARY KEY is already defined.");
+
+                    pkColNames = new HashSet<>();
+
+                    pkColNames.add(col.name());
+
+                    lex.shift();
+
+                    skipIfMatchesKeyword(lex, KEY);
+                }
+
                 return;
             }
         }

@@ -182,17 +182,15 @@ public class SqlParserUtils {
     /**
      * Check if current lexer token matches expected.
      *
-     * @param lex Lexer.
+     * @param token Token..
      * @param expKeyword Expected keyword.
      * @return {@code True} if matches.
      */
-    public static boolean matchesKeyword(SqlParserToken lex, String expKeyword) {
-        if (lex.tokenType() != SqlLexerTokenType.DEFAULT)
+    public static boolean matchesKeyword(SqlParserToken token, String expKeyword) {
+        if (token.tokenType() != SqlLexerTokenType.DEFAULT)
             return false;
 
-        String token = lex.token();
-
-        return expKeyword.equals(token);
+        return expKeyword.equals(token.token());
     }
 
     /**

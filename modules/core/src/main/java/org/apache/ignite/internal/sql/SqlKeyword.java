@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -193,9 +194,11 @@ public class SqlKeyword {
 
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
-                String val = (String)field.get(null);
+                if (F.eq(String.class, field.getType())) {
+                    String val = (String) field.get(null);
 
-                KEYWORDS.add(val);
+                    KEYWORDS.add(val);
+                }
             }
         }
         catch (ReflectiveOperationException e) {
