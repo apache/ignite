@@ -24,6 +24,7 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
@@ -36,7 +37,7 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     private ThreadLocal<PreparedStatement> stmtRange = new ThreadLocal<PreparedStatement>() {
         @Override protected PreparedStatement initialValue() {
             try {
-                return conn.get().prepareStatement("select id, val from test_long where id > ? and id <= ?");
+                return conn.get().prepareStatement("select id, val from test_long where id between ? and ?");
             }
             catch (SQLException e) {
                 throw new IgniteException(e);
@@ -72,27 +73,9 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        println(cfg, "Create table...");
+        NativeSqlQueryRangeBenchmark.fillData(cfg, (IgniteEx)ignite(), args.range());
 
-        try (Statement stmt = conn.get().createStatement()) {
-            stmt.executeUpdate("CREATE TABLE test_long (id long primary key, val long)");
-
-            try (PreparedStatement pstmt = conn.get().prepareStatement("insert into test_long (id, val) values (?, ?)")) {
-                println(cfg, "Populate data...");
-
-                for (long l = 1; l <= args.range(); ++l) {
-                    pstmt.setLong(1, l);
-                    pstmt.setLong(2, l + 1);
-
-                    pstmt.executeUpdate();
-
-                    if (l % 10000 == 0)
-                        println(cfg, "Populate " + l);
-                }
-            }
-        }
-
-        println(cfg, "Finished populating data");
+        ignite().close();
     }
 
     /** {@inheritDoc} */
@@ -101,12 +84,12 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
 
         PreparedStatement stmt;
 
-        if (args.resultSetSize() <= 0) {
+        if (args.sqlRange() <= 0) {
             stmt = stmtFull.get();
 
             expRsSize = args.range();
         }
-        else if (args.resultSetSize() == 1) {
+        else if (args.sqlRange() == 1) {
             stmt = stmtSingle.get();
 
             stmt.setLong(1, ThreadLocalRandom.current().nextLong(args.range()) + 1);
@@ -116,13 +99,13 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
         else {
             stmt = stmtRange.get();
 
-            long id = ThreadLocalRandom.current().nextLong(args.range() - args.resultSetSize()) + 1;
-            long maxId = id + args.resultSetSize();
+            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
+            long maxId = id + args.sqlRange() - 1;
 
             stmt.setLong(1, id);
             stmt.setLong(2, maxId);
 
-            expRsSize = args.resultSetSize();
+            expRsSize = args.sqlRange();
         }
 
         long rsSize = 0;

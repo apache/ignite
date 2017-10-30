@@ -21,7 +21,6 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -253,9 +252,9 @@ public class IgniteBenchmarkArguments {
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
     /** */
-    @Parameter(names = {"-res", "--resultSetSize"}, description = "Result set size")
+    @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")
     @GridToStringInclude
-    private int resultSetSize = 1_000;
+    private int sqlRange = 1;
 
     /** */
     @Parameter(names = {"-clidx", "--clientNodesAfterId"},
@@ -645,8 +644,8 @@ public class IgniteBenchmarkArguments {
     /**
      * @return Result set size.
      */
-    public int resultSetSize() {
-        return resultSetSize;
+    public int sqlRange() {
+        return sqlRange;
     }
 
     /**

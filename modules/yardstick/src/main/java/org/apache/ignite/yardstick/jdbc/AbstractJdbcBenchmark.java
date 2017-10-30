@@ -102,9 +102,6 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
                 }
                 else
                     url = args.jdbcUrl();
-
-                // Stop local node after discover remote node IP.
-                ignite().close();
             }
         }
 

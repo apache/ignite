@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -36,15 +37,24 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        fillData(cfg, (IgniteEx)ignite(), args.range());
+    }
+
+    /**
+     * @param cfg Benchmark configuration.
+     * @param ignite Ignite node.
+     * @param range Data key range.
+     */
+    public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
         println(cfg, "Create table...");
 
-        ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(
+        ignite.context().query().querySqlFieldsNoCache(
             new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
 
         println(cfg, "Populate data...");
 
-        for (long l = 1; l <= args.range(); ++l) {
-            ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(
+        for (long l = 1; l <= range; ++l) {
+            ignite.context().query().querySqlFieldsNoCache(
                 new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
                     .setArgs(l, l + 1), true);
 
@@ -61,12 +71,12 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
 
         SqlFieldsQuery qry;
 
-        if (args.resultSetSize() <= 0) {
+        if (args.sqlRange() <= 0) {
             qry = new SqlFieldsQuery("select id, val from test_long");
 
             expRsSize = args.range();
         }
-        else if (args.resultSetSize() == 1) {
+        else if (args.sqlRange() == 1) {
             qry = new SqlFieldsQuery("select id, val from test_long where id = ?");
 
             qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
@@ -74,14 +84,14 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
             expRsSize = 1;
         }
         else {
-            qry = new SqlFieldsQuery("select id, val from test_long where id > ? and id <= ?");
+            qry = new SqlFieldsQuery("select id, val from test_long where id between ? and ?");
 
-            long id = ThreadLocalRandom.current().nextLong(args.range() - args.resultSetSize()) + 1;
-            long maxId = id + args.resultSetSize();
+            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
+            long maxId = id + args.sqlRange() - 1;
 
             qry.setArgs(id, maxId);
 
-            expRsSize = args.resultSetSize();
+            expRsSize = args.sqlRange();
         }
 
         long rsSize = 0;
