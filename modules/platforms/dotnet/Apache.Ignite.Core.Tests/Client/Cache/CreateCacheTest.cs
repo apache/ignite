@@ -175,34 +175,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Gets the full cache configuration.
         /// </summary>
-        private static CacheConfiguration GetFullCacheConfiguration(string name)
+        private static CacheClientConfiguration GetFullCacheConfiguration(string name)
         {
-            var cfg = CacheConfigurationTest.GetCustomCacheConfiguration(name);
-
-            // Reset unsupported properties.
-            cfg.AffinityFunction = null;
-            cfg.EvictionPolicy = null;
-            cfg.ExpiryPolicyFactory = null;
-            cfg.PluginConfigurations = null;
-            cfg.CacheStoreFactory = null;
-            cfg.NearConfiguration = null;
-            cfg.WriteThrough = false;
-            cfg.ReadThrough = false;
-
-            // Store-specific.
-            cfg.KeepBinaryInStore = false;
-            cfg.LoadPreviousValue = false;
-            cfg.ReadThrough = false;
-            cfg.WriteThrough = false;
-            cfg.StoreConcurrentLoadAllThreshold = CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold;
-            cfg.WriteBehindBatchSize = CacheConfiguration.DefaultWriteBehindBatchSize;
-            cfg.WriteBehindCoalescing = CacheConfiguration.DefaultWriteBehindCoalescing;
-            cfg.WriteBehindEnabled = CacheConfiguration.DefaultWriteBehindEnabled;
-            cfg.WriteBehindFlushFrequency = CacheConfiguration.DefaultWriteBehindFlushFrequency;
-            cfg.WriteBehindFlushSize = CacheConfiguration.DefaultWriteBehindFlushSize;
-            cfg.WriteBehindFlushThreadCount = CacheConfiguration.DefaultWriteBehindFlushThreadCount;
-
-            return cfg;
+            return new CacheClientConfiguration(CacheConfigurationTest.GetCustomCacheConfiguration(name), true);
         }
 
         /** <inheritdoc /> */

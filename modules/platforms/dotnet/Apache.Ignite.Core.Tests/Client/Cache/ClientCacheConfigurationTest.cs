@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -106,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests the serialization/deserialization of <see cref="CacheConfiguration"/>.
         /// </summary>
-        private static void TestSerializeDeserializeUnspported(CacheClientConfiguration cfg, string propName)
+        private static void TestSerializeDeserializeUnspported(CacheConfiguration cfg, string propName)
         {
             var ex = Assert.Throws<NotSupportedException>(() => TestSerializeDeserialize(cfg));
             Assert.AreEqual(string.Format("{0}.{1} property is not supported in thin client mode.",
@@ -116,9 +115,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests the serialization/deserialization of <see cref="CacheConfiguration"/>.
         /// </summary>
-        private static void TestSerializeDeserialize(CacheClientConfiguration cfg)
+        private static void TestSerializeDeserialize(CacheConfiguration cfg)
         {
-            AssertClientConfigsAreEqual(cfg, SerializeDeserialize(cfg));
+            var clientCfg = new CacheClientConfiguration(cfg, false);
+
+            AssertClientConfigsAreEqual(clientCfg, SerializeDeserialize(clientCfg));
         }
 
         /// <summary>

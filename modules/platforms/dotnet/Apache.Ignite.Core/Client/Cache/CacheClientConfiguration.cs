@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Client.Cache
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Ignite client cache configuration.
@@ -126,6 +126,32 @@ namespace Apache.Ignite.Core.Client.Cache
 
                 CopyLocalProperties(other);
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheClientConfiguration" /> class, copying properties from
+        /// provided server cache configuration. See also <see cref="ToCacheConfiguration"/>.
+        /// </summary>
+        /// <param name="cacheConfiguration">Server cache configuration.</param>
+        /// <param name="ignoreUnsupportedProperties">If set to <c>true</c>,
+        /// ignores unsupported properties instead of throwing an exception.</param>
+        public CacheClientConfiguration(CacheConfiguration cacheConfiguration, bool ignoreUnsupportedProperties)
+        {
+            IgniteArgumentCheck.NotNull(cacheConfiguration, "cacheConfiguration");
+
+            ClientCacheConfigurationSerializer.Copy(cacheConfiguration, this, ignoreUnsupportedProperties);
+        }
+
+        /// <summary>
+        /// Converts this instance to full <see cref="CacheConfiguration"/>.
+        /// </summary>
+        public CacheConfiguration ToCacheConfiguration()
+        {
+            var cfg = new CacheConfiguration();
+
+            ClientCacheConfigurationSerializer.Copy(this, cfg);
+
+            return cfg;
         }
 
         /// <summary>

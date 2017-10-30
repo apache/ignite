@@ -33,75 +33,116 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     internal static class ClientCacheConfigurationSerializer
     {
         /// <summary>
-        /// Writes the specified config.
+        /// Copies one cache configuration to another.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheConfiguration cfg)
+        public static void Copy(CacheConfiguration from, CacheClientConfiguration to, bool ignoreUnsupportedProperties)
         {
-            Debug.Assert(stream != null);
-            Debug.Assert(cfg != null);
+            Debug.Assert(from != null);
+            Debug.Assert(to != null);
 
-            // Configuration should be written with a system marshaller.
-            var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+            to.AtomicityMode = from.AtomicityMode;
+            to.Backups = from.Backups;
+            to.CacheMode = from.CacheMode;
+            to.CopyOnRead = from.CopyOnRead;
+            to.DataRegionName = from.DataRegionName;
+            to.EagerTtl = from.EagerTtl;
+            to.EnableStatistics = from.EnableStatistics;
+            to.GroupName = from.GroupName;
+            to.Invalidate = from.Invalidate;
+            to.LockTimeout = from.LockTimeout;
+            to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
+            to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
+            to.Name = from.Name;
+            to.OnheapCacheEnabled = from.OnheapCacheEnabled;
+            to.PartitionLossPolicy = from.PartitionLossPolicy;
+            to.QueryDetailMetricsSize = from.QueryDetailMetricsSize;
+            to.QueryParallelism = from.QueryParallelism;
+            to.ReadFromBackup = from.ReadFromBackup;
+            to.RebalanceBatchSize = from.RebalanceBatchSize;
+            to.RebalanceBatchesPrefetchCount = from.RebalanceBatchesPrefetchCount;
+            to.RebalanceDelay = from.RebalanceDelay;
+            to.RebalanceMode = from.RebalanceMode;
+            to.RebalanceOrder = from.RebalanceOrder;
+            to.RebalanceThrottle = from.RebalanceThrottle;
+            to.RebalanceTimeout = from.RebalanceTimeout;
+            to.SqlEscapeAll = from.SqlEscapeAll;
+            to.SqlIndexMaxInlineSize = from.SqlIndexMaxInlineSize;
+            to.SqlSchema = from.SqlSchema;
+            to.WriteSynchronizationMode = from.WriteSynchronizationMode;
 
-            writer.WriteInt((int) cfg.AtomicityMode);
-            writer.WriteInt(cfg.Backups);
-            writer.WriteInt((int) cfg.CacheMode);
-            writer.WriteBoolean(cfg.CopyOnRead);
-            writer.WriteString(cfg.DataRegionName);
-            writer.WriteBoolean(cfg.EagerTtl);
-            writer.WriteBoolean(cfg.EnableStatistics);
-            writer.WriteString(cfg.GroupName);
-            writer.WriteBoolean(cfg.Invalidate);
-            writer.WriteTimeSpanAsLong(cfg.LockTimeout);
-            writer.WriteInt(cfg.MaxConcurrentAsyncOperations);
-            writer.WriteInt(cfg.MaxQueryIteratorsCount);
-            writer.WriteString(cfg.Name);
-            writer.WriteBoolean(cfg.OnheapCacheEnabled);
-            writer.WriteInt((int) cfg.PartitionLossPolicy);
-            writer.WriteInt(cfg.QueryDetailMetricsSize);
-            writer.WriteInt(cfg.QueryParallelism);
-            writer.WriteBoolean(cfg.ReadFromBackup);
-            writer.WriteInt(cfg.RebalanceBatchSize);
-            writer.WriteLong(cfg.RebalanceBatchesPrefetchCount);
-            writer.WriteTimeSpanAsLong(cfg.RebalanceDelay);
-            writer.WriteInt((int) cfg.RebalanceMode);
-            writer.WriteInt(cfg.RebalanceOrder);
-            writer.WriteTimeSpanAsLong(cfg.RebalanceThrottle);
-            writer.WriteTimeSpanAsLong(cfg.RebalanceTimeout);
-            writer.WriteBoolean(cfg.SqlEscapeAll);
-            writer.WriteInt(cfg.SqlIndexMaxInlineSize);
-            writer.WriteString(cfg.SqlSchema);
-            writer.WriteInt((int) cfg.WriteSynchronizationMode);
+            to.KeyConfiguration = from.KeyConfiguration;
+            to.QueryEntities = from.QueryEntities;
 
-            writer.WriteCollectionRaw(cfg.KeyConfiguration);
-            writer.WriteCollectionRaw(cfg.QueryEntities);
+            if (!ignoreUnsupportedProperties)
+            {
+                // Unsupported complex properties.
+                ThrowUnsupportedIfNotDefault(from.AffinityFunction, "AffinityFunction");
+                ThrowUnsupportedIfNotDefault(from.EvictionPolicy, "EvictionPolicy");
+                ThrowUnsupportedIfNotDefault(from.ExpiryPolicyFactory, "ExpiryPolicyFactory");
+                ThrowUnsupportedIfNotDefault(from.PluginConfigurations, "PluginConfigurations");
+                ThrowUnsupportedIfNotDefault(from.CacheStoreFactory, "CacheStoreFactory");
+                ThrowUnsupportedIfNotDefault(from.NearConfiguration, "NearConfiguration");
 
-            // Unsupported complex properties.
-            ThrowUnsupportedIfNotDefault(cfg.AffinityFunction, "AffinityFunction");
-            ThrowUnsupportedIfNotDefault(cfg.EvictionPolicy, "EvictionPolicy");
-            ThrowUnsupportedIfNotDefault(cfg.ExpiryPolicyFactory, "ExpiryPolicyFactory");
-            ThrowUnsupportedIfNotDefault(cfg.PluginConfigurations, "PluginConfigurations");
-            ThrowUnsupportedIfNotDefault(cfg.CacheStoreFactory, "CacheStoreFactory");
-            ThrowUnsupportedIfNotDefault(cfg.NearConfiguration, "NearConfiguration");
-            
-            // Unsupported store-related properties.
-            ThrowUnsupportedIfNotDefault(cfg.KeepBinaryInStore, "KeepBinaryInStore");
-            ThrowUnsupportedIfNotDefault(cfg.LoadPreviousValue, "LoadPreviousValue");
-            ThrowUnsupportedIfNotDefault(cfg.ReadThrough, "ReadThrough");
-            ThrowUnsupportedIfNotDefault(cfg.WriteThrough, "WriteThrough");
-            ThrowUnsupportedIfNotDefault(cfg.StoreConcurrentLoadAllThreshold, "StoreConcurrentLoadAllThreshold", 
-                CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold);
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindBatchSize, "WriteBehindBatchSize",
-                CacheConfiguration.DefaultWriteBehindBatchSize);
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindCoalescing, "WriteBehindCoalescing",
-                CacheConfiguration.DefaultWriteBehindCoalescing);
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindEnabled, "WriteBehindEnabled");
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindFlushFrequency, "WriteBehindFlushFrequency",
-                CacheConfiguration.DefaultWriteBehindFlushFrequency);
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindFlushSize, "WriteBehindFlushSize",
-                CacheConfiguration.DefaultWriteBehindFlushSize);
-            ThrowUnsupportedIfNotDefault(cfg.WriteBehindFlushThreadCount, "WriteBehindFlushThreadCount",
-                CacheConfiguration.DefaultWriteBehindFlushThreadCount);
+                // Unsupported store-related properties.
+                ThrowUnsupportedIfNotDefault(from.KeepBinaryInStore, "KeepBinaryInStore");
+                ThrowUnsupportedIfNotDefault(from.LoadPreviousValue, "LoadPreviousValue");
+                ThrowUnsupportedIfNotDefault(from.ReadThrough, "ReadThrough");
+                ThrowUnsupportedIfNotDefault(from.WriteThrough, "WriteThrough");
+                ThrowUnsupportedIfNotDefault(from.StoreConcurrentLoadAllThreshold, "StoreConcurrentLoadAllThreshold",
+                    CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold);
+                ThrowUnsupportedIfNotDefault(from.WriteBehindBatchSize, "WriteBehindBatchSize",
+                    CacheConfiguration.DefaultWriteBehindBatchSize);
+                ThrowUnsupportedIfNotDefault(from.WriteBehindCoalescing, "WriteBehindCoalescing",
+                    CacheConfiguration.DefaultWriteBehindCoalescing);
+                ThrowUnsupportedIfNotDefault(from.WriteBehindEnabled, "WriteBehindEnabled");
+                ThrowUnsupportedIfNotDefault(from.WriteBehindFlushFrequency, "WriteBehindFlushFrequency",
+                    CacheConfiguration.DefaultWriteBehindFlushFrequency);
+                ThrowUnsupportedIfNotDefault(from.WriteBehindFlushSize, "WriteBehindFlushSize",
+                    CacheConfiguration.DefaultWriteBehindFlushSize);
+                ThrowUnsupportedIfNotDefault(from.WriteBehindFlushThreadCount, "WriteBehindFlushThreadCount",
+                    CacheConfiguration.DefaultWriteBehindFlushThreadCount);
+            }
+        }
+        /// <summary>
+        /// Copies one cache configuration to another.
+        /// </summary>
+        public static void Copy(CacheClientConfiguration from, CacheConfiguration to)
+        {
+            Debug.Assert(from != null);
+            Debug.Assert(to != null);
+
+            to.AtomicityMode = from.AtomicityMode;
+            to.Backups = from.Backups;
+            to.CacheMode = from.CacheMode;
+            to.CopyOnRead = from.CopyOnRead;
+            to.DataRegionName = from.DataRegionName;
+            to.EagerTtl = from.EagerTtl;
+            to.EnableStatistics = from.EnableStatistics;
+            to.GroupName = from.GroupName;
+            to.Invalidate = from.Invalidate;
+            to.LockTimeout = from.LockTimeout;
+            to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
+            to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
+            to.Name = from.Name;
+            to.OnheapCacheEnabled = from.OnheapCacheEnabled;
+            to.PartitionLossPolicy = from.PartitionLossPolicy;
+            to.QueryDetailMetricsSize = from.QueryDetailMetricsSize;
+            to.QueryParallelism = from.QueryParallelism;
+            to.ReadFromBackup = from.ReadFromBackup;
+            to.RebalanceBatchSize = from.RebalanceBatchSize;
+            to.RebalanceBatchesPrefetchCount = from.RebalanceBatchesPrefetchCount;
+            to.RebalanceDelay = from.RebalanceDelay;
+            to.RebalanceMode = from.RebalanceMode;
+            to.RebalanceOrder = from.RebalanceOrder;
+            to.RebalanceThrottle = from.RebalanceThrottle;
+            to.RebalanceTimeout = from.RebalanceTimeout;
+            to.SqlEscapeAll = from.SqlEscapeAll;
+            to.SqlIndexMaxInlineSize = from.SqlIndexMaxInlineSize;
+            to.SqlSchema = from.SqlSchema;
+            to.WriteSynchronizationMode = from.WriteSynchronizationMode;
+
+            to.KeyConfiguration = from.KeyConfiguration;
+            to.QueryEntities = from.QueryEntities;
         }
 
         /// <summary>
