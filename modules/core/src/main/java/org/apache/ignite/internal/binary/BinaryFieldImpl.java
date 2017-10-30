@@ -278,7 +278,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
 
         int schemaId = obj.schemaId();
 
-        if (schemaId == 0)
+        if (!obj.isFlagSet(BinaryUtils.FLAG_HAS_SCHEMA))
             return BinarySchema.ORDER_NOT_FOUND;
 
         BinarySchema schema = schemas.schema(schemaId);

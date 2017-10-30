@@ -1135,6 +1135,17 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNoFieldsObjectReadCacheInit() throws Exception {
+        BinaryObjectBuilder builder = binaries().builder("TestObject");
+
+        BinaryObject bo = builder.build();
+
+        assertNull(bo.toBuilder().getField("field"));
+    }
+
+    /**
      *
      */
     public void testDateInObjectField() {

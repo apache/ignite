@@ -476,34 +476,36 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         assert reader != null;
 
         if (readCache == null) {
-            int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
-
-            BinarySchema schema = reader.schema();
-
             Map<Integer, Object> readCache = new HashMap<>();
 
-            IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+            if (BinaryUtils.hasSchema(flags)) {
+                int fieldIdLen = BinaryUtils.fieldIdLength(flags);
+                int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
-            int footerPos = footer.get1();
-            int footerEnd = footer.get2();
+                BinarySchema schema = reader.schema();
 
-            int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+                IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
 
-            int idx = 0;
+                int footerPos = footer.get1();
+                int footerEnd = footer.get2();
 
-            while (footerPos + fieldIdLen < footerEnd) {
-                int fieldId = schema.fieldId(idx++);
+                int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
 
-                IgniteBiTuple<Integer, Integer> posAndLen =
-                    fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
+                int idx = 0;
 
-                Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
+                while (footerPos + fieldIdLen < footerEnd) {
+                    int fieldId = schema.fieldId(idx++);
 
-                readCache.put(fieldId, val);
+                    IgniteBiTuple<Integer, Integer> posAndLen =
+                        fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
 
-                // Shift current footer position.
-                footerPos += fieldIdLen + fieldOffsetLen;
+                    Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
+
+                    readCache.put(fieldId, val);
+
+                    // Shift current footer position.
+                    footerPos += fieldIdLen + fieldOffsetLen;
+                }
             }
 
             this.readCache = readCache;
