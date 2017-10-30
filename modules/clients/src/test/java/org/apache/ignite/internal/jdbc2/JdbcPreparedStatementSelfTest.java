@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -39,6 +40,7 @@ import org.junit.Test;
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
+import static java.sql.Types.CLOB;
 import static java.sql.Types.DATALINK;
 import static java.sql.Types.DATE;
 import static java.sql.Types.DOUBLE;
@@ -108,6 +110,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         o.strVal = "str";
         o.arrVal = new byte[] {1};
         o.blobVal = new byte[] {1};
+        o.clobVal = "large str";
         o.dateVal = new Date(1);
         o.timeVal = new Time(1);
         o.tsVal = new Timestamp(1);
@@ -602,6 +605,48 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testClob() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where clobVal is not distinct from ?");
+
+        Clob clob = conn.createClob();
+
+        clob.setString(1, "large str");
+
+        stmt.setClob(1, clob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 1;
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        stmt.setNull(1, CLOB);
+
+        rs = stmt.executeQuery();
+
+        cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 2;
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDate() throws Exception {
         stmt = conn.prepareStatement("select * from TestObject where dateVal is not distinct from ?");
 
@@ -801,6 +846,10 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField
         private byte[] blobVal;
+
+        /** */
+        @QuerySqlField
+        private String clobVal;
 
         /** */
         @QuerySqlField

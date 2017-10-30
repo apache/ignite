@@ -22,6 +22,8 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -64,7 +66,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
             "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val, " +
-            "boolVal2, boolVal3, boolVal4 " +
+            "boolVal2, boolVal3, boolVal4, blobVal, clobVal " +
             "from TestObject where id = 1";
 
     /** Statement. */
@@ -145,6 +147,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         o.bigVal = new BigDecimal(1);
         o.strVal = "1";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
+        o.clobVal = "str";
         o.dateVal = new Date(1, 1, 1);
         o.timeVal = new Time(1, 1, 1);
         o.tsVal = new Timestamp(1);
@@ -673,6 +677,52 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBlob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                Blob blob = rs.getBlob("blobVal");
+                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+
+                blob = rs.getBlob(23);
+                assert Arrays.equals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClob() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                Clob clob = rs.getClob("clobVal");
+                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+
+                clob = rs.getClob(24);
+                assert "str".equals(clob.getSubString(1, (int)clob.length()));
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("deprecation")
     @Test
     public void testDate() throws Exception {
@@ -989,6 +1039,14 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField(index = false)
         private byte[] arrVal;
+
+        /** */
+        @QuerySqlField(index = false)
+        private byte[] blobVal;
+
+        /** */
+        @QuerySqlField(index = false)
+        private String clobVal;
 
         /** */
         @QuerySqlField(index = false)
