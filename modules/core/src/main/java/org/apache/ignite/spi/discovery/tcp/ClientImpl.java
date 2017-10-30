@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -635,6 +636,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
+
+                if (res.failedNodes() != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Handshake response from failed node: " + res);
+
+                    throw new IgniteNeedReconnectException(locNode, null);
+                }
 
                 UUID rmtNodeId = res.creatorNodeId();
 

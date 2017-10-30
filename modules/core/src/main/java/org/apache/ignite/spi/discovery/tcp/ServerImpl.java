@@ -1201,10 +1201,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
 
+                processMessageFailedNodes(res);
+
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
 
-                    synchronized (failedNodes) {
+                    synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
                                 if (log.isDebugEnabled())
@@ -2001,12 +2003,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (msgFailedNodes != null) {
             UUID sndId = msg.senderNodeId();
 
+            if (sndId == null)
+                sndId = msg.creatorNodeId();
+
             if (sndId != null) {
                 if (ring.node(sndId) == null) {
                     if (log.isDebugEnabled()) {
                         log.debug("Ignore message failed nodes, sender node is not alive [nodeId=" + sndId +
                             ", failedNodes=" + msgFailedNodes + ']');
                     }
+                    msg.failedNodes(null);
 
                     return;
                 }
@@ -2016,6 +2022,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Ignore message failed nodes, sender node was recently failed [nodeId=" +
                                 sndId + ']');
+
+                        msg.failedNodes(null);
+
                         return;
                     }
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
@@ -2024,6 +2033,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.debug("Ignore message failed nodes, sender node is in fail list [nodeId=" +
                                     sndId + ", failedNodes=" + msgFailedNodes + ']');
                             }
+
+                            msg.failedNodes(null);
+
                             return;
                         }
                     }
@@ -2042,6 +2054,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (!failedNodes.containsKey(failedNode)) {
                                 failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+
+                                if (msg instanceof TcpDiscoveryHandshakeResponse)
+                                    msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
+                                        failedNode.id(), failedNode.internalOrder()));
 
                                 added = true;
                             }
@@ -2968,6 +2984,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                processMessageFailedNodes(res);
+
+                                if (res.failedNodes() != null) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Handshake response from failed node: " + res);
+
+                                    break addr;
+                                }
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
@@ -4928,6 +4953,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sendMessageAcrossRing(msg);
                     }
                     else {
+                        synchronized (mux) {
+                            if (recentFailedNodeIds.contains(msg.creatorNodeId())) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Status check message discarded (creator node was recently failed).");
+
+                                return;
+                            }
+                        }
                         // Sender is not in topology, it should reconnect.
                         msg.status(STATUS_RECON);
 
@@ -5861,29 +5894,33 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     this.nodeId = nodeId;
 
+                    boolean failed = false;
+
                     synchronized (mux) {
                         if (recentFailedNodeIds.contains(nodeId)) {
                             if (log.isInfoEnabled())
-                                log.info("Ignore handshake request from recently failed node [nodeId=" + nodeId + ']');
+                                log.info("Handshake request from recently failed node [nodeId=" + nodeId + ']');
 
-                            U.closeQuiet(sock);
-
-                            return;
+                            failed = true;
                         }
-                        for (TcpDiscoveryNode n : failedNodes.keySet()) {
-                            if (n.id().equals(nodeId)) {
-                                if (log.isInfoEnabled())
-                                    log.info("Ignore handshake request from failed node [nodeId=" + nodeId + ']');
+                        if (!failed)
+                            for (TcpDiscoveryNode n : failedNodes.keySet()) {
+                                if (n.id().equals(nodeId)) {
+                                    if (log.isInfoEnabled())
+                                        log.info("Handshake request from failed node [nodeId=" + nodeId + ']');
 
-                                U.closeQuiet(sock);
+                                    failed = true;
 
-                                return;
+                                    break;
+                                }
                             }
-                        }
                     }
 
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
+
+                    if (failed)
+                        res.addFailedNode(locNodeId);
 
                     if (req.client())
                         res.clientAck(true);
