@@ -75,6 +75,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -99,12 +100,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /** additional cache for testing different combinations of types in WAL */
     private static final String CACHE_ADDL_NAME = "cache1";
-
-    /** Delete DB dir before test. */
-    private static final boolean deleteBefore = true;
-
-    /** Delete DB dir after test. */
-    private static final boolean deleteAfter = true;
 
     /** Dump records to logger. Should be false for non local run */
     private static final boolean dumpRecords = false;
@@ -160,8 +155,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        if (deleteBefore)
-            deleteWorkFiles();
+        deleteWorkFiles();
     }
 
     /** {@inheritDoc} */
@@ -170,16 +164,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         if (clearProperties)
             System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
-
-        if (deleteAfter)
-            deleteWorkFiles();
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+    private void deleteWorkFiles() throws Exception {
+        GridTestUtils.deleteDbFiles();
     }
 
     /**
@@ -209,8 +200,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final int cntUsingMockIter = iterateAndCount(it, false);
 
         log.info("Total records loaded " + cntUsingMockIter);
-        assert cntUsingMockIter > 0;
-        assert cntUsingMockIter > cacheObjectsToWrite;
+        assertTrue(cntUsingMockIter > 0);
+        assertTrue(cntUsingMockIter > cacheObjectsToWrite);
 
         final File walArchiveDirWithConsistentId = new File(walArchive, subfolderName);
         final File walWorkDirWithConsistentId = new File(wal, subfolderName);
@@ -225,12 +216,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total records loaded using archive directory (file-by-file): " + cntArchiveFileByFile);
 
-        assert cntArchiveFileByFile > cacheObjectsToWrite;
-        assert cntArchiveDir > cacheObjectsToWrite;
-        assert cntArchiveDir == cntArchiveFileByFile;
+        assertTrue(cntArchiveFileByFile > cacheObjectsToWrite);
+        assertTrue(cntArchiveDir > cacheObjectsToWrite);
+        assertTrue(cntArchiveDir == cntArchiveFileByFile);
         //really count2 may be less because work dir correct loading is not supported yet
-        assert cntUsingMockIter >= cntArchiveDir
-            : "Mock based reader loaded " + cntUsingMockIter + " records but standalone has loaded only " + cntArchiveDir;
+        assertTrue("Mock based reader loaded " + cntUsingMockIter + " records " +
+                "but standalone has loaded only " + cntArchiveDir,
+            cntUsingMockIter >= cntArchiveDir);
 
         final File[] workFiles = walWorkDirWithConsistentId.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
 
@@ -238,10 +230,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total records loaded from work: " + cntWork);
 
-        assert cntWork + cntArchiveFileByFile == cntUsingMockIter
-            : "Work iterator loaded [" + cntWork + "] " +
-            "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
-            "mock iterator [" + cntUsingMockIter + "]";
+        assertTrue("Work iterator loaded [" + cntWork + "] " +
+                "Archive iterator loaded [" + cntArchiveFileByFile + "]; " +
+                "mock iterator [" + cntUsingMockIter + "]",
+            cntWork + cntArchiveFileByFile == cntUsingMockIter);
     }
 
     /**
@@ -319,7 +311,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         putDummyRecords(ignite, 500);
 
         stopGrid("node0");
-        assert evtRecorded.get();
+        assertTrue(evtRecorded.get());
     }
 
     /**
@@ -414,7 +406,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             archiveSegmentForInactivity.await(archiveIncompleteSegmentAfterInactivityMs + 1001, TimeUnit.MILLISECONDS);
 
         stopGrid("node0");
-        assert recordedAfterSleep;
+        assertTrue(recordedAfterSleep);
     }
 
     /**
@@ -478,14 +470,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     assertEquals(indexedObj.iVal, indexedObj.jVal);
                     assertEquals(indexedObj.iVal, key);
                     for (byte datum : indexedObj.getData()) {
-                        assert datum >= 'A' && datum <= 'A' + 10;
+                        assertTrue(datum >= 'A' && datum <= 'A' + 10);
                     }
                 }
             }
         };
         scanIterateAndCount(factory, workDir, subfolderName, cntEntries, txCnt, objConsumer, null);
 
-        assert ctrlMap.isEmpty() : " Control Map is not empty after reading entries " + ctrlMap;
+        assertTrue(" Control Map is not empty after reading entries " + ctrlMap, ctrlMap.isEmpty());
     }
 
     /**
@@ -551,8 +543,12 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final int entriesWork = valuesSum(cntWork.values());
         log.info("Archive directory: Tx found " + txCntObservedWork + " entries " + entriesWork);
 
-        assert entriesArch + entriesWork >= minCntEntries;
-        assert txCntObservedWork + txCntObservedArch >= minTxCnt;
+        assertTrue("entriesArch=" + entriesArch + " + entriesWork=" + entriesWork
+                + " >= minCntEntries=" + minCntEntries,
+            entriesArch + entriesWork >= minCntEntries);
+        assertTrue("txCntObservedWork=" + txCntObservedWork + " + txCntObservedArch=" + txCntObservedArch
+                + " >= minTxCnt=" + minTxCnt,
+            txCntObservedWork + txCntObservedArch >= minTxCnt);
     }
 
     /**
@@ -630,7 +626,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                     String msg = "Unable to remove pair from control map " + "K: [" + key + "] V: [" + val + "]";
                     log.error(msg);
                 }
-                assert !(val instanceof BinaryObject);
+                assertFalse(val instanceof BinaryObject);
             }
         };
 
@@ -648,9 +644,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         };
         scanIterateAndCount(factory, workDir, subfolderName, cntEntries, 0, objConsumer, toStrChecker);
 
-        assert ctrlMap.isEmpty() : " Control Map is not empty after reading entries: " + ctrlMap;
-        assert ctrlStringsToSearch.isEmpty() : " Control Map for strings in entries is not empty after" +
-            " reading records: " + ctrlStringsToSearch;
+        assertTrue(" Control Map is not empty after reading entries: " + ctrlMap, ctrlMap.isEmpty());
+        assertTrue(" Control Map for strings in entries is not empty after" +
+            " reading records: " + ctrlStringsToSearch, ctrlStringsToSearch.isEmpty());
 
         //Validate same WAL log with flag binary objects only
         final IgniteWalIteratorFactory keepBinFactory = new IgniteWalIteratorFactory(log, PAGE_SIZE,
@@ -698,7 +694,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                         byte data[] = binaryObj.field("data");
                         for (byte datum : data) {
-                            assert datum >= 'A' && datum <= 'A' + 10;
+                            assertTrue(datum >= 'A' && datum <= 'A' + 10);
                         }
                     }
                 }
@@ -719,9 +715,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         };
         scanIterateAndCount(keepBinFactory, workDir, subfolderName, cntEntries, 0, binObjConsumer, binObjToStrChecker);
 
-        assert ctrlMapForBinaryObjects.isEmpty() : " Control Map is not empty after reading entries: " + ctrlMapForBinaryObjects;
-        assert ctrlStringsForBinaryObjSearch.isEmpty() : " Control Map for strings in entries is not empty after" +
-            " reading records: " + ctrlStringsForBinaryObjSearch;
+        assertTrue(" Control Map is not empty after reading entries: " + ctrlMapForBinaryObjects,
+            ctrlMapForBinaryObjects.isEmpty());
+        assertTrue(" Control Map for strings in entries is not empty after" +
+                " reading records: " + ctrlStringsForBinaryObjSearch,
+            ctrlStringsForBinaryObjSearch.isEmpty());
 
     }
 
@@ -910,15 +908,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * Tests transaction generation and WAL for putAll cache operation.
      * @throws Exception if failed.
      */
-    public void testPutAllTx() throws Exception {
+    public void testPutAllTxIntoTwoNodes() throws Exception {
         final Ignite ignite = startGrid("node0");
-        startGrid(1);
+        final Ignite ignite1 = startGrid(1);
 
         ignite.active(true);
 
         final Map<Object, IndexedObject> map = new TreeMap<>();
 
-        for (int i = 0; i < 1000; i++)
+        final int cntEntries = 1000;
+        for (int i = 0; i < cntEntries; i++)
             map.put(i, new IndexedObject(i));
 
         ignite.cache(CACHE_NAME).putAll(map);
@@ -926,6 +925,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ignite.active(false);
 
         final String subfolderName = genDbSubfolderName(ignite, 0);
+        final String subfolderName1 = genDbSubfolderName(ignite1, 1);
 
         stopAllGrids();
 
@@ -935,7 +935,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final StringBuilder builder = new StringBuilder();
         final Map<GridCacheOperation, Integer> operationsFound = new EnumMap<>(GridCacheOperation.class);
 
-        scanIterateAndCount(factory, workDir, subfolderName, 1000, 1, null, new IgniteInClosure<DataRecord>() {
+        final IgniteInClosure<DataRecord> drHnd = new IgniteInClosure<DataRecord>() {
             @Override public void apply(DataRecord dataRecord) {
                 final List<DataEntry> entries = dataRecord.writeEntries();
 
@@ -961,7 +961,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 builder.append("}\n");
             }
-        });
+        };
+        scanIterateAndCount(factory, workDir, subfolderName, 1, 1, null, drHnd);
+        scanIterateAndCount(factory, workDir, subfolderName1, 1, 1, null, drHnd);
 
         final Integer createsFound = operationsFound.get(CREATE);
 
@@ -970,6 +972,10 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         assertTrue("Create operations should be found in log: " + operationsFound,
             createsFound != null && createsFound > 0);
+
+        assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
+            createsFound != null && createsFound >= cntEntries);
+
     }
 
     /**
@@ -1001,9 +1007,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             null,
             null,
             false);
-
-        //todo: if we remove WAL iterator here, test is failed
-        factory = createWalIteratorFactory(workDir, subfolderName);
 
         scanIterateAndCount(factory, workDir, subfolderName, 1000, 1, null, null);
     }
