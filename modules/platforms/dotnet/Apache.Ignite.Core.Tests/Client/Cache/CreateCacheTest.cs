@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Tests.Cache;
@@ -131,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestCreateFromConfiguration()
         {
             // Default config.
-            var cfg = new CacheConfiguration("a");
+            var cfg = new CacheClientConfiguration("a");
             var cache = Client.CreateCache<int, int>(cfg);
             TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
 
@@ -155,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void TestGetOrCreateFromConfiguration()
         {
             // Default configur.
-            var cfg = new CacheConfiguration("a");
+            var cfg = new CacheClientConfiguration("a");
             var cache = Client.GetOrCreateCache<int, int>(cfg);
             TestUtils.AssertReflectionEqual(cfg, cache.GetConfiguration());
             cache[1] = 1;

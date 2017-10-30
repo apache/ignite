@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Client
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client.Cache;
 
     /// <summary>
@@ -59,7 +58,7 @@ namespace Apache.Ignite.Core.Client
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="configuration">Cache configuration.</param>
         /// <returns>Existing or newly created cache.</returns>
-        ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration);
+        ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheClientConfiguration configuration);
 
         /// <summary>
         /// Dynamically starts new cache using template configuration.
@@ -77,7 +76,7 @@ namespace Apache.Ignite.Core.Client
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <param name="configuration">Cache configuration.</param>
         /// <returns>Existing or newly created cache.</returns>
-        ICacheClient<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration);
+        ICacheClient<TK, TV> CreateCache<TK, TV>(CacheClientConfiguration configuration);
 
         /// <summary>
         /// Gets the collection of names of currently available caches, or empty collection if there are no caches.

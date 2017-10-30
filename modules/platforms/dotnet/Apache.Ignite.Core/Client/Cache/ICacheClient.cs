@@ -225,6 +225,6 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <summary>
         /// Gets the cache configuration.
         /// </summary>
-        CacheConfiguration GetConfiguration();
+        CacheClientConfiguration GetConfiguration();
     }
 }

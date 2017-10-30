@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -329,9 +328,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
-        public CacheConfiguration GetConfiguration()
+        public CacheClientConfiguration GetConfiguration()
         {
-            return DoOutInOp(ClientOp.CacheGetConfiguration, null, s => ClientCacheConfigurationSerializer.Read(s));
+            return DoOutInOp(ClientOp.CacheGetConfiguration, null, s => new CacheClientConfiguration(s));
         }
 
         /// <summary>

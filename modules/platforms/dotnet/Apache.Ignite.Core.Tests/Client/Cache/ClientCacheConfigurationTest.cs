@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Tests.Cache;
@@ -105,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests the serialization/deserialization of <see cref="CacheConfiguration"/>.
         /// </summary>
-        private static void TestSerializeDeserializeUnspported(CacheConfiguration cfg, string propName)
+        private static void TestSerializeDeserializeUnspported(CacheClientConfiguration cfg, string propName)
         {
             var ex = Assert.Throws<NotSupportedException>(() => TestSerializeDeserialize(cfg));
             Assert.AreEqual(string.Format("{0}.{1} property is not supported in thin client mode.",
@@ -115,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Tests the serialization/deserialization of <see cref="CacheConfiguration"/>.
         /// </summary>
-        private static void TestSerializeDeserialize(CacheConfiguration cfg)
+        private static void TestSerializeDeserialize(CacheClientConfiguration cfg)
         {
             AssertClientConfigsAreEqual(cfg, SerializeDeserialize(cfg));
         }
@@ -123,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// <summary>
         /// Asserts the client configs are equal.
         /// </summary>
-        public static void AssertClientConfigsAreEqual(CacheConfiguration cfg, CacheConfiguration cfg2)
+        public static void AssertClientConfigsAreEqual(CacheClientConfiguration cfg, CacheClientConfiguration cfg2)
         {
             if (cfg2.QueryEntities != null)
             {
@@ -134,20 +135,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 }
             }
 
-            TestUtils.AssertReflectionEqual(cfg, cfg2,
-                ignoredProperties: new HashSet<string>(new[] {"LongQueryWarningTimeout"}));
+            TestUtils.AssertReflectionEqual(cfg, cfg2);
         }
 
         /// <summary>
         /// Serializes and deserializes the config.
         /// </summary>
-        private static CacheConfiguration SerializeDeserialize(CacheConfiguration cfg)
+        private static CacheClientConfiguration SerializeDeserialize(CacheClientConfiguration cfg)
         {
             using (var stream = new BinaryHeapStream(128))
             {
                 ClientCacheConfigurationSerializer.Write(stream, cfg);
                 stream.Seek(0, SeekOrigin.Begin);
-                return ClientCacheConfigurationSerializer.Read(stream);
+                return new CacheClientConfiguration(stream);
             }
         }
     }

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Datastream;
@@ -101,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
+        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheClientConfiguration configuration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
@@ -122,7 +121,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public ICacheClient<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
+        public ICacheClient<TK, TV> CreateCache<TK, TV>(CacheClientConfiguration configuration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 

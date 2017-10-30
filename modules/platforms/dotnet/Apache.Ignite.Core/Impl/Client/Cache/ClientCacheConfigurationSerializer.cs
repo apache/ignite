@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -104,50 +105,90 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
+        /// Writes the specified config.
+        /// </summary>
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(cfg != null);
+
+            // Configuration should be written with a system marshaller.
+            var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+
+            writer.WriteInt((int)cfg.AtomicityMode);
+            writer.WriteInt(cfg.Backups);
+            writer.WriteInt((int)cfg.CacheMode);
+            writer.WriteBoolean(cfg.CopyOnRead);
+            writer.WriteString(cfg.DataRegionName);
+            writer.WriteBoolean(cfg.EagerTtl);
+            writer.WriteBoolean(cfg.EnableStatistics);
+            writer.WriteString(cfg.GroupName);
+            writer.WriteBoolean(cfg.Invalidate);
+            writer.WriteTimeSpanAsLong(cfg.LockTimeout);
+            writer.WriteInt(cfg.MaxConcurrentAsyncOperations);
+            writer.WriteInt(cfg.MaxQueryIteratorsCount);
+            writer.WriteString(cfg.Name);
+            writer.WriteBoolean(cfg.OnheapCacheEnabled);
+            writer.WriteInt((int)cfg.PartitionLossPolicy);
+            writer.WriteInt(cfg.QueryDetailMetricsSize);
+            writer.WriteInt(cfg.QueryParallelism);
+            writer.WriteBoolean(cfg.ReadFromBackup);
+            writer.WriteInt(cfg.RebalanceBatchSize);
+            writer.WriteLong(cfg.RebalanceBatchesPrefetchCount);
+            writer.WriteTimeSpanAsLong(cfg.RebalanceDelay);
+            writer.WriteInt((int)cfg.RebalanceMode);
+            writer.WriteInt(cfg.RebalanceOrder);
+            writer.WriteTimeSpanAsLong(cfg.RebalanceThrottle);
+            writer.WriteTimeSpanAsLong(cfg.RebalanceTimeout);
+            writer.WriteBoolean(cfg.SqlEscapeAll);
+            writer.WriteInt(cfg.SqlIndexMaxInlineSize);
+            writer.WriteString(cfg.SqlSchema);
+            writer.WriteInt((int)cfg.WriteSynchronizationMode);
+
+            writer.WriteCollectionRaw(cfg.KeyConfiguration);
+            writer.WriteCollectionRaw(cfg.QueryEntities);
+        }
+        /// <summary>
         /// Reads the config.
         /// </summary>
-        public static CacheConfiguration Read(IBinaryStream stream)
+        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg)
         {
             Debug.Assert(stream != null);
 
             // Configuration should be read with system marshaller.
             var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
 
-            return new CacheConfiguration
-            {
-                AtomicityMode = (CacheAtomicityMode)reader.ReadInt(),
-                Backups = reader.ReadInt(),
-                CacheMode = (CacheMode)reader.ReadInt(),
-                CopyOnRead = reader.ReadBoolean(),
-                DataRegionName = reader.ReadString(),
-                EagerTtl = reader.ReadBoolean(),
-                EnableStatistics = reader.ReadBoolean(),
-                GroupName = reader.ReadString(),
-                Invalidate = reader.ReadBoolean(),
-                LockTimeout = reader.ReadLongAsTimespan(),
-                MaxConcurrentAsyncOperations = reader.ReadInt(),
-                MaxQueryIteratorsCount = reader.ReadInt(),
-                Name = reader.ReadString(),
-                OnheapCacheEnabled = reader.ReadBoolean(),
-                PartitionLossPolicy = (PartitionLossPolicy)reader.ReadInt(),
-                QueryDetailMetricsSize = reader.ReadInt(),
-                QueryParallelism = reader.ReadInt(),
-                ReadFromBackup = reader.ReadBoolean(),
-                RebalanceBatchSize = reader.ReadInt(),
-                RebalanceBatchesPrefetchCount = reader.ReadLong(),
-                RebalanceDelay = reader.ReadLongAsTimespan(),
-                RebalanceMode = (CacheRebalanceMode)reader.ReadInt(),
-                RebalanceOrder = reader.ReadInt(),
-                RebalanceThrottle = reader.ReadLongAsTimespan(),
-                RebalanceTimeout = reader.ReadLongAsTimespan(),
-                SqlEscapeAll = reader.ReadBoolean(),
-                SqlIndexMaxInlineSize = reader.ReadInt(),
-                SqlSchema = reader.ReadString(),
-                WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt(),
-
-                KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r)),
-                QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r))
-            };
+            cfg.AtomicityMode = (CacheAtomicityMode)reader.ReadInt();
+            cfg.Backups = reader.ReadInt();
+            cfg.CacheMode = (CacheMode)reader.ReadInt();
+            cfg.CopyOnRead = reader.ReadBoolean();
+            cfg.DataRegionName = reader.ReadString();
+            cfg.EagerTtl = reader.ReadBoolean();
+            cfg.EnableStatistics = reader.ReadBoolean();
+            cfg.GroupName = reader.ReadString();
+            cfg.Invalidate = reader.ReadBoolean();
+            cfg.LockTimeout = reader.ReadLongAsTimespan();
+            cfg.MaxConcurrentAsyncOperations = reader.ReadInt();
+            cfg.MaxQueryIteratorsCount = reader.ReadInt();
+            cfg.Name = reader.ReadString();
+            cfg.OnheapCacheEnabled = reader.ReadBoolean();
+            cfg.PartitionLossPolicy = (PartitionLossPolicy)reader.ReadInt();
+            cfg.QueryDetailMetricsSize = reader.ReadInt();
+            cfg.QueryParallelism = reader.ReadInt();
+            cfg.ReadFromBackup = reader.ReadBoolean();
+            cfg.RebalanceBatchSize = reader.ReadInt();
+            cfg.RebalanceBatchesPrefetchCount = reader.ReadLong();
+            cfg.RebalanceDelay = reader.ReadLongAsTimespan();
+            cfg.RebalanceMode = (CacheRebalanceMode)reader.ReadInt();
+            cfg.RebalanceOrder = reader.ReadInt();
+            cfg.RebalanceThrottle = reader.ReadLongAsTimespan();
+            cfg.RebalanceTimeout = reader.ReadLongAsTimespan();
+            cfg.SqlEscapeAll = reader.ReadBoolean();
+            cfg.SqlIndexMaxInlineSize = reader.ReadInt();
+            cfg.SqlSchema = reader.ReadString();
+            cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
+            cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+            cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
         }
 
         /// <summary>

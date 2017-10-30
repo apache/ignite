@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Client.Cache
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Impl.Binary;
-    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
-    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client.Cache;
 
     /// <summary>
     /// Ignite client cache configuration.
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Client.Cache
     /// The only difference is that thin client can not read or write certain <see cref="CacheConfiguration"/>
     /// properties, so a separate class exists to make it clear which properties can be used.
     /// </summary>
-    public class CacheClientConfiguration : IBinaryRawWriteAware<BinaryWriter>
+    public class CacheClientConfiguration
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
@@ -62,6 +62,7 @@ namespace Apache.Ignite.Core.Client.Cache
             Backups = CacheConfiguration.DefaultBackups;
             AtomicityMode = CacheConfiguration.DefaultAtomicityMode;
             CacheMode = CacheConfiguration.DefaultCacheMode;
+            CopyOnRead = CacheConfiguration.DefaultCopyOnRead;
             WriteSynchronizationMode = CacheConfiguration.DefaultWriteSynchronizationMode;
             EagerTtl = CacheConfiguration.DefaultEagerTtl;
             Invalidate = CacheConfiguration.DefaultInvalidate;
@@ -115,12 +116,12 @@ namespace Apache.Ignite.Core.Client.Cache
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
+                    ClientCacheConfigurationSerializer.Write(stream, other);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                    ClientCacheConfigurationSerializer.Read(stream, this);
                 }
 
                 CopyLocalProperties(other);
@@ -128,111 +129,19 @@ namespace Apache.Ignite.Core.Client.Cache
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="CacheClientConfiguration"/> class.
         /// </summary>
-        /// <param name="reader">The reader.</param>
-        internal CacheClientConfiguration(BinaryReader reader)
+        internal CacheClientConfiguration(IBinaryStream stream)
         {
-            Read(reader);
-        }
+            Debug.Assert(stream != null);
 
-        /// <summary>
-        /// Reads data into this instance from the specified reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        private void Read(BinaryReader reader)
-        {
-            // Make sure system marshaller is used.
-            Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
-
-            AtomicityMode = (CacheAtomicityMode)reader.ReadInt();
-            Backups = reader.ReadInt();
-            CacheMode = (CacheMode)reader.ReadInt();
-            EagerTtl = reader.ReadBoolean();
-            Invalidate = reader.ReadBoolean();
-            LockTimeout = reader.ReadLongAsTimespan();
-            MaxConcurrentAsyncOperations = reader.ReadInt();
-            Name = reader.ReadString();
-            ReadFromBackup = reader.ReadBoolean();
-            RebalanceBatchSize = reader.ReadInt();
-            RebalanceDelay = reader.ReadLongAsTimespan();
-            RebalanceMode = (CacheRebalanceMode)reader.ReadInt();
-            RebalanceThrottle = reader.ReadLongAsTimespan();
-            RebalanceTimeout = reader.ReadLongAsTimespan();
-            SqlEscapeAll = reader.ReadBoolean();
-            WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
-            EnableStatistics = reader.ReadBoolean();
-            DataRegionName = reader.ReadString();
-            PartitionLossPolicy = (PartitionLossPolicy)reader.ReadInt();
-            GroupName = reader.ReadString();
-            SqlIndexMaxInlineSize = reader.ReadInt();
-            OnheapCacheEnabled = reader.ReadBoolean();
-            RebalanceOrder = reader.ReadInt();
-            RebalanceBatchesPrefetchCount = reader.ReadLong();
-            MaxQueryIteratorsCount = reader.ReadInt();
-            QueryDetailMetricsSize = reader.ReadInt();
-            QueryParallelism = reader.ReadInt();
-            SqlSchema = reader.ReadString();
-
-            KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
-            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
-        }
-
-        /// <summary>
-        /// Writes this instance to the specified writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
-        {
-            Write(writer);
-        }
-
-        /// <summary>
-        /// Writes this instance to the specified writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        internal void Write(BinaryWriter writer)
-        {
-            // Make sure system marshaller is used.
-            Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
-
-            writer.WriteInt((int)AtomicityMode);
-            writer.WriteInt(Backups);
-            writer.WriteInt((int)CacheMode);
-            writer.WriteBoolean(EagerTtl);
-            writer.WriteBoolean(Invalidate);
-            writer.WriteLong((long)LockTimeout.TotalMilliseconds);
-            writer.WriteInt(MaxConcurrentAsyncOperations);
-            writer.WriteString(Name);
-            writer.WriteBoolean(ReadFromBackup);
-            writer.WriteInt(RebalanceBatchSize);
-            writer.WriteLong((long)RebalanceDelay.TotalMilliseconds);
-            writer.WriteInt((int)RebalanceMode);
-            writer.WriteLong((long)RebalanceThrottle.TotalMilliseconds);
-            writer.WriteLong((long)RebalanceTimeout.TotalMilliseconds);
-            writer.WriteBoolean(SqlEscapeAll);
-            writer.WriteInt((int)WriteSynchronizationMode);
-            writer.WriteBoolean(EnableStatistics);
-            writer.WriteString(DataRegionName);
-            writer.WriteInt((int)PartitionLossPolicy);
-            writer.WriteString(GroupName);
-            writer.WriteInt(SqlIndexMaxInlineSize);
-            writer.WriteBoolean(OnheapCacheEnabled);
-            writer.WriteInt(RebalanceOrder);
-            writer.WriteLong(RebalanceBatchesPrefetchCount);
-            writer.WriteInt(MaxQueryIteratorsCount);
-            writer.WriteInt(QueryDetailMetricsSize);
-            writer.WriteInt(QueryParallelism);
-            writer.WriteString(SqlSchema);
-
-            writer.WriteCollectionRaw(KeyConfiguration);
-            writer.WriteCollectionRaw(QueryEntities);
+            ClientCacheConfigurationSerializer.Read(stream, this);
         }
 
         /// <summary>
         /// Copies the local properties (properties that are not written in Write method).
         /// </summary>
-        internal void CopyLocalProperties(CacheClientConfiguration cfg)
+        private void CopyLocalProperties(CacheClientConfiguration cfg)
         {
             Debug.Assert(cfg != null);
 
@@ -361,6 +270,13 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         [DefaultValue(CacheConfiguration.DefaultReadFromBackup)]
         public bool ReadFromBackup { get; set; }
+
+        /// <summary>
+        /// Gets or sets flag indicating whether copy of the value stored in cache should be created
+        /// for cache operation implying return value. 
+        /// </summary>
+        [DefaultValue(CacheConfiguration.DefaultCopyOnRead)]
+        public bool CopyOnRead { get; set; }
 
         /// <summary>
         /// If true all the SQL table and field names will be escaped with double quotes like 
