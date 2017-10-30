@@ -13,32 +13,30 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+package org.apache.ignite.testsuites;
 
-import java.io.Serializable;
-import java.util.Set;
+import junit.framework.TestSuite;
 
 /**
- * Initial snapshot operation interface.
+ * Test suite for cycled run tests on PR code. <br>
+ * This empty suite may be used in case it is needed to run
+ * some test subset to reproduce an issue.<br>
+ *
+ * You may launch and check results on
+ * https://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgniteReproducingSuite
+ *
+ * This suite is not included into main build
  */
-public interface SnapshotOperation extends Serializable {
-    /**
-     * Cache group ids included to this snapshot.
-     *
-     * @return Cache names.
-     */
-    public Set<Integer> cacheGroupIds();
+public class IgniteReproducingSuite extends TestSuite {
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
-    /**
-     * Cache names included to this snapshot.
-     */
-    public Set<String> cacheNames();
+        //uncomment to add some test
+        //for (int i = 0; i < 100; i++)
+        //    suite.addTestSuite();
 
-    /**
-     * Any custom extra parameter.
-     */
-    public Object extraParameter();
+        return suite;
+    }
 }
