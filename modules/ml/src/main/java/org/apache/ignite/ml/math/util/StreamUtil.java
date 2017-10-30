@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.math.util;
 
-import java.util.UUID;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-public class GroupTrainerCacheKey {
-    @AffinityKeyMapped
-    private Integer nodeLocalEntityIndex;
-
-    private UUID trainingUUID;
-
-    public GroupTrainerCacheKey(Integer nodeLocalEntityIndex, UUID trainingUUID) {
-        this.nodeLocalEntityIndex = nodeLocalEntityIndex;
-        this.trainingUUID = trainingUUID;
-    }
-
-    public Integer nodeLocalEntityIndex() {
-        return nodeLocalEntityIndex;
-    }
-
-    public UUID trainingUUID() {
-        return trainingUUID;
+public class StreamUtil {
+    public static <T> Stream<T> fromIterator(Iterator<T> sourceIterator) {
+        return StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(sourceIterator, Spliterator.ORDERED),
+            false);
     }
 }

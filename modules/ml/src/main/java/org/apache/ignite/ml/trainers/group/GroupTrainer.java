@@ -19,8 +19,10 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.Model;
@@ -32,21 +34,23 @@ import org.apache.ignite.ml.trainers.Trainer;
 
 public abstract class GroupTrainer<I, O, R, LC, RC, M extends Model, T> implements Trainer<M, T> {
     IgniteUncurriedBiFunction<Integer, T, O> init;
-    IgniteFunction<I, O> worker;
+    IgniteUncurriedBiFunction<Integer, I, O> worker;
     IgniteFunction<I, IgniteBiTuple<LC, R>> handler;
     IgnitePredicate<Collection<O>> stopper;
     IgniteFunction<Integer, R> result;
     IgniteFunction<Collection<R>, M> modelProducer;
     IgniteCache<GroupTrainerCacheKey, RC> cache;
     int nodeLocalEntitiesCount;
+    Ignite ignite;
 
-    public GroupTrainer(IgniteUncurriedBiFunction<Integer, T, O> init, IgniteFunction<I, O> worker,
+    public GroupTrainer(IgniteUncurriedBiFunction<Integer, T, O> init, IgniteUncurriedBiFunction<Integer, I, O> worker,
         IgniteFunction<I, IgniteBiTuple<LC, R>> handler,
         IgnitePredicate<Collection<O>> stopper,
         IgniteFunction<Integer, R> result,
         IgniteFunction<Collection<R>, M> modelProducer,
         IgniteCache<GroupTrainerCacheKey, RC> cache,
-        int nodeLocEntitiesCnt) {
+        int nodeLocEntitiesCnt,
+        Ignite ignite) {
         this.init = init;
         this.worker = worker;
         this.handler = handler;
@@ -55,6 +59,7 @@ public abstract class GroupTrainer<I, O, R, LC, RC, M extends Model, T> implemen
         this.modelProducer = modelProducer;
         this.cache = cache;
         this.nodeLocalEntitiesCount = nodeLocEntitiesCnt;
+        this.ignite = ignite;
     }
 
     @Override public M train(T data) {
@@ -66,4 +71,8 @@ public abstract class GroupTrainer<I, O, R, LC, RC, M extends Model, T> implemen
     }
 
     protected abstract void initGlobalContext(T data, UUID trainingUUID);
+
+    private <A, B> B execute(ComputeTask<A, B> task, A arg) {
+        return ignite.compute(ignite.cluster().forCacheNodes(cache.getName())).execute(task, arg);
+    }
 }
