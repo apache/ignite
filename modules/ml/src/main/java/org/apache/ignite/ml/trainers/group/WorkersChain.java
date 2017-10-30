@@ -19,8 +19,9 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import javax.cache.Cache;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
@@ -48,18 +49,19 @@ public class WorkersChain<I, G, O> {
     public O process(UUID trainingUUID, String cacheName, I data, Ignite ignite) {
         Object d = data;
         for (ChainStep step : steps) {
+            step.kf.apply(d);
             Object res = ignite.compute(ignite.cluster().forDataNodes(cacheName)).execute(new GroupTrainerTask<>(trainingUUID, step.f, step.reducer, cacheName, d), null);
 
         }
     }
 
     private static class ChainStep<I1, G, O1> {
-        private IgniteFunction<O1, List<Integer>> kf;
-        private IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, O1>> f;
+        private IgniteFunction<O1, Stream<Integer>> kf;
+        private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, O1>> f;
         private IgniteBinaryOperator<O1> reducer;
 
-        private ChainStep(IgniteFunction<O1, List<Integer>> kf,
-            IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, O1>> f,
+        private ChainStep(IgniteFunction<O1, Stream<Integer>> kf,
+            IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, O1>> f,
             IgniteBinaryOperator<O1> reducer) {
             this.kf = kf;
             this.f = f;

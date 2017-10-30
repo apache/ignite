@@ -18,8 +18,12 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.Cache;
@@ -27,24 +31,33 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.StreamUtil;
 
 public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJob {
-    private IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, U>> worker;
+    private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker;
     private UUID trainingUUID;
     private String cacheName;
     private Ignite ignite;
-    IgniteCache<GroupTrainerCacheKey, G> cache;
-    S data;
-    IgniteSupplier<Integer> keySupplier;
+    private IgniteCache<GroupTrainerCacheKey, G> cache;
+    private S data;
+    private IgniteSupplier<Stream<Integer>> keySupplier;
+    private IgniteBinaryOperator<U> reducer;
 
-    public LocalTrainingJob(IgniteBiFunction<Cache.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, U>> worker,
+    public LocalTrainingJob(IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker,
+        IgniteSupplier<Stream<Integer>> keySupplier,
+        IgniteBinaryOperator<U> reducer,
         UUID trainingUUID, String cacheName,
         S data) {
         this.worker = worker;
+        this.keySupplier = keySupplier;
+        this.reducer = reducer;
         this.trainingUUID = trainingUUID;
         this.cacheName = cacheName;
         this.data = data;
@@ -57,15 +70,31 @@ public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJo
 
     }
 
-    @Override public Object execute() throws IgniteException {
-        List<IgniteBiTuple<Cache.Entry<GroupTrainerCacheKey, G>, U>> res = selectLocalEntries().
+    @Override public U execute() throws IgniteException {
+        Map<GroupTrainerCacheKey, G> m = new ConcurrentHashMap<>();
+
+        List<IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> res = selectLocalEntries().
             parallel().
             map(entry -> worker.apply(entry, data)).collect(Collectors.toList());
-        res
+
+        res.stream().map(IgniteBiTuple::get1).forEach(r -> m.put(r.getKey(), r.getValue()));
+
+        cache.putAll(m);
+
+        return res.stream().map(IgniteBiTuple::get2).reduce(reducer).get();
     }
 
     // TODO: do it more optimally.
-    private Stream<Cache.Entry<GroupTrainerCacheKey, G>> selectLocalEntries() {
-        return StreamUtil.fromIterator(cache.localEntries().iterator()).filter(entry -> entry.getKey().trainingUUID().equals(trainingUUID));
+    private Stream<Map.Entry<GroupTrainerCacheKey, G>> selectLocalEntries() {
+        Set<GroupTrainerCacheKey> keys = keySupplier.get().
+            map(k -> new GroupTrainerCacheKey(k, trainingUUID)).
+            filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            collect(Collectors.toSet());
+
+        return cache.getAll(keys).entrySet().stream();
+    }
+
+    private Affinity<GroupTrainerCacheKey> affinity() {
+        return ignite.affinity(cacheName);
     }
 }
