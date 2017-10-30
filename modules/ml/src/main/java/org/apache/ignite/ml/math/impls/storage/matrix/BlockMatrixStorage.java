@@ -189,32 +189,6 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         cache.clearAll(keyset);
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + cols;
-        res = res * 37 + rows;
-        res = res * 37 + uuid.hashCode();
-        res = res * 37 + cache.hashCode();
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-
-        BlockMatrixStorage that = (BlockMatrixStorage)obj;
-
-        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
-            && (cache != null ? cache.equals(that.cache) : that.cache == null);
-    }
-
     /**
      * Get storage UUID.
      *
@@ -277,6 +251,32 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /** {@inheritDoc} */
     @Override public String cacheName() {
         return CACHE_NAME;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + cols;
+        res = res * 37 + rows;
+        res = res * 37 + uuid.hashCode();
+        res = res * 37 + cache.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        BlockMatrixStorage that = (BlockMatrixStorage)obj;
+
+        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
     /** */

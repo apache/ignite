@@ -35,11 +35,17 @@ public class LocalModelsTest {
 
     private String modelFilePath = "model.mlmod";
 
+    /**
+     *
+     */
     @After
     public void cleanUp() throws IOException {
         Files.deleteIfExists(Paths.get(modelFilePath));
     }
 
+    /**
+     *
+     */
     @Test
     public void importExportKMeansModelTest(){
 
@@ -56,6 +62,9 @@ public class LocalModelsTest {
         Assert.assertTrue("", model.equals(importedModel));
     }
 
+    /**
+     *
+     */
     private Model getClusterModel(){
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 

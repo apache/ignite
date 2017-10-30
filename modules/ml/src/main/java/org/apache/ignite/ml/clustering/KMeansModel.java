@@ -76,4 +76,27 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer> {
 
         return res;
     }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + distance.hashCode();
+        res = res * 37 + Arrays.hashCode(centers);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        KMeansModel that = (KMeansModel)obj;
+
+        return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
+    }
 }
