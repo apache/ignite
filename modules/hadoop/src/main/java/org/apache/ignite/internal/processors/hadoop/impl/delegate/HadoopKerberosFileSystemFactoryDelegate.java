@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.hadoop.impl.delegate;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
@@ -81,14 +83,24 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
         A.ensure(proxy0.getReloginInterval() >= 0, "reloginInterval cannot not be negative.");
 
         reloginInterval = proxy0.getReloginInterval();
+        String keyTabLocation = proxy0.getKeyTab();
+        String principalName = proxy0.getKeyTabPrincipal();
 
         try {
+            // Replace _HOST with FDQN.
+            principalName = SecurityUtil.getServerPrincipal(principalName, U.getLocalHost());
+
             UserGroupInformation.setConfiguration(cfg);
-            UserGroupInformation.loginUserFromKeytab(proxy0.getKeyTabPrincipal(), proxy0.getKeyTab());
+            UserGroupInformation.loginUserFromKeytab(principalName, keyTabLocation);
         }
         catch (IOException ioe) {
-            throw new IgniteException("Failed login from keytab [keyTab=" + proxy0.getKeyTab() +
-                ", keyTabPrincipal=" + proxy0.getKeyTabPrincipal() + ']', ioe);
+            if (principalName.equals("_HOST")) {
+                throw new IgniteException("Failed to get local host name.", ioe);
+            }
+            else {
+                throw new IgniteException("Failed login from keytab [keyTab=" + keyTabLocation +
+                    ", keyTabPrincipal=" + principalName + ']', ioe);
+            }
         }
     }
 
