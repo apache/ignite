@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -50,7 +51,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     static final String BASE_URL_BIN = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data, text from Person";
 
     /** Alias for _key */
     private static final String KEY_ALIAS = "key";
@@ -114,6 +115,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
         e.addQueryField("data", byte[].class.getName(), null);
+        e.addQueryField("text", String.class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -190,6 +192,18 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param clob Clob.
+     */
+    static String str(Clob clob) {
+        try {
+            return clob.getSubString(1, (int)clob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -214,6 +228,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         @QuerySqlField
         private final byte[] data;
 
+        /** CLOB data. */
+        @QuerySqlField
+        private final String text;
+
         /**
          * @param id ID.
          * @param firstName First name.
@@ -230,6 +248,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             this.lastName = lastName;
             this.age = age;
             this.data = getBytes(lastName);
+            this.text = firstName + " " + lastName;
         }
 
         /** {@inheritDoc} */

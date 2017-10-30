@@ -253,9 +253,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setClob(int paramIdx, Clob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setString(paramIdx, x.getSubString(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */

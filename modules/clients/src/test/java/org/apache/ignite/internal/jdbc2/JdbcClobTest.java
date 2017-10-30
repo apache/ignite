@@ -313,7 +313,7 @@ public class JdbcClobTest extends TestCase {
         }
 
         try {
-            clob.setString(clob.length() + 1, "a");
+            clob.setString(clob.length() + 2, "a");
 
             fail();
         }

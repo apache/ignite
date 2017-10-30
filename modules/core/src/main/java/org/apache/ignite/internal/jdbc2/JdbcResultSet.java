@@ -1014,9 +1014,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Clob getClob(int colIdx) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob(getString(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -1045,9 +1043,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Clob getClob(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcClob(getString(colLb));
     }
 
     /** {@inheritDoc} */

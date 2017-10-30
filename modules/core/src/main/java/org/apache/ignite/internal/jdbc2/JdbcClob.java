@@ -100,7 +100,7 @@ public class JdbcClob implements Clob {
     @Override public int setString(long pos, String str) throws SQLException {
         ensureNotClosed();
 
-        if (pos < 1 || str == null || pos > chars.length())
+        if (pos < 1 || str == null || pos - 1 > chars.length())
             throw new SQLException("Invalid argument. Position should be greater than zero. " +
                 "Position should not exceed CLOB length. Source string should not be null " +
                 "[pos=" + pos + ", str=" + str + ']');

@@ -29,14 +29,14 @@ import org.apache.ignite.cache.CachePeekMode;
  */
 public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query. */
-    private static final String SQL = "merge into Person(_key, id, firstName, lastName, age, data) values " +
-        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White')), " +
-        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black')), " +
-        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'))";
+    private static final String SQL = "merge into Person(_key, id, firstName, lastName, age, data, text) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White'), 'John White'), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black'), 'Joe Black'), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'), 'Mike Green')";
 
     /** SQL query. */
-    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age, data) values " +
-        "(?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)";
+    protected static final String SQL_PREPARED = "merge into Person(_key, id, firstName, lastName, age, data, text) " +
+        "values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)";
 
     /** Statement. */
     protected Statement stmt;
@@ -76,6 +76,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
                         assertEquals("White", rs.getString("lastName"));
                         assertEquals(25, rs.getInt("age"));
                         assertEquals("White", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("John White", str(rs.getClob("text")));
                         break;
 
                     case 2:
@@ -84,6 +85,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
                         assertEquals("Black", rs.getString("lastName"));
                         assertEquals(35, rs.getInt("age"));
                         assertEquals("Black", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Joe Black", str(rs.getClob("text")));
                         break;
 
                     case 3:
@@ -92,6 +94,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
                         assertEquals("Green", rs.getString("lastName"));
                         assertEquals(40, rs.getInt("age"));
                         assertEquals("Green", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Mike Green", str(rs.getClob("text")));
                         break;
 
                     case 4:
@@ -100,6 +103,7 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
                         assertEquals("Grey", rs.getString("lastName"));
                         assertEquals(22, rs.getInt("age"));
                         assertEquals("Grey", str(getBytes(rs.getBlob("data"))));
+                        assertEquals("Leah Grey", str(rs.getClob("text")));
                         break;
 
                     default:
@@ -155,13 +159,15 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
         prepStmt.setString(4, "White");
         prepStmt.setInt(5, 25);
         prepStmt.setBytes(6, getBytes("White"));
+        prepStmt.setString(7, "John White");
 
-        prepStmt.setString(7, "p2");
-        prepStmt.setInt(8, 2);
-        prepStmt.setString(9, "Joe");
-        prepStmt.setString(10, "Black");
-        prepStmt.setInt(11, 35);
-        prepStmt.setBytes(12, getBytes("Black"));
+        prepStmt.setString(8, "p2");
+        prepStmt.setInt(9, 2);
+        prepStmt.setString(10, "Joe");
+        prepStmt.setString(11, "Black");
+        prepStmt.setInt(12, 35);
+        prepStmt.setBytes(13, getBytes("Black"));
+        prepStmt.setString(14, "Joe Black");
         prepStmt.addBatch();
 
         prepStmt.setString(1, "p3");
@@ -170,13 +176,15 @@ public class JdbcMergeStatementSelfTest extends JdbcAbstractDmlStatementSelfTest
         prepStmt.setString(4, "Green");
         prepStmt.setInt(5, 40);
         prepStmt.setBytes(6, getBytes("Green"));
+        prepStmt.setString(7, "Mike Green");
 
-        prepStmt.setString(7, "p4");
-        prepStmt.setInt(8, 4);
-        prepStmt.setString(9, "Leah");
-        prepStmt.setString(10, "Grey");
-        prepStmt.setInt(11, 22);
-        prepStmt.setBytes(12, getBytes("Grey"));
+        prepStmt.setString(8, "p4");
+        prepStmt.setInt(9, 4);
+        prepStmt.setString(10, "Leah");
+        prepStmt.setString(11, "Grey");
+        prepStmt.setInt(12, 22);
+        prepStmt.setBytes(13, getBytes("Grey"));
+        prepStmt.setString(14, "Leah Grey");
 
         prepStmt.addBatch();
 
