@@ -20,19 +20,16 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Data transfer object for SQL connector configuration.
- *
- * Deprecated as of Apache Ignite 2.3
+ * Data transfer object for client connector configuration.
  */
-@Deprecated
-public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
+public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,7 +60,7 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
     /**
      * Default constructor.
      */
-    public VisorSqlConnectorConfiguration() {
+    public VisorClientConnectorConfiguration() {
         // No-op.
     }
 
@@ -72,7 +69,7 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
      *
      * @param cfg Sql connector configuration.
      */
-    public VisorSqlConnectorConfiguration(SqlConnectorConfiguration cfg) {
+    public VisorClientConnectorConfiguration(ClientConnectorConfiguration cfg) {
         host = cfg.getHost();
         port = cfg.getPort();
         portRange = cfg.getPortRange();
@@ -164,6 +161,6 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSqlConnectorConfiguration.class, this);
+        return S.toString(VisorClientConnectorConfiguration.class, this);
     }
 }
