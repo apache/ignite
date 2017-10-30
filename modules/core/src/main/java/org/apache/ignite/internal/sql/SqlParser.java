@@ -19,12 +19,12 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
-import static org.apache.ignite.internal.sql.SqlKeyword.FULLTEXT;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
@@ -111,6 +111,8 @@ public class SqlParser {
         if (lex.shift()) {
             SqlCommand cmd = null;
 
+            if (matchesKeyword(lex, TABLE))
+                cmd = new SqlCreateTableCommand();
             if (matchesKeyword(lex, INDEX))
                 cmd = new SqlCreateIndexCommand();
             else if (matchesKeyword(lex, SPATIAL)) {

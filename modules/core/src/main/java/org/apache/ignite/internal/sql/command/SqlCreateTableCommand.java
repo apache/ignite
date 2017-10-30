@@ -31,9 +31,11 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
-import static org.apache.ignite.internal.sql.SqlKeyword.ON;
+import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.isVaildIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
@@ -42,25 +44,23 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 /**
  * CREATE INDEX command.
  */
-public class SqlCreateIndexCommand implements SqlCommand {
+public class SqlCreateTableCommand implements SqlCommand {
     /** Schema name. */
     private String schemaName;
 
     /** Table name. */
     private String tblName;
 
-    /** Index name. */
-    private String idxName;
-
     /** IF NOT EXISTS flag. */
     private boolean ifNotExists;
 
-    /** Spatial index flag. */
-    private boolean spatial;
-
     /** Columns. */
     @GridToStringInclude
-    private Collection<SqlIndexColumn> cols;
+    private Collection<SqlColumn> cols;
+
+    /** Primary key column names. */
+    @GridToStringInclude
+    private Collection<String> pkColNames;
 
     /**
      * @return Schema name.
@@ -77,13 +77,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
-     * @return Index name.
-     */
-    public String indexName() {
-        return idxName;
-    }
-
-    /**
      * @return IF NOT EXISTS flag.
      */
     public boolean ifNotExists() {
@@ -91,34 +84,24 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
-     * @return Spatial index flag.
-     */
-    public boolean spatial() {
-        return spatial;
-    }
-
-    /**
-     * @param spatial Spatial index flag.
-     * @return This instance.
-     */
-    public SqlCreateIndexCommand spatial(boolean spatial) {
-        this.spatial = spatial;
-
-        return this;
-    }
-
-    /**
      * @return Columns.
      */
-    public Collection<SqlIndexColumn> columns() {
-        return cols != null ? cols : Collections.<SqlIndexColumn>emptySet();
+    public Collection<SqlColumn> columns() {
+        return cols != null ? cols : Collections.<SqlColumn>emptySet();
+    }
+
+    /**
+     * @return PK column names.
+     */
+    public Collection<String> primaryKeyColumnNames() {
+        return pkColNames != null ? pkColNames : Collections.<String>emptySet();
     }
 
     /**
      * @param col Column.
      * @return This instance.
      */
-    private SqlCreateIndexCommand addColumn(SqlIndexColumn col) {
+    private SqlCreateTableCommand addColumn(SqlColumn col) {
         if (cols == null)
             cols = new LinkedList<>();
 
@@ -129,20 +112,14 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        // TODO: INLINE SIZE
-
         parseIfNotExists(lex);
 
-        idxName = parseIdentifier(lex, IF);
-
-        skipIfMatchesKeyword(lex, ON);
-
-        SqlQualifiedName tblQName = parseQualifiedIdentifier(lex);
+        SqlQualifiedName tblQName = parseQualifiedIdentifier(lex, IF);
 
         schemaName = tblQName.schemaName();
         tblName = tblQName.name();
 
-        parseColumnList(lex);
+        parseColumnAndConstraintList(lex);
 
         return this;
     }
@@ -166,14 +143,14 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /*
      * @param lex Lexer.
      */
-    private void parseColumnList(SqlLexer lex) {
+    private void parseColumnAndConstraintList(SqlLexer lex) {
         if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
             throw errorUnexpectedToken(lex, "(");
 
-        boolean lastCol = false;
+        boolean last = false;
 
-        while (!lastCol) {
-            perseIndexColumn(lex);
+        while (!last) {
+            parseColumnOrConstraint(lex);
 
             if (!lex.shift())
                 throw errorUnexpectedToken(lex, ",", ")");
@@ -183,7 +160,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
                     break;
 
                 case PARENTHESIS_RIGHT:
-                    lastCol = true;
+                    last = true;
 
                     break;
 
@@ -196,24 +173,40 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /**
      * @param lex Lexer.
      */
-    private void perseIndexColumn(SqlLexer lex) {
-        String name = parseIdentifier(lex);
-        boolean desc = false;
+    private void parseColumnOrConstraint(SqlLexer lex) {
+        SqlParserToken next = lex.lookAhead();
 
-        SqlParserToken nextToken = lex.lookAhead();
+        // TODO: Throw errors on unsupported features (keywords!!!).
 
-        if (nextToken != null && (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC))) {
-            lex.shift();
+        if (matchesKeyword(next, PRIMARY))
+            parsePrimaryKeyConstraint(lex);
+        else
+            parseColumn(lex);
+    }
 
-            if (matchesKeyword(lex, DESC))
-                desc = true;
-        }
+    /**
+     * @param lex Lexer.
+     */
+    private void parseColumn(SqlLexer lex) {
+        // TODO: Throw on alraedy defined!
 
-        addColumn(new SqlIndexColumn(name, desc));
+        // TODO
+    }
+
+    /**
+     * @param lex Lexer.
+     */
+    private void parsePrimaryKeyConstraint(SqlLexer lex) {
+        // TODO: throw on already defined!
+
+        skipIfMatchesKeyword(lex, PRIMARY);
+        skipIfMatchesKeyword(lex, KEY);
+
+        // TODO: Column names!
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlCreateIndexCommand.class, this);
+        return S.toString(SqlCreateTableCommand.class, this);
     }
 }

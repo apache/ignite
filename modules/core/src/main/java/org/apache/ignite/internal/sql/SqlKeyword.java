@@ -45,11 +45,17 @@ public class SqlKeyword {
     /** Keyword: INDEX. */
     public static final String INDEX = "INDEX";
 
+    /** Keyword: KEY. */
+    public static final String KEY = "KEY";
+
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: PRIMARY. */
+    public static final String PRIMARY = "PRIMARY";
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";

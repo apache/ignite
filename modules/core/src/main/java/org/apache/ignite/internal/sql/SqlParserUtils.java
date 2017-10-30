@@ -32,7 +32,7 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isIdentifier(lex))
+        if (lex.shift() && isVaildIdentifier(lex))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[identifier]", additionalExpTokens);
@@ -46,7 +46,7 @@ public class SqlParserUtils {
      * @return Qualified name.
      */
     public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isIdentifier(lex)) {
+        if (lex.shift() && isVaildIdentifier(lex)) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
@@ -73,7 +73,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    private static boolean isIdentifier(SqlParserToken token) {
+    public static boolean isVaildIdentifier(SqlParserToken token) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();
@@ -81,7 +81,7 @@ public class SqlParserUtils {
                 if ((c >= 'A' && c <= 'Z') || c == '_')
                     return true;
 
-                throw error(token, "Illegal identifier name.");
+                throw error(token, "Illegal identifier name: " + token.token());
 
             case QUOTED:
                 return true;
