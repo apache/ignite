@@ -119,9 +119,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Dirty flag. */
     private static final long DIRTY_FLAG = 0x0100000000000000L;
 
-    /** Dirty flag. */
-    private static final long TMP_DIRTY_FLAG = 0x0200000000000000L;
-
     /** Invalid relative pointer value. */
     private static final long INVALID_REL_PTR = RELATIVE_PTR_MASK;
 
@@ -236,9 +233,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** */
     private DataRegionMetricsImpl memMetrics;
-
-    /** */
-    private volatile boolean closed;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -361,14 +355,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         U.shutdownNow(getClass(), asyncRunner, log);
 
-        closed = true;
-
-        for (Segment seg : segments) {
-            // Make sure all threads have left the lock.
-            seg.writeLock().lock();
-
-            seg.writeLock().unlock();
-        }
+        for (Segment seg : segments)
+            seg.close();
 
         directMemoryProvider.shutdown();
     }
@@ -1105,7 +1093,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.readLock().lock();
 
                 try {
-                    if (closed)
+                    if (seg.closed)
                         continue;
 
                     total += seg.loadedPages.size();
@@ -1129,7 +1117,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().lock();
 
             try {
-                if (closed)
+                if (seg.closed)
                     continue;
 
                 total += seg.acquiredPages();
@@ -1670,6 +1658,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** Maps partition (cacheId, partId) to its tag. Tag is 1-based incrementing partition file counter */
         private final Map<T2<Integer, Integer>, Integer> partTagMap = new HashMap<>();
 
+        /** */
+        private boolean closed;
+
         /**
          * @param region Memory region.
          * @param throttlingEnabled Write throttling enabled flag.
@@ -1692,6 +1683,20 @@ public class PageMemoryImpl implements PageMemoryEx {
             pool = new PagePool(idx, poolRegion, null);
 
             maxDirtyPages = throttlingEnabled ? pool.pages() * 3 / 4 : Math.min(pool.pages() * 2 / 3, cpPoolPages);
+        }
+
+        /**
+         * Closes the segment.
+         */
+        private void close() {
+            writeLock().lock();
+
+            try {
+                closed = true;
+            }
+            finally {
+                writeLock().unlock();
+            }
         }
 
         /**

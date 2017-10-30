@@ -155,7 +155,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         storagePath = cfg.getStoragePath();
         checkpointFreq = cfg.getCheckpointFrequency();
         lockWaitTime = cfg.getLockWaitTime();
-        checkpointPageBufSize = cfg.getCheckpointPageBufferSize();
         checkpointThreads = cfg.getCheckpointThreads();
         checkpointWriteOrder = cfg.getCheckpointWriteOrder();
         walHistSize = cfg.getWalHistorySize();
@@ -391,7 +390,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         U.writeString(out, storagePath);
         out.writeLong(checkpointFreq);
         out.writeLong(lockWaitTime);
-        out.writeLong(checkpointPageBufSize);
+        out.writeLong(0);
         out.writeInt(checkpointThreads);
         U.writeEnum(out, checkpointWriteOrder);
         out.writeInt(walHistSize);

@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.NameMapper,
-                    _cfg.IdMapper, ser, false, GetAffinityKeyFieldNameFromAttribute(type), 
+                    _cfg.IdMapper, ser, false, AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type), 
                     BinaryUtils.IsIgniteEnum(type), registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
 
@@ -576,7 +576,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Type is found.
                 var typeName = GetTypeName(type, nameMapper);
                 int typeId = GetTypeId(typeName, idMapper);
-                var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
+                var affKeyFld = typeCfg.AffinityKeyFieldName 
+                    ?? AffinityKeyMappedAttribute.GetFieldNameFromAttribute(type);
                 var serializer = GetSerializer(_cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
                 return AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
@@ -624,24 +625,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             return refSerializer != null
                 ? refSerializer.Register(type, typeId, nameMapper, idMapper)
                 : new UserSerializerProxy(serializer);
-        }
-
-        /// <summary>
-        /// Gets the affinity key field name from attribute.
-        /// </summary>
-        private static string GetAffinityKeyFieldNameFromAttribute(Type type)
-        {
-            var res = type.GetMembers()
-                .Where(x => x.GetCustomAttributes(false).OfType<AffinityKeyMappedAttribute>().Any())
-                .Select(x => x.Name).ToArray();
-
-            if (res.Length > 1)
-            {
-                throw new BinaryObjectException(string.Format("Multiple '{0}' attributes found on type '{1}'. " +
-                    "There can be only one affinity field.", typeof (AffinityKeyMappedAttribute).Name, type));
-            }
-
-            return res.SingleOrDefault();
         }
 
         /// <summary>
@@ -711,7 +694,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (typeId == 0)
             {
-                typeId = BinaryUtils.GetStringHashCode(typeName);
+                typeId = BinaryUtils.GetStringHashCodeLowerCase(typeName);
             }
 
             AddType(type, typeId, typeName, false, false, null, null, serializer, affKeyFldName, false);
@@ -843,7 +826,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (id == 0)
             {
-                id = BinaryUtils.GetStringHashCode(typeName);
+                id = BinaryUtils.GetStringHashCodeLowerCase(typeName);
             }
 
             return id;
