@@ -1638,6 +1638,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets a collection of currently started public cache names.
+     *
+     * @return Collection of currently started public cache names
+     */
+    public Collection<String> publicAndDsCacheNames() {
+        return F.viewReadOnly(cacheDescriptors().values(),
+            new IgniteClosure<DynamicCacheDescriptor, String>() {
+                @Override public String apply(DynamicCacheDescriptor desc) {
+                    return desc.cacheConfiguration().getName();
+                }
+            },
+            new IgnitePredicate<DynamicCacheDescriptor>() {
+                @Override public boolean apply(DynamicCacheDescriptor desc) {
+                    return desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES;
+                }
+            }
+        );
+    }
+
+    /**
      * Gets cache mode.
      *
      * @param cacheName Cache name to check.
@@ -2552,7 +2572,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when all caches are deployed.
      */
-    private IgniteInternalFuture<?> dynamicStartCaches(
+    public IgniteInternalFuture<?> dynamicStartCaches(
         Collection<CacheConfiguration> ccfgList,
         CacheType cacheType,
         boolean failIfExists,
