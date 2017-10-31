@@ -3011,6 +3011,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 long nextOrder = res.order();
 
+                                if (nextOrder == 0 && msg instanceof TcpDiscoveryConnectionCheckMessage) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Skip connection check, next node is still initializing");
+
+                                    return;
+                                }
+
                                 if (!next.id().equals(nextId)) {
                                     // Node with different ID has bounded to the same port.
                                     if (log.isDebugEnabled())
