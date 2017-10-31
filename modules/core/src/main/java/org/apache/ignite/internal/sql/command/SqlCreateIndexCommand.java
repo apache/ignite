@@ -20,17 +20,21 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserToken;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
+import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
@@ -61,6 +65,10 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /** Columns. */
     @GridToStringInclude
     private Collection<SqlIndexColumn> cols;
+
+    /** Column names. */
+    @GridToStringExclude
+    private Set<String> colNames;
 
     /**
      * @return Schema name.
@@ -114,19 +122,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return cols != null ? cols : Collections.<SqlIndexColumn>emptySet();
     }
 
-    /**
-     * @param col Column.
-     * @return This instance.
-     */
-    private SqlCreateIndexCommand addColumn(SqlIndexColumn col) {
-        if (cols == null)
-            cols = new LinkedList<>();
-
-        cols.add(col);
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
@@ -176,7 +171,23 @@ public class SqlCreateIndexCommand implements SqlCommand {
                 desc = true;
         }
 
-        addColumn(new SqlIndexColumn(name, desc));
+        addColumn(lex, new SqlIndexColumn(name, desc));
+    }
+
+    /**
+     * @param lex Lexer.
+     * @param col Column.
+     */
+    private void addColumn(SqlLexer lex, SqlIndexColumn col) {
+        if (cols == null) {
+            cols = new LinkedList<>();
+            colNames = new HashSet<>();
+        }
+
+        if (!colNames.add(col.name()))
+            throw error(lex, "Column already defined: " + col.name());
+
+        cols.add(col);
     }
 
     /** {@inheritDoc} */
