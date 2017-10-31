@@ -213,6 +213,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 Throwable tblAbsenceEx = null;
                 Throwable hostsAvailEx = null;
                 Throwable prepStatEx = null;
+                boolean retry = false;
 
                 List<Cache.Entry<Integer, ResultSetFuture>> futResults = new LinkedList<>();
 
@@ -266,13 +267,19 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // Remembering any of last errors.
-                if (tblAbsenceEx != null)
+                if (tblAbsenceEx != null) {
+                    retry = true;
                     error = tblAbsenceEx;
-                else if (hostsAvailEx != null)
+                }
+                else if (hostsAvailEx != null) {
+                    retry = true;
                     error = hostsAvailEx;
-                else if (prepStatEx != null)
+                }
+                else if (prepStatEx != null) {
+                    retry = true;
                     error = prepStatEx;
-
+                }
+                
                 // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
                 tblAbsenceEx = null;
@@ -304,7 +311,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // If there are no errors occurred it means that operation successfully completed and we can return.
-                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null)
+                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && !retry)
                     return assistant.processedData();
 
                 if (tblAbsenceEx != null) {
