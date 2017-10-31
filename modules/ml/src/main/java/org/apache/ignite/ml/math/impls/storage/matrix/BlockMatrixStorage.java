@@ -336,7 +336,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     private void matrixSet(int a, int b, double v) {
         IgnitePair<Long> blockId = getBlockId(a, b);
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(CACHE_NAME, blockId)).run(() -> {
+        ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, blockId)).run(() -> {
             IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             BlockMatrixKey key = getCacheKey(blockId.get1(), blockId.get2());
@@ -389,7 +389,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(CACHE_NAME, getBlockId(a, b))).call(() -> {
+        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getBlockId(a, b))).call(() -> {
             IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));

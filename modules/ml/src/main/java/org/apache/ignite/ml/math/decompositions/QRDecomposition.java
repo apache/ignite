@@ -133,8 +133,8 @@ public class QRDecomposition implements Destroyable {
 
         this.fullRank = fullRank;
 
-        MatrixUtil.toString("R ", r, cols, cols);
-        MatrixUtil.toString("Q ", q, cols, rows);
+//        MatrixUtil.toString("R ", r, cols, cols);
+ //       MatrixUtil.toString("Q ", q, cols, rows);
     }
 
     /** {@inheritDoc} */
