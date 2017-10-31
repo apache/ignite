@@ -1540,6 +1540,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         }
     }
 
+    @Override public void suspend() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override public void restart(IgniteInternalCache cache) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLockImpl.class, this);

@@ -361,6 +361,14 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         }
     }
 
+    @Override public void suspend() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override public void restart(IgniteInternalCache cache) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>context().cacheContext(ctx.cacheId());

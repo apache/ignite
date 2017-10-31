@@ -26,6 +26,7 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -69,6 +72,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** Removed flag. */
     private volatile boolean rmvd;
+
+    /** Suspended future. */
+    private volatile GridFutureAdapter<Void> suspendFut;
 
     /** Check removed flag. */
     private boolean rmvCheck;
@@ -300,6 +306,11 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         if (rmvd)
             throw removedError();
 
+        GridFutureAdapter<Void> suspendFut0 = suspendFut;
+
+        if (suspendFut0 != null && !suspendFut0.isDone())
+            throw suspendedError();
+
         if (rmvCheck) {
             try {
                 rmvd = seqView.get(key) == null;
@@ -325,6 +336,13 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         return new IllegalStateException("Sequence was removed from cache: " + name);
     }
 
+    /**
+     * @return Error.
+     */
+    private IllegalStateException suspendedError() {
+        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), "Underlying cache is restarting: " + ctx.name());
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onRemoved() {
         return rmvd = true;
@@ -333,6 +351,21 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /** {@inheritDoc} */
     @Override public void needCheckNotRemoved() {
         rmvCheck = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() {
+        suspendFut = new GridFutureAdapter<>();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restart(IgniteInternalCache cache) {
+        locVal = 0;
+        upBound = -1;
+        seqView = cache;
+        ctx = cache.context();
+        rmvCheck = true;
+        suspendFut.onDone();
     }
 
     /** {@inheritDoc} */

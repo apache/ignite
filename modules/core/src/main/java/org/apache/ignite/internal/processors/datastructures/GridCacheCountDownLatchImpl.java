@@ -333,6 +333,14 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         }
     }
 
+    @Override public void suspend() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override public void restart(IgniteInternalCache cache) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>context().cacheContext(ctx.cacheId());

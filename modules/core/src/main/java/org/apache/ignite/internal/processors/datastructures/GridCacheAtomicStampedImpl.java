@@ -274,6 +274,14 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         }
     }
 
+    @Override public void suspend() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override public void restart(IgniteInternalCache cache) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx.kernalContext());
