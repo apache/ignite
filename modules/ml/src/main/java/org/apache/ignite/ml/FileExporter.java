@@ -23,53 +23,66 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import org.apache.ignite.IgniteLogger;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO: add description.
+ * Implementation of exporter to/from file.
+ *
+ * Default implementation of {@link Exporter}.
  */
-public class ModelUtils {
-    public static void exportModel(Model model, String path, @Nullable IgniteLogger logger){
+public class FileExporter<D> implements Exporter<D, String> {
+    /** */
+    private IgniteLogger log = null;
+
+    /**
+     * @param log Logger.
+     */
+    public void setLog(IgniteLogger log) {
+        this.log = log;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void save(D d, String path) {
         ObjectOutputStream outStream = null;
         try {
             outStream = new ObjectOutputStream(new FileOutputStream(path));
 
-            outStream.writeObject(model);
+            outStream.writeObject(d);
         } catch (IOException e) {
-            if (logger != null)
-                logger.error("Error opening file", e);
+            if (log != null)
+                log.error("Error opening file", e);
         } finally {
             try {
                 if (outStream != null)
                     outStream.close();
             } catch (IOException e) {
-                if (logger != null)
-                    logger.error("Error closing file", e);
+                if (log != null)
+                    log.error("Error closing file", e);
             }
         }
     }
 
-    public static Model importModel(String path, @Nullable IgniteLogger logger){
-        Model model = null;
+    /** {@inheritDoc} */
+    @Override public D load(String path) {
+        D mdl = null;
         ObjectInputStream inputStream = null;
         try {
             inputStream = new ObjectInputStream(new FileInputStream(path));
-            model = (Model)inputStream.readObject();
+            mdl = (D)inputStream.readObject();
         }catch (ClassNotFoundException e) {
-            if (logger != null)
-                logger.error("Object creation failed.", e);
+            if (log != null)
+                log.error("Object creation failed.", e);
         } catch (IOException e) {
-            if (logger != null)
-                logger.error("Error opening file", e);
+            if (log != null)
+                log.error("Error opening file", e);
         } finally {
             try {
                 if (inputStream != null)
                     inputStream.close();
             } catch (IOException e) {
-                if (logger != null)
-                    logger.error("Error closing file", e);
+                if (log != null)
+                    log.error("Error closing file", e);
             }
         }
-        return model;
+        return mdl;
     }
 }

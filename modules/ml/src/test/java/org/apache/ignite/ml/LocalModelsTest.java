@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
+import org.apache.ignite.ml.clustering.KMeansModel;
 import org.apache.ignite.ml.math.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.After;
@@ -29,18 +30,18 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * TODO: add description.
+ * Tests for models import/export functionality.
  */
 public class LocalModelsTest {
-
-    private String modelFilePath = "model.mlmod";
+    /** */
+    private String mdlFilePath = "model.mlmod";
 
     /**
      *
      */
     @After
     public void cleanUp() throws IOException {
-        Files.deleteIfExists(Paths.get(modelFilePath));
+        Files.deleteIfExists(Paths.get(mdlFilePath));
     }
 
     /**
@@ -48,32 +49,31 @@ public class LocalModelsTest {
      */
     @Test
     public void importExportKMeansModelTest(){
+        Path mdlPath = Paths.get(mdlFilePath);
 
-        Path modelPath = Paths.get(modelFilePath);
+        KMeansModel mdl = getClusterModel();
 
-        Model model = getClusterModel();
+        Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
+        mdl.saveModel(exporter, mdlFilePath);
 
-        ModelUtils.exportModel(model, modelFilePath, null);
+        Assert.assertTrue(String.format("File %s not found", mdlPath.toString()), Files.exists(mdlPath));
 
-        Assert.assertTrue(String.format("File %s not found", modelPath.toString()), Files.exists(modelPath));
+        KMeansModelFormat load = exporter.load(mdlFilePath);
+        KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
 
-        Model importedModel = ModelUtils.importModel(modelFilePath, null);
-
-        Assert.assertTrue("", model.equals(importedModel));
+        Assert.assertTrue("", mdl.equals(importedMdl));
     }
 
     /**
      *
      */
-    private Model getClusterModel(){
+    private KMeansModel getClusterModel(){
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
         double[] v1 = new double[] {1959, 325100};
         double[] v2 = new double[] {1960, 373200};
 
-        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {
-            v1,
-            v2});
+        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
     }
