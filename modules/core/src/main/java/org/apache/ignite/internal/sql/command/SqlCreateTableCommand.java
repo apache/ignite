@@ -194,9 +194,6 @@ public class SqlCreateTableCommand implements SqlCommand {
     private void parseColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
 
-        if (colNames != null && colNames.contains(name))
-            throw error(lex, "Column already defined: " + name);
-
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlColumn col = null;
 

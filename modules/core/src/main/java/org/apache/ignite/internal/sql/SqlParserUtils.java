@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -224,7 +225,19 @@ public class SqlParserUtils {
      * @return Exception.
      */
     public static SqlParseException error(SqlLexerToken token, String msg) {
-        return new SqlParseException(token.sql(), token.tokenPosition(), msg);
+        return error0(token, IgniteQueryErrorCode.PARSING, msg);
+    }
+
+    /**
+     * Create parse exception referring to current lexer position.
+     *
+     * @param token Token.
+     * @param code Error code.
+     * @param msg Message.
+     * @return Exception.
+     */
+    private static SqlParseException error0(SqlLexerToken token, int code, String msg) {
+        return new SqlParseException(token.sql(), token.tokenPosition(), code, msg);
     }
 
     /**
@@ -245,7 +258,7 @@ public class SqlParserUtils {
      */
     public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String keyword) {
         if (matchesKeyword(token, keyword))
-            throw error(token, "Unsupported keyword: " + token.token());
+            throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION, "Unsupported keyword: " + token.token());
     }
 
     /**

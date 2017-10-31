@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+
 /**
  * SQL lexer.
  */
@@ -121,7 +123,8 @@ public class SqlLexer implements SqlLexerToken {
                 case '\"':
                     while (true) {
                         if (eod()) {
-                            throw new SqlParseException(sql, tokenStartPos0, "Unclosed quoted identifier.");
+                            throw new SqlParseException(sql, tokenStartPos0, IgniteQueryErrorCode.PARSING,
+                                "Unclosed quoted identifier.");
                         }
 
                         char c1 = inputChars[pos];

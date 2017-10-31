@@ -30,18 +30,23 @@ public class SqlParseException extends IgniteException {
     /** Position. */
     private final int pos;
 
+    /** Error code. */
+    private final int code;
+
     /**
      * Constructor.
      *
      * @param sql SQL command.
      * @param pos Position.
+     * @param code Error code (parsing, unsupported operation, etc.).
      * @param msg Message.
      */
-    public SqlParseException(String sql, int pos, String msg) {
+    public SqlParseException(String sql, int pos, int code, String msg) {
         super(msg);
 
         this.sql = sql;
         this.pos = pos;
+        this.code = code;
     }
 
     /**
@@ -56,6 +61,13 @@ public class SqlParseException extends IgniteException {
      */
     public int position() {
         return pos;
+    }
+
+    /**
+     * @return Error code.
+     */
+    public int code() {
+        return code;
     }
 
     /** {@inheritDoc} */
