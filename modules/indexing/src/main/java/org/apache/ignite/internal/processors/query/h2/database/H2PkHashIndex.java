@@ -130,6 +130,14 @@ public class H2PkHashIndex extends GridH2IndexBase {
         throw DbException.getUnsupportedException("put");
     }
 
+    @Override public boolean putx(GridH2Row row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
+    }
+
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         // Should not be called directly. Rows are removed from underlying cache data stores.
@@ -137,6 +145,14 @@ public class H2PkHashIndex extends GridH2IndexBase {
         assert false;
 
         throw DbException.getUnsupportedException("remove");
+    }
+
+    @Override public boolean removex(SearchRow row) {
+        // Should not be called directly. Rows are removed from underlying cache data stores.
+
+        assert false;
+
+        throw DbException.getUnsupportedException("removex");
     }
 
     /** {@inheritDoc} */

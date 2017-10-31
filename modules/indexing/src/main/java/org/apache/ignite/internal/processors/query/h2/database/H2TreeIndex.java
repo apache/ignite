@@ -205,6 +205,25 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        try {
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+
+            int seg = segmentForRow(row);
+
+            H2Tree tree = treeForRead(seg);
+
+            return tree.putx(row);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+        finally {
+            InlineIndexHelper.clearCurrentInlineIndexes();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
@@ -224,7 +243,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void removex(SearchRow row) {
+    @Override public boolean removex(SearchRow row) {
         try {
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
@@ -232,7 +251,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            tree.removex(row);
+            return tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

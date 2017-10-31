@@ -504,15 +504,16 @@ public class GridH2Table extends TableBase {
                         Index idx = idxs.get(i);
 
                         if (idx instanceof GridH2IndexBase) {
-                            Row res = ((GridH2IndexBase)idx).remove(old);
+                            boolean res = ((GridH2IndexBase)idx).removex(old);
 
-                            assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                            assert (old != null) == res : "Result of row replacing in PK index=" + old +
+                                ". Result of row replacing  in index #" + i + " " + index(i).getName() + "=" + res;
                         }
                     }
 
                     if (!tmpIdxs.isEmpty()) {
                         for (GridH2IndexBase idx : tmpIdxs.values())
-                            idx.remove(old);
+                            idx.removex(old);
                     }
 
                     size.decrement();
@@ -540,16 +541,15 @@ public class GridH2Table extends TableBase {
     private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old, boolean tmp) {
         assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
-        GridH2Row old2 = idx.put(row);
+        boolean replaced = idx.putx(row);
 
-        if (old2 != null) { // Row was replaced in index.
-            if (!tmp) {
-                if (!eq(pk, old2, old))
-                    throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                        "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
-            }
-        }
-        else if (old != null) // Row was not replaced, need to remove manually.
+        boolean pkReplaced = old != null;
+
+        if (pkReplaced != replaced && !tmp) // Row was replaced in index.
+            throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                "not supported [idx=" + idx + ", old=" + old + ", replaced" + replaced +']');
+
+        if (old != null) // Row was not replaced, need to remove manually.
             idx.removex(old);
     }
 
