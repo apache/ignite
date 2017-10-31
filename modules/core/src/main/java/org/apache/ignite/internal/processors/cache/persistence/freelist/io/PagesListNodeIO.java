@@ -211,7 +211,7 @@ public class PagesListNodeIO extends PageIO {
         int cnt = getCount(pageAddr);
 
         for (int i = 0; i < cnt; i++) {
-            if (PageIdUtils.maskPartitionId(getAt(pageAddr, i)) == dataPageId) {
+            if (PageIdUtils.maskPartitionId(getAt(pageAddr, i)) == PageIdUtils.maskPartitionId(dataPageId)) {
                 if (i != cnt - 1)
                     copyMemory(pageAddr, offset(i + 1), pageAddr, offset(i), 8 * (cnt - i - 1));
 
