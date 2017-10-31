@@ -17,15 +17,10 @@
 
 package org.apache.ignite.internal.sql;
 
-import java.util.HashMap;
-
 /**
  * SQL lexer.
  */
 public class SqlLexer implements SqlParserToken {
-    /** Simple token types. */
-    private static final HashMap<Character, SqlLexerTokenType> SIMPLE_TOKEN_TYPS = new HashMap<>();
-
     /** Original input. */
     private final String sql;
 
@@ -43,14 +38,6 @@ public class SqlLexer implements SqlParserToken {
 
     /** Token type. */
     private SqlLexerTokenType tokenTyp;
-
-    static {
-        SIMPLE_TOKEN_TYPS.put('.', SqlLexerTokenType.DOT);
-        SIMPLE_TOKEN_TYPS.put(',', SqlLexerTokenType.COMMA);
-        SIMPLE_TOKEN_TYPS.put(';', SqlLexerTokenType.SEMICOLON);
-        SIMPLE_TOKEN_TYPS.put('(', SqlLexerTokenType.PARENTHESIS_LEFT);
-        SIMPLE_TOKEN_TYPS.put(')', SqlLexerTokenType.PARENTHESIS_RIGHT);
-    }
 
     /**
      * Constructor.
@@ -82,9 +69,9 @@ public class SqlLexer implements SqlParserToken {
 
         try {
             if (shift())
-                return new SqlParserTokenImpl(sql, token, tokenPos, tokenTyp);
+                return new SqlLookAheadParserToken(sql, token, tokenPos, tokenTyp);
             else
-                return new SqlParserTokenImpl(sql, null, tokenPos, SqlLexerTokenType.EOF);
+                return new SqlLookAheadParserToken(sql, null, tokenPos, SqlLexerTokenType.EOF);
         }
         finally {
             pos = pos0;
@@ -156,7 +143,7 @@ public class SqlLexer implements SqlParserToken {
                 case '(':
                 case ')':
                     token0 = Character.toString(c);
-                    tokenTyp0 = SIMPLE_TOKEN_TYPS.get(c);
+                    tokenTyp0 = SqlLexerTokenType.forChar(c);
 
                     break;
 

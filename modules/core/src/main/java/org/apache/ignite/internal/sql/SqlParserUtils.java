@@ -20,11 +20,9 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.CASCADE;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
-import static org.apache.ignite.internal.sql.SqlKeyword.RESTRICT;
 
 /**
  * Parser utility methods.
@@ -215,7 +213,7 @@ public class SqlParserUtils {
         if (lex.shift() && F.eq(lex.tokenType(), tokenTyp))
             return;
 
-        throw errorUnexpectedToken(lex, tokenTyp.character());
+        throw errorUnexpectedToken(lex, tokenTyp.asString());
     }
 
     /**
