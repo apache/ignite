@@ -40,7 +40,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  * Cache atomic long implementation.
  */
-public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<GridCacheAtomicLongValue>
+    implements GridCacheAtomicLongEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,24 +52,6 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Atomic long name. */
-    private String name;
-
-    /** Removed flag.*/
-    private volatile boolean rmvd;
-
-    /** Check removed flag. */
-    private boolean rmvCheck;
-
-    /** Atomic long key. */
-    private GridCacheInternalKey key;
-
-    /** Atomic long projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
-
-    /** Cache context. */
-    private GridCacheContext<GridCacheInternalKey, GridCacheAtomicLongValue> ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -87,19 +70,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
     public GridCacheAtomicLongImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView) {
-        assert key != null;
-        assert atomicView != null;
-        assert name != null;
-
-        this.ctx = atomicView.context();
-        this.key = key;
-        this.atomicView = atomicView;
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
+        super(name, key, atomicView);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +78,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            GridCacheAtomicLongValue val = atomicView.get(key);
+            GridCacheAtomicLongValue val = cacheView.get(key);
 
             if (val == null)
                 throw new IgniteException("Failed to find atomic long: " + name);
@@ -124,7 +95,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try{
-            EntryProcessorResult<Long> res = atomicView.invoke(key, IncrementAndGetProcessor.INSTANCE);
+            EntryProcessorResult<Long> res = cacheView.invoke(key, IncrementAndGetProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;
 
@@ -143,7 +114,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, GetAndIncrementProcessor.INSTANCE);
+            EntryProcessorResult<Long> res = cacheView.invoke(key, GetAndIncrementProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;
 
@@ -162,7 +133,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, new AddAndGetProcessor(l));
+            EntryProcessorResult<Long> res = cacheView.invoke(key, new AddAndGetProcessor(l));
 
             assert res != null && res.get() != null : res;
 
@@ -181,7 +152,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, new GetAndAddProcessor(l));
+            EntryProcessorResult<Long> res = cacheView.invoke(key, new GetAndAddProcessor(l));
 
             assert res != null && res.get() != null : res;
 
@@ -200,7 +171,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, DecrementAndGetProcessor.INSTANCE);
+            EntryProcessorResult<Long> res = cacheView.invoke(key, DecrementAndGetProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;
 
@@ -219,7 +190,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, GetAndDecrementProcessor.INSTANCE);
+            EntryProcessorResult<Long> res = cacheView.invoke(key, GetAndDecrementProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;
 
@@ -238,7 +209,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, new GetAndSetProcessor(l));
+            EntryProcessorResult<Long> res = cacheView.invoke(key, new GetAndSetProcessor(l));
 
             assert res != null && res.get() != null : res;
 
@@ -257,7 +228,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, new CompareAndSetProcessor(expVal, newVal));
+            EntryProcessorResult<Long> res = cacheView.invoke(key, new CompareAndSetProcessor(expVal, newVal));
 
             assert res != null && res.get() != null : res;
 
@@ -280,7 +251,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         checkRemoved();
 
         try {
-            EntryProcessorResult<Long> res = atomicView.invoke(key, new CompareAndSetProcessor(expVal, newVal));
+            EntryProcessorResult<Long> res = cacheView.invoke(key, new CompareAndSetProcessor(expVal, newVal));
 
             assert res != null && res.get() != null : res;
 
@@ -294,60 +265,6 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         }
     }
 
-    /**
-     * Check removed flag.
-     *
-     * @throws IllegalStateException If removed.
-     */
-    private void checkRemoved() throws IllegalStateException {
-        if (rmvd)
-            throw removedError();
-
-        if (rmvCheck) {
-            try {
-                rmvd = atomicView.get(key) == null;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            rmvCheck = false;
-
-            if (rmvd) {
-                ctx.kernalContext().dataStructures().onRemoved(key, this);
-
-                throw removedError();
-            }
-        }
-    }
-
-    /**
-     * @return Error.
-     */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Atomic long was removed from cache: " + name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void needCheckNotRemoved() {
-        rmvCheck = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
         if (rmvd)
@@ -359,25 +276,6 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ign
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    @Override public void suspend() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override public void restart(IgniteInternalCache cache) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicLongValue>context().cacheContext(ctx.cacheId());
-        this.atomicView = ctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

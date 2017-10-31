@@ -2579,7 +2579,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when all caches are deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCaches(
+    private IgniteInternalFuture<?> dynamicStartCaches(
         Collection<CacheConfiguration> ccfgList,
         CacheType cacheType,
         boolean failIfExists,
@@ -2600,6 +2600,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         ct = CacheType.UTILITY;
                     else if (internalCaches.contains(ccfg.getName()))
                         ct = CacheType.INTERNAL;
+                    else if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
+                        ct = CacheType.DATA_STRUCTURES;
                     else
                         ct = CacheType.USER;
                 }
