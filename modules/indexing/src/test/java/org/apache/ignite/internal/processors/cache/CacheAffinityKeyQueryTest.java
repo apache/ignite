@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
+import java.util.*;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -31,26 +34,24 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
     /** Cache name. */
-    public static final String CACHE_NAME = "cache";
+    private static final String CACHE_NAME = "cache";
+
+    /** Server node name. */
+    private static final String SERVER = "server";
+
+    /** Client node name. */
+    private static final String CLIENT = "client";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith("client"))
-            // No cache configuration on client, so Key is registered before
-            // cache initialization and uses affinity key field.
+        if (igniteInstanceName.equals(CLIENT))
             cfg.setClientMode(true);
         else {
-            cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
-                // Query entity are checked before binary object will be
-                // registered in meta cache, so no affinity field used.
-                .setQueryEntities(Collections.singleton(
-                    new QueryEntity(Key.class.getName(), String.class.getName())))
-
-                // Line below forces registering key type and affinity field (workaround).
-//            .setKeyConfiguration(new CacheKeyConfiguration(Key.class))
-            );
+            cfg.setCacheConfiguration(
+                new CacheConfiguration(CACHE_NAME).setQueryEntities(
+                    Collections.singleton(new QueryEntity(Key.class.getName(), String.class.getName()))));
         }
 
         return cfg;
@@ -61,33 +62,43 @@ public class CacheAffinityKeyQueryTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAffinityKey() throws Exception {
-        Ignite srv = startGrid("server");
+    /** */
+    public void testQueryDescriptorPicksAffinityKey() throws Exception {
+        Ignite srv = startGrid(SERVER);
+
+        Collection<GridQueryTypeDescriptor> types = ((IgniteEx)srv).context().query().types(CACHE_NAME);
+
+        assertTrue(types.size() > 0);
+
+        assertEquals("AFFKEY", types.iterator().next().affinityKey());
+    }
+
+    /** */
+    public void testClientFindsValueByAffinityKey() throws Exception {
+        final Key KEY = new Key("1", 1);
+        final String VAL = "1";
+
+        Ignite srv = startGrid(SERVER);
 
         IgniteCache<Key, String> srvCache = srv.cache(CACHE_NAME);
 
-        srvCache.put(new Key("1", 1), "1");
+        srvCache.put(KEY, VAL);
 
-        assertEquals("1", srvCache.get(new Key("1", 1)));
+        assertEquals(VAL, srvCache.get(KEY));
 
-        Ignite client = startGrid("client");
+        Ignite client = startGrid(CLIENT);
 
         IgniteCache<Key, String> clientCache = client.cache(CACHE_NAME);
 
-        assertEquals("1", clientCache.get(new Key("1", 1)));
+        assertEquals(VAL, clientCache.get(KEY));
     }
 
-    /**
-     *
-     */
+    /** */
     private static class Key {
-        /** Data. */
+        /** Data */
         private String data;
 
-        /** Affinity key. */
+        /** Affinity key */
         @AffinityKeyMapped
         private int affKey;
 

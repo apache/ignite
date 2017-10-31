@@ -39,13 +39,13 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.*;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
@@ -382,6 +382,8 @@ public class QueryUtils {
         if (keyCls == null)
             keyCls = Object.class;
 
+        ensureClassMetadata(ctx, keyCls);
+
         String simpleValType = ((valCls == null) ? typeName(qryEntity.findValueType()) : typeName(valCls));
 
         desc.name(simpleValType);
@@ -484,6 +486,20 @@ public class QueryUtils {
         desc.typeId(valTypeId);
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
+    }
+
+    /**
+     * Ensure class metadata is registered.
+     *
+     * @param ctx Kernal context.
+     * @param cls Class to ensure the metadata is registered for.
+     */
+    private static void ensureClassMetadata(GridKernalContext ctx, Class<?> cls) {
+        if (ctx.cacheObjects() instanceof CacheObjectBinaryProcessorImpl) {
+            ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects())
+                .binaryContext()
+                .descriptorForClass(cls, false);
+        }
     }
 
     /**
