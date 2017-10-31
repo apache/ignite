@@ -20,28 +20,27 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 import java.util.Collection;
 
 /**
- * SQL listener query execute result.
+ * SQL listener query fetch result.
  */
-public class OdbcQueryExecuteResult {
+public class OdbcQueryMoreResultsResult {
     /** Query ID. */
     private final long queryId;
 
-    /** Fields metadata. */
-    private final Collection<OdbcColumnMeta> columnsMetadata;
+    /** Query result rows. */
+    private final Collection<?> items;
 
-    /** Rows affected by the statements. */
-    private final Collection<Long> affectedRows;
+    /** Flag indicating the query has no non-fetched results. */
+    private final boolean last;
 
     /**
      * @param queryId Query ID.
-     * @param columnsMetadata Columns metadata.
-     * @param affectedRows Affected rows.
+     * @param items Query result rows.
+     * @param last Flag indicating the query has no unfetched results.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata,
-        Collection<Long> affectedRows) {
+    public OdbcQueryMoreResultsResult(long queryId, Collection<?> items, boolean last){
         this.queryId = queryId;
-        this.columnsMetadata = columnsMetadata;
-        this.affectedRows = affectedRows;
+        this.items = items;
+        this.last = last;
     }
 
     /**
@@ -52,16 +51,16 @@ public class OdbcQueryExecuteResult {
     }
 
     /**
-     * @return Columns metadata.
+     * @return Query result rows.
      */
-    public Collection<OdbcColumnMeta> columnsMetadata() {
-        return columnsMetadata;
+    public Collection<?> items() {
+        return items;
     }
 
     /**
-     * @return Number of rows affected by the statements.
+     * @return Flag indicating the query has no non-fetched results.
      */
-    public Collection<Long> affectedRows() {
-        return affectedRows;
+    public boolean last() {
+        return last;
     }
 }
