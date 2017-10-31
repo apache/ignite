@@ -45,7 +45,7 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
      * @param ignite Ignite node.
      * @param range Data key range.
      */
-    public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
+    static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
         println(cfg, "Create table...");
 
         ignite.context().query().querySqlFieldsNoCache(
