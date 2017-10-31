@@ -90,6 +90,9 @@ public class SqlKeyword {
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
+    /** Keyword: UNIQUE. */
+    public static final String HASH = "HASH";
+
     /** Keyword: IF. */
     public static final String IF = "IF";
 
@@ -176,6 +179,9 @@ public class SqlKeyword {
 
     /** Keyword: TINYINT. */
     public static final String TINYINT = "TINYINT";
+
+    /** Keyword: UNIQUE. */
+    public static final String UNIQUE = "UNIQUE";
 
     /** Keyword: UUID. */
     public static final String UUID = "UUID";

@@ -25,10 +25,14 @@ import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
+import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
+import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
+import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 
 /**
@@ -65,20 +69,17 @@ public class SqlParser {
                 case DEFAULT:
                     SqlCommand cmd = null;
 
-                    switch (lex.tokenFirstChar()) {
-                        case 'C':
-                            if (matchesKeyword(lex, CREATE))
-                                cmd = processCreate();
+                    switch (lex.token()) {
+                        case CREATE:
+                            cmd = processCreate();
 
                             break;
 
-                        case 'D':
-                            if (matchesKeyword(lex, DROP))
-                                cmd = processDrop();
+                        case DROP:
+                            cmd = processDrop();
 
                             break;
                     }
-
 
                     if (cmd != null) {
                         // If there is something behind the command, this is a syntax error.
@@ -88,7 +89,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex);
+                        throw errorUnexpectedToken(lex, CREATE, DROP);
 
                 case QUOTED:
                 case MINUS:
@@ -108,25 +109,36 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processCreate() {
-        if (lex.shift()) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlCommand cmd = null;
 
-            if (matchesKeyword(lex, TABLE))
-                cmd = new SqlCreateTableCommand();
-            if (matchesKeyword(lex, INDEX))
-                cmd = new SqlCreateIndexCommand();
-            else if (matchesKeyword(lex, SPATIAL)) {
-                if (lex.shift() && matchesKeyword(lex, INDEX))
-                    cmd = new SqlCreateIndexCommand().spatial(true);
-                else
-                    throw errorUnexpectedToken(lex, INDEX);
+            switch (lex.token()) {
+                case INDEX:
+                    cmd = new SqlCreateIndexCommand();
+
+                    break;
+
+                case TABLE:
+                    cmd = new SqlCreateTableCommand();
+
+                    break;
+
+                case SPATIAL:
+                    if (lex.shift() && matchesKeyword(lex, INDEX))
+                        cmd = new SqlCreateIndexCommand().spatial(true);
+                    else
+                        throw errorUnexpectedToken(lex, INDEX);
+
+                    break;
             }
 
             if (cmd != null)
                 return cmd.parse(lex);
+
+            errorUnsupportedIfMatchesKeyword(lex, HASH, PRIMARY, UNIQUE);
         }
 
-        throw errorUnexpectedToken(lex, INDEX, SPATIAL);
+        throw errorUnexpectedToken(lex, INDEX, TABLE, SPATIAL);
     }
 
     /**
@@ -135,18 +147,25 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processDrop() {
-        if (lex.shift()) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlCommand cmd = null;
 
-            if (matchesKeyword(lex, INDEX))
-                cmd = new SqlDropIndexCommand();
-            else if (matchesKeyword(lex, TABLE))
-                cmd = new SqlDropTableCommand();
+            switch (lex.token()) {
+                case INDEX:
+                    cmd = new SqlDropIndexCommand();
+
+                    break;
+
+                case TABLE:
+                    cmd = new SqlDropTableCommand();
+
+                    break;
+            }
 
             if (cmd != null)
                 return cmd.parse(lex);
         }
 
-        throw errorUnexpectedToken(lex, INDEX);
+        throw errorUnexpectedToken(lex, INDEX, TABLE);
     }
 }
