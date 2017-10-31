@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Near transaction prepare request.
+ * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */

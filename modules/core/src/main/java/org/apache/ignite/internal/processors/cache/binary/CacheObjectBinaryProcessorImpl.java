@@ -82,6 +82,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -495,6 +497,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata();
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
 
@@ -534,7 +539,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-        else {
+        else if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata().wrap(binaryCtx);
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,

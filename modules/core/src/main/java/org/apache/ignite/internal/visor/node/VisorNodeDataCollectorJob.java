@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -157,7 +157,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             List<VisorMemoryMetrics> memoryMetrics = res.getMemoryMetrics();
 
-            for (MemoryMetrics m : ignite.memoryMetrics())
+            for (DataRegionMetrics m : ignite.dataRegionMetrics())
                 memoryMetrics.add(new VisorMemoryMetrics(m));
         }
         catch (Exception e) {
@@ -257,7 +257,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void persistenceMetrics(VisorNodeDataCollectorJobResult res) {
         try {
-            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.persistentStoreMetrics()));
+            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.dataStorageMetrics()));
         }
         catch (Exception e) {
             res.setPersistenceMetricsEx(new VisorExceptionWrapper(e));

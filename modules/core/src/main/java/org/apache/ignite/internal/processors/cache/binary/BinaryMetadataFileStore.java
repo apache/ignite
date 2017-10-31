@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,7 +63,7 @@ class BinaryMetadataFileStore {
         this.ctx = ctx;
         this.log = log;
 
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         if (binaryMetadataFileStoreDir != null)
@@ -85,7 +86,7 @@ class BinaryMetadataFileStore {
      * @param binMeta Binary metadata to be written to disk.
      */
     void saveMetadata(BinaryMetadata binMeta) {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         try {
@@ -107,7 +108,7 @@ class BinaryMetadataFileStore {
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
      */
     void restoreMetadata() {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         for (File file : workDir.listFiles()) {

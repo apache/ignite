@@ -27,17 +27,16 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
+import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
@@ -65,6 +64,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * H2 Table implementation.
  */
 public class GridH2Table extends TableBase {
+    /** Insert hack flag. */
+    private static final ThreadLocal<Boolean> INSERT_HACK = new ThreadLocal<>();
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -139,8 +141,12 @@ public class GridH2Table extends TableBase {
             int affKeyColId = -1;
 
             if (affKey != null) {
-                if (doesColumnExist(affKey))
+                if (doesColumnExist(affKey)) {
                     affKeyColId = getColumn(affKey).getColumnId();
+
+                    if (desc.isKeyColumn(affKeyColId))
+                        affKeyColId = KEY_COL;
+                }
                 else
                     affinityColExists = false;
             }
@@ -219,6 +225,13 @@ public class GridH2Table extends TableBase {
      */
     public String cacheName() {
         return cctx.name();
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cctx.cacheId();
     }
 
     /**
@@ -389,37 +402,29 @@ public class GridH2Table extends TableBase {
      * Updates table for given key. If value is null then row with given key will be removed from table,
      * otherwise value and expiration time will be updated or new row will be added.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param expirationTime Expiration time.
+     * @param row Row.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(KeyCacheObject key,
-        int partId,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expirationTime,
-        boolean rmv,
-        long link)
+    public boolean update(CacheDataRow row, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime, link);
+        GridH2Row h2Row = desc.createRow(row);
 
         if (rmv)
-            return doUpdate(row, true);
+            return doUpdate(h2Row, true);
         else {
-            GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)row;
+            GridH2KeyValueRowOnheap h2Row0 = (GridH2KeyValueRowOnheap)h2Row;
 
-            row0.prepareValuesCache();
+            h2Row0.prepareValuesCache();
 
             try {
-                return doUpdate(row, false);
+                return doUpdate(h2Row0, false);
             }
             finally {
-                row0.clearValuesCache();
+                h2Row0.clearValuesCache();
             }
         }
     }
@@ -452,7 +457,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
+    private boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         lock(false);
@@ -477,15 +482,16 @@ public class GridH2Table extends TableBase {
                 // Put row if absent to all indexes sequentially.
                 // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                 while (++i < len) {
-                    if (!(idxs.get(i) instanceof GridH2IndexBase))
-                        continue;
-                    GridH2IndexBase idx = index(i);
+                    Index idx = idxs.get(i);
 
-                    addToIndex(idx, pk, row, old, false);
+                    if (idx instanceof GridH2IndexBase)
+                        addToIndex((GridH2IndexBase)idx, pk, row, old, false);
                 }
 
-                for (GridH2IndexBase idx : tmpIdxs.values())
-                    addToIndex(idx, pk, row, old, true);
+                if (!tmpIdxs.isEmpty()) {
+                    for (GridH2IndexBase idx : tmpIdxs.values())
+                        addToIndex(idx, pk, row, old, true);
+                }
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
@@ -495,15 +501,19 @@ public class GridH2Table extends TableBase {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                     for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
-                        if (!(idxs.get(i) instanceof GridH2IndexBase))
-                            continue;
-                        Row res = index(i).remove(old);
+                        Index idx = idxs.get(i);
 
-                        assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        if (idx instanceof GridH2IndexBase) {
+                            Row res = ((GridH2IndexBase)idx).remove(old);
+
+                            assert eq(pk, res, old) : "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
+                        }
                     }
 
-                    for (GridH2IndexBase idx : tmpIdxs.values())
-                        idx.remove(old);
+                    if (!tmpIdxs.isEmpty()) {
+                        for (GridH2IndexBase idx : tmpIdxs.values())
+                            idx.remove(old);
+                    }
 
                     size.decrement();
                 }
@@ -553,22 +563,6 @@ public class GridH2Table extends TableBase {
      */
     private static boolean eq(Index pk, SearchRow r1, SearchRow r2) {
         return r1 == r2 || (r1 != null && r2 != null && pk.compareRows(r1, r2) == 0);
-    }
-
-    /**
-     * For testing only.
-     *
-     * @return Indexes.
-     */
-    ArrayList<GridH2IndexBase> indexes() {
-        ArrayList<GridH2IndexBase> res = new ArrayList<>(idxs.size() - 2);
-
-        for (int i = pkIndexPos, len = idxs.size(); i < len; i++) {
-            if (idxs.get(i) instanceof GridH2IndexBase)
-                res.add(index(i));
-        }
-
-        return res;
     }
 
     /**
@@ -875,7 +869,7 @@ public class GridH2Table extends TableBase {
      * @param target Index to clone.
      * @return Proxy index.
      */
-    public Index createDuplicateIndexIfNeeded(Index target) {
+    private Index createDuplicateIndexIfNeeded(Index target) {
         if (!(target instanceof H2TreeIndex) && !(target instanceof SpatialIndex))
             return null;
 
@@ -967,5 +961,61 @@ public class GridH2Table extends TableBase {
         finally {
             unlock(true);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Column[] getColumns() {
+        Boolean insertHack = INSERT_HACK.get();
+
+        if (insertHack != null && insertHack) {
+            StackTraceElement[] elems = Thread.currentThread().getStackTrace();
+
+            StackTraceElement elem = elems[2];
+
+            if (F.eq(elem.getClassName(), Insert.class.getName()) && F.eq(elem.getMethodName(), "prepare")) {
+                Column[] columns0 = new Column[columns.length - 3];
+
+                System.arraycopy(columns, 3, columns0, 0, columns0.length);
+
+                return columns0;
+            }
+        }
+
+        return columns;
+    }
+
+    /**
+     * Set insert hack flag.
+     *
+     * @param val Value.
+     */
+    public static void insertHack(boolean val) {
+        INSERT_HACK.set(val);
+    }
+
+    /**
+     * Check whether insert hack is required. This is true in case statement contains "INSERT INTO ... VALUES".
+     *
+     * @param sql SQL statement.
+     * @return {@code True} if target combination is found.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    public static boolean insertHackRequired(String sql) {
+        if (F.isEmpty(sql))
+            return false;
+
+        sql = sql.toLowerCase();
+
+        int idxInsert = sql.indexOf("insert");
+
+        if (idxInsert < 0)
+            return false;
+
+        int idxInto = sql.indexOf("into", idxInsert);
+
+        if (idxInto < 0)
+            return false;
+
+        return true;
     }
 }

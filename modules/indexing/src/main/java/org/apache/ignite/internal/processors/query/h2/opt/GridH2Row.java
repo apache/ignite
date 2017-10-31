@@ -26,75 +26,54 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  * Row with locking support needed for unique key conflicts resolution.
  */
 public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheDataRow {
-    /** Link. */
-    private long link;
+    /** Row. */
+    private CacheDataRow row;
 
-    /** Key. */
-    private KeyCacheObject key;
-
-    /** Value. */
-    private CacheObject val;
-
-    /** Version. */
-    private GridCacheVersion ver;
-
-    /** Partition. */
-    private int partId;
+    /**
+     * @param row Row.
+     */
+    GridH2Row(CacheDataRow row) {
+        this.row = row;
+    }
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject key() {
-        return key;
+        return row.key();
     }
 
     /** {@inheritDoc} */
     @Override public void key(KeyCacheObject key) {
-        this.key = key;
+        row.key(key);
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value() {
-        return val;
-    }
-
-    /**
-     * @param val Value.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
+        return row.value();
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
-        return ver;
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
+        return row.version();
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partId;
+        return row.partition();
     }
 
-    /**
-     * @param partId Partition.
-     */
-    public void partition(int partId) {
-        this.partId = partId;
+    /** {@inheritDoc} */
+    @Override public long expireTime() {
+        return row.expireTime();
     }
 
     /** {@inheritDoc} */
     @Override public long link() {
-        return link;
+        return row.link();
     }
 
     /** {@inheritDoc} */
     @Override public void link(long link) {
-        this.link = link;
+        row.link(link);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +83,6 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
 
     /** {@inheritDoc} */
     @Override public int cacheId() {
-        return 0;
+        return row.cacheId();
     }
 }

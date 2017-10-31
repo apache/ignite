@@ -26,7 +26,9 @@ namespace Apache.Ignite.Core.Impl.PersistentStore
     /// <summary>
     /// Persistent store metrics.
     /// </summary>
+#pragma warning disable 618
     internal class PersistentStoreMetrics : IPersistentStoreMetrics
+#pragma warning restore 618
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PersistentStoreMetrics"/> class.

@@ -29,8 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
@@ -59,7 +58,6 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
@@ -274,34 +272,24 @@ public class GridH2RowDescriptor {
     /**
      * Creates new row.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     * @param expirationTime Expiration time in millis.
+     * @param dataRow Data row.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val, GridCacheVersion ver,
-        long expirationTime, long link) throws IgniteCheckedException {
+    public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
-            if (val == null) // Only can happen for remove operation, can create simple search row.
-                row = new GridH2KeyRowOnheap(wrap(key, keyType));
+            if (dataRow.value() == null) // Only can happen for remove operation, can create simple search row.
+                row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
             else
-                row = new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime);
+                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +
                 "Please make sure that you always store each value type with the same key type " +
                 "or configure key type as common super class for all actual keys for this value type.", e);
         }
-
-        row.version(ver);
-        row.key(key);
-        row.value(val);
-        row.partition(partId);
-        row.link(link);
 
         return row;
     }
