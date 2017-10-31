@@ -127,6 +127,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             createCaches();
         else
             createBinaryCaches();
+
+        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
@@ -138,7 +140,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
         ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
-        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
