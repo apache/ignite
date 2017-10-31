@@ -1250,12 +1250,26 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 errs.add(e);
 
-                if (X.hasCause(e, SSLException.class, StreamCorruptedException.class)) {
+                if (X.hasCause(e, SSLException.class)) {
                     if (--sslConnectAttempts == 0)
                         throw new IgniteException("Unable to establish secure connection. " +
                             "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
 
                     continue;
+                }
+
+                if (X.hasCause(e, StreamCorruptedException.class)) {
+                    // StreamCorruptedException could be caused by remote node failover
+                    if (connectAttempts < 2) {
+                        connectAttempts++;
+
+                        continue;
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Connect failed with StreamCorruptedException, skip address: " + addr);
+
+                    break;
                 }
 
                 if (timeoutHelper.checkFailureTimeoutReached(e))
