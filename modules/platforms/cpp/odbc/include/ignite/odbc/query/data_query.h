@@ -106,6 +106,13 @@ namespace ignite
                 virtual int64_t AffectedRows() const;
 
                 /**
+                 * Move to the next result set.
+                 * 
+                 * @return Operaion result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
+                /**
                  * Get SQL query string.
                  *
                  * @return SQL query string.
@@ -139,6 +146,13 @@ namespace ignite
                  * @return Result.
                  */
                 SqlResult::Type MakeRequestFetch();
+
+                /**
+                 * Make next result set request and use response to set internal state.
+                 *
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestMoreResults();
                 
                 /**
                  * Close query.
@@ -163,7 +177,13 @@ namespace ignite
                 std::auto_ptr<Cursor> cursor;
 
                 /** Number of rows affected. */
-                int64_t rowsAffected;
+                std::vector<int64_t> rowsAffected;
+
+                /** Rows affected index. */
+                size_t rowsAffectedIdx;
+
+                /** Cached next result page. */
+                std::auto_ptr<ResultPage> cachedNextPage;
             };
         }
     }
