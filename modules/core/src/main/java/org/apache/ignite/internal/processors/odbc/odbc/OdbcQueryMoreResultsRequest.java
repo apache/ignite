@@ -17,31 +17,34 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query execute result.
+ * SQL listener query fetch request.
  */
-public class OdbcQueryExecuteResult {
+public class OdbcQueryMoreResultsRequest extends OdbcRequest {
     /** Query ID. */
     private final long queryId;
 
-    /** Fields metadata. */
-    private final Collection<OdbcColumnMeta> columnsMetadata;
-
-    /** Rows affected by the statements. */
-    private final Collection<Long> affectedRows;
+    /** Page size - maximum number of rows to return. */
+    private final int pageSize;
 
     /**
      * @param queryId Query ID.
-     * @param columnsMetadata Columns metadata.
-     * @param affectedRows Affected rows.
+     * @param pageSize Page size.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMetadata,
-        Collection<Long> affectedRows) {
+    public OdbcQueryMoreResultsRequest(long queryId, int pageSize) {
+        super(MORE_RESULTS);
+
         this.queryId = queryId;
-        this.columnsMetadata = columnsMetadata;
-        this.affectedRows = affectedRows;
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
     }
 
     /**
@@ -51,17 +54,8 @@ public class OdbcQueryExecuteResult {
         return queryId;
     }
 
-    /**
-     * @return Columns metadata.
-     */
-    public Collection<OdbcColumnMeta> columnsMetadata() {
-        return columnsMetadata;
-    }
-
-    /**
-     * @return Number of rows affected by the statements.
-     */
-    public Collection<Long> affectedRows() {
-        return affectedRows;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryMoreResultsRequest.class, this);
     }
 }
