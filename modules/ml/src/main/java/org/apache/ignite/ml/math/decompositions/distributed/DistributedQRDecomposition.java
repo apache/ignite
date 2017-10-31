@@ -181,10 +181,10 @@ public class DistributedQRDecomposition implements Destroyable {
 
         int cols = mtx.columnSize();
         Matrix r = getR();
-        MatrixUtil.toString("Before singular", r, cols, cols);
-        checkSingular(r, threshold, true); //TODO: Make it distributed in IGNITE-5828
+        MatrixUtil.toString("Before singular in QR", r, r.columnSize(), r.rowSize());
+        checkSingular(r, threshold, true);
         Matrix x = like(mType, this.cols, cols);
-        MatrixUtil.toString("XX", x, 1, this.cols);
+        MatrixUtil.toString("XX", x, x.columnSize(), x.rowSize());
         Matrix qt = getQ().transpose();
         MatrixUtil.toString("QT", qt, qt.columnSize(), qt.rowSize());
         MatrixUtil.toString("mtx", mtx, mtx.columnSize(), mtx.rowSize());
@@ -194,6 +194,8 @@ public class DistributedQRDecomposition implements Destroyable {
         for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {  // TODO:6222 distribute it
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
             MatrixUtil.toString("X+", x, cols, this.cols);
+            Vector vector = x.viewRow(k);
+            MatrixUtil.toString("x", vector, cols);
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
             MatrixUtil.toString("X-", x, cols, this.cols);
 

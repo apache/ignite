@@ -48,7 +48,9 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     protected AbstractMultipleLinearRegression regression;
 
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 3;
+    private static final int NODE_COUNT = 1;
+
+    private static final double PRECISION = 1E-12;
 
     /** Grid instance. */
     private Ignite ignite;
@@ -460,6 +462,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         Matrix hat = mdl.calculateHat();
+        MatrixUtil.toString("hat", hat, hat.columnSize(), hat.rowSize());
 
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {
@@ -526,8 +529,15 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         Vector combinedY = regression.getY().copy();
         regression.newXSampleData(new SparseBlockDistributedMatrix(x));
         regression.newYSampleData(new SparseDistributedVector(y));
-        Assert.assertEquals(combinedX, regression.getX());
-        Assert.assertEquals(combinedY, regression.getY());
+        for (int i = 0; i < combinedX.rowSize(); i++) {
+            for (int j = 0; j < combinedX.columnSize(); j++) {
+                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+            }
+        }
+        for (int i = 0; i < combinedY.size(); i++) {
+            Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
+        }
+
 
         // No intercept
         regression.setNoIntercept(true);
@@ -536,8 +546,15 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         combinedY = regression.getY().copy();
         regression.newXSampleData(new SparseBlockDistributedMatrix(x));
         regression.newYSampleData(new SparseDistributedVector(y));
-        Assert.assertEquals(combinedX, regression.getX());
-        Assert.assertEquals(combinedY, regression.getY());
+
+        for (int i = 0; i < combinedX.rowSize(); i++) {
+            for (int j = 0; j < combinedX.columnSize(); j++) {
+                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+            }
+        }
+        for (int i = 0; i < combinedY.size(); i++) {
+            Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
+        }
     }
 
     /** */

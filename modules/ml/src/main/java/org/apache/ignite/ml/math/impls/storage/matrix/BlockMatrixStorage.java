@@ -316,13 +316,14 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         BlockEntry entry = cache.localPeek(key);
         entry = entry != null ? entry : cache.get(key);
 
-        if (entry == null) {
+        if (entry == null) { // ERROR - we shouldn't go here and creates block from scratch
             long colId = blockId == 0 ? 0 : blockId + 1;
 
             boolean isLastRow = (blockId) >= blocksInRow * (blocksInCol - 1);
             boolean isLastCol = (colId) % blocksInRow == 0;
 
             entry = new BlockEntry(isLastRow && rows % maxBlockEdge != 0 ? rows % maxBlockEdge : maxBlockEdge, isLastCol && cols % maxBlockEdge != 0 ? cols % maxBlockEdge : maxBlockEdge);
+            System.out.println("Empty block without sto is created");
         }
 
         return entry;
@@ -356,6 +357,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      * @param v New value to set.
      */
     private void matrixSet(int a, int b, double v) {
+
         long id = getBlockId(a, b);
         // Remote set on the primary node (where given row or column is stored locally).
         ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, id)).run(() -> {
@@ -363,7 +365,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));
 
-            System.out.println("Igni " + Ignition.localIgnite().name());
+            //System.out.println("Igni " + Ignition.localIgnite().name());
 
             // Local get.
             BlockEntry block = cache.localPeek(key, CachePeekMode.PRIMARY);
@@ -375,21 +377,46 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
                 block = initBlockFor(a, b);
 
             block.set(a % block.rowSize(), b % block.columnSize(), v);
+            System.out.println("Set v="+v + " by (" + a + "," + b + ") to block with id=" + getBlockId(a,b) + " mtx " + this.getUUID());
 
             // Local put.
-            cache.put(key, block);//<- One put change all values in rowь
-            try{
-                System.out.println(this.get(4,0) + " " + this.get(3,0));
-            } finally {
+            cache.put(key, block);
 
-            }
 
         });
     }
 
     /** */
     private long getBlockId(int x, int y) {
-        return (y / maxBlockEdge) * blockShift(cols) + (x / maxBlockEdge);
+
+        long blockId = 0;
+
+
+        for (int i = 1; i <= blocksInCol; i++) {
+            if(x - (i * maxBlockEdge - 1) > 0){
+                blockId+=blocksInRow; // skip row before the end and move on next row
+            } else {
+                for (int j = 1; j <= blocksInRow; j++) {
+                    if(y - (j*maxBlockEdge - 1) > 0) {
+                        blockId++;
+                    } else {
+                        return blockId;
+                    }
+                }
+            }
+        }
+
+        return blockId;
+
+
+      /*  blockId += (y / maxBlockEdge);//+ ((y) % maxBlockEdge > 0 ? 1 : 0);
+
+        blockId += (x / maxBlockEdge) * (blocksInRow - 1);//+ ((x) % maxBlockEdge > 0 ? 1 : 0);
+        return blockId;*/
+
+              /*  (y / maxBlockEdge) *
+                blockShift(cols)
+                + (x / maxBlockEdge);*/
     }
 
     /** */
@@ -398,15 +425,26 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         int blockRows = 0;
         int blockCols = 0;
 
-        blockRows = rows>= maxBlockEdge ? maxBlockEdge : rows;
-        blockCols = cols>= maxBlockEdge ? maxBlockEdge : cols;
+        if(rows >= maxBlockEdge){
+            blockRows = rows - x >= maxBlockEdge ? maxBlockEdge : rows - x;
+        } else {
+            blockRows =  rows;
+        }
 
+        if(cols >= maxBlockEdge){
+            blockCols = cols - y >= maxBlockEdge ? maxBlockEdge : cols - y;
+        } else {
+            blockCols = cols;
+        }
+
+        System.out.println("Block ("+blockRows + "," + blockCols + ")++");
         return new BlockEntry(blockRows, blockCols);
     }
 
     /** */
     private int blockShift(int i) {
-        return (i) / maxBlockEdge + ((i) % maxBlockEdge > 0 ? 1 : 0);
+        return //(i) / maxBlockEdge +
+                ((i) % maxBlockEdge > 0 ? 1 : 0);
     }
 
     /**

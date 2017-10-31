@@ -154,7 +154,7 @@ public final class Functions {
     public static IgniteBiFunction<Double, Double, Double> plusMult(double constant) {
 
         return (a, b) -> {
-            System.out.println("a = " + a + " b = " + b);
+            //System.out.println("a = " + a + " b = " + b);
             return a + b * constant;
         };
 

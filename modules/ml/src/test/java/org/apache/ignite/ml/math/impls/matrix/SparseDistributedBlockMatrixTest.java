@@ -39,6 +39,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Assert;
@@ -176,6 +177,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, i * cols + j + 1);
 
+       // MatrixUtil.toString("cacheMatrix", cacheMatrix, cacheMatrix.columnSize(), cacheMatrix.rowSize());
         assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRECISION);
         assertEquals(UNEXPECTED_VAL, rows * cols, cacheMatrix.maxValue(), PRECISION);
 
@@ -391,7 +393,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         IgniteUuid uuid = storage.getUUID();
 
-        long maxBlock = (rows / 32 + (rows % 32 > 0 ? 1 : 0)) * (cols / 32 + (cols % 32 > 0 ? 1 : 0));
+        long maxBlock = (rows / BlockEntry.MAX_BLOCK_SIZE + (rows % BlockEntry.MAX_BLOCK_SIZE  > 0 ? 1 : 0)) * (cols / BlockEntry.MAX_BLOCK_SIZE  + (cols % BlockEntry.MAX_BLOCK_SIZE  > 0 ? 1 : 0));
 
         for (long i = 0; i < maxBlock; i++)
             set.add(new BlockMatrixKey(i,uuid,null));

@@ -57,8 +57,8 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      * <p>This implementation computes and caches the QR decomposition of the X matrix.</p>
      */
     public void newSampleData(double[] data, int nobs, int nvars, Matrix like) {
-        super.newSampleData(data, nobs, nvars, like); // DEBUG:  it has distributed Matrix support
-        qr = new DistributedQRDecomposition(getX(), threshold); // TODO: it should be distributed
+        super.newSampleData(data, nobs, nvars, like);
+        qr = new DistributedQRDecomposition(getX(), threshold);
     }
 
     /**
@@ -93,13 +93,16 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
         for (int i = 0; i < n; i++) // DEBUG: can be parallelized in n Ignite threads?
             for (int j = 0; j < n; j++)
                 if (i == j && i < p)
-                    augI.setX(i, j, 1d); // DEBUG: it's distributed
+                    augI.setX(i, j, 1d);
                 else
-                    augI.setX(i, j, 0d); // DEBUG: it's distributed
+                    augI.setX(i, j, 0d);
 
+        MatrixUtil.toString("augI", augI, augI.columnSize(), augI.rowSize());
+        Matrix times = q.times(augI);
+        MatrixUtil.toString("qtimes", times, times.columnSize(), times.rowSize());
         // Compute and return Hat matrix
         // No DME advertised - args valid if we get here
-        return q.times(augI).times(q.transpose()); // DEBUG: it's distributed
+        return q.times(augI).times(q.transpose());
     }
 
     /**
@@ -117,10 +120,10 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      */
     public double calculateTotalSumOfSquares() {
         if (isNoIntercept())
-            return getY().foldMap(Functions.PLUS, Functions.SQUARE, 0.0); // TODO: should be distributed vector and distributed operation foldMap there
+            return getY().foldMap(Functions.PLUS, Functions.SQUARE, 0.0);
         else {
             // TODO: IGNITE-5826, think about incremental update formula.
-            final double mean = getY().sum() / getY().size(); // TODO: it should be cache vector, for example or distributed sparce vector
+            final double mean = getY().sum() / getY().size();
             return getY().foldMap(Functions.PLUS, x -> (mean - x) * (mean - x), 0.0); // TODO: implement foldMap for cachedVector
         }
     }
@@ -189,7 +192,7 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      * @throws NullPointerException if the data for the model have not been loaded
      */
     @Override protected Vector calculateBeta() {
-        return qr.solve(getY()); // TODO: distribute it
+        return qr.solve(getY());
     }
 
     /**

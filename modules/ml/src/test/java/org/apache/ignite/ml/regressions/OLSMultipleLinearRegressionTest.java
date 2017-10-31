@@ -418,6 +418,8 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
 
         Matrix hat = mdl.calculateHat();
+        MatrixUtil.toString("hat", hat, hat.columnSize(), hat.rowSize());
+
 
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {

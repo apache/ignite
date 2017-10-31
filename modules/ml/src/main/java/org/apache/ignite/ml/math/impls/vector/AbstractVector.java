@@ -201,9 +201,9 @@ public abstract class AbstractVector implements Vector {
         int len = size();
 
         for (int i = 0; i < len; i++){
-            System.out.println("GET " + storageGet(i) + " VEC_GET " + vec.get(i)); // storageGet(i) is uncorrect on some iterations
+            //System.out.println("GET " + storageGet(i) + " VEC_GET " + vec.get(i)); // storageGet(i) is uncorrect on some iterations
             //System.out.println("++ funapply = " + fun.apply(storageGet(i), vec.get(i))); // storageGet(i) is uncorrect on some iterations
-            storageSet(i, fun.apply(storageGet(i), vec.get(i))); //<== the problem is here in fun.apply
+            storageSet(i, fun.apply(storageGet(i), vec.get(i)));
 
         }
 

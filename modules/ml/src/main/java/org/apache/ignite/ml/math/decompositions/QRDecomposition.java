@@ -132,6 +132,9 @@ public class QRDecomposition implements Destroyable {
             q = qTmp;
 
         this.fullRank = fullRank;
+
+        MatrixUtil.toString("R ", r, cols, cols);
+        MatrixUtil.toString("Q ", q, cols, rows);
     }
 
     /** {@inheritDoc} */
@@ -190,8 +193,8 @@ public class QRDecomposition implements Destroyable {
         for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
             MatrixUtil.toString("X+", x, cols, this.cols);
-/*            Vector vector = x.viewRow(k);
-            MatrixUtil.toString("x", vector, cols);*/
+            Vector vector = x.viewRow(k);
+            MatrixUtil.toString("x", vector, cols);
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
             MatrixUtil.toString("X-", x, cols, this.cols);
             if (k == 0)

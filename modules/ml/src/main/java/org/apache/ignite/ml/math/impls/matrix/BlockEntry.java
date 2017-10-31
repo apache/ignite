@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.Matrix;
  */
 public final class BlockEntry extends SparseLocalOnHeapMatrix {
     /** Max block size. */
-    public static final int MAX_BLOCK_SIZE = 32;
+    public static final int MAX_BLOCK_SIZE = 4;
 
     /** */
     public BlockEntry() {

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.util;
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
@@ -236,9 +237,9 @@ public class MatrixUtil {
      * For matrices with size less than 100
      */
     public static void toString(String name, Matrix mtx, int cols, int rows){
-        System.out.println(">>>> Print out matrix " + name + " " + mtx.guid().toString());
-        assert cols < 100;
-        assert rows < 100;
+        System.out.println(">>>> Print out matrix " + name + " with size = (" + mtx.rowSize() + "," + mtx.columnSize() + ") " + mtx.guid().toString());
+        assert cols <= 100;
+        assert rows <= 100;
         for (int i = 0; i < rows; i++) {
             StringBuffer s = new StringBuffer("[");
             for(int j = 0; j < cols; j++){
@@ -252,7 +253,7 @@ public class MatrixUtil {
      * For vectors with size less than 100
      */
     public static void toString(String name, Vector v, int size){
-        System.out.println(">>>> Print out vector " + name + " " +  v.guid().toString());
+        System.out.println(">>>> Print out vector " + name + " with size =" + v.size() + " id = " +  v.guid().toString());
         assert size < 100;
         StringBuffer s = new StringBuffer("[");
         for (int i = 0; i < size; i++) {

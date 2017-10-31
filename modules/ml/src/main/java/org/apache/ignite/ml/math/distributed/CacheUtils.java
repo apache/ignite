@@ -221,6 +221,7 @@ public class CacheUtils {
                 BlockEntry be = (BlockEntry)v;
 
                 min = be.minValue();
+                System.out.println("min " + min);
             }
             else
                 throw new UnsupportedOperationException();
@@ -452,8 +453,12 @@ public class CacheUtils {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
-                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k))))){
                     a = folder.apply(new CacheEntry<>(entry, cache), a);
+                    System.out.println("a " + a);
+                }
+
+
             }
 
             return a;
