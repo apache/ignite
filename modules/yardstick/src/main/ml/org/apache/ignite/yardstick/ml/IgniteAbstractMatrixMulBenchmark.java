@@ -61,6 +61,8 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
         if (!startLogged.getAndSet(true))
             BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
+        final double scale = DataChanger.next();
+
         try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
             // Create IgniteThread, we may want to work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
@@ -70,9 +72,9 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
                 @Override public void run() {
                     Matrix m1, m2, m3, m4, m5, m6;
 
-                    (m1 = createAndFill(dataSquare)).times((m2 = createAndFill(dataSquare)));
-                    (m3 = createAndFill(dataRect1)).times((m4 = createAndFill(dataRect2)));
-                    (m5 = createAndFill(dataRect2)).times((m6 = createAndFill(dataRect1)));
+                    (m1 = createAndFill(dataSquare, scale)).times((m2 = createAndFill(dataSquare, scale)));
+                    (m3 = createAndFill(dataRect1, scale)).times((m4 = createAndFill(dataRect2, scale)));
+                    (m5 = createAndFill(dataRect2, scale)).times((m6 = createAndFill(dataRect1, scale)));
 
                     m1.destroy();
                     m2.destroy();
@@ -95,8 +97,13 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
     abstract Matrix newMatrix(int rowSize, int colSize);
 
     /** */
-    private Matrix createAndFill(double[][] data) {
-        return newMatrix(data.length, data[0].length).assign(data);
+    private Matrix createAndFill(double[][] data, double scale) {
+        Matrix res = newMatrix(data.length, data[0].length).assign(data);
+
+        for (int i = 0; i < data.length && i < data[0].length; i++)
+            res.set(i, i, res.get(i, i) * scale);
+
+        return res;
     }
 
     /** */

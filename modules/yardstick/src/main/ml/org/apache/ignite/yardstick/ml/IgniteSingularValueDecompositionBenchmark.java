@@ -47,11 +47,11 @@ public class IgniteSingularValueDecompositionBenchmark extends IgniteAbstractBen
      * Based on SingularValueDecompositionTest#basicTest.
      */
     private void runSingularValueDecomposition() {
-        Matrix m = new DenseLocalOnHeapMatrix(new double[][] {
+        Matrix m = new DenseLocalOnHeapMatrix(new DataChanger.Scale().mutate(new double[][] {
             {2.0d, -1.0d, 0.0d},
             {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
-        });
+        }));
 
         SingularValueDecomposition dec = new SingularValueDecomposition(m);
 

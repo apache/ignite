@@ -46,22 +46,26 @@ public class IgniteEigenDecompositionBenchmark extends IgniteAbstractBenchmark {
      * Based on EigenDecompositionTest.
      */
     private void runEigenDecomposition() {
-        EigenDecomposition decomposition1 = new EigenDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
-            {1.0d, 0.0d, 0.0d, 1.0d},
-            {0.0d, 1.0d, 0.0d, 1.0d},
-            {0.0d, 0.0d, 2.0d, 0.0d},
-            {1.0d, 1.0d, 0.0d, 2.0d}}));
+        final DataChanger.Scale scale = new DataChanger.Scale();
+
+        EigenDecomposition decomposition1 = new EigenDecomposition(new DenseLocalOnHeapMatrix(
+            scale.mutate(new double[][] {
+                {1.0d, 0.0d, 0.0d, 1.0d},
+                {0.0d, 1.0d, 0.0d, 1.0d},
+                {0.0d, 0.0d, 2.0d, 0.0d},
+                {1.0d, 1.0d, 0.0d, 2.0d}})));
 
         decomposition1.getD();
         decomposition1.getV();
 
         decomposition1.destroy();
 
-        EigenDecomposition decomposition2 = new EigenDecomposition(new DenseLocalOnHeapMatrix(new double[][] {
-            {1.0d, 0.0d, 0.0d},
-            {0.0d, 1.0d, 0.0d},
-            {0.0d, 0.0d, 2.0d},
-            {1.0d, 1.0d, 0.0d}}));
+        EigenDecomposition decomposition2 = new EigenDecomposition(new DenseLocalOnHeapMatrix(
+            scale.mutate(new double[][] {
+                {1.0d, 0.0d, 0.0d},
+                {0.0d, 1.0d, 0.0d},
+                {0.0d, 0.0d, 2.0d},
+                {1.0d, 1.0d, 0.0d}})));
         // TODO: IGNITE-5828, find out why decomposition of 3X4 matrix throws row index exception
 
         decomposition2.getD();

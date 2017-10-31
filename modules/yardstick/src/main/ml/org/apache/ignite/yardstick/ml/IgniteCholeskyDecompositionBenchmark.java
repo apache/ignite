@@ -49,24 +49,26 @@ public class IgniteCholeskyDecompositionBenchmark extends IgniteAbstractBenchmar
      * Based on CholeskyDecompositionTest.
      */
     private void runCholeskyDecomposition() {
-        Matrix m = new DenseLocalOnHeapMatrix(new double[][] {
+        final DataChanger.Scale scale = new DataChanger.Scale();
+
+        Matrix m = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
             {2.0d, -1.0d, 0.0d},
             {-1.0d, 2.0d, -1.0d},
             {0.0d, -1.0d, 2.0d}
-        });
+        }));
 
         CholeskyDecomposition dec = new CholeskyDecomposition(m);
 
         dec.getL();
         dec.getLT();
 
-        Matrix bs = new DenseLocalOnHeapMatrix(new double[][] {
+        Matrix bs = new DenseLocalOnHeapMatrix(scale.mutate(new double[][] {
             {4.0, -6.0, 7.0},
             {1.0, 1.0, 1.0}
-        }).transpose();
+        })).transpose();
         dec.solve(bs);
 
-        Vector b = new DenseLocalOnHeapVector(new double[] {4.0, -6.0, 7.0});
+        Vector b = new DenseLocalOnHeapVector(scale.mutate(new double[] {4.0, -6.0, 7.0}));
         dec.solve(b);
 
         dec.destroy();

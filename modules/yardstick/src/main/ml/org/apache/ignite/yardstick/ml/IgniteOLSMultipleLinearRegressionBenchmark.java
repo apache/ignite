@@ -48,7 +48,7 @@ public class IgniteOLSMultipleLinearRegressionBenchmark extends IgniteAbstractBe
     private void runLongly() {
         // Y values are first, then independent vars
         // Each row is one observation
-        double[] design = new double[] {
+        double[] design = new DataChanger.Scale().mutate(new double[] {
             60323, 83.0, 234289, 2356, 1590, 107608, 1947,
             61122, 88.5, 259426, 2325, 1456, 108632, 1948,
             60171, 88.2, 258054, 3682, 1616, 109773, 1949,
@@ -65,7 +65,7 @@ public class IgniteOLSMultipleLinearRegressionBenchmark extends IgniteAbstractBe
             69564, 114.2, 502601, 3931, 2514, 125368, 1960,
             69331, 115.7, 518173, 4806, 2572, 127852, 1961,
             70551, 116.9, 554894, 4007, 2827, 130081, 1962
-        };
+        });
 
         final int nobs = 16;
         final int nvars = 6;

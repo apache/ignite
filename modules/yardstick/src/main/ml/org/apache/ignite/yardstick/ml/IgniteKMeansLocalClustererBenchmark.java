@@ -38,11 +38,13 @@ public class IgniteKMeansLocalClustererBenchmark extends IgniteAbstractBenchmark
         if (!startLogged.getAndSet(true))
             BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
+        final DataChanger.Scale scale = new DataChanger.Scale();
+
         // IMPL NOTE originally taken from KMeansLocalClustererTest
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
-        double[] v1 = new double[] {1959, 325100};
-        double[] v2 = new double[] {1960, 373200};
+        double[] v1 = scale.mutate(new double[] {1959, 325100});
+        double[] v2 = scale.mutate(new double[] {1960, 373200});
 
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {
             v1,

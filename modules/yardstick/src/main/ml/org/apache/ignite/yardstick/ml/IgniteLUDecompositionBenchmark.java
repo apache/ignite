@@ -49,11 +49,11 @@ public class IgniteLUDecompositionBenchmark extends IgniteAbstractBenchmark {
      * Based on LUDecompositionTest.
      */
     private void runLUDecomposition() {
-        Matrix testMatrix = new DenseLocalOnHeapMatrix(new double[][] {
+        Matrix testMatrix = new DenseLocalOnHeapMatrix(new DataChanger.Scale().mutate(new double[][] {
             {2.0d, 1.0d, 1.0d, 0.0d},
             {4.0d, 3.0d, 3.0d, 1.0d},
             {8.0d, 7.0d, 9.0d, 5.0d},
-            {6.0d, 7.0d, 9.0d, 8.0d}});
+            {6.0d, 7.0d, 9.0d, 8.0d}}));
 
         LUDecomposition dec1 = new LUDecomposition(new PivotedMatrixView(testMatrix));
 

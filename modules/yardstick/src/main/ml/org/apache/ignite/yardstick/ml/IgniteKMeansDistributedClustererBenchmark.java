@@ -43,6 +43,8 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
         if (!startLogged.getAndSet(true))
             BenchmarkUtils.println("Starting " + this.getClass().getSimpleName());
 
+        final DataChanger.Scale scale = new DataChanger.Scale();
+
         try (Ignite ignite = Ignition.getOrStart(new IgniteConfiguration())) {
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
@@ -54,8 +56,8 @@ public class IgniteKMeansDistributedClustererBenchmark extends IgniteAbstractBen
                     KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(
                         new EuclideanDistance(), 1, 1, 1L);
 
-                    double[] v1 = new double[] {1959, 325100};
-                    double[] v2 = new double[] {1960, 373200};
+                    double[] v1 = scale.mutate(new double[] {1959, 325100});
+                    double[] v2 = scale.mutate(new double[] {1960, 373200});
 
                     SparseDistributedMatrix points = new SparseDistributedMatrix(
                         2, 2, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
