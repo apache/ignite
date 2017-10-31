@@ -239,6 +239,33 @@ public class GridNioServer<T> {
         this.msgQueueLsnr = msgQueueLsnr;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
 
+        if (port != -1) {
+            // Once bind, we will not change the port in future.
+            Selector selector = createSelector(locAddr = new InetSocketAddress(addr, port)); // fast fail in case the address is already in use.
+
+            long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
+
+            IgniteRunnable balancer0 = null;
+
+            if (balancePeriod > 0) {
+                boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
+
+                if (rndBalance)
+                    balancer0 = new RandomBalancer<>(this, log);
+                else {
+                    balancer0 = readWriteSelectorsAssign ?
+                        new ReadWriteSizeBasedBalancer<>(this, balancePeriod, log) :
+                        new SizeBasedBalancer<>(this, balancePeriod, log);
+                }
+            }
+
+            acceptThread = new IgniteThread(new GridNioAcceptWorker<>(this, igniteInstanceName, "nio-acceptor", locAddr, selector, balancer0, tcpNoDelay, sockSndBuf, sockRcvBuf, log));
+        }
+        else {
+            locAddr = null;
+            acceptThread = null;
+        }
+
         GridNioSslFilter sslFilter = null;
 
         if (directMode) {
@@ -304,33 +331,6 @@ public class GridNioServer<T> {
         }
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
-
-        long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
-
-        IgniteRunnable balancer0 = null;
-
-        if (balancePeriod > 0) {
-            boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
-
-            if (rndBalance)
-                balancer0 = new RandomBalancer<>(this, log);
-            else {
-                balancer0 = readWriteSelectorsAssign ?
-                    new ReadWriteSizeBasedBalancer<>(this, balancePeriod, log) :
-                    new SizeBasedBalancer<>(this, balancePeriod, log);
-            }
-        }
-
-        if (port != -1) {
-            // Once bind, we will not change the port in future.
-            locAddr = new InetSocketAddress(addr, port);
-
-            acceptThread = new IgniteThread(new GridNioAcceptWorker<>(this, igniteInstanceName, "nio-acceptor", locAddr, balancer0, tcpNoDelay, sockSndBuf, sockRcvBuf, log));
-        }
-        else {
-            locAddr = null;
-            acceptThread = null;
-        }
     }
 
     /**

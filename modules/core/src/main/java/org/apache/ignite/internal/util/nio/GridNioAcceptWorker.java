@@ -73,6 +73,7 @@ class GridNioAcceptWorker<T> extends GridWorker {
         String igniteInstanceName,
         String name,
         SocketAddress addr,
+        Selector selector,
         IgniteRunnable balancer,
         boolean tcpNoDelay,
         int sockSndBuf,
@@ -87,7 +88,7 @@ class GridNioAcceptWorker<T> extends GridWorker {
         this.sockRcvBuf = sockRcvBuf;
         this.balancer = balancer;
 
-        selector = nio.createSelector(addr);
+        this.selector = selector;
     }
 
     /** {@inheritDoc} */
