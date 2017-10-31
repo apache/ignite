@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -165,6 +166,16 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
+        for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  CUSTOM_START_KEY);
+        }
+    }
+
+    /**
      * @param cacheMode Cache mode.
      * @param syncMode Write sync mode.
      * @param near Near.
@@ -224,16 +235,55 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     }
 
     /**
+     * @param cache Cache.
+     * @param startKey Start key.
+     */
+    private void doTestDeadlocksTxOnPrimary(IgniteCache cache, Object startKey) {
+        try {
+            awaitPartitionMapExchange();
+
+            doTestDeadlock(3, false, false, startKey, true);
+
+            doTestDeadlock(4, false, false, startKey, true);
+        }
+        catch (Throwable e) {
+            U.error(log, "Unexpected exception: ", e);
+
+            //TODO "if" statement will be removed after fixing https://issues.apache.org/jira/browse/IGNITE-6445
+            if (!e.getMessage().equals("Failed to detect deadlock"))
+                fail();
+        }
+        finally {
+            if (cache != null)
+                cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestDeadlock(
+        int txCnt,
+        boolean lockPrimaryFirst,
+        boolean clientTx,
+        Object startKey
+    ) throws Exception {
+        doTestDeadlock(txCnt, lockPrimaryFirst, clientTx, startKey, false);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     private void doTestDeadlock(
         final int txCnt,
         boolean lockPrimaryFirst,
         final boolean clientTx,
-        Object startKey
+        Object startKey,
+        boolean txOnPrimary
     ) throws Exception {
+
         log.info(">>> Test deadlock [txCnt=" + txCnt + ", lockPrimaryFirst=" + lockPrimaryFirst +
-            ", clientTx=" + clientTx + ", startKey=" + startKey + ']');
+            ", clientTx=" + clientTx + ", startKey=" + startKey + ", txOnPrimary=" + txOnPrimary + ']');
 
         TestCommunicationSpi.init(txCnt);
 
@@ -241,7 +291,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
         final AtomicReference<TransactionDeadlockException> deadlockErr = new AtomicReference<>();
 
-        final List<List<Object>> keySets = generateKeys(txCnt, startKey, !lockPrimaryFirst);
+        final List<List<Object>> keySets = generateKeys(txCnt, startKey, !lockPrimaryFirst, txOnPrimary);
 
         final Set<Object> involvedKeys = new GridConcurrentHashSet<>();
         final Set<Object> involvedLockedKeys = new GridConcurrentHashSet<>();
@@ -283,13 +333,11 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                         ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Object> primaryKeys = primaryKeys(
-                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key , (100 * threadNum)));
+                        grid(primaryNode).cache(CACHE_NAME), 5, incrementKey(key, (100 * threadNum)));
 
-                    Map<Object, Integer> entries = new HashMap<>();
+                    Map<Object, Integer> entries = new LinkedHashMap<>();
 
                     involvedKeys.add(key);
-
-                    entries.put(key, 0);
 
                     for (Object o : primaryKeys) {
                         involvedKeys.add(o);
@@ -303,6 +351,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                         entries.put(k, 2);
                     }
 
+                    entries.put(key, 0);
+
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode().id() +
                         ", tx=" + tx.xid() + ", entries=" + entries + ']');
 
@@ -313,7 +363,12 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                 catch (Throwable e) {
                     log.info("Expected exception: " + e);
 
-                    e.printStackTrace(System.out);
+                    String stackTrace = X.getFullStackTrace(e);
+
+                    log.info(stackTrace);
+
+                    assertTrue("DeadlockDetection hasn't executed at "+ (threadNum - 1) + " node.",
+                        stackTrace.contains(TxDeadlockDetection.class.getName()));
 
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
@@ -364,13 +419,14 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @param nodesCnt Nodes count.
      */
-    private <T> List<List<T>> generateKeys(int nodesCnt, T startKey, boolean reverse) throws IgniteCheckedException {
+    private <T> List<List<T>> generateKeys(int nodesCnt, T startKey, boolean reverse,
+        boolean txOnPrimary) throws IgniteCheckedException {
         List<List<T>> keySets = new ArrayList<>();
 
         for (int i = 0; i < nodesCnt; i++) {
             List<T> keys = new ArrayList<>(2);
 
-            int n1 = i + 1;
+            int n1 = txOnPrimary ? i : i + 1;
             int n2 = n1 + 1;
 
             int i1 = n1 < nodesCnt ? n1 : n1 - nodesCnt;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
+import java.io.Serializable;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -29,8 +30,14 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import javax.cache.Cache;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,13 +46,27 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test SQLSTATE codes propagation with (any) Ignite JDBC driver.
  */
 public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest {
+    /** */
+    protected static final String CACHE_STORE_TEMPLATE = "cache_store";
+
+    /** */
+    protected static final String CACHE_INTERCEPTOR_TEMPLATE = "cache_interceptor";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(getConfiguration(getTestIgniteInstanceName(0))
+        IgniteEx grid = startGrid(getConfiguration(getTestIgniteInstanceName(0))
             .setCacheConfiguration(new CacheConfiguration("test")
                 .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))));
+
+        // add cache template for cache with enabled read-through cache store
+        grid.addCacheConfiguration(new CacheConfiguration<>(CACHE_STORE_TEMPLATE)
+            .setCacheStoreFactory(singletonFactory(new TestCacheStore())).setReadThrough(true));
+
+        // add cache template for cache with enabled cache interceptor
+        grid.addCacheConfiguration(new CacheConfiguration<>(CACHE_INTERCEPTOR_TEMPLATE)
+            .setInterceptor(new TestCacheInterceptor()));
     }
 
     /** {@inheritDoc} */
@@ -505,6 +526,44 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Check error code for the case not null field is configured for table belonging to cache
+     * with enabled read-through cache store.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullRestrictionReadThroughCacheStore() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                conn.setSchema("PUBLIC");
+
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
+                        "WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
+                }
+            }
+        }, "0A000");
+    }
+
+    /**
+     * Check error code for the case not null field is configured for table belonging to cache
+     * with configured cache interceptor.
+     *
+     * @throws SQLException if failed.
+     */
+    public void testNotNullRestrictionCacheInterceptor() throws SQLException {
+        checkErrorState(new ConnClosure() {
+            @Override public void run(Connection conn) throws Exception {
+                conn.setSchema("PUBLIC");
+
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " +
+                        "WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
+                }
+            }
+        }, "0A000");
+    }
+
+    /**
      * @return Connection to execute statements on.
      * @throws SQLException if failed.
      */
@@ -569,5 +628,32 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
          * @throws Exception On error.
          */
         void run(Connection conn) throws Exception;
+    }
+
+    /**
+     * Cache store stub.
+     */
+    protected class TestCacheStore extends CacheStoreAdapter<Object,Object> implements Serializable {
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            // No-op
+        }
+    }
+
+    /**
+     * Cache interceptor stub.
+     */
+    private static class TestCacheInterceptor extends CacheInterceptorAdapter<Object, Object> implements Serializable {
+        // No-op
     }
 }

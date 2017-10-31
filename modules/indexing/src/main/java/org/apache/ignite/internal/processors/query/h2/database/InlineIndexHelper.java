@@ -383,6 +383,9 @@ public class InlineIndexHelper {
         if (type == Value.NULL)
             return Integer.MIN_VALUE;
 
+        if (v == ValueNull.INSTANCE)
+            return fixSort(1, sortType());
+
         if (this.type != type)
             throw new UnsupportedOperationException("Invalid fast index type: " + type);
 
@@ -866,7 +869,6 @@ public class InlineIndexHelper {
             }
 
             case Value.BYTES: {
-                byte[] s;
                 short size;
 
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
@@ -881,6 +883,7 @@ public class InlineIndexHelper {
                     PageUtils.putShort(pageAddr, off + 1, size);
                     PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(val.getBytes(), 0, maxSize - 3));
                 }
+
                 return size + 3;
             }
 
@@ -917,6 +920,7 @@ public class InlineIndexHelper {
      * @param v2 Second value;
      * @return {@code true} if we can rely on compare result.
      */
+    @SuppressWarnings("RedundantIfStatement")
     protected boolean canRelyOnCompare(int c, Value shortVal, Value v2) {
         switch (type) {
             case Value.STRING:

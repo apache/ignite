@@ -159,9 +159,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "ALTER TABLE Person ADD COLUMN city varchar");
 
         run(cache, "INSERT INTO Person (id, name, city) values (1, 'John Doe', 'New York')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (2, 'Mike Watts', 'Denver')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (3, 'Ann Pierce', 'New York')");
 
         run(cache, "CREATE INDEX pidx1 ON Person(name, city desc)");
@@ -205,11 +203,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "CREATE INDEX pidx2 on Person(age desc)");
 
         run(cache, "DROP INDEX pidx2");
-
         run(cache, "DROP INDEX pidx1");
-
         run(cache, "DROP INDEX cidx2");
-
         run(cache, "DROP INDEX cidx1");
 
         run(cache, "DELETE FROM Person where age > 10");
@@ -304,6 +299,49 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         for (Ignite node : Ignition.allGrids())
             checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueNonDynamicTable() {
+        CacheConfiguration c =
+            new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            grid(nodeIndex()).getOrCreateCache(c);
+
+            doTestAlterTableOnFlatValue("INTEGER");
+        }
+        finally {
+            grid(nodeIndex()).destroyCache("ints");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueDynamicTable() {
+        try {
+            run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
+
+            doTestAlterTableOnFlatValue("TEST");
+        }
+        finally {
+            run("DROP TABLE TEST");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have flat value.
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
+            "Cannot add column(s) because table was created with WRAP_VALUE=false option.");
     }
 
     /**

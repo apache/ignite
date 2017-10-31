@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
@@ -62,7 +64,7 @@ public class QuerySchema implements Serializable {
         assert entities != null;
 
         for (QueryEntity qryEntity : entities)
-            this.entities.add(new QueryEntity(qryEntity));
+            this.entities.add(QueryUtils.copy(qryEntity));
     }
 
     /**
@@ -75,7 +77,7 @@ public class QuerySchema implements Serializable {
             QuerySchema res = new QuerySchema();
 
             for (QueryEntity qryEntity : entities)
-                res.entities.add(new QueryEntity(qryEntity));
+                res.entities.add(QueryUtils.copy(qryEntity));
 
             return res;
         }
@@ -151,29 +153,51 @@ public class QuerySchema implements Serializable {
 
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
-                QueryEntity target = null;
+                int targetIdx = -1;
 
-                for (QueryEntity entity : entities()) {
+                for (int i = 0; i < entities.size(); i++) {
+                    QueryEntity entity = ((List<QueryEntity>)entities).get(i);
+
                     if (F.eq(entity.getTableName(), op0.tableName())) {
-                        target = entity;
+                        targetIdx = i;
 
                         break;
                     }
                 }
 
-                if (target == null)
+                if (targetIdx == -1)
                     return;
+
+                boolean replaceTarget = false;
+
+                QueryEntity target = ((List<QueryEntity>)entities).get(targetIdx);
 
                 for (QueryField field : op0.columns()) {
                     target.getFields().put(field.name(), field.typeName());
 
                     if (!field.isNullable()) {
-                        if (target.getNotNullFields() == null)
-                            target.setNotNullFields(new HashSet<String>());
+                        if (!(target instanceof QueryEntityEx)) {
+                            target = new QueryEntityEx(target);
 
-                        target.getNotNullFields().add(field.name());
+                            replaceTarget = true;
+                        }
+
+                        QueryEntityEx target0 = (QueryEntityEx)target;
+
+                        Set<String> notNullFields = target0.getNotNullFields();
+
+                        if (notNullFields == null) {
+                            notNullFields = new HashSet<>();
+
+                            target0.setNotNullFields(notNullFields);
+                        }
+
+                        notNullFields.add(field.name());
                     }
                 }
+
+                if (replaceTarget)
+                    ((List<QueryEntity>)entities).set(targetIdx, target);
             }
         }
     }

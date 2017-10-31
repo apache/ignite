@@ -78,6 +78,11 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterCacheKeyConfiguration(keyCfgs));
     }
 
+    // Generate client connector configuration.
+    static clusterClientConnector(cluster, available) {
+        return this.toSection(this.generator.clusterClientConnector(cluster, available));
+    }
+
     // Generate collision group.
     static clusterCollision(collision) {
         return this.toSection(this.generator.clusterCollision(collision));
@@ -136,6 +141,11 @@ export default class AbstractTransformer {
     // Generate memory configuration group.
     static clusterMemory(memoryConfiguration, available) {
         return this.toSection(this.generator.clusterMemory(memoryConfiguration, available));
+    }
+
+    // Generate memory configuration group.
+    static clusterDataStorageConfiguration(dataStorageCfg, available) {
+        return this.toSection(this.generator.clusterDataStorageConfiguration(dataStorageCfg, available));
     }
 
     // Generate marshaller group.

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -656,6 +656,12 @@ public final class IgniteSystemProperties {
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
+    /**
+     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
+     * disabling JIT in some places.
+     */
+    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {
@@ -727,9 +733,21 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
 
-    /** If this property is set, {@link PersistentStoreConfiguration#writeThrottlingEnabled} will be overridden to true
+    /** If this property is set, {@link DataStorageConfiguration#writeThrottlingEnabled} will be overridden to true
      * independent of initial value in configuration. */
     public static final String IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED = "IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED";
+
+    /**
+     * Property for setup WAL serializer version.
+     */
+    public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
+
+    /**
+     * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
+     * set based on existing data store folders. This option also enables compatible folder generation mode as it was
+     * before 2.3.
+     */
+    public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /**
      * Enforces singleton.

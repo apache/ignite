@@ -219,6 +219,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
             AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
             AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventLocalListenerApply, EventLocalListenerApply);
             AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
             AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
             AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
@@ -898,6 +899,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
+        private long EventLocalListenerApply(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var id = stream.ReadInt();
+
+                var listeners = _ignite.Configuration.LocalEventListenersInternal;
+
+                if (listeners == null || id >= listeners.Length)
+                {
+                    return 0;
+                }
+
+                var listener = listeners[id];
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                var res = listener.Invoke(reader);
+
+                return res ? 1 : 0;
+            }
+        }
+
         #endregion
 
         #region IMPLEMENTATION: SERVICES
@@ -1036,7 +1060,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return 0;
         }
 
-        private long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
             IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
 
@@ -1186,6 +1210,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private long AffinityFunctionInit(long memPtr, long unused, long unused1, void* baseFunc)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())

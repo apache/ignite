@@ -443,6 +443,16 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         @Override public long rebalancingStartTime() {
             return 61;
         }
+
+        /** {@inheritDoc} */
+        @Override public long getEstimatedRebalancingFinishTime() {
+            return 62;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getRebalancingStartTime() {
+            return 63;
+        }
     }
 }
 

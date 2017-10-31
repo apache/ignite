@@ -75,9 +75,8 @@ public class TxRecordSerializer {
 
                 buf.putInt(backupNodes.size());
 
-                for (Object backupNode : backupNodes) {
+                for (Object backupNode : backupNodes)
                     writeConsistentId(backupNode, buf);
-                }
             }
         }
         else {

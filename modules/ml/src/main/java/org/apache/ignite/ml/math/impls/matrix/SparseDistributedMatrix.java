@@ -136,7 +136,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
         CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
-            Affinity affinity = ignite.affinity(cacheName);
+            Affinity<RowColMatrixKey> affinity = ignite.affinity(cacheName);
 
             ClusterNode locNode = ignite.cluster().localNode();
 

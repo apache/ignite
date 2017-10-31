@@ -213,6 +213,8 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
+
             lock (SyncRoot)
             {
                 // 0. Init logger
@@ -452,6 +454,8 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "PlatformJniTarget is passed further")]
         internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
         {
             try

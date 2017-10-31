@@ -237,22 +237,9 @@ public final class GridH2CollocationModel {
     }
 
     /**
-     * @param i Index.
-     * @param f Table filter.
-     * @return {@code true} If the child is not a table or view.
-     */
-    private boolean isChildTableOrView(int i, TableFilter f) {
-        if (f == null)
-            f = childFilters[i];
-
-        Table t = f.getTable();
-
-        return t.isView() || t instanceof GridH2Table;
-    }
-
-    /**
      * Do the needed calculations.
      */
+    @SuppressWarnings("ConstantConditions")
     private void calculate() {
         if (type != null)
             return;
@@ -369,6 +356,7 @@ public final class GridH2CollocationModel {
      * @param f Current filter.
      * @return {@code true} If previous table is REPLICATED.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     private boolean previousReplicated(int f) {
         if (f > 0 && child(f - 1, true).type(true) == Type.REPLICATED)
             return true;
@@ -380,6 +368,7 @@ public final class GridH2CollocationModel {
      * @param f Filter.
      * @return Affinity join type.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private Affinity joinedWithCollocated(int f) {
         TableFilter tf = childFilters[f];
 
@@ -530,6 +519,7 @@ public final class GridH2CollocationModel {
      * @param withUnion With respect to union.
      * @return Multiplier.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private int multiplier(boolean withUnion) {
         calculate();
 

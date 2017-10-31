@@ -410,7 +410,30 @@ namespace Apache.Ignite.Core.Tests
         public static void AssertReflectionEqual(object x, object y, string propertyPath = null,
             HashSet<string> ignoredProperties = null)
         {
+            if (x == null && y == null)
+            {
+                return;
+            }
+
+            Assert.IsNotNull(x, propertyPath);
+            Assert.IsNotNull(y, propertyPath);
+
             var type = x.GetType();
+
+            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                var xCol = ((IEnumerable)x).OfType<object>().ToList();
+                var yCol = ((IEnumerable)y).OfType<object>().ToList();
+
+                Assert.AreEqual(xCol.Count, yCol.Count, propertyPath);
+
+                for (var i = 0; i < xCol.Count; i++)
+                {
+                    AssertReflectionEqual(xCol[i], yCol[i], propertyPath, ignoredProperties);
+                }
+
+                return;
+            }
 
             Assert.AreEqual(type, y.GetType());
 
@@ -426,8 +449,6 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var propInfo in props)
             {
-                var propType = propInfo.PropertyType;
-
                 if (ignoredProperties != null && ignoredProperties.Contains(propInfo.Name))
                 {
                     continue;
@@ -438,29 +459,7 @@ namespace Apache.Ignite.Core.Tests
                 var xVal = propInfo.GetValue(x, null);
                 var yVal = propInfo.GetValue(y, null);
 
-                if (xVal == null || yVal == null)
-                {
-                    Assert.IsNull(xVal, propName);
-                    Assert.IsNull(yVal, propName);
-                }
-                else if (propType != typeof(string) && propType.IsGenericType &&
-                         (propType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
-                          propType.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
-                {
-                    var xCol = ((IEnumerable)xVal).OfType<object>().ToList();
-                    var yCol = ((IEnumerable)yVal).OfType<object>().ToList();
-
-                    Assert.AreEqual(xCol.Count, yCol.Count, propName);
-
-                    for (var i = 0; i < xCol.Count; i++)
-                    {
-                        AssertReflectionEqual(xCol[i], yCol[i], propName, ignoredProperties);
-                    }
-                }
-                else
-                {
-                    AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
-                }
+                AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
             }
         }
     }

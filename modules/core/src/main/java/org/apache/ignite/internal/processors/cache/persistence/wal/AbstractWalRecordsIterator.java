@@ -30,7 +30,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -154,21 +153,31 @@ public abstract class AbstractWalRecordsIterator
      */
     protected void advance() throws IgniteCheckedException {
         while (true) {
-            curRec = advanceRecord(currWalSegment);
+            try {
+                curRec = advanceRecord(currWalSegment);
 
-            if (curRec != null)
-                return;
-            else {
-                currWalSegment = advanceSegment(currWalSegment);
-
-                if (currWalSegment == null)
+                if (curRec != null)
                     return;
+                else {
+                    currWalSegment = advanceSegment(currWalSegment);
+
+                    if (currWalSegment == null)
+                        return;
+                }
+            }
+            catch (WalSegmentTailReachedException e) {
+                log.warning(e.getMessage());
+
+                curRec = null;
+
+                return;
             }
         }
     }
 
     /**
      * Closes and returns WAL segment (if any)
+     *
      * @return closed handle
      * @throws IgniteCheckedException if IO failed
      */
@@ -199,7 +208,8 @@ public abstract class AbstractWalRecordsIterator
      * @return next advanced record
      */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd) {
+        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd
+    ) throws IgniteCheckedException {
         if (hnd == null)
             return null;
 
@@ -217,8 +227,12 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
+            if (e instanceof WalSegmentTailReachedException)
+                throw (WalSegmentTailReachedException)e;
+
             if (!(e instanceof SegmentEofException))
                 handleRecordException(e, ptr);
+
             return null;
         }
     }
@@ -261,24 +275,18 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = ioFactory.create(desc.file);
 
             try {
+                int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO);
+
+                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, serVer);
+
                 FileInput in = new FileInput(fileIO, buf);
 
-                // Header record must be agnostic to the serializer version.
-                WALRecord rec = serializer.readRecord(in,
-                    new FileWALPointer(desc.idx, (int)fileIO.position(), 0));
+                if (start != null && desc.idx == start.index()) {
+                    // Make sure we skip header with serializer version.
+                    long startOffset = Math.max(start.fileOffset(), fileIO.position());
 
-                if (rec == null)
-                    return null;
-
-                if (rec.type() != WALRecord.RecordType.HEADER_RECORD)
-                    throw new IOException("Missing file header record: " + desc.file.getAbsoluteFile());
-
-                int ver = ((HeaderRecord)rec).version();
-
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, ver, serializer.writePointer());
-
-                if (start != null && desc.idx == start.index())
-                    in.seek(start.fileOffset());
+                    in.seek(startOffset);
+                }
 
                 return new FileWriteAheadLogManager.ReadFileHandle(fileIO, desc.idx, sharedCtx.igniteInstanceName(), ser, in);
             }

@@ -53,6 +53,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1663,10 +1665,75 @@ public class GridCacheUtils {
         if (!F.isEmpty(entities)) {
             Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
-            for (QueryEntity entity : entities)
+            for (QueryEntity entity : entities) {
+                if (!F.isEmpty(entity.getNotNullFields()))
+                    QueryUtils.checkNotNullAllowed(cfg);
+
                 normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+            }
 
             cfg.clearQueryEntities().setQueryEntities(normalEntities);
         }
+    }
+
+    /**
+     * Checks if cache configuration belongs to persistent cache.
+     *
+     * @param ccfg Cache configuration.
+     * @param dsCfg Data storage config.
+     */
+    public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
+        if (dsCfg == null)
+            return false;
+
+        String regName = ccfg.getDataRegionName();
+
+        if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))
+            return dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();
+
+        if (dsCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                if (regName.equals(drConf.getName()))
+                    return drConf.isPersistenceEnabled();
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
+     */
+    public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
+        return isPersistenceEnabled(cfg.getDataStorageConfiguration());
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
+     */
+    public static boolean isPersistenceEnabled(DataStorageConfiguration cfg) {
+        if (cfg == null)
+            return false;
+
+        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
+
+        if (dfltReg == null)
+            return false;
+
+        if (dfltReg.isPersistenceEnabled())
+            return true;
+
+        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
+
+        if (regCfgs == null)
+            return false;
+
+        for (DataRegionConfiguration regCfg : regCfgs) {
+            if (regCfg.isPersistenceEnabled())
+                return true;
+        }
+
+        return false;
     }
 }

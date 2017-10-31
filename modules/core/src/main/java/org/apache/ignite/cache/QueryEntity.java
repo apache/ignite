@@ -83,8 +83,8 @@ public class QueryEntity implements Serializable {
     /** Table name. */
     private String tableName;
 
-    /** Fields that must have non-null value. */
-    private Set<String> notNullFields;
+    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+    private Set<String> _notNullFields;
 
     /**
      * Creates an empty query entity.
@@ -113,7 +113,7 @@ public class QueryEntity implements Serializable {
 
         tableName = other.tableName;
 
-        notNullFields = other.notNullFields != null ? new HashSet<>(other.notNullFields) : null;
+        _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
     }
 
     /**
@@ -134,7 +134,7 @@ public class QueryEntity implements Serializable {
      * @param valCls Value type.
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
-        this(convert(processKeyAndValueClasses(keyCls,valCls)));
+        this(convert(processKeyAndValueClasses(keyCls, valCls)));
     }
 
     /**
@@ -353,6 +353,7 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets table name for this query entity.
+     *
      * @param tableName table name
      */
     public void setTableName(String tableName) {
@@ -365,7 +366,7 @@ public class QueryEntity implements Serializable {
      * @return Set of names of fields that must have non-null values.
      */
     @Nullable public Set<String> getNotNullFields() {
-        return notNullFields;
+        return _notNullFields;
     }
 
     /**
@@ -375,13 +376,14 @@ public class QueryEntity implements Serializable {
      * @return {@code this} for chaining.
      */
     public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
-        this.notNullFields = notNullFields;
+        this._notNullFields = notNullFields;
 
         return this;
     }
 
     /**
      * Utility method for building query entities programmatically.
+     *
      * @param fullName Full name of the field.
      * @param type Type of the field.
      * @param alias Field alias.
@@ -468,6 +470,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(idxs))
             entity.setIndexes(idxs);
+
+        if (!F.isEmpty(desc.notNullFields()))
+            entity.setNotNullFields(desc.notNullFields());
 
         return entity;
     }
@@ -591,6 +596,9 @@ public class QueryEntity implements Serializable {
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
+            if (sqlAnn.notNull())
+                desc.addNotNullField(prop.fullName());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -612,7 +620,6 @@ public class QueryEntity implements Serializable {
             desc.addFieldToTextIndex(prop.fullName());
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -620,6 +627,7 @@ public class QueryEntity implements Serializable {
 
         if (o == null || getClass() != o.getClass())
             return false;
+
         QueryEntity entity = (QueryEntity)o;
 
         return F.eq(keyType, entity.keyType) &&
@@ -631,13 +639,13 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(notNullFields, entity.notNullFields);
+            F.eq(_notNullFields, entity._notNullFields);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, notNullFields);
+            tableName, _notNullFields);
     }
 
     /** {@inheritDoc} */

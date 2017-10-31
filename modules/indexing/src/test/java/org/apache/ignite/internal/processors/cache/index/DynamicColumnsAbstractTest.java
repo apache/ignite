@@ -31,9 +31,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
@@ -197,7 +197,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
                 try {
                     assertEquals(DataType.getTypeFromClass(Class.forName(col.typeName())),
-                        rowDesc.fieldType(i - GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT));
+                        rowDesc.fieldType(i - GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT));
                 }
                 catch (ClassNotFoundException e) {
                     throw new AssertionError(e);
@@ -259,16 +259,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-            .setDefaultMemoryPolicyName("default")
-            .setMemoryPolicies(
-                new MemoryPolicyConfiguration()
-                    .setName("default")
-                    .setMaxSize(128 * 1024 * 1024L)
-                    .setInitialSize(128 * 1024 * 1024L)
-            );
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return optimize(cfg);
     }
@@ -302,7 +296,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @return result.
      */
     protected List<List<?>> run(IgniteCache<?, ?> cache, String sql, Object... args) {
-        return cache.query(new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)).getAll();
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema(QueryUtils.DFLT_SCHEMA).setArgs(args)
+            .setDistributedJoins(true);
+
+        return cache.query(qry).getAll();
     }
 
     /**

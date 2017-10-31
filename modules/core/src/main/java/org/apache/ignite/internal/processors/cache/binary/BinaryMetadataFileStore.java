@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * which may lead to segmentation of nodes from cluster.
  */
 class BinaryMetadataFileStore {
-    /** */
+    /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
 
     /** */
@@ -62,20 +63,20 @@ class BinaryMetadataFileStore {
         this.ctx = ctx;
         this.log = log;
 
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         if (binaryMetadataFileStoreDir != null)
             workDir = binaryMetadataFileStoreDir;
         else {
-            String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
+            final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
 
             workDir = new File(U.resolveWorkDirectory(
                 ctx.config().getWorkDirectory(),
                 "binary_meta",
                 false
             ),
-                consId);
+                subFolder);
         }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
@@ -85,7 +86,7 @@ class BinaryMetadataFileStore {
      * @param binMeta Binary metadata to be written to disk.
      */
     void saveMetadata(BinaryMetadata binMeta) {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         try {
@@ -107,7 +108,7 @@ class BinaryMetadataFileStore {
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
      */
     void restoreMetadata() {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         for (File file : workDir.listFiles()) {

@@ -392,7 +392,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Completing topology ready future right away [head=" + aff.topologyVersion() +
                     ", topVer=" + topVer + ']');
 
-            fut.onDone(topVer);
+            fut.onDone(aff.topologyVersion());
         }
         else if (stopErr != null)
             fut.onDone(stopErr);

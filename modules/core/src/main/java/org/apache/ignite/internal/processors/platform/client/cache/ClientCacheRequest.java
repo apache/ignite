@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 
 /**
  * Cache get request.
@@ -77,13 +77,13 @@ class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteCache rawCache(ClientConnectionContext ctx) {
-        GridCacheContext<Object, Object> cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+        DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
 
-        if (cacheCtx == null)
+        if (cacheDesc == null)
             throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
                 cacheId + "]", null);
 
-        String cacheName = cacheCtx.cache().name();
+        String cacheName = cacheDesc.cacheName();
 
         return ctx.kernalContext().grid().cache(cacheName);
     }

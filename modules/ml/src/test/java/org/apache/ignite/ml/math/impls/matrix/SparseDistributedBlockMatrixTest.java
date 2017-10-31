@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,19 +29,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.Blas;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Assert;
 
 import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 
@@ -177,7 +171,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
             for (int j = 0; j < cacheMatrix.columnSize(); j++)
                 cacheMatrix.set(i, j, i * cols + j + 1);
 
-       // MatrixUtil.toString("cacheMatrix", cacheMatrix, cacheMatrix.columnSize(), cacheMatrix.rowSize());
         assertEquals(UNEXPECTED_VAL, 1.0, cacheMatrix.minValue(), PRECISION);
         assertEquals(UNEXPECTED_VAL, rows * cols, cacheMatrix.maxValue(), PRECISION);
 
@@ -391,13 +384,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         BlockMatrixStorage storage = (BlockMatrixStorage)m.getStorage();
 
-        IgniteUuid uuid = storage.getUUID();
-
-        long maxBlock = (rows / BlockEntry.MAX_BLOCK_SIZE + (rows % BlockEntry.MAX_BLOCK_SIZE  > 0 ? 1 : 0)) * (cols / BlockEntry.MAX_BLOCK_SIZE  + (cols % BlockEntry.MAX_BLOCK_SIZE  > 0 ? 1 : 0));
-
-        for (long i = 0; i < maxBlock; i++)
-            set.add(new BlockMatrixKey(i,uuid,null));
-
-        return set;
+        return storage.getAllKeys();
     }
 }

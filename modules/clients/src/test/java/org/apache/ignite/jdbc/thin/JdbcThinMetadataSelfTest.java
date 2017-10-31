@@ -41,7 +41,7 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -118,13 +118,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         persFields.put("age", false);
 
         IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(
-            new QueryEntity(AffinityKey.class.getName(), Person.class.getName())
-                .addQueryField("name", String.class.getName(), null)
-                .addQueryField("age", Integer.class.getName(), null)
-                .addQueryField("orgId", Integer.class.getName(), null)
-                .setIndexes(Arrays.asList(
-                    new QueryIndex("orgId"),
-                    new QueryIndex().setFields(persFields)))
+            new QueryEntityEx(
+                new QueryEntity(AffinityKey.class.getName(), Person.class.getName())
+                    .addQueryField("name", String.class.getName(), null)
+                    .addQueryField("age", Integer.class.getName(), null)
+                    .addQueryField("orgId", Integer.class.getName(), null)
+                    .setIndexes(Arrays.asList(
+                        new QueryIndex("orgId"),
+                        new QueryIndex().setFields(persFields))))
+                .setNotNullFields(new HashSet<>(Arrays.asList("age", "name")))
             ), "pers");
 
         assert personCache != null;
@@ -137,7 +139,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Statement stmt = conn.createStatement();
 
             stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
-            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50))");
+            stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
         }
@@ -154,7 +156,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     public void testResultSetMetaData() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema("pers");
+        conn.setSchema("\"pers\"");
 
         Statement stmt = conn.createStatement();
 
@@ -251,15 +253,16 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
-        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller()
-            instanceof BinaryMarshaller;
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("pers");
 
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
+
+            ResultSetMetaData rsMeta = rs.getMetaData();
+
+            assert rsMeta.getColumnCount() == 24 : "Invalid columns count: " + rsMeta.getColumnCount();
 
             assert rs != null;
 
@@ -279,21 +282,35 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 if ("NAME".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
-                    assert rs.getInt("NULLABLE") == 1;
-                } else if ("AGE".equals(name) || "ORGID".equals(name)) {
+                    assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0; // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
+                } else if ("ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
-                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
+                    assert rs.getInt("NULLABLE") == 1;
+                    assert rs.getInt(11) == 1;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("YES");
+                } else if ("AGE".equals(name)) {
+                    assert rs.getInt("DATA_TYPE") == INTEGER;
+                    assert "INTEGER".equals(rs.getString("TYPE_NAME"));
+                    assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
-                if ("_KEY".equals(name)) {
+                else if ("_KEY".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
                     assert "OTHER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
-                if ("_VAL".equals(name)) {
+                else if ("_VAL".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == OTHER;
                     assert "OTHER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
+                    assert rs.getInt(11) == 0;  // nullable column by index
+                    assert rs.getString("IS_NULLABLE").equals("NO");
                 }
 
                 cnt++;
@@ -525,7 +542,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testParametersMetadata() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema("pers");
+            conn.setSchema("\"pers\"");
 
             PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
 
