@@ -12,6 +12,12 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer> {
     /** Distance measure. */
     private DistanceMeasure measure;
 
+    /**
+     * Constructor that creates FCM model by centers and measure
+     *
+     * @param centers array of centers
+     * @param measure distance measure
+     */
     public FuzzyCMeansModel(Vector[] centers, DistanceMeasure measure) {
         this.centers = Arrays.copyOf(centers, centers.length);
         this.measure = measure;
