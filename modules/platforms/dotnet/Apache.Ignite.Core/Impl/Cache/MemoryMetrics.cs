@@ -24,7 +24,9 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Memory metrics.
     /// </summary>
+#pragma warning disable 618
     internal class MemoryMetrics : IMemoryMetrics
+#pragma warning restore 618
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MemoryMetrics"/> class.

@@ -22,8 +22,8 @@ import java.util.Arrays;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +63,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         if (client)
             cfg.setClientMode(true);
@@ -77,7 +77,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         configure(dbCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -149,9 +149,9 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mCfg MemoryConfiguration.
+     * @param mCfg DataStorageConfiguration.
      */
-    protected void configure(MemoryConfiguration mCfg){
+    protected void configure(DataStorageConfiguration mCfg){
         // No-op.
     }
 

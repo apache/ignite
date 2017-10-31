@@ -24,10 +24,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsInputStream;
@@ -396,14 +396,14 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             @Override public void apply(IgniteConfiguration cfg) {
                 String memPlcName = "igfsDataMemPlc";
 
-                cfg.setMemoryConfiguration(new MemoryConfiguration().setMemoryPolicies(
-                    new MemoryPolicyConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
 
                 FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];
 
-                igfsCfg.getDataCacheConfiguration().setMemoryPolicyName(memPlcName);
+                igfsCfg.getDataCacheConfiguration().setDataRegionName(memPlcName);
 
-                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setMemoryPolicyName(memPlcName));
+                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setDataRegionName(memPlcName));
             }
         };
 

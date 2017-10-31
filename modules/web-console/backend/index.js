@@ -122,8 +122,8 @@ const migrate = (dbConnectionUri, group, migrationsPath) => {
         });
 };
 
-injector('settings')
-    .then(({mongoUrl}) => {
+Promise.all([injector('settings'), injector('mongo')])
+    .then(([{mongoUrl}]) => {
         return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'))
             .then(() => migrate(mongoUrl, 'Ignite Modules', path.join(igniteModules, 'migrations')));
     })

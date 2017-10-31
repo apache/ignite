@@ -40,7 +40,8 @@ public class RowStore {
     /** */
     protected final CacheObjectContext coctx;
 
-
+    /** */
+    private final boolean persistenceEnabled;
 
     /**
      * @param grp Cache group.
@@ -54,7 +55,9 @@ public class RowStore {
 
         ctx = grp.shared();
         coctx = grp.cacheObjectContext();
-        pageMem = grp.memoryPolicy().pageMemory();
+        pageMem = grp.dataRegion().pageMemory();
+
+        persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
     }
 
     /**
@@ -63,13 +66,18 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
-        ctx.database().checkpointReadLock();
 
-        try {
+        if (!persistenceEnabled)
             freeList.removeDataRowByLink(link);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
+        else {
+            ctx.database().checkpointReadLock();
+
+            try {
+                freeList.removeDataRowByLink(link);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -78,13 +86,17 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
-
-        try {
+        if (!persistenceEnabled)
             freeList.insertDataRow(row);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
+        else {
+            ctx.database().checkpointReadLock();
+
+            try {
+                freeList.insertDataRow(row);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
     }
 
