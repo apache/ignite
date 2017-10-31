@@ -35,7 +35,7 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfExists(SqlLexer lex) {
-        SqlParserToken token = lex.lookAhead();
+        SqlLexerToken token = lex.lookAhead();
 
         if (matchesKeyword(token, IF)) {
             lex.shift();
@@ -55,7 +55,7 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfNotExists(SqlLexer lex) {
-        SqlParserToken token = lex.lookAhead();
+        SqlLexerToken token = lex.lookAhead();
 
         if (matchesKeyword(token, IF)) {
             lex.shift();
@@ -135,7 +135,7 @@ public class SqlParserUtils {
 
             String first = lex.token();
 
-            SqlParserToken nextToken = lex.lookAhead();
+            SqlLexerToken nextToken = lex.lookAhead();
 
             if (nextToken.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift();
@@ -157,7 +157,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isVaildIdentifier(SqlParserToken token) {
+    public static boolean isVaildIdentifier(SqlLexerToken token) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();
@@ -186,7 +186,7 @@ public class SqlParserUtils {
      * @param expKeyword Expected keyword.
      * @return {@code True} if matches.
      */
-    public static boolean matchesKeyword(SqlParserToken token, String expKeyword) {
+    public static boolean matchesKeyword(SqlLexerToken token, String expKeyword) {
         return token.tokenType() == SqlLexerTokenType.DEFAULT && expKeyword.equals(token.token());
     }
 
@@ -223,7 +223,7 @@ public class SqlParserUtils {
      * @param msg Message.
      * @return Exception.
      */
-    public static SqlParseException error(SqlParserToken token, String msg) {
+    public static SqlParseException error(SqlLexerToken token, String msg) {
         return new SqlParseException(token.sql(), token.tokenPosition(), msg);
     }
 
@@ -243,7 +243,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @param keyword Keyword.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlParserToken token, String keyword) {
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String keyword) {
         if (matchesKeyword(token, keyword))
             throw error(token, "Unsupported keyword: " + token.token());
     }
@@ -254,7 +254,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @param keywords Keywords.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlParserToken token, String... keywords) {
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String... keywords) {
         if (F.isEmpty(keywords))
             return;
 

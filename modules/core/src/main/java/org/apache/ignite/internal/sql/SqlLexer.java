@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql;
 /**
  * SQL lexer.
  */
-public class SqlLexer implements SqlParserToken {
+public class SqlLexer implements SqlLexerToken {
     /** Original input. */
     private final String sql;
 
@@ -61,7 +61,7 @@ public class SqlLexer implements SqlParserToken {
      *
      * @return Next token.
      */
-    public SqlParserToken lookAhead() {
+    public SqlLexerToken lookAhead() {
         int pos0  = pos;
         String token0 = token;
         int tokenPos0 = tokenPos;
@@ -69,9 +69,9 @@ public class SqlLexer implements SqlParserToken {
 
         try {
             if (shift())
-                return new SqlLookAheadParserToken(sql, token, tokenPos, tokenTyp);
+                return new SqlLexerLookAheadToken(sql, token, tokenPos, tokenTyp);
             else
-                return new SqlLookAheadParserToken(sql, null, tokenPos, SqlLexerTokenType.EOF);
+                return new SqlLexerLookAheadToken(sql, null, tokenPos, SqlLexerTokenType.EOF);
         }
         finally {
             pos = pos0;

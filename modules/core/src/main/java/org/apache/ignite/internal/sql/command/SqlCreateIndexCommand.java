@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlParserToken;
+import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -165,7 +165,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
         String name = parseIdentifier(lex);
         boolean desc = false;
 
-        SqlParserToken nextToken = lex.lookAhead();
+        SqlLexerToken nextToken = lex.lookAhead();
 
         if (matchesKeyword(nextToken, ASC) || matchesKeyword(nextToken, DESC)) {
             lex.shift();

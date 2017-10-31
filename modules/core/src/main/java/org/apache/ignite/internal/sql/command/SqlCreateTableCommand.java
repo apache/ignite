@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlParserToken;
+import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -177,7 +177,7 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseColumnOrConstraint(SqlLexer lex) {
-        SqlParserToken next = lex.lookAhead();
+        SqlLexerToken next = lex.lookAhead();
 
         if (next.tokenType() == SqlLexerTokenType.EOF)
             throw errorUnexpectedToken(lex, PRIMARY, "[column definition]");
@@ -242,7 +242,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                     break;
 
                 case DOUBLE: {
-                    SqlParserToken next = lex.lookAhead();
+                    SqlLexerToken next = lex.lookAhead();
 
                     if (matchesKeyword(next, PRECISION))
                         lex.shift();
@@ -327,7 +327,7 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (col != null) {
                 addColumn(lex, col);
 
-                SqlParserToken next = lex.lookAhead();
+                SqlLexerToken next = lex.lookAhead();
 
                 if (matchesKeyword(next, PRIMARY)) {
                     if (pkColNames != null)
@@ -396,7 +396,7 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @return Precision.
      */
     private static int parseStringPrecision(SqlLexer lex) {
-        SqlParserToken next = lex.lookAhead();
+        SqlLexerToken next = lex.lookAhead();
 
         int res = Integer.MAX_VALUE;
 

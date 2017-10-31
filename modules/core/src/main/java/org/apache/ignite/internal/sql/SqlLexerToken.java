@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql;
 /**
  * SQL parser token interface.
  */
-public interface SqlParserToken {
+public interface SqlLexerToken {
     /**
      * @return Original SQL.
      */

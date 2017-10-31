@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql;
 /**
  * Plain immutable look-ahead parser token.
  */
-public class SqlLookAheadParserToken implements SqlParserToken {
+public class SqlLexerLookAheadToken implements SqlLexerToken {
     /** SQL. */
     private final String sql;
 
@@ -41,7 +41,7 @@ public class SqlLookAheadParserToken implements SqlParserToken {
      * @param tokenPos Token position.
      * @param tokenTyp Token type.
      */
-    public SqlLookAheadParserToken(String sql, String token, int tokenPos, SqlLexerTokenType tokenTyp) {
+    public SqlLexerLookAheadToken(String sql, String token, int tokenPos, SqlLexerTokenType tokenTyp) {
         this.sql = sql;
         this.token = token;
         this.tokenPos = tokenPos;
