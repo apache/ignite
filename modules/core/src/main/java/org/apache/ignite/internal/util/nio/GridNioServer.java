@@ -241,7 +241,10 @@ public class GridNioServer<T> {
 
         if (port != -1) {
             // Once bind, we will not change the port in future.
-            Selector selector = createSelector(locAddr = new InetSocketAddress(addr, port)); // fast fail in case the address is already in use.
+            locAddr = new InetSocketAddress(addr, port);
+
+            // fast fail in case the address is already in use.
+            Selector selector = createSelector(locAddr);
 
             long balancePeriod = IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, 5000);
 
@@ -259,7 +262,8 @@ public class GridNioServer<T> {
                 }
             }
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker<>(this, igniteInstanceName, "nio-acceptor", locAddr, selector, balancer0, tcpNoDelay, sockSndBuf, sockRcvBuf, log));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker<>(this, igniteInstanceName,
+                "nio-acceptor", locAddr, selector, balancer0, tcpNoDelay, sockSndBuf, sockRcvBuf, log));
         }
         else {
             locAddr = null;
