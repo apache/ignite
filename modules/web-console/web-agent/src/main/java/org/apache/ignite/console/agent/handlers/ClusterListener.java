@@ -21,17 +21,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -43,11 +46,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
@@ -72,15 +75,6 @@ public class ClusterListener implements AutoCloseable {
     /** JSON object mapper. */
     private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
-    /** Latest topology snapshot. */
-    private TopologySnapshot top;
-
-    /** */
-    private final WatchTask watchTask = new WatchTask();
-
-    /** */
-    private final BroadcastTask broadcastTask = new BroadcastTask();
-
     /** */
     private static final IgniteClosure<GridClientNodeBean, UUID> NODE2ID = new IgniteClosure<GridClientNodeBean, UUID>() {
         @Override public UUID apply(GridClientNodeBean n) {
@@ -104,10 +98,7 @@ public class ClusterListener implements AutoCloseable {
     };
 
     /** */
-    private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
-
-    /** */
-    private ScheduledFuture<?> refreshTask;
+    private AgentConfiguration cfg;
 
     /** */
     private Socket client;
@@ -115,11 +106,30 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private RestExecutor restExecutor;
 
+    /** */
+    private String sesTok;
+
+    /** */
+    private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
+
+    /** */
+    private ScheduledFuture<?> refreshTask;
+
+    /** Latest topology snapshot. */
+    private TopologySnapshot top;
+
+    /** */
+    private final WatchTask watchTask = new WatchTask();
+
+    /** */
+    private final BroadcastTask broadcastTask = new BroadcastTask();
+
     /**
      * @param client Client.
      * @param restExecutor Client.
      */
-    public ClusterListener(Socket client, RestExecutor restExecutor) {
+    public ClusterListener(AgentConfiguration cfg, Socket client, RestExecutor restExecutor) {
+        this.cfg = cfg;
         this.client = client;
         this.restExecutor = restExecutor;
     }
@@ -246,12 +256,44 @@ public class ClusterListener implements AutoCloseable {
         }
     }
 
+    private boolean hasCredentials() {
+        return !(F.isEmpty(this.cfg.nodeLogin()) || F.isEmpty(this.cfg.nodePassword()));
+    }
+
+    private RestResult safeSendRequest(Map<String, Object> params) throws IOException {
+        if (!F.isEmpty(sesTok))
+            params.put("sessionToken", sesTok);
+
+        RestResult res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
+
+        if (res.getStatus() == STATUS_AUTH_FAILED && this.hasCredentials()) {
+            params.put("ignite.login", this.cfg.nodeLogin());
+            params.put("ignite.password", this.cfg.nodePassword());
+
+            res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
+
+            sesTok = res.getSessionToken();
+        }
+
+        return res;
+    }
+
+    private RestResult topology(boolean full) throws IOException {
+        Map<String, Object> params = U.newHashMap(3);
+
+        params.put("cmd", "top");
+        params.put("attr", true);
+        params.put("mtr", full);
+
+        return this.safeSendRequest(params);
+    }
+
     /** */
     private class WatchTask implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                RestResult res = restExecutor.topology(false, false);
+                RestResult res = topology(false);
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:
@@ -285,13 +327,13 @@ public class ClusterListener implements AutoCloseable {
             }
         }
     }
-    
+
     /** */
     private class BroadcastTask implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                RestResult res = restExecutor.topology(false, true);
+                RestResult res = topology(true);
 
                 switch (res.getStatus()) {
                     case STATUS_SUCCESS:

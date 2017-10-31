@@ -28,20 +28,17 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
@@ -55,7 +52,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
- * API to translate REST requests to Ignite cluster.
+ * API to translate REST requests to Ignite node.
  */
 public class RestExecutor implements AutoCloseable {
     /** */
@@ -67,15 +64,10 @@ public class RestExecutor implements AutoCloseable {
     /** */
     private final OkHttpClient httpClient;
 
-    /** Node URL. */
-    private String nodeUrl;
-
     /**
      * Default constructor.
      */
-    public RestExecutor(String nodeUrl) {
-        this.nodeUrl = nodeUrl;
-
+    public RestExecutor() {
         Dispatcher dispatcher = new Dispatcher();
         
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
@@ -98,29 +90,40 @@ public class RestExecutor implements AutoCloseable {
         }
     }
 
-    /** */
-    private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) throws IOException {
-        if (demo && AgentClusterDemo.getDemoUrl() == null) {
-            try {
-                AgentClusterDemo.tryStart().await();
-            }
-            catch (InterruptedException ignore) {
-                throw new IllegalStateException("Failed to send request because of embedded node for demo mode is not started yet.");
+    private RestResult parseResponse(Response res) throws IOException {
+        if (res.isSuccessful()) {
+            RestResponseHolder holder = MAPPER.readValue(res.body().byteStream(), RestResponseHolder.class);
+
+            int status = holder.getSuccessStatus();
+
+            switch (status) {
+                case STATUS_SUCCESS:
+                    return RestResult.success(holder.getResponse(), holder.getSessionToken());
+
+                default:
+                    return RestResult.fail(status, holder.getError());
             }
         }
 
-        String url = demo ? AgentClusterDemo.getDemoUrl() : nodeUrl;
+        if (res.code() == 401)
+            return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
+                "Please check agent\'s login and password or node port.");
 
+        if (res.code() == 404)
+            return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
+
+        return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + res.message());
+    }
+
+    /** */
+    public RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
         HttpUrl httpUrl = HttpUrl.parse(url);
 
         if (httpUrl == null)
             throw new IllegalStateException("Failed to send request because of node URL is invalid: " + url);
 
-        HttpUrl.Builder urlBuilder = httpUrl.newBuilder();
-
-        if (path != null)
-            urlBuilder.addPathSegment(path);
+        HttpUrl.Builder urlBuilder = httpUrl.newBuilder()
+            .addPathSegment("ignite");
 
         final Request.Builder reqBuilder = new Request.Builder();
 
@@ -130,49 +133,20 @@ public class RestExecutor implements AutoCloseable {
                     reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
         }
 
-        if (body != null) {
-            MediaType contentType = MediaType.parse("text/plain");
+        FormBody.Builder bodyParams = new FormBody.Builder();
 
-            reqBuilder.post(RequestBody.create(contentType, body));
-        }
-        else {
-            FormBody.Builder formBody = new FormBody.Builder();
-
-            if (params != null) {
-                for (Map.Entry<String, Object> entry : params.entrySet()) {
-                    if (entry.getValue() != null)
-                        formBody.add(entry.getKey(), entry.getValue().toString());
-                }
+        if (params != null) {
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                if (entry.getValue() != null)
+                    bodyParams.add(entry.getKey(), entry.getValue().toString());
             }
-
-            reqBuilder.post(formBody.build());
         }
-        
-        reqBuilder.url(urlBuilder.build());
+
+        reqBuilder.url(urlBuilder.build())
+            .post(bodyParams.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
-            if (resp.isSuccessful()) {
-                RestResponseHolder res = MAPPER.readValue(resp.body().byteStream(), RestResponseHolder.class);
-
-                int status = res.getSuccessStatus();
-
-                switch (status) {
-                    case STATUS_SUCCESS:
-                        return RestResult.success(res.getResponse());
-
-                    default:
-                        return RestResult.fail(status, res.getError());
-                }
-            }
-
-            if (resp.code() == 401)
-                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
-                    "Please check agent\'s login and password or node port.");
-
-            if (resp.code() == 404)
-                return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
-
-            return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + resp.message());
+            return parseResponse(resp);
         }
         catch (ConnectException ignored) {
             LT.warn(log, "Failed connect to cluster. " +
@@ -181,43 +155,6 @@ public class RestExecutor implements AutoCloseable {
 
             throw new ConnectException("Failed connect to cluster [url=" + urlBuilder + ", parameters=" + params + "]");
         }
-    }
-
-    /**
-     * @param demo Is demo node request.
-     * @param path Path segment.
-     * @param params Params.
-     * @param headers Headers.
-     * @param body Body.
-     */
-    public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        Map<String, Object> headers, String body) {
-        if (log.isDebugEnabled())
-            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]");
-
-        try {
-            return sendRequest(demo, path, params, headers, body);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
-                ", parameters=" + params + "]", e);
-
-            return RestResult.fail(404, e.getMessage());
-        }
-    }
-
-    /**
-     * @param demo Is demo node request.
-     */
-    public RestResult topology(boolean demo, boolean full) throws IOException {
-        Map<String, Object> params = new HashMap<>(3);
-
-        params.put("cmd", "top");
-        params.put("attr", true);
-        params.put("mtr", full);
-
-        return sendRequest(demo, "ignite", params, null, null);
     }
 
     /**
@@ -234,7 +171,7 @@ public class RestExecutor implements AutoCloseable {
         private String res;
 
         /** Session token string representation. */
-        private String sesTokStr;
+        private String sesTok;
 
         /**
          * @return {@code True} if this request was successful.
@@ -283,14 +220,14 @@ public class RestExecutor implements AutoCloseable {
          * @return String representation of session token.
          */
         public String getSessionToken() {
-            return sesTokStr;
+            return sesTok;
         }
 
         /**
          * @param sesTokStr String representation of session token.
          */
         public void setSessionToken(String sesTokStr) {
-            this.sesTokStr = sesTokStr;
+            this.sesTok = sesTokStr;
         }
     }
 

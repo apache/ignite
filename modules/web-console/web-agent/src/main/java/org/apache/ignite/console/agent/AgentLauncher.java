@@ -368,8 +368,8 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutor(cfg.nodeUri());
-             ClusterListener clusterLsnr = new ClusterListener(client, restExecutor)) {
+        try (RestExecutor restExecutor = new RestExecutor();
+             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
             Emitter.Listener onConnect = new Emitter.Listener() {
                 @Override public void call(Object... args) {
                     log.info("Connection established.");
@@ -453,7 +453,7 @@ public class AgentLauncher {
             };
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
-            RestListener restHnd = new RestListener(restExecutor);
+            RestListener restHnd = new RestListener(cfg, restExecutor);
 
             final CountDownLatch latch = new CountDownLatch(1);
 

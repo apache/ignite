@@ -62,6 +62,16 @@ public class AgentConfiguration {
         "      Default value: " + DFLT_NODE_URI)
     private String nodeUri;
 
+    /** */
+    @Parameter(names = {"-nl", "--node-login"},
+        description = "Login used for connect to Ignite node REST server")
+    private String nodeLogin;
+
+    /** */
+    @Parameter(names = {"-np", "--node-password"},
+        description = "Password used for connect to Ignite node REST server")
+    private String nodePwd;
+
     /** URI for connect to Ignite demo node REST server */
     private String demoNodeUri;
 
@@ -127,6 +137,34 @@ public class AgentConfiguration {
      */
     public void nodeUri(String nodeUri) {
         this.nodeUri = nodeUri;
+    }
+
+    /**
+     * @return Node login.
+     */
+    public String nodeLogin() {
+        return nodeLogin;
+    }
+
+    /**
+     * @param nodeLogin New node login.
+     */
+    public void nodeLogin(String nodeLogin) {
+        this.nodeLogin = nodeLogin;
+    }
+
+    /**
+     * @return Node password.
+     */
+    public String nodePassword() {
+        return nodePwd;
+    }
+
+    /**
+     * @param nodePwd New node password.
+     */
+    public void nodePassword(String nodePwd) {
+        this.nodePwd = nodePwd;
     }
 
     /**

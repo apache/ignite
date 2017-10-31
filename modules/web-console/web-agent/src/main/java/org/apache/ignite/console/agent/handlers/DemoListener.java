@@ -76,42 +76,42 @@ public class DemoListener {
     public Emitter.Listener start() {
         return new Emitter.Listener() {
             @Override public void call(final Object... args) {
-                final Ack demoStartCb = safeCallback(args);
-
-                final long timeout = args.length > 1  && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
-
-                if (refreshTask != null)
-                    refreshTask.cancel(true);
-
-                final CountDownLatch latch = AgentClusterDemo.tryStart();
-
-                pool.schedule(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            U.await(latch);
-
-                            demoStartCb.call();
-
-                            refreshTask = pool.scheduleWithFixedDelay(new Runnable() {
-                                @Override public void run() {
-                                    try {
-                                        RestResult top = restExecutor.topology(true, true);
-
-                                        client.emit(EVENT_DEMO_TOPOLOGY, toJSON(top));
-                                    }
-                                    catch (IOException e) {
-                                        log.info("Lost connection to the demo cluster", e);
-
-                                        stop().call(); // TODO WTF????
-                                    }
-                                }
-                            }, 0L, timeout, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Exception e) {
-                            demoStartCb.call(e);
-                        }
-                    }
-                }, 0, TimeUnit.MILLISECONDS);
+//                final Ack demoStartCb = safeCallback(args);
+//
+//                final long timeout = args.length > 1  && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
+//
+//                if (refreshTask != null)
+//                    refreshTask.cancel(true);
+//
+//                final CountDownLatch latch = AgentClusterDemo.tryStart();
+//
+//                pool.schedule(new Runnable() {
+//                    @Override public void run() {
+//                        try {
+//                            U.await(latch);
+//
+//                            demoStartCb.call();
+//
+//                            refreshTask = pool.scheduleWithFixedDelay(new Runnable() {
+//                                @Override public void run() {
+////                                    try {
+////                                        RestResult top = restExecutor.topology(true, true);
+//
+////                                        client.emit(EVENT_DEMO_TOPOLOGY, toJSON(top));
+//                                    }
+////                                    catch (IOException e) {
+////                                        log.info("Lost connection to the demo cluster", e);
+////
+////                                        stop().call(); // TODO WTF????
+////                                    }
+//                                }
+//                            }, 0L, timeout, TimeUnit.MILLISECONDS);
+//                        }
+//                        catch (Exception e) {
+//                            demoStartCb.call(e);
+//                        }
+//                    }
+//                }, 0, TimeUnit.MILLISECONDS);
             }
         };
     }
