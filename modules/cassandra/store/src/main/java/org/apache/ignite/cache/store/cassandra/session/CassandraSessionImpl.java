@@ -267,15 +267,12 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // Remembering any of last errors.
-                if (tblAbsenceEx != null) {
+                if (tblAbsenceEx != null)
                     error = tblAbsenceEx;
-                }
-                else if (hostsAvailEx != null) {
+                else if (hostsAvailEx != null)
                     error = hostsAvailEx;
-                }
-                else if (prepStatEx != null) {
+                else if (prepStatEx != null)
                     error = prepStatEx;
-                }
                 
                 // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
