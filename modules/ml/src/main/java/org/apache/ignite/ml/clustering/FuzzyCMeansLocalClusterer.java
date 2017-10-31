@@ -75,7 +75,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             throw new MathIllegalArgumentException("The number of points and the number of weights are not equal");
         }
 
-        if (k <= 2) {
+        if (k < 2) {
             throw new MathIllegalArgumentException("The number of clusters is less than 2");
         }
 

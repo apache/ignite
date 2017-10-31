@@ -23,6 +23,11 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer> {
         this.measure = measure;
     }
 
+    /** Distance measure used while clusterization */
+    public DistanceMeasure distanceMeasure() {
+        return measure;
+    }
+
     /** @inheritDoc */
     @Override public int clustersCount() {
         return centers.length;

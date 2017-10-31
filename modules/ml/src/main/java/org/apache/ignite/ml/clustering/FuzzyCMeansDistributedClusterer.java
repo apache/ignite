@@ -86,7 +86,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
             throws MathIllegalArgumentException, ConvergenceException {
         GridArgumentCheck.notNull(points, "points");
 
-        if (k <= 2) {
+        if (k < 2) {
             throw new MathIllegalArgumentException("The number of clusters is less than 2");
         }
 
