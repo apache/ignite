@@ -20,7 +20,10 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.CASCADE;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.RESTRICT;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 
@@ -67,7 +70,16 @@ public class SqlDropTableCommand implements SqlCommand {
         schemaName = idxQName.schemaName();
         tblName = idxQName.name();
 
+        parseRestrictCascade(lex);
+
         return this;
+    }
+
+    /**
+     * @param lex Lexer.
+     */
+    private static void parseRestrictCascade(SqlLexer lex) {
+        errorUnsupportedIfMatchesKeyword(lex.lookAhead(), CASCADE, RESTRICT);
     }
 
     /** {@inheritDoc} */

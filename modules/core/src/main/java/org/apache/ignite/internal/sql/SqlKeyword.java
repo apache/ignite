@@ -42,14 +42,17 @@ public class SqlKeyword {
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
 
-    /** Keyword: CREATE. */
-    public static final String CREATE = "CREATE";
+    /** Keyword: CASCADE. */
+    public static final String CASCADE = "CASCADE";
 
     /** Keyword: CHAR. */
     public static final String CHAR = "CHAR";
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: CREATE. */
+    public static final String CREATE = "CREATE";
 
     /** Keyword: DATE. */
     public static final String DATE = "DATE";
@@ -146,6 +149,9 @@ public class SqlKeyword {
 
     /** Keyword: REAL. */
     public static final String REAL = "REAL";
+
+    /** Keyword: RESTRICT. */
+    public static final String RESTRICT = "RESTRICT";
 
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";

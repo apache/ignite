@@ -20,9 +20,11 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.CASCADE;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+import static org.apache.ignite.internal.sql.SqlKeyword.RESTRICT;
 
 /**
  * Parser utility methods.
@@ -187,10 +189,7 @@ public class SqlParserUtils {
      * @return {@code True} if matches.
      */
     public static boolean matchesKeyword(SqlParserToken token, String expKeyword) {
-        if (token.tokenType() != SqlLexerTokenType.DEFAULT)
-            return false;
-
-        return expKeyword.equals(token.token());
+        return token.tokenType() == SqlLexerTokenType.DEFAULT && expKeyword.equals(token.token());
     }
 
     /**
@@ -238,6 +237,31 @@ public class SqlParserUtils {
      */
     public static SqlParseException errorUnexpectedToken(SqlLexer lex) {
         return errorUnexpectedToken0(lex);
+    }
+
+    /**
+     * Throw unsupported token exception if passed keyword is found.
+     *
+     * @param token Token.
+     * @param keyword Keyword.
+     */
+    public static void errorUnsupportedIfMatchesKeyword(SqlParserToken token, String keyword) {
+        if (matchesKeyword(token, keyword))
+            throw error(token, "Unsupported keyword: " + token.token());
+    }
+
+    /**
+     * Throw unsupported token exception if one of passed keywords is found.
+     *
+     * @param token Token.
+     * @param keywords Keywords.
+     */
+    public static void errorUnsupportedIfMatchesKeyword(SqlParserToken token, String... keywords) {
+        if (F.isEmpty(keywords))
+            return;
+
+        for (String keyword : keywords)
+            errorUnsupportedIfMatchesKeyword(token, keyword);
     }
 
     /**
