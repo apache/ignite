@@ -1122,7 +1122,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testNoFieldsObject() throws Exception {
+    public void testBinaryObjectGettingNotExistingField() throws Exception {
         BinaryObjectBuilder builder = binaries().builder("TestObject");
 
         BinaryObject bo = builder.build();
@@ -1137,7 +1137,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testNoFieldsObjectReadCacheInit() throws Exception {
+    public void testBinaryBuilderGettingNotExistingField() throws Exception {
         BinaryObjectBuilder builder = binaries().builder("TestObject");
 
         BinaryObject bo = builder.build();

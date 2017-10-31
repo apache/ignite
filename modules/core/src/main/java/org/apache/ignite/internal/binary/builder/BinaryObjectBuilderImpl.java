@@ -17,27 +17,6 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +24,26 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -475,41 +474,42 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private void ensureReadCacheInit() {
         assert reader != null;
 
-        if (readCache == null) {
-            Map<Integer, Object> readCache = new HashMap<>();
+        if (this.readCache != null)
+            return;
 
-            if (BinaryUtils.hasSchema(flags)) {
-                int fieldIdLen = BinaryUtils.fieldIdLength(flags);
-                int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        Map<Integer, Object> readCache = new HashMap<>();
 
-                BinarySchema schema = reader.schema();
+        if (BinaryUtils.hasSchema(flags)) {
+            int fieldIdLen = BinaryUtils.fieldIdLength(flags);
+            int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
 
-                IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
+            BinarySchema schema = reader.schema();
 
-                int footerPos = footer.get1();
-                int footerEnd = footer.get2();
+            IgniteBiTuple<Integer, Integer> footer = BinaryUtils.footerAbsolute(reader, start);
 
-                int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
+            int footerPos = footer.get1();
+            int footerEnd = footer.get2();
 
-                int idx = 0;
+            int rawPos = BinaryUtils.rawOffsetAbsolute(reader, start);
 
-                while (footerPos + fieldIdLen < footerEnd) {
-                    int fieldId = schema.fieldId(idx++);
+            int idx = 0;
 
-                    IgniteBiTuple<Integer, Integer> posAndLen =
-                        fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
+            while (footerPos + fieldIdLen < footerEnd) {
+                int fieldId = schema.fieldId(idx++);
 
-                    Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
+                IgniteBiTuple<Integer, Integer> posAndLen =
+                    fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
 
-                    readCache.put(fieldId, val);
+                Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
-                    // Shift current footer position.
-                    footerPos += fieldIdLen + fieldOffsetLen;
-                }
+                readCache.put(fieldId, val);
+
+                // Shift current footer position.
+                footerPos += fieldIdLen + fieldOffsetLen;
             }
-
-            this.readCache = readCache;
         }
+
+        this.readCache = readCache;
     }
 
     /**
