@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -1347,7 +1348,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (nextCmd != null)
                 return null;
 
-            ddlProc.runDdlStatement(cmd);
+            List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
+
+            FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
+
+            ress.add(res);
+
+            return ress;
+        }
+        catch (SqlParseException e) {
+            return null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
         }
     }
 
