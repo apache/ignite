@@ -192,7 +192,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
         int attempt = 0;
         String errorMsg = "Failed to execute Cassandra " + assistant.operationName() + " operation";
-        Throwable error = new IgniteException(errorMsg);
+        Throwable error = null;
 
         RandomSleeper sleeper = newSleeper();
 
@@ -209,11 +209,11 @@ public class CassandraSessionImpl implements CassandraSession {
                 }
 
                 //clean errors info before next communication with Cassandra
+                error = null;
                 Throwable unknownEx = null;
                 Throwable tblAbsenceEx = null;
                 Throwable hostsAvailEx = null;
                 Throwable prepStatEx = null;
-                boolean retry = false;
 
                 List<Cache.Entry<Integer, ResultSetFuture>> futResults = new LinkedList<>();
 
@@ -268,15 +268,12 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 // Remembering any of last errors.
                 if (tblAbsenceEx != null) {
-                    retry = true;
                     error = tblAbsenceEx;
                 }
                 else if (hostsAvailEx != null) {
-                    retry = true;
                     error = hostsAvailEx;
                 }
                 else if (prepStatEx != null) {
-                    retry = true;
                     error = prepStatEx;
                 }
                 
@@ -311,7 +308,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // If there are no errors occurred it means that operation successfully completed and we can return.
-                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && !retry)
+                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && error == null)
                     return assistant.processedData();
 
                 if (tblAbsenceEx != null) {
@@ -345,6 +342,9 @@ public class CassandraSessionImpl implements CassandraSession {
         finally {
             decrementSessionRefs();
         }
+
+        if (error == null)
+            error = new IgniteException(errorMsg);
 
         errorMsg = "Failed to process " + (dataSize - assistant.processedCount()) +
             " of " + dataSize + " elements, during " + assistant.operationName() +
