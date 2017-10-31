@@ -115,6 +115,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1321,9 +1324,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
+    /**
+     * Try executing query using native facilities.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @return Result or {@code null} if cannot parse/process this query.
+     */
+    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
+        SqlParser parser = new SqlParser(schemaName, qry.getSql());
+
+        try {
+            SqlCommand cmd = parser.nextCommand();
+
+            // Only CREATE INDEX for now.
+            if (!(cmd instanceof SqlCreateIndexCommand))
+                return null;
+
+            // No support for multiple statements for now.
+            SqlCommand nextCmd = parser.nextCommand();
+
+            if (nextCmd != null)
+                return null;
+
+            ddlProc.runDdlStatement(cmd);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
         boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts) {
+        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
+
+        if (res != null)
+            return res;
+
         Connection c = connectionForSchema(schemaName);
 
         final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
@@ -1336,6 +1371,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
             distributedJoins, enforceJoinOrder, qry.isLocal());
+
         H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
 
         if (cachedQry != null) {
@@ -1345,14 +1381,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            List<FieldsQueryCursor<List<?>>> res = Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
+            return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
                 qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
                 twoStepQry, meta));
-
-            return res;
         }
 
-        List<FieldsQueryCursor<List<?>>> res = new ArrayList<>(1);
+        res = new ArrayList<>(1);
 
         Object[] argsOrig = qry.getArgs();
         int firstArg = 0;

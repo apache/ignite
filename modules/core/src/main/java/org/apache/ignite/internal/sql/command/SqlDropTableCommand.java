@@ -40,11 +40,14 @@ public class SqlDropTableCommand implements SqlCommand {
     /** IF EXISTS flag. */
     private boolean ifExists;
 
-    /**
-     * @return Schema name.
-     */
-    public String schemaName() {
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
         return schemaName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /**

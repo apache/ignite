@@ -70,11 +70,14 @@ public class SqlCreateIndexCommand implements SqlCommand {
     @GridToStringExclude
     private Set<String> colNames;
 
-    /**
-     * @return Schema name.
-     */
-    public String schemaName() {
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
         return schemaName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /**

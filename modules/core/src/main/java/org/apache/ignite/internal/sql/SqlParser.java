@@ -22,6 +22,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateTableCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropTableCommand;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -39,15 +40,21 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
  * SQL parser.
  */
 public class SqlParser {
+    /** Scheme name. */
+    private final String schemaName;
+
     /** Lexer. */
     private final SqlLexer lex;
 
     /**
      * Constructor.
      *
+     * @param schemaName Schema name.
      * @param sql Original SQL.
      */
-    public SqlParser(String sql) {
+    public SqlParser(@Nullable String schemaName, String sql) {
+        this.schemaName = schemaName;
+
         lex = new SqlLexer(sql);
     }
 
@@ -57,6 +64,22 @@ public class SqlParser {
      * @return Command or {@code null} if end of script is reached.
      */
     public SqlCommand nextCommand() {
+        SqlCommand cmd = nextCommand0();
+
+        if (cmd != null) {
+            if (cmd.schemaName() == null)
+                cmd.schemaName(schemaName);
+        }
+
+        return cmd;
+    }
+
+    /**
+     * Get next command.
+     *
+     * @return Command or {@code null} if end of script is reached.
+     */
+    public SqlCommand nextCommand0() {
         while (true) {
             if (!lex.shift())
                 return null;
