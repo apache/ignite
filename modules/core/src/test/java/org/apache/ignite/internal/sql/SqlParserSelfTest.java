@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.sql;
 
-public class SqlLexerTest {
-    public static void main(String[] args) {
-//        SqlLexer lex = new SqlLexer("CREATE INDEX a_idx ON PUBLIC.\"tEst\" (col1 ASC, COl2, \"coooL4\")");
-//
-//        while (lex.shift())
-//            System.out.println(lex.token() + " -> " + lex.tokenType());
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-
-        //System.out.println(new SqlParser("DROP INDEX IF EXISTS a.a;").nextCommand());
-
+/**
+ * Test for parser.
+ */
+public class SqlParserSelfTest extends GridCommonAbstractTest {
+    /**
+     * Tests for CREATE INDEX command.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCreateIndex() throws Exception {
         System.out.println(new SqlParser(null, "CREATE TABLE t (a VARCHAR, b TINYINT, PRIMARY KEY (a))").nextCommand());
     }
 }
