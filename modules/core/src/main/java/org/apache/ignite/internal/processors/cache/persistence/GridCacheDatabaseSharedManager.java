@@ -111,6 +111,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -165,8 +166,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
     private static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
-
-    private static final String METASTORE_BASELINE_TOPOLOGY_KEY = "metastoreBltKey";
 
     /** Default checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024;
@@ -326,6 +325,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private MetaStorage metaStorage;
 
+    /** */
+    private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
+
     /**
      * @param ctx Kernal context.
      */
@@ -345,6 +347,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()
         );
+
+        metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
+    }
+
+    /** */
+    private void notifyMetastorageReadyForRead() throws IgniteCheckedException {
+        for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
+            lsnr.onReadyForRead(metaStorage);
+    }
+
+    /** */
+    private void notifyMetastorageReadyForReadWrite() throws IgniteCheckedException {
+        for (MetastorageLifecycleListener lsnr : metastorageLifecycleLsnrs)
+            lsnr.onReadyForReadWrite(metaStorage);
     }
 
     /**
@@ -434,7 +450,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persStoreMetrics.wal(cctx.wal());
 
             // Here we can get data from metastorage
-            kernalCtx.state().onStateRestored(restoreBaselineTopology());
+            readMetastore();
         }
     }
 
@@ -455,9 +471,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointPageBufSize = checkpointBufferSize(cctx.kernalContext().config());
     }
 
-    @Nullable private BaselineTopology restoreBaselineTopology() throws IgniteCheckedException {
-        BaselineTopology blt = null;
-
+    private void readMetastore() throws IgniteCheckedException {
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
@@ -491,10 +505,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             applyLastUpdates(status, true);
 
-            byte[] value = metaStorage.getData(METASTORE_BASELINE_TOPOLOGY_KEY);
-
-            if (value != null)
-                blt = new JdkMarshaller().unmarshal(value, getClass().getClassLoader());
+            notifyMetastorageReadyForRead();
 
             metaStorage = null;
 
@@ -502,20 +513,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
-        }
-
-        return blt;
-    }
-
-    private void saveBaselineTopology(@Nullable BaselineTopology blt) throws IgniteCheckedException {
-        assert metaStorage != null;
-
-        if (blt == null)
-            metaStorage.removeData(METASTORE_BASELINE_TOPOLOGY_KEY);
-        else {
-            byte[] bytes = new JdkMarshaller().marshal(blt);
-
-            metaStorage.putData(METASTORE_BASELINE_TOPOLOGY_KEY, bytes);
         }
     }
 
@@ -594,9 +591,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             metaStorage.init(this);
 
-            BaselineTopology blt = ctx.state().clusterState().baselineTopology();
-
-            saveBaselineTopology(blt);
+            notifyMetastorageReadyForReadWrite();
         }
     }
 
@@ -716,10 +711,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.wal().resumeLogging(restore);
 
             cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
-
-            BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
-
-            saveBaselineTopology(blt);
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);

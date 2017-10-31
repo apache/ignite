@@ -52,11 +52,17 @@ public class BaselineTopology implements Serializable {
     private final List<Long> baselineHistory;
 
     /**
-     * @param nodeMap Map of node consistent ID to it's attrubites.
+     * @param nodeMap Map of node consistent ID to it's attributes.
      */
     public BaselineTopology(Map<Object, Map<String, Object>> nodeMap) {
         this.nodeMap = nodeMap;
+
+        for (Object o : nodeMap.keySet())
+            topologyHash += (long) o.hashCode();
+
         baselineHistory = new ArrayList<>();
+
+        baselineHistory.add(topologyHash);
     }
 
     /**
@@ -187,22 +193,27 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
-     * @param blt Blt.
+     * @param blt BaselineTopology to check.
+     * @return {@code True} if current BaselineTopology is compatible (the same or a newer one) with passed in Blt.
      */
-    public boolean isCompatibleWith(BaselineTopology blt) {
-        return blt == null || topologyHash == blt.topologyHash;
+    boolean isCompatibleWith(BaselineTopology blt) {
+        return blt == null || (topologyHash == blt.topologyHash) || baselineHistory.contains(blt.topologyHash);
+    }
+
+    boolean isSuccessorOf(BaselineTopology blt) {
+        return blt == null || (baselineHistory.contains(blt.topologyHash) && topologyHash != blt.topologyHash);
     }
 
     /**
      * @param nodes Nodes.
      */
-    public boolean updateHistory(Collection<ClusterNode> nodes) {
+    boolean updateHistory(Collection<ClusterNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
         if (topologyHash != newTopHash) {
             topologyHash = newTopHash;
 
-            baselineHistory.add(topologyHash);
+            baselineHistory.add(newTopHash);
 
             return true;
         }

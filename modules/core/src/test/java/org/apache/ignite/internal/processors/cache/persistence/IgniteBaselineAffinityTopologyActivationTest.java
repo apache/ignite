@@ -84,7 +84,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      * Verifies scenario when parts of grid were activated independently they are not allowed to join
      * into the same grid again (due to risks of incompatible data modifications).
      */
-    public void testBaselineTopologyValidation() throws Exception {
+    public void testIncompatibleBltNodeIsProhibitedToJoinCluster() throws Exception {
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
         startGridWithConsistentId("C").active(true);
@@ -103,10 +103,14 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         startGridWithConsistentId("A");
         startGridWithConsistentId("B");
 
+        boolean expectedExceptionThrown = false;
+
         try {
             startGridWithConsistentId("C");
         }
         catch (IgniteCheckedException e) {
+            expectedExceptionThrown = true;
+
             if (e.getCause() != null && e.getCause().getCause() != null) {
                 Throwable rootCause = e.getCause().getCause();
 
@@ -116,6 +120,29 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             else
                 throw e;
         }
+
+        assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
+    }
+
+    /**
+     * Test verifies that node with out-of-data but still compatible Baseline Topology is allowed to join the cluster.
+     */
+    public void testNodeWithOldBltIsAllowedToJoinCluster() throws Exception {
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        startGridWithConsistentId("C").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+
+        startGridWithConsistentId("C");
     }
 
     /** */

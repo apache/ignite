@@ -48,9 +48,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -75,7 +77,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  *
  */
-public class GridClusterStateProcessorImpl extends GridProcessorAdapter implements GridClusterStateProcessor {
+public class GridClusterStateProcessorImpl extends GridProcessorAdapter implements GridClusterStateProcessor, MetastorageLifecycleListener {
+    /** */
+    private static final String METASTORE_BASELINE_TOPOLOGY_KEY = "metastoreBltKey";
+
     /** */
     private volatile DiscoveryDataClusterState globalState;
 
@@ -92,6 +97,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     /** Shared context. */
     @GridToStringExclude
     private GridCacheSharedContext<?, ?> sharedCtx;
+
+    /** Fully initialized metastorage. */
+    @GridToStringExclude
+    private ReadWriteMetastorage metastorage;
 
     /** Listener. */
     private final GridLocalEventListener lsr = new GridLocalEventListener() {
@@ -119,6 +128,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
      */
     public GridClusterStateProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
     /** {@inheritDoc} */
@@ -140,6 +151,29 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
         else
             return globalState.active();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+        BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_BASELINE_TOPOLOGY_KEY);
+
+        onStateRestored(blt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        this.metastorage = metastorage;
+
+        saveBaselineTopology(globalState.baselineTopology());
+    }
+
+    /**
+     * @param blt Blt.
+     */
+    private void saveBaselineTopology(BaselineTopology blt) throws IgniteCheckedException {
+        assert metastorage != null;
+
+        metastorage.write(METASTORE_BASELINE_TOPOLOGY_KEY, blt);
     }
 
     /** {@inheritDoc} */
@@ -780,7 +814,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
     }
 
-    @Override public void onStateRestored(BaselineTopology blt) {
+    /** */
+    private void onStateRestored(BaselineTopology blt) {
         DiscoveryDataClusterState state = globalState;
 
         if (!state.active() && !state.transition() && state.baselineTopology() == null) {

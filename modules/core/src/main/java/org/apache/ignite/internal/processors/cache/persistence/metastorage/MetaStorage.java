@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -55,7 +60,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * General purpose key-value local-only storage.
  */
-public class MetaStorage implements DbCheckpointListener {
+public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, ReadWriteMetastorage {
     /** */
     public static final String METASTORAGE_CACHE_NAME = "MetaStorage";
 
@@ -96,6 +101,9 @@ public class MetaStorage implements DbCheckpointListener {
     private Map<String, byte[]> lastUpdates;
 
     /** */
+    private final Marshaller marshaller = new JdkMarshaller();
+
+    /** */
     public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion dataRegion, DataRegionMetricsImpl regionMetrics,
         boolean readOnly) {
         this.wal = wal;
@@ -126,6 +134,32 @@ public class MetaStorage implements DbCheckpointListener {
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Serializable read(String key) throws IgniteCheckedException {
+        byte[] data = getData(key);
+
+        Object result = null;
+
+        if (data != null)
+            result = marshaller.unmarshal(data, getClass().getClassLoader());
+
+        return (Serializable) result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
+        assert val != null;
+
+        byte[] data = marshaller.marshal(val);
+
+        putData(key, data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void remove(@NotNull String key) throws IgniteCheckedException {
+        removeData(key);
     }
 
     /** */
