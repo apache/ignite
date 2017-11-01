@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.apache.ignite.tools.Java9Bridge;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -170,7 +171,8 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 String corePathTemplate = "modules/core/target/classes";
                 String coreTestsPathTemplate = "modules/core/target/test-classes";
 
-                for (URL url : ldr.getURLs()) {
+
+                for (URL url : Java9Bridge.getUrls(ldr)) {
                     String path = url.getPath();
 
                     if (!path.contains(corePathTemplate) && !path.contains(coreTestsPathTemplate))

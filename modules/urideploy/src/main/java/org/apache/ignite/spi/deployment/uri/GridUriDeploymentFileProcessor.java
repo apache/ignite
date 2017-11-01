@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.util.Java9Bridge;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.deployment.uri.UriDeploymentSpi.XML_DESCRIPTOR_PATH;
@@ -293,14 +293,12 @@ final class GridUriDeploymentFileProcessor {
         assert clsLdr != null;
         assert log != null;
 
-        if (clsLdr instanceof URLClassLoader) {
-            URLClassLoader clsLdr0 = (URLClassLoader)clsLdr;
 
-            U.close(clsLdr0, log);
+           Java9Bridge.close(clsLdr, log);
 
             try {
-                URL url = clsLdr0.getURLs()[0];
 
+                URL url= Java9Bridge.getUrls(clsLdr)[0];
                 File dir = new File(url.toURI());
 
                 U.delete(dir);
@@ -314,7 +312,7 @@ final class GridUriDeploymentFileProcessor {
             catch (Exception e) {
                 U.error(log, "Failed to cleanup unit [clsLdr=" + clsLdr + ']', e);
             }
-        }
+
     }
 
     /**

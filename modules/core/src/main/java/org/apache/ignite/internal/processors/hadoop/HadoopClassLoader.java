@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.util.Java9Bridge;
 import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -60,10 +61,10 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
-    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
+    private static final ClassLoader APP_CLS_LDR = HadoopClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> appJars = F.asList(APP_CLS_LDR.getURLs());
+    private static final Collection<URL> appJars = Java9Bridge.getUrls(APP_CLS_LDR);
 
     /** Mutex for native libraries initialization. */
     private static final Object LIBS_MUX = new Object();

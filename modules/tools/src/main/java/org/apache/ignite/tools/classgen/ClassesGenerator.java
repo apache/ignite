@@ -17,6 +17,9 @@
 
 package org.apache.ignite.tools.classgen;
 
+
+import org.apache.ignite.util.Java9Bridge;
+
 import java.io.BufferedInputStream;
 import java.io.Externalizable;
 import java.io.File;
@@ -28,7 +31,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -69,7 +71,7 @@ public class ClassesGenerator {
     }
 
     /** */
-    private final URLClassLoader ldr = (URLClassLoader)getClass().getClassLoader();
+
 
     /** */
     private final Collection<Class> classes = new TreeSet<>(new Comparator<Class>() {
@@ -112,7 +114,8 @@ public class ClassesGenerator {
     private void generate() throws Exception {
         System.out.println("Generating classnames.properties...");
 
-        for (URL url : ldr.getURLs())
+
+        for (URL url : Java9Bridge.getUrls(getClass().getClassLoader()))
             processUrl(url);
 
         if (!errs.isEmpty()) {
@@ -209,7 +212,7 @@ public class ClassesGenerator {
         }
 
         if (included) {
-            Class<?> cls = Class.forName(clsName, false, ldr);
+            Class<?> cls = Class.forName(clsName, false, getClass().getClassLoader());
 
             if (Serializable.class.isAssignableFrom(cls) &&
                 !(cls.getName().endsWith("Future") || cls.getName().endsWith("FutureAdapter"))) {

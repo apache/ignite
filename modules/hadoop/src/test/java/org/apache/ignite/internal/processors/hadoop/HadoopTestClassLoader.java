@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.util.Java9Bridge;
 
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -32,10 +32,10 @@ import java.util.List;
  */
 public class HadoopTestClassLoader extends URLClassLoader {
     /** Parent class loader. */
-    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopTestClassLoader.class.getClassLoader();
+   private static final ClassLoader APP_CLS_LDR = HadoopTestClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> APP_JARS = F.asList(APP_CLS_LDR.getURLs());
+    private static final Collection<URL> APP_JARS = Java9Bridge.getUrls(APP_CLS_LDR);
 
     /** All participating URLs. */
     private static final URL[] URLS;
