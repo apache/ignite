@@ -554,17 +554,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         super.onActivate(ctx);
-
-        if (!cctx.localNode().isClient()) {
-            cctx.pageStore().initializeForMetastorage();
-
-            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
-
-            metaStorage.init(this);
-
-            notifyMetastorageReadyForReadWrite();
-        }
     }
 
     /** {@inheritDoc} */
@@ -664,6 +653,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public void readCheckpointAndRestoreMemory(
         List<DynamicCacheDescriptor> cachesToStart) throws IgniteCheckedException {
+        assert !cctx.localNode().isClient();
+
         checkpointReadLock();
 
         try {
@@ -676,13 +667,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointStatus status = readCheckpointStatus();
 
+            cctx.pageStore().initializeForMetastorage();
+
+            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
+
+            WALPointer restore = restoreMemory(status);
+
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
-            WALPointer restore = restoreMemory(status);
 
             cctx.wal().resumeLogging(restore);
 
             cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            metaStorage.init(this);
+
+            notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
