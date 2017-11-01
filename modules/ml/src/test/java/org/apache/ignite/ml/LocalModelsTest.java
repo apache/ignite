@@ -56,7 +56,7 @@ public class LocalModelsTest {
         Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
         mdl.saveModel(exporter, mdlFilePath);
 
-        Assert.assertTrue(String.format("File %s not found", mdlPath.toString()), Files.exists(mdlPath));
+        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
 
         KMeansModelFormat load = exporter.load(mdlFilePath);
         KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());

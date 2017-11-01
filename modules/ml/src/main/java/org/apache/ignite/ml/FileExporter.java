@@ -42,46 +42,32 @@ public class FileExporter<D> implements Exporter<D, String> {
 
     /** {@inheritDoc} */
     @Override public void save(D d, String path) {
-        ObjectOutputStream outStream = null;
-        try {
-            outStream = new ObjectOutputStream(new FileOutputStream(path));
-
-            outStream.writeObject(d);
+        try (FileOutputStream fos = new FileOutputStream(path)){
+            try (ObjectOutputStream outStream = new ObjectOutputStream(fos)){
+                outStream.writeObject(d);
+            }
         } catch (IOException e) {
             if (log != null)
-                log.error("Error opening file", e);
-        } finally {
-            try {
-                if (outStream != null)
-                    outStream.close();
-            } catch (IOException e) {
-                if (log != null)
-                    log.error("Error closing file", e);
-            }
+                log.error("Error opening file.", e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public D load(String path) {
         D mdl = null;
-        ObjectInputStream inputStream = null;
-        try {
-            inputStream = new ObjectInputStream(new FileInputStream(path));
-            mdl = (D)inputStream.readObject();
-        }catch (ClassNotFoundException e) {
+
+        try (FileInputStream fis = new FileInputStream(path)){
+            try (ObjectInputStream inputStream = new ObjectInputStream(fis)) {
+                mdl = (D)inputStream.readObject();
+            }
+            catch (ClassNotFoundException e) {
             if (log != null)
                 log.error("Object creation failed.", e);
-        } catch (IOException e) {
-            if (log != null)
-                log.error("Error opening file", e);
-        } finally {
-            try {
-                if (inputStream != null)
-                    inputStream.close();
-            } catch (IOException e) {
-                if (log != null)
-                    log.error("Error closing file", e);
             }
+        }
+        catch (IOException e) {
+            if (log != null)
+                log.error("Error opening file.", e);
         }
         return mdl;
     }

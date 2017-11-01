@@ -30,10 +30,10 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class KMeansModelFormat implements Serializable {
     /** Centers of clusters. */
-    private Vector[] centers;
+    private final Vector[] centers;
 
     /** Distance measure. */
-    private DistanceMeasure distance;
+    private final DistanceMeasure distance;
 
     /** */
     public KMeansModelFormat(Vector[] centers, DistanceMeasure distance) {

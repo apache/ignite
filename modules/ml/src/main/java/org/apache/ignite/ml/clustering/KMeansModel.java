@@ -29,10 +29,10 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
     /** Centers of clusters. */
-    private Vector[] centers;
+    private final Vector[] centers;
 
     /** Distance measure. */
-    private DistanceMeasure distance;
+    private final DistanceMeasure distance;
 
     /**
      * Construct KMeans model with given centers and distance measure.
