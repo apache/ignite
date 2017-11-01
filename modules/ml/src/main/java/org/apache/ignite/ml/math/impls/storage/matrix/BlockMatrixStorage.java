@@ -276,28 +276,31 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = 1;
+        int res = blocksInCol;
 
-        res = res * 37 + cols;
-        res = res * 37 + rows;
-        res = res * 37 + uuid.hashCode();
-        res = res * 37 + cache.hashCode();
+        res = 31 * res + blocksInRow;
+        res = 31 * res + rows;
+        res = 31 * res + cols;
+        res = 31 * res + uuid.hashCode();
+        res = 31 * res + maxBlockEdge;
+        res = 31 * res + cache.getName().hashCode();
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
+    @Override public boolean equals(Object o) {
+        if (this == o)
             return true;
-
-        if (obj == null || getClass() != obj.getClass())
+        if (o == null || getClass() != o.getClass())
             return false;
 
-        BlockMatrixStorage that = (BlockMatrixStorage)obj;
+        BlockMatrixStorage that = (BlockMatrixStorage)o;
 
-        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
-            && (cache != null ? cache.equals(that.cache) : that.cache == null);
+        return blocksInCol == that.blocksInCol && blocksInRow == that.blocksInRow && rows == that.rows
+            && cols == that.cols && maxBlockEdge == that.maxBlockEdge && uuid.equals(that.uuid)
+            && cache.getName().equals(that.cache.getName());
+
     }
 
     /**
