@@ -462,9 +462,9 @@ final class BinaryMetadataTransport {
                     return;
                 }
 
-                metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
-
                 metadataFileStore.writeMetadata(holder.metadata());
+
+                metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
             }
 
             for (BinaryMetadataUpdatedListener lsnr : binaryUpdatedLsnrs)
