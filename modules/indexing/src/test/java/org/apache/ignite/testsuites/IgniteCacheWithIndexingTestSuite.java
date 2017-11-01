@@ -18,7 +18,22 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
+import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
+import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
+import org.apache.ignite.internal.processors.cache.CacheAffinityKeyQueryTest;
+import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
+import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
+import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
