@@ -218,7 +218,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    if (filter.apply(dataRow.key()))
+                    if (filter.applyPartition(dataRow.partition()))
                         return true;
                 }
 
