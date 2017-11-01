@@ -17,23 +17,22 @@
 
 package org.apache.ignite.ml;
 
-import java.io.Serializable;
-import java.util.function.BiFunction;
-
-/** Basic interface for all models. */
-@FunctionalInterface
-public interface Model<T, V> extends Serializable {
-    /** Predict a result for value. */
-    public V predict(T val);
+/**
+ * Exporter for models, D - model representation object, P - path to resources.
+ */
+public interface Exporter<D, P> {
+    /**
+     * Save model by path p
+     *
+     * @param d Model representation object.
+     * @param p Path to resource.
+     */
+    public void save(D d, P p);
 
     /**
-     * Combines this model with other model via specified combiner
+     * Load model representation object from p.
      *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * @param p Path to resource.
      */
-    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
-    }
+    public D load(P p);
 }
