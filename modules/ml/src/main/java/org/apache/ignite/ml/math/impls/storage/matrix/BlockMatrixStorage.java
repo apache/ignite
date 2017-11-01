@@ -404,4 +404,33 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
         return Ignition.localIgnite().getOrCreateCache(cfg);
     }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = blocksInCol;
+
+        res = 31 * res + blocksInRow;
+        res = 31 * res + rows;
+        res = 31 * res + cols;
+        res = 31 * res + uuid.hashCode();
+        res = 31 * res + maxBlockEdge;
+        res = 31 * res + cache.getName().hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BlockMatrixStorage that = (BlockMatrixStorage)o;
+
+        return blocksInCol == that.blocksInCol && blocksInRow == that.blocksInRow && rows == that.rows
+            && cols == that.cols && maxBlockEdge == that.maxBlockEdge && uuid.equals(that.uuid)
+            && cache.getName().equals(that.cache.getName());
+
+    }
 }
