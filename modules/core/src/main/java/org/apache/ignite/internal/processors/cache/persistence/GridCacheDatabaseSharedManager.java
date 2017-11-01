@@ -559,17 +559,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         super.onActivate(ctx);
-
-        if (!cctx.localNode().isClient()) {
-            cctx.pageStore().initializeForMetastorage();
-
-            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
-
-            metaStorage.init(this);
-
-            notifyMetastorageReadyForReadWrite();
-        }
     }
 
     /** {@inheritDoc} */
