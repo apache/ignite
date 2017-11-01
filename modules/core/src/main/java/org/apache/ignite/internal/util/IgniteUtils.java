@@ -4685,7 +4685,8 @@ public abstract class IgniteUtils {
     public static boolean join(@Nullable GridWorker w, @Nullable IgniteLogger log) {
         if (w != null)
             try {
-                w.join();
+                if (!Thread.currentThread().equals(w.runner()))
+                    w.join();
             }
             catch (InterruptedException ignore) {
                 warn(log, "Got interrupted while waiting for completion of runnable: " + w);
