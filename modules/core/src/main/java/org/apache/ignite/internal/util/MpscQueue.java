@@ -56,21 +56,14 @@ abstract class Head<E> extends PaddingL1<E> {
      */
     @SuppressWarnings("unchecked")
     public E poll() {
-        Node head = this.head;
-        Node next = head.next();
+        Node node = peekNode();
 
-        if (next == null && head != tail) {
-            do {
-                next = head.next();
-            } while (next == null);
-        }
+        if (node != null) {
+            Object val = node.value();
 
-        if (next != null) {
-            Object val = next.value();
+            node.value(null);
 
-            next.value(null);
-
-            updater.lazySet(this, next);
+            updater.lazySet(this, node);
 
             return (E)val;
         }
@@ -78,31 +71,25 @@ abstract class Head<E> extends PaddingL1<E> {
             return null;
     }
 
+
     /**
      * @return queue size.
      */
     public int size() {
-        Node head = this.head;
-        Node next = head.next();
-
-        if (next == null && head != tail) {
-            do {
-                next = head.next();
-            } while (next == null);
-        }
+        Node node = peekNode();
 
         int size = 0;
 
         for (;;) {
-            if (next == null || next.value() == null)
+            if (node == null || node.value() == null)
                 break;
 
-            Node next0 = next.next();
+            Node next = node.next();
 
-            if (next == next0)
+            if (node == next)
                 break;
 
-            next = next0;
+            node = next;
 
             if (++size == Integer.MAX_VALUE)
                 break;
@@ -113,22 +100,15 @@ abstract class Head<E> extends PaddingL1<E> {
 
     /** {@inheritDoc} */
     public String toString() {
-        Node head = this.head;
-        Node next = head.next();
-
-        if (next == null && head != tail) {
-            do {
-                next = head.next();
-            } while (next == null);
-        }
+        Node node = peekNode();
 
         StringBuilder sb = new StringBuilder().append('[');
 
         for (;;) {
-            if (next == null)
+            if (node == null)
                 break;
 
-            Object value = next.value();
+            Object value = node.value();
 
             if (value == null)
                 break;
@@ -138,15 +118,30 @@ abstract class Head<E> extends PaddingL1<E> {
 
             sb.append(value);
 
-            Node next0 = next.next();
+            Node next = node.next();
 
-            if (next == next0)
+            if (node == next)
                 break;
 
-            next = next0;
+            node = next;
         }
 
         return sb.append(']').toString();
+    }
+
+    /**
+     * @return The node after the head of the queue (the first element in the queue).
+     */
+    private Node peekNode() {
+        Node head = this.head;
+        Node next = head.next();
+
+        if (next == null && head != tail) {
+            do {
+                next = head.next();
+            } while (next == null);
+        }
+        return next;
     }
 }
 
