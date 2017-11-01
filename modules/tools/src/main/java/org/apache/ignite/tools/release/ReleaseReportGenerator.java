@@ -217,11 +217,17 @@ public class ReleaseReportGenerator {
 
         String sPtrn = (String)search.get("sptrn");
 
+        String[] jf = srv.get("fields").toString()
+                .replace("[", "").replace("]", "").split(",");
+
+        if (jf == null)
+            jf = jiraFields;
+
         List<JSONObject> issues = searchIssues((String)srv.get("apiurl"),
             (String)srv.get("username"),
             (String)srv.get("password"),
             (String)search.get("jql"),
-            jiraFields);
+            jf);
 
         for (JSONObject issue : issues) {
             String key = getFieldFromJsonByPattern(issue, kField, kPtrn);
