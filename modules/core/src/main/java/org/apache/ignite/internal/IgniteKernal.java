@@ -3516,7 +3516,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            context().state().changeGlobalState(active, cluster().forServers().nodes()).get();
+            context().state().changeGlobalState(active, cluster().forServers().nodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3531,7 +3531,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            context().state().changeGlobalState(active, nodes).get();
+            context().state().changeGlobalState(active, nodes, true).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -464,16 +464,19 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate) {
-        return changeGlobalState(activate, null);
+        return changeGlobalState(activate, null, false);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
-        Collection<ClusterNode> baselineNodes) {
+        Collection<ClusterNode> baselineNodes,
+        boolean forceChangeBaselineTopology) {
         BaselineTopology blt;
 
-        if (activate && baselineNodes != null
-            && !globalState.active() && globalState.baselineTopology() != null) {
+        if (forceChangeBaselineTopology)
+            blt = BaselineTopology.build(baselineNodes);
+        else if (activate && baselineNodes != null
+            && globalState.baselineTopology() != null) {
             blt = globalState.baselineTopology();
 
             blt.updateHistory(baselineNodes);
