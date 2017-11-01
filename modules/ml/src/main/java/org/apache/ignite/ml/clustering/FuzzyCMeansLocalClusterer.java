@@ -50,11 +50,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         boolean finished = false;
         while (iteration < maxIterations && !finished) {
             calculateDistances(distances, points, centers);
-            calculateMembership(membership, distances, weightsVector);
-            Matrix newCenters = calculateNewCenters(points, membership);
+            Matrix newMembership = calculateMembership(membership, distances, weightsVector);
+            Matrix newCenters = calculateNewCenters(points, newMembership);
 
-            finished = isFinished(centers, newCenters);
+            finished = isFinished(centers, newCenters, membership, newMembership);
             centers = newCenters;
+            membership = newMembership;
             iteration++;
         }
 
@@ -109,7 +110,8 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         }
     }
 
-    private void calculateMembership(Matrix membership, Matrix distances, Vector weights) {
+    private Matrix calculateMembership(Matrix membership, Matrix distances, Vector weights) {
+        Matrix newMembership = membership.copy();
         int numPoints = distances.columnSize();
         int numCenters = distances.rowSize();
         double fuzzyMembershipCoefficient = 2 / (exponentialWeight - 1);
@@ -126,9 +128,10 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
                     invertedFuzzyWeight += value;
                 }
                 double weight = 1.0 / invertedFuzzyWeight * weights.getX(j);
-                membership.setX(i, j, Math.pow(weight, exponentialWeight));
+                newMembership.setX(i, j, Math.pow(weight, exponentialWeight));
             }
         }
+        return newMembership;
     }
 
     private Matrix calculateNewCenters(Matrix points, Matrix membership) {
@@ -143,15 +146,21 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         return newCenters;
     }
 
-    private boolean isFinished(Matrix centers, Matrix newCenters) {
+    private boolean isFinished(Matrix centers, Matrix newCenters, Matrix membership, Matrix newMembership) {
         int numCenters = centers.rowSize();
+        int numPoints = membership.columnSize();
 
         for (int i = 0; i < numCenters; i++) {
             if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxCentersDelta) {
                 return false;
             }
-        }
 
+           for (int j = 0; j < numPoints; j++) {
+                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxCentersDelta / numCenters) {
+                    return false;
+                }
+            }
+        }
         return true;
     }
 }
