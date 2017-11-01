@@ -701,6 +701,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
                     GridH2Row h2Row = rowDesc.createRow(row);
 
+                    // TODO: Use putx as well.
                     h2Idx.put(h2Row);
                 }
             };

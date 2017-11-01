@@ -495,6 +495,7 @@ public class GridH2Table extends TableBase {
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
+                // TODO: Use removex
                 GridH2Row old = pk.remove(row);
 
                 if (old != null) {
