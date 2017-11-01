@@ -2109,6 +2109,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             int p = e.getKey();
             long maxCntr = e.getValue().cnt;
 
+            if (top.groupId() == CU.cacheId("temp"))
+                System.err.println("ASSIGN " + p + ", maxCntr = " + maxCntr + ", nodes=" + e.getValue().nodes);
+
             entryLeft--;
 
             if (entryLeft != 0 && maxCntr == 0)
