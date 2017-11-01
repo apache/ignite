@@ -637,13 +637,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
-                if (res.failedNodes() != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Handshake response from failed node: " + res);
-
-                    throw new IgniteNeedReconnectException(locNode, null);
-                }
-
                 UUID rmtNodeId = res.creatorNodeId();
 
                 assert rmtNodeId != null;

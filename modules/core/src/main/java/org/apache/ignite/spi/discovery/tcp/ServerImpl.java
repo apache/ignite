@@ -1661,6 +1661,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
+        U.interrupt(connChecker);
+        U.join(connChecker, log);
+
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
 
@@ -2050,7 +2053,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         boolean added = false;
 
                         synchronized (mux) {
-                            recentFailedNodeIds.add(failedNode.id());
+                            if (!failedNode.isClient())
+                                recentFailedNodeIds.add(failedNode.id());
 
                             if (!failedNodes.containsKey(failedNode)) {
                                 failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
@@ -2596,6 +2600,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private long lastRingMsgTime;
+
+        /** Last time {@link #checkConnection()} was run */
+        private volatile long lastTimeConnectionChecked;
 
         /**
          */
@@ -4078,6 +4085,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
             }
 
+            synchronized (mux) {
+                if (recentFailedNodeIds.remove(node.id()) && log.isDebugEnabled())
+                    log.debug("Removed node from recently failed nodes list [node=" + node.id() + ", msg=" + msg + ']');
+            }
+
             UUID locNodeId = getLocalNodeId();
 
             if (isLocalNodeCoordinator()) {
@@ -4814,7 +4826,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!skipUpdateFailedNodes) {
                     synchronized (mux) {
-                        recentFailedNodeIds.add(failedNodeId);
+                        if (!failedNode.isClient())
+                            recentFailedNodeIds.add(failedNodeId);
 
                         if (!failedNodes.containsKey(failedNode))
                             failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
@@ -5586,12 +5599,27 @@ class ServerImpl extends TcpDiscoveryImpl {
                 failureThresholdReached = true;
             }
 
+            long lastTimeConn = lastTimeConnectionChecked;
+
+            lastTimeConnectionChecked = U.currentTimeMillis();
+
+            if (lastTimeConn > 0) {
+                long elapsed = U.currentTimeMillis() - lastTimeConn;
+
+                if (elapsed > connCheckThreshold && spiStateCopy() == CONNECTED && ring.hasRemoteServerNodes()) {
+                    lastTimePrevNodeRcvd.set(0);
+
+                    U.warn(log, "Local node operation was frozen and might be failed [elapsed=" + elapsed +
+                        ", connCheckThreshold=" + connCheckThreshold);
+                }
+            }
+
             long lastTimeRcvd = lastTimePrevNodeRcvd.get();
 
             if (lastTimeRcvd > 0) {
-                long prevElapsed = U.currentTimeMillis() - lastTimeRcvd;
+                long elapsed = U.currentTimeMillis() - lastTimeRcvd;
 
-                if (prevElapsed > connCheckThreshold) {
+                if (elapsed > connCheckThreshold) {
 
                     TcpDiscoveryNode prevNode = ring.prevNode();
 
@@ -5903,24 +5931,26 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     boolean failed = false;
 
-                    synchronized (mux) {
-                        if (recentFailedNodeIds.contains(nodeId)) {
-                            if (log.isInfoEnabled())
-                                log.info("Handshake request from recently failed node [nodeId=" + nodeId + ']');
+                    if (srvSock) {
+                        synchronized (mux) {
+                            if (recentFailedNodeIds.contains(nodeId)) {
+                                if (log.isInfoEnabled())
+                                    log.info("Handshake request from recently failed node [nodeId=" + nodeId + ']');
 
-                            failed = true;
-                        }
-                        if (!failed)
-                            for (TcpDiscoveryNode n : failedNodes.keySet()) {
-                                if (n.id().equals(nodeId)) {
-                                    if (log.isInfoEnabled())
-                                        log.info("Handshake request from failed node [nodeId=" + nodeId + ']');
-
-                                    failed = true;
-
-                                    break;
-                                }
+                                failed = true;
                             }
+                            if (!failed)
+                                for (TcpDiscoveryNode n : failedNodes.keySet()) {
+                                    if (n.id().equals(nodeId)) {
+                                        if (log.isInfoEnabled())
+                                            log.info("Handshake request from failed node [nodeId=" + nodeId + ']');
+
+                                        failed = true;
+
+                                        break;
+                                    }
+                                }
+                        }
                     }
 
                     TcpDiscoveryHandshakeResponse res =
