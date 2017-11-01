@@ -3643,6 +3643,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param pageAddr Page address.
          * @param walPlc Full page WAL record policy.
          * @param io IO.
+         *
          * @param cnt Count.
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.

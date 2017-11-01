@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
@@ -80,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
     /** */
-    private MetaStore metaStore;
+    private IndexStorage indexStorage;
 
     /** */
     private ReuseListImpl reuseList;
@@ -100,7 +100,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage metastoreRoot = metas.treeRoot;
 
-        metaStore = new MetadataStorage(grp.dataRegion().pageMemory(),
+        indexStorage = new IndexStorageImpl(grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
@@ -121,7 +121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 final String name = "PendingEntries";
 
-                RootPage pendingRootPage = metaStore.getOrAllocateForTree(name);
+                RootPage pendingRootPage = indexStorage.getOrAllocateForTree(name);
 
                 pendingEntries = new PendingEntriesTree(
                     grp,
@@ -177,7 +177,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean wasSaveToMeta = false;
 
         if (rowStore0 != null) {
-            FreeListImpl freeList = (FreeListImpl)rowStore0.freeList();
+            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 
             freeList.saveMetadata();
 
@@ -484,7 +484,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.sharedGroup())
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
-        return metaStore.getOrAllocateForTree(idxName);
+        return indexStorage.getOrAllocateForTree(idxName);
     }
 
     /** {@inheritDoc} */
@@ -492,7 +492,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.sharedGroup())
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
-        metaStore.dropRootPage(idxName);
+        indexStorage.dropRootPage(idxName);
     }
 
     /** {@inheritDoc} */
@@ -612,7 +612,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            FreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -862,7 +862,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private String name;
 
         /** */
-        private volatile FreeListImpl freeList;
+        private volatile CacheFreeListImpl freeList;
 
         /** */
         private volatile CacheDataStore delegate;
@@ -912,7 +912,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    freeList = new FreeListImpl(
+                    freeList = new CacheFreeListImpl(
                         grp.groupId(),
                         grp.cacheOrGroupName() + "-" + partId,
                         grp.dataRegion().memoryMetrics(),

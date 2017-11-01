@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Meta store.
  */
-public interface MetaStore {
+public interface IndexStorage {
     /**
      * Get or allocate initial page for an index.
      *
