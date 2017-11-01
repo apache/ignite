@@ -547,7 +547,7 @@ public class GridH2Table extends TableBase {
 
         if (pkReplaced != replaced && !tmp) // Row was replaced in index.
             throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                "not supported [idx=" + idx + ", old=" + old + ", replaced" + replaced +']');
+                "not supported [idx=" + idx + ", old=" + old + ", replaced=" + replaced +']');
 
         if (old != null) // Row was not replaced, need to remove manually.
             idx.removex(old);
