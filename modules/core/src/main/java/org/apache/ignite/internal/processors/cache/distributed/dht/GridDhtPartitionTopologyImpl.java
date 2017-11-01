@@ -354,7 +354,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff)) {
+                       // TODO  if (localNode(p, aff)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
                             boolean owned = locPart.own();
@@ -366,7 +366,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 log.debug("Owned partition for oldest node: " + locPart);
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
-                        }
+                        // TODO }
                     }
                 }
                 else
