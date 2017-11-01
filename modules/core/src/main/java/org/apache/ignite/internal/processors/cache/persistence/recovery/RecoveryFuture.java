@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.recovery;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -24,12 +29,16 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -39,6 +48,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.EnumSet.of;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEBUG_ON_RECOVERY;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+
 /**
  *
  */
@@ -46,6 +61,9 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     implements IgniteRecoveryFuture<RecoveryContext> {
     /** */
     public static final long DOUBLE_CHECK_INTERVAL = 10_000;
+
+    /** */
+    private static final boolean DEBUG_ON_RECOVERY = getBoolean(IGNITE_DEBUG_ON_RECOVERY, false);
 
     /** */
     private final IgniteLogger log;
@@ -63,7 +81,7 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     private final Set<GridCacheVersion> skipTxs = new HashSet<>();
 
     /** */
-    private Set<String> remaining = new HashSet<>();
+    private final Set<String> remaining = new GridConcurrentHashSet<>();
 
     /** */
     private WALPointer initPtr;
@@ -75,20 +93,16 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     private Set<GridCacheVersion> notFoundTxs = new HashSet<>();
 
     /** */
-    private final StringBuilder debugBuffer = new StringBuilder();
+    private final boolean debugEnable;
 
     /** */
-    private final boolean debug;
+    private RecoveryDebug debugBuffer;
 
     /**
      *
      */
-    public RecoveryFuture(
-        final WALPointer initPtr,
-        final RecoveryIo recoveryIo,
-        @Nullable final IgniteLogger log
-    ){
-        this(recoveryIo, log, false);
+    public RecoveryFuture(final RecoveryIo recoveryIo, @Nullable final IgniteLogger log) {
+        this(recoveryIo, log, DEBUG_ON_RECOVERY);
     }
 
     /**
@@ -97,10 +111,9 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     public RecoveryFuture(
         final RecoveryIo recoveryIo,
         @Nullable final IgniteLogger log,
-        boolean debug
+        boolean debugEnable
     ) {
-        this.debug = debug;
-
+        this.debugEnable = debugEnable;
         this.log = log;
         this.recoveryIo = recoveryIo;
 
@@ -193,17 +206,43 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     /**
      *
      */
-    public synchronized void setRecoveryWalPoint(WALPointer initPtr) {
+    public synchronized void setRecoveryWalPoint(WALPointer initPtr) throws IgniteCheckedException {
+        try {
+            setRecoveryWalPoint(initPtr, U.defaultWorkDirectory());
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Fail resolve work directory.", e);
+
+            setRecoveryWalPoint(initPtr, null);
+        }
+    }
+
+    /**
+     *
+     */
+    public synchronized void setRecoveryWalPoint(WALPointer initPtr, String path) throws IgniteCheckedException {
         assert !initFut.isDone();
 
         this.initPtr = initPtr;
         this.localNodeConstId = recoveryIo.localNodeConsistentId();
+
+        if (debugEnable) {
+            if (path != null){
+                String recoveryDumpFilePath = path + "/recovery-log-" + U.currentTimeMillis() + "-" + localNodeConstId + ".log";
+
+                debugBuffer = new RecoveryDebug(recoveryDumpFilePath, log);
+            }
+            else
+                debugBuffer = new RecoveryDebug();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void recoveryScan(WALIterator it) {
-        if (debug)
-            debugBuffer.append("<<DEBUG>>\nNode (constId:" + localNodeConstId + ")\n");
+        if (debugEnable)
+            debugBuffer.append("Node constId:")
+                .append(localNodeConstId)
+                .append("\n");
 
         while (it.hasNext()) {
             if (isCancelled())
@@ -217,8 +256,8 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
                 case TX_RECORD:
                     TxRecord txRec = (TxRecord)rec;
 
-                    if (debug)
-                        debugBuffer.append(rec).append("\n");
+                    if (debugEnable)
+                        debugBuffer.append(rec + "\n");
 
                     switch (txRec.state()) {
                         case PREPARING:
@@ -245,9 +284,19 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
                     break;
 
                 case CHECKPOINT_RECORD:
-                case DATA_RECORD:
-                    if (debug)
+                    if (debugEnable)
                         debugBuffer.append(rec).append("\n");
+                    break;
+
+                case DATA_RECORD:
+                    if (debugEnable) {
+                        DataRecord dataRec = (DataRecord)rec;
+
+                        debugBuffer.append(dataRec).append("\n");
+
+                        for (DataEntry e : dataRec.writeEntries())
+                            debugBuffer.append("\t").append(e).append("\n");
+                    }
 
                     break;
                 default:
@@ -257,6 +306,9 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
 
         if (isCancelled())
             return;
+
+        if (debugEnable)
+            txWalState.appendDebugInfo(debugBuffer);
 
         skipTxs.addAll(txWalState.preparingTxs());
         skipTxs.addAll(txWalState.rollBackedTxs());
@@ -325,7 +377,7 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
     /**
      *
      */
-    private  Map<String, TxStateRequest> generateRequests(){
+    private Map<String, TxStateRequest> generateRequests() {
         assert localNodeConstId != null : "Local node consistent id is not setup";
 
         Map<String, TxStateRequest> requestsMap = new HashMap<>();
@@ -348,6 +400,7 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
 
         return requestsMap;
     }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(
         @Nullable RecoveryContext res,
@@ -356,14 +409,95 @@ public class RecoveryFuture extends GridFutureAdapter<RecoveryContext>
         if (!isDone() && log != null && log.isInfoEnabled()) {
             String debugLog = null;
 
-            if (debug)
+            if (debugEnable) {
+                debugBuffer.append("skipTxs ")
+                    .append(res.getSkipTxEntries().size())
+                    .append("\n");
+
+                for (GridCacheVersion txVer : res.getSkipTxEntries())
+                    debugBuffer.append(txVer).append("\n");
+
                 debugLog = debugBuffer.toString();
 
-            log.info("Recovery scan future is done (constId:" + localNodeConstId +
-                "), init pointer " + res.getInitPnt() + " tx will be rollBacked (" + res.getSkipTxEntries().size() +
-                ") " + res.getSkipTxEntries() + (debugLog != null ? "\n" + debugLog : ""));
+                debugBuffer.close();
+            }
+
+            log.info("Recovery scan future is done constId:" + localNodeConstId +
+                ", init pointer " + res.getInitPnt() + " tx will be rollBacked (" + res.getSkipTxEntries().size() +
+                ") \n" + (debugLog != null ? debugLog : "") +
+                "(constId:" + localNodeConstId + ")\n");
         }
 
         return super.onDone(res, err);
+    }
+
+    static class RecoveryDebug {
+        /** */
+        private final StringBuilder debugBuffer = new StringBuilder();
+
+        /** */
+        private FileChannel fc;
+
+        private final IgniteLogger log;
+
+        RecoveryDebug() {
+            // No-op.
+            log = null;
+        }
+
+        RecoveryDebug(String path, @Nullable IgniteLogger log) {
+            this.log = log;
+
+            File f = new File(path);
+
+            if (f.exists())
+                f.delete();
+
+            try {
+                f.createNewFile();
+
+                fc = FileChannel.open(Paths.get(f.getAbsolutePath()), of(READ, WRITE));
+            }
+            catch (IOException e) {
+                U.error(log, "Fail create recovery dump file.", e);
+
+                fc = null;
+            }
+        }
+
+        public RecoveryDebug append(Object st) {
+            debugBuffer.append(st);
+
+            if (fc != null)
+                appendFile(st);
+
+            return this;
+        }
+
+        private void appendFile(Object st) {
+            if (fc != null)
+                try {
+                    fc.write(ByteBuffer.wrap(st.toString().getBytes()));
+                }
+                catch (IOException e) {
+                    U.error(log, "Fail write to recovery dump file.", e);
+                }
+        }
+
+        @Override public String toString() {
+            return debugBuffer.toString();
+        }
+
+        private void close() {
+            if (fc != null)
+                try {
+                    fc.force(true);
+
+                    fc.close();
+                }
+                catch (IOException e) {
+                    U.error(log, "Fail close recovery dump file.", e);
+                }
+        }
     }
 }

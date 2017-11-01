@@ -54,7 +54,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,11 +76,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -102,7 +97,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -150,12 +144,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.PersistenceMetricsMXBean;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
@@ -167,7 +158,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_RECOVERY;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  *
@@ -376,7 +366,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointsEnabled = enable;
 
-        wakeupForCheckpoint("enableCheckpoints()");
+        IgniteInternalFuture f = wakeupForCheckpoint("enableCheckpoints()");
+
+        if (f == null)
+            fut.onDone();
 
         return fut;
     }
@@ -421,9 +414,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             persStoreMetrics.wal(cctx.wal());
 
-            recoveryIo = new RecoveryIoImp(kernalCtx);
+            recoveryIo = new RecoveryIoImp(kernalCtx, log);
 
-            recoveryFut = new RecoveryFuture(recoveryIo, log, true);
+            recoveryFut = new RecoveryFuture(recoveryIo, log);
 
             kernalCtx.io().addMessageListener(TOPIC_RECOVERY, recoveryIo);
 
@@ -556,31 +549,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         super.onActivate(ctx);
-
-        if (!isClient) {
-            CheckpointStatus chpStatus = readCheckpointStatus(null);
-
-            WALPointer recoveryPnt = findRecoveryPoint(chpStatus.startPtr);
-
-            recoveryFut.setRecoveryWalPoint(recoveryPnt);
-
-            long time = RecoveryFuture.DOUBLE_CHECK_INTERVAL;
-
-            CheckpointStatus recoveryDoubleCheckChpStatus = readCheckpointStatus(chpStatus.cpStartTs - time);
-
-            if (U.compareTo(recoveryDoubleCheckChpStatus.startPtr, recoveryPnt) < 0)
-                recoveryPnt = recoveryDoubleCheckChpStatus.startPtr;
-
-            cctx.exchange().lastTopologyFuture().listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    recoveryIo.reset();
-                }
-            });
-
-            try (WALIterator it = cctx.wal().replay(recoveryPnt)) {
-                recoveryFut.recoveryScan(it);
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -1185,6 +1153,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void restoreState() throws IgniteCheckedException {
         try {
+            CheckpointStatus chpStatus = readCheckpointStatus(null);
+
+            WALPointer recoveryPnt = findRecoveryPoint(chpStatus.startPtr);
+
+            recoveryFut.setRecoveryWalPoint(recoveryPnt);
+
+            long time = RecoveryFuture.DOUBLE_CHECK_INTERVAL;
+
+            CheckpointStatus recoveryDoubleCheckChpStatus = readCheckpointStatus(chpStatus.cpStartTs - time);
+
+            if (U.compareTo(recoveryDoubleCheckChpStatus.startPtr, recoveryPnt) < 0)
+                recoveryPnt = recoveryDoubleCheckChpStatus.startPtr;
+
+            cctx.exchange().lastTopologyFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> future) {
+                    recoveryIo.reset();
+                }
+            });
+
+            try (WALIterator it = cctx.wal().replay(recoveryPnt)) {
+                recoveryFut.recoveryScan(it);
+            }
+
             checkpointReadLock();
 
             try {
@@ -1494,8 +1485,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         File[] files = dir.listFiles();
 
-        File first = null;
-
         if (time != null) {
             Arrays.sort(files, new Comparator<File>() {
                 @Override public int compare(File f1, File f2) {
@@ -1506,7 +1495,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         long ts1 = Long.parseLong(m1.group(1));
                         long ts2 = Long.parseLong(m2.group(1));
 
-                        if (ts1 < ts2)
+                        if (ts1 > ts2)
                             return 1;
                         else
                             return -1;
@@ -1515,8 +1504,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return 0;
                 }
             });
-
-            first = files[0];
         }
 
         for (File file : files) {
@@ -1525,14 +1512,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (matcher.matches()) {
                 long ts = Long.parseLong(matcher.group(1));
 
-                if (time != null && file.equals(first))
-                    return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
-
-                if (time != null && ts > time)
-                    continue;
-
                 UUID id = UUID.fromString(matcher.group(2));
                 CheckpointEntryType type = CheckpointEntryType.valueOf(matcher.group(3));
+
+                if (time != null && ts > time && type == CheckpointEntryType.START)
+                    break;
 
                 if (type == CheckpointEntryType.START && ts > lastStartTs) {
                     lastStartTs = ts;

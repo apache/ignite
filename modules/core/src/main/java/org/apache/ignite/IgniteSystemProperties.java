@@ -744,6 +744,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /**
+     * Property for setup debug mode on recovery.
+     */
+    public static final String IGNITE_DEBUG_ON_RECOVERY = "IGNITE_DEBUG_ON_RECOVERY";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

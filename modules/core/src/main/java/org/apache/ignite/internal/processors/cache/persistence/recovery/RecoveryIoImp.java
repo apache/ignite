@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,9 +30,12 @@ import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_RECOVERY;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -52,12 +56,16 @@ public class RecoveryIoImp implements RecoveryIo, GridMessageListener, Discovery
     /** */
     private volatile IgniteInClosure<String> nodeLeftHandler;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      *
      */
-    public RecoveryIoImp(GridKernalContext ctx) {
+    public RecoveryIoImp(GridKernalContext ctx, @Nullable IgniteLogger log) {
         idMapper = new ConsistentIdMapper(ctx.discovery());
 
+        this.log = log;
         this.ctx = ctx;
     }
 
@@ -91,15 +99,23 @@ public class RecoveryIoImp implements RecoveryIo, GridMessageListener, Discovery
     }
 
     /** {@inheritDoc} */
-    @Override public String localNodeConsistentId() {
+    @Override public String localNodeConsistentId() throws IgniteCheckedException {
         try {
             return ctx.pdsFolderResolver().resolveFolders().consistentId().toString();
         }
         catch (IgniteCheckedException e) {
-            // TODO
-        }
+            U.error(log, "Fail resolve consistent id.", e);
 
-        return null;
+            new Thread(
+                new Runnable() {
+                    @Override public void run() {
+                        G.stop(true);
+                    }
+                }
+            ).start();
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -132,7 +148,7 @@ public class RecoveryIoImp implements RecoveryIo, GridMessageListener, Discovery
     /**
      *
      */
-    public void reset(){
+    public void reset() {
         msgHandler = null;
         nodeLeftHandler = null;
     }

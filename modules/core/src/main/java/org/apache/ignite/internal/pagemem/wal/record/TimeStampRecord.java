@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public abstract class TimeStampRecord extends WALRecord {
     /** Timestamp. */
+    @GridToStringInclude
     protected long timestamp;
 
     /**
@@ -53,5 +56,10 @@ public abstract class TimeStampRecord extends WALRecord {
      */
     public long timestamp() {
         return timestamp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TimeStampRecord.class, this, "super", super.toString());
     }
 }

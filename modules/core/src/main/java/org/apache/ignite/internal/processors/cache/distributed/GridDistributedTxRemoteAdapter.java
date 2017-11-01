@@ -605,25 +605,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                            if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
-                                                if (dataEntries == null)
-                                                    dataEntries = new ArrayList<>(entries.size());
-
-                                                dataEntries.add(
-                                                    new DataEntry(
-                                                        cacheCtx.cacheId(),
-                                                        txEntry.key(),
-                                                        val,
-                                                        op,
-                                                        nearXidVersion(),
-                                                        writeVersion(),
-                                                        0,
-                                                        txEntry.key().partition(),
-                                                        txEntry.updateCounter()
-                                                    )
-                                                );
-                                            }
-
                                             if (op == CREATE || op == UPDATE) {
                                                 // Invalidate only for near nodes (backups cannot be invalidated).
                                                 if (isSystemInvalidate() || (isInvalidate() && cacheCtx.isNear()))
@@ -789,15 +770,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         throw (Error)ex;
                                 }
                             }
-
-                            //TODO????
-                            if (!near() && cctx.wal() != null)
-                                cctx.wal().log(new DataRecord(dataEntries));
-
-                            if (ptr != null)
-                                cctx.wal().fsync(ptr);
                         }
-                        catch (StorageException e) {
+                        catch (Exception e) {
                             throw new IgniteCheckedException("Failed to log transaction record " +
                                 "(transaction will be rolled back): " + this, e);
                         }

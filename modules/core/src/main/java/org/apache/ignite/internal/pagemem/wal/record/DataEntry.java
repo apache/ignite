@@ -34,9 +34,11 @@ public class DataEntry {
     protected int cacheId;
 
     /** Cache object key. */
+    @GridToStringInclude
     protected KeyCacheObject key;
 
     /** Cache object value. May be {@code} null for {@link GridCacheOperation#DELETE} */
+    @GridToStringInclude
     @Nullable protected CacheObject val;
 
     /** Entry operation performed. */
@@ -44,6 +46,7 @@ public class DataEntry {
     protected GridCacheOperation op;
 
     /** Near transaction version. */
+    @GridToStringInclude
     protected GridCacheVersion nearXidVer;
 
     /** Write version. */

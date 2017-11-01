@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -219,6 +220,13 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     protected Collection<String> filteredJvmArgs() throws Exception {
         Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        Properties props = System.getProperties();
+
+        for (String name : props.stringPropertyNames()) {
+            if (name.startsWith("IGNITE_"))
+                filteredJvmArgs.add("-D" + name + "=" + props.getProperty(name));
+        }
 
         filteredJvmArgs.add("-ea");
 

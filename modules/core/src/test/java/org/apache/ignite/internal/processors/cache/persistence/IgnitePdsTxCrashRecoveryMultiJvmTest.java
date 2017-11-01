@@ -17,15 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -52,6 +64,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    // nodes + threads
+    //private final ExecutorService exec = Executors.newFixedThreadPool(4 + 8);
 
     /** */
     private static final String CACHE_NAME = "cache";
@@ -84,12 +99,12 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        int it = 10;
+        int it = 1;
 
         for (int i = 0; i < it; i++) {
-            runTest(3, 4);
-
             System.out.println(">>> iteration " + i);
+
+            runTest(4, 8);
 
             stopAllGrids();
 
@@ -111,11 +126,13 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
         ccfg.setBackups(3);
 
         ig.createCache(ccfg);
 
-        final int accounts = 1_000;
+        final int accounts = 50;
         final int balance = 100_000;
 
         load(ig, accounts, balance);
@@ -124,10 +141,15 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
         Random r = new Random();
 
+        long interval = 5_000;
+
         final long startTime = U.currentTimeMillis();
-        final long stopTime = startTime + 10_000;
+        final long stopTime = startTime + interval;
 
         final long crashTime = startTime + r.nextInt((int)(stopTime - startTime));
+
+        final AtomicLong commited = new AtomicLong();
+        final AtomicLong failed = new AtomicLong();
 
         for (int i = 0; i < threads; i++) {
             IgniteInternalFuture f = runAsync(new Runnable() {
@@ -145,6 +167,10 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                                 "Thread name:" + Thread.currentThread().getName() + "\n" +
                                     "Tx commited:" + txCommited + "\n" +
                                     "Tx failure:" + txFail + "\n");
+
+                            commited.addAndGet(txCommited);
+                            failed.addAndGet(txFail);
+
                             break;
                         }
 
@@ -188,6 +214,9 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                             acc1.balance -= money;
                             acc2.balance += money;
 
+                            acc1.transfer = money;
+                            acc2.transfer = money;
+
                             c.put(id1, acc1);
                             c.put(id2, acc2);
 
@@ -198,6 +227,13 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
                         catch (Throwable h) {
                             // No-op.
                             txFail++;
+
+                            try {
+                                U.sleep(100);
+                            }
+                            catch (IgniteInterruptedCheckedException e) {
+                                U.error(log, "Thread interrupted", e);
+                            }
                         }
                     }
                 }
@@ -256,6 +292,8 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
         stopFut.get();
 
+        System.out.println("Total tx commited:" + commited.get() + "\nTotal tx failure:" + failed.get() + "\n");
+
         IgniteEx ig0 = (IgniteEx)startGrids(nodes);
 
         ig0.active(true);
@@ -264,25 +302,216 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPutKeyForward() throws Exception {
+        runTest2(4, 8, 10, 10_000);
+
+        stopAllGrids();
+
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void runTest2(final int nodes, int threads, final int batchSize, long interval) throws Exception {
+        final IgniteEx ig = (IgniteEx)startGrids(nodes);
+
+        ig.active(true);
+
+        assertEquals(nodes, ig.cluster().nodes().size());
+
+        CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(CACHE_NAME);
+
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+        ccfg.setBackups(3);
+
+        ig.createCache(ccfg);
+
+        final AtomicLong data = new AtomicLong();
+
+        final Set<Long> failCommitedRange = new GridConcurrentLinkedHashSet<>();
+
+        GridCompoundFuture<?, ?> txFut = new GridCompoundFuture<>();
+
+        Random r = new Random();
+
+        final long startTime = U.currentTimeMillis();
+        final long stopTime = startTime + interval;
+
+        final long crashTime = stopTime;
+        //final long crashTime = startTime + r.nextInt((int)(stopTime - startTime));
+
+        final AtomicLong commited = new AtomicLong();
+        final AtomicLong failed = new AtomicLong();
+
+        for (int i = 0; i < threads; i++) {
+            IgniteInternalFuture f = runAsync(new Runnable() {
+                @Override public void run() {
+                    Random r = new Random();
+
+                    long txCommited = 0;
+                    long txFail = 0;
+
+                    IgniteCache<Long, Long> c = ig.cache(CACHE_NAME);
+
+                    while (true) {
+                        if (U.currentTimeMillis() > stopTime) {
+                            System.out.println(
+                                "Thread name:" + Thread.currentThread().getName() + "\n" +
+                                    "Tx commited:" + txCommited + "\n" +
+                                    "Tx failure:" + txFail + "\n");
+
+                            commited.addAndGet(txCommited);
+
+                            failed.addAndGet(txFail);
+
+                            break;
+                        }
+
+                        long cur;
+
+                        while (true){
+                            cur = data.get();
+
+                            if (data.compareAndSet(cur, cur + batchSize))
+                                break;
+                        }
+
+                        Map<Long, Long> vals = new HashMap<>();
+
+                        for (long val = cur; val < (cur + batchSize); val++)
+                            vals.put(val, val);
+
+                        assert !vals.isEmpty();
+
+                        try (Transaction tx = ig.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            c.putAll(vals);
+
+                            tx.commit();
+
+                            txCommited++;
+                        }
+                        catch (Throwable h) {
+                            // No-op.
+                            txFail++;
+
+                            failCommitedRange.add(cur);
+
+                            System.out.println(h);
+
+                            try {
+                                U.sleep(100);
+                            }
+                            catch (IgniteInterruptedCheckedException e) {
+                                U.error(log, "Thread interrupted", e);
+                            }
+                        }
+                    }
+                }
+            }, "tx-runner-" + i);
+
+            txFut.add(f);
+        }
+
+        txFut.markInitialized();
+
+        final GridCompoundFuture<?, ?> stopFut = new GridCompoundFuture<>();
+
+        runAsync(new Runnable() {
+            @Override public void run() {
+                while (true) {
+                    if (U.currentTimeMillis() > crashTime)
+                        break;
+
+                    try {
+                        Thread.sleep(30);
+                    }
+                    catch (InterruptedException e) {
+                        U.error(log, "Thread interrupted", e);
+                    }
+                }
+
+                System.out.println("Stop time reached " + crashTime + " nodes will be stopped.");
+
+                for (int i = 0; i < nodes; i++) {
+                    final int node = i;
+
+                    final IgniteEx ignite = grid(node);
+
+                    IgniteInternalFuture f = runAsync(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                if (ignite instanceof IgniteProcessProxy)
+                                    ((IgniteProcessProxy)ignite).kill();
+                                else
+                                    stopGrid(node, true);
+                            }
+                            catch (Exception e) {
+                                U.error(log, "Fail kill node " + node, e);
+                            }
+                        }
+                    });
+
+                    stopFut.add(f);
+                }
+
+                stopFut.markInitialized();
+            }
+        }).get();
+
+        txFut.get();
+
+        stopFut.get();
+
+        System.out.println("Total tx commited:" + commited.get() + "\nTotal tx failure:" + failed.get() + "\n");
+
+        IgniteEx ig0 = (IgniteEx)startGrids(nodes);
+
+        ig0.active(true);
+
+        check(ig0, data.get(), batchSize, failCommitedRange);
+    }
+
+    /**
      *
      */
     private void load(IgniteEx ig, int accounts, int balance) {
         IgniteCache<Long, Account> cache = ig.cache(CACHE_NAME);
 
-        for (long id = 0; id < accounts; id++) {
-            cache.put(id, new Account(id, balance));
-
-            if (id % 100 == 0)
-                System.out.println(">>> " + id);
-        }
-
-        // TODO streamer does not work with proxy.
-        /* try (IgniteDataStreamer<Long, Account> st = ig.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Long, Account> st = ig.dataStreamer(CACHE_NAME)) {
             st.allowOverwrite(true);
 
-            for (long id = 0; id < accounts; id++)
+            for (long id = 0; id < accounts; id++) {
                 st.addData(id, new Account(id, balance));
-        }*/
+
+                if (id % 100 == 0)
+                    System.out.println(">>> " + id);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private void check(IgniteEx ig, long cur, int batchSize, Set<Long> skip) {
+        IgniteCache<Long, Long> cache = ig.cache(CACHE_NAME);
+
+        for (long val = 0; val < cur; val++) {
+            if (skip.contains(val)){
+                val += batchSize - 1;
+
+                continue;
+            }
+
+            Long actl = cache.get(val);
+
+            assert actl != null : "Actual key=" + val + " cur=" + cur + " skip " + skip;
+        }
     }
 
     /**
@@ -293,8 +522,11 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
 
         IgniteCache<Long, Account> cache = ig.cache(CACHE_NAME);
 
-        for (long i = 0; i < accounts; i++) {
-            Account acc = cache.get(i);
+        for (long id = 0; id < accounts; id++) {
+            Account acc = cache.get(id);
+
+            if (acc == null)
+                System.out.println("id " + id);
 
             total += acc.balance;
         }
@@ -305,11 +537,15 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static class Account {
+    static class Account {
         /** */
-        private long id;
+        long id;
+
         /** */
-        private long balance;
+        long balance;
+
+        /** */
+        long transfer;
 
         /**
          *
@@ -335,6 +571,14 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
             return balance == account.balance;
         }
 
+        @Override public String toString() {
+            return "Account[" +
+                "id=" + id +
+                ", balance=" + balance +
+                ", transfer=" + transfer +
+                ']';
+        }
+
         /**
          *
          */
@@ -356,6 +600,6 @@ public class IgnitePdsTxCrashRecoveryMultiJvmTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
+        // deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, true));
     }
 }

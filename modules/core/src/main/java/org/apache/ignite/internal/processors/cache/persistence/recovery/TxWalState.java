@@ -44,10 +44,10 @@ public class TxWalState {
     /**
      *
      */ //TODO resolve via baseline.
-    private Set<String> nodes(Map<Object, Collection<Object>> map) {
+    private Set<String> nodes(Map<Object, Set<Object>> map) {
         Set<String> constIds = new HashSet<>();
 
-        for (Map.Entry<Object, Collection<Object>> entry : map.entrySet()) {
+        for (Map.Entry<Object, Set<Object>> entry : map.entrySet()) {
             Object key = entry.getKey();
 
             constIds.add(key.toString());
@@ -99,7 +99,7 @@ public class TxWalState {
 
         TxHolder txHolderPrepared = this.prepared.get(txVer);
 
-        if (txHolderPrepared == null){
+        if (txHolderPrepared == null) {
             txHolderPreparing.prepared = 1;
 
             txHolderPrepared = txHolderPreparing;
@@ -156,7 +156,7 @@ public class TxWalState {
      * @param txVer Transaction id.
      * @return Boolean.
      */
-    public boolean isPreparing(GridCacheVersion txVer){
+    public boolean isPreparing(GridCacheVersion txVer) {
         return preparing.get(txVer) != null;
     }
 
@@ -164,7 +164,7 @@ public class TxWalState {
      * @param txVer Transaction id.
      * @return Boolean.
      */
-    public boolean isPrepared(GridCacheVersion txVer){
+    public boolean isPrepared(GridCacheVersion txVer) {
         return prepared.get(txVer) != null;
     }
 
@@ -172,16 +172,15 @@ public class TxWalState {
      * @param txVer Transaction id.
      * @return Boolean.
      */
-    public boolean isCommited(GridCacheVersion txVer){
+    public boolean isCommited(GridCacheVersion txVer) {
         return commited.contains(txVer);
     }
-
 
     /**
      * @param txVer Transaction id.
      * @return Boolean.
      */
-    public boolean isRollBacked(GridCacheVersion txVer){
+    public boolean isRollBacked(GridCacheVersion txVer) {
         return rollbacked.contains(txVer);
     }
 
@@ -223,6 +222,36 @@ public class TxWalState {
     }
 
     /**
+     * Append debug info.
+     *
+     * @param rb Recovery debug.
+     */
+    public void appendDebugInfo(RecoveryFuture.RecoveryDebug rb) {
+        rb.append("preparing ").append(preparing.size());
+
+        rb.append("\n");
+
+        if (!preparing.isEmpty()) {
+            for (TxHolder txHolder : preparing.values())
+                rb.append(txHolder).append("\n");
+        }
+
+        rb.append("prepared ").append(prepared.size());
+
+        if (!prepared.isEmpty()) {
+            rb.append("\n");
+
+            for (TxHolder txHolder : prepared.values())
+                rb.append(txHolder).append("\n");
+        }
+
+        rb.append("\n");
+
+        rb.append("commited ").append(commited.size()).append("\n");
+        rb.append("rollBacked ").append(rollbacked.size()).append("\n");
+    }
+
+    /**
      * Transaction wal record wrapper.
      */
     private static class TxHolder {
@@ -236,12 +265,12 @@ public class TxWalState {
         private final GridCacheVersion txVer;
 
         /** Nodes participated in transaction. */
-        private final Map<Object, Collection<Object>> nodes;
+        private final Map<Object, Set<Object>> nodes;
 
         /**
          *
          */
-        private TxHolder(GridCacheVersion txVer, Map<Object, Collection<Object>> nodes) {
+        private TxHolder(GridCacheVersion txVer, Map<Object, Set<Object>> nodes) {
             this.txVer = txVer;
             this.nodes = nodes;
         }
@@ -250,7 +279,12 @@ public class TxWalState {
          * Factory method.
          */
         private static TxHolder create(GridCacheVersion txVer, Map<Object, Collection<Object>> nodes) {
-            return new TxHolder(txVer, nodes);
+            Map<Object, Set<Object>> map = new HashMap<>();
+
+            for (Map.Entry<Object, Collection<Object>> entry : nodes.entrySet())
+                map.put(entry.getKey(), new HashSet<>(entry.getValue()));
+
+            return new TxHolder(txVer, map);
         }
 
         /**
@@ -263,10 +297,72 @@ public class TxWalState {
                 Collection<Object> backups = this.nodes.get(constId);
 
                 if (backups == null)
-                    this.nodes.put(constId, entry.getValue());
+                    this.nodes.put(constId, new HashSet<>(entry.getValue()));
                 else
                     backups.addAll(entry.getValue());
             }
+        }
+
+        /**
+         *
+         */
+        private String constIdsToString(Map<Object, Set<Object>> nodes) {
+            StringBuilder sb = new StringBuilder();
+
+            if (nodes.isEmpty())
+                sb.append("[]");
+
+            for (Map.Entry<Object, Set<Object>> entry : nodes.entrySet()) {
+                sb.append("(").append(entry.getKey()).append("->");
+
+                Collection<Object> backUps = entry.getValue();
+
+                boolean empty = backUps.isEmpty();
+
+                if (!empty)
+                    sb.append("[");
+                else {
+                    sb.append("[]");
+
+                    continue;
+                }
+
+                int size = backUps.size();
+
+                int last = size - 1;
+
+                int cnt = 0;
+
+                for (Object node : entry.getValue()) {
+                    sb.append(node);
+
+                    if (cnt != last)
+                        sb.append(",");
+
+                    cnt++;
+                }
+
+                sb.append("]");
+
+                sb.append(")");
+            }
+
+            return sb.toString();
+        }
+
+        private String txVer() {
+            return "ver[topVer=" + txVer.topologyVersion() +
+                ", order=" + txVer.order() +
+                ", nodeOrder=" + txVer.nodeOrder() + ']';
+        }
+
+        @Override public String toString() {
+            return "Tx[" +
+                "preparing=" + preparing +
+                " prepared=" + prepared +
+                " " + txVer() +
+                " nodes=" + constIdsToString(nodes) +
+                ']';
         }
     }
 }

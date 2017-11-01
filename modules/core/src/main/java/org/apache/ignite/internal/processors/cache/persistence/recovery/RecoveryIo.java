@@ -52,5 +52,5 @@ public interface RecoveryIo {
     /**
      * @return Consistent id for local node.
      */
-    public String localNodeConsistentId();
+    public String localNodeConsistentId() throws IgniteCheckedException;
 }

@@ -52,4 +52,9 @@ public class RecoveryContext {
     public Set<GridCacheVersion> getSkipTxEntries() {
         return skipTxEntries;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "RecoveryContext[" + "initPnt=" + initPnt + ", skipTxEntries=" + skipTxEntries + ']';
+    }
 }
