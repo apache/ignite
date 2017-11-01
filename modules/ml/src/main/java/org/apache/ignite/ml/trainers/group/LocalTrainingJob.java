@@ -40,8 +40,8 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.StreamUtil;
 
-public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJob {
-    private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker;
+public class LocalTrainingJob<S, U extends Serializable, G, D> implements ComputeJob {
+    private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> worker;
     private UUID trainingUUID;
     private String cacheName;
     private Ignite ignite;
@@ -50,7 +50,7 @@ public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJo
     private IgniteSupplier<Stream<Integer>> keySupplier;
     private IgniteBinaryOperator<U> reducer;
 
-    public LocalTrainingJob(IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker,
+    public LocalTrainingJob(IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> worker,
         IgniteSupplier<Stream<Integer>> keySupplier,
         IgniteBinaryOperator<U> reducer,
         UUID trainingUUID, String cacheName,
@@ -73,13 +73,15 @@ public class LocalTrainingJob<S, U extends Serializable, G> implements ComputeJo
     @Override public U execute() throws IgniteException {
         Map<GroupTrainerCacheKey, G> m = new ConcurrentHashMap<>();
 
-        List<IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> res = selectLocalEntries().
+        List<IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> res = selectLocalEntries().
             parallel().
             map(entry -> worker.apply(entry, data)).collect(Collectors.toList());
 
-        res.stream().map(IgniteBiTuple::get1).forEach(r -> m.put(r.getKey(), r.getValue()));
 
-        cache.putAll(m);
+        // TODO: use remote consumer
+//        res.stream().map(IgniteBiTuple::get1).forEach(r -> m.put(r.getKey(), r.getValue()));
+//
+//        cache.putAll(m);
 
         return res.stream().map(IgniteBiTuple::get2).reduce(reducer).get();
     }

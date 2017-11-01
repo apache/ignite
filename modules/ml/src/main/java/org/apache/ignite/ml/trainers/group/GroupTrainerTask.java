@@ -39,14 +39,16 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
 import org.jetbrains.annotations.Nullable;
 
-public class GroupTrainerTask<S, G, U extends Serializable> extends ComputeTaskAdapter<Void, U> {
+public class GroupTrainerTask<S, G, U extends Serializable, D> extends ComputeTaskAdapter<Void, U> {
     private UUID trainingUUID;
-    private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker;
+    private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> worker;
+    IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer;
     // TODO: Also use this reducer on local steps.
     private IgniteBinaryOperator<U> reducer;
     private String cacheName;
@@ -56,14 +58,16 @@ public class GroupTrainerTask<S, G, U extends Serializable> extends ComputeTaskA
     private Ignite ignite;
 
     public GroupTrainerTask(UUID trainingUUID,
-        IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, G>, U>> worker,
+        IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> remoteWorker,
+        IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer,
         IgniteSupplier<Stream<Integer>> keysSupplier,
         IgniteBinaryOperator<U> reducer,
         String cacheName,
         S data,
         Ignite ignite) {
         this.trainingUUID = trainingUUID;
-        this.worker = worker;
+        this.worker = remoteWorker;
+        this.remoteConsumer = remoteConsumer;
         this.keysSupplier = keysSupplier;
         this.reducer = reducer;
         this.cacheName = cacheName;

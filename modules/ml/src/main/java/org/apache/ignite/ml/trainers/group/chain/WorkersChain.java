@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.trainers.group.chain;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,12 +30,16 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
+import org.apache.ignite.ml.trainers.group.GroupTrainerTask;
 
 public class WorkersChain<I, L, G, O> {
-    private List<ChainStep> steps;
+//    private List<ChainStep> steps;
+    ChainStep<I, L, G, ?, ?> step;
+    WorkersChain<?, L, G, O> next;
 
     public WorkersChain() {
-        steps = new LinkedList<>();
+//        steps = new LinkedList<>();
     }
 
     private WorkersChain(List<ChainStep> steps) {
@@ -53,6 +57,10 @@ public class WorkersChain<I, L, G, O> {
         return withNewStep(ChainStep.distributedStep(distributedWorker, kf, distributedConsumer, reducer));
     }
 
+    public <O1> WorkersChain<I, L, G, O1> then(WorkersChain<O, L, G, O1> chain) {
+
+    }
+
     private <O1> WorkersChain<O, L, G, O1> withNewStep(ChainStep<O, ?, ?, ?, O1> step) {
         List<ChainStep> newSteps = new LinkedList<>(steps);
         newSteps.add(step);
@@ -60,15 +68,21 @@ public class WorkersChain<I, L, G, O> {
         return new WorkersChain<>(newSteps);
     }
 
-    public O process(UUID trainingUUID, String cacheName, I data, Ignite ignite) {
-        Object d = data;
-        Object res = null;
-        for (ChainStep step : steps) {
-            IgniteSupplier<Stream<Integer>> keysSupplier = (IgniteSupplier<Stream<Integer>>)step.kf.apply(d);
-            res = ignite.compute(ignite.cluster().forDataNodes(cacheName)).execute(new GroupTrainerTask<>(trainingUUID, step.distributedWorker, keysSupplier, step.reducer, cacheName, d, ignite), null);
-        }
+    public Optional<O> process(UUID trainingUUID, String cacheName, I data, Ignite ignite) {
+        if (step.isLocal) {
+            IgniteSupplier<Stream<Integer>> keysSupplier = step.kf.apply(data);
+            ignite.compute(ignite.cluster().forDataNodes(cacheName)).execute(new GroupTrainerTask<>(trainingUUID, step.distributedWorker, keysSupplier, step.reducer, cacheName, data, ignite), null);
+        } else {
 
-        return (O)res;
+        }
+//        Object d = data;
+//        Object res = null;
+//        for (ChainStep step : steps) {
+//            IgniteSupplier<Stream<Integer>> keysSupplier = (IgniteSupplier<Stream<Integer>>)step.kf.apply(d);
+//            res = ignite.compute(ignite.cluster().forDataNodes(cacheName)).execute(new GroupTrainerTask<>(trainingUUID, step.distributedWorker, keysSupplier, step.reducer, cacheName, d, ignite), null);
+//        }
+//
+//        return (O)res;
     }
 
     private static class ChainStep<I1, L, G, D, O1> {
@@ -76,13 +90,13 @@ public class WorkersChain<I, L, G, O> {
         private IgniteBiFunction<I1, L, Optional<O1>> localWorker;
 
         private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, O1>> distributedWorker;
-        private IgniteFunction<I1, Stream<Integer>> kf;
+        private IgniteFunction<I1, IgniteSupplier<Stream<Integer>>> kf;
         private IgniteConsumer<Map<GroupTrainerCacheKey, D>> distributedConsumer;
         private IgniteBinaryOperator<O1> reducer;
 
         private ChainStep(boolean isLocal,
             IgniteBiFunction<I1, L, Optional<O1>> localWorker,
-            IgniteFunction<I1, Stream<Integer>> kf,
+            IgniteFunction<I1, IgniteSupplier<Stream<Integer>>> kf,
             IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, I1, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, O1>> distributedWorker,
             IgniteConsumer<Map<GroupTrainerCacheKey, D>> distributedConsumer,
             IgniteBinaryOperator<O1> reducer) {
