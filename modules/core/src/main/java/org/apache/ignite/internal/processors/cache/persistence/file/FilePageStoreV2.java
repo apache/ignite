@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
  *
@@ -35,7 +35,7 @@ public class FilePageStoreV2 extends FilePageStore {
      * @param factory Factory.
      * @param cfg Config.
      */
-    public FilePageStoreV2(byte type, File file, FileIOFactory factory, MemoryConfiguration cfg) {
+    public FilePageStoreV2(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
         super(type, file, factory, cfg);
 
         hdrSize = cfg.getPageSize();

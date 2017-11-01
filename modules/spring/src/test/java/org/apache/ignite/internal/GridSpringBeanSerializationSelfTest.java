@@ -53,7 +53,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         bean.setConfiguration(cfg);
 
-        bean.afterPropertiesSet();
+        bean.afterSingletonsInstantiated();
     }
 
     /**

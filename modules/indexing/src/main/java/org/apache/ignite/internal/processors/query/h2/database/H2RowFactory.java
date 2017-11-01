@@ -63,16 +63,13 @@ public class H2RowFactory {
         GridH2Row row;
 
         try {
-            row = rowDesc.createRow(rowBuilder.key(), rowBuilder.partition(), rowBuilder.value(), rowBuilder.version(),
-                rowBuilder.expireTime());
-
-            row.link = link;
+            row = rowDesc.createRow(rowBuilder);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
 
-        assert row.ver != null;
+        assert row.version() != null;
 
         return row;
     }

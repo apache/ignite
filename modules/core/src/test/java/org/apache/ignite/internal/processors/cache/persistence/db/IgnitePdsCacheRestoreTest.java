@@ -21,9 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -40,6 +40,9 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Non-persistent data region name. */
+    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+
     /** */
     private CacheConfiguration[] ccfgs;
 
@@ -55,17 +58,18 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
             ccfgs = null;
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(10 * 1024 * 1024).setPersistenceEnabled(true))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-        cfg.setMemoryConfiguration(memCfg);
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setMaxSize(10 * 1024 * 1024)
+            .setName(NO_PERSISTENCE_REGION)
+            .setPersistenceEnabled(false));
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
-        pCfg.setWalMode(WALMode.LOG_ONLY);
-
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -137,14 +141,22 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache2 = ignite(2).cache("c2");
 
+        IgniteCache<Object, Object> cache3 = ignite(2).cache("c3");
+
         for (Integer key : keys) {
             assertEquals(key, cache1.get(key));
 
             assertNull(cache2.get(key));
 
+            assertNull(cache3.get(key));
+
             cache2.put(key, key);
 
             assertEquals(key, cache2.get(key));
+
+            cache3.put(key, key);
+
+            assertEquals(key, cache3.get(key));
         }
 
         List<Integer> nearKeys = nearKeys(cache1, 10, 0);
@@ -152,6 +164,10 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         for (Integer key : nearKeys) {
             assertNull(cache1.get(key));
             assertNull(cache2.get(key));
+            assertNull(cache3.get(key));
+
+            cache3.put(key, key);
+            assertEquals(key, cache3.get(key));
 
             cache2.put(key, key);
             assertEquals(key, cache2.get(key));
@@ -165,6 +181,8 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         for (Integer key : nearKeys) {
+            assertEquals(key, cache3.get(key));
+
             assertEquals(key, cache2.get(key));
 
             assertEquals(key, cache1.get(key));
@@ -186,10 +204,13 @@ public class IgnitePdsCacheRestoreTest extends GridCommonAbstractTest {
      * @return Configurations set 1.
      */
     private CacheConfiguration[] configurations2() {
-        CacheConfiguration[] ccfgs = new CacheConfiguration[2];
+        CacheConfiguration[] ccfgs = new CacheConfiguration[3];
 
         ccfgs[0] = cacheConfiguration("c1");
         ccfgs[1] = cacheConfiguration("c2");
+        ccfgs[2] = cacheConfiguration("c3");
+
+        ccfgs[2].setDataRegionName(NO_PERSISTENCE_REGION);
 
         return ccfgs;
     }

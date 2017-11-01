@@ -184,7 +184,7 @@ public class DdlStatementsProcessor {
                         throw err;
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
-                        cmd.cacheGroup(),cmd.affinityKey(), cmd.atomicityMode(),
+                        cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
                         cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }

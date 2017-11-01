@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (var dotNetField in dotNetFields)
             {
-                writer.WriteInt(BinaryUtils.GetStringHashCode(dotNetField));
+                writer.WriteInt(BinaryUtils.GetStringHashCodeLowerCase(dotNetField));
             }
         }
 
@@ -304,9 +304,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
             }
-            
-            if (serInfo.ObjectType != serializable.GetType())
+
+            if (serInfo.ObjectType != serializable.GetType() &&
+                typeof(ISerializable).IsAssignableFrom(serInfo.ObjectType))
             {
+                // serInfo.ObjectType should be ISerializable. There is a known case for generic collections:
+                // serializable is EnumEqualityComparer : ISerializable 
+                // and serInfo.ObjectType is ObjectEqualityComparer (does not implement ISerializable interface).
+                // Please read a possible explanation here:
+                // http://dotnetstudio.blogspot.ru/2012/06/net-35-to-net-40-enum.html
+
                 return serInfo.ObjectType;
             }
 
@@ -610,49 +617,49 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (fieldType == typeof(byte))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (sbyte) (byte) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(short))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ushort) (short) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(int))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (uint) (int) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(long))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ulong) (long) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(byte[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<byte, sbyte>((byte[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(short[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName))
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName))
                         ? ConvertArray<short, ushort>((short[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(int[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<int, uint>((int[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(long[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<long, ulong>((long[]) fieldVal) : fieldVal;
                 }
             }

@@ -47,9 +47,9 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
-        assert row0.link != 0;
+        assert row0.link() != 0;
 
-        PageUtils.putLong(pageAddr, off, row0.link);
+        PageUtils.putLong(pageAddr, off, row0.link());
     }
 
     /** {@inheritDoc} */

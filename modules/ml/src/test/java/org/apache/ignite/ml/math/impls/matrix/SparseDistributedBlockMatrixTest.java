@@ -23,12 +23,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
@@ -293,6 +291,8 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
+        BlockMatrixStorage storage = (BlockMatrixStorage)res.getStorage();
+
         for(int i = 0; i < size; i++)
             for(int j = 0; j < size; j++)
                 if (i == j)
@@ -364,17 +364,8 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
     /** Build key set for SparseBlockDistributedMatrix. */
     private Set<BlockMatrixKey> buildKeySet(SparseBlockDistributedMatrix m){
-        Set<BlockMatrixKey> set = new HashSet<>();
-
         BlockMatrixStorage storage = (BlockMatrixStorage)m.getStorage();
 
-        IgniteUuid uuid = storage.getUUID();
-
-        long maxBlock = (rows / 32 + (rows % 32 > 0 ? 1 : 0)) * (cols / 32 + (cols % 32 > 0 ? 1 : 0));
-
-        for (long i = 0; i < maxBlock; i++)
-            set.add(new BlockMatrixKey(i,uuid,null));
-
-        return set;
+        return storage.getAllKeys();
     }
 }

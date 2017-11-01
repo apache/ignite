@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
@@ -126,7 +126,7 @@ public class CacheGroupContext {
     private GridCachePreloader preldr;
 
     /** */
-    private final MemoryPolicy memPlc;
+    private final DataRegion dataRegion;
 
     /** */
     private final CacheObjectContext cacheObjCtx;
@@ -150,7 +150,7 @@ public class CacheGroupContext {
      * @param cacheType Cache type.
      * @param ccfg Cache configuration.
      * @param affNode Affinity node flag.
-     * @param memPlc Memory policy.
+     * @param dataRegion data region.
      * @param cacheObjCtx Cache object context.
      * @param freeList Free list.
      * @param reuseList Reuse list.
@@ -163,13 +163,13 @@ public class CacheGroupContext {
         CacheType cacheType,
         CacheConfiguration ccfg,
         boolean affNode,
-        MemoryPolicy memPlc,
+        DataRegion dataRegion,
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer) {
         assert ccfg != null;
-        assert memPlc != null || !affNode;
+        assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
 
         this.grpId = grpId;
@@ -177,7 +177,7 @@ public class CacheGroupContext {
         this.ctx = ctx;
         this.ccfg = ccfg;
         this.affNode = affNode;
-        this.memPlc = memPlc;
+        this.dataRegion = dataRegion;
         this.cacheObjCtx = cacheObjCtx;
         this.freeList = freeList;
         this.reuseList = reuseList;
@@ -188,7 +188,7 @@ public class CacheGroupContext {
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
 
-        storeCacheId = affNode && memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
 
         log = ctx.kernalContext().log(getClass());
 
@@ -523,10 +523,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Memory policy.
+     * @return data region.
      */
-    public MemoryPolicy memoryPolicy() {
-        return memPlc;
+    public DataRegion dataRegion() {
+        return dataRegion;
     }
 
     /**
@@ -862,7 +862,7 @@ public class CacheGroupContext {
         else
             preldr = new GridCachePreloaderAdapter(this);
 
-        if (ctx.kernalContext().config().getPersistentStoreConfiguration() != null) {
+        if (persistenceEnabled()) {
             try {
                 offheapMgr = new GridCacheOffheapManager();
             }
@@ -876,6 +876,13 @@ public class CacheGroupContext {
         offheapMgr.start(ctx, this);
 
         ctx.affinity().onCacheGroupCreated(this);
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean persistenceEnabled() {
+        return dataRegion != null && dataRegion.config().isPersistenceEnabled();
     }
 
     /**

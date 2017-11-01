@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Cache
 {
+    using System;
+
     /// <summary>
     /// Memory usage metrics.
+    /// Obsolete, use <see cref="IDataRegionMetrics"/>.
     /// </summary>
+    [Obsolete("See IDataRegionMetrics.")]
     public interface IMemoryMetrics
     {
         /// <summary>

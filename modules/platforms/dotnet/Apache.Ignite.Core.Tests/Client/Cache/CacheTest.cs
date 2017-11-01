@@ -68,6 +68,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests the cache put / get for Empty object type.
+        /// </summary>
+        [Test]
+        public void TestPutGetEmptyObject()
+        {
+            using (var client = GetClient())
+            {
+                var serverCache = GetCache<EmptyObject>();
+                var clientCache = client.GetCache<int, EmptyObject>(CacheName);
+
+                serverCache.Put(1, new EmptyObject());
+                Assert.IsNotNull(clientCache.Get(1));
+            }
+        }
+
+        /// <summary>
         /// Tests the cache put / get with user data types.
         /// </summary>
         [Test]
@@ -112,6 +128,60 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // Null key or value.
                 Assert.Throws<ArgumentNullException>(() => clientCache.Put(10, null));
                 Assert.Throws<ArgumentNullException>(() => clientCache.Put(null, person));
+            }
+        }
+
+        /// <summary>
+        /// Tests the cache put / get for Dictionary with Enum keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetDictionary([Values(true, false)] bool compactFooter)
+        {
+            var cfg = GetClientConfiguration();
+
+            cfg.BinaryConfiguration = new BinaryConfiguration
+            {
+                CompactFooter = compactFooter
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var dict = new Dictionary<ByteEnum, int> { { ByteEnum.One, 1 }, { ByteEnum.Two, 2 } };
+
+                var serverCache = GetCache<Dictionary<ByteEnum, int>>();
+                var clientCache = client.GetCache<int, Dictionary<ByteEnum, int>>(CacheName);
+
+                serverCache.Put(1, dict);
+                var res = clientCache.Get(1);
+
+                Assert.AreEqual(dict, res);
+            }
+        }
+
+        /// <summary>
+        /// Tests the cache put / get for HashSet with Enum keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetHashSet([Values(true, false)] bool compactFooter)
+        {
+            var cfg = GetClientConfiguration();
+
+            cfg.BinaryConfiguration = new BinaryConfiguration
+            {
+                CompactFooter = compactFooter
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var hashSet = new HashSet<ByteEnum> { ByteEnum.One, ByteEnum.Two };
+
+                var serverCache = GetCache<HashSet<ByteEnum>>();
+                var clientCache = client.GetCache<int, HashSet<ByteEnum>>(CacheName);
+
+                serverCache.Put(1, hashSet);
+                var res = clientCache.Get(1);
+
+                Assert.AreEqual(hashSet, res);
             }
         }
 
@@ -775,9 +845,57 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        /// <summary>
+        /// Tests various cache names.
+        /// Cache id as calculated as a hash code and passed to the server side; this test verifies correct id
+        /// calculation for different strings.
+        /// </summary>
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = new[]
+            {
+                "foo-bar",
+                "Foo-Bar",
+                "FOO-BAR",
+                "testCache1",
+                "TestCache2",
+                "TESTCACHE3",
+                new string('c', 100),
+                new string('C', 100),
+                Guid.NewGuid().ToString(),
+                "тест",
+                "Тест",
+                "ТЕСТ",
+                "тест1",
+                "Тест2",
+                "ТЕСТ3"
+            };
+
+            var ignite = Ignition.GetIgnite();
+
+            for (var i = 0; i < cacheNames.Length; i++)
+            {
+                var cacheName = cacheNames[i];
+                ignite.CreateCache<int, string>(cacheName).Put(i, cacheName);
+
+                using (var client = GetClient())
+                {
+                    var cache = client.GetCache<int, string>(cacheName);
+                    Assert.AreEqual(cacheName, cache[i]);
+                }
+            }
+        }
+
         private class Container
         {
             public Container Inner;
+        }
+
+        public enum ByteEnum : byte
+        {
+            One = 1,
+            Two = 2,
         }
     }
 }

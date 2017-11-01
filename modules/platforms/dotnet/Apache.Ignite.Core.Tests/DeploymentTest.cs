@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
@@ -38,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestCustomDeployment()
         {
             // Create temp folder
-            var folder = GetTempFolder();
+            var folder = IgniteUtils.GetTempDirectoryName();
 
             // Copy jars
             var home = IgniteHome.Resolve(null);
@@ -137,36 +138,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(exePath, remoteProcPath);
             }
-        }
-
-        /// <summary>
-        /// Gets the temporary folder.
-        /// </summary>
-        private static string GetTempFolder()
-        {
-            const string prefix = "ig-test-";
-            var temp = Path.GetTempPath();
-
-            for (int i = 0; i < int.MaxValue; i++)
-            {
-                {
-                    try
-                    {
-                        var path = Path.Combine(temp, prefix + i);
-
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
-
-                        return Directory.CreateDirectory(path).FullName;
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore
-                    }
-                }
-            }
-
-            throw new InvalidOperationException();
         }
 
         #pragma warning disable 649
