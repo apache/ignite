@@ -31,6 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class TxStateResponse implements Message {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
     @GridDirectCollection(Message.class)
     List<GridCacheVersion> rollBackTxs = new ArrayList<>();

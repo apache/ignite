@@ -31,6 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class TxStateRequest implements Message {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
     @GridDirectCollection(Message.class)
     List<GridCacheVersion> prepared = new ArrayList<>();
