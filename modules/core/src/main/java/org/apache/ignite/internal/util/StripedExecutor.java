@@ -78,10 +78,9 @@ public class StripedExecutor implements ExecutorService {
      * @param log Logger.
      * @param stealTasks {@code True} to steal tasks.
      */
-    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log, boolean stealTasks) {
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log,
+        boolean stealTasks) {
         A.ensure(cnt > 0, "cnt > 0");
-
-
 
         stripes = stealTasks ? StealingStripe.create(igniteInstanceName, poolName, log, cnt) : new Stripe[cnt];
 
@@ -722,13 +721,15 @@ public class StripedExecutor implements ExecutorService {
             super(igniteInstanceName, poolName, idx, log);
         }
 
+        /** {@inheritDoc} */
         @Override void execute(Runnable cmd) {
             queue.offer(cmd);
 
-            if (parked.compareAndSet(true, false))
+            if (parked.get() && parked.compareAndSet(true, false))
                 LockSupport.unpark(thread);
         }
 
+        /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
             Runnable task;
 
@@ -753,10 +754,12 @@ public class StripedExecutor implements ExecutorService {
             }
         }
 
+        /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
         }
 
+        /** {@inheritDoc} */
         @Override String queueToString() {
             return String.valueOf(queue);
         }
