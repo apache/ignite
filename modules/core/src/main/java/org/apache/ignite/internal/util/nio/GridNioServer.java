@@ -254,7 +254,7 @@ public class GridNioServer<T> {
                 boolean rndBalance = IgniteSystemProperties.getBoolean(IGNITE_IO_BALANCE_RANDOM_BALANCE, false);
 
                 if (rndBalance)
-                    balancer0 = new RandomBalancer<>(this, log);
+                    balancer0 = new RandomBalancer<>(this, readWriteSelectorsAssign, log);
                 else {
                     balancer0 = readWriteSelectorsAssign ?
                         new ReadWriteSizeBasedBalancer<>(this, balancePeriod, log) :
@@ -362,7 +362,7 @@ public class GridNioServer<T> {
      * Increments writer sessions moving count.
      */
     void incrementWriterMovedCount() {
-        readerMoveCnt.incrementAndGet();
+        writerMoveCnt.incrementAndGet();
     }
 
     /**

@@ -35,6 +35,9 @@ class RandomBalancer<T> implements IgniteRunnable {
     @GridToStringExclude
     private final GridNioServer<T> nio;
 
+    /** */
+    private final boolean pairedConnections;
+
     /** Logger. */
     @GridToStringExclude
     private final IgniteLogger log;
@@ -43,8 +46,9 @@ class RandomBalancer<T> implements IgniteRunnable {
      * @param nio Nio server.
      * @param log Logger.
      */
-    RandomBalancer(GridNioServer<T> nio, IgniteLogger log) {
+    RandomBalancer(GridNioServer<T> nio, boolean pairedConnections, IgniteLogger log) {
         this.nio = nio;
+        this.pairedConnections = pairedConnections;
         this.log = log;
     }
 
@@ -52,15 +56,20 @@ class RandomBalancer<T> implements IgniteRunnable {
     @Override public void run() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        int w1 = rnd.nextInt(nio.workers().size());
+        int w1, w2;
+
+        w1 = rnd.nextInt(nio.workers().size());
 
         if (nio.workers().get(w1).sessions().isEmpty())
             return;
 
-        int w2 = rnd.nextInt(nio.workers().size());
-
-        while (w2 == w1)
+        do {
             w2 = rnd.nextInt(nio.workers().size());
+
+            if(pairedConnections && (((long)w1 + w2) % 2) != 0)
+                w2 = (w2 + 1) % nio.workers().size();
+        }
+        while (w2 == w1);
 
         GridNioSession ses = randomSession(nio.workers().get(w1));
 

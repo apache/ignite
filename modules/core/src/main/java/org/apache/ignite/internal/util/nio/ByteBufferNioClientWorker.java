@@ -139,6 +139,7 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
             metricsLsnr.onBytesReceived(cnt);
 
         ses.bytesReceived(cnt);
+        onRead(cnt);
 
         // Sets limit to current position and
         // resets position to 0.
@@ -205,6 +206,7 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
                     metricsLsnr.onBytesSent(cnt);
 
                 ses.bytesSent(cnt);
+                onWrite(cnt);
             }
             else {
                 // For test purposes only (skipWrite is set to true in tests only).

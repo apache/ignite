@@ -352,7 +352,7 @@ abstract class AbstractNioClientWorker<T> extends GridWorker implements GridNioW
     }
 
     /**
-     * @param cnt
+     * @param cnt Bytes read.
      */
     final void onRead(int cnt) {
         bytesRcvd += cnt;
@@ -360,7 +360,7 @@ abstract class AbstractNioClientWorker<T> extends GridWorker implements GridNioW
     }
 
     /**
-     * @param cnt
+     * @param cnt Bytes write.
      */
     final void onWrite(int cnt) {
         bytesSent += cnt;
@@ -479,6 +479,8 @@ abstract class AbstractNioClientWorker<T> extends GridWorker implements GridNioW
                                     f.movedSocketChannel((SocketChannel)key.channel());
 
                                     key.cancel();
+
+                                    ses.reset();
 
                                     nio.workers().get(f.toIndex()).offer(f);
                                 }
