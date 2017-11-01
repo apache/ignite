@@ -44,6 +44,9 @@ public class OdbcRequest extends ClientListenerRequestNoId {
     /** Execute sql query with the batch of parameters. */
     public static final int QRY_EXEC_BATCH = 8;
 
+    /** Get next result set. */
+    public static final int MORE_RESULTS = 9;
+
     /** Command. */
     private final int cmd;
 

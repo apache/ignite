@@ -143,6 +143,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
@@ -169,6 +170,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Default checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE = 256L * 1024 * 1024;
+    /** */
+    private static final long GB = 1024L * 1024 * 1024;
+
+    /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
+
+    /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
+    public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
     /** Skip sync. */
     private final boolean skipSync = IgniteSystemProperties.getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
@@ -258,9 +267,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private long checkpointFreq;
-
-    /** */
-    private long checkpointPageBufSize;
 
     /** */
     private FilePageStoreManager storeMgr;
@@ -391,8 +397,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         addDataRegion(
             memCfg,
-            createDataRegionConfiguration(memCfg),
-            METASTORE_DATA_REGION_NAME
+            createDataRegionConfiguration(memCfg)
         );
     }
 
@@ -467,8 +472,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 30_000,
                 new LinkedBlockingQueue<Runnable>()
             );
-
-        checkpointPageBufSize = checkpointBufferSize(cctx.kernalContext().config());
     }
 
     private void readMetastore() throws IgniteCheckedException {
@@ -519,49 +522,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Get checkpoint buffer size for the given configuration.
      *
-     * @param cfg Configuration.
+     * @param regCfg Configuration.
      * @return Checkpoint buffer size.
      */
-    public static long checkpointBufferSize(IgniteConfiguration cfg) {
-        DataStorageConfiguration persistenceCfg = cfg.getDataStorageConfiguration();
-
-        if (persistenceCfg == null)
+    public static long checkpointBufferSize(DataRegionConfiguration regCfg) {
+        if (!regCfg.isPersistenceEnabled())
             return 0L;
 
-        long res = persistenceCfg.getCheckpointPageBufferSize();
+        long res = regCfg.getCheckpointPageBufferSize();
 
         if (res == 0L) {
-            res = DFLT_CHECKPOINTING_PAGE_BUFFER_SIZE;
-
-            DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
-
-            assert memCfg != null;
-
-            long totalSize = memCfg.getSystemRegionMaxSize();
-
-            if (memCfg.getDataRegionConfigurations() == null)
-                totalSize += DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
-            else {
-                for (DataRegionConfiguration memPlc : memCfg.getDataRegionConfigurations()) {
-                    if (Long.MAX_VALUE - memPlc.getMaxSize() > totalSize)
-                        totalSize += memPlc.getMaxSize();
-                    else {
-                        totalSize = Long.MAX_VALUE;
-
-                        break;
-                    }
-                }
-
-                assert totalSize > 0;
-            }
-
-            // Limit the checkpoint page buffer size by 2GB.
-            long dfltSize = 2 * 1024L * 1024L * 1024L;
-
-            long adjusted = Math.min(totalSize / 4, dfltSize);
-
-            if (res < adjusted)
-                res = adjusted;
+            if (regCfg.getMaxSize() < GB)
+                res = Math.min(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE, regCfg.getMaxSize());
+            else if (regCfg.getMaxSize() < 8 * GB)
+                res = regCfg.getMaxSize() / 4;
+            else
+                res = DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE;
         }
 
         return res;
@@ -849,12 +825,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long cacheSize = plcCfg.getMaxSize();
 
         // Checkpoint buffer size can not be greater than cache size, it does not make sense.
-        long chpBufSize = Math.min(checkpointPageBufSize, cacheSize);
+        long chpBufSize = checkpointBufferSize(plcCfg);
 
-        if (checkpointPageBufSize > cacheSize)
+        if (chpBufSize > cacheSize) {
             U.quietAndInfo(log,
-                "Checkpoint page buffer size is too big, setting to an adjusted cache size [size="
+                "Configured checkpoint page buffer size is too big, setting to the max region size [size="
                     + U.readableSize(cacheSize, false) + ",  memPlc=" + plcCfg.getName() + ']');
+
+            chpBufSize = cacheSize;
+        }
 
         boolean writeThrottlingEnabled = persistenceCfg.isWriteThrottlingEnabled();
 
@@ -1119,6 +1098,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }, false));
         }
+
         for (IgniteInternalFuture<Void> clearFut : clearFuts) {
             try {
                 clearFut.get();
@@ -2490,6 +2470,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             boolean hasPages;
 
+            IgniteFuture snapFut = null;
+
             checkpointLock.writeLock().lock();
 
             try {
@@ -2531,7 +2513,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     lsnr.onCheckpointBegin(ctx0);
 
                 if (curr.nextSnapshot)
-                    snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
+                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (grp.isLocal())
@@ -2571,6 +2553,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             curr.cpBeginFut.onDone();
+
+            if (snapFut != null) {
+                try {
+                    snapFut.get();
+                }
+                catch (IgniteException e) {
+                    U.error(log, "Failed to wait for snapshot operation initialization: " +
+                        curr.snapshotOperation + "]", e);
+                }
+            }
 
             if (hasPages) {
                 assert cpPtr != null;

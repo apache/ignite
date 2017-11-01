@@ -118,6 +118,7 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
@@ -189,9 +190,38 @@ public class IgnitionEx {
     static {
         // Check 1.8 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
-            !U.jdkVersion().contains("1.8"))
-            throw new IllegalStateException("Ignite requires Java 7 or above. Current Java version " +
+            !U.jdkVersion().contains("1.8")) {
+            throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
+        }
+
+        String jreVer = U.jreVersion();
+
+        if (jreVer.startsWith("1.7")) {
+            int upd = jreVer.indexOf('_');
+            int beta = jreVer.indexOf('-');
+
+            if (beta < 0)
+                beta = jreVer.length();
+
+            if (upd > 0 && beta > 0) {
+                try {
+                    int update = Integer.parseInt(jreVer.substring(upd + 1, beta));
+
+                    boolean forceJ7 = IgniteSystemProperties.getBoolean(IGNITE_FORCE_START_JAVA7, false);
+
+                    if (update < 71 && !forceJ7) {
+                        throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
+                            "is not supported: " + jreVer);
+                    }
+                    else if (forceJ7)
+                        System.err.println("Ignite requires Java 1.7.0_71 or above. Start on your own risk.");
+                }
+                catch (NumberFormatException ignore) {
+                    // No-op
+                }
+            }
+        }
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
@@ -2779,7 +2809,9 @@ public class IgnitionEx {
      */
     private static void convertLegacyDataStorageConfigurationToNew(
         IgniteConfiguration cfg) throws IgniteCheckedException {
-        boolean persistenceEnabled = cfg.getPersistentStoreConfiguration() != null;
+        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
+
+        boolean persistenceEnabled = psCfg != null;
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
@@ -2814,6 +2846,9 @@ public class IgnitionEx {
                 region.setSwapPath(mpc.getSwapFilePath());
                 region.setMetricsEnabled(mpc.isMetricsEnabled());
 
+                if (persistenceEnabled)
+                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+
                 if (mpc.getName() == null) {
                     throw new IgniteCheckedException(new IllegalArgumentException(
                         "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
@@ -2829,7 +2864,8 @@ public class IgnitionEx {
         }
 
         if (!optionalDataRegions.isEmpty())
-            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(new DataRegionConfiguration[optionalDataRegions.size()]));
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
+                new DataRegionConfiguration[optionalDataRegions.size()]));
 
         if (!customDfltPlc) {
             if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
@@ -2848,10 +2884,7 @@ public class IgnitionEx {
         }
 
         if (persistenceEnabled) {
-            PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
-
             dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
-            dsCfg.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
             dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
             dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
             dsCfg.setFileIOFactory(psCfg.getFileIOFactory());

@@ -256,12 +256,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+    private final PageHandler<Void, Long> rmvRow;
 
     /**
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        /** Indicates whether partition ID should be masked from page ID. */
+        private final boolean maskPartId;
+
+        /** */
+        RemoveRowHandler(boolean maskPartId) {
+            this.maskPartId = maskPartId;
+        }
+
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -293,6 +301,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -330,6 +339,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+
+        rmvRow = new RemoveRowHandler(cacheId == 0);
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -492,6 +504,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             AbstractDataPageIO<T> init = reuseBucket || allocated ? ioVersions().latest() : null;
 
