@@ -750,6 +750,20 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /**
+     * If the property is set Ignite will use legacy node comparator (based on node order) inste
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
+
+    /**
+     *
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

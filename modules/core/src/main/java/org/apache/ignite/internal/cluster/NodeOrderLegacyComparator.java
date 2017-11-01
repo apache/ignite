@@ -13,9 +13,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.cluster;
 
 import java.io.Serializable;
 import java.util.Comparator;
@@ -24,17 +25,17 @@ import org.apache.ignite.cluster.ClusterNode;
 /**
  * Node order comparator.
  */
-public class GridNodeOrderComparator implements Comparator<ClusterNode>, Serializable {
+public class NodeOrderLegacyComparator implements Comparator<ClusterNode>, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final Comparator<ClusterNode> INSTANCE = new GridNodeOrderComparator();
+    public static final Comparator<ClusterNode> INSTANCE = new NodeOrderLegacyComparator();
 
     /**
      * Private constructor. Don't create this class, use {@link #INSTANCE}.
      */
-    private GridNodeOrderComparator() {
+    private NodeOrderLegacyComparator() {
 
     }
 

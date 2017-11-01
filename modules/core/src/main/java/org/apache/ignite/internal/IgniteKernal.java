@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -125,6 +126,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessorImpl;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -950,7 +952,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new  GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
-                startProcessor(new GridClusterStateProcessor(ctx));
+                startProcessor(createComponent(GridClusterStateProcessor.class, ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
@@ -3520,6 +3522,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void activeEx(boolean active, Collection<ClusterNode> nodes) {
+        guard();
+
+        try {
+            context().state().changeGlobalState(active, nodes).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
         CU.validateCacheNames(cacheNames);
 
@@ -3988,6 +4005,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
+
+        if (cls.equals(GridClusterStateProcessor.class))
+            return (T)new GridClusterStateProcessorImpl(ctx);
 
         Class<T> implCls = null;
 
