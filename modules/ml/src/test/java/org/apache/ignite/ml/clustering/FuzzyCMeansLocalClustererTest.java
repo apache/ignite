@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.clustering;
 
 import org.apache.ignite.ml.math.DistanceMeasure;
@@ -6,7 +23,6 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -17,6 +33,8 @@ import java.util.Comparator;
 import static org.junit.Assert.*;
 
 public class FuzzyCMeansLocalClustererTest {
+
+    /** test FCM for points that forms three clusters on the line */
     @Test
     public void equalWeightsOneDimension() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -37,6 +55,7 @@ public class FuzzyCMeansLocalClustererTest {
         assertEquals(8.5, centers[2].getX(0), 2);
     }
 
+    /** test FCM for points that forms four clusters on the plane */
     @Test
     public void equalWeightsTwoDimensions() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -62,6 +81,7 @@ public class FuzzyCMeansLocalClustererTest {
         assertEquals(0, measure.compute(centers[3], new DenseLocalOnHeapVector(new double[]{-10, 10})), 1);
     }
 
+    /** test FCM for points that have different weights */
     @Test
     public void differentWeightsOneDimension() {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),

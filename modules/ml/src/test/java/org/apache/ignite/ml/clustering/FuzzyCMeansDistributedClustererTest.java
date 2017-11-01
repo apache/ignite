@@ -1,20 +1,35 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.clustering;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.EuclideanDistance;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Random;
 
-/**
- * Created by kroonk on 27.10.17.
- */
 public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 1;
 
@@ -46,19 +61,20 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
+    /** test that algorithm gives correct results on a small sample - 4 centers at the plane */
     @Test
     public void testTwoDimensionsLittleData() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansDistributedClusterer(new EuclideanDistance(),
-                2, 0.01, 50, null, 2, 50);
+        FuzzyCMeansDistributedClusterer clusterer = new FuzzyCMeansDistributedClusterer(new EuclideanDistance(),
+                2, 0.01, 500, null, 2, 50);
 
         double[][] points = new double[][]{{-10, -10}, {-9, -11}, {-10, -9}, {-11, -9},
                 {10, 10},   {9, 11},   {10, 9},   {11, 9},
                 {-10, 10},  {-9, 11},  {-10, 9},  {-11, 9},
                 {10, -10},  {9, -11},  {10, -9},  {11, -9}};
 
-        Matrix pointMatrix = new SparseDistributedMatrix(16, 2,
+        SparseDistributedMatrix pointMatrix = new SparseDistributedMatrix(16, 2,
                 StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
         for (int i = 0; i < 16; i++) {
             pointMatrix.setRow(i, points[i]);
@@ -66,53 +82,99 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
 
         FuzzyCMeansModel model = clusterer.cluster(pointMatrix, 4);
 
-        for (int i = 0; i < 4; i++) {
-            Vector center = model.centers()[i];
-            System.out.print(center.getX(0));
-            System.out.print(' ');
-            System.out.println(center.getX(1));
+        Vector[] centers = model.centers();
+        Arrays.sort(centers, Comparator.comparing(vector -> Math.atan2(vector.get(1), vector.get(0))));
+
+        DistanceMeasure measure = model.distanceMeasure();
+
+        assertEquals(0, measure.compute(centers[0], new DenseLocalOnHeapVector(new double[]{-10, -10})), 1);
+        assertEquals(0, measure.compute(centers[1], new DenseLocalOnHeapVector(new double[]{10, -10})), 1);
+        assertEquals(0, measure.compute(centers[2], new DenseLocalOnHeapVector(new double[]{10, 10})), 1);
+        assertEquals(0, measure.compute(centers[3], new DenseLocalOnHeapVector(new double[]{-10, 10})), 1);
+    }
+
+    /** perform N tests each of which contains M random points placed around K centers in 2D */
+    @Test
+    public void testTwoDimensionsRandomlyPlacedPointsAndCenters() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        final int numOfTests = 5;
+
+        final double exponentialWeight = 2.0;
+        final double maxCentersDelta = 0.01;
+        final int maxIterations = 500;
+        final Long seed = 1L;
+
+        DistanceMeasure measure = new EuclideanDistance();
+        FuzzyCMeansDistributedClusterer distributedClusterer = new FuzzyCMeansDistributedClusterer(measure,
+                exponentialWeight, maxCentersDelta, maxIterations, seed, 2, 50);
+
+        for (int i = 0; i < numOfTests; i++) {
+            performRandomTest(distributedClusterer, i);
         }
     }
 
-    public void testTwoDimensionsLargeData() {
-        Random random = new Random();
+    /**
+     * Test given clusterer for points placed randomly around vertexes of a regular polygon`
+     *
+     * @param distributedClusterer tested clusterer
+     * @param seed seed for the random numbers generator
+     */
+    public void performRandomTest(FuzzyCMeansDistributedClusterer distributedClusterer, long seed) {
+        final int minNumCenters = 2;
+        final int maxNumCenters = 5;
+        final double maxRadius = 1000;
+        final int maxPoints = 1000;
+        final int minPoints = 300;
 
-        final int numCenters = 4;
-        final int pointsAroundCenters = 2000;
+        Random random = new Random(seed);
+
+        int numCenters = random.nextInt(maxNumCenters - minNumCenters) + minNumCenters;
 
         double[][] centers = new double[numCenters][2];
+
         for (int i = 0; i < numCenters; i++) {
-            centers[i][0] = Math.cos(Math.PI * 2 / numCenters * i) * 100000;
-            centers[i][1] = Math.sin(Math.PI * 2 / numCenters * i) * 100000;
+            boolean finished = false;
+            double radius = maxRadius;
+            double angle = Math.PI * 2.0 * i / numCenters;
+            centers[i][0] = Math.cos(angle) * radius;
+            centers[i][1] = Math.sin(angle) * radius;
         }
 
-        double[][] points = new double[numCenters * pointsAroundCenters][2];
-        for (int i = 0; i < numCenters; i++) {
-            for (int j = 0; j < pointsAroundCenters; j++) {
-                int id = i * pointsAroundCenters + j;
-                points[id][0] = random.nextDouble() * 20000 + centers[i][0];
-                points[id][1] = random.nextDouble() * 20000 + centers[i][1];
-            }
+        int numPoints = minPoints + random.nextInt(maxPoints - minPoints);
+
+        double[][] points = new double[numPoints][2];
+
+        for (int i = 0; i < numPoints; i++) {
+            int center = random.nextInt(numCenters);
+            double randomDouble = random.nextDouble();
+            double radius = randomDouble * randomDouble * maxRadius / 10;
+            double angle = random.nextDouble() * Math.PI * 2.0;
+            points[i][0] = centers[center][0] + Math.cos(angle) * radius;
+            points[i][1] = centers[center][1] + Math.sin(angle) * radius;
         }
 
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        Matrix pointMatrix = new SparseDistributedMatrix(numCenters * pointsAroundCenters, 2,
+        SparseDistributedMatrix pointMatrix = new SparseDistributedMatrix(numPoints, 2,
                 StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-        for (int i = 0; i < numCenters * pointsAroundCenters; i++) {
+        for (int i = 0; i < numPoints; i++) {
             pointMatrix.setRow(i, points[i]);
         }
 
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansDistributedClusterer(new EuclideanDistance(),
-                2, 0.01, 50, null, 2, 50);
+        FuzzyCMeansModel model = distributedClusterer.cluster(pointMatrix, numCenters);
+        Vector[] computedCenters = model.centers();
+        DistanceMeasure measure = model.distanceMeasure();
 
-        FuzzyCMeansModel model = clusterer.cluster(pointMatrix, numCenters);
+        int counter = numCenters;
 
         for (int i = 0; i < numCenters; i++) {
-            Vector center = model.centers()[i];
-            System.out.print((int) center.get(0));
-            System.out.print(' ');
-            System.out.println((int) center.get(1));
+            for (int j = 0; j < numCenters; j++) {
+                if (measure.compute(computedCenters[i], new DenseLocalOnHeapVector(centers[j])) < 100) {
+                    counter--;
+                    break;
+                }
+            }
         }
+
+        assertEquals(0, counter);
     }
 }

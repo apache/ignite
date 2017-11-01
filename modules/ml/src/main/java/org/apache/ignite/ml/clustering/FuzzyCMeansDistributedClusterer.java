@@ -120,7 +120,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param k number of centers
      * @return array of primary centers
      */
-    public Vector[] initializeCenters(SparseDistributedMatrix points, int k) {
+    private Vector[] initializeCenters(SparseDistributedMatrix points, int k) {
         int pointsNumber = points.rowSize();
 
         Vector firstCenter = points.viewRow(random.nextInt(pointsNumber));
@@ -208,7 +208,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     double probability = (costs.get(index) * 2.0 * k) / costsSum;
 
-                    if (new Random(seed * (index + 1)).nextDouble() < probability) {
+                    if (random.nextDouble() < probability) {
                         centers.add(vector);
                     }
 
@@ -231,7 +231,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param k the estimated number of centers
      * @return k centers
      */
-    public Vector[] chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers, int k) {
+    private Vector[] chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers, int k) {
         centers = centers.stream().distinct().collect(Collectors.toList());
 
         ConcurrentHashMap<Integer, Integer> weightsMap = weightCenters(cacheName, uuid, centers);
@@ -297,7 +297,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param centers array of current centers
      * @return membership matrix and sums of membership coefficient for each center
      */
-    public MembershipsAndSums calculateMembership(SparseDistributedMatrix points, Vector[] centers) {
+    private MembershipsAndSums calculateMembership(SparseDistributedMatrix points, Vector[] centers) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
         IgniteUuid uuid = points.getUUID();
         double fuzzyMembershipCoefficient = 2 / (exponentialWeight - 1);
@@ -349,7 +349,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param k number of centers
      * @return array of new centers
      */
-    public Vector[] calculateNewCenters(SparseDistributedMatrix points, MembershipsAndSums membershipsAndSums, int k) {
+    private Vector[] calculateNewCenters(SparseDistributedMatrix points, MembershipsAndSums membershipsAndSums, int k) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
         IgniteUuid uuid = points.getUUID();
 
