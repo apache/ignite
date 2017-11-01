@@ -19,12 +19,14 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -144,6 +146,20 @@ public class DiscoCache {
      */
     public DiscoveryDataClusterState state() {
         return state;
+    }
+
+    /**
+     *
+     */
+    public List<ClusterNode> baselineView() {
+        BaselineTopology baselineTop = state().baselineTopology();
+
+        if (baselineTop == null)
+            return allNodes();
+
+        HashSet<ClusterNode> res = new HashSet<>();
+
+        return baselineTop.createBaselineView(allNodes());
     }
 
     /** @return Local node. */

@@ -68,6 +68,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import javax.cache.CacheException;
 
@@ -606,6 +607,11 @@ public class IgfsIgniteMock implements IgniteEx {
         throwUnsupported();
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void activeEx(boolean active, Collection<ClusterNode> nodes) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */

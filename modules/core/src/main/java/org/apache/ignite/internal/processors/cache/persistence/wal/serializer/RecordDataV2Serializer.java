@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
@@ -54,6 +56,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case DATA_RECORD:
                 return delegateSerializer.size(record) + 8/*timestamp*/;
 
+            case SNAPSHOT:
+                return 8 + 1;
+
+            case EXCHANGE:
+                return 4 + 8 + 2 + ((ExchangeRecord)record).getConstId().getBytes().length;
+
             default:
                 return delegateSerializer.size(record);
         }
@@ -76,6 +84,23 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 return new DataRecord(entries, timeStamp);
 
+            case SNAPSHOT:
+                long snpId = in.readLong();
+                byte full = in.readByte();
+
+                return new SnapshotRecord(snpId, full == 1);
+
+            case EXCHANGE:
+                int idx = in.readInt();
+                long ts = in.readLong();
+                short size = in.readShort();
+
+                byte[] arr = new byte[size];
+
+                in.readFully(arr);
+
+                return new ExchangeRecord(new String(arr), ExchangeRecord.Type.values()[idx], ts);
+
             default:
                 return delegateSerializer.readRecord(type, in);
         }
@@ -95,6 +120,26 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+
+                break;
+
+            case SNAPSHOT:
+                SnapshotRecord snpRec = (SnapshotRecord)record;
+
+                buf.putLong(snpRec.getSnapshotId());
+                buf.put(snpRec.isFull() ? (byte)1 : 0);
+
+                break;
+
+            case EXCHANGE:
+                ExchangeRecord rec = (ExchangeRecord)record;
+
+                byte[] bytes = rec.getConstId().getBytes();
+
+                buf.putInt(rec.getType().ordinal());
+                buf.putLong(rec.timestamp());
+                buf.putShort((short)bytes.length);
+                buf.put(bytes);
 
                 break;
 

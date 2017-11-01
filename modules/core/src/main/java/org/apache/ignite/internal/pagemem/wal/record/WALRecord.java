@@ -166,7 +166,10 @@ public abstract class WALRecord {
         PARTITION_DESTROY,
 
         /** Snapshot record. */
-        SNAPSHOT;
+        SNAPSHOT,
+
+        /** Exchange record. */
+        EXCHANGE;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

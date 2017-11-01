@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -34,23 +35,27 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** State change request ID. */
-    private UUID reqId;
+    private final UUID reqId;
 
     /** New cluster state. */
-    private boolean clusterActive;
+    private final boolean clusterActive;
+
+    /** */
+    @Nullable private final BaselineTopology baselineTopology;
 
     /**
      * @param reqId State change request ID.
      * @param clusterActive New cluster state.
      */
-    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive) {
+    public ChangeGlobalStateFinishMessage(UUID reqId, boolean clusterActive, @Nullable BaselineTopology baselineTopology) {
         assert reqId != null;
 
         this.reqId = reqId;
         this.clusterActive = clusterActive;
+        this.baselineTopology = baselineTopology;
     }
 
     /**
@@ -65,6 +70,13 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      */
     public boolean clusterActive() {
         return clusterActive;
+    }
+
+    /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return baselineTopology;
     }
 
     /** {@inheritDoc} */

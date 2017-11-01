@@ -55,6 +55,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -795,70 +797,84 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert req != null : exchActions;
 
-        if (req.activate()) {
-            if (log.isInfoEnabled()) {
-                log.info("Start activation process [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]");
-            }
-
-            try {
-                cctx.activate();
-
-                if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
-                    List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
-
-                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests())
-                        startDescs.add(startReq.descriptor());
-
-                    cctx.database().readCheckpointAndRestoreMemory(startDescs);
-                }
-
-                cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
-
+        if (req.activeChanged()) {
+            if (req.activate()) {
                 if (log.isInfoEnabled()) {
-                    log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
+                    log.info("Start activation process [nodeId=" + cctx.localNodeId() +
                         ", client=" + cctx.kernalContext().clientNode() +
                         ", topVer=" + initialVersion() + "]");
                 }
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]", e);
 
-                changeGlobalStateE = e;
+                try {
+                    cctx.activate();
 
-                if (crd) {
-                    synchronized (mux) {
-                        changeGlobalStateExceptions.put(cctx.localNodeId(), e);
+                    if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+                        List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
+
+                        for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests())
+                            startDescs.add(startReq.descriptor());
+
+                        cctx.database().readCheckpointAndRestoreMemory(startDescs);
                     }
+
+                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Successfully activated caches [nodeId=" + cctx.localNodeId() +
+                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", topVer=" + initialVersion() + "]");
+                    }
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to activate node components [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]", e);
+
+                    changeGlobalStateE = e;
+
+                    if (crd) {
+                        synchronized (mux) {
+                            changeGlobalStateExceptions.put(cctx.localNodeId(), e);
+                        }
+                    }
+                }
+            }
+            else {
+                if (log.isInfoEnabled()) {
+                    log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]");
+                }
+
+                try {
+                    cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
+
+                    cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
+
+                    cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Successfully deactivated data structures, services and caches [" +
+                            "nodeId=" + cctx.localNodeId() +
+                            ", client=" + cctx.kernalContext().clientNode() +
+                            ", topVer=" + initialVersion() + "]");
+                    }
+                }
+                catch (Exception e) {
+                    U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
+                        ", client=" + cctx.kernalContext().clientNode() +
+                        ", topVer=" + initialVersion() + "]", e);
+
+                    changeGlobalStateE = e;
                 }
             }
         }
         else {
-            if (log.isInfoEnabled()) {
-                log.info("Start deactivation process [nodeId=" + cctx.localNodeId() +
-                    ", client=" + cctx.kernalContext().clientNode() +
-                    ", topVer=" + initialVersion() + "]");
-            }
-
             try {
-                cctx.kernalContext().dataStructures().onDeActivate(cctx.kernalContext());
-
-                cctx.kernalContext().service().onDeActivate(cctx.kernalContext());
-
-                cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
-
-                if (log.isInfoEnabled()) {
-                    log.info("Successfully deactivated data structures, services and caches [" +
-                        "nodeId=" + cctx.localNodeId() +
-                        ", client=" + cctx.kernalContext().clientNode() +
-                        ", topVer=" + initialVersion() + "]");
-                }
+                cctx.affinity().onBaselineTopologyChanged(this, crd);
             }
             catch (Exception e) {
-                U.error(log, "Failed to deactivate node components [nodeId=" + cctx.localNodeId() +
+                U.error(log, "Failed to change baseline topology [nodeId=" + cctx.localNodeId() +
                     ", client=" + cctx.kernalContext().clientNode() +
                     ", topVer=" + initialVersion() + "]", e);
 
@@ -1485,6 +1501,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        logExchange();
+
         cctx.database().releaseHistoryForExchange();
 
         if (err == null) {
@@ -1524,6 +1542,29 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    private void logExchange(){
+        if (cctx.kernalContext().state().publicApiActiveState() && cctx.wal() != null) {
+            if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
+                try {
+                    ExchangeRecord.Type type = null;
+
+                    if (firstDiscoEvt.type() == EVT_NODE_JOINED)
+                        type = ExchangeRecord.Type.JOIN;
+                    else if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
+                        type = ExchangeRecord.Type.LEFT;
+
+                    if (type != null)
+                        cctx.wal().log(new ExchangeRecord(firstDiscoEvt.eventNode().consistentId().toString(), type));
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+        }
     }
 
     /**
@@ -2404,7 +2445,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     ChangeGlobalStateFinishMessage stateFinishMsg = new ChangeGlobalStateFinishMessage(
                         req.requestId(),
-                        active);
+                        active,
+                        stateChangeErr ? null : req.baselineTopology());
 
                     cctx.discovery().sendCustomEvent(stateFinishMsg);
                 }
