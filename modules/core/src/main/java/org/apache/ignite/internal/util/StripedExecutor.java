@@ -582,7 +582,9 @@ public class StripedExecutor implements ExecutorService {
                     int init = ThreadLocalRandom.current().nextInt(poolSize);
 
                     for (int cur = init;;) {
-                        if (stripes[cur].parked.compareAndSet(true, false)) {
+                        AtomicBoolean parked = stripes[cur].parked;
+
+                        if (parked.get() && parked.compareAndSet(true, false)) {
                             LockSupport.unpark(stripes[cur].thread);
 
                             break;
@@ -676,7 +678,7 @@ public class StripedExecutor implements ExecutorService {
         @Override void execute(Runnable cmd) {
             queue.add(cmd);
 
-            if (parked.compareAndSet(true, false))
+            if (parked.get() && parked.compareAndSet(true, false))
                 LockSupport.unpark(thread);
             else if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD)
                 unpark.run();
