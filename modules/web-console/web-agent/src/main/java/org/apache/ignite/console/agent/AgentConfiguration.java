@@ -248,6 +248,16 @@ public class AgentConfiguration {
         if (val != null)
             nodeUri(val);
 
+        val = (String)props.remove("node-login");
+
+        if (val != null)
+            nodeLogin(val);
+
+        val = (String)props.remove("node-password");
+
+        if (val != null)
+            nodePassword(val);
+
         val = (String)props.remove("driver-folder");
 
         if (val != null)
@@ -273,6 +283,12 @@ public class AgentConfiguration {
         if (nodeUri == null)
             nodeUri(DFLT_NODE_URI);
 
+        if (nodeLogin == null)
+            nodeLogin(cmd.nodeLogin());
+
+        if (nodePwd == null)
+            nodePassword(cmd.nodePassword());
+
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
 
@@ -285,7 +301,7 @@ public class AgentConfiguration {
         StringBuilder sb = new StringBuilder();
 
         if (!F.isEmpty(tokens)) {
-            sb.append("User's security tokens        : ");
+            sb.append("User's security tokens          : ");
 
             boolean first = true;
 
@@ -307,9 +323,11 @@ public class AgentConfiguration {
             sb.append('\n');
         }
 
-        sb.append("URI to Ignite node REST server: ").append(nodeUri == null ? DFLT_NODE_URI : nodeUri).append('\n');
-        sb.append("URI to Ignite Console server  : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
-        sb.append("Path to agent property file   : ").append(configPath()).append('\n');
+        sb.append("URI to Ignite node REST server  : ").append(nodeUri == null ? DFLT_NODE_URI : nodeUri).append('\n');
+        if (nodeLogin != null)
+            sb.append("Login to Ignite node REST server: ").append(nodeLogin).append('\n');
+        sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
+        sb.append("Path to agent property file     : ").append(configPath()).append('\n');
 
         String drvFld = driversFolder();
 
@@ -320,8 +338,8 @@ public class AgentConfiguration {
                 drvFld = new File(agentHome, "jdbc-drivers").getPath();
         }
 
-        sb.append("Path to JDBC drivers folder   : ").append(drvFld).append('\n');
-        sb.append("Demo mode                     : ").append(disableDemo() ? "disabled" : "enabled");
+        sb.append("Path to JDBC drivers folder     : ").append(drvFld).append('\n');
+        sb.append("Demo mode                       : ").append(disableDemo() ? "disabled" : "enabled");
 
         return sb.toString();
     }

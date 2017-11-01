@@ -47,6 +47,7 @@ import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.console.agent.rest.RestExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
+import org.apache.ignite.console.agent.rest.RestExecutorSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.json.JSONArray;
@@ -368,7 +369,7 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutor();
+        try (RestExecutor restExecutor = new RestExecutorSecurity(cfg.nodeLogin(), cfg.nodePassword());
              ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
             Emitter.Listener onConnect = new Emitter.Listener() {
                 @Override public void call(Object... args) {

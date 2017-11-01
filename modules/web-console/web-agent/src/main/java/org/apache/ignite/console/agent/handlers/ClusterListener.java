@@ -107,9 +107,6 @@ public class ClusterListener implements AutoCloseable {
     private RestExecutor restExecutor;
 
     /** */
-    private String sesTok;
-
-    /** */
     private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
 
     /** */
@@ -256,28 +253,11 @@ public class ClusterListener implements AutoCloseable {
         }
     }
 
-    private boolean hasCredentials() {
-        return !(F.isEmpty(this.cfg.nodeLogin()) || F.isEmpty(this.cfg.nodePassword()));
-    }
-
-    private RestResult safeSendRequest(Map<String, Object> params) throws IOException {
-        if (!F.isEmpty(sesTok))
-            params.put("sessionToken", sesTok);
-
-        RestResult res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
-
-        if (res.getStatus() == STATUS_AUTH_FAILED && this.hasCredentials()) {
-            params.put("ignite.login", this.cfg.nodeLogin());
-            params.put("ignite.password", this.cfg.nodePassword());
-
-            res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
-
-            sesTok = res.getSessionToken();
-        }
-
-        return res;
-    }
-
+    /**
+     * Collect topology.
+     *
+     * @param full Full.
+     */
     private RestResult topology(boolean full) throws IOException {
         Map<String, Object> params = U.newHashMap(3);
 
@@ -285,7 +265,7 @@ public class ClusterListener implements AutoCloseable {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return this.safeSendRequest(params);
+        return restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
     }
 
     /** */
