@@ -45,7 +45,7 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
 import org.jetbrains.annotations.Nullable;
 
-public class GroupTrainerTask<S, G, U extends Serializable, D> extends ComputeTaskAdapter<Void, U> {
+public class GroupTrainerTask<K, S, G, U extends Serializable, D> extends ComputeTaskAdapter<Void, U> {
     private UUID trainingUUID;
     private IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> worker;
     IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer;
@@ -53,14 +53,14 @@ public class GroupTrainerTask<S, G, U extends Serializable, D> extends ComputeTa
     private IgniteBinaryOperator<U> reducer;
     private String cacheName;
     private S data;
-    private IgniteSupplier<Stream<Integer>> keysSupplier;
+    private IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier;
     private IgniteCache<GroupTrainerCacheKey, G> cache;
     private Ignite ignite;
 
     public GroupTrainerTask(UUID trainingUUID,
         IgniteBiFunction<Map.Entry<GroupTrainerCacheKey, G>, S, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> remoteWorker,
         IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer,
-        IgniteSupplier<Stream<Integer>> keysSupplier,
+        IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
         IgniteBinaryOperator<U> reducer,
         String cacheName,
         S data,
@@ -80,7 +80,6 @@ public class GroupTrainerTask<S, G, U extends Serializable, D> extends ComputeTa
         Map<ComputeJob, ClusterNode> res = new HashMap<>();
 
         Set<GroupTrainerCacheKey> keys = keysSupplier.get().
-            map(k -> new GroupTrainerCacheKey(k, trainingUUID)).
             collect(Collectors.toSet());
 
         Map<ClusterNode, Collection<GroupTrainerCacheKey>> key2Node = affinity().mapKeysToNodes(keys);

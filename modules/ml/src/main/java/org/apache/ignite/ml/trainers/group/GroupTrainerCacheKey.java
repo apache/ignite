@@ -20,15 +20,18 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
-public class GroupTrainerCacheKey {
+public class GroupTrainerCacheKey<K> {
     @AffinityKeyMapped
     private Integer nodeLocalEntityIndex;
 
     private UUID trainingUUID;
 
-    public GroupTrainerCacheKey(Integer nodeLocalEntityIndex, UUID trainingUUID) {
+    K data;
+
+    public GroupTrainerCacheKey(Integer nodeLocalEntityIndex, K data, UUID trainingUUID) {
         this.nodeLocalEntityIndex = nodeLocalEntityIndex;
         this.trainingUUID = trainingUUID;
+        this.data = data;
     }
 
     public Integer nodeLocalEntityIndex() {
@@ -37,5 +40,31 @@ public class GroupTrainerCacheKey {
 
     public UUID trainingUUID() {
         return trainingUUID;
+    }
+
+    public K data() {
+        return data;
+    }
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GroupTrainerCacheKey<?> key = (GroupTrainerCacheKey<?>)o;
+
+        if (nodeLocalEntityIndex != null ? !nodeLocalEntityIndex.equals(key.nodeLocalEntityIndex) : key.nodeLocalEntityIndex != null)
+            return false;
+        if (trainingUUID != null ? !trainingUUID.equals(key.trainingUUID) : key.trainingUUID != null)
+            return false;
+        return data != null ? data.equals(key.data) : key.data == null;
+    }
+
+    @Override public int hashCode() {
+        int result = nodeLocalEntityIndex != null ? nodeLocalEntityIndex.hashCode() : 0;
+        result = 31 * result + (trainingUUID != null ? trainingUUID.hashCode() : 0);
+        result = 31 * result + (data != null ? data.hashCode() : 0);
+        return result;
     }
 }
