@@ -29,6 +29,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -433,6 +434,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             ig.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setBackups(1)
                     .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
