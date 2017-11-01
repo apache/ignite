@@ -2450,14 +2450,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
                 continue;
 
-            GridDhtPartitionTopology top;
+            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                continue;
 
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
 
-            if (!grpCtx.persistenceEnabled())
-                continue;
-
-            top = grpCtx != null ?
+            GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
                 cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
 
