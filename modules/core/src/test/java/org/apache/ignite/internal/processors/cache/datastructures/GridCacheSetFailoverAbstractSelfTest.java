@@ -293,6 +293,8 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
         }
 
         set.close();
+
+        killFut.cancel();
     }
 
     /**
