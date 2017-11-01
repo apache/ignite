@@ -261,8 +261,16 @@ public class StripedExecutor implements ExecutorService {
      * @throws IgniteInterruptedException If interrupted.
      */
     private void awaitStop() throws IgniteInterruptedException {
-        for (Stripe stripe : stripes)
-            stripe.awaitStop();
+        boolean b = true;
+
+        while (b) {
+            try {
+                for (Stripe stripe : stripes)
+                    stripe.awaitStop();
+
+                b = false;
+            } catch (IgniteInterruptedException ignore) {}
+        }
     }
 
     /**

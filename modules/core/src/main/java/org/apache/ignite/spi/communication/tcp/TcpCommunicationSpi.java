@@ -2564,7 +2564,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assert node != null;
         assert msg != null;
 
-        if (log.isTraceEnabled())
+        if (log != null && log.isTraceEnabled())
             log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
         ClusterNode locNode = getLocalNode();
