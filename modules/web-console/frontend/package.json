@@ -32,6 +32,7 @@
     "win32"
   ],
   "dependencies": {
+    "@uirouter/angularjs": "1.0.5",
     "angular": "1.5.11",
     "angular-acl": "0.1.8",
     "angular-animate": "1.5.11",
@@ -50,7 +51,6 @@
     "angular-translate": "2.15.2",
     "angular-tree-control": "0.2.28",
     "angular-ui-grid": "4.0.7",
-    "@uirouter/angularjs": "1.0.5",
     "babel-core": "6.25.0",
     "babel-eslint": "7.2.3",
     "babel-loader": "7.1.1",

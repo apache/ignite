@@ -141,7 +141,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /**
      * @return Inline size.
      */
-    public int inlineSize() {
+    private int inlineSize() {
         return inlineSize;
     }
 
@@ -219,6 +219,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 int idx0 = col.column.getColumnId();
 
                 Value v2 = row.getValue(idx0);
+
                 if (v2 == null) {
                     // Can't compare further.
                     return 0;
@@ -227,6 +228,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 Value v1 = rowData.getValue(idx0);
 
                 int c = compareValues(v1, v2);
+
                 if (c != 0)
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
@@ -248,19 +250,28 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         for (int i = 0, len = cols.length; i < len; i++) {
             int idx = columnIds[i];
+
             Value v1 = r1.getValue(idx);
             Value v2 = r2.getValue(idx);
+
             if (v1 == null || v2 == null) {
-                // can't compare further
+                // Can't compare further.
                 return 0;
             }
+
             int c = compareValues(v1, v2);
+
             if (c != 0)
                 return InlineIndexHelper.fixSort(c, cols[i].sortType);
         }
+
         return 0;
     }
 
-    /** Compares two Values. */
+    /**
+     * @param v1 First value.
+     * @param v2 Second value.
+     * @return Comparison result.
+     */
     public abstract int compareValues(Value v1, Value v2);
 }

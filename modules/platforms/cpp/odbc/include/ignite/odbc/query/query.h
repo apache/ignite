@@ -131,6 +131,13 @@ namespace ignite
                 virtual int64_t AffectedRows() const = 0;
 
                 /**
+                 * Move to the next result set.
+                 *
+                 * @return Operatoin result.
+                 */
+                virtual SqlResult::Type NextResultSet() = 0;
+
+                /**
                  * Get query type.
                  *
                  * @return Query type.
