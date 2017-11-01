@@ -390,7 +390,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 for (int i = 0; i < entryCnt; i++)
                     entries.add(readDataEntry(in));
 
-                res = new DataRecord(entries, 0L);
+                res = new DataRecord(entries);
 
                 break;
 
