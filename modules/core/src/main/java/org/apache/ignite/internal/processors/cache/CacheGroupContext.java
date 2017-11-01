@@ -342,7 +342,9 @@ public class CacheGroupContext {
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
 
-        assert !sharedGroup() && caches.size() == 1 : ctx.kernalContext().isStopping();
+        assert !sharedGroup() && caches.size() == 1 :
+            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+            ", caches=" + caches;
 
         return caches.get(0);
     }
