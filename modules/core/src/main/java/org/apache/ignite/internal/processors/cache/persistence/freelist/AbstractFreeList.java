@@ -192,7 +192,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             T row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
+            io.addRow(pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
