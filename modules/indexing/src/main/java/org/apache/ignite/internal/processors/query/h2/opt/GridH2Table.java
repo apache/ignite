@@ -402,26 +402,32 @@ public class GridH2Table extends TableBase {
      * Updates table for given key. If value is null then row with given key will be removed from table,
      * otherwise value and expiration time will be updated or new row will be added.
      *
-     * @param row Row.
+     * @param row Row to be updated.
+     * @param prevRow Previous row.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheDataRow row, boolean rmv)
+    public boolean update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row h2Row = desc.createRow(row);
 
+        GridH2Row prevH2Row = null;
+
+        if (prevRow != null)
+            prevH2Row = desc.createRow(prevRow);
+
         if (rmv)
-            return doUpdate(h2Row, true);
+            return doUpdate(h2Row, prevH2Row, true);
         else {
             GridH2KeyValueRowOnheap h2Row0 = (GridH2KeyValueRowOnheap)h2Row;
 
             h2Row0.prepareValuesCache();
 
             try {
-                return doUpdate(h2Row0, false);
+                return doUpdate(h2Row0, prevH2Row, false);
             }
             finally {
                 h2Row0.clearValuesCache();
@@ -451,13 +457,15 @@ public class GridH2Table extends TableBase {
     /**
      * For testing only.
      *
-     * @param row Row.
+     * @param row Row to be updated.
+     * @param prevRow Previous row value.
      * @param del If given row should be deleted from table.
      * @return {@code True} if operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
+    private boolean doUpdate(final GridH2Row row, final GridH2Row prevRow, boolean del)
+        throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         lock(false);
@@ -470,9 +478,12 @@ public class GridH2Table extends TableBase {
             if (!del) {
                 assert rowFactory == null || row.link() != 0 : row;
 
-                GridH2Row old = pk.put(row); // Put to PK.
+                boolean oldReplaced = pk.putx(row); // Put to PK.
 
-                if (old == null)
+                assert oldReplaced == (prevRow != null) : "Old row removing status is not consistent with old row value " +
+                    "[oldReplaced=" + oldReplaced + ", oldRow=" + prevRow + ']';
+
+                if (!oldReplaced)
                     size.increment();
 
                 int len = idxs.size();
@@ -485,36 +496,35 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, pk, row, old, false);
+                        addToIndex((GridH2IndexBase)idx, row, prevRow, false);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, pk, row, old, true);
+                        addToIndex(idx, row, prevRow, true);
                 }
             }
             else {
                 //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
-                // TODO: Use removex
-                GridH2Row old = pk.remove(row);
+                boolean oldReplaced = pk.removex(row);
 
-                if (old != null) {
+                if (oldReplaced) {
                     // Remove row from all indexes.
                     // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
                     for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
                         Index idx = idxs.get(i);
 
                         if (idx instanceof GridH2IndexBase) {
-                            boolean res = ((GridH2IndexBase)idx).removex(old);
+                            boolean res = ((GridH2IndexBase)idx).removex(row);
 
-                            assert (old != null) == res : "Result of row replacing in PK index=" + old +
-                                ". Result of row replacing  in index #" + i + " " + index(i).getName() + "=" + res;
+                            assert res : "Row has been removed from PK index, but hasn't been removed from " +
+                                "index #" + i + " " + index(i).getName() + ", result=" + res;
                         }
                     }
 
                     if (!tmpIdxs.isEmpty()) {
                         for (GridH2IndexBase idx : tmpIdxs.values())
-                            idx.removex(old);
+                            idx.removex(row);
                     }
 
                     size.decrement();
@@ -534,23 +544,23 @@ public class GridH2Table extends TableBase {
      * Add row to index.
      *
      * @param idx Index to add row to.
-     * @param pk Primary key index.
      * @param row Row to add to index.
      * @param old Previous row state, if any.
      * @param tmp {@code True} if this is proposed index which may be not consistent yet.
      */
-    private void addToIndex(GridH2IndexBase idx, Index pk, GridH2Row row, GridH2Row old, boolean tmp) {
+    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row old, boolean tmp) {
         assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
 
         boolean replaced = idx.putx(row);
 
         boolean pkReplaced = old != null;
 
-        if (pkReplaced != replaced && !tmp) // Row was replaced in index.
-            throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                "not supported [idx=" + idx + ", old=" + old + ", replaced=" + replaced +']');
-
-        if (old != null) // Row was not replaced, need to remove manually.
+        if (replaced) { // Row was replaced in index.
+            if (!tmp && pkReplaced != replaced)
+                throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
+                    "not supported [idx=" + idx + ", old=" + old + ", replaced=" + replaced + ']');
+        }
+        else if (old != null) // Row was not replaced, need to remove manually.
             idx.removex(old);
     }
 

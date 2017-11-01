@@ -1741,7 +1741,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            idx.store(cctx, desc, newRow);
+            idx.store(cctx, desc, newRow, prevRow);
         }
         finally {
             busyLock.leaveBusy();
