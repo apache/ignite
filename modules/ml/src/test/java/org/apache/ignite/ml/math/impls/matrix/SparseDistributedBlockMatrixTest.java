@@ -216,12 +216,23 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
         fail("UnsupportedOperationException expected.");
     }
 
-    /** */
+
     public void testCacheBehaviour(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = rows;
+        cacheBehaviorLogic(size);
+    }
 
-        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(rows, cols);
-        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(rows, cols);
+    /** */
+    public void testCacheBehaviourWithHomogeneousBlocks(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+        cacheBehaviorLogic(size);
+    }
+
+    private void cacheBehaviorLogic(int size) {
+        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
+        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
 
         initMtx(cacheMatrix1);
         initMtx(cacheMatrix2);
@@ -277,9 +288,20 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
      * Simple test for two square matrices.
      */
     public void testSquareMatrixTimes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = rows;
+        squareMatrixTimesLogic(size);
+    }
 
-        int size = 100;
+    /**
+     * Simple test for two square matrices with size which is proportional to MAX_BLOCK_SIZE constant
+     */
+    public void testSquareMatrixTimesWithHomogeneousBlocks(){
+        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+        squareMatrixTimesLogic(size);
+    }
+
+    private void squareMatrixTimesLogic(int size) {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
@@ -290,8 +312,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
         }
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
-
-        BlockMatrixStorage storage = (BlockMatrixStorage)res.getStorage();
 
         for(int i = 0; i < size; i++)
             for(int j = 0; j < size; j++)
