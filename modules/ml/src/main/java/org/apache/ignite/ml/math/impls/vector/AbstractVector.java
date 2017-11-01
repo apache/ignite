@@ -40,7 +40,6 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -200,13 +199,8 @@ public abstract class AbstractVector implements Vector {
 
         int len = size();
 
-        for (int i = 0; i < len; i++){
-            //System.out.println("GET " + storageGet(i) + " VEC_GET " + vec.get(i)); // storageGet(i) is uncorrect on some iterations
-            //System.out.println("++ funapply = " + fun.apply(storageGet(i), vec.get(i))); // storageGet(i) is uncorrect on some iterations
+        for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), vec.get(i)));
-
-        }
-
 
         return this;
     }
@@ -217,6 +211,7 @@ public abstract class AbstractVector implements Vector {
 
         for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), y));
+
         return this;
     }
 
@@ -737,7 +732,6 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public Vector minus(Vector vec) {
-
         checkCardinality(vec);
 
         Vector cp = copy();

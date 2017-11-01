@@ -174,8 +174,8 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
      * once it is successfully loaded.</p>
      */
     @Override protected void newXSampleData(Matrix x) {
-        super.newXSampleData(x); // TODO: distribute it
-        qr = new DistributedQRDecomposition(getX()); // TODO: distribute it
+        super.newXSampleData(x);
+        qr = new DistributedQRDecomposition(getX());
     }
 
 
@@ -215,10 +215,10 @@ public class DistributedOLSMultipleLinearRegression extends AbstractMultipleLine
     @Override protected Matrix calculateBetaVariance() {
         int p = getX().columnSize();
 
-        Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p)); //TODO: distribute it
-        Matrix rInv = rAug.inverse(); // TODO: distribute it
+        Matrix rAug = MatrixUtil.copy(qr.getR().viewPart(0, p, 0, p));
+        Matrix rInv = rAug.inverse();
 
-        return rInv.times(rInv.transpose()); //TODO: distribute it
+        return rInv.times(rInv.transpose());
     }
 
 

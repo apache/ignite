@@ -34,12 +34,12 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.like;
  */
 public class DistributedQRDecomposition implements Destroyable {
     /** */
-    private final Matrix q; //TODO: change to SDM
+    private final Matrix q;
     /** */
-    private final Matrix r; //TODO: change to SDM
+    private final Matrix r;
 
     /** */
-    private final Matrix mType; //TODO: change to SDM
+    private final Matrix mType;
     /** */
     private final boolean fullRank;
 
@@ -85,22 +85,20 @@ public class DistributedQRDecomposition implements Destroyable {
 
         mType = like(mtx, 1, 1);
 
-        MatrixUtil.toString("Mtx", mtx, cols, rows);
         Matrix qTmp = copy(mtx);
-        MatrixUtil.toString("qTmp", qTmp, cols, rows);
 
         boolean fullRank = true;
 
         r = like(mtx, min, cols);
         this.threshold = threshold;
 
-        for (int i = 0; i < min; i++) {  // TODO: distribute it
-            Vector qi = qTmp.viewColumn(i); // TODO: where's Distributed Vector?
+        for (int i = 0; i < min; i++) {
+            Vector qi = qTmp.viewColumn(i);
 
-            double alpha = qi.kNorm(2); // TODO: distribute it ?
+            double alpha = qi.kNorm(2);
 
             if (Math.abs(alpha) > Double.MIN_VALUE)
-                qi.map(Functions.div(alpha)); // TODO: distribute it ?
+                qi.map(Functions.div(alpha));
             else {
                 checkDouble(alpha);
 
@@ -133,9 +131,6 @@ public class DistributedQRDecomposition implements Destroyable {
             q = qTmp;
 
         this.fullRank = fullRank;
-
-        MatrixUtil.toString("R ", r, cols, cols);
-        MatrixUtil.toString("Q ", q, cols, rows);
     }
 
     /** {@inheritDoc} */
@@ -181,23 +176,16 @@ public class DistributedQRDecomposition implements Destroyable {
 
         int cols = mtx.columnSize();
         Matrix r = getR();
-        MatrixUtil.toString("Before singular in QR", r, r.columnSize(), r.rowSize());
         checkSingular(r, threshold, true);
         Matrix x = like(mType, this.cols, cols);
-        MatrixUtil.toString("XX", x, x.columnSize(), x.rowSize());
         Matrix qt = getQ().transpose();
-        MatrixUtil.toString("QT", qt, qt.columnSize(), qt.rowSize());
-        MatrixUtil.toString("mtx", mtx, mtx.columnSize(), mtx.rowSize());
         Matrix y = qt.times(mtx);
-        MatrixUtil.toString("y", y, y.columnSize(), y.rowSize());
 
-        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {  // TODO:6222 distribute it
+
+        for (int k = Math.min(this.cols, rows) - 1; k >= 0; k--) {
             // X[k,] = Y[k,] / R[k,k], note that X[k,] starts with 0 so += is same as =
-            MatrixUtil.toString("X+", x, cols, this.cols);
             Vector vector = x.viewRow(k);
-            MatrixUtil.toString("x", vector, cols);
             x.viewRow(k).map(y.viewRow(k), Functions.plusMult(1 / r.get(k, k)));
-            MatrixUtil.toString("X-", x, cols, this.cols);
 
 
             if (k == 0)
@@ -205,12 +193,10 @@ public class DistributedQRDecomposition implements Destroyable {
 
             // Y[0:(k-1),] -= R[0:(k-1),k] * X[k,]
             Vector rCol = r.viewColumn(k).viewPart(0, k);
-            MatrixUtil.toString("rCol on iteration k = " + k, rCol, k);
 
             for (int c = 0; c < cols; c++){
                 Vector part = y.viewColumn(c).viewPart(0, k);
                 part.map(rCol, Functions.plusMult(-x.get(k, c)));
-                MatrixUtil.toString("part on iteration c after mult = " + c, part, k);
             }
         }
 
@@ -225,9 +211,7 @@ public class DistributedQRDecomposition implements Destroyable {
      * @throws IllegalArgumentException if {@code B.rows() != A.rows()}.
      */
     public Vector solve(Vector vec) {
-        MatrixUtil.toString("vec", vec.likeMatrix(vec.size(), 1).assignColumn(0, vec),  1, vec.size());
         Matrix res = solve(vec.likeMatrix(vec.size(), 1).assignColumn(0, vec));
-        MatrixUtil.toString("Result of solving = ", res, res.columnSize(), res.rowSize());
         return vec.like(res.rowSize()).assign(res.viewColumn(0));
     }
 

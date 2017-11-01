@@ -48,7 +48,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     protected AbstractMultipleLinearRegression regression;
 
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 1;
+    private static final int NODE_COUNT = 3;
 
     private static final double PRECISION = 1E-12;
 

@@ -43,8 +43,6 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
-import org.apache.ignite.ml.math.util.MatrixUtil;
-
 /**
  * This class provides a helper implementation of the {@link Matrix}
  * interface to minimize the effort required to implement it.
@@ -151,8 +149,6 @@ public abstract class AbstractMatrix implements Matrix {
             double min = Double.MAX_VALUE;
             int row = 0, col = 0;
 
-        //    MatrixUtil.toString("Find min ", this, this.columnSize(), this.rowSize());
-
             int rows = rowSize();
             int cols = columnSize();
 
@@ -160,7 +156,6 @@ public abstract class AbstractMatrix implements Matrix {
                 for (int y = 0; y < cols; y++) {
                     double d = storageGet(x, y);
 
-                    //System.out.println("i " + x + " j " + y +" d " + d);
                     if (d < min) {
                         min = d;
                         row = x;
@@ -717,7 +712,7 @@ public abstract class AbstractMatrix implements Matrix {
     @Override public Vector getRow(int row) {
         checkRowIndex(row);
 
-        Vector res = new DenseLocalOnHeapVector(columnSize()); //TODO: add ticket incorrect for distributed matrices
+        Vector res = new DenseLocalOnHeapVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
             res.setX(i, getX(row,i));

@@ -97,8 +97,6 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
         // No eviction.
         cfg.setEvictionPolicy(null);
 
-        cfg.setBackups(0);
-
         // No copying of values.
         cfg.setCopyOnRead(false);
 

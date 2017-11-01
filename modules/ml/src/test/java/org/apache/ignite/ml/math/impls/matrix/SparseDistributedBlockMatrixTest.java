@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
@@ -345,6 +346,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
+        Tracer.showAscii(res);
         for(int i = 0; i < size; i++)
             for(int j = 0; j < size; j++)
                 if (i == j)
@@ -382,7 +384,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
     /** Build key set for SparseBlockDistributedMatrix. */
     private Set<BlockMatrixKey> buildKeySet(SparseBlockDistributedMatrix m){
-        Set<BlockMatrixKey> set = new HashSet<>();
 
         BlockMatrixStorage storage = (BlockMatrixStorage)m.getStorage();
 
