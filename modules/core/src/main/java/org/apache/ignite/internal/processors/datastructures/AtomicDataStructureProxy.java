@@ -163,6 +163,8 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
 
     /** {@inheritDoc} */
     @Override public void restart(IgniteInternalCache cache) {
+        invalidateLocalState();
+
         cacheView = cache;
         ctx = cache.context();
         rmvCheck = true;
