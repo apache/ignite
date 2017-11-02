@@ -31,20 +31,28 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
     /** specific constant which is used in calculating of membership matrix */
     protected double exponentialWeight;
 
-    /** max distance between old and new centers which indicates when algorithm should stop */
-    protected double maxCentersDelta;
+    /** max distance between old and new centers or max delta of membership matrix elements for which
+     *  algorithm should stop */
+    protected double maxDelta;
+
+    /** flag that tells when algorithm should stop, if centers have moved insignificantly
+     *  or if memberships delta is small enough */
+    protected StopCondition stopCondition;
 
     /**
      * Constructor that stores some required parameters
      *
      * @param measure distance measure
      * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param maxCentersDelta max distance between old and new centers which indicates when algorithm should stop
+     * @param stopCondition flag that tells when algorithm should stop
+     * @param maxDelta max distance between old and new centers or max delta of memberships for which algorithm should stop
      */
-    protected BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, double maxCentersDelta) {
+    protected BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
+                                       double maxDelta) {
         this.measure = measure;
         this.exponentialWeight = exponentialWeight;
-        this.maxCentersDelta = maxCentersDelta;
+        this.stopCondition = stopCondition;
+        this.maxDelta = maxDelta;
     }
 
     /**
@@ -66,5 +74,10 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
      */
     protected double distance(final Vector v1, final Vector v2) {
         return measure.compute(v1, v2);
+    }
+
+    public enum StopCondition {
+        STABLE_CENTERS,
+        STABLE_MEMBERSHIPS
     }
 }
