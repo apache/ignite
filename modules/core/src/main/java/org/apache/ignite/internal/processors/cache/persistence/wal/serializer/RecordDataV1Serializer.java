@@ -168,7 +168,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case METASTORE_DATA_RECORD:
                 MetastoreDataRecord metastoreDataRec = (MetastoreDataRecord)record;
 
-                return  4 + metastoreDataRec.key().getBytes().length + 4 + metastoreDataRec.value().length;
+                return  4 + metastoreDataRec.key().getBytes().length + 4 +
+                    (metastoreDataRec.value() != null ? metastoreDataRec.value().length : 0);
 
             case HEADER_RECORD:
                 return HEADER_RECORD_DATA_SIZE;
@@ -405,9 +406,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 int valLen = in.readInt();
 
-                byte[] val = new byte[valLen];
+                assert valLen >= 0;
 
-                in.readFully(val);
+                byte[] val;
+
+                if (valLen > 0) {
+                    val = new byte[valLen];
+
+                    in.readFully(val);
+                }
+                else
+                    val = null;
 
                 return new MetastoreDataRecord(key, val);
 
@@ -941,8 +950,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(strBytes.length);
                 buf.put(strBytes);
-                buf.putInt(metastoreDataRecord.value().length);
-                buf.put(metastoreDataRecord.value());
+                if (metastoreDataRecord.value() != null) {
+                    buf.putInt(metastoreDataRecord.value().length);
+                    buf.put(metastoreDataRecord.value());
+                }
+                else
+                    buf.putInt(0);
 
                 break;
 
