@@ -409,19 +409,19 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         buf.limit(data.offset() + data.payloadSize());
 
                         if (size == 0) {
-                            if (buf.remaining() >= 2 && incomplete == null) {
+                            if (buf.remaining() >= 4 && incomplete == null) {
                                 // Just read size.
-                                size = buf.getShort();
+                                size = buf.getInt();
                                 incomplete = new IncompleteObject(new byte[size]);
                             }
                             else {
                                 if (incomplete == null)
-                                    incomplete = new IncompleteObject(new byte[2]);
+                                    incomplete = new IncompleteObject(new byte[4]);
 
                                 incomplete.readData(buf);
 
                                 if (incomplete.isReady()) {
-                                    size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getShort();
+                                    size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getInt();
                                     incomplete = new IncompleteObject(new byte[size]);
                                 }
                             }

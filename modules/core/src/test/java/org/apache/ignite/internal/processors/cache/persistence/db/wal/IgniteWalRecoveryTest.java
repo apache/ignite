@@ -949,37 +949,24 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             int cnt = 5000;
             int arraySize = 32_768;
 
-            IgniteEx ignite0 = (IgniteEx)startGrid("node1");
-            IgniteEx ignite1 = (IgniteEx)startGrid("node2");
+            IgniteEx ignite = (IgniteEx)startGrid("node1");
 
-            ignite1.active(true);
+            ignite.active(true);
 
-            GridCacheSharedContext<Object, Object> sharedCtx0 = ignite0.context().cache().context();
-            GridCacheSharedContext<Object, Object> sharedCtx1 = ignite1.context().cache().context();
+            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
 
-            MetaStorage storage0 = ((GridCacheDatabaseSharedManager)sharedCtx0.database()).metaStorage();
-            MetaStorage storage1 = ((GridCacheDatabaseSharedManager)sharedCtx1.database()).metaStorage();
-
-            assert storage0 != null;
+            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx.database()).metaStorage();
 
             for (int i = 0; i < cnt; i++) {
-                storage0.putData(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
-
                 byte[] b1 = new byte[arraySize];
                 for (int k = 0; k < arraySize; k++) {
                     b1[k] = (byte) (k % 100);
                 }
-                storage1.putData(String.valueOf(i), b1);
+                storage.putData(String.valueOf(i), b1);
             }
 
             for (int i = 0; i < cnt; i++) {
-                byte[] d1 = storage0.getData(String.valueOf(i));
-                assertEquals(3, d1.length);
-                assertEquals((byte)(i % 256), d1[0]);
-                assertEquals(2, d1[1]);
-                assertEquals(3, d1[2]);
-
-                byte[] d2 = storage1.getData(String.valueOf(i));
+                byte[] d2 = storage.getData(String.valueOf(i));
                 assertEquals(arraySize, d2.length);
 
                 for (int k = 0; k < arraySize; k++) {
