@@ -60,12 +60,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
      * @param name Index name.
      * @param colsList Index columns.
      */
-    public H2PkHashIndex(
-        GridCacheContext<?, ?> cctx,
-        GridH2Table tbl,
-        String name,
-        List<IndexColumn> colsList
-    ) {
+    public H2PkHashIndex(GridCacheContext<?, ?> cctx, GridH2Table tbl, String name, List<IndexColumn> colsList) {
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 

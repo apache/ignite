@@ -327,6 +327,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         long time = System.currentTimeMillis();
 
         IndexingQueryFilter qryFilter = threadLocalFilter();
+
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ? qryFilter.forCache(getTable().cacheName()) : null;
 
         List<GridH2Row> rows = new ArrayList<>();
