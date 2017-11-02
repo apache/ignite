@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.index.Cursor;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -35,27 +34,15 @@ public class H2Cursor implements Cursor {
     private final GridCursor<GridH2Row> cursor;
 
     /** */
-    private final IndexingQueryCacheFilter filter;
-
-    /** */
     private final long time = U.currentTimeMillis();
-
-    /**
-     * @param cursor Cursor.
-     * @param filter Filter.
-     */
-    public H2Cursor(GridCursor<GridH2Row> cursor, IndexingQueryCacheFilter filter) {
-        assert cursor != null;
-
-        this.cursor = cursor;
-        this.filter = filter;
-    }
 
     /**
      * @param cursor Cursor.
      */
     public H2Cursor(GridCursor<GridH2Row> cursor) {
-        this(cursor, null);
+        assert cursor != null;
+
+        this.cursor = cursor;
     }
 
     /** {@inheritDoc} */
@@ -82,8 +69,7 @@ public class H2Cursor implements Cursor {
                 if (row.expireTime() > 0 && row.expireTime() <= time)
                     continue;
 
-                if (filter == null || filter.applyPartition(row.partition()))
-                    return true;
+                return true;
             }
 
             return false;
