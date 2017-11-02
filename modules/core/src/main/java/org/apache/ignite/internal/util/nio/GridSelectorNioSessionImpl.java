@@ -20,32 +20,39 @@ package org.apache.ignite.internal.util.nio;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.MpscQueue;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Session implementation bound to selector API and socket API.
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
+@SuppressWarnings("WeakerAccess")
 class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<SessionWriteRequest> queue = new ConcurrentLinkedDeque8<>();
+    private final MpscQueue<SessionWriteRequest> regular = new MpscQueue<>();
+
+    /** Pending system write requests. */
+    private final MpscQueue<SessionWriteRequest> system = new MpscQueue<>();
+
+    /** moving flag. */
+    private volatile boolean moving;
 
     /** Selection key associated with this session. */
     @GridToStringExclude
     private SelectionKey key;
 
     /** Current worker thread. */
+    @GridToStringExclude
     private volatile GridNioWorker worker;
 
     /** Semaphore. */
@@ -53,25 +60,22 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     private final Semaphore sem;
 
     /** Write buffer. */
+    @GridToStringExclude
     private ByteBuffer writeBuf;
 
     /** Read buffer. */
+    @GridToStringExclude
     private ByteBuffer readBuf;
+
+    /** Logger. */
+    @GridToStringExclude
+    private final IgniteLogger log;
 
     /** Incoming recovery data. */
     private GridNioRecoveryDescriptor inRecovery;
 
     /** Outgoing recovery data. */
     private GridNioRecoveryDescriptor outRecovery;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** */
-    private List<SessionChangeRequest> pendingStateChanges;
-
-    /** */
-    final AtomicBoolean procWrite = new AtomicBoolean();
 
     /** */
     private Object sysMsg;
@@ -139,11 +143,66 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
         return this;
     }
 
+    /** Pending write requests. */
+    public Collection<SessionWriteRequest> pendingRequests() {
+        return F.concat(false, system.toList(), regular.toList());
+    }
+
+    /**
+     * Schedules session write operation.
+     * @param req Write request.
+     */
+    public void add(SessionWriteRequest req) {
+        if (req.system())
+            system.offer(req);
+        else
+            regular.offer(req);
+
+        if(!moving)
+            // wakeup worker if needed
+            worker.offer(req);
+    }
+
+    /**
+     * Schedules session write operation.
+     * @param reqs Write requests.
+     */
+    public void add(Queue<SessionWriteRequest> reqs) {
+        assert !reqs.isEmpty();
+
+        SessionWriteRequest req;
+
+        while ((req = reqs.poll()) != null) {
+            if (req.system())
+                system.offer(req);
+            else
+                regular.offer(req);
+        }
+
+        if(!moving)
+            // wakeup worker if needed
+            worker.offer(req);
+    }
+
     /**
      * @return Worker.
      */
     GridNioWorker worker() {
         return worker;
+    }
+
+    /**
+     * @param worker Nio worker responsible for this session.
+     */
+    void worker(GridNioWorker worker) {
+        this.worker = worker;
+    }
+
+    /**
+     * @param moving Moving flag.
+     */
+    void moving(boolean moving) {
+        this.moving = moving;
     }
 
     /**
@@ -179,147 +238,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     }
 
     /**
-     * @param from Current session worker.
-     * @param fut Move future.
-     * @return {@code True} if session move was scheduled.
-     */
-    boolean offerMove(GridNioWorker from, SessionChangeRequest fut) {
-        synchronized (this) {
-            if (log.isDebugEnabled())
-                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
-
-            GridNioWorker worker0 = worker;
-
-            if (worker0 != from)
-                return false;
-
-            worker.offer(fut);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param fut Future.
-     */
-    void offerStateChange(SessionChangeRequest fut) {
-        synchronized (this) {
-            if (log.isDebugEnabled())
-                log.debug("Offered move [ses=" + this + ", fut=" + fut + ']');
-
-            GridNioWorker worker0 = worker;
-
-            if (worker0 == null) {
-                if (pendingStateChanges == null)
-                    pendingStateChanges = new ArrayList<>();
-
-                pendingStateChanges.add(fut);
-            }
-            else
-                worker0.offer(fut);
-        }
-    }
-
-    /**
-     * @param moveFrom Current session worker.
-     */
-    void startMoveSession(GridNioWorker moveFrom) {
-        synchronized (this) {
-            assert this.worker == moveFrom;
-
-            if (log.isDebugEnabled())
-                log.debug("Started moving [ses=" + this + ", from=" + moveFrom + ']');
-
-            List<SessionChangeRequest> sesReqs = moveFrom.clearSessionRequests(this);
-
-            worker = null;
-
-            if (sesReqs != null) {
-                if (pendingStateChanges == null)
-                    pendingStateChanges = new ArrayList<>();
-
-                pendingStateChanges.addAll(sesReqs);
-            }
-        }
-    }
-
-    /**
-     * @param moveTo New session worker.
-     */
-    void finishMoveSession(GridNioWorker moveTo) {
-        synchronized (this) {
-            assert worker == null;
-
-            if (log.isDebugEnabled())
-                log.debug("Finishing moving [ses=" + this + ", to=" + moveTo + ']');
-
-            worker = moveTo;
-
-            if (pendingStateChanges != null) {
-                moveTo.offer(pendingStateChanges);
-
-                pendingStateChanges = null;
-            }
-        }
-    }
-
-    /**
-     * Adds write future at the front of the queue without acquiring back pressure semaphore.
-     *
-     * @param writeFut Write request.
-     * @return Updated size of the queue.
-     */
-    int offerSystemFuture(SessionWriteRequest writeFut) {
-        writeFut.messageThread(true);
-
-        boolean res = queue.offerFirst(writeFut);
-
-        assert res : "Future was not added to queue";
-
-        return queue.sizex();
-    }
-
-    /**
-     * Adds write future to the pending list and returns the size of the queue.
-     * <p>
-     * Note that separate counter for the queue size is needed because in case of concurrent
-     * calls this method should return different values (when queue size is 0 and 2 concurrent calls
-     * occur exactly one call will return 1)
-     *
-     * @param writeFut Write request to add.
-     * @return Updated size of the queue.
-     */
-    int offerFuture(SessionWriteRequest writeFut) {
-        boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
-
-        if (sem != null && !msgThread)
-            sem.acquireUninterruptibly();
-
-        writeFut.messageThread(msgThread);
-
-        boolean res = queue.offer(writeFut);
-
-        assert res : "Future was not added to queue";
-
-        return queue.sizex();
-    }
-
-    /**
-     * @param futs Futures to resend.
-     */
-    void resend(Collection<SessionWriteRequest> futs) {
-        assert queue.isEmpty() : queue.size();
-
-        boolean add = queue.addAll(futs);
-
-        assert add;
-    }
-
-    /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
     @Nullable SessionWriteRequest pollFuture() {
-        SessionWriteRequest last = queue.poll();
+        SessionWriteRequest last = system.poll();
+
+        if(last == null)
+            last = regular.poll();
 
         if (last != null) {
             if (sem != null && !last.messageThread())
@@ -346,29 +271,12 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     }
 
     /**
-     * @param fut Future.
-     * @return {@code True} if future was removed from queue.
-     */
-    boolean removeFuture(SessionWriteRequest fut) {
-        assert closed();
-
-        return queue.removeLastOccurrence(fut);
-    }
-
-    /**
      * Gets number of write requests in a queue that have not been processed yet.
      *
      * @return Number of write requests.
      */
     int writeQueueSize() {
-        return queue.sizex();
-    }
-
-    /**
-     * @return Write requests.
-     */
-    Collection<SessionWriteRequest> writeQueue() {
-        return queue;
+        return regular.size() + system.size();
     }
 
     /** {@inheritDoc} */

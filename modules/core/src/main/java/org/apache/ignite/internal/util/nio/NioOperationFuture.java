@@ -17,64 +17,22 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.nio.channels.SocketChannel;
-import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Class for requesting write and session close operations.
+ * Class for requesting session write and change operations.
  */
-class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWriteRequest,
-    SessionChangeRequest, GridNioKeyAttachment {
-    /** Socket channel in register request. */
-    @GridToStringExclude
-    private SocketChannel sockCh;
-
+@SuppressWarnings("unchecked")
+abstract class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionChangeRequest, GridNioKeyAttachment {
     /** Session to perform operation on. */
     @GridToStringExclude
-    private GridSelectorNioSessionImpl ses;
+    protected GridSelectorNioSessionImpl ses;
 
     /** Is it a close request or a write request. */
-    private NioOperation op;
-
-    /** Message. */
-    private Object msg;
-
-    /** */
-    @GridToStringExclude
-    private boolean accepted;
-
-    /** */
-    @GridToStringExclude
-    private Map<Integer, ?> meta;
-
-    /** */
-    @GridToStringExclude
-    private boolean skipRecovery;
-
-    /**
-     * @param sockCh Socket channel.
-     * @param accepted {@code True} if socket has been accepted.
-     * @param meta Optional meta.
-     */
-    NioOperationFuture(
-        SocketChannel sockCh,
-        boolean accepted,
-        @Nullable Map<Integer, ?> meta
-    ) {
-        super(null);
-
-        op = NioOperation.REGISTER;
-
-        this.sockCh = sockCh;
-        this.accepted = accepted;
-        this.meta = meta;
-    }
+    protected NioOperation op;
 
     /**
      * Creates change request.
@@ -85,10 +43,6 @@ class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWrite
     NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
         super(null);
 
-        assert ses != null || op == NioOperation.DUMP_STATS : "Invalid params [ses=" + ses + ", op=" + op + ']';
-        assert op != null;
-        assert op != NioOperation.REGISTER;
-
         this.ses = ses;
         this.op = op;
     }
@@ -98,50 +52,15 @@ class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWrite
      *
      * @param ses Session to change.
      * @param op Requested operation.
-     * @param msg Message.
      * @param ackC Closure invoked when message ACK is received.
      */
     NioOperationFuture(GridSelectorNioSessionImpl ses,
         NioOperation op,
-        Object msg,
         IgniteInClosure<IgniteException> ackC) {
         super(ackC);
 
-        assert ses != null;
-        assert op != null;
-        assert op != NioOperation.REGISTER;
-        assert msg != null;
-
         this.ses = ses;
         this.op = op;
-        this.msg = msg;
-    }
-
-    /**
-     * Creates change request.
-     *
-     * @param ses Session to change.
-     * @param op Requested operation.
-     * @param commMsg Direct message.
-     * @param skipRecovery Skip recovery flag.
-     * @param ackC Closure invoked when message ACK is received.
-     */
-    NioOperationFuture(GridSelectorNioSessionImpl ses,
-        NioOperation op,
-        Message commMsg,
-        boolean skipRecovery,
-        IgniteInClosure<IgniteException> ackC) {
-        super(ackC);
-
-        assert ses != null;
-        assert op != null;
-        assert op != NioOperation.REGISTER;
-        assert commMsg != null;
-
-        this.ses = ses;
-        this.op = op;
-        this.msg = commMsg;
-        this.skipRecovery = skipRecovery;
     }
 
     /** {@inheritDoc} */
@@ -150,76 +69,13 @@ class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWrite
     }
 
     /** {@inheritDoc} */
-    public NioOperation operation() {
+    @Override public NioOperation operation() {
         return op;
     }
 
-    public void operation(NioOperation op) {
-        this.op = op;
-    }
-
     /** {@inheritDoc} */
-    public Object message() {
-        return msg;
-    }
-
-    public void message(Object msg) {
-        this.msg = msg;
-    }
-
-    /** {@inheritDoc} */
-    public void resetSession(GridNioSession ses) {
-        assert msg instanceof Message : msg;
-
-        this.ses = (GridSelectorNioSessionImpl)ses;
-    }
-
-    /**
-     * @return Socket channel for register request.
-     */
-    SocketChannel socketChannel() {
-        return sockCh;
-    }
-
-    /** {@inheritDoc} */
-    public GridSelectorNioSessionImpl session() {
+    @Override public GridSelectorNioSessionImpl session() {
         return ses;
-    }
-
-    /**
-     * @return {@code True} if connection has been accepted.
-     */
-    boolean accepted() {
-        return accepted;
-    }
-
-    /**
-     * @return Meta.
-     */
-    public Map<Integer, ?> meta() {
-        return meta;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(Exception e) {
-        onDone(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        assert msg instanceof Message : msg;
-
-        ((Message)msg).onAckReceived();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMessageWritten() {
-        onDone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean skipRecovery() {
-        return skipRecovery;
     }
 
     /** {@inheritDoc} */

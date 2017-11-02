@@ -93,9 +93,7 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
 
         this.metricsLsnr = metricsLsnr;
 
-        readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
-
-        readBuf.order(order);
+        readBuf = allocateBuffer(8 << 10);
     }
 
     /** {@inheritDoc} */
@@ -125,7 +123,7 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
             if (log.isDebugEnabled())
                 log.debug("Remote client closed connection: " + ses);
 
-            close(ses, null);
+            closeSession(ses, null);
 
             return;
         }
@@ -158,7 +156,7 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
             }
         }
         catch (IgniteCheckedException e) {
-            close(ses, e);
+            closeSession(ses, e);
         }
     }
 
@@ -179,16 +177,8 @@ class ByteBufferNioClientWorker<T> extends AbstractNioClientWorker {
                 req = ses.pollFuture();
 
                 if (req == null) {
-                    if (ses.procWrite.get()) {
-                        ses.procWrite.set(false);
-
-                        if (ses.writeQueue().isEmpty()) {
-                            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                        }
-                        else
-                            ses.procWrite.set(true);
-                    }
+                    if((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
                     break;
                 }

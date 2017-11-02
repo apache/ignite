@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -70,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <T> Message type.
  *
  */
+@SuppressWarnings({"WeakerAccess", "TypeMayBeWeakened", "ForLoopReplaceableByForEach"})
 public class GridNioServer<T> {
     /** */
     public static final String IGNITE_IO_BALANCE_RANDOM_BALANCE = "IGNITE_IO_BALANCE_RANDOM_BALANCER";
@@ -102,9 +102,6 @@ public class GridNioServer<T> {
     static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
-    /**
-     *
-     */
     static {
         // This is a workaround for JDK bug (NPE in Selector.open()).
         // http://bugs.sun.com/view_bug.do?bug_id=6427854
@@ -150,7 +147,7 @@ public class GridNioServer<T> {
     private final InetSocketAddress locAddr;
 
     /** Sessions. */
-    private final Set<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
+    private final Collection<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** */
     @GridToStringExclude
@@ -438,9 +435,12 @@ public class GridNioServer<T> {
         if (impl.closed())
             return new GridNioFinishedFuture<>(false);
 
-        NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
+        NioOperationFuture<Boolean> fut = new SessionCloseFuture(impl);
 
-        impl.offerStateChange(fut);
+        if (log.isDebugEnabled())
+            log.debug("Offered session change request [ses=" + impl + ", fut=" + fut + ']');
+
+        impl.worker().offer(fut);
 
         return fut;
     }
@@ -479,19 +479,16 @@ public class GridNioServer<T> {
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg, ackC);
+            SessionWriteFuture fut = new SessionWriteFuture(impl, msg, ackC);
 
-            send0(impl, fut, false);
+            send0(impl, fut);
 
             return fut;
         }
-        else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, true, ackC);
+        else
+            send0(impl, new SessionWriteRequestImpl(impl, msg, true, ackC));
 
-            send0(impl, req, false);
-
-            return null;
-        }
+        return null;
     }
 
     /**
@@ -510,54 +507,40 @@ public class GridNioServer<T> {
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (createFut) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-                skipRecoveryPred.apply(msg), ackC);
+            SessionWriteFuture fut = new SessionWriteFuture(impl, msg, skipRecoveryPred.apply(msg), ackC);
 
-            send0(impl, fut, false);
+            send0(impl, fut);
 
             return fut;
         }
-        else {
-            SessionWriteRequest req = new WriteRequestImpl(ses, msg, skipRecoveryPred.apply(msg), ackC);
+        else
+            send0(impl, new SessionWriteRequestImpl(impl, msg, skipRecoveryPred.apply(msg), ackC));
 
-            send0(impl, req, false);
-
-            return null;
-        }
+        return null;
     }
 
     /**
      * @param ses Session.
      * @param req Request.
-     * @param sys System message flag.
      * @throws IgniteCheckedException If session was closed.
      */
-    private void send0(GridSelectorNioSessionImpl ses, SessionWriteRequest req,
-        boolean sys) throws IgniteCheckedException {
+    private void send0(GridSelectorNioSessionImpl ses, SessionWriteRequest req) throws IgniteCheckedException {
         assert ses != null;
         assert req != null;
 
-        int msgCnt = sys ? ses.offerSystemFuture(req) : ses.offerFuture(req);
-
         if (ses.closed()) {
-            if (ses.removeFuture(req)) {
-                IOException err = new IOException("Failed to send message (connection was closed): " + ses);
+            IOException err = new IOException("Failed to send message (connection was closed): " + ses);
 
-                req.onError(err);
+            req.onError(err);
 
-                if (!(req instanceof GridNioFuture))
-                    throw new IgniteCheckedException(err);
-            }
+            if (!(req instanceof GridNioFuture))
+                throw new IgniteCheckedException(err);
         }
-        else if (!ses.procWrite.get() && ses.procWrite.compareAndSet(false, true)) {
-            GridNioWorker worker = ses.worker();
-
-            if (worker != null)
-                worker.offer((SessionChangeRequest)req);
-        }
+        else
+            ses.add(req);
 
         if (msgQueueLsnr != null)
-            msgQueueLsnr.apply(ses, msgCnt);
+            msgQueueLsnr.apply(ses, ses.writeQueueSize());
     }
 
     /**
@@ -587,23 +570,16 @@ public class GridNioServer<T> {
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (lsnr != null) {
-            NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl,
-                NioOperation.REQUIRE_WRITE,
-                msg,
-                skipRecoveryPred.apply(msg),
-                null);
+            SessionWriteFuture fut = new SessionWriteFuture(impl, msg, skipRecoveryPred.apply(msg), true);
 
             fut.listen(lsnr);
 
             assert !fut.isDone();
 
-            send0(impl, fut, true);
+            send0(impl, fut);
         }
-        else {
-            SessionWriteRequest req = new WriteRequestSystemImpl(ses, msg);
-
-            send0(impl, req, true);
-        }
+        else
+            send0(impl, new SessionWriteRequestImpl(impl, msg, true, true));
     }
 
     /**
@@ -622,18 +598,15 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
 
-            SessionWriteRequest fut0 = futs.iterator().next();
-
             for (SessionWriteRequest fut : futs) {
                 fut.messageThread(true);
 
                 fut.resetSession(ses0);
             }
 
-            ses0.resend(futs);
+            assert ses0.writeQueueSize() == 0 : ses0.writeQueueSize();
 
-            // Wake up worker.
-            ses0.offerStateChange((SessionChangeRequest)fut0);
+            ses0.add(futs);
         }
     }
 
@@ -657,26 +630,31 @@ public class GridNioServer<T> {
      * @param to Move to index.
      */
     void moveSession(GridNioSession ses, int from, int to) {
-        assert from >= 0 && from < workers().size() : from;
-        assert to >= 0 && to < workers().size() : to;
+        assert from >= 0 && from < clientWorkers.size() : from;
+        assert to >= 0 && to < clientWorkers.size() : to;
         assert from != to;
 
-        GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+        GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        SessionMoveFuture fut = new SessionMoveFuture(ses0, to);
+        GridNioWorker worker0 = impl.worker();
 
-        if (!ses0.offerMove(workers().get(from), fut))
-            fut.onDone(false);
+        if (clientWorkers.get(from) == worker0) {
+            SessionChangeRequest fut = new SessionMoveFuture(impl, to);
+
+            if (log.isDebugEnabled())
+                log.debug("Offered session change request [ses=" + impl + ", fut=" + fut + ']');
+
+
+            worker0.offer(fut);
+        }
     }
 
     /**
      * @param ses Session.
-     * @param op Operation.
      * @return Future for operation.
      */
-    GridNioFuture<?> pauseResumeReads(GridNioSession ses, NioOperation op) {
+    GridNioFuture<?> pauseReads(GridNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl;
-        assert op == NioOperation.PAUSE_READ || op == NioOperation.RESUME_READ;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
@@ -684,9 +662,35 @@ public class GridNioServer<T> {
             return new GridNioFinishedFuture(new IOException("Failed to pause/resume reads " +
                 "(connection was closed): " + ses));
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, op);
+        NioOperationFuture<?> fut = new PauseReadFuture(impl);
 
-        impl.offerStateChange(fut);
+        if (log.isDebugEnabled())
+            log.debug("Offered session change request [ses=" + impl + ", fut=" + fut + ']');
+
+        impl.worker().offer(fut);
+
+        return fut;
+    }
+
+    /**
+     * @param ses Session.
+     * @return Future for operation.
+     */
+    GridNioFuture<?> resumeReads(GridNioSession ses) {
+        assert ses instanceof GridSelectorNioSessionImpl;
+
+        GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
+
+        if (impl.closed())
+            return new GridNioFinishedFuture(new IOException("Failed to pause/resume reads " +
+                "(connection was closed): " + ses));
+
+        NioOperationFuture<?> fut = new ResumeReadFuture(impl);
+
+        if (log.isDebugEnabled())
+            log.debug("Offered session change request [ses=" + impl + ", fut=" + fut + ']');
+
+        impl.worker().offer(fut);
 
         return fut;
     }
@@ -731,12 +735,10 @@ public class GridNioServer<T> {
             }
         });
 
-        for (int i = 0; i < workers().size(); i++) {
-            NioOperationFuture<String> opFut = new NioOperationFuture<>(null, NioOperation.DUMP_STATS);
+        for (int i = 0; i < clientWorkers.size(); i++) {
+            NioOperationFuture<String> opFut = new DumpStatisticsFuture(p);
 
-            opFut.message(p);
-
-            workers().get(i).offer(opFut);
+            clientWorkers.get(i).offer(opFut);
 
             fut.add(opFut);
         }
@@ -777,11 +779,9 @@ public class GridNioServer<T> {
         });
 
         for (int i = 0; i < workers().size(); i++) {
-            NioOperationFuture<String> opFut = new NioOperationFuture<>(null, NioOperation.DUMP_STATS);
+            NioOperationFuture<String> opFut = new DumpStatisticsFuture(p);
 
-            opFut.message(p);
-
-            workers().get(i).offer(opFut);
+            clientWorkers.get(i).offer(opFut);
 
             fut.add(opFut);
         }
@@ -810,13 +810,15 @@ public class GridNioServer<T> {
             if (!closed) {
                 ch.configureBlocking(false);
 
-                NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
+                ConnectionOperationFuture req;
 
                 if (async) {
                     assert meta != null;
 
-                    req.operation(NioOperation.CONNECT);
+                    req = new ConnectionOperationFuture(ch, false, meta, NioOperation.CONNECT);
                 }
+                else
+                    req = new ConnectionOperationFuture(ch, false, meta, NioOperation.REGISTER);
 
                 if (lsnr != null)
                     req.listen(lsnr);
@@ -840,15 +842,13 @@ public class GridNioServer<T> {
      */
     public GridNioFuture<GridNioSession> cancelConnect(final SocketChannel ch, Map<Integer, ?> meta) {
         if (!closed) {
-            NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
-
-            req.operation(NioOperation.CANCEL_CONNECT);
+            NioOperationFuture<GridNioSession> req = new ConnectionOperationFuture(ch, false, meta, NioOperation.CANCEL_CONNECT);
 
             Integer idx = (Integer)meta.get(WORKER_IDX_META_KEY);
 
             assert idx != null : meta;
 
-            workers().get(idx).offer(req);
+            clientWorkers.get(idx).offer(req);
 
             return req;
         }
@@ -912,7 +912,7 @@ public class GridNioServer<T> {
      * @param req Request to balance.
      * @param meta Session metadata.
      */
-    synchronized void offerBalanced(NioOperationFuture req, @Nullable Map<Integer, Object> meta) {
+    synchronized void offerBalanced(ConnectionOperationFuture req, @Nullable Map<Integer, Object> meta) {
         assert req.operation() == NioOperation.REGISTER || req.operation() == NioOperation.CONNECT : req;
         assert req.socketChannel() != null : req;
 
@@ -954,7 +954,7 @@ public class GridNioServer<T> {
         if (meta != null)
             meta.put(WORKER_IDX_META_KEY, balanceIdx);
 
-        workers().get(balanceIdx).offer(req);
+        clientWorkers.get(balanceIdx).offer(req);
     }
 
     /**

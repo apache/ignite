@@ -130,7 +130,7 @@ class DirectNioClientWorker<T> extends AbstractNioClientWorker {
             if (log.isDebugEnabled())
                 log.debug("Remote client closed connection: " + ses);
 
-            close(ses, null);
+            closeSession(ses, null);
 
             return;
         }
@@ -159,14 +159,11 @@ class DirectNioClientWorker<T> extends AbstractNioClientWorker {
             else
                 readBuf.clear();
 
-            if (ses.hasSystemMessage() && !ses.procWrite.get()) {
-                ses.procWrite.set(true);
-
+            if (ses.hasSystemMessage())
                 registerWrite(ses);
-            }
         }
         catch (IgniteCheckedException e) {
-            close(ses, e);
+            closeSession(ses, e);
         }
     }
 
@@ -240,16 +237,8 @@ class DirectNioClientWorker<T> extends AbstractNioClientWorker {
                         req = ses.pollFuture();
 
                         if (req == null && buf.position() == 0) {
-                            if (ses.procWrite.get()) {
-                                ses.procWrite.set(false);
-
-                                if (ses.writeQueue().isEmpty()) {
-                                    if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                }
-                                else
-                                    ses.procWrite.set(true);
-                            }
+                            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
                             break;
                         }
@@ -396,7 +385,7 @@ class DirectNioClientWorker<T> extends AbstractNioClientWorker {
         if (ses.hasSystemMessage()) {
             Object msg = ses.systemMessage();
 
-            SessionWriteRequest req = new WriteRequestSystemImpl(ses, msg);
+            SessionWriteRequest req = new SessionWriteRequestImpl(ses, msg, true, true);
 
             assert !ses.hasSystemMessage();
 
@@ -437,16 +426,8 @@ class DirectNioClientWorker<T> extends AbstractNioClientWorker {
                 req = ses.pollFuture();
 
                 if (req == null && buf.position() == 0) {
-                    if (ses.procWrite.get()) {
-                        ses.procWrite.set(false);
-
-                        if (ses.writeQueue().isEmpty()) {
-                            if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                        }
-                        else
-                            ses.procWrite.set(true);
-                    }
+                    if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
 
                     return;
                 }

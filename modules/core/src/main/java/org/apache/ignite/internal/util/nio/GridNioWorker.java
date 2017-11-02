@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.util.Collection;
-import java.util.List;
+import java.nio.channels.Selector;
 import java.util.Set;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  *
@@ -29,23 +29,12 @@ interface GridNioWorker {
     /**
      * @param req Change request.
      */
-    public void offer(SessionChangeRequest req);
-
-    /**
-     * @param reqs Change requests.
-     */
-    public void offer(Collection<SessionChangeRequest> reqs);
-
-    /**
-     * @param ses Session.
-     * @return Session state change requests.
-     */
-    @Nullable public List<SessionChangeRequest> clearSessionRequests(GridNioSession ses);
+    void offer(SessionChangeRequest req);
 
     /**
      * @param ses Session to register write interest for.
      */
-    public void registerWrite(GridSelectorNioSessionImpl ses);
+    void registerWrite(GridNioSession ses);
 
     /**
      * Resets the worker counters.
@@ -77,4 +66,36 @@ interface GridNioWorker {
      */
     long bytesSentTotal();
 
+    /**
+     * @return Selector, used by this worker.
+     */
+    Selector selector();
+
+    /**
+     * Registers a new session.
+     * @param future Connection Operation future.
+     */
+    void register(ConnectionOperationFuture future);
+
+    /**
+     * Dumps worker statistics.
+     * @param sb String builder
+     * @param p Predicate which determines should Session info be included to output or not.
+     * @param shortInfo True if short format should be used.
+     */
+    void dumpStats(StringBuilder sb, IgnitePredicate<GridNioSession> p, boolean shortInfo);
+
+    /**
+     * Closes the session and all associated resources, then notifies the listener.
+     *
+     * @param ses Session to be closed.
+     * @param reason Exception to be passed to the listener, if any.
+     * @return {@code True} if this call closed the ses.
+     */
+    boolean closeSession(GridNioSession ses, IgniteCheckedException reason);
+
+    /**
+     * @return Worker index.
+     */
+    int idx();
 }

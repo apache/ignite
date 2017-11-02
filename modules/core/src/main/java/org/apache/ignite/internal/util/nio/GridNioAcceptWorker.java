@@ -224,7 +224,7 @@ class GridNioAcceptWorker<T> extends GridWorker {
      * @param sockCh Socket channel to be registered on one of the selectors.
      */
     private void addRegistrationRequest(SocketChannel sockCh) {
-        nio.offerBalanced(new NioOperationFuture<>(sockCh, true, null), null);
+        nio.offerBalanced(new ConnectionOperationFuture(sockCh, true, null, NioOperation.REGISTER), null);
     }
 
     /** {@inheritDoc} */

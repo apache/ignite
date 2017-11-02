@@ -17,32 +17,35 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.io.IOException;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Session close request.
  */
-interface SessionChangeRequest {
+final class SessionCloseFuture extends NioOperationFuture<Boolean> {
     /**
-     * @return Session.
+     * @param ses Session to close.
      */
-    <T extends GridNioSession> T session();
+    SessionCloseFuture(GridSelectorNioSessionImpl ses) {
+        super(ses, NioOperation.CLOSE);
+    }
 
-    /**
-     * @return Requested change operation.
-     */
-    NioOperation operation();
+    /** {@inheritDoc} */
+    @Override public <T> void invoke(GridNioServer<T> nio, GridNioWorker worker) {
+        GridNioWorker worker0 = ses.worker();
 
-    /**
-     * Invokes the change operation.
-     * It is guaranteed that the method invokes from Nio thread.
-     * It's possible that method invokes several times in certain
-     * cases but guaranteed that it isn't called concurrently.
-     * @param nio Nio server.
-     * @param worker Nio worker.
-     * @throws IOException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    <T> void invoke(GridNioServer<T> nio, GridNioWorker worker) throws IOException, IgniteCheckedException;
+        if(worker != worker0)
+            worker0.offer(this);
+        else {
+            if (worker.closeSession(session(), null))
+                onDone(true);
+            else
+                onDone(false);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SessionCloseFuture.class, this, super.toString());
+    }
 }

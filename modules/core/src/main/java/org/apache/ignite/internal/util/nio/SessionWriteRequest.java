@@ -23,7 +23,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 /**
  *
  */
-public interface SessionWriteRequest {
+public interface SessionWriteRequest extends SessionChangeRequest {
     /**
      * Sets flag indicating that message send future was created in thread that was processing a message.
      *
@@ -42,6 +42,11 @@ public interface SessionWriteRequest {
     public boolean skipRecovery();
 
     /**
+     * @return {@code True} if request is system one.
+     */
+    public boolean system();
+
+    /**
      * The method will be called when ack received.
      */
     public void onAckReceived();
@@ -50,11 +55,6 @@ public interface SessionWriteRequest {
      * @return Ack closure.
      */
     public IgniteInClosure<IgniteException> ackClosure();
-
-    /**
-     * @return Session.
-     */
-    public GridNioSession session();
 
     /**
      * @param ses Session.

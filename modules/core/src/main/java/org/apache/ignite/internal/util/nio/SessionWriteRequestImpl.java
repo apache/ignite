@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -25,9 +26,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-final class WriteRequestImpl implements SessionWriteRequest, SessionChangeRequest {
+@SuppressWarnings("unchecked")
+final class SessionWriteRequestImpl implements SessionWriteRequest {
     /** */
-    private GridNioSession ses;
+    @GridToStringExclude
+    private GridSelectorNioSessionImpl ses;
 
     /** */
     private final Object msg;
@@ -39,7 +42,29 @@ final class WriteRequestImpl implements SessionWriteRequest, SessionChangeReques
     private final boolean skipRecovery;
 
     /** */
+    private final boolean system;
+
+    /** */
     private final IgniteInClosure<IgniteException> ackC;
+
+    /**
+     * @param ses Session.
+     * @param msg Message.
+     * @param skipRecovery Skip recovery flag.
+     */
+    SessionWriteRequestImpl(GridSelectorNioSessionImpl ses, Object msg, boolean skipRecovery) {
+        this(ses, msg, skipRecovery, false, null);
+    }
+
+    /**
+     * @param ses Session.
+     * @param msg Message.
+     * @param skipRecovery Skip recovery flag.
+     * @param system System message flag.
+     */
+    SessionWriteRequestImpl(GridSelectorNioSessionImpl ses, Object msg, boolean skipRecovery, boolean system) {
+        this(ses, msg, skipRecovery, system, null);
+    }
 
     /**
      * @param ses Session.
@@ -47,14 +72,33 @@ final class WriteRequestImpl implements SessionWriteRequest, SessionChangeReques
      * @param skipRecovery Skip recovery flag.
      * @param ackC Closure invoked when message ACK is received.
      */
-    WriteRequestImpl(GridNioSession ses,
+    SessionWriteRequestImpl(GridSelectorNioSessionImpl ses, Object msg, boolean skipRecovery, IgniteInClosure<IgniteException> ackC) {
+        this(ses, msg, skipRecovery, false, ackC);
+    }
+
+    /**
+     * @param ses Session.
+     * @param msg Message.
+     * @param skipRecovery Skip recovery flag.
+     * @param system System message flag.
+     * @param ackC Closure invoked when message ACK is received.
+     */
+    private SessionWriteRequestImpl(GridSelectorNioSessionImpl ses,
         Object msg,
         boolean skipRecovery,
+        boolean system,
         IgniteInClosure<IgniteException> ackC) {
         this.ses = ses;
         this.msg = msg;
         this.skipRecovery = skipRecovery;
+        this.system = system;
         this.ackC = ackC;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> void invoke(GridNioServer<T> nio, GridNioWorker worker) {
+        if (ses.worker() == worker)
+            worker.registerWrite(ses);
     }
 
     /** {@inheritDoc} */
@@ -64,12 +108,18 @@ final class WriteRequestImpl implements SessionWriteRequest, SessionChangeReques
 
     /** {@inheritDoc} */
     @Override public boolean messageThread() {
-        return msgThread;
+        // system message is always processed without acquiring back pressure semaphore
+        return system || msgThread;
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return skipRecovery;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean system() {
+        return system;
     }
 
     /** {@inheritDoc} */
@@ -101,11 +151,11 @@ final class WriteRequestImpl implements SessionWriteRequest, SessionChangeReques
 
     /** {@inheritDoc} */
     @Override public void resetSession(GridNioSession ses) {
-        this.ses = ses;
+        this.ses = (GridSelectorNioSessionImpl)ses;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioSession session() {
+    @Override public GridSelectorNioSessionImpl session() {
         return ses;
     }
 
@@ -116,6 +166,6 @@ final class WriteRequestImpl implements SessionWriteRequest, SessionChangeReques
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(WriteRequestImpl.class, this);
+        return S.toString(SessionWriteRequestImpl.class, this);
     }
 }

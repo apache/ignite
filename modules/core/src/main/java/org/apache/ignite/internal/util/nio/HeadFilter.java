@@ -83,8 +83,7 @@ class HeadFilter<T> extends GridNioFilterAdapter {
 
                 GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
 
-                if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true))
-                    ses0.worker().registerWrite(ses0);
+                ses0.worker().registerWrite(ses0);
 
                 return null;
             }
@@ -117,11 +116,11 @@ class HeadFilter<T> extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
-        return nio.pauseResumeReads(ses, NioOperation.PAUSE_READ);
+        return nio.pauseReads(ses);
     }
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
-        return nio.pauseResumeReads(ses, NioOperation.RESUME_READ);
+        return nio.resumeReads(ses);
     }
 }
