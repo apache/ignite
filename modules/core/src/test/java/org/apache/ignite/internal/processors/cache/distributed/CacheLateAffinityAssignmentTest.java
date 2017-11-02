@@ -2477,7 +2477,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         cache.remove(key);
 
-                        assertNull(cache.get(key));
+                        try(Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            assertNull(cache.get(key));
+                        }
                     }
                 }
                 catch (Exception e) {
