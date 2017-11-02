@@ -557,7 +557,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return PageIdUtils.partId(link);
+        return PageIdUtils.partId(pageId(link));
     }
 
     /** {@inheritDoc} */

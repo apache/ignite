@@ -775,6 +775,7 @@ public class DataPageIO extends PageIO {
     /**
      * Adds row to this data page and sets respective link to the given row object.
      *
+     * @param pageId page ID.
      * @param pageAddr Page address.
      * @param row Cache data row.
      * @param rowSize Row size.
@@ -782,6 +783,7 @@ public class DataPageIO extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(
+        final long pageId,
         final long pageAddr,
         CacheDataRow row,
         final int rowSize,
@@ -800,7 +802,7 @@ public class DataPageIO extends PageIO {
 
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
-        setLink(row, pageAddr, itemId);
+        setLinkByPageId(row, pageId, itemId);
     }
 
     /**
@@ -1021,7 +1023,18 @@ public class DataPageIO extends PageIO {
      * @param itemId Item ID.
      */
     private void setLink(CacheDataRow row, long pageAddr, int itemId) {
-        row.link(PageIdUtils.link(getPageId(pageAddr), itemId));
+        long pageId = getPageId(pageAddr);
+
+        setLinkByPageId(row, pageId, itemId);
+    }
+
+    /**
+     * @param row Row to set link to.
+     * @param pageId Page ID.
+     * @param itemId Item ID.
+     */
+    private void setLinkByPageId(CacheDataRow row, long pageId, int itemId) {
+        row.link(PageIdUtils.link(pageId, itemId));
     }
 
     /**
