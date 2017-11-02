@@ -22,7 +22,7 @@ import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 /**
  * Factory class for {@link LruEvictionPolicy}.
  */
-public class LruEvictionPolicyFactory extends AbstractEvictionPolicyFactory<LruEvictionPolicy> {
+public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<LruEvictionPolicy<K, V>> {
 
     /** */
     public LruEvictionPolicyFactory() {
@@ -33,9 +33,16 @@ public class LruEvictionPolicyFactory extends AbstractEvictionPolicyFactory<LruE
         setMaxSize(maxSize);
     }
 
+    /** */
+    public LruEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
+        setMaxSize(maxSize);
+        setBatchSize(batchSize);
+        setMaxMemorySize(maxMemSize);
+    }
+
     /** {@inheritDoc} */
-    @Override public LruEvictionPolicy create() {
-        LruEvictionPolicy policy = new LruEvictionPolicy();
+    @Override public LruEvictionPolicy<K, V> create() {
+        LruEvictionPolicy<K, V> policy = new LruEvictionPolicy<>();
 
         policy.setBatchSize(getBatchSize());
         policy.setMaxMemorySize(getMaxMemorySize());

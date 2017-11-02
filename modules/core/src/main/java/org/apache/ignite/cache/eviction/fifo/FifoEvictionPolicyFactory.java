@@ -22,7 +22,7 @@ import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 /**
  * Factory class for {@link FifoEvictionPolicy}.
  */
-public class FifoEvictionPolicyFactory extends AbstractEvictionPolicyFactory<FifoEvictionPolicy> {
+public class FifoEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<FifoEvictionPolicy<K, V>> {
 
     /** Constructor. */
     public FifoEvictionPolicyFactory() {
@@ -33,9 +33,16 @@ public class FifoEvictionPolicyFactory extends AbstractEvictionPolicyFactory<Fif
         setMaxSize(maxSize);
     }
 
+    /** */
+    public FifoEvictionPolicyFactory(int maxSize, int batchSize, long maxMemSize) {
+        setMaxSize(maxSize);
+        setBatchSize(batchSize);
+        setMaxMemorySize(maxMemSize);
+    }
+
     /** {@inheritDoc} */
-    @Override public FifoEvictionPolicy create() {
-        FifoEvictionPolicy policy = new FifoEvictionPolicy();
+    @Override public FifoEvictionPolicy<K, V> create() {
+        FifoEvictionPolicy<K, V> policy = new FifoEvictionPolicy<>();
 
         policy.setBatchSize(getBatchSize());
         policy.setMaxMemorySize(getMaxMemorySize());

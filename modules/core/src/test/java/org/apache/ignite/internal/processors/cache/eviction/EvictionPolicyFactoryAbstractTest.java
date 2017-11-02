@@ -125,7 +125,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
         if (nearEnabled) {
             NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-            nearCfg.setNearEvictionPolicy(createNearPolicy(nearMax));
+            nearCfg.setNearEvictionPolicyFactory(createNearPolicyFactory(nearMax));
 
             cc.setNearConfiguration(nearCfg);
         }
@@ -642,13 +642,12 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class);
+        CacheEvictionManager evictMgr = grid(i).cachex(DEFAULT_CACHE_NAME).context().near().context().evicts();
 
-        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+        assert evictMgr instanceof GridCacheEvictionManager : evictMgr;
 
-        return (T)(nearCfg == null ? null : nearCfg.getNearEvictionPolicy());
+        return (T)((GridCacheEvictionManager)evictMgr).getEvictionPolicy();
     }
-
     /**
      * @param c1 Policy collection.
      * @param c2 Expected list.
@@ -893,7 +892,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
      * @param nearMax Near max.
      * @return Policy.
      */
-    protected abstract T createNearPolicy(int nearMax);
+    protected abstract Factory<T> createNearPolicyFactory(int nearMax);
 
     /**
      * Performs after-test near policy check.

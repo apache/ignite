@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
 import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
 
 /**
@@ -27,12 +28,12 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactor
 public class SortedEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstractTest<SortedEvictionPolicy<String, String>> {
     /** {@inheritDoc} */
     @Override protected Factory<SortedEvictionPolicy<String, String>> createPolicyFactory() {
-        return new SortedEvictionPolicyFactory(plcMax, plcBatchSize, plcMaxMemSize);
+        return new SortedEvictionPolicyFactory<>(plcMax, plcBatchSize, plcMaxMemSize);
     }
 
     /** {@inheritDoc} */
-    @Override protected SortedEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        SortedEvictionPolicy<String, String> plc = new SortedEvictionPolicy<>();
+    @Override protected Factory<SortedEvictionPolicy<String, String>> createNearPolicyFactory(int nearMax) {
+        SortedEvictionPolicyFactory<String, String> plc = new SortedEvictionPolicyFactory<>();
 
         plc.setMaxSize(nearMax);
         plc.setBatchSize(plcBatchSize);
@@ -258,36 +259,6 @@ public class SortedEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAb
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /** */
-    private static class SortedEvictionPolicyFactory implements Factory<SortedEvictionPolicy<String, String>> {
-        /** */
-        private final int plcMax;
-
-        /** */
-        private final int batchSize;
-
-        /** */
-        private final long plcMaxMemSize;
-
-        /** Constructor. */
-        public SortedEvictionPolicyFactory(int plcMax, int batchSize, long plcMaxMemSize) {
-            this.plcMax = plcMax;
-            this.batchSize = batchSize;
-            this.plcMaxMemSize = plcMaxMemSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SortedEvictionPolicy<String, String> create() {
-            SortedEvictionPolicy<String, String> plc = new SortedEvictionPolicy<>();
-
-            plc.setMaxSize(plcMax);
-            plc.setBatchSize(batchSize);
-            plc.setMaxMemorySize(plcMaxMemSize);
-
-            return plc;
         }
     }
 }

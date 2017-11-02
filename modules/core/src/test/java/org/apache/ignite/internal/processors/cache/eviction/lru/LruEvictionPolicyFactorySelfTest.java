@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.eviction.lru;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
 
 /**
@@ -28,12 +29,12 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactor
 public class LruEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstractTest<LruEvictionPolicy<String, String>> {
     /** {@inheritDoc} */
     @Override protected Factory<LruEvictionPolicy<String, String>> createPolicyFactory() {
-        return new LruEvictionPolicyFactory(plcMax, plcBatchSize, plcMaxMemSize);
+        return new LruEvictionPolicyFactory<>(plcMax, plcBatchSize, plcMaxMemSize);
     }
 
     /** {@inheritDoc} */
-    @Override protected LruEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        LruEvictionPolicy<String, String> plc = new LruEvictionPolicy<>();
+    @Override protected Factory<LruEvictionPolicy<String, String>> createNearPolicyFactory(int nearMax) {
+        LruEvictionPolicyFactory<String, String> plc = new LruEvictionPolicyFactory<>();
 
         plc.setMaxSize(nearMax);
         plc.setBatchSize(plcBatchSize);
@@ -346,36 +347,6 @@ public class LruEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstr
             }
             else
                 assertTrue(policy(i).queue().size() <= plcMax + plcBatchSize);
-        }
-    }
-
-    /** */
-    private static class LruEvictionPolicyFactory implements Factory<LruEvictionPolicy<String, String>> {
-        /** */
-        private final int plcMax;
-
-        /** */
-        private final int batchSize;
-
-        /** */
-        private final long plcMaxMemSize;
-
-        /** Constructor. */
-        public LruEvictionPolicyFactory(int plcMax, int batchSize, long plcMaxMemSize) {
-            this.plcMax = plcMax;
-            this.batchSize = batchSize;
-            this.plcMaxMemSize = plcMaxMemSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public LruEvictionPolicy<String, String> create() {
-            LruEvictionPolicy<String, String> plc = new LruEvictionPolicy<>();
-
-            plc.setMaxSize(plcMax);
-            plc.setBatchSize(batchSize);
-            plc.setMaxMemorySize(plcMaxMemSize);
-
-            return plc;
         }
     }
 }

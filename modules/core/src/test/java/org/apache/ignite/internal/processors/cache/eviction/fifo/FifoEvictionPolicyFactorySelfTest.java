@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.fifo;
 
 import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
 
 /**
@@ -27,12 +28,12 @@ import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactor
 public class FifoEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstractTest<FifoEvictionPolicy<String, String>> {
        /** {@inheritDoc} */
     @Override protected Factory<FifoEvictionPolicy<String, String>> createPolicyFactory() {
-        return new FifoEvictionPolicyFactory(plcMax, plcBatchSize, plcMaxMemSize);
+        return new FifoEvictionPolicyFactory<>(plcMax, plcBatchSize, plcMaxMemSize);
     }
 
     /** {@inheritDoc} */
-    @Override protected FifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        FifoEvictionPolicy<String, String> plc = new FifoEvictionPolicy<>();
+    @Override protected Factory<FifoEvictionPolicy<String, String>> createNearPolicyFactory(int nearMax) {
+        FifoEvictionPolicyFactory<String, String> plc = new FifoEvictionPolicyFactory<>();
 
         plc.setMaxSize(nearMax);
         plc.setBatchSize(plcBatchSize);
@@ -255,36 +256,6 @@ public class FifoEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbst
         }
         finally {
             stopAllGrids();
-        }
-    }
-
-    /** */
-    private static class FifoEvictionPolicyFactory implements Factory<FifoEvictionPolicy<String, String>> {
-        /** */
-        private final int plcMax;
-
-        /** */
-        private final int batchSize;
-
-        /** */
-        private final long plcMaxMemSize;
-
-        /** Constructor. */
-        public FifoEvictionPolicyFactory(int plcMax, int batchSize, long plcMaxMemSize) {
-            this.plcMax = plcMax;
-            this.batchSize = batchSize;
-            this.plcMaxMemSize = plcMaxMemSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FifoEvictionPolicy<String, String> create() {
-            FifoEvictionPolicy<String, String> plc = new FifoEvictionPolicy<>();
-
-            plc.setMaxSize(plcMax);
-            plc.setBatchSize(batchSize);
-            plc.setMaxMemorySize(plcMaxMemSize);
-
-            return plc;
         }
     }
 }
