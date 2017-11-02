@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -46,7 +47,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -73,7 +73,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -258,17 +257,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /** {@inheritDoc} */
     @Override public GridH2Table getTable() {
         return (GridH2Table)super.getTable();
-    }
-
-    /**
-     * Filters rows from expired ones and using predicate.
-     *
-     * @param cursor GridCursor over rows.
-     * @param filter Optional filter.
-     * @return Filtered iterator.
-     */
-    protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
-        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**
@@ -1570,7 +1558,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected GridCursor<GridH2Row> doFind0(
+    protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
@@ -1580,77 +1568,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Cursor which filters by expiration time and predicate.
-     */
-    protected static class FilteringCursor implements GridCursor<GridH2Row> {
-        /** */
-        private final GridCursor<GridH2Row> cursor;
-
-        /** */
-        private final IndexingQueryCacheFilter fltr;
-
-        /** */
-        private final long time;
-
-        /** */
-        private GridH2Row next;
-
-        /**
-         * @param cursor GridCursor.
-         * @param time Time for expired rows filtering.
-         * @param qryFilter Filter.
-         * @param cacheName Cache name.
-         */
-        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
-            String cacheName) {
-            this.cursor = cursor;
-            this.time = time;
-            this.fltr = qryFilter != null ? qryFilter.forCache(cacheName) : null;
-        }
-
-        /**
-         * @param row Row.
-         * @return If this row was accepted.
-         */
-        @SuppressWarnings({"unchecked", "SimplifiableIfStatement"})
-        protected boolean accept(GridH2Row row) {
-            if (row.expireTime() != 0 && row.expireTime() <= time)
-                return false;
-
-            return fltr == null || fltr.applyPartition(row.partition());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            next = null;
-
-            while (cursor.next()) {
-                GridH2Row t = cursor.get();
-
-                if (accept(t)) {
-                    next = t;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridH2Row get() throws IgniteCheckedException {
-            if (next == null)
-                throw new NoSuchElementException();
-
-            return next;
-        }
-    }
-
-    /**
      *
      */
     private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
         /** */
-        private final GridCursor<GridH2Row> cursor;
+        private final H2Cursor cursor;
 
         /** Next element. */
         private GridH2Row next;
@@ -1658,18 +1580,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /**
          * @param cursor Cursor.
          */
-        private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+        private CursorIteratorWrapper(H2Cursor cursor) {
             assert cursor != null;
 
             this.cursor = cursor;
 
-            try {
-                if (cursor.next())
-                    next = cursor.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
         }
 
         /** {@inheritDoc} */
@@ -1679,19 +1596,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         /** {@inheritDoc} */
         @Override public GridH2Row next() {
-            try {
-                GridH2Row res = next;
+            GridH2Row res = next;
 
-                if (cursor.next())
-                    next = cursor.get();
-                else
-                    next = null;
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
+            else
+                next = null;
 
-                return res;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return res;
         }
 
         /** {@inheritDoc} */
