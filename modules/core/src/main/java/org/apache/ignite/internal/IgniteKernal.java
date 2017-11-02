@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -3527,11 +3526,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void activeEx(boolean active, Collection<ClusterNode> nodes) {
+    @Override public void setBaselineTopology(Collection<ClusterNode> nodes) {
         guard();
 
         try {
-            context().state().changeGlobalState(active, nodes, true).get();
+            if (!context().state().clusterState().active())
+                throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+            context().state().changeGlobalState(true, nodes, true).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
