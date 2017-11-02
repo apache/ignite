@@ -235,8 +235,10 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     try {
                         DataPageIO.VERSIONS.latest().initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
 
-                        for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++)
+                        for (int i = PageIO.COMMON_HEADER_END + DataPageIO.ITEMS_OFF; i < mem.pageSize(); i++)
                             PageUtils.putByte(pageAddr, i, (byte)0xAB);
+
+                        PageIO.printPage(pageAddr, mem.pageSize());
                     }
                     finally {
                         mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);

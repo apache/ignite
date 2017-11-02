@@ -296,7 +296,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
      */
     final void sendSingleRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
-            cache.updateAllAsyncInternal(nodeId, req,
+            cache.updateAllAsyncInternal(cctx.localNode(), req,
                 new GridDhtAtomicCache.UpdateReplyClosure() {
                     @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         if (syncMode != FULL_ASYNC)

@@ -174,8 +174,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
      * size should be relatively small. Try to avoid having partitions with more
      * than quarter million keys.
      * <p>
-     * Note that for fully replicated caches this method should always
-     * return {@code 1}.
+     * For fully replicated caches this method works the same way as a partitioned
+     * cache.
      *
      * @return Total partition count.
      */

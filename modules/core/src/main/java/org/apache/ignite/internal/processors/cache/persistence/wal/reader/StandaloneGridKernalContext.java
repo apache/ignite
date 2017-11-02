@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,11 +27,14 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -41,6 +46,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -55,7 +61,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -73,6 +79,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -83,16 +90,36 @@ import org.jetbrains.annotations.Nullable;
  * Dummy grid kernal context
  */
 public class StandaloneGridKernalContext implements GridKernalContext {
-    /** */
+    /** Config for fake Ignite instance. */
+    private final IgniteConfiguration cfg;
+
+    /** Logger. */
     private IgniteLogger log;
 
-    /** */
+    /** Empty plugin processor. */
     private IgnitePluginProcessor pluginProc;
 
     /**
-     * @param log Logger.
+     * Cache object processor. Used for converting cache objects and keys into binary objects. Null means there is no
+     * convert is configured. All entries in this case will be lazy data entries.
      */
-    StandaloneGridKernalContext(IgniteLogger log) {
+    @Nullable private IgniteCacheObjectProcessor cacheObjProcessor;
+
+    /** Marshaller context implementation. */
+    private MarshallerContextImpl marshallerContext;
+
+    /**
+     * @param log Logger.
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
+     * {@code null} means no specific folder is configured. <br>
+     *
+     * @param marshallerMappingFileStoreDir folder specifying location of marshaller mapping file store.
+     * {@code null} means no specific folder is configured.
+     * Providing {@code null} will disable unmarshall for non primitive objects, BinaryObjects will be provided <br>
+     */
+    StandaloneGridKernalContext(IgniteLogger log,
+        @Nullable final File binaryMetadataFileStoreDir,
+        @Nullable final File marshallerMappingFileStoreDir) throws IgniteCheckedException {
         this.log = log;
 
         try {
@@ -102,6 +129,56 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
+
+        this.marshallerContext = new MarshallerContextImpl(null);
+        this.cfg = prepareIgniteConfiguration();
+        this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
+
+        if (marshallerMappingFileStoreDir != null) {
+            marshallerContext.setMarshallerMappingFileStoreDir(marshallerMappingFileStoreDir);
+            marshallerContext.onMarshallerProcessorStarted(this, null);
+        }
+    }
+
+    /**
+     * Creates binary processor which allows to convert WAL records into objects
+     *
+     * @param ctx kernal context
+     * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store
+     *
+     * {@code null} means no specific folder is configured. <br> In this case folder for metadata is composed from work
+     * directory and consistentId
+     * @return Cache object processor able to restore data records content into binary objects
+     * @throws IgniteCheckedException Throws in case of initialization errors.
+     */
+    private IgniteCacheObjectProcessor binaryProcessor(
+        final GridKernalContext ctx,
+        final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+
+        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
+        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        processor.start();
+        return processor;
+    }
+
+    /**
+     * @return Ignite configuration which allows to start requied processors for WAL reader
+     */
+    private IgniteConfiguration prepareIgniteConfiguration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setDiscoverySpi(new StandaloneNoopDiscoverySpi());
+        cfg.setCommunicationSpi(new StandaloneNoopCommunicationSpi());
+
+        final Marshaller marshaller = new BinaryMarshaller();
+        cfg.setMarshaller(marshaller);
+
+        PersistentStoreConfiguration pstCfg = new PersistentStoreConfiguration();
+        cfg.setPersistentStoreConfiguration(pstCfg);
+
+        marshaller.setContext(marshallerContext);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -141,12 +218,21 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
-        return null;
+        final IgniteEx kernal = new IgniteKernal();
+        try {
+            Field fieldCfg = kernal.getClass().getDeclaredField("cfg");
+            fieldCfg.setAccessible(true);
+            fieldCfg.set(kernal, cfg);
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error("", e);
+        }
+        return kernal;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration config() {
-        return null;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -251,7 +337,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PoolProcessor pools() {
-        return null;
+        return new PoolProcessor(this);
     }
 
     /** {@inheritDoc} */
@@ -276,7 +362,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public IgniteCacheObjectProcessor cacheObjects() {
-        return null;
+        return cacheObjProcessor;
     }
 
     /** {@inheritDoc} */
@@ -285,7 +371,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor sqlListener() {
         return null;
     }
 
@@ -301,12 +387,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public GridIoManager io() {
-        return null;
+        return new GridIoManager(this);
     }
 
     /** {@inheritDoc} */
     @Override public GridDiscoveryManager discovery() {
-        return null;
+        return new GridDiscoveryManager(StandaloneGridKernalContext.this) {
+            @Override public Object consistentId() {
+                return ""; // some non null value is required
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -350,7 +440,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() { }
+    @Override public void markSegmented() {
+    }
 
     /** {@inheritDoc} */
     @Override public boolean segmented() {
@@ -358,7 +449,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void printMemoryStats() { }
+    @Override public void printMemoryStats() {
+    }
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
@@ -421,7 +513,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getDataStreamerExecutorService() {
+    @Override public StripedExecutor getDataStreamerExecutorService() {
         return null;
     }
 
@@ -487,7 +579,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public MarshallerContextImpl marshallerContext() {
-        return null;
+        return marshallerContext;
     }
 
     /** {@inheritDoc} */

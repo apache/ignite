@@ -64,16 +64,6 @@ namespace ignite
             };
         };
 
-        struct ResponseStatus
-        {
-            enum Type
-            {
-                SUCCESS = 0,
-
-                FAILED = 1
-            };
-        };
-
         /**
          * Handshake request.
          */
@@ -88,9 +78,10 @@ namespace ignite
              * @param enforceJoinOrder Enforce join order flag.
              * @param replicatedOnly Replicated only flag.
              * @param collocated Collocated flag.
+             * @param lazy Lazy flag.
              */
             HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder,
-                bool replicatedOnly, bool collocated);
+                bool replicatedOnly, bool collocated, bool lazy);
 
             /**
              * Destructor.
@@ -118,6 +109,9 @@ namespace ignite
 
             /** Collocated flag. */
             bool collocated;
+
+            /** Lazy flag. */
+            bool lazy;
         };
 
         /**
@@ -407,14 +401,15 @@ namespace ignite
             /**
              * Read response using provided reader.
              * @param reader Reader.
+             * @param ver Protocol version.
              */
-            void Read(impl::binary::BinaryReaderImpl& reader);
+            void Read(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 
             /**
              * Get request processing status.
              * @return Status.
              */
-            int8_t GetStatus() const
+            int32_t GetStatus() const
             {
                 return status;
             }
@@ -432,11 +427,11 @@ namespace ignite
             /**
              * Read data if response status is ResponseStatus::SUCCESS.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl&);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl&, const ProtocolVersion&);
 
         private:
             /** Request processing status. */
-            int8_t status;
+            int32_t status;
 
             /** Error message. */
             std::string error;
@@ -489,7 +484,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            void Read(impl::binary::BinaryReaderImpl& reader);
+            void Read(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
         private:
             /** Handshake accepted. */
@@ -532,7 +527,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Query ID. */
             int64_t queryId;
@@ -572,18 +567,30 @@ namespace ignite
                 return meta;
             }
 
+            /**
+             * Get affected rows number.
+             * @return Number of rows affected by the query.
+             */
+            int64_t GetAffectedRows()
+            {
+                return affectedRows;
+            }
+
         private:
             /**
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Query ID. */
             int64_t queryId;
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
+
+            /** Number of affected rows. */
+            int64_t affectedRows;
         };
 
         /**
@@ -629,12 +636,22 @@ namespace ignite
                 return errorMessage;
             }
 
+            /**
+             * Get error code.
+             * @return Error code.
+             */
+            int32_t GetErrorCode() const
+            {
+                return errorCode;
+            }
+
         private:
             /**
              * Read response using provided reader.
              * @param reader Reader.
+             * @param ver Protocol version.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 
             /** Affected rows. */
             int64_t affectedRows;
@@ -644,6 +661,9 @@ namespace ignite
 
             /** Error message. */
             std::string errorMessage;
+
+            /** Error code. */
+            int32_t errorCode;
         };
 
         /**
@@ -677,7 +697,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Query ID. */
             int64_t queryId;
@@ -716,7 +736,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Columns metadata. */
             meta::ColumnMetaVector meta;
@@ -752,7 +772,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Columns metadata. */
             meta::TableMetaVector meta;
@@ -788,7 +808,7 @@ namespace ignite
              * Read response using provided reader.
              * @param reader Reader.
              */
-            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader);
+            virtual void ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&);
 
             /** Columns metadata. */
             std::vector<int8_t> typeIds;

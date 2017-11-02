@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -352,6 +353,17 @@ public class GridAffinityAssignmentCache {
 
         return aff.assignment();
     }
+    /**
+     * @param topVer Topology version.
+     * @return Affinity assignment.
+     */
+    public List<List<ClusterNode>> readyAssignments(AffinityTopologyVersion topVer) {
+        AffinityAssignment aff = readyAffinity(topVer);
+
+        assert aff != null : "No ready affinity [grp=" + cacheOrGrpName + ", ver=" + topVer + ']';
+
+        return aff.assignment();
+    }
 
     /**
      * Gets future that will be completed after topology with version {@code topVer} is calculated.
@@ -453,6 +465,30 @@ public class GridAffinityAssignmentCache {
         }
 
         return false;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Assignment.
+     */
+    public AffinityAssignment readyAffinity(AffinityTopologyVersion topVer) {
+        AffinityAssignment cache = head.get();
+
+        if (!cache.topologyVersion().equals(topVer)) {
+            cache = affCache.get(topVer);
+
+            if (cache == null) {
+                throw new IllegalStateException("Affinity for topology version is " +
+                    "not initialized [locNode=" + ctx.discovery().localNode().id() +
+                    ", grp=" + cacheOrGrpName +
+                    ", topVer=" + topVer +
+                    ", head=" + head.get().topologyVersion() +
+                    ", history=" + affCache.keySet() +
+                    ']');
+            }
+        }
+
+        return cache;
     }
 
     /**
@@ -600,6 +636,12 @@ public class GridAffinityAssignmentCache {
         }
     }
 
+    /**
+     * @return All initialized versions.
+     */
+    public Collection<AffinityTopologyVersion> cachedVersions() {
+        return affCache.keySet();
+    }
 
     /**
      * Affinity ready future. Will remove itself from ready futures map.

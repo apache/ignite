@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(Ignite grid)
+        public void Inject(IIgniteInternal grid)
         {
             ResourceProcessor.Inject(_action, grid);
         }
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteWithPeerDeployment(_action));
+            writer0.WriteWithPeerDeployment(_action);
         }
 
         /// <summary>

@@ -962,8 +962,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-            IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
-            try {
+            try (IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 ldr.receiver(new StreamReceiver<String, String>() {
                     @Override public void receive(IgniteCache<String, String> cache,
                         Collection<Map.Entry<String, String>> entries) throws IgniteException {
@@ -972,6 +971,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         cache.put("key", threadName);
                     }
                 });
+
                 ldr.addData("key", "value");
 
                 ldr.tryFlush();
@@ -981,9 +981,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         return cache.get("key") != null;
                     }
                 }, 3_000);
-            }
-            finally {
-                ldr.close(true);
             }
 
             assertNotNull(cache.get("key"));
@@ -1011,9 +1008,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-            IgniteDataStreamer<String, String> ldr = client.dataStreamer(DEFAULT_CACHE_NAME);
-
-            try {
+            try (IgniteDataStreamer<String, String> ldr = client.dataStreamer(DEFAULT_CACHE_NAME)) {
                 ldr.receiver(new StringStringStreamReceiver());
 
                 ldr.addData("key", "value");
@@ -1025,9 +1020,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         return cache.get("key") != null;
                     }
                 }, 3_000);
-            }
-            finally {
-                ldr.close(true);
             }
 
             assertNotNull(cache.get("key"));

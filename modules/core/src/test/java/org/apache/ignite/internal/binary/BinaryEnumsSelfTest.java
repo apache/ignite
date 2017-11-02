@@ -539,6 +539,44 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test operations on simple type with declared body which is registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeclaredBodyEnumRegistered() throws Exception {
+        checkDeclaredBodyEnum(true);
+    }
+
+    /**
+     * Test operations on simple type with declared body which is not registered in advance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeclaredBodyEnumNotRegistered() throws Exception {
+        checkDeclaredBodyEnum(false);
+    }
+
+    /**
+     * Check enums with declared body.
+     *
+     * @param registered Registered flag.
+     * @throws Exception If failed.
+     */
+    private void checkDeclaredBodyEnum(boolean registered) throws Exception {
+        startUp(registered);
+
+        cache1.put(1, DeclaredBodyEnum.ONE);
+
+        if (registered) {
+            assertEquals(DeclaredBodyEnum.ONE, cache1.get(1));
+            assertEquals(DeclaredBodyEnum.ONE, cache2.get(1));
+        }
+
+        validate((BinaryObject) cacheBinary1.get(1), DeclaredBodyEnum.ONE);
+        validate((BinaryObject) cacheBinary2.get(1), DeclaredBodyEnum.ONE);
+    }
+
+    /**
      * Validate simple array.
      *
      * @param registered Registered flag.
@@ -606,6 +644,21 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         if (register)
             assertEquals(val.name(), obj.enumName());
     }
+    
+    /**
+     * Validate single value.
+     *
+     * @param obj Binary value.
+     * @param val Expected value.
+     */
+    private void validate(BinaryObject obj, DeclaredBodyEnum val) {
+        assertTrue(obj.type().isEnum());
+
+        assertEquals(node1.binary().typeId(DeclaredBodyEnum.class.getName()), obj.type().typeId());
+        assertEquals(node2.binary().typeId(DeclaredBodyEnum.class.getName()), obj.type().typeId());
+
+        assertEquals(val.ordinal(), obj.enumOrdinal());
+    }
 
     /** Register enum */
     private void defineEnum() {
@@ -645,5 +698,23 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public enum EnumType {
         ONE,
         TWO
+    }
+
+    /**
+     * Enumeration for tests.
+     */
+    public enum DeclaredBodyEnum {
+        ONE {
+            @Override boolean isSupported() {
+                return false;
+            }
+        },
+        TWO {
+            @Override boolean isSupported() {
+                return false;
+            }
+        };
+
+        abstract boolean isSupported();
     }
 }

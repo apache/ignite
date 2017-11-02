@@ -124,6 +124,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             javaFieldName: String,
             javaFieldType: String
         }],
+        queryKeyFields: [String],
         fields: [{name: String, className: String}],
         aliases: [{field: String, alias: String}],
         indexes: [{
@@ -1035,12 +1036,16 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
+            useAsDefaultSchema: Boolean,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
             },
-            qryType: String
+            qryType: String,
+            nonCollocatedJoins: {type: Boolean, default: false},
+            enforceJoinOrder: {type: Boolean, default: false},
+            lazy: {type: Boolean, default: false}
         }]
     });
 
@@ -1055,7 +1060,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         date: Date,
         group: String,
         action: String,
-        amount: { type: Number, default: 1 }
+        amount: { type: Number, default: 0 }
     });
 
     ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });

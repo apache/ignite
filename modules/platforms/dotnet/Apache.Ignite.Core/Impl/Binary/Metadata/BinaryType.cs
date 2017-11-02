@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     {
         /** Empty metadata. */
         public static readonly BinaryType Empty =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false, null, null);
+            new BinaryType(BinaryTypeId.Object, BinaryTypeNames.TypeNameObject, null, null, false, null, null);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, BinaryField> EmptyDict = new Dictionary<string, BinaryField>();
@@ -70,6 +70,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Marshaller. */
         private readonly Marshaller _marshaller;
 
+        /** Schema. */
+        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
+
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
         /// </summary>
@@ -77,36 +80,36 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             Justification = "Readability.")]
         static BinaryType()
         {
-            TypeNames[BinaryUtils.TypeBool] = BinaryTypeNames.TypeNameBool;
-            TypeNames[BinaryUtils.TypeByte] = BinaryTypeNames.TypeNameByte;
-            TypeNames[BinaryUtils.TypeShort] = BinaryTypeNames.TypeNameShort;
-            TypeNames[BinaryUtils.TypeChar] = BinaryTypeNames.TypeNameChar;
-            TypeNames[BinaryUtils.TypeInt] = BinaryTypeNames.TypeNameInt;
-            TypeNames[BinaryUtils.TypeLong] = BinaryTypeNames.TypeNameLong;
-            TypeNames[BinaryUtils.TypeFloat] = BinaryTypeNames.TypeNameFloat;
-            TypeNames[BinaryUtils.TypeDouble] = BinaryTypeNames.TypeNameDouble;
-            TypeNames[BinaryUtils.TypeDecimal] = BinaryTypeNames.TypeNameDecimal;
-            TypeNames[BinaryUtils.TypeString] = BinaryTypeNames.TypeNameString;
-            TypeNames[BinaryUtils.TypeGuid] = BinaryTypeNames.TypeNameGuid;
-            TypeNames[BinaryUtils.TypeTimestamp] = BinaryTypeNames.TypeNameTimestamp;
-            TypeNames[BinaryUtils.TypeEnum] = BinaryTypeNames.TypeNameEnum;
-            TypeNames[BinaryUtils.TypeObject] = BinaryTypeNames.TypeNameObject;
-            TypeNames[BinaryUtils.TypeArrayBool] = BinaryTypeNames.TypeNameArrayBool;
-            TypeNames[BinaryUtils.TypeArrayByte] = BinaryTypeNames.TypeNameArrayByte;
-            TypeNames[BinaryUtils.TypeArrayShort] = BinaryTypeNames.TypeNameArrayShort;
-            TypeNames[BinaryUtils.TypeArrayChar] = BinaryTypeNames.TypeNameArrayChar;
-            TypeNames[BinaryUtils.TypeArrayInt] = BinaryTypeNames.TypeNameArrayInt;
-            TypeNames[BinaryUtils.TypeArrayLong] = BinaryTypeNames.TypeNameArrayLong;
-            TypeNames[BinaryUtils.TypeArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
-            TypeNames[BinaryUtils.TypeArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
-            TypeNames[BinaryUtils.TypeArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
-            TypeNames[BinaryUtils.TypeArrayString] = BinaryTypeNames.TypeNameArrayString;
-            TypeNames[BinaryUtils.TypeArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
-            TypeNames[BinaryUtils.TypeArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
-            TypeNames[BinaryUtils.TypeArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
-            TypeNames[BinaryUtils.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
-            TypeNames[BinaryUtils.TypeCollection] = BinaryTypeNames.TypeNameCollection;
-            TypeNames[BinaryUtils.TypeDictionary] = BinaryTypeNames.TypeNameMap;
+            TypeNames[BinaryTypeId.Bool] = BinaryTypeNames.TypeNameBool;
+            TypeNames[BinaryTypeId.Byte] = BinaryTypeNames.TypeNameByte;
+            TypeNames[BinaryTypeId.Short] = BinaryTypeNames.TypeNameShort;
+            TypeNames[BinaryTypeId.Char] = BinaryTypeNames.TypeNameChar;
+            TypeNames[BinaryTypeId.Int] = BinaryTypeNames.TypeNameInt;
+            TypeNames[BinaryTypeId.Long] = BinaryTypeNames.TypeNameLong;
+            TypeNames[BinaryTypeId.Float] = BinaryTypeNames.TypeNameFloat;
+            TypeNames[BinaryTypeId.Double] = BinaryTypeNames.TypeNameDouble;
+            TypeNames[BinaryTypeId.Decimal] = BinaryTypeNames.TypeNameDecimal;
+            TypeNames[BinaryTypeId.String] = BinaryTypeNames.TypeNameString;
+            TypeNames[BinaryTypeId.Guid] = BinaryTypeNames.TypeNameGuid;
+            TypeNames[BinaryTypeId.Timestamp] = BinaryTypeNames.TypeNameTimestamp;
+            TypeNames[BinaryTypeId.Enum] = BinaryTypeNames.TypeNameEnum;
+            TypeNames[BinaryTypeId.Object] = BinaryTypeNames.TypeNameObject;
+            TypeNames[BinaryTypeId.ArrayBool] = BinaryTypeNames.TypeNameArrayBool;
+            TypeNames[BinaryTypeId.ArrayByte] = BinaryTypeNames.TypeNameArrayByte;
+            TypeNames[BinaryTypeId.ArrayShort] = BinaryTypeNames.TypeNameArrayShort;
+            TypeNames[BinaryTypeId.ArrayChar] = BinaryTypeNames.TypeNameArrayChar;
+            TypeNames[BinaryTypeId.ArrayInt] = BinaryTypeNames.TypeNameArrayInt;
+            TypeNames[BinaryTypeId.ArrayLong] = BinaryTypeNames.TypeNameArrayLong;
+            TypeNames[BinaryTypeId.ArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
+            TypeNames[BinaryTypeId.ArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
+            TypeNames[BinaryTypeId.ArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
+            TypeNames[BinaryTypeId.ArrayString] = BinaryTypeNames.TypeNameArrayString;
+            TypeNames[BinaryTypeId.ArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
+            TypeNames[BinaryTypeId.ArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
+            TypeNames[BinaryTypeId.ArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
+            TypeNames[BinaryTypeId.Array] = BinaryTypeNames.TypeNameArrayObject;
+            TypeNames[BinaryTypeId.Collection] = BinaryTypeNames.TypeNameCollection;
+            TypeNames[BinaryTypeId.Dictionary] = BinaryTypeNames.TypeNameMap;
         }
 
         /// <summary>
@@ -128,7 +131,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public BinaryType(BinaryReader reader)
+        /// <param name="readSchemas">Whether to read schemas.</param>
+        public BinaryType(BinaryReader reader, bool readSchemas = false)
         {
             _typeId = reader.ReadInt();
             _typeName = reader.ReadString();
@@ -160,6 +164,16 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 }
 
                 _enumValueToName = _enumNameToValue.ToDictionary(x => x.Value, x => x.Key);
+            }
+
+            if (readSchemas)
+            {
+                var cnt = reader.ReadInt();
+
+                for (var i = 0; i < cnt; i++)
+                {
+                    _schema.Add(reader.ReadInt(), reader.ReadIntArray());
+                }
             }
 
             _marshaller = reader.Marshaller;
@@ -316,6 +330,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public IDictionary<string, int> EnumValuesMap
         {
             get { return _enumNameToValue; }
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        public BinaryObjectSchema Schema
+        {
+            get { return _schema; }
         }
 
         /// <summary>

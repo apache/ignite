@@ -20,10 +20,12 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +37,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +66,17 @@ public class StripedExecutor implements ExecutorService {
      * @param log Logger.
      */
     public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log) {
+        this(cnt, igniteInstanceName, poolName, log, false);
+    }
+
+    /**
+     * @param cnt Count.
+     * @param igniteInstanceName Node name.
+     * @param poolName Pool name.
+     * @param log Logger.
+     * @param stealTasks {@code True} to steal tasks.
+     */
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log, boolean stealTasks) {
         A.ensure(cnt > 0, "cnt > 0");
 
         boolean success = false;
@@ -75,14 +91,19 @@ public class StripedExecutor implements ExecutorService {
 
         try {
             for (int i = 0; i < cnt; i++) {
-                stripes[i] = new StripeConcurrentQueue(
+                stripes[i] = stealTasks ? new StripeConcurrentQueue(
                     igniteInstanceName,
                     poolName,
                     i,
-                    log);
-
-                stripes[i].start();
+                    log, stripes) : new StripeConcurrentQueue(
+                        igniteInstanceName,
+                        poolName,
+                        i,
+                        log);
             }
+
+            for (int i = 0; i < cnt; i++)
+                stripes[i].start();
 
             success = true;
         }
@@ -396,7 +417,7 @@ public class StripedExecutor implements ExecutorService {
         private final String poolName;
 
         /** */
-        private final int idx;
+        protected final int idx;
 
         /** */
         private final IgniteLogger log;
@@ -439,7 +460,8 @@ public class StripedExecutor implements ExecutorService {
                 poolName + "-stripe-" + idx,
                 this,
                 IgniteThread.GRP_IDX_UNASSIGNED,
-                idx);
+                idx,
+                GridIoPolicy.UNDEFINED);
 
             thread.start();
         }
@@ -534,8 +556,17 @@ public class StripedExecutor implements ExecutorService {
      * Stripe.
      */
     private static class StripeConcurrentQueue extends Stripe {
+        /** */
+        private static final int IGNITE_TASKS_STEALING_THRESHOLD =
+            IgniteSystemProperties.getInteger(
+                IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD, 4);
+
         /** Queue. */
-        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+        private final Queue<Runnable> queue;
+
+        /** */
+        @GridToStringExclude
+        private final Stripe[] others;
 
         /** */
         private volatile boolean parked;
@@ -546,16 +577,37 @@ public class StripedExecutor implements ExecutorService {
          * @param idx Stripe index.
          * @param log Logger.
          */
-        public StripeConcurrentQueue(
+        StripeConcurrentQueue(
             String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(igniteInstanceName,
+            this(igniteInstanceName, poolName, idx, log, null);
+        }
+
+        /**
+         * @param igniteInstanceName Ignite instance name.
+         * @param poolName Pool name.
+         * @param idx Stripe index.
+         * @param log Logger.
+         */
+        StripeConcurrentQueue(
+            String igniteInstanceName,
+            String poolName,
+            int idx,
+            IgniteLogger log,
+            Stripe[] others
+        ) {
+            super(
+                igniteInstanceName,
                 poolName,
                 idx,
                 log);
+
+            this.others = others;
+
+            this.queue = others == null ? new ConcurrentLinkedQueue<Runnable>() : new ConcurrentLinkedDeque<Runnable>();
         }
 
         /** {@inheritDoc} */
@@ -578,6 +630,24 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
+                    if(others != null) {
+                        int len = others.length;
+                        int init = ThreadLocalRandom.current().nextInt(len);
+                        int cur = init;
+
+                        while (true) {
+                            if(cur != idx) {
+                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
+
+                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
+                                    return r;
+                            }
+
+                            if ((cur = (cur + 1) % len) == init)
+                                break;
+                        }
+                    }
+
                     LockSupport.park();
 
                     if (Thread.interrupted())
@@ -595,6 +665,13 @@ public class StripedExecutor implements ExecutorService {
 
             if (parked)
                 LockSupport.unpark(thread);
+
+            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
+                for (Stripe other : others) {
+                    if(((StripeConcurrentQueue)other).parked)
+                        LockSupport.unpark(other.thread);
+                }
+            }
         }
 
         /** {@inheritDoc} */

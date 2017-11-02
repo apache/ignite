@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,6 +82,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -109,13 +112,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     /** */
     private BinaryMetadataFileStore metadataFileStore;
 
+    /**
+     * Custom folder specifying local folder for {@link #metadataFileStore}.<br>
+     * {@code null} means no specific folder is configured. <br>
+     * In this case folder for metadata is composed from work directory and consistentId <br>
+     */
+    @Nullable private File binaryMetadataFileStoreDir;
+
     /** */
     @GridToStringExclude
     private IgniteBinary binaries;
 
-    /** Listener removes all registered binary schemas after the local client reconnected. */
+    /** Listener removes all registered binary schemas and user type descriptors after the local client reconnected. */
     private final GridLocalEventListener clientDisconLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
+            binaryContext().unregisterUserTypeDescriptors();
+
             binaryContext().unregisterBinarySchemas();
 
             metadataLocCache.clear();
@@ -146,7 +158,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
-            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log);
+            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
@@ -442,6 +454,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
+        assert newMeta != null;
+        assert newMeta instanceof BinaryTypeImpl;
+
+        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
+
+        BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
+
+        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+
+        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+
+        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) {
         BinaryMetadata meta = metadata0(typeId);
 
@@ -470,6 +498,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata();
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
 
@@ -509,7 +540,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-        else {
+        else if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata().wrap(binaryCtx);
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,
@@ -893,5 +927,13 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     metadataFileStore.saveMetadata(holder.metadata());
             }
         }
+    }
+
+    /**
+     * Sets path to binary metadata store configured by user, should include binary_meta and consistentId
+     * @param binaryMetadataFileStoreDir path to binary_meta
+     */
+    public void setBinaryMetadataFileStoreDir(@Nullable File binaryMetadataFileStoreDir) {
+        this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
     }
 }

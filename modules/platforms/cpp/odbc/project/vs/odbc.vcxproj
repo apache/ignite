@@ -217,6 +217,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\batch_query.h" />

@@ -17,7 +17,7 @@
 
 import angular from 'angular';
 
-import IgniteBranding from './branding.provider';
+import IgniteBranding from './branding.service';
 
 import igniteHeaderLogo from './header-logo.directive';
 import igniteHeaderTitle from './header-title.directive';
@@ -28,14 +28,18 @@ import ignitePoweredByApache from './powered-by-apache.directive';
 
 angular
 .module('ignite-console.branding', [
-    'ui.router.metatags'
+    'tf.metatags'
 ])
-.provider(...IgniteBranding)
-.config(['UIRouterMetatagsProvider', (UIRouterMetatagsProvider) => {
-    UIRouterMetatagsProvider
-        .setDefaultTitle('Apache Ignite - Management Tool and Configuration Wizard')
-        .setTitleSuffix(' – Apache Ignite Web Console')
-        .setDefaultDescription('The Apache Ignite Web Console is an interactive management tool and configuration wizard which walks you through the creation of config files. Try it now.');
+.service('IgniteBranding', IgniteBranding)
+.config(['tfMetaTagsProvider', (tfMetaTagsProvider) => {
+    tfMetaTagsProvider.setDefaults({
+        title: 'Apache Ignite - Management Tool and Configuration Wizard',
+        properties: {
+            description: 'The Apache Ignite Web Console is an interactive management tool and configuration wizard which walks you through the creation of config files. Try it now.'
+        }
+    });
+
+    tfMetaTagsProvider.setTitleSuffix(' – Apache Ignite Web Console');
 }])
 .directive(...ignitePoweredByApache)
 .directive(...igniteHeaderLogo)

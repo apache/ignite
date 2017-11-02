@@ -24,7 +24,7 @@ angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
 ])
-.config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
+.config(['$stateProvider', ($stateProvider) => {
     $stateProvider
         .state('demo', {
             abstract: true,
@@ -33,27 +33,29 @@ angular
         })
         .state('demo.resume', {
             url: '/resume',
-            onEnter: AclRoute.checkAccess('demo'),
-            controller: ['$state', ($state) => {
-                $state.go('base.configuration.tabs.advanced.clusters');
-            }],
-            metaTags: {
+            permission: 'demo',
+            redirectTo: 'base.configuration.tabs',
+            unsaved: true,
+            tfMetaTags: {
                 title: 'Demo resume'
             }
         })
         .state('demo.reset', {
             url: '/reset',
-            onEnter: AclRoute.checkAccess('demo'),
-            controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
-                $http.post('/api/v1/demo/reset')
-                    .then(() => $state.go('base.configuration.tabs.advanced.clusters'))
-                    .catch((res) => {
-                        $state.go('base.configuration.tabs.advanced.clusters');
+            permission: 'demo',
+            redirectTo: (trans) => {
+                const $http = trans.injector().get('$http');
 
-                        Messages.showError(res);
+                return $http.post('/api/v1/demo/reset')
+                    .then(() => 'base.configuration.tabs')
+                    .catch((err) => {
+                        trans.injector().get('IgniteMessages').showError(err);
+
+                        return 'base.configuration.tabs';
                     });
-            }],
-            metaTags: {
+            },
+            unsaved: true,
+            tfMetaTags: {
                 title: 'Demo reset'
             }
         });

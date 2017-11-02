@@ -28,7 +28,11 @@ const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
 
-const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
+const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
+
+const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+
+const DDL_SINCE = [['2.1.6', '2.2.0'], '2.3.0'];
 
 const _fullColName = (col) => {
     const res = [];
@@ -54,6 +58,7 @@ class Paragraph {
         self.qryType = paragraph.qryType || 'query';
         self.maxPages = 0;
         self.filter = '';
+        self.useAsDefaultSchema = false;
 
         _.assign(this, paragraph);
 
@@ -130,12 +135,19 @@ class Paragraph {
             while (_.nonNil(cause)) {
                 if (_.nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = cause.message;
+                    this.error.message = cause.message || cause.className;
 
                     break;
                 }
 
                 cause = cause.cause;
+            }
+
+            if (_.isEmpty(this.error.message) && _.nonEmpty(err.className)) {
+                this.error.message = 'Internal cluster error';
+
+                if (_.nonEmpty(err.className))
+                    this.error.message += ': ' + err.className;
             }
         };
     }
@@ -854,9 +866,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         return cachesAcc;
                     }, []), 'label');
 
-                    if (_.isEmpty($scope.caches))
-                        return;
-
                     // Reset to first cache in case of stopped selected.
                     const cacheNames = _.map($scope.caches, (cache) => cache.value);
 
@@ -1247,7 +1256,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             const chartHistory = paragraph.chartHistory;
 
-                // Clear history on query change.
+            // Clear history on query change.
             if (clearChart) {
                 chartHistory.length = 0;
 
@@ -1304,6 +1313,9 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
          * @return {String} Nid
          */
         const _chooseNode = (name, local) => {
+            if (_.isEmpty(name))
+                return Promise.resolve(null);
+
             const nodes = cacheNodes(name);
 
             if (local) {
@@ -1321,7 +1333,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1358,7 +1370,25 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const cache = _.find($scope.caches, {name: paragraph.cacheName});
 
             if (cache)
-                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_VERS));
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...ENFORCE_JOIN_SINCE));
+
+            return false;
+        };
+
+        $scope.lazyQueryAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...LAZY_QUERY_SINCE));
+
+            return false;
+        };
+
+        $scope.ddlAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...DDL_SINCE));
 
             return false;
         };
@@ -1366,8 +1396,9 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
+            const lazy = !!paragraph.lazy;
 
-            $scope.actionAvailable(paragraph, true) && _chooseNode(paragraph.cacheName, local)
+            $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1380,20 +1411,21 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         .then(() => {
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
-                                cacheName: paragraph.cacheName,
+                                cacheName: ($scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema) ? null : paragraph.cacheName,
                                 query: paragraph.query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
-                                localNid: local ? nid : null
+                                localNid: local ? nid : null,
+                                lazy
                             };
 
                             const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize);
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1424,7 +1456,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         };
 
         $scope.explain = (paragraph) => {
-            if (!$scope.actionAvailable(paragraph, true))
+            if (!$scope.queryAvailable(paragraph))
                 return;
 
             Notebook.save($scope.notebook)
@@ -1446,7 +1478,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1463,7 +1495,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            $scope.actionAvailable(paragraph, false) && _chooseNode(cacheName, local)
+            $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
                     Notebook.save($scope.notebook)
                         .catch(Messages.showError);
@@ -1610,7 +1642,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid))
+                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => paragraph.ace && paragraph.ace.focus());
@@ -1669,18 +1701,32 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             _chartApplySettings(paragraph, true);
         };
 
-        $scope.actionAvailable = function(paragraph, needQuery) {
-            return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
+        $scope.queryAvailable = function(paragraph) {
+            return paragraph.query && !paragraph.loading;
         };
 
-        $scope.actionTooltip = function(paragraph, action, needQuery) {
-            if ($scope.actionAvailable(paragraph, needQuery))
+        $scope.queryTooltip = function(paragraph, action) {
+            if ($scope.queryAvailable(paragraph))
                 return;
 
             if (paragraph.loading)
                 return 'Waiting for server response';
 
-            return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
+            return 'Input text to ' + action;
+        };
+
+        $scope.scanAvailable = function(paragraph) {
+            return $scope.caches.length && !paragraph.loading;
+        };
+
+        $scope.scanTooltip = function(paragraph) {
+            if ($scope.scanAvailable(paragraph))
+                return;
+
+            if (paragraph.loading)
+                return 'Waiting for server response';
+
+            return 'Select cache to export scan results';
         };
 
         $scope.clickableMetadata = function(node) {
@@ -1761,7 +1807,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     if (_.nonNil(item)) {
                         const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
-                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + item.message);
+                        scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));
 
                         addToTrace(item.cause);
 

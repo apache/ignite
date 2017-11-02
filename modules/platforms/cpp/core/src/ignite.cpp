@@ -45,6 +45,16 @@ namespace ignite
         return impl.Get()->GetConfiguration();
     }
 
+    bool Ignite::IsActive()
+    {
+        return impl.Get()->IsActive();
+    }
+
+    void Ignite::SetActive(bool active)
+    {
+        impl.Get()->SetActive(active);
+    }
+
     transactions::Transactions Ignite::GetTransactions()
     {
         using ignite::common::concurrent::SharedPointer;

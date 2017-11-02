@@ -11,7 +11,10 @@
     "HadoopIgfsJcl": {"artifactId": "ignite-hadoop"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
-    "Generic": {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.2"},
+    "Generic": [
+        {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.2"},
+        {"groupId": "com.mchange", "artifactId": "mchange-commons-java", "version": "0.2.11"}
+    ],
     "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "5.1.40"},
     "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4.1212.jre7"},
     "H2": {"groupId": "com.h2database", "artifactId": "h2", "version": [

@@ -92,6 +92,6 @@ public class MergeRecord<L> extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MergeRecord.class, this, "prntId", U.hexLong(prntId), "rightId", U.hexLong(rightId),
-            "parent", super.toString());
+            "super", super.toString());
     }
 }

@@ -30,6 +30,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -392,7 +394,7 @@ final class BinaryMetadataTransport {
      * @param pendingVer Pending version.
      * @param fut Future.
      */
-    private void initSyncFor(int typeId, int pendingVer, MetadataUpdateResultFuture fut) {
+    private void initSyncFor(int typeId, int pendingVer, final MetadataUpdateResultFuture fut) {
         if (stopping) {
             fut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
 
@@ -401,7 +403,15 @@ final class BinaryMetadataTransport {
 
         SyncKey key = new SyncKey(typeId, pendingVer);
 
-        syncMap.put(key, fut);
+        MetadataUpdateResultFuture oldFut = syncMap.putIfAbsent(key, fut);
+
+        if (oldFut != null) {
+            oldFut.listen(new IgniteInClosure<IgniteInternalFuture<MetadataUpdateResult>>() {
+                @Override public void apply(IgniteInternalFuture<MetadataUpdateResult> doneFut) {
+                    fut.onDone(doneFut.result(), doneFut.error());
+                }
+            });
+        }
 
         fut.key(key);
     }

@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -60,16 +69,6 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
@@ -89,10 +88,10 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final GridQueryTypeDescriptor type;
 
     /** */
-    private final String[] fields;
+    private volatile String[] fields;
 
     /** */
-    private final int[] fieldTypes;
+    private volatile int[] fieldTypes;
 
     /** */
     private final int keyType;
@@ -107,16 +106,13 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     private final GridUnsafeGuard guard;
 
     /** */
-    private final boolean snapshotableIdx;
-
-    /** */
-    private final GridQueryProperty[] props;
+    private volatile GridQueryProperty[] props;
 
     /** Id of user-defined key column */
-    private final int keyAliasColumnId;
+    private volatile int keyAliasColId;
 
     /** Id of user-defined value column */
-    private final int valueAliasColumnId;
+    private volatile int valAliasColId;
 
     /**
      * Constructor.
@@ -137,6 +133,17 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
         guard = schema.offheap() == null ? null : new GridUnsafeGuard();
 
+        keyType = DataType.getTypeFromClass(type.keyClass());
+        valType = DataType.getTypeFromClass(type.valueClass());
+
+        refreshMetadataFromTypeDescriptor();
+    }
+
+    /**
+     * Update metadata of this row descriptor according to current state of type descriptor.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public final void refreshMetadataFromTypeDescriptor() {
         Map<String, Class<?>> allFields = new LinkedHashMap<>();
 
         allFields.putAll(type.fields());
@@ -150,9 +157,6 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         for (int i = 0; i < fieldTypes.length; i++)
             fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
 
-        keyType = DataType.getTypeFromClass(type.keyClass());
-        valType = DataType.getTypeFromClass(type.valueClass());
-
         props = new GridQueryProperty[fields.length];
 
         for (int i = 0; i < fields.length; i++) {
@@ -163,16 +167,13 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
             props[i] = p;
         }
 
-        final List<String> fieldsList = Arrays.asList(fields);
+        List<String> fieldsList = Arrays.asList(fields);
 
-        keyAliasColumnId =
+        keyAliasColId =
             (type.keyFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : -1;
 
-        valueAliasColumnId =
+        valAliasColId =
             (type.valueFieldName() != null) ? DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : -1;
-
-        // Index is not snapshotable in db-x.
-        snapshotableIdx = false;
     }
 
     /** {@inheritDoc} */
@@ -382,34 +383,29 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean snapshotableIndex() {
-        return snapshotableIdx;
+    @Override public boolean isKeyColumn(int colId) {
+        assert colId >= 0;
+        return colId == KEY_COL || colId == keyAliasColId;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isKeyColumn(int columnId) {
-        assert columnId >= 0;
-        return columnId == KEY_COL || columnId == keyAliasColumnId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isValueColumn(int columnId) {
-        assert columnId >= 0;
-        return columnId == VAL_COL || columnId == valueAliasColumnId;
+    @Override public boolean isValueColumn(int colId) {
+        assert colId >= 0;
+        return colId == VAL_COL || colId == valAliasColId;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantIfStatement")
-    @Override public boolean isKeyValueOrVersionColumn(int columnId) {
-        assert columnId >= 0;
+    @Override public boolean isKeyValueOrVersionColumn(int colId) {
+        assert colId >= 0;
 
-        if (columnId < DEFAULT_COLUMNS_COUNT)
+        if (colId < DEFAULT_COLUMNS_COUNT)
             return true;
 
-        if (columnId == keyAliasColumnId)
+        if (colId == keyAliasColId)
             return true;
 
-        if (columnId == valueAliasColumnId)
+        if (colId == valAliasColId)
             return true;
 
         return false;
@@ -420,26 +416,26 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         assert masks != null;
         assert masks.length > 0;
 
-        if (keyAliasColumnId < 0)
+        if (keyAliasColId < 0)
             return (masks[KEY_COL] & mask) != 0;
         else
-            return (masks[KEY_COL] & mask) != 0 || (masks[keyAliasColumnId] & mask) != 0;
+            return (masks[KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
     }
 
     /** {@inheritDoc} */
-    @Override public void initValueCache(Value valCache[], Value key, Value value, Value version) {
+    @Override public void initValueCache(Value valCache[], Value key, Value val, Value ver) {
         assert valCache != null;
         assert valCache.length > 0;
 
         valCache[KEY_COL] = key;
-        valCache[VAL_COL] = value;
-        valCache[VER_COL] = version;
+        valCache[VAL_COL] = val;
+        valCache[VER_COL] = ver;
 
-        if (keyAliasColumnId > 0)
-            valCache[keyAliasColumnId] = key;
+        if (keyAliasColId > 0)
+            valCache[keyAliasColId] = key;
 
-        if (valueAliasColumnId > 0)
-            valCache[valueAliasColumnId] = value;
+        if (valAliasColId > 0)
+            valCache[valAliasColId] = val;
     }
 
     /** {@inheritDoc} */
@@ -451,8 +447,8 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
         for (int idx = 0; idx < data.length; idx++)
             data[idx] = row.getValue(idx);
 
-        copyAliasColumnData(data, KEY_COL, keyAliasColumnId);
-        copyAliasColumnData(data, VAL_COL, valueAliasColumnId);
+        copyAliasColumnData(data, KEY_COL, keyAliasColId);
+        copyAliasColumnData(data, VAL_COL, valAliasColId);
 
         return new SimpleRow(data);
     }
@@ -477,16 +473,16 @@ public class H2RowDescriptor implements GridH2RowDescriptor {
 
     /** {@inheritDoc} */
     @Override public int getAlternativeColumnId(int colId) {
-        if (keyAliasColumnId > 0) {
+        if (keyAliasColId > 0) {
             if (colId == KEY_COL)
-                return keyAliasColumnId;
-            else if (colId == keyAliasColumnId)
+                return keyAliasColId;
+            else if (colId == keyAliasColId)
                 return KEY_COL;
         }
-        if (valueAliasColumnId > 0) {
+        if (valAliasColId > 0) {
             if (colId == VAL_COL)
-                return valueAliasColumnId;
-            else if (colId == valueAliasColumnId)
+                return valAliasColId;
+            else if (colId == valAliasColId)
                 return VAL_COL;
         }
 

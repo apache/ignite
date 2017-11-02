@@ -28,6 +28,7 @@
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/protocol_version.h"
 
 namespace ignite
 {
@@ -44,8 +45,13 @@ namespace ignite
 
             /**
              * Constructor.
+             * @param cap Initial capasity.
              */
-            Parser(int32_t cap = DEFAULT_MEM_ALLOCATION) : inMem(cap), outMem(cap), outStream(&outMem)
+            Parser(int32_t cap = DEFAULT_MEM_ALLOCATION) :
+                protocolVer(ProtocolVersion::GetCurrent()),
+                inMem(cap),
+                outMem(cap),
+                outStream(&outMem)
             {
                 //No-op.
             }
@@ -67,7 +73,7 @@ namespace ignite
             template<typename MsgT>
             void Encode(const MsgT& msg, std::vector<int8_t>& buf)
             {
-                using namespace ignite::impl::binary;
+                using namespace impl::binary;
 
                 ResetState();
 
@@ -90,7 +96,7 @@ namespace ignite
             template<typename MsgT>
             void Decode(MsgT& msg, const std::vector<int8_t>& buf)
             {
-                using namespace ignite::impl::binary;
+                using namespace impl::binary;
 
                 if (inMem.Capacity() < static_cast<int32_t>(buf.size()))
                     inMem.Reallocate(static_cast<int32_t>(buf.size()));
@@ -99,11 +105,21 @@ namespace ignite
 
                 inMem.Length(static_cast<int32_t>(buf.size()));
 
-                ignite::impl::interop::InteropInputStream inStream(&inMem);
+                impl::interop::InteropInputStream inStream(&inMem);
 
                 BinaryReaderImpl reader(&inStream);
 
-                msg.Read(reader);
+                msg.Read(reader, protocolVer);
+            }
+
+            /**
+             * Set protocol version.
+             *
+             * @param ver Version to set.
+             */
+            void SetProtocolVersion(const ProtocolVersion& ver)
+            {
+                protocolVer = ver;
             }
 
         private:
@@ -119,14 +135,17 @@ namespace ignite
                 outStream.Position(0);
             }
 
+            /** Protocol version. */
+            ProtocolVersion protocolVer;
+
             /** Input operational memory. */
-            ignite::impl::interop::InteropUnpooledMemory inMem;
+            impl::interop::InteropUnpooledMemory inMem;
 
             /** Output operational memory. */
-            ignite::impl::interop::InteropUnpooledMemory outMem;
+            impl::interop::InteropUnpooledMemory outMem;
 
             /** Output stream. */
-            ignite::impl::interop::InteropOutputStream outStream;
+            impl::interop::InteropOutputStream outStream;
         };
     }
 }

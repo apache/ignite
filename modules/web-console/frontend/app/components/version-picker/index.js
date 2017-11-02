@@ -20,6 +20,6 @@ import component from './component';
 
 export default angular
     .module('ignite-console.version-picker', [
-        'ignite-console.configuration'
+        'ignite-console.services'
     ])
     .component('versionPicker', component);

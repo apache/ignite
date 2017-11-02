@@ -37,6 +37,11 @@ class ClientCacheUpdateTimeout extends GridTimeoutObjectAdapter implements Cache
     }
 
     /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onTimeout() {
         if (!cctx.kernalContext().isStopping())
             cctx.exchange().addCustomTask(this);

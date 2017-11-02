@@ -182,8 +182,9 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (stripeMappers0) {
             if (!embedded) {
-                log.info("Striped mapper output is disabled becuase it cannot be used in external mode [jobId=" +
-                    job.id() + ']');
+                if (log.isInfoEnabled())
+                    log.info("Striped mapper output is disabled becuase it cannot be used in external mode [jobId=" +
+                        job.id() + ']');
 
                 stripeMappers0 = false;
             }
