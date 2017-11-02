@@ -23,13 +23,23 @@ import org.h2.value.Value;
  * Row which was filtered out.
  */
 public class GridH2FilteredRow extends GridH2Row {
+    /** Partition ID. */
+    private final int partId;
+
     /**
      * Constructor.
      *
      * @param partId Partition.
      */
     public GridH2FilteredRow(int partId) {
+        super(null);
+
         this.partId = partId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
     }
 
     /** {@inheritDoc} */
