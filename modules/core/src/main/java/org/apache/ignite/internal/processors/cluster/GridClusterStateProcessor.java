@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -98,4 +99,9 @@ public interface GridClusterStateProcessor extends GridProcessor {
      * @param req State change request.
      */
     void onStateChangeExchangeDone(StateChangeRequest req);
+
+    /**
+     * @param blt New baseline topology.
+     */
+    void onBaselineTopologyChanged(BaselineTopology blt) throws IgniteCheckedException;
 }
