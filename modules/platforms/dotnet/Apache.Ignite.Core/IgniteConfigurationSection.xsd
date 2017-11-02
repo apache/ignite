@@ -575,6 +575,32 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="keyConfiguration" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Cache key configuration collection.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="cacheKeyConfiguration" maxOccurs="unbounded">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Cache key configuration.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="typeName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Key type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="affinityKeyFieldName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Affinity key field name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
                                         <xs:element name="pluginConfigurations" minOccurs="0">
                                             <xs:annotation>
                                                 <xs:documentation>Cache plugin configurations.</xs:documentation>
@@ -777,6 +803,46 @@
                                     <xs:attribute name="sqlIndexMaxInlineSize" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>Maximum size of SQL inline index. Part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="onheapCacheEnabled" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Whether on-heap cache is enabled for the off-heap based page memory.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="storeConcurrentLoadAllThreshold" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Threshold to use when multiple keys are being loaded from an underlying cache store.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="rebalanceOrder" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Caches with bigger RebalanceOrder are rebalanced later than caches with smaller RebalanceOrder. 0 for unordered (immediate) rebalance.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="rebalanceBatchesPrefetchCount" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Rebalance batches prefetch count.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxQueryIteratorsCount" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum number of active query iterators.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="queryDetailMetricsSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Size of the query detail metrics to be stored in memory.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="sqlSchema" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>SQL schema. Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive. Quoted cache name is used by default.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="queryParallelism" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Desired query parallelism within a single node.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>
@@ -1556,6 +1622,11 @@
                                             <xs:documentation>Enable disk persistence for this region.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1624,6 +1695,11 @@
                                                         <xs:documentation>Enable disk persistence for this region.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
+                                                <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
                                             </xs:complexType>                                            
                                         </xs:element>
                                     </xs:sequence>
@@ -1638,11 +1714,6 @@
                         <xs:attribute name="checkpointFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="checkpointPageBufferSize" type="xs:long">
-                            <xs:annotation>
-                                <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="checkpointThreads" type="xs:int">

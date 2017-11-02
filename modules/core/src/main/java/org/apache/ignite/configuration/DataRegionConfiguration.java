@@ -129,6 +129,9 @@ public final class DataRegionConfiguration implements Serializable {
      */
     private boolean persistenceEnabled = false;
 
+    /** Temporary buffer size for checkpoints in bytes. */
+    private long checkpointPageBufSize;
+
     /**
      * Gets data region name.
      *
@@ -212,11 +215,11 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Sets a path to the memory-mapped files.
      *
-     * @param swapFilePath A Path to the memory mapped file.
+     * @param swapPath A Path to the memory mapped file.
      * @return {@code this} for chaining.
      */
-    public DataRegionConfiguration setSwapPath(String swapFilePath) {
-        this.swapPath = swapFilePath;
+    public DataRegionConfiguration setSwapPath(String swapPath) {
+        this.swapPath = swapPath;
 
         return this;
     }
@@ -400,6 +403,31 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
         this.metricsSubIntervalCount = metricsSubIntervalCnt;
+
+        return this;
+    }
+
+    /**
+     * Gets amount of memory allocated for a checkpoint temporary buffer.
+     *
+     * @return Checkpoint page buffer size in bytes or {@code 0} for Ignite
+     *      to choose the buffer size automatically.
+     */
+    public long getCheckpointPageBufferSize() {
+        return checkpointPageBufSize;
+    }
+
+    /**
+     * Sets amount of memory allocated for the checkpoint temporary buffer. The buffer is used to create temporary
+     * copies of pages that are being written to disk and being update in parallel while the checkpoint is in
+     * progress.
+     *
+     * @param checkpointPageBufSize Checkpoint page buffer size in bytes or {@code 0} for Ignite to
+     *      choose the buffer size automatically.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setCheckpointPageBufferSize(long checkpointPageBufSize) {
+        this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
     }

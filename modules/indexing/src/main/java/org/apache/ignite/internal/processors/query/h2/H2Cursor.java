@@ -82,14 +82,7 @@ public class H2Cursor implements Cursor {
                 if (row.expireTime() > 0 && row.expireTime() <= time)
                     continue;
 
-                if (filter == null)
-                    return true;
-
-                Object key = row.getValue(0).getObject();
-
-                assert key != null;
-
-                if (filter.apply(key))
+                if (filter == null || filter.applyPartition(row.partition()))
                     return true;
             }
 
