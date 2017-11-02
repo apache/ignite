@@ -82,9 +82,9 @@ public class FuzzyCMeansLocalClustererTest {
 
     /** test FCM for points with same coordinates*/
     @Test
-    public void correctCentersOfTheSamePointsTwoDimensions() {
+    public void checkCentersOfTheSamePointsTwoDimensions() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 10, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS, 0.01, 10, null);
 
         double[][] points = new double[][] {{3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}};
 
@@ -102,18 +102,18 @@ public class FuzzyCMeansLocalClustererTest {
         }
     }
 
-    /** test FCM for points on sphere*/
+    /** test FCM for points on sphere */
     @Test
-    public void correctDefinitionOfCentersOnSphrere() {
+    public void checkLocftionOfCentersOnSphrere() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 100, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 100, null);
 
-        int numberOfCenters = 65;
-        double radius = 10.0;
-        double[][] points = new double [numberOfCenters][2];
-        for (int i = 0; i < numberOfCenters; i++) {
-            points[i][0] = Math.cos(Math.PI*2*i/numberOfCenters) * radius;
-            points[i][1] = Math.sin(Math.PI*2*i/numberOfCenters) * radius;
+        int numberOfPoints = 650;
+        double radius = 100.0;
+        double[][] points = new double [numberOfPoints][2];
+        for (int i = 0; i < numberOfPoints; i++) {
+            points[i][0] = Math.cos(Math.PI*2*i/numberOfPoints) * radius;
+            points[i][1] = Math.sin(Math.PI*2*i/numberOfPoints) * radius;
         }
 
         Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
@@ -125,14 +125,14 @@ public class FuzzyCMeansLocalClustererTest {
         for (int i = 1; i < k; i++) {
             sum = sum.plus(model.centers()[i]);
         }
-        assertEquals(0, sum.kNorm(1), 0.5);
+        assertEquals(0, sum.kNorm(1), 1);
     }
 
-    /** test FCM for points on line*/
+    /** test FCM for points on line */
     @Test
     public void test2DLineClustering() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 50, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 50, null);
 
         double[][] points = new double[][]{{1, 2}, {3, 6}, {5, 10}};
 
@@ -176,21 +176,21 @@ public class FuzzyCMeansLocalClustererTest {
         assertTrue(centers1[0].get(0) - centers2[0].get(0) > 0.5);
     }
 
-    /** test FCM for illegal number of clusters*/
+    /** test FCM for illegal number of clusters */
     @Test(expected = MathIllegalArgumentException.class)
-    public void testClusteringWithOneCenter() {
+    public void testIllegalNumberOfClusters() {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 10, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 10, null);
         double[][] points = new double[][]{{1}, {2}, {3}, {4}};
 
         FuzzyCMeansModel cluster = clusterer.cluster(new DenseLocalOnHeapMatrix(points), 1);
     }
 
-    /** test FCM for different amounts of points and weights*/
+    /** test FCM for different amounts of points and weights */
     @Test(expected = MathIllegalArgumentException.class)
-    public void testClusteringWithDifferentAmountsOfPointsAndWeights(){
+    public void testDifferentAmountsOfPointsAndWeights(){
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 10, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 10, null);
         double[][] points = new double[][]{{1}, {2}, {3}, {4}};
         ArrayList<Double> weights = new ArrayList<>();
         Collections.addAll(weights, new Double[]{1.0, 34.0, 2.5, 5.0, 0.5});

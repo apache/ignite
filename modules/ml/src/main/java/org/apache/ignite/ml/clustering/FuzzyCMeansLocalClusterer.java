@@ -97,7 +97,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             Matrix newMembership = calculateMembership(distances, weightsVector);
             Matrix newCenters = calculateNewCenters(points, newMembership);
 
-            finished = isFinished(centers, newCenters, membership, newMembership);
+            if (this.stopCondition == StopCondition.STABLE_CENTERS) {
+                finished = areCentersStable(centers, newCenters);
+            } else {
+                finished = areMembershipStable(membership, newMembership);
+            }
+
             centers = newCenters;
             membership = newMembership;
             iteration++;
@@ -230,19 +235,29 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
      * @param newCenters new centers
      * @return the result of comparison
      */
-    private boolean isFinished(Matrix centers, Matrix newCenters, Matrix membership, Matrix newMembership) {
+    private boolean areCentersStable(Matrix centers, Matrix newCenters) {
         int numCenters = centers.rowSize();
-        int numPoints = membership.columnSize();
-
         for (int i = 0; i < numCenters; i++) {
             if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxDelta) {
                 return false;
             }
+        }
+        return true;
+    }
 
-            //TODO: stop condition flag
-
-           for (int j = 0; j < numPoints; j++) {
-                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxCentersDelta / numCenters) {
+    /**
+     * Check if membership changes insignificantly
+     *
+     * @param membership old membership
+     * @param newMembership new membership
+     * @return the result of comparison
+     */
+    private boolean areMembershipStable(Matrix membership, Matrix newMembership) {
+        int numCenters = membership.rowSize();
+        int numPoints = membership.columnSize();
+        for (int i = 0; i < numCenters; i++) {
+            for (int j = 0; j < numPoints; j++) {
+                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxDelta) {
                     return false;
                 }
             }
