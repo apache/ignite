@@ -104,7 +104,7 @@ public class FuzzyCMeansLocalClustererTest {
 
     /** test FCM for points on sphere */
     @Test
-    public void checkLocftionOfCentersOnSphrere() {
+    public void checkCentersLocationOnSphrere() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 100, null);
 
