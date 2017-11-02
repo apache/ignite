@@ -242,7 +242,6 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         cols = in.readInt();
         acsMode = in.readInt();
         stoMode = in.readInt();
-//        uuid = (IgniteUuid)in.readObject();
         uuid = (UUID)in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }

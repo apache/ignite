@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.math.functions;
 
-import java.util.HashMap;
+import java.io.Serializable;
+import java.util.function.BiFunction;
 
-public class VotingModel<D, T> implements Model<D, HashMap<T, Integer>> {
-
-
-    @Override public HashMap<T, Integer> predict(D val) {
-        return null;
-    }
+/**
+ * Serializable binary function.
+ *
+ * @see BiFunction
+ */
+public interface IgniteCurriedBiFunction<A, B, T> extends IgniteFunction<A, IgniteFunction<B, T>>, Serializable {
 }

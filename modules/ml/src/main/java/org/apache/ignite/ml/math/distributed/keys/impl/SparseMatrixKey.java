@@ -84,29 +84,10 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-//        matrixId = U.readGridUuid(in);
         matrixId = (UUID)in.readObject();
         affinityKey = in.readObject();
         idx = in.readInt();
     }
-
-//    /** {@inheritDoc} */
-//    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-//        BinaryRawWriter out = writer.rawWriter();
-//
-//        BinaryUtils.writeIgniteUuid(out, matrixId);
-//        out.writeObject(affinityKey);
-//        out.writeInt(idx);
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-//        BinaryRawReader in = reader.rawReader();
-//
-//        matrixId = BinaryUtils.readIgniteUuid(in);
-//        affinityKey = in.readObject();
-//        idx = in.readInt();
-//    }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {

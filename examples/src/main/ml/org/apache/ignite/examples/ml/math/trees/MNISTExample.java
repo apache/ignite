@@ -55,13 +55,29 @@ import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculator
 import org.apache.ignite.ml.util.MnistUtils;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Example of usage of decision trees algorithm for MNIST dataset.
+ */
 public class MNISTExample {
-    public static final String MNIST_TRAINING_IMAGES_PATH = "ts_i";
-    public static final String MNIST_TRAINING_LABELS_PATH = "ts_l";
-    public static final String MNIST_TEST_IMAGES_PATH = "tss_i";
-    public static final String MNIST_TEST_LABELS_PATH = "tss_l";
+    /** Name of parameter specifying path to training set images. */
+    private static final String MNIST_TRAINING_IMAGES_PATH = "ts_i";
+
+    /** Name of parameter specifying path to training set labels. */
+    private static final String MNIST_TRAINING_LABELS_PATH = "ts_l";
+
+    /** Name of parameter specifying path to test set images. */
+    private static final String MNIST_TEST_IMAGES_PATH = "tss_i";
+
+    /** Name of parameter specifying path to test set labels. */
+    private static final String MNIST_TEST_LABELS_PATH = "tss_l";
+
+    /** Name of parameter specifying path of Ignite config. */
     private static final String CONFIG = "cfg";
 
+    /**
+     * Launches example.
+     * @param args Program arguments.
+     */
     public static void main(String[] args) {
         String igniteCfgPath;
 
@@ -125,14 +141,6 @@ public class MNISTExample {
         }
     }
 
-    private static int getIntOrDefault(String optionName, int def, CommandLine line) {
-        return line.hasOption(optionName) ? Integer.parseInt(line.getOptionValue(optionName)) : def;
-    }
-
-    private static double getDoubleOrDefault(String optionName, double def, CommandLine line) {
-        return line.hasOption(optionName) ? Double.parseDouble(line.getOptionValue(optionName)) : def;
-    }
-
     /**
      * Build cli options.
      */
@@ -168,6 +176,11 @@ public class MNISTExample {
         return options;
     }
 
+    /**
+     * Creates cache where data for training is stored.
+     * @param ignite Ignite instance.
+     * @return cache where data for training is stored.
+     */
     private static IgniteCache<BiIndex, Double> createBiIndexedCache(Ignite ignite) {
         CacheConfiguration<BiIndex, Double> cfg = new CacheConfiguration<>();
 
@@ -193,15 +206,22 @@ public class MNISTExample {
         return ignite.getOrCreateCache(cfg);
     }
 
-    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> str, int vectorSize, Ignite ignite) {
+    /**
+     * Loads vectors into cache.
+     * @param cacheName Name of cache.
+     * @param vectorsIterator Iterator over vectors to load.
+     * @param vectorSize Size of vector.
+     * @param ignite Ignite instance.
+     */
+    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> vectorsIterator, int vectorSize, Ignite ignite) {
         try (IgniteDataStreamer<BiIndex, Double> streamer =
                  ignite.dataStreamer(cacheName)) {
             int sampleIdx = 0;
 
             streamer.perNodeBufferSize(10000);
 
-            while (str.hasNext()) {
-                org.apache.ignite.ml.math.Vector next = str.next();
+            while (vectorsIterator.hasNext()) {
+                org.apache.ignite.ml.math.Vector next = vectorsIterator.next();
 
                 for (int i = 0; i < vectorSize; i++)
                     streamer.addData(new BiIndex(sampleIdx, i), next.getX(i));

@@ -19,7 +19,7 @@ package org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
 
 /** Continuous Split Calculators. */
@@ -28,5 +28,5 @@ public class ContinuousSplitCalculators {
     public static IgniteFunction<ColumnDecisionTreeTrainerInput, VarianceSplitCalculator> VARIANCE = input -> new VarianceSplitCalculator();
 
     /** Gini split calculator. */
-    public static IgniteUncurriedBiFunction<Ignite, ColumnDecisionTreeTrainerInput, GiniSplitCalculator> GINI = ignite -> input -> new GiniSplitCalculator(input.labels(ignite));
+    public static IgniteCurriedBiFunction<Ignite, ColumnDecisionTreeTrainerInput, GiniSplitCalculator> GINI = ignite -> input -> new GiniSplitCalculator(input.labels(ignite));
 }

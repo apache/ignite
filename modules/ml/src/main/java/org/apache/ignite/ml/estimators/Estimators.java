@@ -34,6 +34,7 @@ public class Estimators {
         }).average().orElse(0);
     }
 
+    /** Simple implementation of errors percentage estimator. */
     public static <T, V> IgniteTriFunction<Model<T, V>, Stream<IgniteBiTuple<T, V>>, Function<V, Double>, Double> errorsPercentage() {
         return  (model, stream, f) -> {
             AtomicLong total = new AtomicLong(0);

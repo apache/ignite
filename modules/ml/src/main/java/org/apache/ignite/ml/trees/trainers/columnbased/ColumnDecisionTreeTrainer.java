@@ -52,7 +52,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.functions.IgniteToDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
@@ -504,7 +504,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
      * @param trainingUUID UUID of current training.
      */
     private void updateSplitCache(int lastSplitRegionIdx, int regsCnt, int featuresCnt,
-        IgniteUncurriedBiFunction<Ignite, Integer, Object> affinity,
+        IgniteCurriedBiFunction<Ignite, Integer, Object> affinity,
         UUID trainingUUID) {
         CacheUtils.update(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME, ignite,
             (Ignite ign, Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>> e) -> {

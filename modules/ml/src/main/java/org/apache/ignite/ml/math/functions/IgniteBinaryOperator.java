@@ -20,5 +20,10 @@ package org.apache.ignite.ml.math.functions;
 import java.io.Serializable;
 import java.util.function.BinaryOperator;
 
+/**
+ * Serializable binary operator.
+ *
+ * @see java.util.function.BinaryOperator
+ */
 public interface IgniteBinaryOperator<A> extends BinaryOperator<A>, Serializable {
 }
