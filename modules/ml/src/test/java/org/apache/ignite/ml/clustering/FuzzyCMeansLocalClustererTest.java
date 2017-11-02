@@ -104,7 +104,7 @@ public class FuzzyCMeansLocalClustererTest {
 
     /** test FCM for points on sphere */
     @Test
-    public void checkCentersLocationOnSphrere() {
+    public void checkCentersLocationOnSphere() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 100, null);
 
@@ -112,8 +112,8 @@ public class FuzzyCMeansLocalClustererTest {
         double radius = 100.0;
         double[][] points = new double [numberOfPoints][2];
         for (int i = 0; i < numberOfPoints; i++) {
-            points[i][0] = Math.cos(Math.PI*2*i/numberOfPoints) * radius;
-            points[i][1] = Math.sin(Math.PI*2*i/numberOfPoints) * radius;
+            points[i][0] = Math.cos(Math.PI * 2 * i / numberOfPoints) * radius;
+            points[i][1] = Math.sin(Math.PI * 2 * i / numberOfPoints) * radius;
         }
 
         Matrix pointMatrix = new DenseLocalOnHeapMatrix(points);
