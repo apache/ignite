@@ -9,7 +9,9 @@ import org.apache.ignite.ml.trees.nodes.SplitNode;
  * @param <D> Class encapsulating information about the region.
  */
 public class ContinuousSplitInfo<D extends RegionInfo> extends SplitInfo<D> {
-    /** Threshold used for split. Samples with values less or equal than this go to left region, others go to the right region. */
+    /** Threshold used for split.
+     * Samples with values less or equal than this go to left region, others go to the right region.
+     */
     private double threshold;
 
     /**

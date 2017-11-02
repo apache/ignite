@@ -19,23 +19,41 @@ package org.apache.ignite.ml.structures;
 
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Class for vector with label.
+ * @param <V> Some class extending {@link Vector}.
+ * @param <T> Type of label.
+ */
 public class LabeledVector<V extends Vector, T> {
+    /** Vector. */
     private V vector;
+
+    /** Label. */
     private T label;
 
+    /**
+     * Construct labeled vector.
+     * @param vector Vector.
+     * @param label Label.
+     */
     public LabeledVector(V vector, T label) {
         this.vector = vector;
         this.label = label;
     }
 
+    /**
+     * Get the vector.
+     * @return Vector.
+     */
     public V vector() {
         return vector;
     }
+
+    /**
+     * Get the label.
+     * @return Label.
+     */
     public T label() {
         return label;
-    }
-
-    public void setLabel(T label) {
-        this.label = label;
     }
 }

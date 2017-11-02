@@ -83,6 +83,7 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
         double mean = 0.0;
         double m2 = 0.0;
 
+        // Here we calculate variance and mean by incremental computation.
         while (itr.hasNext()) {
             i++;
             double x = itr.next();

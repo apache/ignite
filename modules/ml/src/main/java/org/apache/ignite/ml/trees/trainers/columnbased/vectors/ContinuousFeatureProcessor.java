@@ -79,7 +79,8 @@ public class ContinuousFeatureProcessor<D extends ContinuousRegionInfo> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<RegionProjection, RegionProjection> performSplit(SparseBitSet bs, RegionProjection<D> reg, D leftData, D rightData) {
+    @Override public IgniteBiTuple<RegionProjection, RegionProjection> performSplit(SparseBitSet bs,
+        RegionProjection<D> reg, D leftData, D rightData) {
         int lSize = leftData.getSize();
         int rSize = rightData.getSize();
         int depth = reg.depth();
@@ -93,8 +94,8 @@ public class ContinuousFeatureProcessor<D extends ContinuousRegionInfo> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<RegionProjection, RegionProjection> performSplitGeneric(SparseBitSet bs, double[] labels, RegionProjection<D> reg, RegionInfo leftData,
-        RegionInfo rightData) {
+    @Override public IgniteBiTuple<RegionProjection, RegionProjection> performSplitGeneric(SparseBitSet bs,
+        double[] labels, RegionProjection<D> reg, RegionInfo leftData, RegionInfo rightData) {
         int lSize = bs.cardinality();
         int rSize = reg.sampleIndexes().length - lSize;
         int depth = reg.depth();

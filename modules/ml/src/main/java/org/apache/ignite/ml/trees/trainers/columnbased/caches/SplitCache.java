@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased.caches;
 
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -163,13 +164,18 @@ public class SplitCache {
      * @param trainingUUID UUID of training.
      * @return local entries for keys corresponding to {@code featureIndexes}.
      */
-    public static Iterable<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>> localEntries(Set<Integer> featureIndexes, IgniteBiFunction<Integer, Ignite, Object> affinity, UUID trainingUUID) {
+    public static Iterable<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>> localEntries(Set<Integer> featureIndexes,
+        IgniteBiFunction<Integer, Ignite, Object> affinity,
+        UUID trainingUUID) {
         Ignite ignite = Ignition.localIgnite();
         Set<SplitKey> keys = featureIndexes.stream().map(fIdx -> new SplitKey(trainingUUID, affinity.apply(fIdx, ignite), fIdx)).collect(Collectors.toSet());
 
         Collection<SplitKey> locKeys = affinity().mapKeysToNodes(keys).getOrDefault(ignite.cluster().localNode(), Collections.emptyList());
 
-        return () -> locKeys.stream().map(k -> (Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>)(new CacheEntryImpl<>(k, getOrCreate(ignite).localPeek(k)))).iterator();
+        return () -> {
+            Function<SplitKey, Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>> f = k -> (new CacheEntryImpl<>(k, getOrCreate(ignite).localPeek(k)));
+            return locKeys.stream().map(f).iterator();
+        };
     }
 
     /**

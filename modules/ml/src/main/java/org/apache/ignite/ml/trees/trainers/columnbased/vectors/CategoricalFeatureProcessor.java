@@ -134,14 +134,19 @@ public class CategoricalFeatureProcessor
         SparseBitSet bs, double[] values, RegionProjection<CategoricalRegionInfo> reg, RegionInfo leftData, RegionInfo rightData) {
         int depth = reg.depth();
 
-        IgniteBiTuple<Integer[], Integer[]> lrSamples = splitByBitSet(bs.cardinality(), reg.sampleIndexes().length - bs.cardinality(), reg.sampleIndexes(), bs);
+        int lSize = bs.cardinality();
+        int rSize = reg.sampleIndexes().length - lSize;
+        IgniteBiTuple<Integer[], Integer[]> lrSamples = splitByBitSet(lSize, rSize, reg.sampleIndexes(), bs);
         BitSet leftCats = calculateCats(lrSamples.get1(), values);
         CategoricalRegionInfo lInfo = new CategoricalRegionInfo(leftData.impurity(), leftCats);
 
         // TODO: IGNITE-5892 Check how it will work with sparse data.
         BitSet rightCats = calculateCats(lrSamples.get2(), values);
         CategoricalRegionInfo rInfo = new CategoricalRegionInfo(rightData.impurity(), rightCats);
-        return new IgniteBiTuple<>(new RegionProjection<>(lrSamples.get1(), lInfo, depth + 1), new RegionProjection<>(lrSamples.get2(), rInfo, depth + 1));
+
+        RegionProjection<CategoricalRegionInfo> rPrj = new RegionProjection<>(lrSamples.get2(), rInfo, depth + 1);
+        RegionProjection<CategoricalRegionInfo> lPrj = new RegionProjection<>(lrSamples.get1(), lInfo, depth + 1);
+        return new IgniteBiTuple<>(lPrj, rPrj);
     }
 
     /**

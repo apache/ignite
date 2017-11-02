@@ -22,7 +22,14 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 /** Utility class for feature vector processors. */
 public class Utils {
-    /** */
+    /**
+     * Split target array into two (left and right) arrays by bitset.
+     * @param lSize Left array size;
+     * @param rSize Right array size.
+     * @param samples Arrays to split size.
+     * @param bs Bitset specifying split.
+     * @return BiTuple containing result of split.
+     */
     public static IgniteBiTuple<Integer[], Integer[]> splitByBitSet(int lSize, int rSize, Integer[] samples, SparseBitSet bs) {
         Integer[] lArr = new Integer[lSize];
         Integer[] rArr = new Integer[rSize];

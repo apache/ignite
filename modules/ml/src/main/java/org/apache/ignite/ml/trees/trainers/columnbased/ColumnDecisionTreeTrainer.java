@@ -51,7 +51,6 @@ import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.math.functions.IgniteToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
@@ -319,7 +318,11 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     () -> {
                         TrainingContext<ContinuousRegionInfo> ctx = ContextCache.getOrCreate(ignite).get(uuid);
                         Ignite ignite = Ignition.localIgnite();
-                        RegionProjection reg = ProjectionsCache.getOrCreate(ignite).localPeek(ProjectionsCache.key(bestFeatureIdx, regIdx / BLOCK_SIZE, input.affinityKey(bestFeatureIdx, Ignition.localIgnite()), uuid)).get(regIdx % BLOCK_SIZE);
+                        RegionKey key = ProjectionsCache.key(bestFeatureIdx,
+                            regIdx / BLOCK_SIZE,
+                            input.affinityKey(bestFeatureIdx, Ignition.localIgnite()),
+                            uuid);
+                        RegionProjection reg = ProjectionsCache.getOrCreate(ignite).localPeek(key).get(regIdx % BLOCK_SIZE);
                         return ctx.featureProcessor(bestFeatureIdx).findBestSplit(reg, ctx.values(bestFeatureIdx, ignite), ctx.labels(), regIdx);
                     });
 
@@ -342,7 +345,11 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                         TrainingContext ctx = ctxCache.localPeek(uuid);
 
                         double[] values = featuresCache.localPeek(getFeatureCacheKey(bestFeatureIdx, uuid, input.affinityKey(bestFeatureIdx, Ignition.localIgnite())));
-                        RegionProjection reg = ProjectionsCache.getOrCreate(ignite).localPeek(ProjectionsCache.key(bestFeatureIdx, regIdx / BLOCK_SIZE, input.affinityKey(bestFeatureIdx, Ignition.localIgnite()), uuid)).get(regIdx % BLOCK_SIZE);
+                        RegionKey key = ProjectionsCache.key(bestFeatureIdx,
+                            regIdx / BLOCK_SIZE,
+                            input.affinityKey(bestFeatureIdx, Ignition.localIgnite()),
+                            uuid);
+                        RegionProjection reg = ProjectionsCache.getOrCreate(ignite).localPeek(key).get(regIdx % BLOCK_SIZE);
                         return ctx.featureProcessor(bestFeatureIdx).calculateOwnershipBitSet(reg, values, best.info);
 
                     });
@@ -384,7 +391,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                         RegionProjection targetRegProj = leftBlock.get(idxInBlock);
 
-                        IgniteBiTuple<RegionProjection, RegionProjection> regs = ctx.performSplit(input, bs, fIdx, best.featureIdx, targetRegProj, best.info.leftData(), best.info.rightData(), ign);
+                        IgniteBiTuple<RegionProjection, RegionProjection> regs = ctx.
+                            performSplit(input, bs, fIdx, best.featureIdx, targetRegProj, best.info.leftData(), best.info.rightData(), ign);
 
                         RegionProjection left = regs.get1();
                         RegionProjection right = regs.get2();
@@ -403,7 +411,9 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                         }
                         else {
                             rightBlock.add(right);
-                            return rightBlock.equals(k) ? Stream.of(new CacheEntryImpl<>(k, leftBlock)) : Stream.of(new CacheEntryImpl<>(k, leftBlock), new CacheEntryImpl<>(rightKey, rightBlock));
+                            return rightBlock.equals(k) ?
+                                Stream.of(new CacheEntryImpl<>(k, leftBlock)) :
+                                Stream.of(new CacheEntryImpl<>(k, leftBlock), new CacheEntryImpl<>(rightKey, rightBlock));
                         }
                     },
                     bestRegsKeys);
@@ -487,12 +497,16 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
         return CacheUtils.reduce(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME, ignite,
             (Object ctx, Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>> e, IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>> r) ->
-                Functions.MAX_GENERIC(new IgniteBiTuple<>(e.getKey().featureIdx(), e.getValue()), r, Comparator.comparingDouble((IgniteToDoubleFunction<IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>>>)bt -> bt != null && bt.get2() != null ? bt.get2().get2() : Double.NEGATIVE_INFINITY)),
+                Functions.MAX_GENERIC(new IgniteBiTuple<>(e.getKey().featureIdx(), e.getValue()), r, comparator()),
             () -> null,
             () -> SplitCache.localEntries(featureIndexes, affinity, trainingUUID),
             (i1, i2) -> Functions.MAX_GENERIC(i1, i2, Comparator.comparingDouble(bt -> bt.get2().get2())),
             () -> new IgniteBiTuple<>(-1, new IgniteBiTuple<>(-1, Double.NEGATIVE_INFINITY))
         );
+    }
+
+    private static Comparator<IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>>> comparator() {
+        return Comparator.comparingDouble(bt -> bt != null && bt.get2() != null ? bt.get2().get2() : Double.NEGATIVE_INFINITY);
     }
 
     /**

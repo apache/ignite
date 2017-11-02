@@ -25,8 +25,10 @@ import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer
 /** Continuous Split Calculators. */
 public class ContinuousSplitCalculators {
     /** Variance split calculator. */
-    public static IgniteFunction<ColumnDecisionTreeTrainerInput, VarianceSplitCalculator> VARIANCE = input -> new VarianceSplitCalculator();
+    public static IgniteFunction<ColumnDecisionTreeTrainerInput, VarianceSplitCalculator> VARIANCE = input ->
+        new VarianceSplitCalculator();
 
     /** Gini split calculator. */
-    public static IgniteCurriedBiFunction<Ignite, ColumnDecisionTreeTrainerInput, GiniSplitCalculator> GINI = ignite -> input -> new GiniSplitCalculator(input.labels(ignite));
+    public static IgniteCurriedBiFunction<Ignite, ColumnDecisionTreeTrainerInput, GiniSplitCalculator> GINI = ignite ->
+        input -> new GiniSplitCalculator(input.labels(ignite));
 }

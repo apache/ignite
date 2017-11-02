@@ -19,11 +19,24 @@ package org.apache.ignite.ml.structures;
 
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Labeled vector specialized to double label.
+ * @param <V> Type of vector.
+ */
 public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Double> {
+    /**
+     * Construct LabeledVectorDouble.
+     * @param vector Vector.
+     * @param label Label.
+     */
     public LabeledVectorDouble(V vector, Double label) {
         super(vector, label);
     }
 
+    /**
+     * Get label as double.
+     * @return label as double.
+     */
     public double doubleLabel() {
         return label().doubleValue();
     }
