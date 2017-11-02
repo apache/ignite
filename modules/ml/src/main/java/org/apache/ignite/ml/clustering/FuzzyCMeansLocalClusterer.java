@@ -94,11 +94,17 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         boolean finished = false;
         while (iteration < maxIterations && !finished) {
             calculateDistances(distances, points, centers);
-            calculateMembership(membership, distances, weightsVector);
-            Matrix newCenters = calculateNewCenters(points, membership);
+            Matrix newMembership = calculateMembership(distances, weightsVector);
+            Matrix newCenters = calculateNewCenters(points, newMembership);
 
-            finished = isFinished(centers, newCenters);
+            if (this.stopCondition == StopCondition.STABLE_CENTERS) {
+                finished = areCentersStable(centers, newCenters);
+            } else {
+                finished = areMembershipStable(membership, newMembership);
+            }
+
             centers = newCenters;
+            membership = newMembership;
             iteration++;
         }
 
@@ -175,11 +181,12 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
     /**
      * Calculate membership matrix
      *
-     * @param membership output matrix
      * @param distances matrix of distances
      * @param weights vector of weights
+     * @
      */
-    private void calculateMembership(Matrix membership, Matrix distances, Vector weights) {
+    private Matrix calculateMembership(Matrix distances, Vector weights) {
+        Matrix newMembership = new DenseLocalOnHeapMatrix(distances.rowSize(), distances.columnSize());
         int numPoints = distances.columnSize();
         int numCenters = distances.rowSize();
         double fuzzyMembershipCoefficient = 2 / (exponentialWeight - 1);
@@ -189,16 +196,17 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
                 double invertedFuzzyWeight = 0;
                 for (int k = 0; k < numCenters; k++) {
                     double value = Math.pow(distances.get(i, j) / distances.get(k, j),
-                                                    fuzzyMembershipCoefficient);
+                            fuzzyMembershipCoefficient);
                     if (Double.isNaN(value)) {
                         value = 1.0;
                     }
                     invertedFuzzyWeight += value;
                 }
                 double weight = 1.0 / invertedFuzzyWeight * weights.getX(j);
-                membership.setX(i, j, Math.pow(weight, exponentialWeight));
+                newMembership.setX(i, j, Math.pow(weight, exponentialWeight));
             }
         }
+        return newMembership;
     }
 
     /**
@@ -227,16 +235,33 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
      * @param newCenters new centers
      * @return the result of comparison
      */
-    private boolean isFinished(Matrix centers, Matrix newCenters) {
+    private boolean areCentersStable(Matrix centers, Matrix newCenters) {
         int numCenters = centers.rowSize();
-
         for (int i = 0; i < numCenters; i++) {
             if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxDelta) {
                 return false;
             }
         }
-
         return true;
     }
 
+    /**
+     * Check if membership changes insignificantly
+     *
+     * @param membership old membership
+     * @param newMembership new membership
+     * @return the result of comparison
+     */
+    private boolean areMembershipStable(Matrix membership, Matrix newMembership) {
+        int numCenters = membership.rowSize();
+        int numPoints = membership.columnSize();
+        for (int i = 0; i < numCenters; i++) {
+            for (int j = 0; j < numPoints; j++) {
+                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxDelta) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
