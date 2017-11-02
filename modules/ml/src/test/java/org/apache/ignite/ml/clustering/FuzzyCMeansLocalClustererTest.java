@@ -36,7 +36,8 @@ public class FuzzyCMeansLocalClustererTest {
     @Test
     public void equalWeightsOneDimension() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 10, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
+                0.01, 10, null);
 
         double[][] points = new double[][]{{-10}, {-9}, {-8}, {-7},
                                            {7},   {8},  {9},  {10},
@@ -57,7 +58,8 @@ public class FuzzyCMeansLocalClustererTest {
     @Test
     public void equalWeightsTwoDimensions() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 20, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
+                0.01, 20, null);
 
         double[][] points = new double[][]{{-10, -10}, {-9, -11}, {-10, -9}, {-11, -9},
                                            {10, 10},   {9, 11},   {10, 9},   {11, 9},
@@ -157,7 +159,8 @@ public class FuzzyCMeansLocalClustererTest {
     @Test
     public void differentWeightsOneDimension() {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
-                2, 0.01, 10, null);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
+                0.01, 10, null);
 
         double[][] points = new double[][]{{1}, {2}, {3}, {4}, {5}, {6}};
 

@@ -46,13 +46,14 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
      *
      * @param measure distance measure
      * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param maxCentersDelta max distance between old and new centers which indicates when algorithm should stop
+     * @param stopCondition flag that tells when algorithm should stop
+     * @param maxDelta max distance between old and new centers which indicates when algorithm should stop
      * @param maxIterations the maximum number of iterations
      * @param seed seed for random numbers generator
      */
-    public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight,
-                                     double maxCentersDelta, int maxIterations, Long seed) {
-        super(measure, exponentialWeight, maxCentersDelta);
+    public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
+                                     double maxDelta, int maxIterations, Long seed) {
+        super(measure, exponentialWeight, stopCondition, maxDelta);
         this.maxIterations = maxIterations;
         rand = seed != null ? new Random(seed) : new Random();
     }
@@ -234,7 +235,7 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
         int numPoints = membership.columnSize();
 
         for (int i = 0; i < numCenters; i++) {
-            if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxCentersDelta) {
+            if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxDelta) {
                 return false;
             }
 

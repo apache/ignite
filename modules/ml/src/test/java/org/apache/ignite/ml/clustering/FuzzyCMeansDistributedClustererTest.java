@@ -67,7 +67,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         FuzzyCMeansDistributedClusterer clusterer = new FuzzyCMeansDistributedClusterer(new EuclideanDistance(),
-                2, 0.01, 500, null, 2, 50);
+                2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS,
+                0.01, 500, null, 2, 50);
 
         double[][] points = new double[][]{{-10, -10}, {-9, -11}, {-10, -9}, {-11, -9},
                 {10, 10},   {9, 11},   {10, 9},   {11, 9},
@@ -107,7 +108,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
 
         DistanceMeasure measure = new EuclideanDistance();
         FuzzyCMeansDistributedClusterer distributedClusterer = new FuzzyCMeansDistributedClusterer(measure,
-                exponentialWeight, maxCentersDelta, maxIterations, seed, 2, 50);
+                exponentialWeight, BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS,
+                maxCentersDelta, maxIterations, seed, 2, 50);
 
         for (int i = 0; i < numOfTests; i++) {
             performRandomTest(distributedClusterer, i);

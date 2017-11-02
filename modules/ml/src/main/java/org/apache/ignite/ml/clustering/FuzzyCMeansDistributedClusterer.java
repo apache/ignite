@@ -63,15 +63,17 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      *
      * @param measure distance measure
      * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param maxCentersDelta max distance between old and new centers which indicates when algorithm should stop
+     * @param stopCondition flag that tells when algorithm should stop
+     * @param maxDelta max distance between old and new centers which indicates when algorithm should stop
      * @param cMeansMaxIterations the maximum number of FCM iterations
      * @param seed seed for random numbers generator
      * @param initializationSteps number of steps in primary centers selection (the more steps, the more candidates)
      * @param kMeansMaxIterations maximum number of K-Means iteration in primary centers selection
      */
-    public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight, double maxCentersDelta,
-                                int cMeansMaxIterations, Long seed, int initializationSteps, int kMeansMaxIterations) {
-        super(measure, exponentialWeight, maxCentersDelta);
+    public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight,
+                                           StopCondition stopCondition, double maxDelta, int cMeansMaxIterations,
+                                           Long seed, int initializationSteps, int kMeansMaxIterations) {
+        super(measure, exponentialWeight, stopCondition, maxDelta);
 
         this.seed = seed != null ? seed : new Random().nextLong();
         this.initializationSteps = initializationSteps;
@@ -92,13 +94,19 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
         Vector[] centers = initializeCenters(points, k);
 
+        MembershipsAndSums membershipsAndSums = null;
+
         int iteration = 0;
         boolean finished = false;
         while (!finished && iteration < cMeansMaxIterations) {
             MembershipsAndSums newMembershipsAndSums = calculateMembership(points, centers);
             Vector[] newCenters = calculateNewCenters(points, newMembershipsAndSums, k);
 
-            finished = isFinished(centers, newCenters);
+            if (stopCondition == StopCondition.STABLE_CENTERS) {
+                finished = isFinished(centers, newCenters);
+            } else {
+                finished = isFinished(membershipsAndSums, newMembershipsAndSums);
+            }
 
             centers = newCenters;
 
@@ -400,12 +408,36 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         int numCenters = centers.length;
 
         for (int i = 0; i < numCenters; i++) {
-            if (distance(centers[i], newCenters[i]) > maxCentersDelta) {
+            if (distance(centers[i], newCenters[i]) > maxDelta) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Check memberships delta
+     *
+     * @param membershipsAndSums old memberships
+     * @param newMembershipsAndSums new memberships
+     * @return the result of comparison
+     */
+    private boolean isFinished(MembershipsAndSums membershipsAndSums, MembershipsAndSums newMembershipsAndSums) {
+        if (membershipsAndSums == null) {
+            return false;
+        }
+
+        double currentMaxDelta = 0.0;
+        for (Integer key : membershipsAndSums.memberships.keySet()) {
+            double distance = measure.compute(membershipsAndSums.memberships.get(key),
+                                              newMembershipsAndSums.memberships.get(key));
+            if (distance > currentMaxDelta) {
+                currentMaxDelta = distance;
+            }
+        }
+
+        return currentMaxDelta <= maxDelta;
     }
 
     /** Service class used to optimize counting of membership sums */
