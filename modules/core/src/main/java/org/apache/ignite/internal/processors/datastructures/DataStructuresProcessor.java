@@ -173,8 +173,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                         UUID leftNodeId = discoEvt.eventNode().id();
 
-                        System.out.println("!!!~ ушла нода "+ leftNodeId);
-
                         for (GridCacheRemovable ds : dsMap.values()) {
                             if (ds instanceof GridCacheSemaphoreEx)
                                 ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
@@ -182,7 +180,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
                             else if (ds instanceof GridCacheLockEx2Default) {
                                 ((GridCacheLockEx2Default)ds).removeAll(leftNodeId);
-                                System.out.println("!!!~ и мы за ней прибрали");
                             }
                         }
 
@@ -263,8 +260,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
 
-            if (ds instanceof GridCacheLockEx2)
-                ((GridCacheLockEx2)ds).close();
+            /*if (ds instanceof GridCacheLockEx2)
+                ((GridCacheLockEx2)ds).close();*/
         }
 
         if (initLatch.getCount() > 0) {
@@ -560,15 +557,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (type.equals(REENTRANT_LOCK2)) {
                 tcfg.setAtomicityMode(ATOMIC);
-                System.out.println("!!!~ backups= "+tcfg.getBackups());
-                System.out.println("!!!~ CacheMode= "+tcfg.getCacheMode());
-                tcfg.setCacheMode(CacheMode.REPLICATED);
-                System.out.println("!!!~ ReadFromBackup= "+tcfg.isReadFromBackup());
-                tcfg.setReadFromBackup(false);
-                System.out.println("!!!~ WriteSynchronization= "+tcfg.getWriteSynchronizationMode());
-                tcfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-                System.out.println("!!!~ RebalanceMode= "+tcfg.getRebalanceMode());
-                tcfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+                //System.out.println("!!!~ backups= "+tcfg.getBackups());
+                //System.out.println("!!!~ CacheMode= "+tcfg.getCacheMode());
+                //tcfg.setCacheMode(CacheMode.REPLICATED);
+                //System.out.println("!!!~ ReadFromBackup= "+tcfg.isReadFromBackup());
+                //tcfg.setReadFromBackup(false);
+                //System.out.println("!!!~ WriteSynchronization= "+tcfg.getWriteSynchronizationMode());
+                //tcfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+                //System.out.println("!!!~ RebalanceMode= "+tcfg.getRebalanceMode());
+                //tcfg.setRebalanceMode(CacheRebalanceMode.SYNC);
                 // New reentrant lock doesn't need any query.
                 needQuery = false;
             }
@@ -625,8 +622,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     T old;
 
-                    boolean flag = true;
-
                     try {
                         ret = c.getSafe(key, val, cache);
 
@@ -655,7 +650,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                                     //releasers.putIfAbsent(1/*key.name().hashCode()*/, ((GridCacheLockEx2Default)ret.get1()).getReleaser());
 
-                                    cache.invoke(key,
+                                    /*cache.invoke(key,
                                         new EntryProcessor<GridCacheInternalKey, AtomicDataStructureValue, Void>() {
                                             @Override public Void process(
                                                 MutableEntry<GridCacheInternalKey, AtomicDataStructureValue> entry,
@@ -675,9 +670,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                                                 return null;
                                             }
-                                        });
-
-                                    flag = false;
+                                        });*/
                                 }
                             }
 
@@ -763,7 +756,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 ", actualType=" + val.type() + ']');
 
                         if (pred == null || pred.applyx(val)) {
-                            System.out.println("!!!~ удалил значение О_о "+key);
                             cache.remove(key);
 
                             tx.commit();
@@ -1352,25 +1344,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             fair ? GridCacheLockImpl2Fair.class : GridCacheLockImpl2Unfair.class);
     }
 
-    /** */
-    boolean removeReentrantLock(final GridCacheInternalKey key) {
-//        synchronized (key) {
-//            PrimaryNodeFaile lsnr = failedListener.get(key);
-//
-//            if (lsnr != null && lsnr.remove()) {
-//                ctx.event().removeLocalEventListener(lsnr, new int[] {
-//                    EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_CLIENT_NODE_DISCONNECTED,
-//                    EVT_CLIENT_NODE_RECONNECTED});
-//
-//                failedListener.remove(key, lsnr);
-//
-//                return true;
-//            }
-//        }
-
-        return false;
-    }
-
     /**
      * Gets or creates reentrant lock. If reentrant lock is not found in cache,
      * it is created using provided name, failover mode, and fairness mode parameters.
@@ -1458,87 +1431,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             return S.toString(DataStructuresEntryFilter.class, this);
         }
     }
-
-//    /** */
-//    private static class ListenerSetter implements Callable<Void> {
-//        /** */
-//        private final String name;
-//
-//        /** */
-//        private final boolean fair;
-//
-//        /** */
-//        @IgniteInstanceResource
-//        private Ignite g;
-//
-//        /** */
-//        public ListenerSetter(String name, boolean fair) {
-//            this.name = name;
-//            this.fair = fair;
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public Void call() throws Exception {
-//            IgnitePredicate<DiscoveryEvent> listener = new NodeRemover(name, fair, g);
-//
-//            g.events().localListen(listener, new int[]{EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_CLIENT_NODE_DISCONNECTED,
-//                EVT_CLIENT_NODE_RECONNECTED});
-//
-//            System.out.println("!!!~ назначил лисенер чистельщик на ноде "+g.cluster().localNode().id());
-//
-//            return null;
-//        }
-//
-//        /** */
-//        private static class NodeRemover implements IgnitePredicate<DiscoveryEvent> {
-//            /** */
-//            private static final long serialVersionUID = 4431745675372387948L;
-//
-//            /** */
-//            private final String name;
-//
-//            /** */
-//            private final boolean fair;
-//
-//            /** */
-//            private final Ignite g;
-//
-//            /** */
-//            private NodeRemover(String name, boolean fair, Ignite g) {
-//                this.name = name;
-//                this.fair = fair;
-//                this.g = g;
-//            }
-//
-//            /** {@inheritDoc} */
-//            @Override public boolean apply(DiscoveryEvent event) {
-//                System.out.println("!!!~ нода вышла "+event.eventNode().id()+" class: "+event.type());
-//
-//                try (GridCacheLockEx2Default lock = (GridCacheLockEx2Default)g.reentrantLock(name, fair, false)) {
-//                    if (lock != null)
-//                        lock.removeAll(event.eventNode().id());
-//
-//                    return true;
-//                }
-//            }
-//
-//            /** {@inheritDoc} */
-//            @Override public boolean equals(Object o) {
-//                if (this == o)
-//                    return true;
-//
-//                if (o == null || getClass() != o.getClass())
-//                    return false;
-//
-//                return name.equals(((NodeRemover)o).name);
-//            }
-//
-//            /** {@inheritDoc} */
-//            @Override public int hashCode() {
-//                return 31 * name.hashCode() + (fair ? 1 : 0);
-//            }
-//        }
-//    }
 
     /**
      *
@@ -1769,7 +1661,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private static <T> T retryTopologySafe(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
             try {
-                System.out.println("!!!~ i = "+i);
                 return c.applyx();
             }
             catch (IgniteCheckedException e) {
@@ -1822,86 +1713,4 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             return value;
         }
     }
-
-//    /** */
-//    private static class PrimaryNodeFaile implements IgnitePredicate<DiscoveryEvent> {
-//        /** */
-//        private static final long serialVersionUID = 4531745675372387948L;
-//
-//        /** */
-//        private ClusterNode keyNode;
-//
-//        /** */
-//        private final IgniteInternalCache cache;
-//
-//        /** */
-//        private final GridCacheInternalKey key;
-//
-//        /** */
-//        private final String name;
-//
-//        /** */
-//        private final boolean fair;
-//
-//        /** Kernal context. */
-//        @GridToStringExclude
-//        protected final GridKernalContext ctx;
-//
-//        /** */
-//        private final AtomicInteger count = new AtomicInteger();
-//
-//        /** */
-//        public PrimaryNodeFaile(ClusterNode keyNode, IgniteInternalCache cache, GridCacheInternalKey key, String name,
-//            boolean fair, GridKernalContext ctx) {
-//            this.keyNode = keyNode;
-//            this.cache = cache;
-//            this.key = key;
-//            this.name = name;
-//            this.fair = fair;
-//            this.ctx = ctx;
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public boolean apply(DiscoveryEvent event) {
-//            if (event.eventNode().id().equals(keyNode.id())) {
-//
-//                System.out.println("!!!~ праймери нода слегла");
-//
-//                // Это надо сделать
-//                try (GridCacheLockEx2Default lock = (GridCacheLockEx2Default)ctx.grid().reentrantLock(name, fair, false)) {
-//                    if (lock != null)
-//                        lock.removeAll(event.eventNode().id());
-//                }
-//
-//                try {
-//                    keyNode = cache.affinity().mapKeyToNode(key);
-//
-//                    if (!ctx.localNodeId().equals(keyNode.id())) {
-//                        System.out.println("!!!~ пытаюсь назначить чистильщика на ноду");
-//                        ctx.closure().callAsync(GridClosureCallMode.BROADCAST, new ListenerSetter(name, fair),
-//                            Collections.singleton(keyNode)).get();
-//                    } else {
-//                        try {
-//                            System.out.println("!!!~ Поднял чистильщика локально на" + ctx.localNodeId());
-//                            new ListenerSetter(name, fair).call();
-//                        }
-//                        catch (Exception e) {
-//                        }
-//                    }
-//                }
-//                catch (IgniteCheckedException | IllegalStateException e) {
-//                }
-//            }
-//
-//            return true;
-//        }
-//
-//        void add() {
-//            count.incrementAndGet();
-//        }
-//
-//        boolean remove() {
-//            return count.decrementAndGet() <= 0;
-//        }
-//    }
 }

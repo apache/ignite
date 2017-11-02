@@ -87,8 +87,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
 
         sync = new LocalSync(new GlobalUnfairSync(ctx.localNodeId(), key, lockView, listener, ctx, log));
 
-        System.out.println("!!!~ делаем лок на " + ctx.localNodeId()+ " в кэше "+ctx.name());
-
         ctx.io().addCacheHandler(ctx.cacheId(), GridCacheLockImpl2Unfair.ReleasedMessage.class,
             new IgniteBiInClosure<UUID, GridCacheLockImpl2Unfair.ReleasedMessage>() {
                 @Override public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
@@ -432,14 +430,13 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2Default {
                             UUID nextNode = result.get().owner;
 
                             if (nextNode != null) {
-                                System.out.println("!!!~ счас сообщим ноде "+nextNode);
                                 if (nodeId.equals(nextNode))
                                     listener.release();
                                 else{
                                     ctx.io().send(nextNode,
                                         new GridCacheLockImpl2Unfair.ReleasedMessage(ctx.cacheId(), key.name()), P2P_POOL);
                                 }
-                            } else System.out.println("!!!~ следующей ноды просто нет");
+                            }
                         }
                     }
                     catch (IgniteCheckedException e) {
