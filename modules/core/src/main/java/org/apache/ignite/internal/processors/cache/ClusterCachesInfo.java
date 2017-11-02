@@ -336,6 +336,10 @@ class ClusterCachesInfo {
                     "Near eviction policy", locAttr.nearEvictionPolicyClassName(),
                     rmtAttr.nearEvictionPolicyClassName(), false);
 
+                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "nearEvictionPolicyFactory",
+                    "Near eviction policy factory", locAttr.nearEvictionPolicyFactoryClassName(),
+                    rmtAttr.nearEvictionPolicyFactoryClassName(), false);
+
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityIncludeNeighbors",
                     "Affinity include neighbors", locAttr.affinityIncludeNeighbors(),
                     rmtAttr.affinityIncludeNeighbors(), true);

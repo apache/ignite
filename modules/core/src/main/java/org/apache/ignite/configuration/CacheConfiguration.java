@@ -592,13 +592,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
      *
-     * @param factory Cache expiration policy.
+     * @param evictPlcFactory Cache expiration policy.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setEvictionPolicyFactory(
-        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> factory) {
-        this.evictPlcFactory = factory;
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        this.evictPlcFactory = evictPlcFactory;
 
         return this;
     }

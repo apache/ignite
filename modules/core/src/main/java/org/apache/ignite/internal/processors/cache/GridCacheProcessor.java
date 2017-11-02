@@ -520,8 +520,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
-        if (nearCfg != null)
+        if (nearCfg != null) {
+            prepare(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
             prepare(cfg, nearCfg.getNearEvictionPolicy(), true);
+        }
 
         for (Object obj : objs)
             prepare(cfg, obj, false);
@@ -564,8 +566,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
-        if (nearCfg != null)
+        if (nearCfg != null) {
+            cleanup(cfg, nearCfg.getNearEvictionPolicyFactory(), true);
             cleanup(cfg, nearCfg.getNearEvictionPolicy(), true);
+        }
 
         cctx.cleanup();
     }
@@ -3722,8 +3726,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
 
-        if (nearCfg != null)
+        if (nearCfg != null) {
+            ret.add(nearCfg.getNearEvictionPolicyFactory());
             ret.add(nearCfg.getNearEvictionPolicy());
+        }
 
         Collections.addAll(ret, objs);
 

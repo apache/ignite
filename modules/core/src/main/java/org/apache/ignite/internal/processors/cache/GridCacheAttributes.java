@@ -171,6 +171,8 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Near eviction policy class name.
+     *
+     * @deprecated Use nearEvictionPolicyFactoryClassName() instead.
      */
     public String nearEvictionPolicyClassName() {
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
@@ -179,6 +181,13 @@ public class GridCacheAttributes implements Serializable {
             return null;
 
         return className(nearCfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * @return Near eviction policy factory class name.
+     */
+    public String nearEvictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
     }
 
     /**
