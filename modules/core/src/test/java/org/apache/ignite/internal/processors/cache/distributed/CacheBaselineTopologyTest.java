@@ -501,7 +501,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return grid(0).active();
+                for (int i = 0; i < NODE_COUNT; i++)
+                  if (!grid(i).active())
+                      return false;
+
+                return true;
             }
         }, 10_000);
 
