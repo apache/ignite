@@ -28,6 +28,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -1557,7 +1558,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected GridCursor<GridH2Row> doFind0(
+    protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
@@ -1571,7 +1572,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
         /** */
-        private final GridCursor<GridH2Row> cursor;
+        private final H2Cursor cursor;
 
         /** Next element. */
         private GridH2Row next;
@@ -1579,18 +1580,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /**
          * @param cursor Cursor.
          */
-        private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+        private CursorIteratorWrapper(H2Cursor cursor) {
             assert cursor != null;
 
             this.cursor = cursor;
 
-            try {
-                if (cursor.next())
-                    next = cursor.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
         }
 
         /** {@inheritDoc} */
@@ -1600,19 +1596,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         /** {@inheritDoc} */
         @Override public GridH2Row next() {
-            try {
-                GridH2Row res = next;
+            GridH2Row res = next;
 
-                if (cursor.next())
-                    next = cursor.get();
-                else
-                    next = null;
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
+            else
+                next = null;
 
-                return res;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return res;
         }
 
         /** {@inheritDoc} */
