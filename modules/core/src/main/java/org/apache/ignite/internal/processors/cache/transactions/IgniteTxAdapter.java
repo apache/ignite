@@ -758,8 +758,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
-        if (explicit != null) throw new RuntimeException("[txs]Checking lock when explicit lock exists");
-
         return local() && !cacheCtx.isDht() ?
             entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
@@ -775,8 +773,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         IgniteTxEntry txEntry = entry(entry.txKey());
 
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
-
-        if (explicit != null) throw new RuntimeException("[txs]Checking lock when explicit lock exists");
 
         return local() && !cacheCtx.isDht() ?
             entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
