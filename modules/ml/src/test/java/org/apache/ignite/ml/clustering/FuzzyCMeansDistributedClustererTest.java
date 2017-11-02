@@ -20,7 +20,6 @@ package org.apache.ignite.ml.clustering;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.*;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -108,7 +107,7 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
 
         DistanceMeasure measure = new EuclideanDistance();
         FuzzyCMeansDistributedClusterer distributedClusterer = new FuzzyCMeansDistributedClusterer(measure,
-                exponentialWeight, BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS,
+                exponentialWeight, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
                 maxCentersDelta, maxIterations, seed, 2, 50);
 
         for (int i = 0; i < numOfTests; i++) {

@@ -109,6 +109,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
             }
 
             centers = newCenters;
+            membershipsAndSums = newMembershipsAndSums;
 
             iteration++;
         }
