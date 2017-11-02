@@ -26,7 +26,7 @@ public abstract class ReentrantProcessor<T>
             }
 
             return result.locked;
-        }
+        } //else System.out.println("!!!~ куда-то съебалась запись 2!");
 
         return false;
     }

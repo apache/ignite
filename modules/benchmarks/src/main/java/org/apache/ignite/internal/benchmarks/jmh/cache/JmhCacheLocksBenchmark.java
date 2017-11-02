@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
@@ -48,8 +49,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
-import org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2;
-import org.apache.ignite.internal.processors.datastructures.GridCacheLockState2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
@@ -81,13 +80,13 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     private static final String lockKey = "key0";
 
     /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean failoverSafe = false;
+    private static final boolean failoverSafe = true;
 
     /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean fair = false;
+    private static final boolean fair = true;
 
     /** Number of nodes. */
-    final static int MAX_NODES = 6;
+    final static int MAX_NODES = 10;
 
     /** */
     final static Ignite[] nodes = new Ignite[MAX_NODES];
@@ -96,7 +95,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     final static AtomicInteger countForThread = new AtomicInteger(0);
 
     /** IgniteCache.lock() with a fixed lock key. */
-    @State(Scope.Benchmark)
+    @State(Scope.Thread)
     public static class CacheLockState {
         /** */
         public final Lock cacheLock;
@@ -118,7 +117,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /** Ignite.reentrantLock() with a fixed lock key. */
-    @State(Scope.Benchmark)
+    @State(Scope.Thread)
     public static class IgniteLockState {
         /** */
         public final IgniteLock igniteLock;
@@ -170,66 +169,6 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         lockState.igniteLock.unlock();
     }
 
-    /*@State(Scope.Benchmark)
-    public static class SecondUnlock {
-
-        Thread waitingForLock;
-
-        IgniteLock igniteLock;
-
-        IgniteLock igniteLock2;
-
-        public SecondUnlock() {}
-
-        @Setup(Level.Invocation)
-        public void start() {
-            igniteLock = nodes[0].reentrantLock(lockKey+"2", fair, true);
-
-            igniteLock.lock();
-            igniteLock2 = nodes[1].reentrantLock(lockKey+"2", fair, true);
-            final IgniteLock pam = igniteLock2;
-            waitingForLock = new Thread(new Runnable() {
-                @Override public void run() {
-                    pam.lock();
-                    pam.unlock();
-                }
-            });
-            waitingForLock.start();
-            try {
-                Thread.sleep(1);
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        @TearDown(Level.Invocation)
-        public void end() {
-            try {
-                waitingForLock.join();
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Benchmark
-    public void zzz(SecondUnlock unlock) {
-        unlock.igniteLock.unlock();
-        try {
-            unlock.waitingForLock.join();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Benchmark
-    public void zzz2(SecondUnlock unlock) {
-        unlock.igniteLock.unlock();
-    }*/
-
     /**
      * Create locks and put values in the cache.
      */
@@ -243,44 +182,6 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         cache.putIfAbsent(lockKey, "foo");
     }
 
-
-    /*@State(Scope.Thread)
-    public static class State3 {
-        public final IgniteCache cache;
-        public final EntryProcessor<Object, Object, Boolean> ep = new EP();
-
-        public State3() {
-             this.cache = nodes[countForThread.getAndIncrement() % MAX_NODES]
-                .cache(DEFAULT_CACHE_NAME);
-
-             this.cache.put(lockKey, "foo");
-        }
-    }
-
-    public static class EP implements EntryProcessor<Object, Object, Boolean>, Binarylizable {
-        @Override public Boolean process(MutableEntry entry, Object... objects) throws EntryProcessorException {
-            //Make it operation like update
-            if (entry.exists())
-                if (entry.getValue() != null) {
-                    entry.setValue(entry.getValue());
-                    return true;
-                }
-
-            return false;
-        }
-
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        }
-
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        }
-    }
-
-    @Benchmark
-    public Object invoke(State3 state) {
-        return state.cache.invoke(lockKey, state.ep);
-    }*/
-
     /**
      * Run benchmarks.
      *
@@ -290,7 +191,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     public static void main(String[] args) throws Exception {
         final String simpleClsName = JmhCacheLocksBenchmark.class.getSimpleName();
         final int threads = MAX_NODES;
-        final boolean client = true;
+        final boolean client = false;
         final CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
         final CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -309,7 +210,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                "-XX:+UnlockCommercialFeatures",
+                //"-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
