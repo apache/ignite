@@ -178,7 +178,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper, p), p);
+            return new H2Cursor(tree.find(lower, upper, p));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
