@@ -753,6 +753,11 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onBaselineTopologyChanged(BaselineTopology blt) throws IgniteCheckedException {
+        saveBaselineTopology(blt);
+    }
+
     /**
      * @param reqId Request ID.
      * @param initNodeId Initialize node id.
