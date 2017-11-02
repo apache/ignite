@@ -23,6 +23,8 @@ import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
  * Factory class for {@link LruEvictionPolicy}.
  */
 public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<LruEvictionPolicy<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** */
     public LruEvictionPolicyFactory() {
