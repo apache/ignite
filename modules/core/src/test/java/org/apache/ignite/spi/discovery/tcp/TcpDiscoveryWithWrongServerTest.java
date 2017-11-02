@@ -148,6 +148,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
     public void testDisconnectOnRequest() throws Exception {
         startTcpThread(new DisconnectOnRequestWorker());
 
+        Thread.sleep(1000);
         simpleTest();
     }
 
@@ -322,7 +323,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
             Collections.sort(res, new Comparator<InetSocketAddress>() {
                 @Override public int compare(InetSocketAddress o1, InetSocketAddress o2) {
-                    return o1.toString().compareTo(o2.toString());
+                    return o2.toString().compareTo(o1.toString());
                 }
             });
 
