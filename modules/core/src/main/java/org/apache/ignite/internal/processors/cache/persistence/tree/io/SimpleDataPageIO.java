@@ -52,7 +52,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
         if (payloadSize == written)
             return;
 
-        int start = rowOff > 2 ? rowOff - 2 : 0;
+        int start = rowOff > 4 ? rowOff - 4 : 0;
 
         final int len = Math.min(row.value().length - start, payloadSize - written);
 
@@ -67,13 +67,13 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     /** */
     private int writeSizeFragment(final MetastorageDataRow row, final ByteBuffer buf, final int rowOff,
         final int payloadSize) {
-        final int size = 2;
+        final int size = 4;
 
         if (rowOff >= size)
             return 0;
 
         if (rowOff == 0 && payloadSize >= size) {
-            buf.putShort((short)row.value().length);
+            buf.putInt(row.value().length);
 
             return size;
         }
@@ -81,7 +81,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
         ByteBuffer buf2 = ByteBuffer.allocate(size);
         buf2.order(buf.order());
 
-        buf2.putShort((short)row.value().length);
+        buf2.putInt(row.value().length);
         int len = Math.min(size - rowOff, payloadSize);
         buf.put(buf2.array(), rowOff, len);
 
@@ -102,19 +102,19 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
         if (newRow)
             PageUtils.putShort(addr, 0, (short)payloadSize);
 
-        PageUtils.putShort(addr, 2, (short)row.value().length);
-        PageUtils.putBytes(addr, 4, row.value());
+        PageUtils.putInt(addr, 2, row.value().length);
+        PageUtils.putBytes(addr, 6, row.value());
     }
 
     public static byte[] readPayload(long link) {
-        int size = PageUtils.getShort(link, 0);
+        int size = PageUtils.getInt(link, 0);
 
-        return PageUtils.getBytes(link, 2, size);
+        return PageUtils.getBytes(link, 4, size);
     }
 
     /** {@inheritDoc} */
     @Override public int getRowSize(MetastorageDataRow row) throws IgniteCheckedException {
-        return 2 + row.value().length;
+        return 4 + row.value().length;
     }
 
 

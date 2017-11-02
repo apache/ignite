@@ -944,6 +944,45 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    public void testMetastorageLargeArray() throws Exception {
+        try {
+            int cnt = 5000;
+            int arraySize = 32_768;
+
+            IgniteEx ignite = (IgniteEx)startGrid("node1");
+
+            ignite.active(true);
+
+            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
+
+            MetaStorage storage = ((GridCacheDatabaseSharedManager)sharedCtx.database()).metaStorage();
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] b1 = new byte[arraySize];
+                for (int k = 0; k < arraySize; k++) {
+                    b1[k] = (byte) (k % 100);
+                }
+                storage.putData(String.valueOf(i), b1);
+            }
+
+            for (int i = 0; i < cnt; i++) {
+                byte[] d2 = storage.getData(String.valueOf(i));
+                assertEquals(arraySize, d2.length);
+
+                for (int k = 0; k < arraySize; k++) {
+                    assertEquals((byte) (k % 100), d2[k]);
+                }
+            }
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
     public void testMetastorageRemove() throws Exception {
         try {
             int cnt = 400;
