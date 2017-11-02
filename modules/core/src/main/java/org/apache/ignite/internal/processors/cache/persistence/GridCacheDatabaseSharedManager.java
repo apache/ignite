@@ -1958,6 +1958,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case METASTORE_DATA_RECORD:
+                        //TODO ask IL?
+                  /*      if (!cctx.kernalContext().state().publicApiActiveState())
+                            continue;*/
+
                         MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)rec;
 
                         metaStorage.applyUpdate(metastoreDataRecord.key(), metastoreDataRecord.value());
