@@ -1,11 +1,14 @@
 package org.apache.ignite.ml.clustering;
 
+import org.apache.ignite.ml.Exportable;
+import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.FuzzyCMeansModelFormat;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 
 import java.util.Arrays;
 
-public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer> {
+public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
     /** Centers of clusters. */
     private Vector[] centers;
 
@@ -56,5 +59,12 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer> {
         }
 
         return index;
+    }
+
+    @Override
+    public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
+        FuzzyCMeansModelFormat modelData = new FuzzyCMeansModelFormat(centers, measure);
+
+        exporter.save(modelData, path);
     }
 }
