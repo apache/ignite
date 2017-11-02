@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -110,7 +110,7 @@ public class IgniteNode implements BenchmarkServer {
                     int nearCacheSize = args.getNearCacheSize();
 
                     if (nearCacheSize != 0)
-                        nearCfg.setNearEvictionPolicyFactory(new LruEvictionPolicyFactory(nearCacheSize));
+                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(nearCacheSize));
 
                     cc.setNearConfiguration(nearCfg);
                 }
