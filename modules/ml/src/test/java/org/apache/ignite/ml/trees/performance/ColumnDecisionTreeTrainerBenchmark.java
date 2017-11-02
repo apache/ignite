@@ -120,6 +120,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     }
 
     @Test
+    @Ignore
     public void testMNIST() throws IOException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
