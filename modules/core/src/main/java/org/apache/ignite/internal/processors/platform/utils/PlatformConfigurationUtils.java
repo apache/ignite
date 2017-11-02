@@ -49,8 +49,8 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -216,8 +216,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
-        ccfg.setEvictionPolicyFactory(readEvictionPolicyFactory(in));
-        if (ccfg.getEvictionPolicyFactory() != null)
+        ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        if (ccfg.getEvictionPolicy() != null)
             ccfg.setOnheapCacheEnabled(true);
 
         ccfg.setAffinity(readAffinityFunction(in));
@@ -292,7 +292,7 @@ public class PlatformConfigurationUtils {
         NearCacheConfiguration cfg = new NearCacheConfiguration();
 
         cfg.setNearStartSize(in.readInt());
-        cfg.setNearEvictionPolicyFactory(readEvictionPolicyFactory(in));
+        cfg.setNearEvictionPolicy(readEvictionPolicy(in));
 
         return cfg;
     }
@@ -303,21 +303,21 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Eviction policy.
      */
-    private static Factory<? extends EvictionPolicy> readEvictionPolicyFactory(BinaryRawReader in) {
+    private static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
             case 0:
                 break;
             case 1: {
-                FifoEvictionPolicyFactory p = new FifoEvictionPolicyFactory();
+                FifoEvictionPolicy p = new FifoEvictionPolicy();
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
                 return p;
             }
             case 2: {
-                LruEvictionPolicyFactory p = new LruEvictionPolicyFactory();
+                LruEvictionPolicy p = new LruEvictionPolicy();
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
@@ -378,7 +378,7 @@ public class PlatformConfigurationUtils {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
-        writeEvictionPolicyFactory(out, cfg.getNearEvictionPolicyFactory());
+        writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
     }
 
     /**
@@ -427,19 +427,19 @@ public class PlatformConfigurationUtils {
      * @param p Policy.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private static void writeEvictionPolicyFactory(BinaryRawWriter out, Factory<? extends EvictionPolicy> p) {
-        if (p instanceof FifoEvictionPolicyFactory) {
+    private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
+        if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
 
-            FifoEvictionPolicyFactory p0 = (FifoEvictionPolicyFactory)p;
+            FifoEvictionPolicy p0 = (FifoEvictionPolicy)p;
             out.writeInt(p0.getBatchSize());
             out.writeInt(p0.getMaxSize());
             out.writeLong(p0.getMaxMemorySize());
         }
-        else if (p instanceof LruEvictionPolicyFactory) {
+        else if (p instanceof LruEvictionPolicy) {
             out.writeByte((byte)2);
 
-            LruEvictionPolicyFactory p0 = (LruEvictionPolicyFactory)p;
+            LruEvictionPolicy p0 = (LruEvictionPolicy)p;
             out.writeInt(p0.getBatchSize());
             out.writeInt(p0.getMaxSize());
             out.writeLong(p0.getMaxMemorySize());
@@ -912,7 +912,7 @@ public class PlatformConfigurationUtils {
         else
             writer.writeBoolean(false);
 
-        writeEvictionPolicyFactory(writer, ccfg.getEvictionPolicyFactory());
+        writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
 
