@@ -282,6 +282,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            // TODO: Do we filter backups here? Looks like a bug!
             GridH2Row row = b ? tree.findFirst(): tree.findLast();
 
             return new SingleRowCursor(row);
@@ -338,7 +339,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             if (range == null)
                 return EMPTY_CURSOR;
 
-            return filter(range, filter);
+            return range;
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
