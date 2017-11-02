@@ -480,9 +480,6 @@ public class GridH2Table extends TableBase {
 
                 boolean oldReplaced = pk.putx(row); // Put to PK.
 
-                assert oldReplaced == (prevRow != null) : "Old row removing status is not consistent with old row value " +
-                    "[oldReplaced=" + oldReplaced + ", oldRow=" + prevRow + ']';
-
                 if (!oldReplaced)
                     size.increment();
 
