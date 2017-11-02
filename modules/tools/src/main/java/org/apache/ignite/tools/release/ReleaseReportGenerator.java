@@ -60,7 +60,7 @@ import org.json.simple.parser.ParseException;
  */
 public class ReleaseReportGenerator {
     /** Issue fields list for return from Jira search */
-    private final static String[] jiraFields = new String[] {"key", "summary"};
+    private static String[] jiraFields = new String[] {"key", "summary"};
 
     /** Release report json tempate path */
     private static String templatePath = "./report_template.json";
@@ -217,17 +217,16 @@ public class ReleaseReportGenerator {
 
         String sPtrn = (String)search.get("sptrn");
 
-        String[] jf = srv.get("fields").toString()
-                .replace("[", "").replace("]", "").split(",");
+        Object fieldList = srv.get("fields");
 
-        if (jf == null)
-            jf = jiraFields;
+        if (fieldList != null)
+            jiraFields = fieldList.toString().replace("[", "").replace("]", "").split(",");
 
         List<JSONObject> issues = searchIssues((String)srv.get("apiurl"),
             (String)srv.get("username"),
             (String)srv.get("password"),
             (String)search.get("jql"),
-            jf);
+            jiraFields);
 
         for (JSONObject issue : issues) {
             String key = getFieldFromJsonByPattern(issue, kField, kPtrn);
