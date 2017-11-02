@@ -281,18 +281,27 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             GridDhtTxLocalAdapter dhtTx = (GridDhtTxLocalAdapter)tx;
 
             // Null is returned if timeout is negative and there is other lock owner.
-            return addDhtLocal(
-                dhtTx.nearNodeId(),
-                dhtTx.nearXidVersion(),
-                tx.topologyVersion(),
-                tx.threadId(),
-                tx.xidVersion(),
-                serOrder,
-                timeout,
+            GridCacheMvccCandidate candidate = addDhtLocal(
+                    dhtTx.nearNodeId(),
+                    dhtTx.nearXidVersion(),
+                    tx.topologyVersion(),
+                    tx.threadId(),
+                    tx.xidVersion(),
+                    serOrder,
+                    timeout,
                 /*reenter*/false,
                 /*tx*/true,
-                tx.implicitSingle(),
-                read) != null;
+                    tx.implicitSingle(),
+                    read);
+
+            if (candidate!= null &&
+                    candidate.previous() != null &&
+                    !candidate.previous().owner() &&
+                    !candidate.owner() &&
+                    candidate.previous().parent().localOwner() != null)
+                throw new RuntimeException("[txs]CheckThreadChain exception");
+
+            return candidate != null;
         }
 
         try {
