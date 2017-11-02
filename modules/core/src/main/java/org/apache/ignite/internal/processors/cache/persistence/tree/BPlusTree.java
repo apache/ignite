@@ -4533,13 +4533,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (rows == EMPTY)
                 rows = (T[])new Object[cnt];
 
+            int foundCnt = 0;
+
             for (int i = 0; i < cnt; i++) {
                 T r = getRow(io, pageAddr, startIdx + i, x);
 
-                rows = GridArrays.set(rows, i, r);
+                if (r != null)
+                    rows = GridArrays.set(rows, foundCnt++, r);
             }
 
-            GridArrays.clearTail(rows, cnt);
+            if (foundCnt == 0) {
+                rows = (T[])EMPTY;
+
+                return false;
+            }
+
+            GridArrays.clearTail(rows, foundCnt);
 
             return true;
         }

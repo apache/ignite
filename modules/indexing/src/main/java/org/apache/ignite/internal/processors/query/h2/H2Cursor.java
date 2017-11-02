@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2FilteredRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,9 +65,6 @@ public class H2Cursor implements Cursor {
         try {
             while (cursor.next()) {
                 GridH2Row row = cursor.get();
-
-                if (row instanceof GridH2FilteredRow)
-                    continue;
 
                 if (row.expireTime() > 0 && row.expireTime() <= time)
                     continue;

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2FilteredRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -132,7 +131,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             IndexingQueryCacheFilter filter0 = (IndexingQueryCacheFilter)filter;
 
             if (!filter0.applyPartition(part))
-                return new GridH2FilteredRow(part);
+                return null;
         }
 
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
