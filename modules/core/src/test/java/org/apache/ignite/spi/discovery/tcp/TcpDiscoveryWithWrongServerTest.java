@@ -158,7 +158,6 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         startTcpThread(new DisconnectOnRequestWorker(), SERVER_PORT);
         startTcpThread(new DisconnectOnRequestWorker(), LAST_SERVER_PORT);
 
-        Thread.sleep(1000);
         simpleTest();
     }
 
