@@ -173,7 +173,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private void saveBaselineTopology(BaselineTopology blt) throws IgniteCheckedException {
         assert metastorage != null;
 
-        metastorage.write(METASTORE_BASELINE_TOPOLOGY_KEY, blt);
+        if (blt != null)
+            metastorage.write(METASTORE_BASELINE_TOPOLOGY_KEY, blt);
+        else
+            metastorage.remove(METASTORE_BASELINE_TOPOLOGY_KEY);
     }
 
     /** {@inheritDoc} */
