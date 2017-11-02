@@ -593,7 +593,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->NextResults();
+        statement->MoreResults();
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }

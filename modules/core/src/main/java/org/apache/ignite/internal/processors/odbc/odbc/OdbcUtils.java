@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -180,5 +184,32 @@ public class OdbcUtils {
         }
 
         return msg;
+    }
+
+    /**
+     * Get affected rows for statement.
+     * @param qryCur Cursor.
+     * @return Number of table rows affected, if the query is DML, and -1 otherwise.
+     */
+    public static long rowsAffected(QueryCursor<List<?>> qryCur) {
+        QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;
+
+        if (qryCur0.isQuery())
+            return -1;
+
+        Iterator<List<?>> iter = qryCur0.iterator();
+
+        if (iter.hasNext()) {
+            List<?> res = iter.next();
+
+            if (res.size() > 0) {
+                Long affected = (Long) res.get(0);
+
+                if (affected != null)
+                    return affected;
+            }
+        }
+
+        return 0;
     }
 }

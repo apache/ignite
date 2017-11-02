@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.function.BiFunction;
 
 /** Basic interface for all models. */
 @FunctionalInterface
-public interface Model<T, V> {
+public interface Model<T, V> extends Serializable {
     /** Predict a result for value. */
     V predict(T val);
 
