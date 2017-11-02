@@ -27,7 +27,11 @@ import java.util.Arrays;
 import java.util.PrimitiveIterator;
 import java.util.stream.DoubleStream;
 
+/**
+ * Base class for decision trees test.
+ */
 public class BaseDecisionTreeTest extends GridCommonAbstractTest {
+    /** Count of nodes. */
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
@@ -58,25 +62,11 @@ public class BaseDecisionTreeTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    static IgniteFunction<DoubleStream, Double> SIMPLE_VARIANCE_CALCULATOR = stream -> {
-        PrimitiveIterator.OfDouble iter = stream.iterator();
-        int i = 0;
-
-        double mean = 0.0;
-        double m2 = 0.0;
-
-        while (iter.hasNext()) {
-            i++;
-            double x = iter.next();
-            double delta = x - mean;
-            mean += delta / i;
-            double delta2 = x - mean;
-            m2 += delta * delta2;
-        }
-
-        return i > 0 ? m2 / i : 0.0;
-    };
-
+    /**
+     * Convert double array to  {@link LabeledVectorDouble}
+     * @param arr Array for conversion.
+     * @return LabeledVectorDouble.
+     */
     public static LabeledVectorDouble<DenseLocalOnHeapVector> asLabeledVector(double arr[]) {
         return new LabeledVectorDouble<>(new DenseLocalOnHeapVector(Arrays.copyOf(arr, arr.length - 1)), arr[arr.length - 1]);
     }

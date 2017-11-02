@@ -162,7 +162,7 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
             points(totalPts, (i, rn) -> i).
             collect(Collectors.toList());
 
-        int featCnt = gen.featCnt();
+        int featCnt = gen.featuresCnt();
 
         Collections.shuffle(lst, rnd);
 

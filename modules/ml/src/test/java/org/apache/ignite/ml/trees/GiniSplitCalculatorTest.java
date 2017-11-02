@@ -22,25 +22,32 @@ import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.GiniSplitC
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 import org.junit.Test;
 
+/**
+ * Test of {@link GiniSplitCalculator}.
+ */
 public class GiniSplitCalculatorTest {
+    /** Test calculation of region info consisting from one point. */
     @Test public void testCalculateRegionInfoSimple() {
         double labels[] = new double[] {0.0};
 
         assert new GiniSplitCalculator(labels).calculateRegionInfo(DoubleStream.of(labels), 0).impurity() == 0.0;
     }
 
+    /** Test calculation of region info consisting from two distinct classes. */
     @Test public void testCalculateRegionInfoTwoClasses() {
         double labels[] = new double[] {0.0, 1.0};
 
         assert new GiniSplitCalculator(labels).calculateRegionInfo(DoubleStream.of(labels), 0).impurity() == 0.5;
     }
 
+    /** Test calculation of region info consisting from three distinct classes. */
     @Test public void testCalculateRegionInfoThreeClasses() {
         double labels[] = new double[] {0.0, 1.0, 2.0};
 
         assert Math.abs(new GiniSplitCalculator(labels).calculateRegionInfo(DoubleStream.of(labels), 0).impurity() - 2.0 / 3) < 1E-5;
     }
 
+    /** Test calculation of split of region consisting from one point. */
     @Test public void testSplitSimple() {
         double labels[] = new double[] {0.0};
         double values[] = new double[] {0.0};
@@ -53,6 +60,7 @@ public class GiniSplitCalculatorTest {
         assert new GiniSplitCalculator(labels).splitRegion(samples, values, labels, 0, data) == null;
     }
 
+    /** Test calculation of split of region consisting from two points. */
     @Test public void testSplitTwoClassesTwoPoints() {
         double labels[] = new double[] {0.0, 1.0};
         double values[] = new double[] {0.0, 1.0};
@@ -75,6 +83,7 @@ public class GiniSplitCalculatorTest {
         assert split.rightData().getSize() == 1;
     }
 
+    /** Test calculation of split of region consisting from four distinct values. */
     @Test public void testSplitTwoClassesFourPoints() {
         double labels[] = new double[] {0.0, 0.0, 1.0, 1.0};
         double values[] = new double[] {0.0, 1.0, 2.0, 3.0};
@@ -98,6 +107,7 @@ public class GiniSplitCalculatorTest {
         assert split.rightData().getSize() == 2;
     }
 
+    /** Test calculation of split of region consisting from three distinct values. */
     @Test public void testSplitThreePoints() {
         double labels[] = new double[] {0.0, 1.0, 2.0};
         double values[] = new double[] {0.0, 1.0, 2.0};

@@ -22,37 +22,43 @@ import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSp
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 import org.junit.Test;
 
+/**
+ * Test for {@link VarianceSplitCalculator}.
+ */
 public class VarianceSplitCalculatorTest {
+    /** Test calculation of region info consisting from one point. */
     @Test public void testCalculateRegionInfoSimple() {
         double labels[] = new double[] {0.0};
 
         assert new VarianceSplitCalculator().calculateRegionInfo(DoubleStream.of(labels), 1).impurity() == 0.0;
     }
 
+    /** Test calculation of region info consisting from two classes. */
     @Test public void testCalculateRegionInfoTwoClasses() {
         double labels[] = new double[] {0.0, 1.0};
 
         assert new VarianceSplitCalculator().calculateRegionInfo(DoubleStream.of(labels), 2).impurity() == 0.25;
     }
 
+    /** Test calculation of region info consisting from three classes. */
     @Test public void testCalculateRegionInfoThreeClasses() {
         double labels[] = new double[] {1.0, 2.0, 3.0};
 
         assert Math.abs(new VarianceSplitCalculator().calculateRegionInfo(DoubleStream.of(labels), 3).impurity() - 2.0 / 3) < 1E-10;
     }
 
+    /** Test calculation of split of region consisting from one point. */
     @Test public void testSplitSimple() {
         double labels[] = new double[] {0.0};
         double values[] = new double[] {0.0};
         Integer[] samples = new Integer[] {0};
-
-        int cnts[] = new int[] {1};
 
         VarianceSplitCalculator.VarianceData data = new VarianceSplitCalculator.VarianceData(0.0, 1, 0.0);
 
         assert new VarianceSplitCalculator().splitRegion(samples, values, labels, 0, data) == null;
     }
 
+    /** Test calculation of split of region consisting from two classes. */
     @Test public void testSplitTwoClassesTwoPoints() {
         double labels[] = new double[] {0.0, 1.0};
         double values[] = new double[] {0.0, 1.0};
