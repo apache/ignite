@@ -1691,9 +1691,11 @@ public class GridCacheUtils {
             if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
                 return true;
 
-            for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
-                if (drConf.isPersistenceEnabled())
-                    return true;
+            if (dsCfg.getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                    if (drConf.isPersistenceEnabled())
+                        return true;
+                }
             }
 
             return false;
