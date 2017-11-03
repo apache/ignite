@@ -79,7 +79,10 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class GridClusterStateProcessorImpl extends GridProcessorAdapter implements GridClusterStateProcessor, MetastorageLifecycleListener {
     /** */
-    private static final String METASTORE_BASELINE_TOPOLOGY_KEY = "metastoreBltKey";
+    private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
+
+    /** */
+    private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
 
     /** */
     private volatile DiscoveryDataClusterState globalState;
@@ -133,7 +136,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public boolean publicApiActiveState() {
+    @Override public boolean publicApiActiveState() {
         if (ctx.isDaemon())
             return sendComputeCheckGlobalState();
 
@@ -155,7 +158,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_BASELINE_TOPOLOGY_KEY);
+        BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
 
         onStateRestored(blt);
     }
@@ -164,19 +167,22 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
         this.metastorage = metastorage;
 
-        saveBaselineTopology(globalState.baselineTopology());
+        saveBaselineTopology(globalState.baselineTopology(), null);
     }
 
     /**
      * @param blt Blt.
      */
-    private void saveBaselineTopology(BaselineTopology blt) throws IgniteCheckedException {
+    private void saveBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
+        if (prevBltHistItem != null)
+            metastorage.write(METASTORE_BLT_HIST_PREFIX + prevBltHistItem.id(), prevBltHistItem);
+
         if (blt != null)
-            metastorage.write(METASTORE_BASELINE_TOPOLOGY_KEY, blt);
+            metastorage.write(METASTORE_CURR_BLT_KEY, blt);
         else
-            metastorage.remove(METASTORE_BASELINE_TOPOLOGY_KEY);
+            metastorage.remove(METASTORE_CURR_BLT_KEY);
     }
 
     /** {@inheritDoc} */
@@ -315,6 +321,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
                 if (log.isInfoEnabled())
                     log.info("Started state transition: " + msg.activate());
 
+                BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(globalState.baselineTopology());
+
                 globalState = DiscoveryDataClusterState.createTransitionState(msg.activate(),
                     msg.baselineTopology(),
                     msg.requestId(),
@@ -323,7 +331,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
-                StateChangeRequest req = new StateChangeRequest(msg, msg.activate() != state.active(), stateChangeTopVer);
+                StateChangeRequest req = new StateChangeRequest(msg, bltHistItem, msg.activate() != state.active(), stateChangeTopVer);
 
                 exchangeActions.stateChangeRequest(req);
 
@@ -474,22 +482,29 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
         Collection<ClusterNode> baselineNodes,
         boolean forceChangeBaselineTopology) {
-        BaselineTopology blt;
+        BaselineTopology newBlt;
+
+        BaselineTopology currentBlt = globalState.baselineTopology();
+
+        int newBltId = currentBlt == null ? 0 : currentBlt.id() + 1;
 
         if (forceChangeBaselineTopology)
-            blt = BaselineTopology.build(baselineNodes);
-        else if (activate && baselineNodes != null
-            && globalState.baselineTopology() != null) {
-            blt = globalState.baselineTopology();
+            newBlt = BaselineTopology.build(baselineNodes, newBltId);
+        else if (activate
+            && baselineNodes != null
+            && currentBlt != null)
+        {
+            newBlt = currentBlt;
 
-            blt.updateHistory(baselineNodes);
+            newBlt.updateHistory(baselineNodes);
         }
         else
-            blt = BaselineTopology.build(baselineNodes);
+            newBlt = BaselineTopology.build(baselineNodes, newBltId);
 
-        return changeGlobalState0(activate, blt);
+        return changeGlobalState0(activate, newBlt);
     }
 
+    /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
             BaselineTopology blt) {
         if (ctx.isDaemon() || ctx.clientNode()) {
@@ -754,8 +769,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onBaselineTopologyChanged(BaselineTopology blt) throws IgniteCheckedException {
-        saveBaselineTopology(blt);
+    @Override public void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+        saveBaselineTopology(blt, prevBltHistItem);
     }
 
     /**

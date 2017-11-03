@@ -102,6 +102,7 @@ public interface GridClusterStateProcessor extends GridProcessor {
 
     /**
      * @param blt New baseline topology.
+     * @param prevBltHistItem
      */
-    void onBaselineTopologyChanged(BaselineTopology blt) throws IgniteCheckedException;
+    void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException;
 }

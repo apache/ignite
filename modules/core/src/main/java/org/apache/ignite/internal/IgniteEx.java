@@ -182,5 +182,5 @@ public interface IgniteEx extends Ignite {
      *
      * @param nodes Baseline topology nodes.
      */
-    public void setBaselineTopology(Collection<ClusterNode> nodes);
+    public void setBaselineTopology(@Nullable Collection<ClusterNode> nodes);
 }

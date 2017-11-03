@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteChangeGlobalStateDataStructureTest;
@@ -72,6 +73,7 @@ public class IgniteStandByClusterSuite extends TestSuite {
         suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
 
         suite.addTestSuite(CacheBaselineTopologyTest.class);
+        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
         return suite;
     }

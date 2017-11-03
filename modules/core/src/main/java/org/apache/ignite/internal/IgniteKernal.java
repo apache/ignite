@@ -3533,6 +3533,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (!context().state().clusterState().active())
                 throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
 
+            if (nodes != null && !nodes.containsAll(context().discovery().aliveServerNodes()))
+                throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+
             context().state().changeGlobalState(true, nodes, true).get();
         }
         catch (IgniteCheckedException e) {

@@ -85,6 +85,46 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
+     * Verifies that when old but compatible node
+     * (it is the node that once wasn't presented in activationHistory but hasn't participated in any branching point)
+     * joins the cluster after restart, cluster gets activated.
+     */
+    public void testAutoActivationWithCompatibleOldNode() throws Exception {
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        startGridWithConsistentId("C").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B").active(true);
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        final Ignite nodeC = startGridWithConsistentId("C");
+
+        boolean active = GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return nodeC.active();
+                }
+            },
+            10_000
+        );
+
+        assertTrue(active);
+    }
+
+    /**
+     *
+     */
+    public void testOnlineNodesCannotBeRemovedFromBaselineTopology() throws Exception {
+        //TODO implement test
+    }
+
+    /**
      * Verifies scenario when parts of grid were activated independently they are not allowed to join
      * into the same grid again (due to risks of incompatible data modifications).
      */

@@ -42,6 +42,9 @@ public class BaselineTopology implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final int id;
+
     /** Key - node consistent ID, value - node attribute map. */
     private final Map<Object, Map<String, Object>> nodeMap;
 
@@ -54,7 +57,9 @@ public class BaselineTopology implements Serializable {
     /**
      * @param nodeMap Map of node consistent ID to it's attributes.
      */
-    public BaselineTopology(Map<Object, Map<String, Object>> nodeMap) {
+    private BaselineTopology(Map<Object, Map<String, Object>> nodeMap, int id) {
+        this.id = id;
+
         this.nodeMap = nodeMap;
 
         for (Object o : nodeMap.keySet())
@@ -66,10 +71,31 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
+     * @return id of this BaselineTopology.
+     */
+    public int id() {
+        return id;
+    }
+
+    /**
      * @return Set of consistent IDs.
      */
     public Set<Object> consistentIds() {
         return nodeMap.keySet();
+    }
+
+    /**
+     * @return Activation history.
+     */
+    public List<Long> activationHistory() {
+        return activationHist;
+    }
+
+    /**
+     * @return Activation hash.
+     */
+    public long activationHash() {
+        return activationHash;
     }
 
     /**
@@ -178,9 +204,10 @@ public class BaselineTopology implements Serializable {
 
     /**
      * @param nodes Nodes.
+     * @param id ID of BaselineTopology to build.
      * @return Baseline topology consisting of given nodes.
      */
-    @Nullable public static BaselineTopology build(Collection<ClusterNode> nodes) {
+    @Nullable public static BaselineTopology build(Collection<ClusterNode> nodes, int id) {
         if (nodes == null)
             return null;
 
@@ -189,7 +216,7 @@ public class BaselineTopology implements Serializable {
         for (ClusterNode node : nodes)
             nodeMap.put(node.consistentId(), node.attributes());
 
-        return new BaselineTopology(nodeMap);
+        return new BaselineTopology(nodeMap, id);
     }
 
     /**
