@@ -22,11 +22,11 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Base matrix cache key.
  */
-public interface MatrixCacheKey {
+public interface DataStructureCacheKey {
     /**
      * @return matrix id.
      */
-    public IgniteUuid matrixId();
+    public IgniteUuid dataStructureId();
 
     /**
      * @return affinity key.

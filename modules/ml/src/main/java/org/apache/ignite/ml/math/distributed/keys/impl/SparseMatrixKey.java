@@ -71,7 +71,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binaryl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid matrixId() {
+    @Override public IgniteUuid dataStructureId() {
         return matrixId;
     }
 

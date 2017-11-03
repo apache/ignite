@@ -359,9 +359,9 @@ public class CacheUtils {
     private static <K> IgnitePredicate<K> sparseKeyFilter(IgniteUuid matrixUuid) {
         return key -> {
             if (key instanceof BlockMatrixKey)
-                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
+                return ((BlockMatrixKey)key).dataStructureId().equals(matrixUuid);
             else if (key instanceof RowColMatrixKey)
-                return ((RowColMatrixKey)key).matrixId().equals(matrixUuid);
+                return ((RowColMatrixKey)key).dataStructureId().equals(matrixUuid);
             else
                 throw new UnsupportedOperationException(); // TODO: handle my poor doubles
         };

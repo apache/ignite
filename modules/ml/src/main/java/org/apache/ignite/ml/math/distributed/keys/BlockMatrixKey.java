@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
  *
  * TODO: check if using {@link IgnitePair} will be better for block id.
  */
-public interface BlockMatrixKey extends MatrixCacheKey {
+public interface BlockMatrixKey extends DataStructureCacheKey {
     /**
      * @return block row id.
      */
