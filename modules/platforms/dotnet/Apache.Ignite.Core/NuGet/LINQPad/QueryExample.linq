@@ -31,6 +31,7 @@
 /// 
 /// Requirements:
 /// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
+/// * Microsoft Visual C++ 2010 Redistributable Package: http://www.microsoft.com/en-us/download/details.aspx?id=14632 (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()
@@ -38,21 +39,18 @@ void Main()
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
-	// Configure cacheable types
-    var cfg = new IgniteConfiguration { BinaryConfiguration = new BinaryConfiguration(typeof(Organization), typeof(Person))	};
-
     // Start instance
-    using (var ignite = Ignition.Start(cfg))
+    using (var ignite = Ignition.Start())
     {
         // Create and populate organization cache
-        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs", 
+        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs-sql", 
 			new QueryEntity(typeof(int), typeof(Organization))));
         orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
         orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
         orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
 
         // Create and populate person cache
-        var persons = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof(Person)));
+        var persons = ignite.GetOrCreateCache<int, Person>(new CacheConfiguration("persons-sql", typeof(Person)));
         persons[1] = new Person { OrgId = 1, Name = "James Wilson" };
         persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
         persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };
@@ -64,7 +62,7 @@ void Main()
 		
 		// SQL query with join
 		const string orgName = "Apache";
-		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs\".Organization where Person.OrgId = \"orgs\".Organization._key and \"orgs\".Organization.Name = ?", orgName))
+		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs-sql\".Organization where Person.OrgId = \"orgs-sql\".Organization._key and \"orgs-sql\".Organization.Name = ?", orgName))
 			.Dump("Persons working for " + orgName);
 
 		// Fields query

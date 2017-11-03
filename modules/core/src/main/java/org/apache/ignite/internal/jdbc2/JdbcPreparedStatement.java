@@ -17,12 +17,29 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
-import java.util.*;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * JDBC prepared statement implementation.
@@ -31,8 +48,11 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /** Arguments count. */
-    private final int argsCnt;
+    /** H2's parsed statement to retrieve metadata from. */
+    PreparedStatement nativeStatement;
+
+    /** Batch arguments. */
+    private List<List<Object>> batchArgs;
 
     /**
      * Creates new prepared statement.
@@ -44,24 +64,28 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         super(conn);
 
         this.sql = sql;
+    }
 
-        argsCnt = sql.replaceAll("[^?]", "").length();
+    /** {@inheritDoc} */
+    @Override public void addBatch(String sql) throws SQLException {
+        ensureNotClosed();
+
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch is not supported for prepared " +
+            "statement (use addBatch() to add new set of arguments)");
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
-        ResultSet rs = executeQuery(sql);
+        ensureNotClosed();
 
-        args = null;
-
-        return rs;
+        return executeQuery(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
@@ -163,6 +187,13 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
+    @Override public void clearBatch() throws SQLException {
+        ensureNotClosed();
+
+        batchArgs = null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void setObject(int paramIdx, Object x, int targetSqlType) throws SQLException {
         setArgument(paramIdx, x);
     }
@@ -181,8 +212,25 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(args);
+
+        args = null;
     }
+
+    /** {@inheritDoc} */
+    @Override public int[] executeBatch() throws SQLException {
+        ensureNotClosed();
+
+        List<List<Object>> batchArgs = this.batchArgs;
+
+        this.batchArgs = null;
+
+        return doBatchUpdate(sql, null, batchArgs);
+    }
+
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int len) throws SQLException {
@@ -200,9 +248,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */
@@ -223,7 +269,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
+        return getNativeStatement().getMetaData();
     }
 
     /** {@inheritDoc} */
@@ -255,7 +301,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Meta data for prepared statement is not supported.");
+        return getNativeStatement().getParameterMetaData();
     }
 
     /** {@inheritDoc} */
@@ -400,12 +446,36 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     private void setArgument(int paramIdx, Object val) throws SQLException {
         ensureNotClosed();
 
-        if (paramIdx < 1 || paramIdx > argsCnt)
+        if (paramIdx < 1)
             throw new SQLException("Parameter index is invalid: " + paramIdx);
 
-        if (args == null)
-            args = new Object[argsCnt];
+        ensureArgsSize(paramIdx);
 
-        args[paramIdx - 1] = val;
+        args.set(paramIdx - 1, val);
+    }
+
+    /**
+     * Initialize {@link #args} and increase its capacity and size up to given argument if needed.
+     * @param size new expected size.
+     */
+    private void ensureArgsSize(int size) {
+        if (args == null)
+            args = new ArrayList<>(size);
+
+        args.ensureCapacity(size);
+
+        while (args.size() < size)
+            args.add(null);
+    }
+
+    /**
+     * @return H2's prepared statement to get metadata from.
+     * @throws SQLException if failed.
+     */
+    private PreparedStatement getNativeStatement() throws SQLException {
+        if (nativeStatement != null)
+            return nativeStatement;
+
+        return (nativeStatement = conn.prepareNativeStatement(sql));
     }
 }

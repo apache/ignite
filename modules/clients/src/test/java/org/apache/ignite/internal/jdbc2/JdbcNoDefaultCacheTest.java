@@ -19,8 +19,9 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,8 +29,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
@@ -53,8 +55,8 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE1_NAME), cacheConfiguration(CACHE2_NAME));
 
@@ -72,7 +74,7 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setIndexedTypes(Integer.class, Integer.class);
@@ -85,8 +87,6 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
 
         Ignite ignite = ignite(0);
 
@@ -125,37 +125,20 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoCacheNameQuery() throws Exception {
-        Statement stmt;
+        try (
+            Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + CFG_URL);
+            final Statement stmt = conn.createStatement()) {
+            assertNotNull(stmt);
+            assertFalse(stmt.isClosed());
 
-        stmt = DriverManager.getConnection(CFG_URL_PREFIX + CFG_URL).createStatement();
+            Throwable throwable = GridTestUtils.assertThrows(null, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    stmt.execute("select t._key, t._val from \"cache1\".Integer t");
+                    return null;
+                }
+            }, SQLException.class, "Failed to query Ignite.");
 
-        assertNotNull(stmt);
-        assertFalse(stmt.isClosed());
-
-        stmt.execute("select t._key, t._val from \"cache1\".Integer t");
-
-        ResultSet rs = stmt.getResultSet();
-
-        while(rs.next())
-            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
-
-        stmt.execute("select t._key, t._val from \"cache2\".Integer t");
-
-        rs = stmt.getResultSet();
-
-        while(rs.next())
-            assertEquals(rs.getInt(2), rs.getInt(1) * 3);
-
-        stmt.execute("select t._key, t._val, v._val " +
-            "from \"cache1\".Integer t join \"cache2\".Integer v on t._key = v._key");
-
-        rs = stmt.getResultSet();
-
-        while(rs.next()) {
-            assertEquals(rs.getInt(2), rs.getInt(1) * 2);
-            assertEquals(rs.getInt(3), rs.getInt(1) * 3);
+            assertEquals(throwable.getCause().getMessage(), "Ouch! Argument is invalid: Cache name must not be null or empty.");
         }
-
-        stmt.close();
     }
 }

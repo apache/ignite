@@ -113,10 +113,13 @@ public class TransactionConfiguration implements Serializable {
      * @param txSerEnabled Flag to enable/disable serializable cache transactions.
 
      * @deprecated This method has no effect, {@link TransactionIsolation#SERIALIZABLE} isolation is always enabled.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setTxSerializableEnabled(boolean txSerEnabled) {
+    public TransactionConfiguration setTxSerializableEnabled(boolean txSerEnabled) {
         this.txSerEnabled = txSerEnabled;
+
+        return this;
     }
 
     /**
@@ -134,9 +137,12 @@ public class TransactionConfiguration implements Serializable {
      * Sets default transaction concurrency.
      *
      * @param dfltConcurrency Default cache transaction concurrency.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultTxConcurrency(TransactionConcurrency dfltConcurrency) {
+    public TransactionConfiguration setDefaultTxConcurrency(TransactionConcurrency dfltConcurrency) {
         this.dfltConcurrency = dfltConcurrency;
+
+        return this;
     }
 
     /**
@@ -154,9 +160,12 @@ public class TransactionConfiguration implements Serializable {
      * Sets default transaction isolation.
      *
      * @param dfltIsolation Default cache transaction isolation.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultTxIsolation(TransactionIsolation dfltIsolation) {
+    public TransactionConfiguration setDefaultTxIsolation(TransactionIsolation dfltIsolation) {
         this.dfltIsolation = dfltIsolation;
+
+        return this;
     }
 
     /**
@@ -174,9 +183,12 @@ public class TransactionConfiguration implements Serializable {
      * #DFLT_TRANSACTION_TIMEOUT}.
      *
      * @param dfltTxTimeout Default transaction timeout.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultTxTimeout(long dfltTxTimeout) {
+    public TransactionConfiguration setDefaultTxTimeout(long dfltTxTimeout) {
         this.dfltTxTimeout = dfltTxTimeout;
+
+        return this;
     }
 
     /**
@@ -196,9 +208,12 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param pessimisticTxLogSize Pessimistic transactions log size.
      * @see #getPessimisticTxLogSize()
+     * @return {@code this} for chaining.
      */
-    public void setPessimisticTxLogSize(int pessimisticTxLogSize) {
+    public TransactionConfiguration setPessimisticTxLogSize(int pessimisticTxLogSize) {
         this.pessimisticTxLogSize = pessimisticTxLogSize;
+
+        return this;
     }
 
     /**
@@ -217,9 +232,12 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param pessimisticTxLogLinger Pessimistic log cleanup delay.
      * @see #getPessimisticTxLogLinger()
+     * @return {@code this} for chaining.
      */
-    public void setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
+    public TransactionConfiguration setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
         this.pessimisticTxLogLinger = pessimisticTxLogLinger;
+
+        return this;
     }
 
     /**
@@ -239,10 +257,13 @@ public class TransactionConfiguration implements Serializable {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @deprecated Use {@link #setTxManagerFactory(Factory)} instead.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setTxManagerLookupClassName(String tmLookupClsName) {
+    public TransactionConfiguration setTxManagerLookupClassName(String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
+
+        return this;
     }
 
     /**
@@ -286,9 +307,12 @@ public class TransactionConfiguration implements Serializable {
      * @param factory Transaction manager factory.
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
      * @see #setUseJtaSynchronization(boolean)
+     * @return {@code this} for chaining.
      */
-    public <T> void setTxManagerFactory(Factory<T> factory) {
+    public <T> TransactionConfiguration setTxManagerFactory(Factory<T> factory) {
         txManagerFactory = factory;
+
+        return this;
     }
 
     /**
@@ -309,8 +333,11 @@ public class TransactionConfiguration implements Serializable {
      * @param useJtaSync Whether to use JTA {@code javax.transaction.Synchronization}
      *      instead of {@code javax.transaction.xa.XAResource}.
      * @see #setTxManagerFactory(Factory)
+     * @return {@code this} for chaining.
      */
-    public void setUseJtaSynchronization(boolean useJtaSync) {
+    public TransactionConfiguration setUseJtaSynchronization(boolean useJtaSync) {
         this.useJtaSync = useJtaSync;
+
+        return this;
     }
 }

@@ -191,7 +191,10 @@ public final class GridJavaProcess {
 
         killProc.waitFor();
 
-        assert killProc.exitValue() == 0 : "Process killing was not successful";
+        int exitVal = killProc.exitValue();
+
+        if (exitVal != 0)
+            log.info(String.format("Abnormal exit value of %s for pid %s", exitVal, pid));
 
         if (procKilledC != null)
             procKilledC.apply();

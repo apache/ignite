@@ -28,8 +28,8 @@ public interface BinaryMetadataHandler {
      * Adds meta data.
      *
      * @param typeId Type ID.
-     * @param meta Meta data.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @param meta Metadata.
+     * @throws BinaryObjectException In case of error.
      */
     public void addMeta(int typeId, BinaryType meta) throws BinaryObjectException;
 
@@ -37,8 +37,27 @@ public interface BinaryMetadataHandler {
      * Gets meta data for provided type ID.
      *
      * @param typeId Type ID.
-     * @return Meta data.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     * @return Metadata.
+     * @throws BinaryObjectException In case of error.
      */
     public BinaryType metadata(int typeId) throws BinaryObjectException;
+
+    /**
+     * Gets unwrapped meta data for provided type ID.
+     *
+     * @param typeId Type ID.
+     * @return Metadata.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryMetadata metadata0(int typeId) throws BinaryObjectException;
+
+    /**
+     * Gets metadata for provided type ID and schema ID.
+     *
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Metadata.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException;
 }

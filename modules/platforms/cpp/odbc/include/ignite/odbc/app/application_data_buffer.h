@@ -25,8 +25,9 @@
 #include <ignite/guid.h>
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include <ignite/time.h>
+#include <ignite/common/decimal.h>
 
-#include "ignite/odbc/decimal.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/type_traits.h"
 
@@ -54,9 +55,9 @@ namespace ignite
                  * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
-                 * @param offset Pointer to buffer and reslen offset pointer.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, SqlLen buflen, SqlLen* reslen, size_t** offset = 0);
+                ApplicationDataBuffer(type_traits::OdbcNativeType::Type type, void* buffer,
+                    SqlLen buflen, SqlLen* reslen);
 
                 /**
                  * Copy constructor.
@@ -79,13 +80,23 @@ namespace ignite
                 ApplicationDataBuffer& operator=(const ApplicationDataBuffer& other);
 
                 /**
-                 * Set pointer to offset pointer.
+                 * Set offset in bytes for all bound pointers.
                  *
-                 * @param offset Pointer to offset pointer.
+                 * @param offset Offset.
                  */
-                void SetPtrToOffsetPtr(size_t** offset)
+                void SetByteOffset(int offset)
                 {
-                    this->offset = offset;
+                    this->byteOffset = offset;
+                }
+
+                /**
+                 * Set offset in elements for all bound pointers.
+                 *
+                 * @param
+                 */
+                void SetElementOffset(SqlUlen idx)
+                {
+                    this->elementOffset = idx;
                 }
 
                 /**
@@ -164,7 +175,7 @@ namespace ignite
                  *
                  * @param value Value to put.
                  */
-                void PutDecimal(const Decimal& value);
+                void PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
@@ -179,6 +190,13 @@ namespace ignite
                  * @param value Value to put.
                  */
                 void PutTimestamp(const Timestamp& value);
+
+                /**
+                 * Put time to buffer.
+                 *
+                 * @param value Value to put.
+                 */
+                void PutTime(const Time& value);
 
                 /**
                  * Get string.
@@ -251,6 +269,20 @@ namespace ignite
                 Timestamp GetTimestamp() const;
 
                 /**
+                 * Get value of type Time.
+                 *
+                 * @return Value of type Timestamp.
+                 */
+                Time GetTime() const;
+
+                /**
+                 * Get value of type Decimal.
+                 *
+                 * @param val Result is placed here.
+                 */
+                void GetDecimal(common::Decimal& val) const;
+
+                /**
                  * Get raw data.
                  *
                  * @return Buffer data.
@@ -265,17 +297,6 @@ namespace ignite
                 const SqlLen* GetResLen() const;
 
                 /**
-                 * Get buffer size in bytes.
-                 *
-                 * @return Buffer size.
-                 */
-                SqlLen GetSize() const
-                {
-                    return buflen;
-                }
-
-            private:
-                /**
                  * Get raw data.
                  *
                  * @return Buffer data.
@@ -289,6 +310,59 @@ namespace ignite
                  */
                 SqlLen* GetResLen();
 
+                /**
+                 * Get buffer size in bytes.
+                 *
+                 * @return Buffer size.
+                 */
+                SqlLen GetSize() const
+                {
+                    return buflen;
+                }
+
+                /**
+                 * Check if the data is going to be provided at execution.
+                 *
+                 * @return True if the data is going to be provided
+                 *     at execution.
+                 */
+                bool IsDataAtExec() const;
+
+                /**
+                 * Get size of the data that is going to be provided at
+                 * execution.
+                 *
+                 * @return Size of the data that is going to be provided
+                 *     at execution.
+                 */
+                SqlLen GetDataAtExecSize() const;
+
+                /**
+                 * Get single element size.
+                 *
+                 * @return Size of the single element.
+                 */
+                SqlLen GetElementSize() const;
+
+                /**
+                 * Get size of the input buffer.
+                 *
+                 * @return Input buffer size, or zero if the data is going
+                 *     to be provided at execution.
+                 */
+                SqlLen GetInputSize() const;
+
+                /**
+                 * Get buffer type.
+                 *
+                 * @return Buffer type.
+                 */
+                type_traits::OdbcNativeType::Type GetType() const
+                {
+                    return type;
+                }
+
+            private:
                 /**
                  * Put value of numeric type in the buffer.
                  *
@@ -349,13 +423,14 @@ namespace ignite
                  * Apply buffer offset to pointer.
                  * Adds offset to pointer if offset pointer is not null.
                  * @param ptr Pointer.
+                 * @param elemSize Element size.
                  * @return Pointer with applied offset.
                  */
                 template<typename T>
-                T* ApplyOffset(T* ptr) const;
+                T* ApplyOffset(T* ptr, size_t elemSize) const;
 
                 /** Underlying data type. */
-                type_traits::IgniteSqlType type;
+                type_traits::OdbcNativeType::Type type;
 
                 /** Buffer pointer. */
                 void* buffer;
@@ -366,8 +441,11 @@ namespace ignite
                 /** Result length. */
                 SqlLen* reslen;
 
-                /** Pointer to implementation pointer to application offset */
-                size_t** offset;
+                /** Current byte offset */
+                int byteOffset;
+
+                /** Current element offset. */
+                SqlUlen elementOffset;
             };
 
             /** Column binging map type alias. */

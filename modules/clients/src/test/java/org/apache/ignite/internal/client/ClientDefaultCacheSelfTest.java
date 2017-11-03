@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.client;
 
-import java.io.BufferedReader;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -58,13 +64,16 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     private static final int HTTP_PORT = 8081;
 
     /** Url address to send HTTP request. */
-    private static final String TEST_URL = "http://" + HOST + ":" + HTTP_PORT + "/ignite";
+    private static final String TEST_URL = "http://" + HOST + ":" + HTTP_PORT + "/ignite?";
 
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** Name of node local cache. */
     private static final String LOCAL_CACHE = "local";
+
+    /** JSON to java mapper. */
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -86,8 +95,8 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assert cfg.getConnectorConfiguration() == null;
 
@@ -103,77 +112,95 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration cLocal = new CacheConfiguration();
+        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cLocal.setName(LOCAL_CACHE);
+        cLoc.setName(LOCAL_CACHE);
 
-        cLocal.setCacheMode(CacheMode.LOCAL);
+        cLoc.setCacheMode(CacheMode.LOCAL);
 
-        cLocal.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cLoc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLocal);
+        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLoc);
 
         return cfg;
     }
 
     /**
-     * Builds list of connection strings with few different ports.
-     * Used to avoid possible failures in case of port range active.
-     *
-     * @param startPort Port to start list from.
-     * @return List of client connection strings.
-     */
-    private Collection<String> getServerList(int startPort) {
-        Collection<String> srvs = new ArrayList<>();
-
-        for (int i = startPort; i < startPort + 10; i++)
-            srvs.add(HOST + ":" + i);
-
-        return srvs;
-    }
-
-    /*
      * Send HTTP request to Jetty server of node and process result.
      *
-     * @param query Send query parameters.
+     * @param params Command parameters.
      * @return Processed response string.
+     * @throws IOException If failed.
      */
-    private String sendHttp(String query) {
-        String res = "No result";
+    private String content(Map<String, String> params) throws IOException {
+        SB sb = new SB(TEST_URL);
+
+        for (Map.Entry<String, String> e : params.entrySet())
+            sb.a(e.getKey()).a('=').a(e.getValue()).a('&');
+
+        String qry = sb.toString();
 
         try {
-            URLConnection connection = new URL(TEST_URL + "?" + query).openConnection();
+            URL url = new URL(qry);
 
-            connection.setRequestProperty("Accept-Charset", CHARSET);
+            URLConnection conn = url.openConnection();
 
-            BufferedReader r = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            conn.setRequestProperty("Accept-Charset", CHARSET);
 
-            res = r.readLine();
+            InputStream in = conn.getInputStream();
 
-            r.close();
+            StringBuilder buf = new StringBuilder(256);
+
+            try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, "UTF-8"))) {
+                for (String line = rdr.readLine(); line != null; line = rdr.readLine())
+                    buf.append(line);
+            }
+
+            return buf.toString();
         }
         catch (IOException e) {
-            error("Failed to send HTTP request: " + TEST_URL + "?" + query, e);
-        }
+            error("Failed to send HTTP request: " + TEST_URL + "?" + qry, e);
 
-        // Cut node id from response.
-        return res.substring(res.indexOf("\"response\""));
+            throw e;
+        }
+    }
+
+    /**
+     * @param content Content to check.
+     */
+    private JsonNode jsonResponse(String content) throws IOException {
+        assertNotNull(content);
+        assertFalse(content.isEmpty());
+
+        JsonNode node = JSON_MAPPER.readTree(content);
+
+        assertFalse(node.get("affinityNodeId").asText().isEmpty());
+        assertEquals(0, node.get("successStatus").asInt());
+        assertTrue(node.get("error").isNull());
+        assertTrue(node.get("sessionToken").isNull());
+
+        return node.get("response");
     }
 
     /**
      * Json format string in cache should not transform to Json object on get request.
      */
-    public void testSkipString2JsonTransformation() {
+    public void testSkipString2JsonTransformation() throws Exception {
+        String val = "{\"v\":\"my Value\",\"t\":1422559650154}";
+
         // Put to cache JSON format string value.
-        assertEquals("Incorrect query response", "\"response\":true,\"sessionToken\":\"\",\"successStatus\":0}",
-            sendHttp("cmd=put&cacheName=" + LOCAL_CACHE +
-                "&key=a&val=%7B%22v%22%3A%22my%20Value%22%2C%22t%22%3A1422559650154%7D"));
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", LOCAL_CACHE,
+            "key", "a", "val", URLEncoder.encode(val, CHARSET)));
+
+        JsonNode res = jsonResponse(ret);
+
+        assertEquals("Incorrect put response", true, res.asBoolean());
 
         // Escape '\' symbols disappear from response string on transformation to JSON object.
-        assertEquals(
-            "Incorrect query response",
-            "\"response\":\"{\\\"v\\\":\\\"my Value\\\",\\\"t\\\":1422559650154}\"," +
-                "\"sessionToken\":\"\",\"successStatus\":0}",
-            sendHttp("cmd=get&cacheName=" + LOCAL_CACHE + "&key=a"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", LOCAL_CACHE, "key", "a"));
+
+        res = jsonResponse(ret);
+
+        assertEquals("Incorrect get response", val, res.asText());
     }
 }

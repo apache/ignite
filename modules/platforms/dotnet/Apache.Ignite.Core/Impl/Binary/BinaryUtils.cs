@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -32,9 +30,9 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
-    /**
-     * <summary>Utilities for binary serialization.</summary>
-     */
+    /// <summary>
+    /// Utilities for binary serialization.
+    /// </summary>
     internal static class BinaryUtils
     {
         /** Header of NULL object. */
@@ -49,147 +47,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Protocol versnion. */
         public const byte ProtoVer = 1;
 
-        /** Type: object. */
-        public const byte TypeObject = HdrFull;
-
-        /** Type: unsigned byte. */
-        public const byte TypeByte = 1;
-
-        /** Type: short. */
-        public const byte TypeShort = 2;
-
-        /** Type: int. */
-        public const byte TypeInt = 3;
-
-        /** Type: long. */
-        public const byte TypeLong = 4;
-
-        /** Type: float. */
-        public const byte TypeFloat = 5;
-
-        /** Type: double. */
-        public const byte TypeDouble = 6;
-
-        /** Type: char. */
-        public const byte TypeChar = 7;
-
-        /** Type: boolean. */
-        public const byte TypeBool = 8;
-        
-        /** Type: decimal. */
-        public const byte TypeDecimal = 30;
-
-        /** Type: string. */
-        public const byte TypeString = 9;
-
-        /** Type: GUID. */
-        public const byte TypeGuid = 10;
-
-        /** Type: date. */
-        public const byte TypeTimestamp = 33;
-
-        /** Type: unsigned byte array. */
-        public const byte TypeArrayByte = 12;
-
-        /** Type: short array. */
-        public const byte TypeArrayShort = 13;
-
-        /** Type: int array. */
-        public const byte TypeArrayInt = 14;
-
-        /** Type: long array. */
-        public const byte TypeArrayLong = 15;
-
-        /** Type: float array. */
-        public const byte TypeArrayFloat = 16;
-
-        /** Type: double array. */
-        public const byte TypeArrayDouble = 17;
-
-        /** Type: char array. */
-        public const byte TypeArrayChar = 18;
-
-        /** Type: boolean array. */
-        public const byte TypeArrayBool = 19;
-
-        /** Type: decimal array. */
-        public const byte TypeArrayDecimal = 31;
-
-        /** Type: string array. */
-        public const byte TypeArrayString = 20;
-
-        /** Type: GUID array. */
-        public const byte TypeArrayGuid = 21;
-
-        /** Type: date array. */
-        public const byte TypeArrayTimestamp = 34;
-
-        /** Type: object array. */
-        public const byte TypeArray = 23;
-
-        /** Type: collection. */
-        public const byte TypeCollection = 24;
-
-        /** Type: map. */
-        public const byte TypeDictionary = 25;
-        
-        /** Type: binary object. */
-        public const byte TypeBinary = 27;
-
-        /** Type: enum. */
-        public const byte TypeEnum = 28;
-
-        /** Type: enum array. */
-        public const byte TypeArrayEnum = 29;
-        
-        /** Type: native job holder. */
-        public const byte TypeNativeJobHolder = 77;
-
-        /** Type: Ignite proxy. */
-        public const byte TypeIgniteProxy = 74;
-
-        /** Type: function wrapper. */
-        public const byte TypeComputeOutFuncJob = 80;
-
-        /** Type: function wrapper. */
-        public const byte TypeComputeFuncJob = 81;
-
-        /** Type: continuous query remote filter. */
-        public const byte TypeContinuousQueryRemoteFilterHolder = 82;
-
-        /** Type: Compute out func wrapper. */
-        public const byte TypeComputeOutFuncWrapper = 83;
-
-        /** Type: Compute func wrapper. */
-        public const byte TypeComputeFuncWrapper = 85;
-
-        /** Type: Compute job wrapper. */
-        public const byte TypeComputeJobWrapper = 86;
-
-        /** Type: Serializable wrapper. */
-        public const byte TypeSerializableHolder = 87;
-
-        /** Type: DateTime wrapper. */
-        public const byte TypeDateTimeHolder = 93;
-
-        /** Type: action wrapper. */
-        public const byte TypeComputeActionJob = 88;
-
-        /** Type: entry processor holder. */
-        public const byte TypeCacheEntryProcessorHolder = 89;
-
-        /** Type: entry predicate holder. */
-        public const byte TypeCacheEntryPredicateHolder = 90;
-        
-        /** Type: message filter holder. */
-        public const byte TypeMessageListenerHolder = 92;
-
-        /** Type: stream receiver holder. */
-        public const byte TypeStreamReceiverHolder = 94;
-
-        /** Type: platform object proxy. */
-        public const byte TypePlatformJavaObjectFactoryProxy = 99;
-
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -198,42 +55,31 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
-        
+
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-        
+
         /** Byte "0". */
         public const byte ByteZero = 0;
-
-        /** Byte "1". */
-        public const byte ByteOne = 1;
 
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
-        /** Length of array size. */
-        public const int LengthArraySize = 4;
-
-        /** Int type. */
-        public static readonly Type TypInt = typeof(int);
-
-        /** Collection type. */
-        public static readonly Type TypCollection = typeof(ICollection);
-
-        /** Dictionary type. */
-        public static readonly Type TypDictionary = typeof(IDictionary);
-
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
-        
+
         /** Bindig flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        /** Default poratble marshaller. */
-        private static readonly Marshaller Marsh = new Marshaller(null);
+        /** System marshaller. */
+        private static readonly Marshaller Marsh = new Marshaller(
+            new BinaryConfiguration { CompactFooter = false })
+        {
+            RegistrationDisabled = true
+        };
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
@@ -254,8 +100,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             ? (Action<Guid, IBinaryStream>)WriteGuidFast : WriteGuidSlow;
 
         /** Guid reader. */
-        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
-            ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
+        public static readonly Func<IBinaryStream, Guid> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid>)ReadGuidFast : ReadGuidSlow;
+
+        /** String mode environment variable. */
+        public const string IgniteBinaryMarshallerUseStringSerializationVer2 =
+            "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+        /** String mode. */
+        public static readonly bool UseStringSerializationVer2 =
+            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
 
         /// <summary>
         /// Default marshaller.
@@ -325,26 +179,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (sbyte* res0 = res)
             {
-                stream.Read((byte*) res0, len);
+                stream.Read((byte*)res0, len);
             }
-
-            return res;
-        }
-
-        /**
-         * <summary>Read byte array.</summary>
-         * <param name="data">Data.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static byte[] ReadByteArray(byte[] data, int pos) {
-            int len = ReadInt(data, pos);
-
-            pos += 4;
-
-            byte[] res = new byte[len];
-
-            Buffer.BlockCopy(data, pos, res, 0, len);
 
             return res;
         }
@@ -374,7 +210,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (ushort* res0 = res)
             {
-                stream.Read((byte*) res0, len * 2);
+                stream.Read((byte*)res0, len * 2);
             }
 
             return res;
@@ -388,42 +224,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static short[] ReadShortArray(IBinaryStream stream)
         {
             return stream.ReadShortArray(stream.ReadInt());
-        }
-
-        /**
-         * <summary>Read int value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static int ReadInt(byte[] data, int pos) {
-            int val = data[pos];
-
-            val |= data[pos + 1] << 8;
-            val |= data[pos + 2] << 16;
-            val |= data[pos + 3] << 24;
-
-            return val;
-        }
-
-        /**
-         * <summary>Read long value.</summary>
-         * <param name="data">Data array.</param>
-         * <param name="pos">Position.</param>
-         * <returns>Value.</returns>
-         */
-        public static long ReadLong(byte[] data, int pos) {
-            long val = (long)(data[pos]) << 0;
-
-            val |= (long)(data[pos + 1]) << 8;
-            val |= (long)(data[pos + 2]) << 16;
-            val |= (long)(data[pos + 3]) << 24;
-            val |= (long)(data[pos + 4]) << 32;
-            val |= (long)(data[pos + 5]) << 40;
-            val |= (long)(data[pos + 6]) << 48;
-            val |= (long)(data[pos + 7]) << 56;
-
-            return val;
         }
 
         /**
@@ -461,7 +261,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (uint* res0 = res)
             {
-                stream.Read((byte*) res0, len * 4);
+                stream.Read((byte*)res0, len * 4);
             }
 
             return res;
@@ -502,7 +302,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (ulong* res0 = res)
             {
-                stream.Read((byte*) res0, len * 8);
+                stream.Read((byte*)res0, len * 8);
             }
 
             return res;
@@ -608,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
-        
+
         /// <summary>
         /// Write nullable date array.
         /// </summary>
@@ -622,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeTimestamp);
+                    stream.WriteByte(BinaryTypeId.Timestamp);
 
                     WriteTimestamp(val.Value, stream);
                 }
@@ -630,7 +430,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     stream.WriteByte(HdrNull);
             }
         }
-        
+
         /**
          * <summary>Write string in UTF8 encoding.</summary>
          * <param name="val">String.</param>
@@ -642,12 +442,177 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (char* chars = val)
             {
-                int byteCnt = Utf8.GetByteCount(chars, charCnt);
+                int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
                 stream.WriteInt(byteCnt);
 
                 stream.WriteString(chars, charCnt, byteCnt, Utf8);
             }
+        }
+
+        /// <summary>
+        /// Converts string to UTF8 bytes.
+        /// </summary>
+        /// <param name="chars">Chars.</param>
+        /// <param name="charCnt">Chars count.</param>
+        /// <param name="byteCnt">Bytes count.</param>
+        /// <param name="enc">Encoding.</param>
+        /// <param name="data">Data.</param>
+        /// <returns>Amount of bytes written.</returns>
+        public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        {
+            if (!UseStringSerializationVer2)
+                return enc.GetBytes(chars, charCnt, data, byteCnt);
+
+            int strLen = charCnt;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c, cnt;
+            // ReSharper restore TooWideLocalVariableScope
+
+            int position = 0;
+
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                c = *(chars + cnt);
+
+                if (c >= 0x0001 && c <= 0x007F)
+                    *(data + position++) = (byte)c;
+                else if (c > 0x07FF)
+                {
+                    *(data + position++) = (byte)(0xE0 | ((c >> 12) & 0x0F));
+                    *(data + position++) = (byte)(0x80 | ((c >> 6) & 0x3F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+                else
+                {
+                    *(data + position++) = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
+                }
+            }
+
+            return position;
+        }
+
+        /// <summary>
+        /// Gets the UTF8 byte count.
+        /// </summary>
+        /// <param name="chars">The chars.</param>
+        /// <param name="strLen">Length of the string.</param>
+        /// <returns>UTF byte count.</returns>
+        private static unsafe int GetUtf8ByteCount(char* chars, int strLen)
+        {
+            int utfLen = 0;
+            int cnt;
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                var c = *(chars + cnt);
+
+                // ASCII
+                if (c >= 0x0001 && c <= 0x007F)
+                    utfLen++;
+                // Special symbols (surrogates)
+                else if (c > 0x07FF)
+                    utfLen += 3;
+                // The rest of the symbols.
+                else
+                    utfLen += 2;
+            }
+            return utfLen;
+        }
+
+        /// <summary>
+        /// Converts UTF8 bytes to string.
+        /// </summary>
+        /// <param name="arr">The bytes.</param>
+        /// <returns>Resulting string.</returns>
+        private static string Utf8BytesToString(byte[] arr)
+        {
+            if (!UseStringSerializationVer2)
+                return Utf8.GetString(arr);
+
+            int len = arr.Length, off = 0;
+            int c, charArrCnt = 0, total = len;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
+            int c2, c3;
+            // ReSharper restore TooWideLocalVariableScope
+            char[] res = new char[len];
+
+            // try reading ascii
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                if (c > 127)
+                    break;
+
+                off++;
+
+                res[charArrCnt++] = (char)c;
+            }
+
+            // read other
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                switch (c >> 4)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                        /* 0xxxxxxx*/
+                        off++;
+
+                        res[charArrCnt++] = (char)c;
+
+                        break;
+                    case 12:
+                    case 13:
+                        /* 110x xxxx   10xx xxxx*/
+                        off += 2;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 1];
+
+                        if ((c2 & 0xC0) != 0x80)
+                            throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                        res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                        break;
+                    case 14:
+                        /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                        off += 3;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = arr[off - 2];
+
+                        c3 = arr[off - 1];
+
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                            throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                            ((c2 & 0x3F) << 6) |
+                            ((c3 & 0x3F) << 0));
+
+                        break;
+                    default:
+                        /* 10xx xxxx,  1111 xxxx */
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+                }
+            }
+
+            return len == charArrCnt ? new string(res) : new string(res, 0, charArrCnt);
         }
 
         /**
@@ -659,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             byte[] bytes = ReadByteArray(stream);
 
-            return bytes != null ? Utf8.GetString(bytes) : null;
+            return bytes != null ? Utf8BytesToString(bytes) : null;
         }
 
         /**
@@ -675,7 +640,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val != null)
                 {
-                    stream.WriteByte(TypeString);
+                    stream.WriteByte(BinaryTypeId.String);
                     WriteString(val, stream);
                 }
                 else
@@ -684,28 +649,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Read string array in UTF8 encoding.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>String array.</returns>
-         */
-        public static string[] ReadStringArray(IBinaryStream stream)
-        {
-            int len = stream.ReadInt();
-
-            string[] vals = new string[len];
-
-            for (int i = 0; i < len; i++)
-                vals[i] = ReadString(stream);
-
-            return vals;
-        }
-
-        /**
          * <summary>Write decimal value.</summary>
          * <param name="val">Decimal value.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimal(decimal val, IBinaryStream stream) 
+        public static void WriteDecimal(decimal val, IBinaryStream stream)
         {
             // Vals are:
             // [0] = lo
@@ -713,14 +661,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             // [2] = high
             // [3] = flags
             int[] vals = decimal.GetBits(val);
-            
+
             // Get start index skipping leading zeros.
             int idx = vals[2] != 0 ? 2 : vals[1] != 0 ? 1 : vals[0] != 0 ? 0 : -1;
-                        
-            // Write scale and negative flag.
-            int scale = (vals[3] & 0x00FF0000) >> 16; 
 
-            stream.WriteInt(((vals[3] & 0x80000000) == 0x80000000) ? (int)((uint)scale | 0x80000000) : scale);
+            // Write scale and negative flag.
+            int scale = (vals[3] & 0x00FF0000) >> 16;
+
+            stream.WriteInt(scale);
+
+            Boolean neg = vals[3] < 0;
 
             if (idx == -1)
             {
@@ -731,7 +681,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 int len = (idx + 1) << 2;
-                
+
                 // Write data.
                 for (int i = idx; i >= 0; i--)
                 {
@@ -741,7 +691,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     int part16 = (curPart >> 16) & 0xFF;
                     int part8 = (curPart >> 8) & 0xFF;
                     int part0 = curPart & 0xFF;
-                    
+
                     if (i == idx)
                     {
                         // Possibly skipping some values here.
@@ -751,12 +701,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len + 1);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len);
 
-                            stream.WriteByte((byte)part24);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part24 | -0x80) : part24));
                             stream.WriteByte((byte)part16);
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
@@ -767,12 +719,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 1);
 
-                            stream.WriteByte((byte)part16);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
                         }
@@ -782,12 +736,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 1);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 2);
 
-                            stream.WriteByte((byte)part8);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
                         }
                         else
@@ -796,12 +752,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 2);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 3);
 
-                            stream.WriteByte((byte)part0);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part0 | -0x80) : part0));
                         }
                     }
                     else
@@ -824,24 +782,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             int scale = stream.ReadInt();
 
-            bool neg;
+            bool neg = false;
 
-            if (scale < 0)
+            byte[] mag = ReadByteArray(stream);
+
+            if ((sbyte)mag[0] < 0)
             {
-                scale = scale & 0x7FFFFFFF;
+                mag[0] &= 0x7F;
 
                 neg = true;
             }
-            else
-                neg = false;
-
-            byte[] mag = ReadByteArray(stream);
 
             if (scale < 0 || scale > 28)
                 throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);
 
             if (mag.Length > 13)
-                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " + 
+                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " +
                     mag.Length * 8);
 
             if (mag.Length == 13 && mag[0] != 0)
@@ -888,7 +844,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeDecimal);
+                    stream.WriteByte(BinaryTypeId.Decimal);
 
                     WriteDecimal(val.Value, stream);
                 }
@@ -925,7 +881,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var bytes = guid.ToByteArray();
 
-            var bytes0 = (byte*) &guid;
+            var bytes0 = (byte*)&guid;
 
             for (var i = 0; i < bytes.Length; i++)
                 if (bytes[i] != bytes0[i])
@@ -946,7 +902,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var ptr = &jguid;
 
-            stream.Write((byte*) ptr, 16);
+            stream.Write((byte*)ptr, 16);
         }
 
         /// <summary>
@@ -954,7 +910,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="val">The value.</param>
         /// <param name="stream">The stream.</param>
-        public static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
+        private static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
         {
             var bytes = val.ToByteArray();
             byte* jBytes = stackalloc byte[16];
@@ -978,7 +934,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             jBytes[13] = bytes[10]; // f
             jBytes[14] = bytes[9]; // e
             jBytes[15] = bytes[8]; // d
-            
+
             stream.Write(jBytes, 16);
         }
 
@@ -988,17 +944,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        public static unsafe Guid? ReadGuidFast(IBinaryStream stream)
+        public static unsafe Guid ReadGuidFast(IBinaryStream stream)
         {
             JavaGuid jguid;
 
-            var ptr = (byte*) &jguid;
+            var ptr = (byte*)&jguid;
 
             stream.Read(ptr, 16);
 
             var dotnetGuid = new GuidAccessor(jguid);
 
-            return *(Guid*) (&dotnetGuid);
+            return *(Guid*)(&dotnetGuid);
         }
 
         /// <summary>
@@ -1006,7 +962,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        public static unsafe Guid? ReadGuidSlow(IBinaryStream stream)
+        public static unsafe Guid ReadGuidSlow(IBinaryStream stream)
         {
             byte* jBytes = stackalloc byte[16];
 
@@ -1050,7 +1006,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeGuid);
+                    stream.WriteByte(BinaryTypeId.Guid);
 
                     WriteGuid(val.Value, stream);
                 }
@@ -1059,36 +1015,38 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /**
-         * <summary>Read GUID array.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID array.</returns>
-         */
-        public static Guid?[] ReadGuidArray(IBinaryStream stream)
-        {
-            int len = stream.ReadInt();
-
-            Guid?[] vals = new Guid?[len];
-
-            for (int i = 0; i < len; i++)
-                vals[i] = ReadGuid(stream);
-
-            return vals;
-        }
-
         /// <summary>
         /// Write array.
         /// </summary>
         /// <param name="val">Array.</param>
         /// <param name="ctx">Write context.</param>
-        /// <param name="elementType">Type of the array element.</param>
-        public static void WriteArray(Array val, BinaryWriter ctx, int elementType = ObjTypeId)
+        /// <param name="elemTypeId">The element type id.</param>
+        public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null)
         {
             Debug.Assert(val != null && ctx != null);
 
             IBinaryStream stream = ctx.Stream;
 
-            stream.WriteInt(elementType);
+            if (elemTypeId != null && elemTypeId != BinaryTypeId.Unregistered)
+            {
+                stream.WriteInt(elemTypeId.Value);
+            }
+            else
+            {
+                var elemType = val.GetType().GetElementType();
+
+                Debug.Assert(elemType != null);
+
+                var typeId = ObjTypeId;
+
+                if (elemType != typeof(object))
+                    typeId = ctx.Marshaller.GetDescriptor(elemType).TypeId;
+
+                stream.WriteInt(typeId);
+
+                if (typeId == BinaryTypeId.Unregistered)
+                    ctx.WriteString(elemType.FullName);
+            }
 
             stream.WriteInt(val.Length);
 
@@ -1111,7 +1069,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 result = ArrayReaders.GetOrAdd(elementType, t =>
                     DelegateConverter.CompileFunc<Func<BinaryReader, bool, object>>(null,
                         MtdhReadArray.MakeGenericMethod(t),
-                        new[] {typeof (BinaryReader), typeof (bool)}, new[] {false, false, true}));
+                        new[] { typeof(BinaryReader), typeof(bool) }, new[] { false, false, true }));
 
             return result(ctx, typed);
         }
@@ -1129,7 +1087,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             var pos = stream.Position;
 
             if (typed)
-                stream.ReadInt();
+            {
+                int typeId = stream.ReadInt();
+
+                if (typeId == BinaryTypeId.Unregistered)
+                    ctx.ReadString();
+            }
 
             int len = stream.ReadInt();
 
@@ -1168,22 +1131,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static void WriteCollection(ICollection val, BinaryWriter ctx)
         {
             var valType = val.GetType();
-            
+
             byte colType;
 
             if (valType.IsGenericType)
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                if (genType == typeof (List<>))
+                if (genType == typeof(List<>))
                     colType = CollectionArrayList;
-                else if (genType == typeof (LinkedList<>))
+                else if (genType == typeof(LinkedList<>))
                     colType = CollectionLinkedList;
                 else
                     colType = CollectionCustom;
             }
             else
-                colType = valType == typeof (ArrayList) ? CollectionArrayList : CollectionCustom;
+                colType = valType == typeof(ArrayList) ? CollectionArrayList : CollectionCustom;
 
             WriteCollection(val, ctx, colType);
         }
@@ -1237,7 +1200,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
-                adder = (col, elem) => ((ArrayList) col).Add(elem);
+                adder = (col, elem) => ((ArrayList)col).Add(elem);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
@@ -1260,10 +1223,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
+                dictType = genType == typeof(Dictionary<,>) ? MapHashMap : MapCustom;
             }
             else
-                dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
+                dictType = valType == typeof(Hashtable) ? MapHashMap : MapCustom;
 
             WriteDictionary(val, ctx, dictType);
         }
@@ -1332,36 +1295,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write enum.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="val">Value.</param>
-        public static void WriteEnum<T>(BinaryWriter writer, T val)
-        {
-            writer.WriteInt(GetEnumTypeId(val.GetType(), writer.Marshaller));
-            writer.WriteInt(TypeCaster<int>.Cast(val));
-        }
-
-        /// <summary>
-        /// Gets the enum type identifier.
-        /// </summary>
-        /// <param name="enumType">The enum type.</param>
-        /// <param name="marshaller">The marshaller.</param>
-        /// <returns>Enum type id.</returns>
-        public static int GetEnumTypeId(Type enumType, Marshaller marshaller)
-        {
-            if (Enum.GetUnderlyingType(enumType) == TypInt)
-            {
-                var desc = marshaller.GetDescriptor(enumType);
-
-                return desc == null ? ObjTypeId : desc.TypeId;
-            }
-
-            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                                            enumType.Name);
-        }
-
-        /// <summary>
         /// Gets the enum value by type id and int representation.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
@@ -1375,10 +1308,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return TypeCaster<T>.Cast(value);
 
             // All enums are user types
-            var desc = marsh.GetDescriptor(true, typeId);
+            var desc = marsh.GetDescriptor(true, typeId, true);
 
             if (desc == null || desc.Type == null)
-                throw new BinaryObjectException("Unknown enum type id: " + typeId);
+                return TypeCaster<T>.Cast(value);
 
             return (T)Enum.ToObject(desc.Type, value);
         }
@@ -1399,12 +1332,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Get string hash code.</summary>
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */
-        public static int GetStringHashCode(string val)
+        /// <summary>
+        /// Gets the string hash code using Java algorithm, converting English letters to lower case.
+        /// </summary>
+        public static int GetStringHashCodeLowerCase(string val)
         {
             if (val == null)
                 return 0;
@@ -1421,50 +1352,61 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hash;
         }
 
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
+        private static int GetStringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+
+            int hash = 0;
+
+            unchecked
+            {
+                // ReSharper disable once LoopCanBeConvertedToQuery (performance)
+                foreach (var c in val)
+                    hash = 31 * hash + c;
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Gets the cache identifier.
+        /// </summary>
+        public static int GetCacheId(string cacheName)
+        {
+            return string.IsNullOrEmpty(cacheName) ? 1 : GetStringHashCode(cacheName);
+        }
+
+        /// <summary>
+        /// Cleans the name of the field.
+        /// </summary>
         public static string CleanFieldName(string fieldName)
         {
+            // C# auto property backing field:
             if (fieldName.StartsWith("<", StringComparison.Ordinal)
                 && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
+            {
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
-            
+            }
+
+            // F# backing field:
+            if (fieldName.EndsWith("@", StringComparison.Ordinal))
+            {
+                return fieldName.Substring(0, fieldName.Length - 1);
+            }
+
             return fieldName;
         }
 
-        /**
-         * <summary>Convert type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertTypeName(string typeName, IBinaryNameMapper converter)
-        {
-            var typeName0 = typeName;
-
-            try
-            {
-                if (converter != null)
-                    typeName = converter.GetTypeName(typeName);
-            }
-            catch (Exception e)
-            {
-                throw new BinaryObjectException("Failed to convert type name due to converter exception " +
-                    "[typeName=" + typeName + ", converter=" + converter + ']', e);
-            }
-
-            if (typeName == null)
-                throw new BinaryObjectException("Name converter returned null name for type [typeName=" +
-                    typeName0 + ", converter=" + converter + "]");
-
-            return typeName;
-        }
-
-        /**
-         * <summary>Convert field name.</summary>
-         * <param name="fieldName">Field name.</param>
-         * <param name="converter">Converter.</param>
-         * <returns>Converted name.</returns>
-         */
-        public static string ConvertFieldName(string fieldName, IBinaryNameMapper converter)
+        /// <summary>
+        /// Convert field name.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="converter">Converter.</param>
+        private static string ConvertFieldName(string fieldName, IBinaryNameMapper converter)
         {
             var fieldName0 = fieldName;
 
@@ -1486,67 +1428,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             return fieldName;
         }
 
-        /**
-         * <summary>Extract simple type name.</summary>
-         * <param name="typeName">Type name.</param>
-         * <returns>Simple type name.</returns>
-         */
-        public static string SimpleTypeName(string typeName)
-        {
-            int idx = typeName.LastIndexOf('.');
-
-            return idx < 0 ? typeName : typeName.Substring(idx + 1);
-        }
-
-        /**
-         * <summary>Resolve type ID.</summary>
-         * <param name="typeName">Type name.</param>
-         * <param name="nameMapper">Name mapper.</param>
-         * <param name="idMapper">ID mapper.</param>
-         */
-        public static int TypeId(string typeName, IBinaryNameMapper nameMapper,
-            IBinaryIdMapper idMapper)
-        {
-            Debug.Assert(typeName != null);
-
-            typeName = ConvertTypeName(typeName, nameMapper);
-
-            int id = 0;
-
-            if (idMapper != null)
-            {
-                try
-                {
-                    id = idMapper.GetTypeId(typeName);
-                }
-                catch (Exception e)
-                {
-                    throw new BinaryObjectException("Failed to resolve type ID due to ID mapper exception " +
-                        "[typeName=" + typeName + ", idMapper=" + idMapper + ']', e);
-                }
-            }
-
-            if (id == 0)
-                id = GetStringHashCode(typeName);
-
-            return id;
-        }
-
         /// <summary>
-        /// Gets the name of the type.
+        /// Gets the SQL name of the type.
         /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
-        /// </returns>
-        public static string GetTypeName(Type type)
+        public static string GetSqlTypeName(Type type)
         {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
+            // SQL always uses simple type name without namespace, parent class, etc.
+            return type.FullName;
         }
 
         /**
@@ -1559,7 +1447,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static int FieldId(int typeId, string fieldName, IBinaryNameMapper nameMapper,
             IBinaryIdMapper idMapper)
         {
-            Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
 
             fieldName = ConvertFieldName(fieldName, nameMapper);
@@ -1580,38 +1467,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (id == 0)
-                id = GetStringHashCode(fieldName);
+                id = GetStringHashCodeLowerCase(fieldName);
 
             if (id == 0)
-                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " + 
+                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
                     "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
 
             return id;
-        }
-
-        /// <summary>
-        /// Compare contents of two byte array chunks.
-        /// </summary>
-        /// <param name="arr1">Array 1.</param>
-        /// <param name="offset1">Offset 1.</param>
-        /// <param name="len1">Length 1.</param>
-        /// <param name="arr2">Array 2.</param>
-        /// <param name="offset2">Offset 2.</param>
-        /// <param name="len2">Length 2.</param>
-        /// <returns>True if array chunks are equal.</returns>
-        public static bool CompareArrays(byte[] arr1, int offset1, int len1, byte[] arr2, int offset2, int len2)
-        {
-            if (len1 == len2)
-            {
-                for (int i = 0; i < len1; i++)
-                {
-                    if (arr1[offset1 + i] != arr2[offset2 + i])
-                        return false;
-                }
-
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
@@ -1673,7 +1535,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
+                                              reader.ReadString());
 
             return null;
         }
@@ -1697,14 +1560,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void ToJavaDate(DateTime date, out long high, out int low)
         {
             if (date.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException(
+            {
+                throw new BinaryObjectException(
                     "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+            }
 
             long diff = date.Ticks - JavaDateTicks;
 
             high = diff / TimeSpan.TicksPerMillisecond;
 
-            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
+            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100;
         }
 
         /// <summary>
@@ -1765,13 +1630,73 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // Read the rest.
-                cfg.DefaultNameMapper = CreateInstance<IBinaryNameMapper>(reader);
-                cfg.DefaultIdMapper = CreateInstance<IBinaryIdMapper>(reader);
-                cfg.DefaultSerializer = CreateInstance<IBinarySerializer>(reader);
-                cfg.DefaultKeepDeserialized = reader.ReadBoolean();
+                cfg.NameMapper = CreateInstance<IBinaryNameMapper>(reader);
+                cfg.IdMapper = CreateInstance<IBinaryIdMapper>(reader);
+                cfg.Serializer = CreateInstance<IBinarySerializer>(reader);
+                cfg.KeepDeserialized = reader.ReadBoolean();
             }
             else
                 cfg = null;
+        }
+
+        /// <summary>
+        /// Gets the unsupported type exception.
+        /// </summary>
+        public static BinaryObjectException GetUnsupportedTypeException(Type type, object obj)
+        {
+            return new BinaryObjectException(string.Format(
+                "Unsupported object type [type={0}, object={1}].\nSpecified type " +
+                "can not be serialized by Ignite: it is neither [Serializable], " +
+                "nor registered in IgniteConfiguration.BinaryConfiguration." +
+                "\nSee https://apacheignite-net.readme.io/docs/serialization for more details.", type, obj));
+        }
+
+        /// <summary>
+        /// Reinterprets int bits as a float.
+        /// </summary>
+        public static unsafe float IntToFloatBits(int val)
+        {
+            return *(float*)&val;
+        }
+
+        /// <summary>
+        /// Reinterprets long bits as a double.
+        /// </summary>
+        public static unsafe double LongToDoubleBits(long val)
+        {
+            return *(double*)&val;
+        }
+
+        /// <summary>
+        /// Determines whether specified type is Ignite-compatible enum (value fits into 4 bytes).
+        /// </summary>
+        public static bool IsIgniteEnum(Type type)
+        {
+            Debug.Assert(type != null);
+
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (!type.IsEnum)
+                return false;
+
+            var enumType = Enum.GetUnderlyingType(type);
+
+            return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte) 
+                || enumType == typeof(short) || enumType == typeof(ushort) || enumType == typeof(uint);
+        }
+
+        /// <summary>
+        /// Converts long to timespan.
+        /// </summary>
+        public static TimeSpan LongToTimeSpan(long ms)
+        {
+            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
+                return TimeSpan.MaxValue;
+
+            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
+                return TimeSpan.MinValue;
+
+            return TimeSpan.FromMilliseconds(ms);
         }
 
         /// <summary>
@@ -1837,7 +1762,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             [FieldOffset(0)] public readonly ulong CBA;
             [FieldOffset(8)] public readonly ulong KJIHGFED;
             [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
-            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
+            [FieldOffset(0)]
+            public unsafe fixed byte Bytes[16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.

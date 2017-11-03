@@ -18,6 +18,10 @@
 package org.apache.ignite.cache.affinity;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,14 +46,17 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Backup count. */
-    private static final int BACKUPS = 1;
-
     /** Split attribute name. */
     private static final String SPLIT_ATTRIBUTE_NAME = "split-attribute";
 
     /** Split attribute value. */
     private String splitAttrVal;
+
+    /** Attribute value for first node group. */
+    public static final String FIRST_NODE_GROUP = "A";
+
+    /** Backup count. */
+    private int backups = 1;
 
     /** Test backup filter. */
     protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
@@ -61,13 +69,64 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
             }
         };
 
+    /** Test backup filter. */
+    protected static final IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter =
+        new IgniteBiPredicate<ClusterNode, List<ClusterNode>>() {
+            @Override public boolean apply(ClusterNode node, List<ClusterNode> assigned) {
+                assert node != null : "primary is null";
+                assert assigned != null : "backup is null";
+
+                Map<String, Integer> backupAssignedAttribute = getAttributeStatistic(assigned);
+
+                String nodeAttributeVal = node.attribute(SPLIT_ATTRIBUTE_NAME);
+
+                if (FIRST_NODE_GROUP.equals(nodeAttributeVal)
+                    && backupAssignedAttribute.get(FIRST_NODE_GROUP) < 2)
+                    return true;
+
+                return backupAssignedAttribute.get(nodeAttributeVal).equals(0);
+            }
+        };
+
+    /**
+     * @param nodes List of cluster nodes.
+     * @return Statistic.
+     */
+    @NotNull private static Map<String, Integer> getAttributeStatistic(Collection<ClusterNode> nodes) {
+        Map<String, Integer> backupAssignedAttribute = new HashMap<>();
+
+        backupAssignedAttribute.put(FIRST_NODE_GROUP, 0);
+
+        backupAssignedAttribute.put("B", 0);
+
+        backupAssignedAttribute.put("C", 0);
+
+        for (ClusterNode assignedNode: nodes) {
+            if (assignedNode == null)
+                continue;
+
+            String val = assignedNode.attribute(SPLIT_ATTRIBUTE_NAME);
+
+            Integer cnt = backupAssignedAttribute.get(val);
+
+            backupAssignedAttribute.put(val, cnt + 1);
+        }
+
+        return backupAssignedAttribute;
+    }
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setBackups(BACKUPS);
-        cacheCfg.setAffinity(affinityFunction());
+        cacheCfg.setBackups(backups);
+
+        if (backups < 2)
+            cacheCfg.setAffinity(affinityFunction());
+        else
+            cacheCfg.setAffinity(affinityFunctionWithAffinityBackupFilter());
+
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -75,7 +134,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);
@@ -90,9 +149,16 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     protected abstract AffinityFunction affinityFunction();
 
     /**
+     * @return Affinity function for test.
+     */
+    protected abstract AffinityFunction affinityFunctionWithAffinityBackupFilter();
+
+    /**
      * @throws Exception If failed.
      */
     public void testPartitionDistribution() throws Exception {
+        backups = 1;
+
         try {
             for (int i = 0; i < 3; i++) {
                 splitAttrVal = "A";
@@ -118,11 +184,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
      */
     @SuppressWarnings("ConstantConditions")
     private void checkPartitions() throws Exception {
-        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
 
         int partCnt = aff.partitions();
 
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < partCnt; i++) {
             Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
@@ -133,6 +199,64 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
             ClusterNode backup = F.last(nodes);
 
             assertFalse(F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME)));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionDistributionWithAffinityBackupFilter() throws Exception {
+        backups = 3;
+
+        try {
+            for (int i = 0; i < 2; i++) {
+                splitAttrVal = FIRST_NODE_GROUP;
+
+                startGrid(4 * i);
+
+                startGrid(4 * i + 3);
+
+                splitAttrVal = "B";
+
+                startGrid(4 * i + 1);
+
+                splitAttrVal = "C";
+
+                startGrid(4 * i + 2);
+
+                awaitPartitionMapExchange();
+
+                checkPartitionsWithAffinityBackupFilter();
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private void checkPartitionsWithAffinityBackupFilter() throws Exception {
+        AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();
+
+        int partCnt = aff.partitions();
+
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < partCnt; i++) {
+            Collection<ClusterNode> nodes = affinity(cache).mapKeyToPrimaryAndBackups(i);
+
+            assertEquals(backups + 1, nodes.size());
+
+            Map<String, Integer> stat = getAttributeStatistic(nodes);
+
+            assertEquals(stat.get(FIRST_NODE_GROUP), new Integer(2));
+
+            assertEquals(stat.get("B"), new Integer(1));
+
+            assertEquals(stat.get("C"), new Integer(1));
         }
     }
 }

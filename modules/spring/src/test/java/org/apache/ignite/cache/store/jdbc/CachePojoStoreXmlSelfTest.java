@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import java.net.URL;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -25,13 +26,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
- * Tests for {@code PojoCacheStore} created via XML.
+ * Tests for {@link CacheJdbcPojoStore} created via XML.
  */
 public class CachePojoStoreXmlSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        String path = builtinKeys ?  "modules/spring/src/test/config/jdbc-pojo-store-builtin.xml" :
-            "modules/spring/src/test/config/jdbc-pojo-store-obj.xml";
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        String path = builtinKeys
+            ? "modules/spring/src/test/config/jdbc-pojo-store-builtin.xml"
+            : "modules/spring/src/test/config/jdbc-pojo-store-obj.xml";
 
         URL url = U.resolveIgniteUrl(path);
 
@@ -39,7 +41,12 @@ public class CachePojoStoreXmlSelfTest extends CacheJdbcPojoStoreAbstractSelfTes
 
         IgniteConfiguration cfg = spring.loadConfigurations(url).get1().iterator().next();
 
-        cfg.setGridName(gridName);
+        if (sqlEscapeAll()) {
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
+                ((CacheJdbcPojoStoreFactory)ccfg.getCacheStoreFactory()).setSqlEscapeAll(true);
+        }
+
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
     }

@@ -147,6 +147,16 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         assertFalse(storeMap.containsKey(key));
 
         assertNull(cache.get(key));
+
+        ldrCallCnt.set(0);
+
+        cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
+            @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+                return null;
+            }
+        });
+
+        checkCalls(1, 0);
     }
 
     /**

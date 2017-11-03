@@ -51,16 +51,16 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     protected static final String TX_CACHE = "TX_CACHE";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg1.setName(ATOMIC_CACHE);
         ccfg1.setBackups(1);
         ccfg1.setAtomicityMode(ATOMIC);
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg2.setName(TX_CACHE);
         ccfg2.setBackups(1);

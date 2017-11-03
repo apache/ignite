@@ -25,14 +25,18 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -42,7 +46,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
@@ -83,62 +86,62 @@ public class IgniteNode implements BenchmarkServer {
 
         assert c != null;
 
+        if (args.cleanWorkDirectory())
+            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
+
         ApplicationContext appCtx = tup.get2();
 
         assert appCtx != null;
 
-        for (CacheConfiguration cc : c.getCacheConfiguration()) {
-            // IgniteNode can not run in CLIENT_ONLY mode,
-            // except the case when it's used inside IgniteAbstractBenchmark.
-            boolean cl = args.isClientOnly() && (args.isNearCache() || clientMode);
+        CacheConfiguration[] ccfgs = c.getCacheConfiguration();
 
-            if (cl)
-                c.setClientMode(true);
+        if (ccfgs != null) {
+            for (CacheConfiguration cc : ccfgs) {
+                // IgniteNode can not run in CLIENT_ONLY mode,
+                // except the case when it's used inside IgniteAbstractBenchmark.
+                boolean cl = args.isClientOnly() && (args.isNearCache() || clientMode);
 
-            if (args.isNearCache()) {
-                NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+                if (cl)
+                    c.setClientMode(true);
 
-                if (args.getNearCacheSize() != 0)
-                    nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(args.getNearCacheSize()));
+                if (args.isNearCache()) {
+                    NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                cc.setNearConfiguration(nearCfg);
+                    if (args.getNearCacheSize() != 0)
+                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(args.getNearCacheSize()));
+
+                    cc.setNearConfiguration(nearCfg);
+                }
+
+                if (args.cacheGroup() != null)
+                    cc.setGroupName(args.cacheGroup());
+
+                cc.setWriteSynchronizationMode(args.syncMode());
+
+                cc.setBackups(args.backups());
+
+                if (args.restTcpPort() != 0) {
+                    ConnectorConfiguration ccc = new ConnectorConfiguration();
+
+                    ccc.setPort(args.restTcpPort());
+
+                    if (args.restTcpHost() != null)
+                        ccc.setHost(args.restTcpHost());
+
+                    c.setConnectorConfiguration(ccc);
+                }
+
+                cc.setReadThrough(args.isStoreEnabled());
+
+                cc.setWriteThrough(args.isStoreEnabled());
+
+                cc.setWriteBehindEnabled(args.isWriteBehind());
+
+                BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
             }
-
-            cc.setWriteSynchronizationMode(args.syncMode());
-
-            if (args.orderMode() != null)
-                cc.setAtomicWriteOrderMode(args.orderMode());
-
-            cc.setBackups(args.backups());
-
-            if (args.restTcpPort() != 0) {
-                ConnectorConfiguration ccc = new ConnectorConfiguration();
-
-                ccc.setPort(args.restTcpPort());
-
-                if (args.restTcpHost() != null)
-                    ccc.setHost(args.restTcpHost());
-
-                c.setConnectorConfiguration(ccc);
-            }
-
-            if (args.isOffHeap()) {
-                cc.setOffHeapMaxMemory(0);
-
-                if (args.isOffheapValues())
-                    cc.setMemoryMode(OFFHEAP_VALUES);
-                else
-                    cc.setEvictionPolicy(new LruEvictionPolicy(50000));
-            }
-
-            cc.setReadThrough(args.isStoreEnabled());
-
-            cc.setWriteThrough(args.isStoreEnabled());
-
-            cc.setWriteBehindEnabled(args.isWriteBehind());
-
-            BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
         }
+        else
+            BenchmarkUtils.println(cfg, "There are no caches configured");
 
         TransactionConfiguration tc = c.getTransactionConfiguration();
 
@@ -152,6 +155,26 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
+        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
+            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
+
+            if (memCfg == null) {
+                memCfg = new DataStorageConfiguration();
+
+                c.setDataStorageConfiguration(memCfg);
+            }
+
+            memCfg.setPageSize(args.getPageSize());
+        }
+
+        if (args.persistentStoreEnabled()) {
+            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+
+            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+            c.setDataStorageConfiguration(pcCfg);
+        }
+
         ignite = IgniteSpring.start(c, appCtx);
 
         BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
@@ -162,7 +185,7 @@ public class IgniteNode implements BenchmarkServer {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
         throws Exception {
         URL url;
 

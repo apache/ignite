@@ -22,29 +22,37 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Cache count down latch self test.
@@ -73,6 +81,45 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     }
 
     /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            IgniteCountDownLatch latch = ignite.countDownLatch("latch1", 10, false, true);
+
+            assertNotNull(latch);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                assertEquals(8, latch.countDown(2));
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(7, latch.countDown(1));
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     private void checkLatch() throws Exception {
@@ -88,9 +135,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         assertEquals(2, latch1.count());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -125,8 +170,6 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
             }
         });
 
-        IgniteFuture<Object> fut = comp.future();
-
         Thread.sleep(3000);
 
         assert latch1.countDown() == 1;
@@ -144,7 +187,6 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
     /**
      * @param latch Latch.
-     *
      * @throws Exception If failed.
      */
     protected void checkRemovedLatch(final IgniteCountDownLatch latch) throws Exception {
@@ -236,8 +278,8 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      * @param latchName Latch name.
      * @param cnt Count.
      * @param autoDel Auto delete flag.
-     * @throws Exception If failed.
      * @return New latch.
+     * @throws Exception If failed.
      */
     private IgniteCountDownLatch createLatch(String latchName, int cnt, boolean autoDel)
         throws Exception {
@@ -274,7 +316,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         // Ensure latch is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().countDownLatch(latchName, 10, true, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().countDownLatch(latchName, null, 10, true, false));
 
         checkRemovedLatch(latch);
     }
@@ -283,8 +325,6 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      * @throws Exception If failed.
      */
     public void testLatchMultinode1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1802");
-
         if (gridCount() == 1)
             return;
 
@@ -329,6 +369,58 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get(30_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLatchBroadcast() throws Exception {
+        Ignite ignite = grid(0);
+        ClusterGroup srvsGrp = ignite.cluster().forServers();
+
+        int numOfSrvs = srvsGrp.nodes().size();
+
+        ignite.destroyCache("testCache");
+        IgniteCache<Object, Object> cache = ignite.createCache("testCache");
+
+        for (ClusterNode node : srvsGrp.nodes())
+            cache.put(String.valueOf(node.id()), 0);
+
+        for (int i = 0; i < 500; i++) {
+            IgniteCountDownLatch latch1 = createLatch1(ignite, numOfSrvs);
+            IgniteCountDownLatch latch2 = createLatch2(ignite, numOfSrvs);
+
+            ignite.compute(srvsGrp).broadcast(new IgniteRunnableJob(latch1, latch2, i));
+            assertTrue(latch2.await(10000));
+        }
+    }
+
+    /**
+     * @param client Ignite client.
+     * @param numOfSrvs Number of server nodes.
+     * @return Ignite latch.
+     */
+    private IgniteCountDownLatch createLatch1(Ignite client, int numOfSrvs) {
+        return client.countDownLatch(
+            "testName1", // Latch name.
+            numOfSrvs,          // Initial count.
+            true,        // Auto remove, when counter has reached zero.
+            true         // Create if it does not exist.
+        );
+    }
+
+    /**
+     * @param client Ignite client.
+     * @param numOfSrvs Number of server nodes.
+     * @return Ignite latch.
+     */
+    private IgniteCountDownLatch createLatch2(Ignite client, int numOfSrvs) {
+        return client.countDownLatch(
+            "testName2", // Latch name.
+            numOfSrvs,          // Initial count.
+            true,        // Auto remove, when counter has reached zero.
+            true         // Create if it does not exist.
+        );
     }
 
     /**
@@ -390,5 +482,100 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
+    }
+
+    /**
+     * Ignite job
+     */
+    public class IgniteRunnableJob implements IgniteRunnable {
+
+        /**
+         * Ignite.
+         */
+        @IgniteInstanceResource
+        Ignite igniteInstance;
+
+        /**
+         * Number of iteration.
+         */
+        protected final int iteration;
+
+        /**
+         * Ignite latch 1.
+         */
+        private final IgniteCountDownLatch latch1;
+
+        /**
+         * Ignite latch 2.
+         */
+        private final IgniteCountDownLatch latch2;
+
+        /**
+         * @param latch1 Ignite latch 1.
+         * @param latch2 Ignite latch 2.
+         * @param iteration Number of iteration.
+         */
+        public IgniteRunnableJob(IgniteCountDownLatch latch1, IgniteCountDownLatch latch2, int iteration) {
+            this.iteration = iteration;
+            this.latch1 = latch1;
+            this.latch2 = latch2;
+        }
+
+        /**
+         * @return Ignite latch.
+         */
+        IgniteCountDownLatch createLatch1() {
+            return latch1;
+        }
+
+        /**
+         * @return Ignite latch.
+         */
+        IgniteCountDownLatch createLatch2() {
+            return latch2;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+
+            IgniteCountDownLatch latch1 = createLatch1();
+            IgniteCountDownLatch latch2 = createLatch2();
+
+            IgniteCache<Object, Object> cache = igniteInstance.cache("testCache");
+
+            for (ClusterNode node : igniteInstance.cluster().forServers().nodes()) {
+                Integer val = (Integer)cache.get(String.valueOf(node.id()));
+                assertEquals(val, (Integer)iteration);
+            }
+
+            latch1.countDown();
+
+            assertTrue(latch1.await(10000));
+
+            cache.put(getUID(), (iteration + 1));
+
+            latch2.countDown();
+
+        }
+
+        /**
+         * @return Node UUID as string.
+         */
+        String getUID() {
+            String id = "";
+            Collection<ClusterNode> nodes = igniteInstance.cluster().forLocal().nodes();
+            for (ClusterNode node : nodes) {
+                if (node.isLocal())
+                    id = String.valueOf(node.id());
+            }
+            return id;
+        }
+
+        /**
+         * @return Ignite.
+         */
+        public Ignite igniteInstance() {
+            return igniteInstance;
+        }
     }
 }

@@ -21,6 +21,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 
 /**
@@ -38,5 +39,11 @@ public class S3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTe
         spi.setBucketNameSuffix("unit-test-bucket");
 
         super.spiConfigure(spi);
+    }
+
+    /** {@inheritDoc} */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Override public void testStartStop() throws Exception {
+        super.testStartStop();
     }
 }

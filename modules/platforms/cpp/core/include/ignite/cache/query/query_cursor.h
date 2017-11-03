@@ -42,7 +42,13 @@ namespace ignite
              * Query cursor class template.
              *
              * Both key and value types should be default-constructable,
-             * copy-constructable and assignable.
+             * copy-constructable and assignable. Also BinaryType class
+             * template should be specialized for both types.
+             *
+             * This class implemented as a reference to an implementation so copying
+             * of this class instance will only create another reference to the same
+             * underlying object. Underlying object released automatically once all
+             * the instances are destructed.
              */
             template<typename K, typename V>
             class QueryCursor
@@ -73,11 +79,12 @@ namespace ignite
 
                 /**
                  * Check whether next entry exists.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -105,7 +112,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->HasNext(&err);
+                        return impl0->HasNext(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
@@ -117,11 +124,12 @@ namespace ignite
 
                 /**
                  * Get next entry.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 CacheEntry<K, V> GetNext()
                 {
@@ -152,7 +160,7 @@ namespace ignite
                     if (impl0) {
                         impl::Out2Operation<K, V> outOp;
 
-                        impl0->GetNext(outOp, &err);
+                        impl0->GetNext(outOp, err);
 
                         if (err.GetCode() == IgniteError::IGNITE_SUCCESS) 
                         {
@@ -175,13 +183,14 @@ namespace ignite
 
                 /**
                  * Get all entries.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
-                 * @param Vector where query entries will be stored.
+                 * @param res Vector where query entries will be stored.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res)
+                void GetAll(std::vector<CacheEntry<K, V> >& res)
                 {
                     IgniteError err;
 
@@ -196,21 +205,45 @@ namespace ignite
                  *
                  * This method should only be used on the valid instance.
                  * 
-                 * @param Vector where query entries will be stored.
+                 * @param res Vector where query entries will be stored.
                  * @param err Used to set operation result.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res, IgniteError& err)
+                void GetAll(std::vector<CacheEntry<K, V> >& res, IgniteError& err)
                 {
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0) {
-                        impl::OutQueryGetAllOperation<K, V> outOp(&res);
+                        impl::OutQueryGetAllOperation<K, V> outOp(res);
 
-                        impl0->GetAll(outOp, &err);
+                        impl0->GetAll(outOp, err);
                     }
                     else
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Instance is not usable (did you check for error?).");
+                }
+
+                /**
+                 * Get all entries.
+                 *
+                 * This method should only be used on the valid instance.
+                 * 
+                 * @param iter Output iterator.
+                 */
+                template<typename OutIter>
+                void GetAll(OutIter iter)
+                {
+                    impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
+
+                    if (impl0) {
+                        impl::OutQueryGetAllOperationIter<K, V, OutIter> outOp(iter);
+
+                        impl0->GetAll(outOp);
+                    }
+                    else
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Instance is not usable (did you check for error?).");
+                    }
                 }
 
                 /**

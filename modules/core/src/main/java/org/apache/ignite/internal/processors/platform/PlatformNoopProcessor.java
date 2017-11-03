@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op processor.
@@ -61,118 +60,8 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget transactions() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget projection() throws IgniteCheckedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget compute(PlatformTarget grp) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget message(PlatformTarget grp) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget events(PlatformTarget grp) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget services(PlatformTarget grp) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget extensions() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void getIgniteConfiguration(long memPtr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void getCacheNames(long memPtr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
-        return null;
     }
 }

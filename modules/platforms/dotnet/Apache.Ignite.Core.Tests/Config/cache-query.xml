@@ -28,7 +28,6 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
-        <property name="lateAffinityAssignment" value="false"/>
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
@@ -57,24 +56,40 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="QueryPerson"/>
-                                <property name="ascendingFields">
-                                    <map>
-                                        <entry key="age" value="java.lang.Integer"/>
-                                    </map>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="Apache.Ignite.Core.Tests.Cache.Query.QueryPerson"/>
+                                <property name="fields">
+                                    <util:map map-class="java.util.LinkedHashMap">
+                                        <entry key="age" value="int" />
+                                        <entry key="name" value="java.lang.String" />
+                                    </util:map>
                                 </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="name" value="java.lang.String"/>
-                                        <entry key="age" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
+                                <property name="notNullFields">
                                     <list>
                                         <value>name</value>
+                                    </list>
+                                </property>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="true"/>
+                                                </map>
+                                            </property>
+                                            <property name="indexType" value="FULLTEXT"/>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                            <property name="indexType" value="SORTED"/>
+                                            <property name="inlineSize" value="2345"/>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>

@@ -36,7 +36,7 @@ public class GridSqlFunction extends GridSqlElement {
     /** */
     private static final Map<String, GridSqlFunctionType> TYPE_MAP = new HashMap<>();
 
-    /**
+    /*
      *
      */
     static {
@@ -66,7 +66,7 @@ public class GridSqlFunction extends GridSqlElement {
      * @param name Name.
      */
     private GridSqlFunction(String schema, GridSqlFunctionType type, String name) {
-        super(new ArrayList<GridSqlElement>());
+        super(new ArrayList<GridSqlAst>());
 
         if (name == null)
             throw new NullPointerException("name");
@@ -94,18 +94,21 @@ public class GridSqlFunction extends GridSqlElement {
         if (schema != null)
             buff.append(Parser.quoteIdentifier(schema)).append('.');
 
-        buff.append(Parser.quoteIdentifier(name));
+        // We don't need to quote identifier as long as H2 never does so with function names when generating plan SQL.
+        // On the other hand, quoting identifiers that also serve as keywords (like CURRENT_DATE() and CURRENT_DATE)
+        // turns CURRENT_DATE() into "CURRENT_DATE"(), which is not good.
+        buff.append(name);
 
         if (type == CASE) {
             buff.append(' ').append(child().getSQL());
 
-            for (int i = 1, len = children.size() - 1; i < len; i += 2) {
+            for (int i = 1, len = size() - 1; i < len; i += 2) {
                 buff.append(" WHEN ").append(child(i).getSQL());
                 buff.append(" THEN ").append(child(i + 1).getSQL());
             }
 
-            if ((children.size() & 1) == 0)
-                buff.append(" ELSE ").append(child(children.size() - 1).getSQL());
+            if ((size() & 1) == 0)
+                buff.append(" ELSE ").append(child(size() - 1).getSQL());
 
             return buff.append(" END").toString();
         }
@@ -134,11 +137,13 @@ public class GridSqlFunction extends GridSqlElement {
                 break;
 
             case TABLE:
-                for (GridSqlElement e : children) {
+                for (int i = 0; i < size(); i++) {
                     buff.appendExceptFirst(", ");
 
+                    GridSqlElement e = child(i);
+
                     // id int = ?, name varchar = ('aaa', 'bbb')
-                    buff.append(((GridSqlAlias)e).alias())
+                    buff.append(Parser.quoteIdentifier(((GridSqlAlias)e).alias()))
                         .append(' ')
                         .append(e.resultType().sql())
                         .append('=')
@@ -148,9 +153,9 @@ public class GridSqlFunction extends GridSqlElement {
                 break;
 
             default:
-                for (GridSqlElement e : children) {
+                for (int i = 0; i < size(); i++) {
                     buff.appendExceptFirst(", ");
-                    buff.append(e.getSQL());
+                    buff.append(child(i).getSQL());
                 }
         }
 

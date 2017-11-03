@@ -35,7 +35,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
@@ -43,11 +43,11 @@ import scala.Tuple2;
  * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
 public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
-    /** For grid names generation */
+    /** For Ignite instance names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);
 
-    /** Grid names. */
-    private static ThreadLocal<Integer> gridNames = new ThreadLocal<Integer>() {
+    /** Ignite instance names. */
+    private static ThreadLocal<Integer> igniteInstanceNames = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return cntr.getAndIncrement();
         }
@@ -106,6 +106,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /**
      * Creates default spark context
+     *
+     * @return Context.
      */
     private JavaSparkContext createContext() {
         SparkConf conf = new SparkConf();
@@ -127,7 +129,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F));
+                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true);
 
             Ignite ignite = ic.ignite();
 
@@ -186,8 +188,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
-        fail("IGNITE-3009");
-
         JavaSparkContext sc = createContext();
 
         JavaIgniteContext<String, Entity> ic = null;
@@ -198,10 +198,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
             int cnt = 1001;
-
-            List<Integer> numbers = F.range(0, cnt);
-
-            cache.savePairs(sc.parallelize(numbers, GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -238,14 +235,14 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
-            DataFrame df =
+            Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
 
             df.printSchema();
 
-            Row[] res = df.collect();
+            Row[] res = (Row[])df.collect();
 
             assertEquals("Invalid result length", 1, res.length);
             assertEquals("Invalid result", 50, res[0].get(0));
@@ -254,11 +251,11 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             Column exp = new Column("NAME").equalTo("name50").and(new Column("SALARY").equalTo(5000));
 
-            DataFrame df0 = cache.sql("select id, name, salary from Entity").where(exp);
+            Dataset<Row> df0 = cache.sql("select id, name, salary from Entity").where(exp);
 
             df.printSchema();
 
-            Row[] res0 = df0.collect();
+            Row[] res0 = (Row[])df0.collect();
 
             assertEquals("Invalid result length", 1, res0.length);
             assertEquals("Invalid result", 50, res0[0].get(0));
@@ -279,10 +276,12 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param client Client.
+     * @throws Exception If failed.
+     * @return Confiuration.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, boolean client) throws Exception {
+    private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -295,16 +294,18 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
     }
 
     /**
      * Creates cache configuration.
+     *
+     * @return Cache configuration.
      */
     private static CacheConfiguration<Object, Object> cacheConfiguration() {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(1);
 
@@ -322,7 +323,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("worker-" + gridNames.get(), false);
+                return getConfiguration("worker-" + igniteInstanceNames.get(), false);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

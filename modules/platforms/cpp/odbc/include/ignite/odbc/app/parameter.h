@@ -22,12 +22,10 @@
 
 #include <map>
 
-#include <ignite/guid.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/type_traits.h"
 
 namespace ignite
 {
@@ -70,7 +68,7 @@ namespace ignite
                 ~Parameter();
 
                 /**
-                 * Copy assigment operator.
+                 * Assignment operator.
                  *
                  * @param other Other instance.
                  * @return This.
@@ -78,10 +76,12 @@ namespace ignite
                 Parameter& operator=(const Parameter& other);
 
                 /**
-                 * Write request using provided writer.
+                 * Write parameter using provided writer.
                  * @param writer Writer.
+                 * @param offset Offset for the buffer.
+                 * @param idx Index for the array-of-parameters case.
                  */
-                void Write(ignite::impl::binary::BinaryWriterImpl& writer) const;
+                void Write(impl::binary::BinaryWriterImpl& writer, int offset = 0, SqlUlen idx = 0) const;
 
                 /**
                  * Get data buffer.
@@ -89,6 +89,32 @@ namespace ignite
                  * @return underlying ApplicationDataBuffer instance.
                  */
                 ApplicationDataBuffer& GetBuffer();
+
+                /**
+                 * Get data buffer.
+                 *
+                 * @return underlying ApplicationDataBuffer instance.
+                 */
+                const ApplicationDataBuffer& GetBuffer() const;
+
+                /**
+                 * Reset stored at-execution data.
+                 */
+                void ResetStoredData();
+
+                /**
+                 * Check if all the at-execution data has been stored.
+                 * @return
+                 */
+                bool IsDataReady() const;
+
+                /**
+                 * Put at-execution data.
+                 *
+                 * @param data Data buffer pointer.
+                 * @param len Data length.
+                 */
+                void PutData(void* data, SqlLen len);
 
             private:
                 /** Underlying data buffer. */
@@ -102,10 +128,13 @@ namespace ignite
 
                 /** IPD decimal digits. */
                 int16_t decDigits;
-            };
 
-            /** Parameter binging map type alias. */
-            typedef std::map<uint16_t, Parameter> ParameterBindingMap;
+                /** User provided null data at execution. */
+                bool nullData;
+
+                /** Stored at-execution data. */
+                std::vector<int8_t> storedData;
+            };
         }
     }
 }

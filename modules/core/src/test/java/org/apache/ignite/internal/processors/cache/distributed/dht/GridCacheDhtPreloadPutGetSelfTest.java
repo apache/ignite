@@ -65,8 +65,8 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assert preloadMode != null;
 
@@ -198,7 +198,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
 
-                            IgniteCache<Integer, Integer> cache = g2.cache(null);
+                            IgniteCache<Integer, Integer> cache = g2.cache(DEFAULT_CACHE_NAME);
 
                             for (int j = 0; j < KEY_CNT; j++) {
                                 Integer val = cache.get(j);
@@ -230,7 +230,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
                             Ignite g1 = startGrid(1);
 
-                            IgniteCache<Integer, Integer> cache = g1.cache(null);
+                            IgniteCache<Integer, Integer> cache = g1.cache(DEFAULT_CACHE_NAME);
 
                             for (int j = 0; j < KEY_CNT; j++) {
                                 cache.put(j, j);

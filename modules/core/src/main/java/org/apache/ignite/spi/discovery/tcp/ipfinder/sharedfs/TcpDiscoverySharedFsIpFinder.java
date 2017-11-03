@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,29 +42,19 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
 /**
- * Shared filesystem-based IP finder.
- * <h1 class="header">Configuration</h1>
- * <h2 class="header">Mandatory</h2>
- * There are no mandatory configuration parameters.
- * <h2 class="header">Optional</h2>
- * <ul>
- *      <li>Path (see {@link #setPath(String)})</li>
- *      <li>Shared flag (see {@link #setShared(boolean)})</li>
- * </ul>
- * <p>
- * If {@link #getPath()} is not provided, then {@link #DFLT_PATH} will be used and
- * only local nodes will discover each other. To enable discovery over network
- * you must provide a path to a shared directory explicitly.
- * <p>
- * The directory will contain empty files named like the following 192.168.1.136#1001.
- * <p>
- * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
+ * Shared filesystem-based IP finder. <h1 class="header">Configuration</h1> <h2 class="header">Mandatory</h2> There are
+ * no mandatory configuration parameters. <h2 class="header">Optional</h2> <ul> <li>Path (see {@link
+ * #setPath(String)})</li> <li>Shared flag (see {@link #setShared(boolean)})</li> </ul> <p> If {@link #getPath()} is not
+ * provided, then {@link #DFLT_PATH} will be used and only local nodes will discover each other. To enable discovery
+ * over network you must provide a path to a shared directory explicitly. <p> The directory will contain empty files
+ * named like the following 192.168.1.136#1001. <p> Note that this finder is shared by default (see {@link
+ * org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
 public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
-     * Default path for discovering of local nodes (testing only). Note that this path is relative to
-     * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
-     * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
+     * Default path for discovering of local nodes (testing only). Note that this path is relative to {@code
+     * IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified, otherwise it is
+     * relative to {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
      */
@@ -120,10 +112,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Sets path.
      *
      * @param path Shared path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPath(String path) {
+    public TcpDiscoverySharedFsIpFinder setPath(String path) {
         this.path = path;
+
+        return this;
     }
 
     /**
@@ -148,7 +143,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
                     tmp = new File(path);
                 else {
                     try {
-                        tmp = U.resolveWorkDirectory(path, false);
+                        tmp = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, false);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSpiException("Failed to resolve directory [path=" + path +
@@ -225,8 +220,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         initFolder();
 
         try {
-            for (InetSocketAddress addr : addrs) {
-                File file = new File(folder, name(addr));
+            for (String name : distinctNames(addrs)) {
+                File file = new File(folder, name);
 
                 file.createNewFile();
             }
@@ -243,8 +238,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         initFolder();
 
         try {
-            for (InetSocketAddress addr : addrs) {
-                File file = new File(folder, name(addr));
+            for (String name : distinctNames(addrs)) {
+                File file = new File(folder, name);
 
                 if (!file.delete())
                     throw new IgniteSpiException("Failed to delete file " + file.getName());
@@ -253,6 +248,22 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);
         }
+    }
+
+    /**
+     * Returns set with unique names.
+     *
+     * @param addresses List of addresses.
+     * @return Set of addresses.
+     */
+    private Iterable<String> distinctNames(Iterable<InetSocketAddress> addresses) {
+        Set<String> result = new HashSet<>();
+
+        for (InetSocketAddress address : addresses) {
+            result.add(name(address));
+        }
+
+        return result;
     }
 
     /**
@@ -279,7 +290,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param hostAddress Host address.
      * @return Normalized host address that can be safely used in file names.
      */
-    private String normalizeAddress(String hostAddress){
+    private String normalizeAddress(String hostAddress) {
         return hostAddress.replaceAll(COLON_DELIM, COLON_SUBST);
     }
 
@@ -289,8 +300,15 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param hostAddress Host address.
      * @return Standard host address.
      */
-    private String denormalizeAddress(String hostAddress){
+    private String denormalizeAddress(String hostAddress) {
         return hostAddress.replaceAll(COLON_SUBST, COLON_DELIM);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoverySharedFsIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Config
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Configurator which uses arguments array.
@@ -75,7 +76,12 @@ namespace Apache.Ignite.Config
 
             foreach (var arg in args)
             {
-                Func<string, bool> argIs = x => arg.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
+                if (string.IsNullOrWhiteSpace(arg.Item2))
+                    throw new IgniteException(string.Format(
+                        "Missing argument value: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+
+                var arg0 = arg;  // copy captured variable
+                Func<string, bool> argIs = x => arg0.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
 
                 if (argIs(CmdIgniteHome))
                     cfg.IgniteHome = arg.Item2;
@@ -99,6 +105,11 @@ namespace Apache.Ignite.Config
                     assemblies.Add(arg.Item2);
                 else if (argIs(CmdForceTestClasspath) && arg.Item2 == "true")
                     Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+                else if (!argIs(CmdConfigFile) && !argIs(CmdConfigSection))
+                {
+                    throw new IgniteException(string.Format(
+                        "Unknown argument: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+                }
             }
 
             if (jvmOpts.Count > 0)
@@ -152,12 +163,12 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static ExeConfigurationFileMap GetConfigMap(string fileName)
         {
-            fileName = Path.GetFullPath(fileName);
+            var fullFileName = Path.GetFullPath(fileName);
 
-            if (!File.Exists(fileName))
-                throw new InvalidOperationException("Specified config file does not exist: " + fileName);
+            if (!File.Exists(fullFileName))
+                throw new ConfigurationErrorsException("Specified config file does not exist: " + fileName);
 
-            return new ExeConfigurationFileMap {ExeConfigFilename = fileName};
+            return new ExeConfigurationFileMap {ExeConfigFilename = fullFileName};
         }
 
         /// <summary>
@@ -165,9 +176,12 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static string FindValue(IEnumerable<Tuple<string, string>> args, string name)
         {
-            return args.Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
-                    .Select(x => x.Item2)
-                    .FirstOrDefault();
+            // Search in reverse so that command line has preference over config file.
+            return args
+                .Reverse()
+                .Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.Item2)
+                .FirstOrDefault();
         }
     }
 }

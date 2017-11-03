@@ -35,7 +35,6 @@
 #include "ignite/examples/organization.h"
 
 using namespace ignite;
-using namespace cache;
 
 using namespace examples;
 
@@ -48,6 +47,16 @@ using namespace examples;
  *
  * After all pre-requirements are fulfilled just build project as described
  * in README and run resulting file.
+ *
+ * Note, that all fields which used in queries must be listed in config file
+ * under queryEntities property of the caches. You can find config file in
+ * config directory: cpp/examples/odbc-example/config/example-odbc.xml
+ *
+ * In addition to all the fields listed under QueryEntity bean, each table
+ * have two special predefined fields: _key and _val, which represent links
+ * to whole key and value objects. In some queries _key column is used. Key
+ * in our case works like an ID for the row and it should always present in
+ * INSERT statements.
  */
 
 /** Read buffer size. */
@@ -118,40 +127,28 @@ std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
 }
 
 /**
+ * Extract error from ODBC handle and throw it as IgniteError.
+ *
+ * @param handleType Type of the handle.
+ * @param handle Handle.
+ * @param msg Error message.
+ */
+void ThrowOdbcError(SQLSMALLINT handleType, SQLHANDLE handle, std::string msg)
+{
+    std::stringstream builder;
+
+    builder << msg << ": " << GetOdbcErrorMessage(handleType, handle);
+
+    std::string errorMsg = builder.str();
+
+    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, errorMsg.c_str());
+}
+
+/**
  * Fetch cache data using ODBC interface.
  */
-void GetDataWithOdbc(const std::string& query)
+void GetDataWithOdbc(SQLHDBC dbc, const std::string& query)
 {
-    SQLHENV env;
-
-    // Allocate an environment handle
-    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-    // We want ODBC 3 support
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-    SQLHDBC dbc;
-
-    // Allocate a connection handle
-    SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-    // Combining connect string
-    std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=Person;";
-
-    SQLCHAR outstr[ODBC_BUFFER_SIZE];
-    SQLSMALLINT outstrlen;
-
-    // Connecting to ODBC server.
-    SQLRETURN ret = SQLDriverConnect(dbc, NULL, reinterpret_cast<SQLCHAR*>(&connectStr[0]),
-        static_cast<SQLSMALLINT>(connectStr.size()), outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-    if (!SQL_SUCCEEDED(ret))
-    {
-        std::cerr << "Failed to connect: " << GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc) << std::endl;
-
-        return;
-    }
-
     SQLHSTMT stmt;
 
     // Allocate a statement handle
@@ -159,7 +156,7 @@ void GetDataWithOdbc(const std::string& query)
 
     std::vector<SQLCHAR> buf(query.begin(), query.end());
 
-    ret = SQLExecDirect(stmt, &buf[0], static_cast<SQLSMALLINT>(buf.size()));
+    SQLRETURN ret = SQLExecDirect(stmt, &buf[0], static_cast<SQLSMALLINT>(buf.size()));
 
     if (SQL_SUCCEEDED(ret))
         PrintOdbcResultSet(stmt);
@@ -168,51 +165,386 @@ void GetDataWithOdbc(const std::string& query)
 
     // Releasing statement handle.
     SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-    // Disconneting from the server.
-    SQLDisconnect(dbc);
-
-    // Releasing allocated handles.
-    SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-    SQLFreeHandle(SQL_HANDLE_ENV, env);
 }
 
 /**
  * Populate Person cache with sample data.
- * 
- * @param cache Cache instance.
+ *
+ * @param dbc Database connection.
  */
-void Populate(Cache<int64_t, Person>& cache)
+void PopulatePerson(SQLHDBC dbc)
 {
-    std::map<int64_t, Person> persons;
+    SQLHSTMT stmt;
 
-    int64_t key = 0;
-    persons[++key] = Person(1, "John", "Doe", "Master Degree.", 2200.0);
-    persons[++key] = Person(1, "Jane", "Doe", "Bachelor Degree.", 1300.0);
-    persons[++key] = Person(2, "John", "Smith", "Bachelor Degree.", 1700.0);
-    persons[++key] = Person(2, "Jane", "Smith", "Master Degree.", 2500.0);
-    persons[++key] = Person(2, "John", "Roe", "Bachelor Degree.", 1500.0);
-    persons[++key] = Person(2, "Jane", "Roe", "Bachelor Degree.", 1000.0);
-    persons[++key] = Person(1, "Richard", "Miles", "Master Degree.", 2400.0);
-    persons[++key] = Person(2, "Mary", "Major", "Bachelor Degree.", 900.0);
+    // Allocate a statement handle
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
-    cache.PutAll(persons);
+    if (!SQL_SUCCEEDED(ret))
+        ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to allocate statement handle");
+
+    try
+    {
+        SQLCHAR query[] =
+            "INSERT INTO Person (_key, orgId, firstName, lastName, resume, salary) "
+            "VALUES (?, ?, ?, ?, ?, ?)";
+
+        ret = SQLPrepare(stmt, query, static_cast<SQLSMALLINT>(sizeof(query)));
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to prepare query");
+
+        // Binding columns.
+
+        int64_t key = 0;
+        int64_t orgId = 0;
+        char firstName[1024] = { 0 };
+        SQLLEN firstNameLen = SQL_NTS;
+        char lastName[1024] = { 0 };
+        SQLLEN lastNameLen = SQL_NTS;
+        char resume[1024] = { 0 };
+        SQLLEN resumeLen = SQL_NTS;
+        double salary = 0.0;
+
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &orgId, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
+            sizeof(firstName), sizeof(firstName), firstName, 0, &firstNameLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
+            sizeof(lastName), sizeof(lastName), lastName, 0, &lastNameLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 5, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
+            sizeof(resume), sizeof(resume), resume, 0, &resumeLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 6, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, &salary, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        // Filling cache.
+
+        key = 1;
+        orgId = 1;
+        strncpy(firstName, "John", sizeof(firstName));
+        strncpy(lastName, "Doe", sizeof(lastName));
+        strncpy(resume, "Master Degree.", sizeof(resume));
+        salary = 2200.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 1;
+        strncpy(firstName, "Jane", sizeof(firstName));
+        strncpy(lastName, "Doe", sizeof(lastName));
+        strncpy(resume, "Bachelor Degree.", sizeof(resume));
+        salary = 1300.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 2;
+        strncpy(firstName, "John", sizeof(firstName));
+        strncpy(lastName, "Smith", sizeof(lastName));
+        strncpy(resume, "Bachelor Degree.", sizeof(resume));
+        salary = 1700.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 2;
+        strncpy(firstName, "Jane", sizeof(firstName));
+        strncpy(lastName, "Smith", sizeof(lastName));
+        strncpy(resume, "Master Degree.", sizeof(resume));
+        salary = 2500.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 2;
+        strncpy(firstName, "John", sizeof(firstName));
+        strncpy(lastName, "Roe", sizeof(lastName));
+        strncpy(resume, "Bachelor Degree.", sizeof(resume));
+        salary = 1500.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 2;
+        strncpy(firstName, "Jane", sizeof(firstName));
+        strncpy(lastName, "Roe", sizeof(lastName));
+        strncpy(resume, "Bachelor Degree.", sizeof(resume));
+        salary = 1000.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 1;
+        strncpy(firstName, "Richard", sizeof(firstName));
+        strncpy(lastName, "Miles", sizeof(lastName));
+        strncpy(resume, "Master Degree.", sizeof(resume));
+        salary = 2400.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "No more data expected");
+
+        ++key;
+        orgId = 2;
+        strncpy(firstName, "Mary", sizeof(firstName));
+        strncpy(lastName, "Major", sizeof(lastName));
+        strncpy(resume, "Bachelor Degree.", sizeof(resume));
+        salary = 900.0;
+
+        ret = SQLExecute(stmt);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute prepared statement");
+    }
+    catch(...)
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Re-throwing expection.
+        throw;
+    }
+
+    // Releasing statement handle.
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
 
 /**
  * Populate Organization cache with sample data.
- * 
- * @param cache Cache instance.
+ *
+ * @param dbc Database connection.
  */
-void Populate(Cache<int64_t, Organization>& cache)
+void PopulateOrganization(SQLHDBC dbc)
 {
-    std::map<int64_t, Organization> orgs;
+    SQLHSTMT stmt;
 
-    int64_t key = 0;
-    orgs[++key] = Organization("Microsoft", Address("1096 Eddy Street, San Francisco, CA", 94109));
-    orgs[++key] = Organization("Red Cross", Address("184 Fidler Drive, San Antonio, TX", 78205));
+    // Allocate a statement handle
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
-    cache.PutAll(orgs);
+    if (!SQL_SUCCEEDED(ret))
+        ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to allocate statement handle");
+
+    try
+    {
+        SQLCHAR query1[] = "INSERT INTO \"Organization\".Organization (_key, name) VALUES (1L, 'Microsoft')";
+
+        ret = SQLExecDirect(stmt, query1, static_cast<SQLSMALLINT>(sizeof(query1)));
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute query");
+
+        SQLFreeStmt(stmt, SQL_CLOSE);
+
+        SQLCHAR query2[] = "INSERT INTO \"Organization\".Organization (_key, name) VALUES (2L, 'Red Cross')";
+
+        ret = SQLExecDirect(stmt, query2, static_cast<SQLSMALLINT>(sizeof(query2)));
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute query");
+    }
+    catch (...)
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Re-throwing expection.
+        throw;
+    }
+
+    // Releasing statement handle.
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+}
+
+/**
+ * Adjust salary for specified employee.
+ *
+ * @param dbc Database connection.
+ * @param key Person key.
+ * @param salary New salary.
+ */
+void AdjustSalary(SQLHDBC dbc, int64_t key, double salary)
+{
+    SQLHSTMT stmt;
+
+    // Allocate a statement handle
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to allocate statement handle");
+
+    try
+    {
+        SQLCHAR query[] = "UPDATE Person SET salary=? WHERE _key=?";
+
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, &salary, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLExecDirect(stmt, query, static_cast<SQLSMALLINT>(sizeof(query)));
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute query");
+    }
+    catch (...)
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Re-throwing expection.
+        throw;
+    }
+
+    // Releasing statement handle.
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+}
+
+/**
+ * Remove specified person.
+ *
+ * @param dbc Database connection.
+ * @param key Person key.
+ */
+void DeletePerson(SQLHDBC dbc, int64_t key)
+{
+    SQLHSTMT stmt;
+
+    // Allocate a statement handle
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to allocate statement handle");
+
+    try
+    {
+        SQLCHAR query[] = "DELETE FROM Person WHERE _key=?";
+
+        ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_BIGINT, 0, 0, &key, 0, 0);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to bind parameter");
+
+        ret = SQLExecDirect(stmt, query, static_cast<SQLSMALLINT>(sizeof(query)));
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_STMT, stmt, "Failed to execute query");
+    }
+    catch (...)
+    {
+        // Releasing statement handle.
+        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+
+        // Re-throwing expection.
+        throw;
+    }
+
+    // Releasing statement handle.
+    SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+}
+
+/**
+ * Query tables.
+ *
+ * @param dbc Database connection.
+ */
+void QueryData(SQLHDBC dbc)
+{
+    std::cout << std::endl;
+    std::cout << ">>> Getting list of persons:" << std::endl;
+
+    GetDataWithOdbc(dbc, "SELECT firstName, lastName, resume, salary FROM Person");
+
+    std::cout << std::endl;
+    std::cout << ">>> Getting average salary by degree:" << std::endl;
+
+    GetDataWithOdbc(dbc, "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
+
+    std::cout << std::endl;
+    std::cout << ">>> Getting people with organizations:" << std::endl;
+
+    GetDataWithOdbc(dbc, "SELECT firstName, lastName, Organization.name FROM Person "
+        "INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
 }
 
 /**
@@ -220,12 +552,9 @@ void Populate(Cache<int64_t, Organization>& cache)
  *
  * @return Exit code.
  */
-int main() 
+int main()
 {
     IgniteConfiguration cfg;
-
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
 
     cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-odbc.xml";
 
@@ -234,39 +563,65 @@ int main()
         // Start a node.
         Ignite grid = Ignition::Start(cfg);
 
+        SQLHENV env;
+
+        // Allocate an environment handle
+        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
+
+        // We want ODBC 3 support
+        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
+
+        SQLHDBC dbc;
+
+        // Allocate a connection handle
+        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+        // Combining connect string
+        std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;SCHEMA=Person;";
+
+        SQLCHAR outstr[ODBC_BUFFER_SIZE];
+        SQLSMALLINT outstrlen;
+
+        // Connecting to ODBC server.
+        SQLRETURN ret = SQLDriverConnect(dbc, NULL, reinterpret_cast<SQLCHAR*>(&connectStr[0]),
+            static_cast<SQLSMALLINT>(connectStr.size()), outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+        if (!SQL_SUCCEEDED(ret))
+            ThrowOdbcError(SQL_HANDLE_DBC, dbc, "Failed to connect");
+
         std::cout << std::endl;
         std::cout << ">>> Cache ODBC example started." << std::endl;
         std::cout << std::endl;
 
-        // Get Person cache instance.
-        Cache<int64_t, Person> personCache = grid.GetCache<int64_t, Person>("Person");
-
-        // Get Organization cache instance.
-        Cache<int64_t, Organization> orgCache = grid.GetCache<int64_t, Organization>("Organization");
-
-        // Clear caches.
-        personCache.Clear();
-        orgCache.Clear();
-
         // Populate caches.
-        Populate(personCache);
-        Populate(orgCache);
+        PopulatePerson(dbc);
+        PopulateOrganization(dbc);
+
+        QueryData(dbc);
 
         std::cout << std::endl;
-        std::cout << ">>> Getting list of persons:" << std::endl;
+        std::cout << std::endl;
+        std::cout << ">>> Adjusted salary for Mary Major. Querying again." << std::endl;
 
-        GetDataWithOdbc("SELECT firstName, lastName, resume, salary FROM Person");
+        AdjustSalary(dbc, 8, 1200.0);
+
+        QueryData(dbc);
 
         std::cout << std::endl;
-        std::cout << ">>> Getting average salary by degree:" << std::endl;
-
-        GetDataWithOdbc("SELECT resume, AVG(salary) FROM Person GROUP BY resume");
-
         std::cout << std::endl;
-        std::cout << ">>> Getting people with organizations:" << std::endl;
+        std::cout << ">>> Removing several employees. Querying again." << std::endl;
 
-        GetDataWithOdbc("SELECT firstName, lastName, Organization.name FROM Person "
-            "INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
+        DeletePerson(dbc, 4);
+        DeletePerson(dbc, 5);
+
+        QueryData(dbc);
+
+        // Disconneting from the server.
+        SQLDisconnect(dbc);
+
+        // Releasing allocated handles.
+        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+        SQLFreeHandle(SQL_HANDLE_ENV, env);
 
         // Stop node.
         Ignition::StopAll(false);
@@ -274,10 +629,12 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;
-    std::cout << ">>> Example finished, press any key to exit ..." << std::endl;
+    std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
     std::cout << std::endl;
 
     std::cin.get();

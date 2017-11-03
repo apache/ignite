@@ -1,36 +1,63 @@
 Ignite Fabric Maven Build Instructions
 ======================================
-Without LGPL dependencies (default):
-  mvn clean package -DskipTests
+1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
-Without LGPL dependencies and Scala 2.10:
-  mvn clean package -DskipTests -Dscala-2.10
+2) Compile and install:
 
-With LGPL dependencies:
-  mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
-With LGPL dependencies and Scala 2.10:
-  mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl -Dscala-2.10
+  or if you have built Apache Ignite.NET on the first step use following command:
+  (Note that 'doxygen' should be installed before running this command.)
 
-With Apache Ignite.NET:
-  Build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
-  Then build Ignite Fabric with Apache Ignite.NET:
-  mvn clean package -DskipTests -DclientDocs
+3) Javadoc generation (optional):
 
-  Note that 'doxygen' should be installed before running this command.
+  mvn initialize -Pjavadoc
+
+4) Assembly Apache Ignite fabric:
+
+  mvn initialize -Prelease
 
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
-NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
-      Schema Import module use JavaFX, under OpenJDK may be compiled and run only on OpenJDK 8 with installed OpenJFX.
+Ignite Fabric with LGPL Maven Build Instructions
+======================================
+1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
+
+2) Compile and install:
+
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests
+
+  or if you have built Apache Ignite.NET on the first step use following command:
+  (Note that 'doxygen' should be installed before running this command.)
+
+  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+
+3) Javadoc generation with LGPL (optional):
+
+  mvn initialize -Pjavadoc,lgpl
+
+4) Assembly Apache Ignite fabric with LGPL dependencies:
+
+  mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+
+Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
 
 Ignite Hadoop Accelerator Maven Build Instructions
 ============================================
-mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X] [-Dspark.version=x.y.z]
+1) Compile and install:
+
+    mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
-Use 'spark.version' parameter to build ignite-spark module for a specific Spark version.
+Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
+For example:
+
+    mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
+
+2) Assembly Hadoop Accelerator:
+  mvn initialize -Prelease -Dignite.edition=hadoop
 
 Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
 assembly will also include integration module for Apache Spark.
@@ -66,12 +93,17 @@ Maven release plugin release:prepare goal can be used to make release tag.
 
 Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
-   Following command deploys Ignite to maven repository, prepares sources and fabric edition binaries.
-      mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -B
+   1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
+      mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
 
-   In case you want to release both fabric and hadoop editions you have to build hadoop edition first using command
-      mvn package -P apache-release,gpg,release,scala,lgpl -Dignite.edition=hadoop -DskipTests -B
-   save /target/bin/*.zip, make "mvn clean" and restore saved files before deploying fabric.
+   2) Javadoc generation:
+      mvn initialize -Pjavadoc
+
+   3) Assembly Apache Ignite Fabric:
+      mvn initialize -Prelease
+
+   4) Assembly Hadoop Accelerator:
+      mvn initialize -Prelease -Dignite.edition=hadoop
 
    Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
    created inside /target/bin folder when release profile is used.

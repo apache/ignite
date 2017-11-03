@@ -212,7 +212,8 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job metrics processor processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job metrics processor processor memory stats [igniteInstanceName=" +
+            ctx.igniteInstanceName() + ']');
     }
 
     /**
@@ -323,9 +324,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private GridJobMetricsSnapshot lastSnapshot;
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean collect(GridJobMetricsSnapshot s) {
             assert s != null;
 

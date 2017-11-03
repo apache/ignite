@@ -25,6 +25,11 @@
 #include <algorithm>
 
 #include <ignite/common/common.h>
+#include <ignite/common/platform_utils.h>
+
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
+#include "ignite/time.h"
 
 #ifdef IGNITE_FRIEND
 #   define IGNITE_FRIEND_EXPORT IGNITE_EXPORT
@@ -60,6 +65,13 @@ namespace ignite
         }
 
         /**
+         * Strips leading and trailing whitespaces from string.
+         *
+         * @param str String to be transformed.
+         */
+        IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
          * Get string representation of long in decimal form.
          *
          * @param val Long value to be converted to string.
@@ -84,70 +96,6 @@ namespace ignite
         }
 
         /**
-         * Convert struct tm to time_t (UTC).
-         *
-         * @param time Standard C type struct tm value.
-         * @return Standard C type time_t value.
-         */
-        IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
-
-        /**
-         * Convert struct tm to time_t (Local time).
-         *
-         * @param time Standard C type struct tm value.
-         * @return Standard C type time_t value.
-         */
-        IGNITE_IMPORT_EXPORT time_t IgniteTimeLocal(const tm& time);
-
-        /**
-         * Convert time_t to struct tm (UTC).
-         *
-         * @param in Standard C type time_t value.
-         * @param out Standard C type struct tm value.
-         * @return True on success.
-         */
-        IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
-
-        /**
-         * Convert time_t to struct tm (Local time).
-         *
-         * @param in Standard C type time_t value.
-         * @param out Standard C type struct tm value.
-         * @return True on success.
-         */
-        IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
-
-        /**
-         * Get number of leading zeroes in octet.
-         *
-         * @param octet Octet.
-         * @return Number of leading zero-bits.
-         */
-        IGNITE_IMPORT_EXPORT int LeadingZeroesForOctet(int8_t octet);
-
-        /**
-         * Get number of significant bits in octet.
-         *
-         * @param octet Octet.
-         * @return Number of significant bits.
-         */
-        inline int BitLengthForOctet(int8_t octet)
-        {
-            return 8 - LeadingZeroesForOctet(octet);
-        }
-
-        /**
-         * Check if the number is power of two.
-         *
-         * @param num Integer number.
-         * @return True if the number is power of two.
-         */
-        inline bool PowerOfTwo(int num)
-        {
-            return (num & (num - 1)) == 0;
-        }
-
-        /**
          * Copy characters.
          *
          * @param val Value.
@@ -163,49 +111,371 @@ namespace ignite
         IGNITE_IMPORT_EXPORT void ReleaseChars(char* val);
 
         /**
-         * Read system environment variable taking thread-safety in count.
+         * Casts value of one type to another type, using stringstream.
          *
-         * @param name Environment variable name.
-         * @param found Whether environment variable with such name was found.
-         * @return Environment variable value.
+         * @param val Input value.
+         * @param res Resulted value.
          */
-        IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool& found);
-
-        /**
-         * Ensure that file on the given path exists in the system.
-         *
-         * @param path Path.
-         * @return True if file exists, false otherwise.
-         */
-        IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
-
-        /**
-         * Safe array which automatically reclaims occupied memory when out of scope.
-         */
-        template<typename T>
-        struct IGNITE_IMPORT_EXPORT SafeArray
+        template<typename T1, typename T2>
+        void LexicalCast(const T2& val, T1& res)
         {
-            /** Target array. */
-            T* target;
+            std::stringstream converter;
+
+            converter << val;
+            converter >> res;
+        }
+
+        /**
+         * Casts value of one type to another type, using stringstream.
+         *
+         * @param val Input value.
+         * @return Resulted value.
+         */
+        template<typename T1, typename T2>
+        T1 LexicalCast(const T2& val)
+        {
+            T1 res;
+
+            LexicalCast<T1, T2>(val, res);
+
+            return res;
+        }
+
+        /**
+         * Check if the predicate returns true for all the elements of the
+         * sequence.
+         *
+         * @return True if the predicate returns true for all the elements
+         *     of the sequence and false otherwise.
+         */
+        template<typename Iter, typename Pred>
+        bool AllOf(Iter begin, Iter end, Pred pred)
+        {
+            Iter i = begin;
+
+            while (i != end && pred(*i))
+                ++i;
+
+            return i == end;
+        }
+
+        /**
+         * Converts 32-bit integer to big endian format
+         *
+         * @param value Input value
+         * @return Resulting value
+         */
+        IGNITE_IMPORT_EXPORT uint32_t ToBigEndian(uint32_t value);
+
+        /**
+         * Convert Date type to standard C type time_t.
+         *
+         * @param date Date type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t DateToCTime(const Date& date)
+        {
+            return static_cast<time_t>(date.GetSeconds());
+        }
+
+        /**
+         * Convert Timestamp type to standard C type time_t.
+         *
+         * @param ts Timestamp type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t TimestampToCTime(const Timestamp& ts)
+        {
+            return static_cast<time_t>(ts.GetSeconds());
+        }
+
+        /**
+         * Convert Time type to standard C type time_t.
+         *
+         * @param time Time type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t TimeToCTime(const Time& time)
+        {
+            return static_cast<time_t>(time.GetSeconds());
+        }
+
+        /**
+         * Convert Date type to standard C type time_t.
+         *
+         * @param date Date type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool DateToCTm(const Date& date, tm& ctime)
+        {
+            time_t tmt = DateToCTime(date);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert Timestamp type to standard C type struct tm.
+         *
+         * @param ts Timestamp type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool TimestampToCTm(const Timestamp& ts, tm& ctime)
+        {
+            time_t tmt = TimestampToCTime(ts);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert Time type to standard C type struct tm.
+         *
+         * @param time Time type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool TimeToCTm(const Time& time, tm& ctime)
+        {
+            time_t tmt = TimeToCTime(time);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert standard C type time_t to Date.
+         *
+         * @param ctime Standard C type time_t.
+         * @return Corresponding value of Date.
+         */
+        inline Date CTimeToDate(time_t ctime)
+        {
+            return Date(ctime * 1000);
+        }
+
+        /**
+         * Convert standard C type time_t to Time.
+         *
+         * @param ctime Standard C type time_t.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTimeToTime(time_t ctime)
+        {
+            return Time(ctime * 1000);
+        }
+
+        /**
+         * Convert standard C type time_t to Timestamp type.
+         *
+         * @param ctime Standard C type time_t.
+         * @param ns Nanoseconds second fraction.
+         * @return Corresponding value of Timestamp.
+         */
+        inline Timestamp CTimeToTimestamp(time_t ctime, int32_t ns)
+        {
+            return Timestamp(ctime, ns);
+        }
+
+        /**
+         * Convert standard C type struct tm to Date type.
+         *
+         * @param ctime Standard C type struct tm.
+         * @return Corresponding value of Date.
+         */
+        inline Date CTmToDate(const tm& ctime)
+        {
+            time_t time = common::IgniteTimeGm(ctime);
+
+            return CTimeToDate(time);
+        }
+
+        /**
+         * Convert standard C type struct tm to Time type.
+         *
+         * @param ctime Standard C type struct tm.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTmToTime(const tm& ctime)
+        {
+            time_t time = common::IgniteTimeGm(ctime);
+
+            return CTimeToTime(time);
+        }
+
+        /**
+         * Convert standard C type struct tm to Timestamp type.
+         *
+         * @param ctime Standard C type struct tm.
+         * @param ns Nanoseconds second fraction.
+         * @return Corresponding value of Timestamp.
+         */
+        inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
+        {
+            time_t time = common::IgniteTimeGm(ctime);
+
+            return CTimeToTimestamp(time, ns);
+        }
+
+        /**
+         * Make Date in human understandable way.
+         *
+         * Created Date uses GMT timezone.
+         *
+         * @param year Year.
+         * @param month Month.
+         * @param day Day.
+         * @param hour Hour.
+         * @param min Min.
+         * @param sec Sec.
+         * @return Date.
+         */
+        Date MakeDateGmt(int year = 1900, int month = 1,
+            int day = 1, int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Date in human understandable way.
+         *
+         * Created Date uses local timezone.
+         *
+         * @param year Year.
+         * @param month Month.
+         * @param day Day.
+         * @param hour Hour.
+         * @param min Min.
+         * @param sec Sec.
+         * @return Date.
+         */
+        Date MakeDateLocal(int year = 1900, int month = 1,
+            int day = 1, int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Time in human understandable way.
+         *
+         * Created Time uses GMT timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Time in human understandable way.
+         *
+         * Created Time uses Local timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Timestamp in human understandable way.
+         *
+         * Created Timestamp uses GMT timezone.
+         *
+         * @param year Year.
+         * @param month Month.
+         * @param day Day.
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @param ns Nanosecond.
+         * @return Timestamp.
+         */
+        Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
+            int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
+
+        /**
+         * Make Date in human understandable way.
+         *
+         * Created Timestamp uses Local timezone.
+         *
+         * @param year Year.
+         * @param month Month.
+         * @param day Day.
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @param ns Nanosecond.
+         * @return Timestamp.
+         */
+        Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
+            int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
+
+        /**
+         * Meta-programming class.
+         * Defines T1 as ::type if the condition is true, otherwise
+         * defines T2 as ::type.
+         */
+        template<bool, typename T1, typename T2>
+        struct Conditional
+        {
+            typedef T1 type;
+        };
+
+        /**
+         * Specialization for the false case.
+         */
+        template<typename T1, typename T2>
+        struct Conditional<false, T1, T2>
+        {
+            typedef T2 type;
+        };
+
+        /**
+         * Utility class to bind class instance with member function.
+         */
+        template<typename R, typename T>
+        class BoundInstance
+        {
+        public:
+            typedef R FunctionReturnType;
+            typedef T ClassType;
+            typedef FunctionReturnType(ClassType::* MemberFunctionType)();
 
             /**
              * Constructor.
+             *
+             * @param instance Class instance.
+             * @param mfunc Member function.
              */
-            SafeArray(int cap)
+            BoundInstance(ClassType* instance, MemberFunctionType mfunc) : 
+                instance(instance),
+                mfunc(mfunc)
             {
-                target = new T[cap];
+                // No-op.
             }
 
             /**
-             * Destructor.
+             * Invoke operator.
+             *
+             * @return Result of the invokation of the member function on the bound instance.
              */
-            ~SafeArray()
+            FunctionReturnType operator()()
             {
-                delete[] target;
+                return (instance->*mfunc)();
             }
+                
+        private:
+            /** Instance reference. */
+            ClassType* instance;
 
-            IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
+            /** Member function pointer. */
+            MemberFunctionType mfunc;
         };
+
+        /**
+         * Utility function for binding.
+         */
+        template<typename R, typename T>
+        BoundInstance<R, T> Bind(T* instance, R(T::* mfunc)())
+        {
+            return BoundInstance<R, T>(instance, mfunc);
+        }
     }
 }
 

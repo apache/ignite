@@ -197,12 +197,20 @@ namespace Apache.Ignite.Core.Tests.Process
             Debug.Assert(proc != null);
 
             // 3. Attach output readers to avoid hangs.
+            AttachProcessConsoleReader(proc, outReader);
+
+            return proc;
+        }
+
+        /// <summary>
+        /// Attaches the process console reader.
+        /// </summary>
+        public static void AttachProcessConsoleReader(Process proc, IIgniteProcessOutputReader outReader = null)
+        {
             outReader = outReader ?? DfltOutReader;
 
             Attach(proc, proc.StandardOutput, outReader, false);
             Attach(proc, proc.StandardError, outReader, true);
-
-            return proc;
         }
 
         /// <summary>
@@ -211,6 +219,17 @@ namespace Apache.Ignite.Core.Tests.Process
         public bool Alive
         {
             get { return !_proc.HasExited; }
+        }
+
+        /// <summary>
+        /// Gets the process.
+        /// </summary>
+        public string GetInfo()
+        {
+            return Alive
+                ? string.Format("Id={0}, Alive={1}", _proc.Id, Alive)
+                : string.Format("Id={0}, Alive={1}, ExitCode={2}, ExitTime={3}",
+                    _proc.Id, Alive, _proc.ExitCode, _proc.ExitTime);
         }
 
         /// <summary>
@@ -246,16 +265,6 @@ namespace Apache.Ignite.Core.Tests.Process
             _proc.WaitForExit();
 
             return _proc.ExitCode;
-        }
-
-        /// <summary>
-        /// Join process with timeout.
-        /// </summary>
-        /// <param name="timeout">Timeout in milliseconds.</param>
-        /// <returns><c>True</c> if process exit occurred before timeout.</returns>
-        public bool Join(int timeout)
-        {
-            return _proc.WaitForExit(timeout);
         }
 
         /// <summary>

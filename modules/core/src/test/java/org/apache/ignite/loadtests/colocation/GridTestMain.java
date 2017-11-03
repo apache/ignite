@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -88,13 +87,11 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        IgniteCompute comp = g.compute().withAsync();
-
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
             final long key = i;
 
-            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
+            final IgniteFuture<?> f = g.compute().affinityRunAsync("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
                     Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
@@ -104,58 +101,11 @@ public class GridTestMain {
                 }
             });
 
-            final IgniteFuture<?> f = comp.future();
-
             q.put(f);
 
             f.listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> o) {
                     q.poll();
-                }
-            });
-
-            if (i % 10000 == 0)
-                X.println("Executed jobs: " + i);
-        }
-
-        long end = System.currentTimeMillis();
-
-        X.println("Executed " + GridTestConstants.ENTRY_COUNT + " computations in " + (end - start) + "ms.");
-    }
-
-    /**
-     *
-     */
-    private static void localPoolRun() {
-        X.println("Local thread pool run...");
-
-        ExecutorService exe = new IgniteThreadPoolExecutor(400, 400, 0, new ArrayBlockingQueue<Runnable>(400) {
-            @Override public boolean offer(Runnable runnable) {
-                try {
-                    put(runnable);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                return true;
-            }
-        });
-
-        long start = System.currentTimeMillis();
-
-        final IgniteCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
-
-        // Collocate computations and data.
-        for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
-            final long key = i;
-
-            exe.submit(new Runnable() {
-                @Override public void run() {
-                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
-
-                    if (val == null || val != key)
-                        throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
                 }
             });
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.stream.kafka.connect;
 
+import java.lang.reflect.Field;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,9 +31,11 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.utils.SystemTime;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -40,12 +44,13 @@ import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.runtime.rest.entities.ConnectorInfo;
 import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
+import org.apache.kafka.connect.sink.SinkConnector;
+import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.FutureCallback;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.mock;
 
 /**
@@ -59,13 +64,16 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Test topics. */
-    private static final String[] TOPICS = {"test1", "test2"};
+    private static final String[] TOPICS = {"sink-test1", "sink-test2"};
 
     /** Kafka partition. */
     private static final int PARTITIONS = 3;
 
     /** Kafka replication factor. */
     private static final int REPLICATION_FACTOR = 1;
+
+    /** Worker id. */
+    private static final String WORKER_ID = "workerId";
 
     /** Test Kafka broker. */
     private TestKafkaBroker kafkaBroker;
@@ -77,17 +85,11 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private Herder herder;
 
     /** Ignite server node. */
-    private Ignite grid;
+    private static Ignite grid;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
-        IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
-
-        cfg.setClientMode(false);
-
-        grid = startGrid("igniteServerNode", cfg);
-
         kafkaBroker = new TestKafkaBroker();
 
         for (String topic : TOPICS)
@@ -96,9 +98,9 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
         OffsetBackingStore offBackingStore = mock(OffsetBackingStore.class);
-        offBackingStore.configure(anyObject(Map.class));
+        offBackingStore.configure(workerCfg);
 
-        worker = new Worker(workerCfg, offBackingStore);
+        worker = new Worker(WORKER_ID, new SystemTime(), workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);
@@ -113,21 +115,53 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
         kafkaBroker.shutdown();
 
+        grid.cache(CACHE_NAME).removeAll();
+
+        // reset cache name to overwrite task configurations.
+        Field field = IgniteSinkTask.class.getDeclaredField("cacheName");
+
+        field.setAccessible(true);
+        field.set(IgniteSinkTask.class, null);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected void beforeTestsStarted() throws Exception {
+        IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
+
+        cfg.setClientMode(false);
+
+        grid = startGrid("igniteServerNode", cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    public void testSinkPutsWithoutTransformation() throws Exception {
+        Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
+
+        sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
+
+        testSinkPuts(sinkProps, false);
+    }
+
+    public void testSinkPutsWithTransformation() throws Exception {
+        testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
     }
 
     /**
      * Tests the whole data flow from injecting data to Kafka to transferring it to the grid. It reads from two
      * specified Kafka topics, because a sink task can read from multiple topics.
      *
+     * @param sinkProps Sink properties.
+     * @param keyless Tests on Kafka stream with null keys if true.
      * @throws Exception Thrown in case of the failure.
      */
-    public void testSinkPuts() throws Exception {
-        Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
-
+    private void testSinkPuts(Map<String, String> sinkProps, boolean keyless) throws Exception {
         FutureCallback<Herder.Created<ConnectorInfo>> cb = new FutureCallback<>(new Callback<Herder.Created<ConnectorInfo>>() {
-            @Override
-            public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
+            @Override public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
                 if (error != null)
                     throw new RuntimeException("Failed to create a job!");
             }
@@ -161,7 +195,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
         // Produces events for the specified number of topics
         for (String topic : TOPICS)
-            keyValMap.putAll(produceStream(topic));
+            keyValMap.putAll(produceStream(topic, keyless));
 
         // Checks all events successfully processed in 10 seconds.
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -179,9 +213,10 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * Sends messages to Kafka.
      *
      * @param topic Topic name.
+     * @param keyless Indicates whether a Kafka key is specified.
      * @return Map of key value messages.
      */
-    private Map<String, String> produceStream(String topic) {
+    private Map<String, String> produceStream(String topic, boolean keyless) {
         List<ProducerRecord<String, String>> messages = new ArrayList<>(EVENT_CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
@@ -189,12 +224,18 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         for (int evt = 0; evt < EVENT_CNT; evt++) {
             long runtime = System.currentTimeMillis();
 
-            String key = topic + "_" + String.valueOf(evt);
-            String msg = runtime + String.valueOf(evt);
+            String key = null;
+            if (!keyless)
+                key = topic + ":" + String.valueOf(evt);
+
+            String msg = topic + ":" + String.valueOf(evt) + "_" + runtime;
 
             messages.add(new ProducerRecord<>(topic, key, msg));
 
-            keyValMap.put(key, msg);
+            if (!keyless)
+                keyValMap.put(key, msg);
+            else
+                keyValMap.put(topic + ":" + String.valueOf(evt), String.valueOf(runtime));
         }
 
         kafkaBroker.sendMessages(messages);
@@ -211,13 +252,15 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private Map<String, String> makeSinkProps(String topics) {
         Map<String, String> props = new HashMap<>();
 
-        props.put(ConnectorConfig.TOPICS_CONFIG, topics);
+        props.put(SinkConnector.TOPICS_CONFIG, topics);
         props.put(ConnectorConfig.TASKS_MAX_CONFIG, "2");
         props.put(ConnectorConfig.NAME_CONFIG, "test-sink-connector");
-        props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSinkConnector.class.getName());
+        props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSinkConnectorMock.class.getName());
         props.put(IgniteSinkConstants.CACHE_NAME, "testCache");
         props.put(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE, "true");
         props.put(IgniteSinkConstants.CACHE_CFG_PATH, "example-ignite.xml");
+        props.put(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS,
+            "org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest$TestExtractor");
 
         return props;
     }
@@ -239,9 +282,22 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         props.put("key.converter.schemas.enable", "false");
         props.put("value.converter.schemas.enable", "false");
         props.put(WorkerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
+        props.put("offset.storage.file.filename", "/tmp/connect.offsets");
         // fast flushing for testing.
         props.put(WorkerConfig.OFFSET_COMMIT_INTERVAL_MS_CONFIG, "10");
 
         return props;
+    }
+
+    /**
+     * Test transformer.
+     */
+    static class TestExtractor implements StreamSingleTupleExtractor<SinkRecord, String, String> {
+
+        /** {@inheritDoc} */
+        @Override public Map.Entry<String, String> extract(SinkRecord msg) {
+            String[] parts = ((String)msg.value()).split("_");
+            return new AbstractMap.SimpleEntry<String, String>(parts[0], parts[1]);
+        }
     }
 }

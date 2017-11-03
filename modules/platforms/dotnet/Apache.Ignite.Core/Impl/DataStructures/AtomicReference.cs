@@ -19,28 +19,28 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Atomic reference.
     /// </summary>
-    internal class AtomicReference<T> : PlatformTarget, IAtomicReference<T>
+    internal class AtomicReference<T> : PlatformTargetAdapter, IAtomicReference<T>
     {
         /** Opcodes. */
         private enum Op
         {
             Get = 1,
             Set = 2,
-            CompareAndSetAndGet = 3
+            CompareAndSetAndGet = 3,
+            Close = 4,
+            IsClosed = 5
         }
 
         /** */
         private readonly string _name;
 
         /** <inheritDoc /> */
-        public AtomicReference(IUnmanagedTarget target, Marshaller marsh, string name)
-            : base(target, marsh)
+        public AtomicReference(IPlatformTargetInternal target, string name)
+            : base(target)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
 
@@ -80,13 +80,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public bool IsClosed
         {
-            get { return UnmanagedUtils.AtomicReferenceIsClosed(Target); }
+            get { return DoOutInOp((int) Op.IsClosed) == True; }
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            UnmanagedUtils.AtomicReferenceClose(Target);
+            DoOutInOp((int) Op.Close);
         }
     }
 }

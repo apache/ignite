@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheComman
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -75,6 +77,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.jsr166.LongAdder8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
@@ -146,7 +149,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             workersCnt.increment();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "rest-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
@@ -284,7 +287,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-                    res = new GridRestResponse(STATUS_FAILED, e.getMessage());
+                    // Prepare error message:
+                    SB sb = new SB(256);
+
+                    sb.a("Failed to handle request: [req=").a(req.command());
+
+                    if (req instanceof GridRestTaskRequest) {
+                        GridRestTaskRequest tskReq = (GridRestTaskRequest)req;
+
+                        sb.a(", taskName=").a(tskReq.taskName())
+                            .a(", params=").a(tskReq.params());
+                    }
+
+                    sb.a(", err=").a(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).a(']');
+
+                    res = new GridRestResponse(STATUS_FAILED, sb.toString());
                 }
 
                 assert res != null;
@@ -413,8 +430,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         sesTtl = sesExpTime0;
 
-        sesTimeoutCheckerThread = new IgniteThread(ctx.gridName(), "session-timeout-worker",
-            new GridWorker(ctx.gridName(), "session-timeout-worker", log) {
+        sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
+            new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
                 @Override protected void body() throws InterruptedException {
                     while (!isCancelled()) {
                         Thread.sleep(SES_TIMEOUT_CHECK_DELAY);
@@ -436,6 +453,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (isRestEnabled()) {
+            if (notStartOnClient()) {
+                U.quietAndInfo(log, "REST protocols do not start on client node. " +
+                    "To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.");
+
+                return;
+            }
+
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
@@ -444,7 +468,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new DataStructuresCommandHandler(ctx));
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
-
+            addHandler(new GridChangeStateCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -471,8 +495,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
     }
 
+    /**
+     * @return {@code True} if rest processor should not start on client node.
+     */
+    private boolean notStartOnClient() {
+        return ctx.clientNode() && !IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT);
+    }
+
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         if (isRestEnabled()) {
             for (GridRestProtocol proto : protos)
                 proto.onKernalStart();
@@ -778,6 +809,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case ATOMIC_DECREMENT:
             case NAME:
             case LOG:
+            case CLUSTER_CURRENT_STATE:
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
                 break;
 
             default:
@@ -872,7 +906,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> REST processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> REST processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
     }
@@ -954,7 +988,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         /**
-         * Checks whether session at expired state (EPIRATION_FLAG) or not, if not then tries to update last touch time.
+         * Checks whether session at expired state (EXPIRATION_FLAG) or not, if not then tries to update last touch time.
          *
          * @return {@code False} if session timed out (not successfully touched).
          * @see #isTimedOut(long)

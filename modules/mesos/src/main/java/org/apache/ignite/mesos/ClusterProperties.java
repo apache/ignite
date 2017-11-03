@@ -200,6 +200,15 @@ public class ClusterProperties {
     /** */
     public static final String IGNITE_CONFIG_XML_URL = "IGNITE_CONFIG_XML_URL";
 
+    /** */
+    public static final String IGNITE_HTTP_SERVER_IDLE_TIMEOUT = "IGNITE_HTTP_SERVER_IDLE_TIMEOUT";
+
+    /** */
+    public static final long IGNITE_HTTP_SERVER_IDLE_TIMEOUT_DEFAULT = 30000L;
+
+    /** Jetty idle timeout. */
+    private long idleTimeout = IGNITE_HTTP_SERVER_IDLE_TIMEOUT_DEFAULT;
+
     /** Url to ignite config. */
     private String igniteCfgUrl = null;
 
@@ -400,6 +409,17 @@ public class ClusterProperties {
     }
 
     /**
+     * Sets the maximum Idle time for a http connection, which will be used for
+     * jetty server. The server provides resources for ignite mesos framework such as
+     * ignite archive, user's libs, configurations and etc.
+     *
+     * @return Http server idle timeout.
+     */
+    public long idleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
      * URL to ignite package. The URL should to point at valid apache ignite archive.
      * This property can be useful if using own apache ignite build.
      *
@@ -458,7 +478,9 @@ public class ClusterProperties {
             if (cfg != null) {
                 props = new Properties();
 
-                props.load(new FileInputStream(cfg));
+                try (FileInputStream in = new FileInputStream(cfg)) {
+                    props.load(in);
+                }
             }
 
             ClusterProperties prop = new ClusterProperties();
@@ -502,6 +524,8 @@ public class ClusterProperties {
 
             String ptrn = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
 
+            prop.idleTimeout = getLongProperty(IGNITE_HTTP_SERVER_IDLE_TIMEOUT, props, IGNITE_HTTP_SERVER_IDLE_TIMEOUT_DEFAULT);
+
             if (ptrn != null) {
                 try {
                     prop.hostnameConstraint = Pattern.compile(ptrn);
@@ -533,6 +557,23 @@ public class ClusterProperties {
             prop = System.getenv(name);
 
         return prop == null ? dfltVal : Double.valueOf(prop);
+    }
+
+    /**
+     * @param name Property name.
+     * @param fileProps Property file.
+     * @return Property value.
+     */
+    private static long getLongProperty(String name, Properties fileProps, Long dfltVal) {
+        if (fileProps != null && fileProps.containsKey(name))
+            return Long.valueOf(fileProps.getProperty(name));
+
+        String prop = System.getProperty(name);
+
+        if (prop == null)
+            prop = System.getenv(name);
+
+        return prop == null ? dfltVal : Long.valueOf(prop);
     }
 
     /**

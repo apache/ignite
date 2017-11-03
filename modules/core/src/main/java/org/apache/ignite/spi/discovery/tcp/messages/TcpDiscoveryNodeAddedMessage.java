@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +41,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
 
     /** Added node. */
     private final TcpDiscoveryNode node;
+
+    /** */
+    private DiscoveryDataPacket dataPacket;
 
     /** Pending messages from previous node. */
     private Collection<TcpDiscoveryAbstractMessage> msgs;
@@ -62,12 +65,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Topology snapshots history. */
     private Map<Long, Collection<ClusterNode>> topHist;
 
-    /** Discovery data from new node. */
-    private Map<Integer, byte[]> newNodeDiscoData;
-
-    /** Discovery data from old nodes. */
-    private Map<UUID, Map<Integer, byte[]>> oldNodesDiscoData;
-
     /** Start time of the first grid node. */
     private final long gridStartTime;
 
@@ -76,12 +73,12 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId Creator node ID.
      * @param node Node to add to topology.
-     * @param newNodeDiscoData New Node discovery data.
+     * @param dataPacket container for collecting discovery data across the cluster.
      * @param gridStartTime Start time of the first grid node.
      */
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
         TcpDiscoveryNode node,
-        Map<Integer, byte[]> newNodeDiscoData,
+        DiscoveryDataPacket dataPacket,
         long gridStartTime)
     {
         super(creatorNodeId);
@@ -90,10 +87,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         assert gridStartTime > 0;
 
         this.node = node;
-        this.newNodeDiscoData = newNodeDiscoData;
+        this.dataPacket = dataPacket;
         this.gridStartTime = gridStartTime;
-
-        oldNodesDiscoData = new LinkedHashMap<>();
     }
 
     /**
@@ -109,8 +104,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         this.top = msg.top;
         this.clientTop = msg.clientTop;
         this.topHist = msg.topHist;
-        this.newNodeDiscoData = msg.newNodeDiscoData;
-        this.oldNodesDiscoData = msg.oldNodesDiscoData;
+        this.dataPacket = msg.dataPacket;
         this.gridStartTime = msg.gridStartTime;
     }
 
@@ -220,36 +214,17 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * @return Discovery data from new node.
+     * @return {@link DiscoveryDataPacket} carried by this message.
      */
-    public Map<Integer, byte[]> newNodeDiscoveryData() {
-        return newNodeDiscoData;
-    }
-
-    /**
-     * @return Discovery data from old nodes.
-     */
-    public Map<UUID, Map<Integer, byte[]>> oldNodesDiscoveryData() {
-        return oldNodesDiscoData;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param discoData Discovery data to add.
-     */
-    public void addDiscoveryData(UUID nodeId, Map<Integer, byte[]> discoData) {
-        // Old nodes disco data may be null if message
-        // makes more than 1 pass due to stopping of the nodes in topology.
-        if (oldNodesDiscoData != null)
-            oldNodesDiscoData.put(nodeId, discoData);
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**
      * Clears discovery data to minimize message size.
      */
     public void clearDiscoveryData() {
-        newNodeDiscoData = null;
-        oldNodesDiscoData = null;
+        dataPacket = null;
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
@@ -88,66 +88,49 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void testGetAndPut() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1525");
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testExplicitTransactionRetriesSingleValue() throws Exception {
-        checkRetry(Test.TX_PUT, TestMemoryMode.HEAP, false);
+        checkRetry(Test.TX_PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExplicitTransactionRetriesSingleValueStoreEnabled() throws Exception {
-        checkRetry(Test.TX_PUT, TestMemoryMode.HEAP, true);
+        checkRetry(Test.TX_PUT, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExplicitTransactionRetries() throws Exception {
-        explicitTransactionRetries(TestMemoryMode.HEAP, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExplicitTransactionRetriesSingleOperation() throws Exception {
-        explicitTransactionRetries(TestMemoryMode.HEAP, false);
+        explicitTransactionRetries(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExplicitTransactionRetriesStoreEnabled() throws Exception {
-        explicitTransactionRetries(TestMemoryMode.HEAP, true);
+        explicitTransactionRetries(false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testExplicitTransactionRetriesOffheapSwap() throws Exception {
-        explicitTransactionRetries(TestMemoryMode.OFFHEAP_EVICT_SWAP, false);
+    public void testExplicitTransactionRetriesEvictionEnabled() throws Exception {
+        explicitTransactionRetries(true, false);
     }
 
     /**
-     * @param memMode Memory mode.
+     * @param evict If {@code true} uses cache with eviction policy.
      * @param store If {@code true} uses cache with store.
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void explicitTransactionRetries(TestMemoryMode memMode, boolean store) throws Exception {
-        ignite(0).createCache(cacheConfiguration(memMode, store));
+    public void explicitTransactionRetries(boolean evict, boolean store) throws Exception {
+        ignite(0).createCache(cacheConfiguration(evict, store));
 
         final AtomicInteger idx = new AtomicInteger();
         int threads = 8;
@@ -160,7 +143,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                 int base = th * FACTOR;
 
                 Ignite ignite = ignite(0);
-                final IgniteCache<Object, Object> cache = ignite.cache(null);
+                final IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 try {
                     for (int i = 0; i < FACTOR; i++) {
@@ -196,7 +179,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
         // Verify contents of the cache.
         for (int g = 0; g < GRID_CNT; g++) {
-            IgniteCache<Object, Object> cache = ignite(g).cache(null);
+            IgniteCache<Object, Object> cache = ignite(g).cache(DEFAULT_CACHE_NAME);
 
             for (int th = 0; th < threads; th++) {
                 int base = th * FACTOR;
@@ -214,6 +197,70 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                 }
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
+        ignite(0).createCache(cacheConfiguration(false, false));
+
+        final AtomicBoolean finished = new AtomicBoolean();
+
+        final int keysCnt = keysCount();
+
+        IgniteInternalFuture<Object> fut = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Random rnd = new Random();
+
+                while (!finished.get()) {
+                    stopGrid(0);
+
+                    U.sleep(300);
+
+                    startGrid(0);
+
+                    if (rnd.nextBoolean()) // OPC possible only when there is no migration from one backup to another.
+                        awaitPartitionMapExchange();
+                }
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<Object> fut2 = runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int iter = 0;
+
+                while (!finished.get()) {
+                    try {
+                        IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+
+                        Integer val = ++iter;
+
+                        for (int i = 0; i < keysCnt; i++)
+                            cache.invoke(i, new SetEntryProcessor(val));
+                    }
+                    catch (Exception ignored) {
+                        // No-op.
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        try {
+            U.sleep(DURATION);
+        }
+        finally {
+            finished.set(true);
+
+            fut.get();
+            fut2.get();
+        }
+
+        checkOnePhaseCommitReturnValuesCleaned(GRID_CNT);
     }
 
     /**

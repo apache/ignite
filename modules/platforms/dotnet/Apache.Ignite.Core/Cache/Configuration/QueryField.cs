@@ -20,8 +20,11 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Represents a queryable field.
@@ -71,7 +74,33 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Gets the field name.
+        /// Initializes a new instance of the <see cref="QueryField"/> class.
+        /// </summary>
+        internal QueryField(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            Name = reader.ReadString();
+            FieldTypeName = reader.ReadString();
+            IsKeyField = reader.ReadBoolean();
+            NotNull = reader.ReadBoolean();
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            writer.WriteString(Name);
+            writer.WriteString(FieldTypeName);
+            writer.WriteBoolean(IsKeyField);
+            writer.WriteBoolean(NotNull);
+        }
+
+        /// <summary>
+        /// Gets or sets the field name.
         /// </summary>
         public string Name { get; set; }
 
@@ -87,7 +116,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 FieldTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeNameAndLogWarning(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _type = value;
             }
@@ -103,6 +132,43 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 _fieldTypeName = value;
                 _type = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this field belongs to the cache key.
+        /// Proper value here is required for SQL DML queries which create/modify cache keys.
+        /// </summary>
+        public bool IsKeyField { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether null value is allowed for the field.
+        /// </summary>
+        public bool NotNull { get; set; }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log, string logInfo)
+        {
+            Debug.Assert(log != null);
+            Debug.Assert(logInfo != null);
+
+            logInfo += string.Format(", QueryField '{0}'", Name);
+
+            JavaTypes.LogIndirectMappingWarning(_type, log, logInfo);
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(QueryField field)
+        {
+            Debug.Assert(field != null);
+
+            if (field._type != null)
+            {
+                _type = field._type;
             }
         }
     }

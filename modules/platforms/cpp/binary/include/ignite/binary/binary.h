@@ -23,12 +23,13 @@
 #ifndef _IGNITE_BINARY_BINARY
 #define _IGNITE_BINARY_BINARY
 
-#include "ignite/binary/binary_consts.h"
-#include "ignite/binary/binary_containers.h"
-#include "ignite/binary/binary_type.h"
-#include "ignite/binary/binary_raw_reader.h"
-#include "ignite/binary/binary_raw_writer.h"
-#include "ignite/binary/binary_reader.h"
-#include "ignite/binary/binary_writer.h"
+#include <ignite/binary/binary_consts.h>
+#include <ignite/binary/binary_containers.h>
+#include <ignite/binary/binary_type.h>
+#include <ignite/binary/binary_object.h>
+#include <ignite/binary/binary_raw_reader.h>
+#include <ignite/binary/binary_raw_writer.h>
+#include <ignite/binary/binary_reader.h>
+#include <ignite/binary/binary_writer.h>
 
 #endif //_IGNITE_BINARY_BINARY

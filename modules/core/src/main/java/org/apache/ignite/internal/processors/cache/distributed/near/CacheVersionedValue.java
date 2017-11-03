@@ -161,7 +161,7 @@ public class CacheVersionedValue implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 102;
     }
 

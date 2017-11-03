@@ -38,33 +38,26 @@ namespace Apache.Ignite.Linq.Impl
     {
         /** */
         private readonly ICacheInternal _cache;
+        
+        /** */
+        private readonly QueryOptions _options;
 
         /** */
         private static readonly CopyOnWriteConcurrentDictionary<ConstructorInfo, object> CtorCache =
             new CopyOnWriteConcurrentDictionary<ConstructorInfo, object>();
 
-        /** */
-        private readonly bool _local;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="cache">The executor function.</param>
-        /// <param name="local">Local flag.</param>
-        public CacheFieldsQueryExecutor(ICacheInternal cache, bool local)
+        /// <param name="options">Query options.</param>
+        public CacheFieldsQueryExecutor(ICacheInternal cache, QueryOptions options)
         {
             Debug.Assert(cache != null);
+            Debug.Assert(options != null);
 
             _cache = cache;
-            _local = local;
-        }
-
-        /// <summary>
-        /// Gets the local flag.
-        /// </summary>
-        public bool Local
-        {
-            get { return _local; }
+            _options = options;
         }
 
         /** <inheritdoc /> */
@@ -92,7 +85,7 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", qryData.QueryText,
                 string.Join(", ", qryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray());
+            var qry = GetFieldsQuery(qryData.QueryText, qryData.Parameters.ToArray());
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
@@ -100,43 +93,123 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Compiles the query.
+        /// Compiles the query without regard to number or order of arguments.
         /// </summary>
-        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
+        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel)
         {
             Debug.Assert(queryModel != null);
-            Debug.Assert(queryCaller != null);
 
-            var qryData = GetQueryData(queryModel);
+            var qryText = GetQueryData(queryModel).QueryText;
+            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            var qryText = qryData.QueryText;
+            return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+        }
+
+        /// <summary>
+        /// Compiles the query.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="queryModel">The query model.</param>
+        /// <param name="queryLambdaModel">The query model generated from lambda body.</param>
+        /// <param name="queryLambda">The query lambda.</param>
+        /// <returns>Compiled query func.</returns>
+        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, QueryModel queryLambdaModel,
+            LambdaExpression queryLambda)
+        {
+            Debug.Assert(queryModel != null);
+
+            // Get model from lambda to map arguments properly.
+            var qryData = GetQueryData(queryLambdaModel);
+
+            var qryText = GetQueryData(queryModel).QueryText;
+            var qryTextLambda = qryData.QueryText;
+
+            if (qryText != qryTextLambda)
+            {
+                Debug.WriteLine(qryText);
+                Debug.WriteLine(qryTextLambda);
+
+                throw new InvalidOperationException("Error compiling query: entire LINQ expression should be " +
+                                                    "specified within lambda passed to Compile method. " +
+                                                    "Part of the query can't be outside the Compile method call.");
+            }
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
+
+            var qryParams = qryData.Parameters.ToArray();
 
             // Compiled query is a delegate with query parameters
             // Delegate parameters order and query parameters order may differ
 
+            // Simple case: lambda with no parameters. Only embedded parameters are used.
+            if (!queryLambda.Parameters.Any())
+            {
+                return argsUnused => _cache.QueryFields(GetFieldsQuery(qryText, qryParams), selector);
+            }
+
             // These are in order of usage in query
-            var qryOrderParams = qryData.ParameterExpressions.OfType<MemberExpression>()
-                .Select(x => x.Member.Name).ToList();
+            var qryOrderArgs = qryParams.OfType<ParameterExpression>().Select(x => x.Name).ToArray();
 
             // These are in order they come from user
-            var userOrderParams = queryCaller.Method.GetParameters().Select(x => x.Name).ToList();
+            var userOrderArgs = queryLambda.Parameters.Select(x => x.Name).ToList();
 
-            if ((qryOrderParams.Count != qryData.Parameters.Count) ||
-                (qryOrderParams.Count != userOrderParams.Count))
-                throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
-                    "should come from enclosing delegate parameters.");
+            // Simple case: all query args directly map to the lambda args in the same order
+            if (qryOrderArgs.Length == qryParams.Length
+                && qryOrderArgs.SequenceEqual(userOrderArgs))
+            {
+                return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+            }
 
-            var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
+            // General case: embedded args and lambda args are mixed; same args can be used multiple times.
+            // Produce a mapping that defines where query arguments come from.
+            var mapping = qryParams.Select(x =>
+            {
+                var pe = x as ParameterExpression;
 
-            // Check if user param order is already correct
-            if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
+                if (pe != null)
+                    return userOrderArgs.IndexOf(pe.Name);
 
-            // Return delegate with reorder
-            return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local,
-                args.Select((x, i) => args[indices[i]]).ToArray()), selector);
+                return -1;
+            }).ToArray();
+
+            return args => _cache.QueryFields(
+                GetFieldsQuery(qryText, MapQueryArgs(args, qryParams, mapping)), selector);
+        }
+
+        /// <summary>
+        /// Maps the query arguments.
+        /// </summary>
+        private static object[] MapQueryArgs(object[] userArgs, object[] embeddedArgs, int[] mapping)
+        {
+            var mappedArgs = new object[embeddedArgs.Length];
+
+            for (var i = 0; i < mappedArgs.Length; i++)
+            {
+                var map = mapping[i];
+
+                mappedArgs[i] = map < 0 ? embeddedArgs[i] : userArgs[map];
+            }
+
+            return mappedArgs;
+        }
+
+        /// <summary>
+        /// Gets the fields query.
+        /// </summary>
+        internal SqlFieldsQuery GetFieldsQuery(string text, object[] args)
+        {
+            return new SqlFieldsQuery(text)
+            {
+                EnableDistributedJoins = _options.EnableDistributedJoins,
+                PageSize = _options.PageSize,
+                EnforceJoinOrder = _options.EnforceJoinOrder,
+                Timeout = _options.Timeout,
+                ReplicatedOnly = _options.ReplicatedOnly,
+                Colocated = _options.Colocated,
+                Local = _options.Local,
+                Arguments = args,
+                Lazy = _options.Lazy
+            };
         }
 
         /** <inheritdoc /> */

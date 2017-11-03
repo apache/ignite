@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
@@ -26,13 +27,14 @@ namespace Apache.Ignite.Core.Impl
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
@@ -45,7 +47,17 @@ namespace Apache.Ignite.Core.Impl
         private const string EnvJavaHome = "JAVA_HOME";
 
         /** Lookup paths. */
-        private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
+        private static readonly string[] JvmDllLookupPaths =
+        {
+            // JRE paths
+            @"bin\server",
+            @"bin\client",
+
+            // JDK paths
+            @"jre\bin\server",
+            @"jre\bin\client",
+            @"jre\bin\default"
+        };
 
         /** Registry lookup paths. */
         private static readonly string[] JreRegistryKeys =
@@ -69,16 +81,6 @@ namespace Apache.Ignite.Core.Impl
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
-
-        /// <summary>
-        /// Initializes the <see cref="IgniteUtils"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
-            Justification = "Readability.")]
-        static IgniteUtils()
-        {
-            TryCleanTempDirectories();
-        }
 
         /// <summary>
         /// Gets thread local random.
@@ -122,12 +124,17 @@ namespace Apache.Ignite.Core.Impl
         /// Load JVM DLL if needed.
         /// </summary>
         /// <param name="configJvmDllPath">JVM DLL path from config.</param>
-        public static void LoadDlls(string configJvmDllPath)
+        /// <param name="log">Log.</param>
+        public static void LoadDlls(string configJvmDllPath, ILogger log)
         {
-            if (_loaded) return;
+            if (_loaded)
+            {
+                log.Debug("JNI dll is already loaded.");
+                return;
+            }
 
             // 1. Load JNI dll.
-            LoadJvmDll(configJvmDllPath);
+            LoadJvmDll(configJvmDllPath, log);
 
             // 2. Load GG JNI dll.
             UnmanagedUtils.Initialize();
@@ -139,8 +146,9 @@ namespace Apache.Ignite.Core.Impl
         /// Create new instance of specified class.
         /// </summary>
         /// <param name="typeName">Class name</param>
+        /// <param name="props">Properties to set.</param>
         /// <returns>New Instance.</returns>
-        public static T CreateInstance<T>(string typeName)
+        public static T CreateInstance<T>(string typeName, IEnumerable<KeyValuePair<string, object>> props = null)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
@@ -149,7 +157,12 @@ namespace Apache.Ignite.Core.Impl
             if (type == null)
                 throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return (T) Activator.CreateInstance(type);
+            var res =  (T) Activator.CreateInstance(type);
+
+            if (props != null)
+                SetProperties(res, props);
+
+            return res;
         }
 
         /// <summary>
@@ -157,7 +170,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target object.</param>
         /// <param name="props">Properties.</param>
-        public static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
+        private static void SetProperties(object target, IEnumerable<KeyValuePair<string, object>> props)
         {
             if (props == null)
                 return;
@@ -182,17 +195,25 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Loads the JVM DLL.
         /// </summary>
-        private static void LoadJvmDll(string configJvmDllPath)
+        private static void LoadJvmDll(string configJvmDllPath, ILogger log)
         {
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
+                log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
+
                 var errCode = LoadDll(dllPath.Value, FileJvmDll);
                 if (errCode == 0)
+                {
+                    log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
+                }
 
-                messages.Add(string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, errorCode={2}]", 
-                    dllPath.Key, dllPath.Value, errCode));
+                var message = string.Format(CultureInfo.InvariantCulture, "[option={0}, path={1}, error={2}]",
+                                                  dllPath.Key, dllPath.Value, FormatWin32Error(errCode));
+                messages.Add(message);
+
+                log.Debug("Failed to load jvm.dll: " + message);
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options
@@ -211,6 +232,32 @@ namespace Apache.Ignite.Core.Impl
 
             throw new IgniteException(string.Format(CultureInfo.InvariantCulture, "Failed to load {0}:\n{1}", 
                 FileJvmDll, combinedMessage));
+        }
+
+        /// <summary>
+        /// Formats the Win32 error.
+        /// </summary>
+        [ExcludeFromCodeCoverage]
+        public static string FormatWin32Error(int errorCode)
+        {
+            if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
+            {
+                var mode = Environment.Is64BitProcess ? "x64" : "x86";
+
+                return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
+                                     "This is often caused by x64/x86 mismatch. " +
+                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
+
+            if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
+            {
+                return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
+                       "This can be caused by missing dependencies. " +
+                       "Make sure that Microsoft Visual C++ 2010 Redistributable Package is installed " +
+                       "(https://www.microsoft.com/en-us/download/details.aspx?id=14632).";
+            }
+
+            return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
         }
 
         /// <summary>
@@ -332,10 +379,20 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
         /// </summary>
-        private static void TryCleanTempDirectories()
+        internal static void TryCleanTempDirectories()
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
+            var dt = DateTime.Now;
+
+            foreach (var dir in Directory.EnumerateDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
             {
+                if ((dt - Directory.GetCreationTime(dir)).TotalMinutes < 1)
+                {
+                    // Do not clean up recently created temp directories:
+                    // they may be used by currently starting up nodes.
+                    // This is a workaround for multiple node startup problem, see IGNITE-5730.
+                    continue;
+                }
+
                 try
                 {
                     Directory.Delete(dir, true);
@@ -355,15 +412,15 @@ namespace Apache.Ignite.Core.Impl
         /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
         /// </summary>
         /// <returns>The full path of the temporary directory.</returns>
-        private static string GetTempDirectoryName()
+        internal static string GetTempDirectoryName()
         {
+            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
+
             while (true)
             {
-                var dir = Path.Combine(Path.GetTempPath(), DirIgniteTmp + Path.GetRandomFileName());
-
                 try
                 {
-                    return Directory.CreateDirectory(dir).FullName;
+                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
                 }
                 catch (IOException)
                 {
@@ -425,7 +482,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(BinaryReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -434,7 +491,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
+            var ignite = reader.Marshaller.Ignite;
 
             if (pred == null)
             {
@@ -450,6 +507,26 @@ namespace Apache.Ignite.Core.Impl
                     if (pred(node))
                         res.Add(node);
                 }
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Encodes the peek modes into a single int value.
+        /// </summary>
+        public static int EncodePeekModes(CachePeekMode[] modes)
+        {
+            var res = 0;
+
+            if (modes == null)
+            {
+                return res;
+            }
+
+            foreach (var mode in modes)
+            {
+                res |= (int)mode;
             }
 
             return res;

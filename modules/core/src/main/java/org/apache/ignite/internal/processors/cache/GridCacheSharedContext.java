@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,24 +36,39 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
@@ -89,11 +104,26 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
+    /** Write ahead log manager. */
+    private IgniteWriteAheadLogManager walMgr;
+
+    /** Database manager. */
+    private IgniteCacheDatabaseSharedManager dbMgr;
+
+    /** Snp manager. */
+    private IgniteCacheSnapshotManager snpMgr;
+
+    /** Page store manager. */
+    private IgnitePageStoreManager pageStoreMgr;
+
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
 
+    /** Ttl cleanup manager. */
+    private GridCacheSharedTtlCleanupManager ttlMgr;
+
     /** Cache contexts map. */
-    private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -107,6 +137,33 @@ public class GridCacheSharedContext<K, V> {
     /** Indicating whether local store keeps primary only. */
     private final boolean locStorePrimaryOnly = IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY);
 
+    /** */
+    private final IgniteLogger msgLog;
+
+    /** */
+    private final IgniteLogger atomicMsgLog;
+
+    /** */
+    private final IgniteLogger txPrepareMsgLog;
+
+    /** */
+    private final IgniteLogger txFinishMsgLog;
+
+    /** */
+    private final IgniteLogger txLockMsgLog;
+
+    /** */
+    private final IgniteLogger txRecoveryMsgLog;
+
+    /** Concurrent DHT atomic updates counters. */
+    private AtomicIntegerArray dhtAtomicUpdCnt;
+
+    /** Rebalance enabled flag. */
+    private boolean rebalanceEnabled = true;
+
+    /** */
+    private final List<IgniteChangeGlobalStateSupport> stateAwareMgrs;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -116,6 +173,7 @@ public class GridCacheSharedContext<K, V> {
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
+     * @param ttlMgr Ttl cleanup manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
      */
@@ -124,24 +182,145 @@ public class GridCacheSharedContext<K, V> {
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
+        IgnitePageStoreManager pageStoreMgr,
+        IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
         GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, affMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, snpMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new ConcurrentHashMap<>();
+        ctxMap = new ConcurrentHashMap8<>();
 
         locStoreCnt = new AtomicInteger();
+
+        if (dbMgr != null && dbMgr.persistenceEnabled())
+            dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
+
+        msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
+        atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
+        txPrepareMsgLog = kernalCtx.log(CU.TX_MSG_PREPARE_LOG_CATEGORY);
+        txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
+        txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
+        txRecoveryMsgLog = kernalCtx.log(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
+
+        stateAwareMgrs = new ArrayList<>();
+
+        if (pageStoreMgr != null)
+            stateAwareMgrs.add(pageStoreMgr);
+
+        if (walMgr != null)
+            stateAwareMgrs.add(walMgr);
+
+        stateAwareMgrs.add(dbMgr);
+
+        stateAwareMgrs.add(snpMgr);
+
+        for (PluginProvider prv : kernalCtx.plugins().allProviders())
+            if (prv instanceof IgniteChangeGlobalStateSupport)
+                stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void activate() throws IgniteCheckedException {
+        if (!kernalCtx.clientNode())
+            dbMgr.lock();
+
+        boolean success = false;
+
+        try {
+            for (IgniteChangeGlobalStateSupport mgr : stateAwareMgrs)
+                mgr.onActivate(kernalCtx);
+
+            success = true;
+        }
+        finally {
+            if (!success) {
+                if (!kernalCtx.clientNode())
+                    dbMgr.unLock();
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void deactivate() {
+        for (int i = stateAwareMgrs.size() - 1; i >= 0; i--)
+            stateAwareMgrs.get(i).onDeActivate(kernalCtx);
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger() {
+        return msgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger atomicMessageLogger() {
+        return atomicMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txPrepareMessageLogger() {
+        return txPrepareMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txFinishMessageLogger() {
+        return txFinishMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txLockMessageLogger() {
+        return txLockMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txRecoveryMessageLogger() {
+        return txRecoveryMsgLog;
+    }
+
+    /**
+     * @return rebalance enabled flag.
+     */
+    public boolean isRebalanceEnabled() {
+        return this.rebalanceEnabled;
+    }
+
+    /**
+     * @param rebalanceEnabled rebalance enabled flag.
+     */
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
+        this.rebalanceEnabled = rebalanceEnabled;
+
+        if (rebalanceEnabled)
+            cache().enableRebalance();
     }
 
     /**
@@ -165,22 +344,30 @@ public class GridCacheSharedContext<K, V> {
             if (restartOnDisconnect(mgr))
                 mgr.stop(true);
         }
+
+        deactivate();
     }
 
     /**
+     * @param active Active flag.
      * @throws IgniteCheckedException If failed.
      */
-    void onReconnected() throws IgniteCheckedException {
+    void onReconnected(boolean active) throws IgniteCheckedException {
         List<GridCacheSharedManager<K, V>> mgrs = new LinkedList<>();
 
         setManagers(mgrs, txMgr,
             jtaMgr,
             verMgr,
             mvccMgr,
+            pageStoreMgr,
+            walMgr,
+            dbMgr,
+            snpMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
-            ioMgr);
+            ioMgr,
+            ttlMgr);
 
         this.mgrs = mgrs;
 
@@ -189,8 +376,12 @@ public class GridCacheSharedContext<K, V> {
                 mgr.start(this);
         }
 
-        for (GridCacheSharedManager<?, ?> mgr : mgrs)
-            mgr.onKernalStart(true);
+        kernalCtx.query().onCacheReconnect();
+
+        if (!active)
+            affinity().removeAllCacheInfo();
+
+        exchMgr.onKernalStart(active, true);
     }
 
     /**
@@ -204,31 +395,42 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param mgrs Managers list.
      * @param txMgr Transaction manager.
+     * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
-     * @param jtaMgr JTA manager.
+     * @param ttlMgr Ttl cleanup manager.
      */
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
+        IgnitePageStoreManager pageStoreMgr,
+        IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
+        IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
-        GridCacheIoManager ioMgr) {
+        GridCacheIoManager ioMgr,
+        GridCacheSharedTtlCleanupManager ttlMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
+        this.pageStoreMgr = add(mgrs, pageStoreMgr);
+        this.walMgr = add(mgrs, walMgr);
+        this.dbMgr = add(mgrs, dbMgr);
+        this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
+        this.ttlMgr = add(mgrs, ttlMgr);
     }
 
     /**
@@ -238,6 +440,23 @@ public class GridCacheSharedContext<K, V> {
      */
     public Collection<GridCacheContext> cacheContexts() {
         return (Collection)ctxMap.values();
+    }
+
+    /**
+     * @param c Cache context closure.
+     */
+    void forAllCaches(final IgniteInClosure<GridCacheContext> c) {
+        for (Integer cacheId : ctxMap.keySet()) {
+            ctxMap.computeIfPresent(cacheId,
+                new ConcurrentHashMap8.BiFun<Integer, GridCacheContext<K, V>, GridCacheContext<K, V>>() {
+                    @Override public GridCacheContext<K, V> apply(Integer cacheId, GridCacheContext<K, V> ctx) {
+                        c.apply(ctx);
+
+                        return ctx;
+                    }
+                }
+            );
+        }
     }
 
     /**
@@ -274,7 +493,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param cacheCtx Cache context to remove.
      */
-    public void removeCacheContext(GridCacheContext cacheCtx) {
+    void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
@@ -285,7 +504,7 @@ public class GridCacheSharedContext<K, V> {
             locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
-        ioMgr.removeHandlers(cacheId);
+        ioMgr.removeCacheHandlers(cacheId);
     }
 
     /**
@@ -316,10 +535,26 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Grid name.
+     * Returns cache object context if created or creates new and caches it until cache started.
+     *
+     * @param cacheId Cache id.
      */
-    public String gridName() {
-        return kernalCtx.gridName();
+    public @Nullable CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
+        GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
+
+        if (ctx != null)
+            return ctx.cacheObjectContext();
+
+        DynamicCacheDescriptor desc = cache().cacheDescriptor(cacheId);
+
+        return desc != null ? desc.cacheObjectContext(kernalContext().cacheObjects()) : null;
+    }
+
+    /**
+     * @return Ignite instance name.
+     */
+    public String igniteInstanceName() {
+        return kernalCtx.igniteInstanceName();
     }
 
     /**
@@ -418,10 +653,45 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Database manager.
+     */
+    public IgniteCacheDatabaseSharedManager database() {
+        return dbMgr;
+    }
+
+    /**
+     * @return Snapshot manager.
+     */
+    public IgniteCacheSnapshotManager snapshot() {
+        return snpMgr;
+    }
+
+    /**
+     * @return Page store manager.
+     */
+    public IgnitePageStoreManager pageStore() {
+        return pageStoreMgr;
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    public IgniteWriteAheadLogManager wal() {
+        return walMgr;
+    }
+
+    /**
      * @return IO manager.
      */
     public GridCacheIoManager io() {
         return ioMgr;
+    }
+
+    /**
+     * @return Ttl cleanup manager.
+     * */
+    public GridCacheSharedTtlCleanupManager ttl() {
+        return ttlMgr;
     }
 
     /**
@@ -540,18 +810,31 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * Waits for partition locks and transactions release.
+     * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
+     * This method must be called only after
+     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
+     * method is called so that all new updates will wait to switch to the new version.
+     * This method will capture:
+     * <ul>
+     *     <li>All non-released cache locks</li>
+     *     <li>All non-committed transactions (local and remote)</li>
+     *     <li>All pending atomic updates</li>
+     *     <li>All pending DataStreamer updates</li>
+     * </ul>
+     *
+     * Captured updates are wrapped in a future that will be completed once pending objects are released.
      *
      * @param topVer Topology version.
      * @return {@code true} if waiting was successful.
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture f = new GridCompoundFuture();
+        GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
+        f.add(mvcc().finishDataStreamerUpdates(topVer));
 
         f.markInitialized();
 
@@ -581,7 +864,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return Error message if transactions are incompatible.
      */
-    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridLongList activeCacheIds,
+    @Nullable public String verifyTxCompatibility(IgniteInternalTx tx, GridIntList activeCacheIds,
         GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.systemTx() && !tx.system())
             return "system cache can be enlisted only in system transaction";
@@ -590,7 +873,7 @@ public class GridCacheSharedContext<K, V> {
             return "non-system cache can't be enlisted in system transaction";
 
         for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
+            int cacheId = activeCacheIds.get(i);
 
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
@@ -646,8 +929,8 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to close.
      * @throws IgniteCheckedException If failed.
      */
-    public void endTx(IgniteInternalTx tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
+    public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
 
         tx.close();
     }
@@ -657,13 +940,13 @@ public class GridCacheSharedContext<K, V> {
      * @return Commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(GridNearTxLocal tx) {
         GridCacheContext ctx = tx.txState().singleCacheContext(this);
 
         if (ctx == null) {
-            tx.txState().awaitLastFut(this);
+            tx.txState().awaitLastFuture(this);
 
-            return tx.commitAsync();
+            return tx.commitNearTxLocalAsync();
         }
         else
             return ctx.cache().commitTxAsync(tx);
@@ -674,10 +957,34 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      * @return Rollback future.
      */
-    public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFut(this);
+    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
 
-        return tx.rollbackAsync();
+        return tx.rollbackNearTxLocalAsync();
+    }
+
+    /**
+     * Suspends transaction. It could be resume later. Supported only for optimistic transactions.
+     *
+     * @param tx Transaction to suspend.
+     * @throws IgniteCheckedException If suspension failed.
+     */
+    public void suspendTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
+
+        tx.suspend();
+    }
+
+    /**
+     * Resume transaction if it was previously suspended.
+     *
+     * @param tx Transaction to resume.
+     * @throws IgniteCheckedException If resume failed.
+     */
+    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.txState().awaitLastFuture(this);
+
+        tx.resume();
     }
 
     /**
@@ -705,5 +1012,32 @@ public class GridCacheSharedContext<K, V> {
      */
     public void txContextReset() {
         mvccMgr.contextReset();
+    }
+
+    /**
+     * @param ver DHT atomic update future version.
+     * @return Amount of active DHT atomic updates.
+     */
+    public int startDhtAtomicUpdate(GridCacheVersion ver) {
+        assert dhtAtomicUpdCnt != null;
+
+        return dhtAtomicUpdCnt.incrementAndGet(dhtAtomicUpdateIndex(ver));
+    }
+
+    /**
+     * @param ver DHT atomic update future version.
+     */
+    public void finishDhtAtomicUpdate(GridCacheVersion ver) {
+        assert dhtAtomicUpdCnt != null;
+
+        dhtAtomicUpdCnt.decrementAndGet(dhtAtomicUpdateIndex(ver));
+    }
+
+    /**
+     * @param ver Version.
+     * @return Index.
+     */
+    private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
+        return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
 }

@@ -47,6 +47,8 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientThreadFactory;
+import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.client.util.GridClientStripedLock;
 import org.apache.ignite.internal.client.util.GridClientUtils;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
@@ -82,6 +84,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
 
     /** Class logger. */
     private final Logger log;
+
+    /** All local enabled MACs. */
+    private final Collection<String> macs;
 
     /** NIO server. */
     private GridNioServer srv;
@@ -164,6 +169,8 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         if (marshId == null && cfg.getMarshaller() == null)
             throw new GridClientException("Failed to start client (marshaller is not configured).");
 
+        macs = U.allLocalMACs();
+
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
                 IgniteLogger gridLog = new JavaLogger(false);
@@ -176,7 +183,6 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
 
                     sslFilter.directMode(false);
-                    sslFilter.clientMode(true);
 
                     filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
@@ -197,7 +203,8 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
-                    .gridName(routerClient ? "routerClient" : "gridClient")
+                    .igniteInstanceName(routerClient ? "routerClient" : "gridClient")
+                    .serverName("tcp-client")
                     .daemon(cfg.isDaemon())
                     .build();
 
@@ -313,7 +320,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         }
 
         boolean sameHost = node.attributes().isEmpty() ||
-            F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+            F.containsAny(macs, node.attribute(ATTR_MACS).toString().split(", "));
 
         Collection<InetSocketAddress> srvs = new LinkedHashSet<>();
 
@@ -460,9 +467,26 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             GridClientConnection conn;
 
             if (cfg.getProtocol() == GridClientProtocol.TCP) {
-                conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
-                    cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                    cfg.isTcpNoDelay(), cfg.getMarshaller(), marshId, top, cred, keepBinariesThreadLocal());
+                GridClientMarshaller marsh = cfg.getMarshaller();
+
+                try {
+                    conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
+                        cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
+                        cfg.isTcpNoDelay(), marsh, marshId, top, cred, keepBinariesThreadLocal());
+                }
+                catch (GridClientException e) {
+                    if (marsh instanceof GridClientZipOptimizedMarshaller) {
+                        log.warning("Failed to connect with GridClientZipOptimizedMarshaller," +
+                            " trying to fallback to default marshaller: " + e);
+
+                        conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
+                            cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
+                            cfg.isTcpNoDelay(), ((GridClientZipOptimizedMarshaller)marsh).defaultMarshaller(), marshId,
+                            top, cred, keepBinariesThreadLocal());
+                    }
+                    else
+                        throw e;
+                }
             }
             else
                 throw new GridServerUnreachableException("Failed to create client (protocol is not supported): " +

@@ -84,7 +84,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         try {
             assert arg != null;
 
-            Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
+            Map<String, Object> args = U.unmarshal(MARSHALLER, arg, null);
 
             boolean first = true;
 
@@ -106,9 +106,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 String cache = (String)args.get("cache");
 
-                Map<? extends ComputeJob, ClusterNode> node = mapToNode(subgrid, args, first, cache);
+                Map<? extends ComputeJob, ClusterNode> node = null;
 
-                if (node == null && cache == null) {
+                if (cache == null) {
                     boolean start = ignite.configuration().isClientMode();
 
                     IgniteCache<?, ?> cache0 =
@@ -117,6 +117,8 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                     if (cache0 != null)
                         node = mapToNode(subgrid, args, first, cache0.getName());
                 }
+                else
+                    node = mapToNode(subgrid, args, first, cache);
 
                 if (node != null)
                     return node;
@@ -165,12 +167,12 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             if (res.getException() == null) {
                 status = 0;
 
-                bytes = MARSHALLER.marshal(res.getData());
+                bytes = U.marshal(MARSHALLER, res.getData());
             }
             else {
                 status = 1;
 
-                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
+                bytes = U.marshal(MARSHALLER, new SQLException(res.getException().getMessage()));
             }
 
             byte[] packet = new byte[bytes.length + 1];
@@ -268,7 +270,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 qry.setPageSize(pageSize);
 
-                QueryCursor<List<?>> cursor = cache.query(qry);
+                QueryCursor<List<?>> cursor = cache.withKeepBinary().query(qry);
 
                 Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)cursor).fieldsMeta();
 

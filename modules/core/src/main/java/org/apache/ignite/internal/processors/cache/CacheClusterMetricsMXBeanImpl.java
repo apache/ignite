@@ -44,11 +44,6 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return cache.clusterMetrics().getOverflowSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
         return cache.clusterMetrics().getOffHeapGets();
     }
@@ -94,6 +89,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return cache.clusterMetrics().getHeapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return cache.clusterMetrics().getOffHeapPrimaryEntriesCount();
     }
@@ -106,56 +106,6 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return cache.clusterMetrics().getOffHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return cache.clusterMetrics().getOffHeapMaxSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return cache.clusterMetrics().getSwapGets();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return cache.clusterMetrics().getSwapPuts();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return cache.clusterMetrics().getSwapRemovals();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return cache.clusterMetrics().getSwapHits();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return cache.clusterMetrics().getSwapMisses();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        return cache.clusterMetrics().getSwapHitPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        return cache.clusterMetrics().getSwapMissPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        return cache.clusterMetrics().getSwapEntriesCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return cache.clusterMetrics().getSwapSize();
     }
 
     /** {@inheritDoc} */
@@ -406,5 +356,50 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
         return cache.clusterMetrics().isWriteThrough();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return cache.clusterMetrics().getTotalPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return cache.clusterMetrics().getRebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return cache.clusterMetrics().getKeysToRebalanceLeft();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return cache.clusterMetrics().getRebalancingKeysRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return cache.clusterMetrics().getRebalancingBytesRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long estimateRebalancingFinishTime() {
+        return cache.clusterMetrics().estimateRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return cache.clusterMetrics().rebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return cache.clusterMetrics().getEstimatedRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return cache.clusterMetrics().getRebalancingStartTime();
     }
 }

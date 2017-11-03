@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -69,30 +71,34 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     private volatile ReaderId[] rdrs = ReaderId.EMPTY_ARRAY;
 
     /** Local partition. */
+    @GridToStringExclude
     private final GridDhtLocalPartition locPart;
 
     /**
      * @param ctx Cache context.
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     public GridDhtCacheEntry(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
 
         // Record this entry with partition.
         int p = cctx.affinity().partition(key);
 
-        locPart = ctx.topology().localPartition(p, topVer, true);
+        locPart = ctx.topology().localPartition(p, topVer, true, true);
 
-        assert locPart != null;
+        assert locPart != null : p;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer,
+        boolean primary,
+        @Nullable Long primaryCntr) {
+        return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, primaryCntr);
     }
 
     /** {@inheritDoc} */
@@ -112,6 +118,11 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Override protected GridDhtLocalPartition localPartition() {
+        return locPart;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isDht() {
         return true;
     }
@@ -126,7 +137,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         assert !Thread.holdsLock(this);
 
         // Remove this entry from partition mapping.
-        cctx.dht().topology().onRemoved(this);
+        cctx.topology().onRemoved(this);
     }
 
     /**
@@ -135,7 +146,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Local candidate by near version.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate localCandidateByNearVersion(GridCacheVersion nearVer,
+    @Nullable synchronized GridCacheMvccCandidate localCandidateByNearVersion(GridCacheVersion nearVer,
         boolean rmv) throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -165,34 +176,33 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param threadId Owning thread ID.
      * @param ver Lock version.
      * @param serOrder Version for serializable transactions ordering.
-     * @param serReadVer Optional read entry version for optimistic serializable transaction.
      * @param timeout Timeout to acquire lock.
      * @param reenter Reentry flag.
      * @param tx Tx flag.
      * @param implicitSingle Implicit flag.
+     * @param read Read lock flag.
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws GridDistributedLockCancelledException If lock was cancelled.
      */
-    @Nullable public GridCacheMvccCandidate addDhtLocal(
+    @Nullable GridCacheMvccCandidate addDhtLocal(
         UUID nearNodeId,
         GridCacheVersion nearVer,
         AffinityTopologyVersion topVer,
         long threadId,
         GridCacheVersion ver,
         @Nullable GridCacheVersion serOrder,
-        @Nullable GridCacheVersion serReadVer,
         long timeout,
         boolean reenter,
         boolean tx,
-        boolean implicitSingle)
+        boolean implicitSingle,
+        boolean read)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
-        assert serReadVer == null || serOrder != null;
         assert !reenter || serOrder == null;
 
         GridCacheMvccCandidate cand;
-        GridCacheMvccCandidate prev;
-        GridCacheMvccCandidate owner;
+        CacheLockCandidates prev;
+        CacheLockCandidates owner;
 
         CacheObject val;
 
@@ -211,7 +221,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 mvccExtras(mvcc);
             }
 
-            prev = mvcc.anyOwner();
+            prev = mvcc.allOwners();
 
             boolean emptyBefore = mvcc.isEmpty();
 
@@ -226,7 +236,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 reenter,
                 tx,
                 implicitSingle,
-                /*dht-local*/true
+                /*dht-local*/true,
+                read
             );
 
             if (cand == null)
@@ -234,10 +245,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
             cand.topologyVersion(topVer);
 
-            owner = mvcc.anyOwner();
+            owner = mvcc.allOwners();
 
             if (owner != null)
-                cand.ownerVersion(owner.version());
+                cand.ownerVersion(owner.candidate(0).version());
 
             boolean emptyAfter = mvcc.isEmpty();
 
@@ -264,7 +275,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         long timeout,
         @Nullable GridCacheVersion serOrder,
         GridCacheVersion serReadVer,
-        boolean keepBinary
+        boolean read
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter dhtTx = (GridDhtTxLocalAdapter)tx;
@@ -277,11 +288,11 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 tx.threadId(),
                 tx.xidVersion(),
                 serOrder,
-                serReadVer,
                 timeout,
                 /*reenter*/false,
                 /*tx*/true,
-                tx.implicitSingle()) != null;
+                tx.implicitSingle(),
+                read) != null;
         }
 
         try {
@@ -290,7 +301,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 tx.otherNodeId(),
                 tx.threadId(),
                 tx.xidVersion(),
-                tx.timeout(),
                 /*tx*/true,
                 tx.implicit(),
                 null);
@@ -340,7 +350,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = this.val;
 
             return F.t(ver, val0);
         }
@@ -393,16 +403,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             return null;
         }
 
-        // If remote node has no near cache, don't add it.
-        if (!cctx.discovery().cacheNearNode(node, cacheName())) {
-            if (log.isDebugEnabled())
-                log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
-
-            return null;
-        }
-
         // If remote node is (primary?) or back up, don't add it as a reader.
-        if (cctx.affinity().belongs(node, partition(), topVer)) {
+        if (cctx.affinity().partitionBelongs(node, partition(), topVer)) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because remote node is affinity node [locNodeId=" + cctx.localNodeId()
                     + ", rmtNodeId=" + nodeId + ", key=" + key + ']');
@@ -552,21 +554,17 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * from swap storage.
      *
      * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      * @throws IgniteCheckedException If failed to remove from swap.
      */
     public boolean clearInternal(
         GridCacheVersion ver,
-        boolean swap,
         GridCacheObsoleteEntryExtras extras
     ) throws IgniteCheckedException {
         boolean rmv = false;
 
         try {
             synchronized (this) {
-                CacheObject prev = saveValueForIndexUnlocked();
-
                 // Call markObsolete0 to avoid recursive calls to clear if
                 // we are clearing dht local partition (onMarkedObsolete should not be called).
                 if (!markObsolete0(ver, false, extras)) {
@@ -581,17 +579,16 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
-                clearIndex(prev);
+                if (log.isTraceEnabled()) {
+                    log.trace("clearInternal [key=" + key +
+                        ", entry=" + System.identityHashCode(this) +
+                        ']');
+                }
+
+                removeValue();
 
                 // Give to GC.
                 update(null, 0L, 0L, ver, true);
-
-                if (swap) {
-                    releaseSwap();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry has been cleared from swap storage: " + this);
-                }
 
                 if (cctx.store().isLocal())
                     cctx.store().remove(null, key);
@@ -616,6 +613,15 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /**
+     * @return Readers.
+     */
+    @Nullable public ReaderId[] readersLocked() {
+        assert Thread.holdsLock(this);
+
+        return this.rdrs;
+    }
+
+    /**
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
@@ -635,7 +641,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         for (int i = 0; i < rdrs.length; i++) {
             ClusterNode node = cctx.discovery().getAlive(rdrs[i].nodeId());
 
-            if (node == null || !cctx.discovery().cacheNode(node, cacheName())) {
+            if (node == null) {
                 // Node has left and if new list has already been created, just skip.
                 // Otherwise, create new list and add alive nodes.
                 if (newRdrs == null) {
@@ -708,29 +714,31 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * @return Cache name.
      */
-    protected String cacheName() {
-        return cctx.dht().near().name();
+    protected final String cacheName() {
+        return cctx.name();
     }
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return S.toString(GridDhtCacheEntry.class, this, "super", super.toString());
+        return S.toString(GridDhtCacheEntry.class, this,
+            "part", locPart.id(),
+            "super", super.toString());
     }
 
     /** {@inheritDoc} */
     @Override protected void incrementMapPublicSize() {
-        locPart.incrementPublicSize(this);
+        locPart.incrementPublicSize(null, this);
     }
 
     /** {@inheritDoc} */
     @Override protected void decrementMapPublicSize() {
-        locPart.decrementPublicSize(this);
+        locPart.decrementPublicSize(null, this);
     }
 
     /**
      * Reader ID.
      */
-    private static class ReaderId {
+    public static class ReaderId {
         /** */
         private static final ReaderId[] EMPTY_ARRAY = new ReaderId[0];
 
@@ -756,9 +764,26 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
 
         /**
+         * @param readers Readers array.
+         * @param nodeId Node ID to check.
+         * @return {@code True} if node ID found in readers array.
+         */
+        public static boolean contains(@Nullable ReaderId[] readers, UUID nodeId) {
+            if (readers == null)
+                return false;
+
+            for (int i = 0; i < readers.length; i++) {
+                if (nodeId.equals(readers[i].nodeId))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /**
          * @return Node ID.
          */
-        UUID nodeId() {
+        public UUID nodeId() {
             return nodeId;
         }
 

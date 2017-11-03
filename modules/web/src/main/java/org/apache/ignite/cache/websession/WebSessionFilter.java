@@ -242,7 +242,7 @@ public class WebSessionFilter implements Filter {
     @Override public void init(FilterConfig cfg) throws ServletException {
         ctx = cfg.getServletContext();
 
-        String gridName = U.firstNotNull(
+        String igniteInstanceName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
@@ -278,11 +278,11 @@ public class WebSessionFilter implements Filter {
         if (!F.isEmpty(binParam))
             keepBinary = Boolean.parseBoolean(binParam);
 
-        webSesIgnite = G.ignite(gridName);
+        webSesIgnite = G.ignite(igniteInstanceName);
 
         if (webSesIgnite == null)
-            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
-                gridName);
+            throw new IgniteException("Ignite instance for web sessions caching is not started (is it configured?): " +
+                igniteInstanceName);
 
         txs = webSesIgnite.transactions();
 
@@ -321,8 +321,8 @@ public class WebSessionFilter implements Filter {
         }
 
         if (log.isInfoEnabled())
-            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
-                ", maxRetriesOnFail=" + retries + ']');
+            log.info("Started web sessions caching [igniteInstanceName=" + igniteInstanceName +
+                ", cacheName=" + cacheName + ", maxRetriesOnFail=" + retries + ']');
     }
 
     /**
@@ -561,18 +561,10 @@ public class WebSessionFilter implements Filter {
 
         chain.doFilter(httpReq, res);
 
-        if (!cached.isValid())
-            binaryCache.remove(cached.id());
-        // Changed session ID.
-        else if (!cached.getId().equals(sesId)) {
-            final String oldId = cached.getId();
+        WebSessionV2 cachedNew = (WebSessionV2)httpReq.getSession(false);
 
-            cached.invalidate();
-
-            binaryCache.remove(oldId);
-        }
-        else
-            updateAttributesV2(cached.getId(), cached);
+        if (cachedNew != null && cachedNew.isValid())
+            updateAttributesV2(cachedNew.getId(), cachedNew);
 
         return sesId;
     }
@@ -695,8 +687,8 @@ public class WebSessionFilter implements Filter {
      * @return New session.
      */
     private WebSessionV2 createSessionV2(final HttpSession ses, final String sesId) throws IOException {
-        if (log.isDebugEnabled())
-            log.debug("Session created: " + sesId);
+        assert ses != null;
+        assert sesId != null;
 
         WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller);
 
@@ -733,6 +725,9 @@ public class WebSessionFilter implements Filter {
 
         final String sesId = transformSessionId(ses.getId());
 
+        if (log.isDebugEnabled())
+            log.debug("Session created: " + sesId);
+
         return createSessionV2(ses, sesId);
     }
 
@@ -745,7 +740,7 @@ public class WebSessionFilter implements Filter {
     private <T> IgniteCache<String, T> cacheWithExpiryPolicy(final int maxInactiveInteval,
         final IgniteCache<String, T> cache) {
         if (maxInactiveInteval > 0) {
-            long ttl = maxInactiveInteval * 1000;
+            long ttl = maxInactiveInteval * 1000L;
 
             ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
@@ -760,6 +755,7 @@ public class WebSessionFilter implements Filter {
      */
     public void destroySession(String sesId) {
         assert sesId != null;
+
         for (int i = 0; i < retries; i++) {
             try {
                 if (cache.remove(sesId) && log.isDebugEnabled())
@@ -854,8 +850,8 @@ public class WebSessionFilter implements Filter {
      */
     private void handleAttributeUpdateException(final String sesId, final int tryCnt, final RuntimeException e) {
         if (tryCnt == retries - 1) {
-            U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                sesId + ", retries=" + retries + ']');
+            U.error(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
+                sesId + ", retries=" + retries + ']', e);
         }
         else {
             U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
@@ -963,6 +959,27 @@ public class WebSessionFilter implements Filter {
 
             return newId;
         }
+
+        /** {@inheritDoc} */
+        @Override public void login(String username, String password) throws ServletException{
+            HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            req.login(username, password);
+
+            String newId = req.getSession(false).getId();
+
+            this.ses.setId(newId);
+
+            this.ses = createSession(ses, newId);
+            this.ses.servletContext(ctx);
+            this.ses.filter(WebSessionFilter.this);
+            this.ses.resetUpdates();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses.isValid();
+        }
     }
 
     /**
@@ -986,7 +1003,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
-            if (!ses.isValid()) {
+            if (ses != null && !ses.isValid()) {
                 binaryCache.remove(ses.id());
 
                 if (create) {
@@ -998,7 +1015,7 @@ public class WebSessionFilter implements Filter {
                     }
                 }
                 else
-                    return null;
+                    ses = null;
             }
 
             return ses;
@@ -1025,6 +1042,29 @@ public class WebSessionFilter implements Filter {
             }
 
             return newId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void login(String username, String password) throws ServletException{
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            req.login(username, password);
+
+            final String newId = req.getSession(false).getId();
+
+            if (!F.eq(newId, ses.getId())) {
+                try {
+                    ses = createSessionV2(ses, newId);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses != null && ses.isValid();
         }
     }
 }

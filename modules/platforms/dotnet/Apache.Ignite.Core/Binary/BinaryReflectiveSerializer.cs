@@ -18,8 +18,6 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
-    using System.Collections.Generic;
-    using System.Reflection;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
@@ -41,15 +39,34 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     public sealed class BinaryReflectiveSerializer : IBinarySerializer
     {
-        /** Cached binding flags. */
-        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
-            BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-
-        /** Cached type descriptors. */
-        private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
-
         /** Raw mode flag. */
         private bool _rawMode;
+
+        /** In use flag. */
+        private bool _isInUse;
+
+        /** Force timestamp flag. */
+        private bool _forceTimestamp;
+
+        /// <summary>
+        /// Write binary object.
+        /// </summary>
+        /// <param name="obj">Object.</param>
+        /// <param name="writer">Binary writer.</param>
+        public void WriteBinary(object obj, IBinaryWriter writer)
+        {
+            throw new NotSupportedException(GetType() + ".WriteBinary should not be called directly.");
+        }
+
+        /// <summary>
+        /// Read binary object.
+        /// </summary>
+        /// <param name="obj">Instantiated empty object.</param>
+        /// <param name="reader">Binary reader.</param>
+        public void ReadBinary(object obj, IBinaryReader reader)
+        {
+            throw new NotSupportedException(GetType() + ".ReadBinary should not be called directly.");
+        }
 
         /// <summary>
         /// Gets or value indicating whether raw mode serialization should be used.
@@ -62,179 +79,55 @@ namespace Apache.Ignite.Core.Binary
             get { return _rawMode; }
             set
             {
-                if (_types.Count > 0)
-                    throw new InvalidOperationException(typeof (BinarizableSerializer).Name +
-                        ".RawMode cannot be changed after first serialization.");
+                ThrowIfInUse();
 
                 _rawMode = value;
             }
         }
 
         /// <summary>
-        /// Write portalbe object.
+        /// Gets or sets a value indicating whether all DateTime values should be written as Timestamp.
+        /// <para />
+        /// Timestamp format is required for values used in SQL and for interoperation with other platforms.
+        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write.
+        /// <para />
+        /// Normally serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields.
+        /// This attribute changes the behavior to <see cref="IBinaryWriter.WriteTimestamp"/>.
+        /// <para />
+        /// See also <see cref="TimestampAttribute"/>.
         /// </summary>
-        /// <param name="obj">Object.</param>
-        /// <param name="writer">Writer.</param>
-        /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void WriteBinary(object obj, IBinaryWriter writer)
+        public bool ForceTimestamp
         {
-            var binarizable = obj as IBinarizable;
+            get { return _forceTimestamp; }
+            set
+            {
+                ThrowIfInUse();
 
-            if (binarizable != null)
-                binarizable.WriteBinary(writer);
-            else
-                GetDescriptor(obj).Write(obj, writer);
+                _forceTimestamp = value;
+            }
         }
 
         /// <summary>
-        /// Read binary object.
+        /// Registers the specified type.
         /// </summary>
-        /// <param name="obj">Instantiated empty object.</param>
-        /// <param name="reader">Reader.</param>
-        /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void ReadBinary(object obj, IBinaryReader reader)
-        {
-            var binarizable = obj as IBinarizable;
-            
-            if (binarizable != null)
-                binarizable.ReadBinary(reader);
-            else
-                GetDescriptor(obj).Read(obj, reader);
-        }
-
-        /// <summary>Register type.</summary>
-        /// <param name="type">Type.</param>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="converter">Name converter.</param>
-        /// <param name="idMapper">ID mapper.</param>
-        internal void Register(Type type, int typeId, IBinaryNameMapper converter,
+        internal IBinarySerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
             IBinaryIdMapper idMapper)
         {
-            if (type.GetInterface(typeof(IBinarizable).Name) != null)
-                return;
+            _isInUse = true;
 
-            List<FieldInfo> fields = new List<FieldInfo>();
-
-            Type curType = type;
-
-            while (curType != null)
-            {
-                foreach (FieldInfo field in curType.GetFields(Flags))
-                {
-                    if (!field.IsNotSerialized)
-                        fields.Add(field);
-                }
-
-                curType = curType.BaseType;
-            }
-
-            IDictionary<int, string> idMap = new Dictionary<int, string>();
-
-            foreach (FieldInfo field in fields)
-            {
-                string fieldName = BinaryUtils.CleanFieldName(field.Name);
-
-                int fieldId = BinaryUtils.FieldId(typeId, fieldName, converter, idMapper);
-
-                if (idMap.ContainsKey(fieldId))
-                {
-                    throw new BinaryObjectException("Conflicting field IDs [type=" +
-                        type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
-                        ", fieldId=" + fieldId + ']');
-                }
-                
-                idMap[fieldId] = fieldName;
-            }
-
-            fields.Sort(Compare);
-
-            Descriptor desc = new Descriptor(fields, _rawMode);
-
-            _types[type] = desc;
+            return new BinaryReflectiveSerializerInternal(_rawMode)
+                .Register(type, typeId, converter, idMapper, _forceTimestamp);
         }
 
         /// <summary>
-        /// Gets the descriptor for an object.
+        /// Throws an exception if this instance is already in use.
         /// </summary>
-        private Descriptor GetDescriptor(object obj)
+        private void ThrowIfInUse()
         {
-            var type = obj.GetType();
-
-            Descriptor desc;
-
-            if (!_types.TryGetValue(type, out desc))
-                throw new BinaryObjectException("Type is not registered in serializer: " + type.Name);
-
-            return desc;
-        }
-        
-        /// <summary>
-        /// Compare two FieldInfo instances. 
-        /// </summary>
-        private static int Compare(FieldInfo info1, FieldInfo info2) {
-            string name1 = BinaryUtils.CleanFieldName(info1.Name);
-            string name2 = BinaryUtils.CleanFieldName(info2.Name);
-
-            return string.Compare(name1, name2, StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Type descriptor. 
-        /// </summary>
-        private class Descriptor
-        {
-            /** Write actions to be performed. */
-            private readonly List<BinaryReflectiveWriteAction> _wActions;
-
-            /** Read actions to be performed. */
-            private readonly List<BinaryReflectiveReadAction> _rActions;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="fields">Fields.</param>
-            /// <param name="raw">Raw mode.</param>
-            public Descriptor(List<FieldInfo> fields, bool raw)
+            if (_isInUse)
             {
-                _wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
-                _rActions = new List<BinaryReflectiveReadAction>(fields.Count);
-
-                foreach (FieldInfo field in fields)
-                {
-                    BinaryReflectiveWriteAction writeAction;
-                    BinaryReflectiveReadAction readAction;
-
-                    BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, raw);
-
-                    _wActions.Add(writeAction);
-                    _rActions.Add(readAction);
-                }
-            }
-
-            /// <summary>
-            /// Write object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="writer">Writer.</param>
-            public void Write(object obj, IBinaryWriter writer)
-            {
-                int cnt = _wActions.Count;
-
-                for (int i = 0; i < cnt; i++)
-                    _wActions[i](obj, writer);                   
-            }
-
-            /// <summary>
-            /// Read object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="reader">Reader.</param>
-            public void Read(object obj, IBinaryReader reader)
-            {
-                int cnt = _rActions.Count;
-
-                for (int i = 0; i < cnt; i++ )
-                    _rActions[i](obj, reader);
+                throw new InvalidOperationException(typeof(BinaryReflectiveSerializer).Name +
+                                                    ".RawMode cannot be changed after first serialization.");
             }
         }
     }

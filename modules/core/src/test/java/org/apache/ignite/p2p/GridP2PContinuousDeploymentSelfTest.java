@@ -40,8 +40,8 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     /** Number of grids cache. */
     private static final int GRID_CNT = 2;
 
-    /** Name for grid without cache. */
-    private static final String GRID_NAME = "grid-no-cache";
+    /** Name for Ignite instance without cache. */
+    private static final String IGNITE_INSTANCE_NAME = "grid-no-cache";
 
     /** First test task name. */
     private static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask1";
@@ -50,12 +50,12 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask2";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(CONTINUOUS);
 
-        if (GRID_NAME.equals(gridName))
+        if (IGNITE_INSTANCE_NAME.equals(igniteInstanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -99,20 +99,20 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      */
     @SuppressWarnings("unchecked")
     public void testDeployment() throws Exception {
-        Ignite ignite = startGrid(GRID_NAME);
+        Ignite ignite = startGrid(IGNITE_INSTANCE_NAME);
 
         Class cls = getExternalClassLoader().loadClass(TEST_TASK_1);
 
         compute(ignite.cluster().forRemotes()).execute(cls, null);
 
-        stopGrid(GRID_NAME);
+        stopGrid(IGNITE_INSTANCE_NAME);
 
-        ignite = startGrid(GRID_NAME);
+        ignite = startGrid(IGNITE_INSTANCE_NAME);
 
         cls = getExternalClassLoader().loadClass(TEST_TASK_2);
 
         compute(ignite.cluster().forRemotes()).execute(cls, null);
 
-        stopGrid(GRID_NAME);
+        stopGrid(IGNITE_INSTANCE_NAME);
     }
 }

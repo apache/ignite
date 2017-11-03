@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_PROGRAMS = ignite-queryexample
+noinst_PROGRAMS = ignite-query-example
 
 AM_CPPFLAGS = \
     -I@top_srcdir@/include \
@@ -30,27 +30,29 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/../jni/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
-ignite_queryexample_LDADD = \
+ignite_query_example_LDADD = \
     @top_srcdir@/../core/libignite.la \
     -lpthread
 
-ignite_queryexample_LDFLAGS = \
+ignite_query_example_LDFLAGS = \
     -static-libtool-libs
 
-ignite_queryexample_SOURCES = \
+ignite_query_example_SOURCES = \
     src/query_example.cpp
 
 run-check: check
-	./ignite-queryexample -p
+	./ignite-query-example -p
 
 clean-local: clean-check
 	$(RM) *.gcno *.gcda
 
 clean-check:
-	$(RM) $(ignite_queryexample_OBJECTS)
+	$(RM) $(ignite_query_example_OBJECTS)

@@ -47,6 +47,7 @@ public class IgniteExamplesJ8SelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
+
 //        suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
 //        suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
 //        suite.addTest(new TestSuite(DeploymentExamplesSelfTest.class));

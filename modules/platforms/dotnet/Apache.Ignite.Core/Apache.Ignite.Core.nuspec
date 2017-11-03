@@ -44,11 +44,8 @@ Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distri
             
 More info: https://apacheignite-net.readme.io/
         </description>
-        <summary>
-            High-performance in-memory platform for computing and transacting on large-scale data sets in real-time.
-        </summary>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2015</copyright>
+        <copyright>Copyright 2017</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
     </metadata>
     <files>
@@ -56,18 +53,16 @@ More info: https://apacheignite-net.readme.io/
         <file src="NuGet\Install.ps1" target="tools" />
         <file src="NuGet\Uninstall.ps1" target="tools" />
         <file src="NuGet\PostBuild.ps1" target="tools" />
-        
-        <!-- Other files should go to Content folder to be automatically included in project. -->
-        <!--<file src="..\..\..\..\config\default-config.xml" target="Content\Config" />-->
+
+        <!-- Include Apache.Ignite.exe -->
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
         
         <!-- 
             Library files (jars) should not be included in project, so that NuGet package restore works properly.
             We keep jars in NuGet dir and copy them over in PostBuild event.
         -->
-        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\licenses\*.*" target="Licenses" />
+        <file src="..\bin\Libs\*.jar" target="Libs" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />

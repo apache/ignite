@@ -56,8 +56,8 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 
@@ -88,7 +88,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
         Collection<Integer> res = new ArrayList<>();
 
         for (int i : F.asList(1, 2, 3)) {
-            res.add(grid().compute().affinityCall(null, i, new IgniteCallable<Integer>() {
+            res.add(grid().compute().affinityCall(DEFAULT_CACHE_NAME, i, new IgniteCallable<Integer>() {
                 @Override public Integer call() {
                     ids.add(this);
 
@@ -106,7 +106,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
      */
     public void testAffinityRun() throws Exception {
         for (int i : F.asList(1, 2, 3)) {
-            grid().compute().affinityRun(null, i, new IgniteRunnable() {
+            grid().compute().affinityRun(DEFAULT_CACHE_NAME, i, new IgniteRunnable() {
                 @Override public void run() {
                     ids.add(this);
 

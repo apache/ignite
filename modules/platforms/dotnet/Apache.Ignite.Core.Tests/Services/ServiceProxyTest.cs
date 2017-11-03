@@ -110,8 +110,13 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(_svc.ObjProp);
 
             prx.ObjProp = new TestClass {Prop = "prop2"};
-            Assert.AreEqual("prop2", ((TestClass)prx.ObjProp).Prop);
-            Assert.AreEqual("prop2", ((TestClass)_svc.ObjProp).Prop);
+
+            var propVal = KeepBinary
+                ? ((IBinaryObject) prx.ObjProp).Deserialize<TestClass>().Prop
+                : ((TestClass) prx.ObjProp).Prop;
+
+            Assert.AreEqual("prop2", propVal);
+            Assert.AreEqual("prop2", ((TestClass) _svc.ObjProp).Prop);
         }
 
         /// <summary>
@@ -191,10 +196,19 @@ namespace Apache.Ignite.Core.Tests.Services
             var prx = GetProxy();
 
             var err = Assert.Throws<ServiceInvocationException>(prx.ExceptionMethod);
-            Assert.AreEqual("Expected exception", err.InnerException.Message);
 
-            var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
-            Assert.IsTrue(ex.ToString().Contains("+CustomException"));
+            if (KeepBinary)
+            {
+                Assert.IsNotNull(err.BinaryCause);
+                Assert.AreEqual("Expected exception", err.BinaryCause.Deserialize<Exception>().Message);
+            }
+            else
+            {
+                Assert.IsNotNull(err.InnerException);
+                Assert.AreEqual("Expected exception", err.InnerException.Message);
+            }
+
+            Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
         }
 
         [Test]
@@ -243,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Creates the proxy.
         /// </summary>
-        protected T GetProxy<T>()
+        private T GetProxy<T>()
         {
             _svc = new TestIgniteService(Binary);
 
@@ -285,8 +299,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
-                
-                _marsh.StartMarshal(outStream).WriteString("unused");  // fake Java exception details
+
+                var writer = _marsh.StartMarshal(outStream);
+                writer.WriteString("unused");  // fake Java exception details
+                writer.WriteString("unused");  // fake Java exception details
 
                 outStream.SynchronizeOutput();
 
@@ -589,9 +605,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomException : Exception
+        private class CustomException : Exception, IBinarizable
         {
-            
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>

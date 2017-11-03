@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +35,12 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsPathSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
 
     /**
      * Test public methods of igfs path.
@@ -96,12 +101,6 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         String pathStr = "///";
         URI uri = URI.create(pathStr);
         IgfsPath path = new IgfsPath(uri);
-
-        assertNotNull(new IgfsPath(uri));
-        assertNotNull(new IgfsPath(pathStr));
-        assertNotNull(new IgfsPath("/"));
-        assertNotNull(new IgfsPath(path, pathStr));
-        assertNotNull(new IgfsPath());
 
         Class nullUri = URI.class;
         Class nullStr = String.class;

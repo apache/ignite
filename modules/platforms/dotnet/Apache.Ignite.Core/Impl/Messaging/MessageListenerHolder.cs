@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Func<Guid, object, bool> _invoker;
 
         /** Current Ignite instance. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
         
         /** Underlying filter. */
         private readonly object _filter;
@@ -102,12 +102,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 DestroyAction();
         }
 
-        /** <inheritDoc /> */
-        public bool Released
-        {
-            get { return false; } // Multiple releases are allowed.
-        }
-
         /// <summary>
         /// Creates local holder instance.
         /// </summary>
@@ -154,22 +148,20 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(Filter));
+            writer0.WriteObjectDetached(Filter);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageListenerHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public MessageListenerHolder(IBinaryReader reader)
+        public MessageListenerHolder(BinaryReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _filter = reader0.ReadObject<object>();
+            _filter = reader.ReadObject<object>();
 
             _invoker = GetInvoker(_filter);
 
-            _ignite = reader0.Marshaller.Ignite;
+            _ignite = reader.Marshaller.Ignite;
 
             ResourceProcessor.Inject(_filter, _ignite);
         }

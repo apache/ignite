@@ -26,6 +26,9 @@
     <Filter Include="Code\diagnostic">
       <UniqueIdentifier>{df33e506-b5d8-423f-bcc5-1825242a3e28}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\system\ui">
+      <UniqueIdentifier>{ff144e89-0a10-42c3-97dd-d22bfdbc7abb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -47,6 +50,9 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\utility.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\log.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\cursor.cpp">
@@ -103,9 +109,6 @@
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
       <Filter>Code\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\decimal.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\type_info_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -116,6 +119,33 @@
       <Filter>Code\query</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\entry_points.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp">
+      <Filter>Code\system\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system_dsn.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dsn_config.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\protocol_version.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\app\parameter_set.cpp">
+      <Filter>Code\app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\query\batch_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\message.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -156,6 +186,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\log.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h">
@@ -215,9 +248,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
       <Filter>Code\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\decimal.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -228,6 +258,30 @@
       <Filter>Code\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h">
+      <Filter>Code\system\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter_set.h">
+      <Filter>Code\app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\batch_query.h">
+      <Filter>Code\query</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

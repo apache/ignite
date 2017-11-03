@@ -140,7 +140,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
      *
      */
     private void populateCache() {
-        IgniteCache<String, Object> cache = G.ignite().cache(null);
+        IgniteCache<String, Object> cache = G.ignite().cache(DEFAULT_CACHE_NAME);
 
         cache.put("int", intValue());
         cache.put("string", "cacheString");

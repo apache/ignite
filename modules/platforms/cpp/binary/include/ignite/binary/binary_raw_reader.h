@@ -41,12 +41,25 @@ namespace ignite
     {
         /**
          * Binary raw reader.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryRawReader
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
              *
              * @param impl Implementation.
              */
@@ -205,14 +218,14 @@ namespace ignite
             int32_t ReadDoubleArray(double* res, int32_t len);
 
             /**
-             * Read Guid. Maps to "UUID" type in Java.
+             * Read Guid. Maps to "java.util.UUID" type in Java.
              *
              * @return Result.
              */
             Guid ReadGuid();
 
             /**
-             * Read array of Guids. Maps to "UUID[]" type in Java.
+             * Read array of Guids. Maps to "java.util.UUID[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             
@@ -224,14 +237,14 @@ namespace ignite
             int32_t ReadGuidArray(Guid* res, int32_t len);
 
             /**
-             * Read Date. Maps to "Date" type in Java.
+             * Read Date. Maps to "java.util.Date" type in Java.
              *
              * @return Result.
              */
             Date ReadDate();
 
             /**
-             * Read array of Dates. Maps to "Date[]" type in Java.
+             * Read array of Dates. Maps to "java.util.Date[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             
@@ -243,14 +256,14 @@ namespace ignite
             int32_t ReadDateArray(Date* res, int32_t len);
 
             /**
-             * Read Timestamp. Maps to "Timestamp" type in Java.
+             * Read Timestamp. Maps to "java.sql.Timestamp" type in Java.
              *
              * @return Result.
              */
             Timestamp ReadTimestamp();
 
             /**
-             * Read array of Timestamps. Maps to "Timestamp[]" type in Java.
+             * Read array of Timestamps. Maps to "java.sql.Timestamp[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             
@@ -260,6 +273,25 @@ namespace ignite
              *     -1 will be returned in case array in stream was null.
              */
             int32_t ReadTimestampArray(Timestamp* res, int32_t len);
+
+            /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @return Result.
+             */
+            Time ReadTime();
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(Time* res, int32_t len);
 
             /**
              * Read string.
@@ -285,11 +317,11 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::common::SafeArray<char> arr(len + 1);
+                    ignite::common::FixedSizeArray<char> arr(len + 1);
 
-                    ReadString(arr.target, len + 1);
+                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
                 else
                     return std::string();
@@ -325,7 +357,7 @@ namespace ignite
             template<typename T>
             BinaryCollectionReader<T> ReadCollection()
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(&typ, &size);
@@ -353,7 +385,7 @@ namespace ignite
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap()
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(&typ, &size);
@@ -366,7 +398,7 @@ namespace ignite
              *
              * @return Collection type.
              */
-            CollectionType ReadCollectionType();
+            CollectionType::Type ReadCollectionType();
 
             /**
              * Read type of the collection.
@@ -385,6 +417,27 @@ namespace ignite
             {
                 return impl->ReadObject<T>();
             }
+
+            /**
+             * Try read object.
+             * Reads value, stores it to res and returns true if the value is
+             * not null. Otherwise just returns false.
+             *
+             * @param res Read value is placed here if non-null.
+             * @return True if the non-null value has been read and false
+             *     otherwise.
+             */
+            template<typename T>
+            bool TryReadObject(T& res)
+            {
+                if (impl->SkipIfNull())
+                    return false;
+
+                res = impl->ReadObject<T>();
+
+                return true;
+            }
+
         private:
             /** Implementation delegate. */
             ignite::impl::binary::BinaryReaderImpl* impl;  

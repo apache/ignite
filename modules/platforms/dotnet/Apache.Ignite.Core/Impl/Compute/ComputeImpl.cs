@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -33,14 +34,12 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Compute implementation.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class ComputeImpl : PlatformTarget
+    internal class ComputeImpl : PlatformTargetAdapter
     {
         /** */
         private const int OpAffinity = 1;
@@ -57,6 +56,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** */
         private const int OpUnicast = 5;
 
+        /** */
+        private const int OpWithNoFailover = 6;
+
+        /** */
+        private const int OpWithTimeout = 7;
+
+        /** */
+        private const int OpExecNative = 8;
+
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
@@ -67,11 +75,10 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="prj">Projection.</param>
         /// <param name="keepBinary">Binary flag.</param>
-        public ComputeImpl(IUnmanagedTarget target, Marshaller marsh, ClusterGroupImpl prj, bool keepBinary)
-            : base(target, marsh)
+        public ComputeImpl(IPlatformTargetInternal target, ClusterGroupImpl prj, bool keepBinary)
+            : base(target)
         {
             _prj = prj;
 
@@ -97,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         public void WithNoFailover()
         {
-            UU.ComputeWithNoFailover(Target);
+            DoOutInOp(OpWithNoFailover);
         }
 
         /// <summary>
@@ -107,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="timeout">Computation timeout in milliseconds.</param>
         public void WithTimeout(long timeout)
         {
-            UU.ComputeWithTimeout(Target, timeout);
+            DoOutInOp(OpWithTimeout, timeout);
         }
 
         /// <summary>
@@ -132,12 +139,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                TReduceRes res = DoOutInOp<TReduceRes>(OpExec, writer =>
-                {
-                    WriteTask(writer, taskName, taskArg, nodes);
-                });
-
-                return res;
+                return DoOutInOp<TReduceRes>(OpExec, writer => WriteTask(writer, taskName, taskArg, nodes));
             }
             finally
             {
@@ -158,18 +160,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                Future<TReduceRes> fut = null;
-
-                DoOutInOp(OpExecAsync, writer =>
-                {
-                    WriteTask(writer, taskName, taskArg, nodes);
-                }, input =>
-                {
-                    fut = GetFuture<TReduceRes>((futId, futTyp) =>
-                        UU.TargetListenFutureAndGet(Target, futId, futTyp), _keepBinary.Value);
-                });
-
-                return fut;
+                return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
             }
             finally
             {
@@ -193,11 +184,15 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
 
-            var futTarget = UU.ComputeExecuteNative(Target, ptr, _prj.TopologyVersion);
+            var futTarget = DoOutOpObject(OpExecNative, (IBinaryStream s) =>
+            {
+                s.WriteLong(ptr);
+                s.WriteLong(_prj.TopologyVersion);
+            });
 
             var future = holder.Future;
 
-            future.SetTarget(futTarget);
+            future.SetTarget(new Listenable(futTarget));
 
             return future;
         }
@@ -447,6 +442,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="action">Job to execute.</param>
         public Future<object> AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(action, "action");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, object, object>(),
@@ -465,6 +461,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         public Future<TJobRes> AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(clo, "clo");
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
@@ -552,7 +549,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                             writeAction(writer);
                     });
 
-                    holder.Future.SetTarget(futTarget);
+                    holder.Future.SetTarget(new Listenable(futTarget));
                 }
                 catch (Exception e)
                 {
@@ -593,7 +590,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
-                writer.WriteObject(jobHolder);
+                writer.WriteObjectDetached(jobHolder);
             }
             catch (Exception)
             {
@@ -612,12 +609,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="taskName">Task name.</param>
         /// <param name="taskArg">Task arg.</param>
         /// <param name="nodes">Nodes.</param>
-        private void WriteTask(BinaryWriter writer, string taskName, object taskArg,
+        private void WriteTask(IBinaryRawWriter writer, string taskName, object taskArg,
             ICollection<IClusterNode> nodes)
         {
             writer.WriteString(taskName);
             writer.WriteBoolean(_keepBinary.Value);
-            writer.Write(taskArg);
+            writer.WriteObject(taskArg);
 
             WriteNodeIds(writer, nodes);
         }
@@ -627,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <param name="nodes">Nodes.</param>
-        private static void WriteNodeIds(BinaryWriter writer, ICollection<IClusterNode> nodes)
+        private static void WriteNodeIds(IBinaryRawWriter writer, ICollection<IClusterNode> nodes)
         {
             if (nodes == null)
                 writer.WriteBoolean(false);

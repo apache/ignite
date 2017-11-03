@@ -22,17 +22,18 @@
 
 #define IGNITE_ODBC_API_CALL(...)                   \
         diagnosticRecords.Reset();                  \
-        SqlResult result = (__VA_ARGS__);           \
+        SqlResult::Type result = (__VA_ARGS__);     \
         diagnosticRecords.SetHeaderRecord(result)
 
 #define IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS                     \
         diagnosticRecords.Reset();                              \
-        diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS)
+        diagnosticRecords.SetHeaderRecord(SqlResult::AI_SUCCESS)
 
 namespace ignite
 {
     namespace odbc
     {
+        class OdbcError;
         class Connection;
 
         namespace diagnostic
@@ -62,6 +63,16 @@ namespace ignite
                 }
 
                 /**
+                 * Get diagnostic record.
+                 *
+                 * @return Diagnostic record.
+                 */
+                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords()
+                {
+                    return diagnosticRecords;
+                }
+
+                /**
                  * Add new status record.
                  *
                  * @param sqlState SQL state.
@@ -69,7 +80,7 @@ namespace ignite
                  * @param rowNum Associated row number.
                  * @param columnNum Associated column number.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message,
+                virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message,
                     int32_t rowNum, int32_t columnNum);
 
                 /**
@@ -78,7 +89,14 @@ namespace ignite
                  * @param sqlState SQL state.
                  * @param message Message.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message);
+                virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param err Error.
+                 */
+                virtual void AddStatusRecord(const OdbcError& err);
 
             protected:
                 /**

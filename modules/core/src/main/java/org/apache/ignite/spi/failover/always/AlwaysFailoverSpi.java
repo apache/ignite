@@ -23,9 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.failover.GridFailoverContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -92,7 +96,7 @@ import org.apache.ignite.spi.failover.FailoverSpi;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, AlwaysFailoverSpiMBean {
+public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
 
@@ -121,8 +125,12 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     /** Number of jobs that were failed over. */
     private int totalFailoverJobs;
 
-    /** {@inheritDoc} */
-    @Override public int getMaximumFailoverAttempts() {
+    /**
+     * See {@link #setMaximumFailoverAttempts(int)}.
+     *
+     * @return Maximum number of attempts to execute a failed job on another node.
+     */
+    public int getMaximumFailoverAttempts() {
         return maxFailoverAttempts;
     }
 
@@ -131,14 +139,21 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
      * If not specified, {@link #DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
      *
      * @param maxFailoverAttempts Maximum number of attempts to execute a failed job on another node.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setMaximumFailoverAttempts(int maxFailoverAttempts) {
+    public AlwaysFailoverSpi setMaximumFailoverAttempts(int maxFailoverAttempts) {
         this.maxFailoverAttempts = maxFailoverAttempts;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalFailoverJobsCount() {
+    /**
+     * Get total number of jobs that were failed over.
+     *
+     * @return Total number of failed over jobs.
+     */
+    public int getTotalFailoverJobsCount() {
         return totalFailoverJobs;
     }
 
@@ -148,7 +163,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -157,7 +172,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
         if (log.isDebugEnabled())
             log.debug(configInfo("maximumFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, AlwaysFailoverSpiMBean.class);
+        registerMBean(igniteInstanceName, new AlwaysFailoverSpiMBeanImpl(this), AlwaysFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -189,7 +204,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             return null;
         }
 
-        if (ctx.affinityKey() != null) {
+        if (ctx.partition() >= 0) {
             Integer affCallAttempt = ctx.getJobResult().getJobContext().getAttribute(AFFINITY_CALL_ATTEMPT);
 
             if (affCallAttempt == null)
@@ -205,7 +220,15 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             else {
                 ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
 
-                return ignite.affinity(ctx.affinityCacheName()).mapKeyToNode(ctx.affinityKey());
+                try {
+                    return ((IgniteEx)ignite).context().affinity().mapPartitionToNode(ctx.affinityCacheName(), ctx.partition(),
+                        ((GridFailoverContextImpl)ctx).affinityTopologyVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to get map job to node on failover: " + ctx, e);
+
+                    return null;
+                }
             }
         }
 
@@ -214,7 +237,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
         if (failedNodes == null)
             failedNodes = U.newHashSet(1);
 
-        Integer failoverCnt = failedNodes.size();
+        int failoverCnt = failedNodes.size();
 
         if (failoverCnt >= maxFailoverAttempts) {
             U.warn(log, "Job failover failed because number of maximum failover attempts is exceeded [failedJob=" +
@@ -275,7 +298,34 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     }
 
     /** {@inheritDoc} */
+    @Override public AlwaysFailoverSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AlwaysFailoverSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for AlwaysFailoverSpi.
+     */
+    private class AlwaysFailoverSpiMBeanImpl extends IgniteSpiMBeanAdapter implements AlwaysFailoverSpiMBean {
+        /** {@inheritDoc} */
+        AlwaysFailoverSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaximumFailoverAttempts() {
+            return AlwaysFailoverSpi.this.getMaximumFailoverAttempts();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalFailoverJobsCount() {
+            return AlwaysFailoverSpi.this.getTotalFailoverJobsCount();
+        }
     }
 }

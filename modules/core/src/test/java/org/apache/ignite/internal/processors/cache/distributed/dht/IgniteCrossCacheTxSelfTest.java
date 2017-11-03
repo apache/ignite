@@ -40,6 +40,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests specific combinations of cross-cache transactions.
@@ -58,8 +59,8 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     private static final int TX_CNT = 500;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -134,6 +135,13 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
      */
     public void testOptimisticRepeatableRead() throws Exception {
         checkTxsSingleOp(OPTIMISTIC, REPEATABLE_READ);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticSerializable() throws Exception {
+        checkTxsSingleOp(OPTIMISTIC, SERIALIZABLE);
     }
 
     /**

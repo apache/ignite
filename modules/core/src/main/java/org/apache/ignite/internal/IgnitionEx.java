@@ -33,10 +33,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +46,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
@@ -54,22 +55,32 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -77,6 +88,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -89,12 +101,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
+import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -107,20 +118,18 @@ import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEP_MODE_OVERRIDE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_START_JAVA7;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
+import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -146,7 +155,7 @@ public class IgnitionEx {
     /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
-    /** Map of named grids. */
+    /** Map of named Ignite instances. */
     private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap8<>();
 
     /** Map of grid states ever started in this JVM. */
@@ -174,16 +183,45 @@ public class IgnitionEx {
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
-    /**
+    /*
      * Checks runtime version to be 1.7.x or 1.8.x.
      * This will load pretty much first so we must do these checks here.
      */
     static {
         // Check 1.8 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
-            !U.jdkVersion().contains("1.8"))
-            throw new IllegalStateException("Ignite requires Java 7 or above. Current Java version " +
+            !U.jdkVersion().contains("1.8")) {
+            throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
+        }
+
+        String jreVer = U.jreVersion();
+
+        if (jreVer.startsWith("1.7")) {
+            int upd = jreVer.indexOf('_');
+            int beta = jreVer.indexOf('-');
+
+            if (beta < 0)
+                beta = jreVer.length();
+
+            if (upd > 0 && beta > 0) {
+                try {
+                    int update = Integer.parseInt(jreVer.substring(upd + 1, beta));
+
+                    boolean forceJ7 = IgniteSystemProperties.getBoolean(IGNITE_FORCE_START_JAVA7, false);
+
+                    if (update < 71 && !forceJ7) {
+                        throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
+                            "is not supported: " + jreVer);
+                    }
+                    else if (forceJ7)
+                        System.err.println("Ignite requires Java 1.7.0_71 or above. Start on your own risk.");
+                }
+                catch (NumberFormatException ignore) {
+                    // No-op
+                }
+            }
+        }
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
         // For details please see:
@@ -256,11 +294,11 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets states of named grid. If name is {@code null}, then state of
-     * default no-name grid is returned.
+     * Gets states of named Ignite instance. If name is {@code null}, then state of
+     * default no-name Ignite instance is returned.
      *
-     * @param name Grid name. If name is {@code null}, then state of
-     *      default no-name grid is returned.
+     * @param name Ignite instance name. If name is {@code null}, then state of
+     *      default no-name Ignite instance is returned.
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
@@ -291,14 +329,14 @@ public class IgnitionEx {
     }
 
     /**
-     * Stops named grid. If {@code cancel} flag is set to {@code true} then
+     * Stops named Ignite instance. If {@code cancel} flag is set to {@code true} then
      * all jobs currently executing on local node will be interrupted. If
-     * grid name is {@code null}, then default no-name grid will be stopped.
-     * If wait parameter is set to {@code true} then grid will wait for all
+     * Ignite instance name is {@code null}, then default no-name Ignite instance will be stopped.
+     * If wait parameter is set to {@code true} then Ignite instance will wait for all
      * tasks to be finished.
      *
-     * @param name Grid name. If {@code null}, then default no-name grid will
-     *      be stopped.
+     * @param name Ignite instance name. If {@code null}, then default no-name
+     *      Ignite instance will be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
      *      by calling {@link ComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
@@ -306,7 +344,7 @@ public class IgnitionEx {
      *      canceled. In either case, grid node will wait for completion of all
      *      jobs running on it before stopping.
      * @param stopNotStarted If {@code true} and node start did not finish then interrupts starting thread.
-     * @return {@code true} if named grid instance was indeed found and stopped,
+     * @return {@code true} if named Ignite instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      */
@@ -342,7 +380,7 @@ public class IgnitionEx {
         }
 
         // We don't have log at this point...
-        U.warn(null, "Ignoring stopping grid instance that was already stopped or never started: " + name);
+        U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
 
         return false;
     }
@@ -500,7 +538,8 @@ public class IgnitionEx {
 
         U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
-        return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx), true).grid();
+        return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx), true)
+            .get1().grid();
     }
 
     /**
@@ -513,7 +552,7 @@ public class IgnitionEx {
      *      also if named grid has already been started.
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return start(cfg, null, true);
+        return start(cfg, null, true).get1();
     }
 
     /**
@@ -521,14 +560,34 @@ public class IgnitionEx {
      * an exception will be thrown.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * failIfStarted Throw or not an exception if grid is already started.
-     * @return Started grid.
+     * @param failIfStarted When flag is {@code true} and grid with specified name has been already started
+     *      the exception is thrown. Otherwise the existing instance of the grid is returned.
+     * @return Started grid or existing grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
     public static Ignite start(IgniteConfiguration cfg, boolean failIfStarted) throws IgniteCheckedException {
-        return start(cfg, null, failIfStarted);
+        return start(cfg, null, failIfStarted).get1();
     }
+
+    /**
+     * Gets or starts new grid instance if it hasn't been started yet.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * @return Tuple with: grid instance and flag to indicate the instance is started by this call.
+     *      So, when the new ignite instance is started the flag is {@code true}. If an existing instance is returned
+     *      the flag is {@code false}.
+     * @throws IgniteException If grid could not be started.
+     */
+    public static T2<Ignite, Boolean> getOrStart(IgniteConfiguration cfg) throws IgniteException {
+        try {
+            return start(cfg, null, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
 
     /**
      * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
@@ -546,7 +605,7 @@ public class IgnitionEx {
     public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
-        return start0(new GridStartContext(cfg, null, springCtx), true).grid();
+        return start0(new GridStartContext(cfg, null, springCtx), true).get1().grid();
     }
 
     /**
@@ -559,14 +618,18 @@ public class IgnitionEx {
      *      If provided, this context can be injected into grid tasks and grid jobs using
      *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
      * @param failIfStarted Throw or not an exception if grid is already started.
-     * @return Started grid.
+     * @return Tuple with: grid instance and flag to indicate the instance is started by this call.
+     *      So, when the new ignite instance is started the flag is {@code true}. If an existing instance is returned
+     *      the flag is {@code false}.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+    public static T2<Ignite, Boolean> start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
-        return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
+        T2<IgniteNamedInstance, Boolean> res = start0(new GridStartContext(cfg, null, springCtx), failIfStarted);
+
+        return new T2<>((Ignite)res.get1().grid(), res.get2());
     }
 
     /**
@@ -599,24 +662,25 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL.
-     * @param gridName Grid name that will override default.
+     * @param igniteInstanceName Ignite instance name that will override default.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String igniteInstanceName)
+        throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            if (cfg.getGridName() == null && !F.isEmpty(gridName))
-                cfg.setGridName(gridName);
+            if (cfg.getIgniteInstanceName() == null && !F.isEmpty(igniteInstanceName))
+                cfg.setIgniteInstanceName(igniteInstanceName);
 
             return start(cfg);
         }
         else
-            return start(springCfgPath, gridName, null, null);
+            return start(springCfgPath, igniteInstanceName, null, null);
     }
 
     /**
@@ -730,7 +794,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param igniteInstanceName Ignite instance name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -742,11 +806,11 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(String springCfgPath, @Nullable String gridName,
+    public static Ignite start(String springCfgPath, @Nullable String igniteInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         URL url = U.resolveSpringUrl(springCfgPath);
 
-        return start(url, gridName, springCtx, ldr);
+        return start(url, igniteInstanceName, springCtx, ldr);
     }
 
     /**
@@ -800,7 +864,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param igniteInstanceName Ignite instance name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -812,7 +876,7 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(URL springCfgUrl, @Nullable String gridName,
+    public static Ignite start(URL springCfgUrl, @Nullable String igniteInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
@@ -847,7 +911,7 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        return startConfigurations(cfgMap, springCfgUrl, gridName, springCtx, ldr);
+        return startConfigurations(cfgMap, springCfgUrl, igniteInstanceName, springCtx, ldr);
     }
 
     /**
@@ -880,7 +944,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param igniteInstanceName Ignite instance name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -892,7 +956,7 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(InputStream springCfgStream, @Nullable String gridName,
+    public static Ignite start(InputStream springCfgStream, @Nullable String igniteInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgStream, "springCfgUrl");
 
@@ -927,7 +991,7 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        return startConfigurations(cfgMap, null, gridName, springCtx, ldr);
+        return startConfigurations(cfgMap, null, igniteInstanceName, springCtx, ldr);
     }
 
     /**
@@ -935,7 +999,7 @@ public class IgnitionEx {
      *
      * @param cfgMap Configuration map.
      * @param springCfgUrl Spring XML configuration file URL.
-     * @param gridName Grid name that will override default.
+     * @param igniteInstanceName Ignite instance name that will override default.
      * @param springCtx Optional Spring application context.
      * @param ldr Optional class loader that will be used by default.
      * @return Started grid.
@@ -944,7 +1008,7 @@ public class IgnitionEx {
     private static Ignite startConfigurations(
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap,
         URL springCfgUrl,
-        @Nullable String gridName,
+        @Nullable String igniteInstanceName,
         @Nullable GridSpringResourceContext springCtx,
         @Nullable ClassLoader ldr)
         throws IgniteCheckedException {
@@ -954,15 +1018,16 @@ public class IgnitionEx {
             for (IgniteConfiguration cfg : cfgMap.get1()) {
                 assert cfg != null;
 
-                if (cfg.getGridName() == null && !F.isEmpty(gridName))
-                    cfg.setGridName(gridName);
+                if (cfg.getIgniteInstanceName() == null && !F.isEmpty(igniteInstanceName))
+                    cfg.setIgniteInstanceName(igniteInstanceName);
 
                 if (ldr != null && cfg.getClassLoader() == null)
                     cfg.setClassLoader(ldr);
 
                 // Use either user defined context or our one.
                 IgniteNamedInstance grid = start0(
-                    new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx), true);
+                    new GridStartContext(cfg, springCfgUrl, springCtx == null
+                        ? cfgMap.get2() : springCtx), true).get1();
 
                 // Add it if it was not stopped during startup.
                 if (grid != null)
@@ -994,16 +1059,18 @@ public class IgnitionEx {
      *
      * @param startCtx Start context.
      * @param failIfStarted Throw or not an exception if grid is already started.
-     * @return Started grid.
+     * @return Tuple with: grid instance and flag to indicate the instance is started by this call.
+     *      So, when the new ignite instance is started the flag is {@code true}. If an existing instance is returned
+     *      the flag is {@code false}.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
+    private static T2<IgniteNamedInstance, Boolean> start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
-        String name = startCtx.config().getGridName();
+        String name = startCtx.config().getIgniteInstanceName();
 
         if (name != null && name.isEmpty())
-            throw new IgniteCheckedException("Non default grid instances cannot have empty string name.");
+            throw new IgniteCheckedException("Non default Ignite instances cannot have empty string name.");
 
         IgniteNamedInstance grid = new IgniteNamedInstance(name);
 
@@ -1025,10 +1092,11 @@ public class IgnitionEx {
                 if (name == null)
                     throw new IgniteCheckedException("Default Ignite instance has already been started.");
                 else
-                    throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
+                    throw new IgniteCheckedException("Ignite instance with this name has already been started: " +
+                        name);
             }
             else
-                return old;
+                return new T2<>(old, false);
 
         if (startCtx.config().getWarmupClosure() != null)
             startCtx.config().getWarmupClosure().apply(startCtx.config());
@@ -1070,7 +1138,7 @@ public class IgnitionEx {
         if (grid == null)
             throw new IgniteCheckedException("Failed to start grid with provided configuration.");
 
-        return grid;
+        return new T2<>(grid, true);
     }
 
     /**
@@ -1278,17 +1346,21 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets the grid, which is owner of current thread. An Exception is thrown if
-     * current thread is not an {@link IgniteThread}.
+     * Gets a name of the grid from thread local config, which is owner of current thread.
      *
      * @return Grid instance related to current thread
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        if (Thread.currentThread() instanceof IgniteThread)
-            return gridx(((IgniteThread)Thread.currentThread()).getGridName());
+        String name = U.getCurrentIgniteName();
+
+        if (U.isCurrentIgniteNameSet(name))
+            return gridx(name);
+        else if (Thread.currentThread() instanceof IgniteThread)
+            return gridx(((IgniteThread)Thread.currentThread()).getIgniteInstanceName());
         else
-            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+            throw new IllegalArgumentException("Ignite instance name thread local must be set or" +
+                " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**
@@ -1297,7 +1369,7 @@ public class IgnitionEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public static IgniteKernal gridx(@Nullable String name) {
+    public  static IgniteKernal gridx(@Nullable String name) {
         IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
@@ -1340,17 +1412,17 @@ public class IgnitionEx {
     }
 
     /**
-     * @param gridName Grid instance name.
+     * @param igniteInstanceName Ignite instance name.
      * @param state Factory state.
      */
-    private static void notifyStateChange(@Nullable String gridName, IgniteState state) {
-        if (gridName != null)
-            gridStates.put(gridName, state);
+    private static void notifyStateChange(@Nullable String igniteInstanceName, IgniteState state) {
+        if (igniteInstanceName != null)
+            gridStates.put(igniteInstanceName, state);
         else
             dfltGridState = state;
 
         for (IgnitionListener lsnr : lsnrs)
-            lsnr.onStateChange(gridName, state);
+            lsnr.onStateChange(igniteInstanceName, state);
     }
 
     /**
@@ -1451,31 +1523,52 @@ public class IgnitionEx {
         private volatile IgniteKernal grid;
 
         /** Executor service. */
-        private ExecutorService execSvc;
+        private ThreadPoolExecutor execSvc;
+
+        /** Executor service for services. */
+        private ThreadPoolExecutor svcExecSvc;
 
         /** System executor service. */
-        private ExecutorService sysExecSvc;
+        private ThreadPoolExecutor sysExecSvc;
+
+        /** */
+        private StripedExecutor stripedExecSvc;
 
         /** Management executor service. */
-        private ExecutorService mgmtExecSvc;
+        private ThreadPoolExecutor mgmtExecSvc;
 
         /** P2P executor service. */
-        private ExecutorService p2pExecSvc;
+        private ThreadPoolExecutor p2pExecSvc;
 
         /** IGFS executor service. */
-        private ExecutorService igfsExecSvc;
+        private ThreadPoolExecutor igfsExecSvc;
+
+        /** Data streamer executor service. */
+        private StripedExecutor dataStreamerExecSvc;
 
         /** REST requests executor service. */
-        private ExecutorService restExecSvc;
+        private ThreadPoolExecutor restExecSvc;
 
         /** Utility cache executor service. */
-        private ExecutorService utilityCacheExecSvc;
+        private ThreadPoolExecutor utilityCacheExecSvc;
 
-        /** Marshaller cache executor service. */
-        private ExecutorService marshCacheExecSvc;
+        /** Affinity executor service. */
+        private ThreadPoolExecutor affExecSvc;
+
+        /** Indexing pool. */
+        private ThreadPoolExecutor idxExecSvc;
 
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
+
+        /** Query executor service. */
+        private ThreadPoolExecutor qryExecSvc;
+
+        /** Query executor service. */
+        private ThreadPoolExecutor schemaExecSvc;
+
+        /** Executor service. */
+        private Map<String, ThreadPoolExecutor> customExecSvcs;
 
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
@@ -1628,99 +1721,209 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getCollisionSpi());
                 ensureMultiInstanceSupport(myCfg.getFailoverSpi());
                 ensureMultiInstanceSupport(myCfg.getLoadBalancingSpi());
-                ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
+
+            validateThreadPoolSize(cfg.getPublicThreadPoolSize(), "public");
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
+                cfg.getIgniteInstanceName(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.PUBLIC_POOL);
+
+            execSvc.allowCoreThreadTimeOut(true);
+
+            validateThreadPoolSize(cfg.getServiceThreadPoolSize(), "service");
+
+            svcExecSvc = new IgniteThreadPoolExecutor(
+                "svc",
                 cfg.getGridName(),
-                cfg.getPublicThreadPoolSize(),
-                cfg.getPublicThreadPoolSize(),
-                DFLT_PUBLIC_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
+                cfg.getServiceThreadPoolSize(),
+                cfg.getServiceThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SERVICE_POOL);
 
-            if (!myCfg.isClientMode())
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
+            svcExecSvc.allowCoreThreadTimeOut(true);
 
-            // Note that since we use 'LinkedBlockingQueue', number of
-            // maximum threads has no effect.
+            validateThreadPoolSize(cfg.getSystemThreadPoolSize(), "system");
+
             sysExecSvc = new IgniteThreadPoolExecutor(
                 "sys",
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
-                DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SYSTEM_POOL);
 
-            // Pre-start all threads as they are guaranteed to be needed.
-            ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
+            sysExecSvc.allowCoreThreadTimeOut(true);
+
+            validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
+
+            stripedExecSvc = new StripedExecutor(
+                cfg.getStripedPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "sys",
+                log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             // Note, that we do not pre-start threads here as management pool may
             // not be needed.
+            validateThreadPoolSize(cfg.getManagementThreadPoolSize(), "management");
+
             mgmtExecSvc = new IgniteThreadPoolExecutor(
                 "mgmt",
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.MANAGEMENT_POOL);
+
+            mgmtExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             // Note, that we do not pre-start threads here as class loading pool may
             // not be needed.
+            validateThreadPoolSize(cfg.getPeerClassLoadingThreadPoolSize(), "peer class loading");
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p",
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.P2P_POOL);
+
+            p2pExecSvc.allowCoreThreadTimeOut(true);
+
+            dataStreamerExecSvc = new StripedExecutor(
+                cfg.getDataStreamerThreadPoolSize(),
+                cfg.getIgniteInstanceName(),
+                "data-streamer",
+                log,
+                true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
+            validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
+
             igfsExecSvc = new IgniteThreadPoolExecutor(
-                "igfs",
-                cfg.getGridName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
-                0,
-                new LinkedBlockingQueue<Runnable>());
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                new IgfsThreadFactory(cfg.getIgniteInstanceName(), "igfs"));
+
+            igfsExecSvc.allowCoreThreadTimeOut(true);
 
             // Note that we do not pre-start threads here as this pool may not be needed.
+            validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "async callback");
+
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 "callback");
 
             if (myCfg.getConnectorConfiguration() != null) {
+                validateThreadPoolSize(myCfg.getConnectorConfiguration().getThreadPoolSize(), "connector");
+
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
-                    myCfg.getGridName(),
+                    myCfg.getIgniteInstanceName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
-                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>()
                 );
+
+                restExecSvc.allowCoreThreadTimeOut(true);
             }
+
+            validateThreadPoolSize(myCfg.getUtilityCacheThreadPoolSize(), "utility cache");
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
-                cfg.getGridName(),
+                cfg.getIgniteInstanceName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.UTILITY_CACHE_POOL);
 
-            marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache",
-                cfg.getGridName(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+            utilityCacheExecSvc.allowCoreThreadTimeOut(true);
+
+            affExecSvc = new IgniteThreadPoolExecutor(
+                "aff",
+                cfg.getIgniteInstanceName(),
+                1,
+                1,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.AFFINITY_POOL);
+
+            affExecSvc.allowCoreThreadTimeOut(true);
+
+            if (IgniteComponentType.INDEXING.inClassPath()) {
+                int cpus = Runtime.getRuntime().availableProcessors();
+
+                idxExecSvc = new IgniteThreadPoolExecutor(
+                    "idx",
+                    cfg.getIgniteInstanceName(),
+                    cpus,
+                    cpus * 2,
+                    3000L,
+                    new LinkedBlockingQueue<Runnable>(1000),
+                    GridIoPolicy.IDX_POOL
+                );
+            }
+
+            validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");
+
+            qryExecSvc = new IgniteThreadPoolExecutor(
+                "query",
+                cfg.getIgniteInstanceName(),
+                cfg.getQueryThreadPoolSize(),
+                cfg.getQueryThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.QUERY_POOL);
+
+            qryExecSvc.allowCoreThreadTimeOut(true);
+
+            schemaExecSvc = new IgniteThreadPoolExecutor(
+                "schema",
+                cfg.getIgniteInstanceName(),
+                2,
+                2,
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(),
+                GridIoPolicy.SCHEMA_POOL);
+
+            schemaExecSvc.allowCoreThreadTimeOut(true);
+
+            if (!F.isEmpty(cfg.getExecutorConfiguration())) {
+                validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
+
+                customExecSvcs = new HashMap<>();
+
+                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                    ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
+                        execCfg.getName(),
+                        cfg.getIgniteInstanceName(),
+                        execCfg.getSize(),
+                        execCfg.getSize(),
+                        DFLT_THREAD_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>());
+
+                    customExecSvcs.put(execCfg.getName(), exec);
+                }
+            }
 
             // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
@@ -1733,13 +1936,30 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc, callbackExecSvc,
+                grid0.start(
+                    myCfg,
+                    utilityCacheExecSvc,
+                    execSvc,
+                    svcExecSvc,
+                    sysExecSvc,
+                    stripedExecSvc,
+                    p2pExecSvc,
+                    mgmtExecSvc,
+                    igfsExecSvc,
+                    dataStreamerExecSvc,
+                    restExecSvc,
+                    affExecSvc,
+                    idxExecSvc,
+                    callbackExecSvc,
+                    qryExecSvc,
+                    schemaExecSvc,
+                    customExecSvcs,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    });
+                    }
+                );
 
                 state = STARTED;
 
@@ -1797,6 +2017,43 @@ public class IgnitionEx {
         }
 
         /**
+         * @param poolSize an actual value in the configuration.
+         * @param poolName a name of the pool like 'management'.
+         * @throws IgniteCheckedException If the poolSize is wrong.
+         */
+        private static void validateThreadPoolSize(int poolSize, String poolName)
+            throws IgniteCheckedException {
+            if (poolSize <= 0) {
+                throw new IgniteCheckedException("Invalid " + poolName + " thread pool size" +
+                    " (must be greater than 0), actual value: " + poolSize);
+            }
+        }
+
+        /**
+         * @param cfgs Array of the executors configurations.
+         * @throws IgniteCheckedException If configuration is wrong.
+         */
+        private static void validateCustomExecutorsConfiguration(ExecutorConfiguration[] cfgs)
+            throws IgniteCheckedException {
+            if (cfgs == null)
+                return;
+
+            Set<String> names = new HashSet<>(cfgs.length);
+
+            for (ExecutorConfiguration cfg : cfgs) {
+                if (F.isEmpty(cfg.getName()))
+                    throw new IgniteCheckedException("Custom executor name cannot be null or empty.");
+
+                if (!names.add(cfg.getName()))
+                    throw new IgniteCheckedException("Duplicate custom executor name: " + cfg.getName());
+
+                if (cfg.getSize() <= 0)
+                    throw new IgniteCheckedException("Custom executor size must be positive [name=" + cfg.getName() +
+                        ", size=" + cfg.getSize() + ']');
+            }
+        }
+
+        /**
          * @param cfg Ignite configuration copy to.
          * @return New ignite configuration.
          * @throws IgniteCheckedException If failed.
@@ -1814,18 +2071,21 @@ public class IgnitionEx {
                 // If user provided IGNITE_HOME - set it as a system property.
                 U.setIgniteHome(ggHome);
 
-            U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
+            // Correctly resolve work directory and set it back to configuration.
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), ggHome);
+
+            myCfg.setWorkDirectory(workDir);
 
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getGridName());
+            assert F.eq(name, cfg.getIgniteInstanceName());
 
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
             myCfg.setNodeId(nodeId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
 
             assert cfgLog != null;
 
@@ -1906,7 +2166,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            if (myCfg.getMBeanServer() == null)
+            if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
                 myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
 
             Marshaller marsh = myCfg.getMarshaller();
@@ -1925,6 +2185,8 @@ public class IgnitionEx {
                 else
                     marsh = new BinaryMarshaller();
             }
+
+            MarshallerUtils.setNodeName(marsh, cfg.getIgniteInstanceName());
 
             myCfg.setMarshaller(marsh);
 
@@ -1946,7 +2208,38 @@ public class IgnitionEx {
 
             initializeDefaultCacheConfiguration(myCfg);
 
+            ExecutorConfiguration[] execCfgs = myCfg.getExecutorConfiguration();
+
+            if (execCfgs != null) {
+                ExecutorConfiguration[] clone = execCfgs.clone();
+
+                for (int i = 0; i < execCfgs.length; i++)
+                    clone[i] = new ExecutorConfiguration(execCfgs[i]);
+
+                myCfg.setExecutorConfiguration(clone);
+            }
+
+            initializeDataStorageConfiguration(myCfg);
+
             return myCfg;
+        }
+
+        /**
+         * @param cfg Ignite configuration.
+         */
+        private void initializeDataStorageConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
+            if (cfg.getDataStorageConfiguration() != null &&
+                (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)) {
+                throw new IgniteCheckedException("Data storage can be configured with either legacy " +
+                    "(MemoryConfiguration, PersistentStoreConfiguration) or new (DataStorageConfiguration) classes, " +
+                    "but not both.");
+            }
+
+            if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
+                convertLegacyDataStorageConfigurationToNew(cfg);
+
+            if (!cfg.isClientMode() && cfg.getDataStorageConfiguration() == null)
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration());
         }
 
         /**
@@ -1959,21 +2252,17 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            cacheCfgs.add(marshallerSystemCache());
-
             cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
-
-            cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
 
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 
             if (userCaches != null && userCaches.length > 0) {
                 if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
-                        "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
+                        "cannot be used with cache (use SPI with @DiscoverySpiOrderSupport annotation, " +
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
@@ -1981,17 +2270,18 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isMarshallerCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
+                    if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException(
+                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                                + "\" because it is reserved for IGFS internal purposes.");
+
+                    if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
+                            "\" because it is reserved for data structures.");
 
                     cacheCfgs.add(ccfg);
                 }
@@ -1999,11 +2289,9 @@ public class IgnitionEx {
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
 
-            // Iterate over IGFS caches and prepare their configurations if needed.
             assert cfg.getCacheConfiguration() != null;
 
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
-                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
+            IgfsUtils.prepareCacheConfigurations(cfg);
         }
 
         /**
@@ -2029,7 +2317,7 @@ public class IgnitionEx {
                 cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
             if (cfg.getEventStorageSpi() == null)
-                cfg.setEventStorageSpi(new MemoryEventStorageSpi());
+                cfg.setEventStorageSpi(new NoopEventStorageSpi());
 
             if (cfg.getCheckpointSpi() == null)
                 cfg.setCheckpointSpi(new NoopCheckpointSpi());
@@ -2042,35 +2330,39 @@ public class IgnitionEx {
 
             if (cfg.getLoadBalancingSpi() == null)
                 cfg.setLoadBalancingSpi(new RoundRobinLoadBalancingSpi());
+            else {
+                Collection<LoadBalancingSpi> spis = new ArrayList<>();
+
+                boolean dfltLoadBalancingSpi = false;
+
+                for (LoadBalancingSpi spi : cfg.getLoadBalancingSpi()) {
+                    spis.add(spi);
+
+                    if (!dfltLoadBalancingSpi && spi instanceof RoundRobinLoadBalancingSpi)
+                        dfltLoadBalancingSpi = true;
+                }
+
+                // Add default load balancing SPI for internal tasks.
+                if (!dfltLoadBalancingSpi)
+                    spis.add(new RoundRobinLoadBalancingSpi());
+
+                cfg.setLoadBalancingSpi(spis.toArray(new LoadBalancingSpi[spis.size()]));
+            }
 
             if (cfg.getIndexingSpi() == null)
                 cfg.setIndexingSpi(new NoopIndexingSpi());
-
-            if (cfg.getSwapSpaceSpi() == null) {
-                boolean needSwap = false;
-
-                if (cfg.getCacheConfiguration() != null && !Boolean.TRUE.equals(cfg.isClientMode())) {
-                    for (CacheConfiguration c : cfg.getCacheConfiguration()) {
-                        if (c.isSwapEnabled()) {
-                            needSwap = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                cfg.setSwapSpaceSpi(needSwap ? new FileSwapSpaceSpi() : new NoopSwapSpaceSpi());
-            }
         }
 
         /**
          * @param cfgLog Configured logger.
          * @param nodeId Local node ID.
+         * @param workDir Work directory.
          * @return Initialized logger.
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+            throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
@@ -2128,6 +2420,10 @@ public class IgnitionEx {
                         cfgLog = new JavaLogger();
                 }
 
+                // Special handling for Java logger which requires work directory.
+                if (cfgLog instanceof JavaLogger)
+                    ((JavaLogger)cfgLog).setWorkDirectory(workDir);
+
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof LoggerNodeIdAware)
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
@@ -2144,28 +2440,6 @@ public class IgnitionEx {
         }
 
         /**
-         * Creates marshaller system cache configuration.
-         *
-         * @return Marshaller system cache configuration.
-         */
-        private static CacheConfiguration marshallerSystemCache() {
-            CacheConfiguration cache = new CacheConfiguration();
-
-            cache.setName(CU.MARSH_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(ATOMIC);
-            cache.setSwapEnabled(false);
-            cache.setRebalanceMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-            cache.setStartSize(300);
-            cache.setRebalanceOrder(-2);//Prior to other system caches.
-
-            return cache;
-        }
-
-        /**
          * Creates utility system cache configuration.
          *
          * @return Utility system cache configuration.
@@ -2176,38 +2450,14 @@ public class IgnitionEx {
             cache.setName(CU.UTILITY_CACHE_NAME);
             cache.setCacheMode(REPLICATED);
             cache.setAtomicityMode(TRANSACTIONAL);
-            cache.setSwapEnabled(false);
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
             cache.setNodeFilter(CacheConfiguration.ALL_NODES);
             cache.setRebalanceOrder(-2); //Prior to user caches.
+            cache.setCopyOnRead(false);
 
             return cache;
-        }
-
-        /**
-         * Creates cache configuration for atomic data structures.
-         *
-         * @param cfg Atomic configuration.
-         * @return Cache configuration for atomic data structures.
-         */
-        private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg) {
-            CacheConfiguration ccfg = new CacheConfiguration();
-
-            ccfg.setName(CU.ATOMICS_CACHE_NAME);
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setSwapEnabled(false);
-            ccfg.setRebalanceMode(SYNC);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-            ccfg.setRebalanceOrder(-1); //Prior to user caches.
-
-            if (cfg.getCacheMode() == PARTITIONED)
-                ccfg.setBackups(cfg.getBackups());
-
-            return ccfg;
         }
 
         /**
@@ -2234,7 +2484,7 @@ public class IgnitionEx {
             // Double check.
             if (grid0 == null) {
                 if (log != null)
-                    U.warn(log, "Attempting to stop an already stopped grid instance (ignore): " + name);
+                    U.warn(log, "Attempting to stop an already stopped Ignite instance (ignore): " + name);
 
                 return;
             }
@@ -2245,12 +2495,12 @@ public class IgnitionEx {
 
                     shutdownHook = null;
 
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown hook is removed.");
                 }
                 catch (IllegalStateException e) {
                     // Shutdown is in progress...
-                    if (log.isDebugEnabled())
+                    if (log != null && log.isDebugEnabled())
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
@@ -2260,8 +2510,8 @@ public class IgnitionEx {
             try {
                 grid0.stop(cancel);
 
-                if (log.isDebugEnabled())
-                    log.debug("Grid instance stopped ok: " + name);
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Ignite instance stopped ok: " + name);
             }
             catch (Throwable e) {
                 U.error(log, "Failed to properly stop grid instance due to undeclared exception.", e);
@@ -2274,7 +2524,8 @@ public class IgnitionEx {
 
                 grid = null;
 
-                stopExecutors(log);
+                if (log != null)
+                    stopExecutors(log);
 
                 log = null;
             }
@@ -2313,6 +2564,18 @@ public class IgnitionEx {
 
             sysExecSvc = null;
 
+            U.shutdownNow(getClass(), qryExecSvc, log);
+
+            qryExecSvc = null;
+
+            U.shutdownNow(getClass(), schemaExecSvc, log);
+
+            schemaExecSvc = null;
+
+            U.shutdownNow(getClass(), stripedExecSvc, log);
+
+            stripedExecSvc = null;
+
             U.shutdownNow(getClass(), mgmtExecSvc, log);
 
             mgmtExecSvc = null;
@@ -2320,6 +2583,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), p2pExecSvc, log);
 
             p2pExecSvc = null;
+
+            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
+
+            dataStreamerExecSvc = null;
 
             U.shutdownNow(getClass(), igfsExecSvc, log);
 
@@ -2334,13 +2601,24 @@ public class IgnitionEx {
 
             utilityCacheExecSvc = null;
 
-            U.shutdownNow(getClass(), marshCacheExecSvc, log);
+            U.shutdownNow(getClass(), affExecSvc, log);
 
-            marshCacheExecSvc = null;
+            affExecSvc = null;
+
+            U.shutdownNow(getClass(), idxExecSvc, log);
+
+            idxExecSvc = null;
 
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
             callbackExecSvc = null;
+
+            if (!F.isEmpty(customExecSvcs)) {
+                for (ThreadPoolExecutor exec : customExecSvcs.values())
+                    U.shutdownNow(getClass(), exec, log);
+
+                customExecSvcs = null;
+            }
         }
 
         /**
@@ -2350,6 +2628,11 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
+            assert srv != null;
+
             synchronized (mbeans) {
                 GridMBeanServerData data = mbeans.get(srv);
 
@@ -2391,7 +2674,7 @@ public class IgnitionEx {
 
                 assert data != null;
 
-                data.addGrid(name);
+                data.addIgniteInstance(name);
                 data.setCounter(data.getCounter() + 1);
             }
         }
@@ -2400,13 +2683,16 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
+            if(U.IGNITE_MBEANS_DISABLED)
+                return;
+
             synchronized (mbeans) {
                 Iterator<Entry<MBeanServer, GridMBeanServerData>> iter = mbeans.entrySet().iterator();
 
                 while (iter.hasNext()) {
                     Entry<MBeanServer, GridMBeanServerData> entry = iter.next();
 
-                    if (entry.getValue().containsGrid(name)) {
+                    if (entry.getValue().containsIgniteInstance(name)) {
                         GridMBeanServerData data = entry.getValue();
 
                         assert data != null;
@@ -2428,7 +2714,7 @@ public class IgnitionEx {
                         else {
                             // Decrement counter.
                             data.setCounter(data.getCounter() - 1);
-                            data.removeGrid(name);
+                            data.removeIgniteInstance(name);
                         }
                     }
                 }
@@ -2441,7 +2727,7 @@ public class IgnitionEx {
          */
         private static class GridMBeanServerData {
             /** Set of grid names for selected MBeanServer. */
-            private Collection<String> gridNames = new HashSet<>();
+            private Collection<String> igniteInstanceNames = new HashSet<>();
 
             /** */
             private ObjectName mbean;
@@ -2461,32 +2747,32 @@ public class IgnitionEx {
             }
 
             /**
-             * Add grid name.
+             * Add Ignite instance name.
              *
-             * @param gridName Grid name.
+             * @param igniteInstanceName Ignite instance name.
              */
-            public void addGrid(String gridName) {
-                gridNames.add(gridName);
+            public void addIgniteInstance(String igniteInstanceName) {
+                igniteInstanceNames.add(igniteInstanceName);
             }
 
             /**
-             * Remove grid name.
+             * Remove Ignite instance name.
              *
-             * @param gridName Grid name.
+             * @param igniteInstanceName Ignite instance name.
              */
-            public void removeGrid(String gridName) {
-                gridNames.remove(gridName);
+            public void removeIgniteInstance(String igniteInstanceName) {
+                igniteInstanceNames.remove(igniteInstanceName);
             }
 
             /**
              * Returns {@code true} if data contains the specified
-             * grid name.
+             * Ignite instance name.
              *
-             * @param gridName Grid name.
-             * @return {@code true} if data contains the specified grid name.
+             * @param igniteInstanceName Ignite instance name.
+             * @return {@code true} if data contains the specified Ignite instance name.
              */
-            public boolean containsGrid(String gridName) {
-                return gridNames.contains(gridName);
+            public boolean containsIgniteInstance(String igniteInstanceName) {
+                return igniteInstanceNames.contains(igniteInstanceName);
             }
 
             /**
@@ -2516,5 +2802,112 @@ public class IgnitionEx {
                 this.cnt = cnt;
             }
         }
+    }
+
+    /**
+     * @param cfg Ignite Configuration with legacy data storage configuration.
+     */
+    private static void convertLegacyDataStorageConfigurationToNew(
+        IgniteConfiguration cfg) throws IgniteCheckedException {
+        PersistentStoreConfiguration psCfg = cfg.getPersistentStoreConfiguration();
+
+        boolean persistenceEnabled = psCfg != null;
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration() != null ?
+            cfg.getMemoryConfiguration() : new MemoryConfiguration();
+
+        dsCfg.setConcurrencyLevel(memCfg.getConcurrencyLevel());
+        dsCfg.setPageSize(memCfg.getPageSize());
+        dsCfg.setSystemRegionInitialSize(memCfg.getSystemCacheInitialSize());
+        dsCfg.setSystemRegionMaxSize(memCfg.getSystemCacheMaxSize());
+
+        List<DataRegionConfiguration> optionalDataRegions = new ArrayList<>();
+
+        boolean customDfltPlc = false;
+
+        if (memCfg.getMemoryPolicies() != null) {
+            for (MemoryPolicyConfiguration mpc : memCfg.getMemoryPolicies()) {
+                DataRegionConfiguration region = new DataRegionConfiguration();
+
+                region.setPersistenceEnabled(persistenceEnabled);
+
+                if (mpc.getInitialSize() != 0L)
+                    region.setInitialSize(mpc.getInitialSize());
+
+                region.setEmptyPagesPoolSize(mpc.getEmptyPagesPoolSize());
+                region.setEvictionThreshold(mpc.getEvictionThreshold());
+                region.setMaxSize(mpc.getMaxSize());
+                region.setName(mpc.getName());
+                region.setPageEvictionMode(mpc.getPageEvictionMode());
+                region.setMetricsRateTimeInterval(mpc.getRateTimeInterval());
+                region.setMetricsSubIntervalCount(mpc.getSubIntervals());
+                region.setSwapPath(mpc.getSwapFilePath());
+                region.setMetricsEnabled(mpc.isMetricsEnabled());
+
+                if (persistenceEnabled)
+                    region.setCheckpointPageBufferSize(psCfg.getCheckpointingPageBufferSize());
+
+                if (mpc.getName() == null) {
+                    throw new IgniteCheckedException(new IllegalArgumentException(
+                        "User-defined MemoryPolicyConfiguration must have non-null and non-empty name."));
+                }
+
+                if (mpc.getName().equals(memCfg.getDefaultMemoryPolicyName())) {
+                    customDfltPlc = true;
+
+                    dsCfg.setDefaultDataRegionConfiguration(region);
+                } else
+                    optionalDataRegions.add(region);
+            }
+        }
+
+        if (!optionalDataRegions.isEmpty())
+            dsCfg.setDataRegionConfigurations(optionalDataRegions.toArray(
+                new DataRegionConfiguration[optionalDataRegions.size()]));
+
+        if (!customDfltPlc) {
+            if (!DFLT_MEM_PLC_DEFAULT_NAME.equals(memCfg.getDefaultMemoryPolicyName())) {
+                throw new IgniteCheckedException(new IllegalArgumentException("User-defined default MemoryPolicy " +
+                    "name must be presented among configured MemoryPolices: " + memCfg.getDefaultMemoryPolicyName()));
+            }
+
+            dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(memCfg.getDefaultMemoryPolicySize())
+                .setName(memCfg.getDefaultMemoryPolicyName())
+                .setPersistenceEnabled(persistenceEnabled));
+        } else {
+            if (memCfg.getDefaultMemoryPolicySize() != DFLT_MEMORY_POLICY_MAX_SIZE)
+                throw new IgniteCheckedException(new IllegalArgumentException("User-defined MemoryPolicy " +
+                    "configuration and defaultMemoryPolicySize properties are set at the same time."));
+        }
+
+        if (persistenceEnabled) {
+            dsCfg.setCheckpointFrequency(psCfg.getCheckpointingFrequency());
+            dsCfg.setCheckpointThreads(psCfg.getCheckpointingThreads());
+            dsCfg.setCheckpointWriteOrder(psCfg.getCheckpointWriteOrder());
+            dsCfg.setFileIOFactory(psCfg.getFileIOFactory());
+            dsCfg.setLockWaitTime(psCfg.getLockWaitTime());
+            dsCfg.setStoragePath(psCfg.getPersistentStorePath());
+            dsCfg.setMetricsRateTimeInterval(psCfg.getRateTimeInterval());
+            dsCfg.setMetricsSubIntervalCount(psCfg.getSubIntervals());
+            dsCfg.setWalThreadLocalBufferSize(psCfg.getTlbSize());
+            dsCfg.setWalArchivePath(psCfg.getWalArchivePath());
+            dsCfg.setWalAutoArchiveAfterInactivity(psCfg.getWalAutoArchiveAfterInactivity());
+            dsCfg.setWalFlushFrequency(psCfg.getWalFlushFrequency());
+            dsCfg.setWalFsyncDelayNanos(psCfg.getWalFsyncDelayNanos());
+            dsCfg.setWalHistorySize(psCfg.getWalHistorySize());
+            dsCfg.setWalMode(psCfg.getWalMode());
+            dsCfg.setWalRecordIteratorBufferSize(psCfg.getWalRecordIteratorBufferSize());
+            dsCfg.setWalSegments(psCfg.getWalSegments());
+            dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
+            dsCfg.setWalPath(psCfg.getWalStorePath());
+            dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
+            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
+            dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
+        }
+
+        cfg.setDataStorageConfiguration(dsCfg);
     }
 }

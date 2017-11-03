@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -32,16 +35,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -51,13 +58,25 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -110,7 +129,31 @@ public class IgfsUtils {
     /** Separator between id and name parts in the trash name. */
     private static final char TRASH_NAME_SEPARATOR = '|';
 
-    /**
+    /** Flag: this is a directory. */
+    private static final byte FLAG_DIR = 0x1;
+
+    /** Flag: this is a file. */
+    private static final byte FLAG_FILE = 0x2;
+
+    /** Filesystem cache prefix. */
+    public static final String IGFS_CACHE_PREFIX = "igfs-internal-";
+
+    /** Data cache suffix. */
+    public static final String DATA_CACHE_SUFFIX = "-data";
+
+    /** Meta cache suffix. */
+    public static final String META_CACHE_SUFFIX = "-meta";
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
+
+    /** Min available TCP port. */
+    private static final int MIN_TCP_PORT = 1;
+
+    /** Max available TCP port. */
+    private static final int MAX_TCP_PORT = 0xFFFF;
+
+    /*
      * Static initializer.
      */
     static {
@@ -184,7 +227,7 @@ public class IgfsUtils {
      * @return Converted IGFS exception.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static IgfsException toIgfsException(Exception err) {
+    public static IgfsException toIgfsException(Throwable err) {
         IgfsException err0 = err instanceof IgfsException ? (IgfsException)err : null;
 
         IgfsException igfsErr = X.cause(err, IgfsException.class);
@@ -294,6 +337,7 @@ public class IgfsUtils {
     /**
      * Sends a series of event.
      *
+     * @param kernalCtx Kernal context.
      * @param path The path of the created file.
      * @param type The type of event to send.
      */
@@ -304,6 +348,7 @@ public class IgfsUtils {
     /**
      * Sends a series of event.
      *
+     * @param kernalCtx Kernal context.
      * @param path The path of the created file.
      * @param newPath New path.
      * @param type The type of event to send.
@@ -325,69 +370,189 @@ public class IgfsUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean matchIgfsCacheName(@Nullable String cacheName) {
+        return cacheName != null && cacheName.startsWith(IGFS_CACHE_PREFIX);
+    }
+
+    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
      */
     public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
-
-        if (igfsCfgs != null) {
-            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
-                if (igfsCfg != null) {
-                    if (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName()))
-                        return true;
-                }
-            }
-        }
-
-        return false;
+        return matchIgfsCacheName(cacheName);
     }
 
     /**
      * Prepare cache configuration if this is IGFS meta or data cache.
      *
      * @param cfg Configuration.
-     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void prepareCacheConfiguration(IgniteConfiguration cfg, CacheConfiguration ccfg) {
+    public static void prepareCacheConfigurations(IgniteConfiguration cfg) throws IgniteCheckedException {
         FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+        List<CacheConfiguration> ccfgs = new ArrayList<>(Arrays.asList(cfg.getCacheConfiguration()));
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                if (igfsCfg != null) {
-                    if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
-                        // No copy-on-read.
-                        ccfg.setCopyOnRead(false);
+                if (igfsCfg == null)
+                    continue;
 
-                        // Always full-sync to maintain consistency.
-                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                CacheConfiguration ccfgMeta = igfsCfg.getMetaCacheConfiguration();
 
-                        // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
-                            ccfg.getAffinityMapper() == null)
-                            ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+                if (ccfgMeta == null) {
+                    ccfgMeta = defaultMetaCacheConfig();
 
-                        return;
-                    }
+                    igfsCfg.setMetaCacheConfiguration(ccfgMeta);
+                }
 
-                    if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
-                        // No copy-on-read.
-                        ccfg.setCopyOnRead(false);
+                ccfgMeta.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + META_CACHE_SUFFIX);
 
-                        // Always full-sync to maintain consistency.
-                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                ccfgs.add(ccfgMeta);
 
-                        // Set affinity mapper if needed.
-                        if (ccfg.getAffinityMapper() == null)
-                            ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
+                CacheConfiguration ccfgData = igfsCfg.getDataCacheConfiguration();
 
-                        return;
-                    }
+                if (ccfgData == null) {
+                    ccfgData = defaultDataCacheConfig();
+
+                    igfsCfg.setDataCacheConfiguration(ccfgData);
+                }
+
+                ccfgData.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + DATA_CACHE_SUFFIX);
+
+                ccfgs.add(ccfgData);
+
+
+                // No copy-on-read.
+                ccfgMeta.setCopyOnRead(false);
+                ccfgData.setCopyOnRead(false);
+
+                // Always full-sync to maintain consistency.
+                ccfgMeta.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                ccfgData.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                // Set co-located affinity mapper if needed.
+                if (igfsCfg.isColocateMetadata() && ccfgMeta.getAffinityMapper() == null)
+                    ccfgMeta.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+
+                // Set affinity mapper if needed.
+                if (ccfgData.getAffinityMapper() == null)
+                    ccfgData.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
+            }
+
+            cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
+        }
+
+        validateLocalIgfsConfigurations(cfg);
+    }
+
+    /**
+     * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
+     *
+     * @param igniteCfg Ignite config.
+     * @throws IgniteCheckedException If any of IGFS configurations is invalid.
+     */
+    private static void validateLocalIgfsConfigurations(IgniteConfiguration igniteCfg)
+        throws IgniteCheckedException {
+
+        if (igniteCfg.getFileSystemConfiguration() == null || igniteCfg.getFileSystemConfiguration().length == 0)
+            return;
+
+        Collection<String> cfgNames = new HashSet<>();
+
+        for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
+            String name = cfg.getName();
+
+            if (name == null)
+                throw new IgniteCheckedException("IGFS name cannot be null");
+
+            if (cfgNames.contains(name))
+                throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
+                    "assign unique name to each): " + name);
+
+            CacheConfiguration ccfgData = cfg.getDataCacheConfiguration();
+
+            CacheConfiguration ccfgMeta = cfg.getMetaCacheConfiguration();
+
+            if (QueryUtils.isEnabled(ccfgData))
+                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
+
+            if (QueryUtils.isEnabled(ccfgMeta))
+                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
+
+            if (ccfgMeta.getAtomicityMode() != TRANSACTIONAL)
+                throw new IgniteCheckedException("IGFS metadata cache should be transactional: " + cfg.getName());
+
+            if (!(ccfgData.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
+                throw new IgniteCheckedException(
+                    "Invalid IGFS data cache configuration (key affinity mapper class should be " +
+                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
+
+            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
+
+            if (ipcCfg != null) {
+                final int tcpPort = ipcCfg.getPort();
+
+                if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
+                    throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
+                        ".." + MAX_TCP_PORT + "]: " + tcpPort);
+
+                if (ipcCfg.getThreadCount() <= 0)
+                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
+                        ipcCfg.getThreadCount());
+            }
+
+            boolean secondary = cfg.getDefaultMode() == IgfsMode.PROXY;
+
+            if (cfg.getPathModes() != null) {
+                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
+                    if (mode.getValue() == IgfsMode.PROXY)
+                        secondary = true;
                 }
             }
+
+            if (secondary && cfg.getSecondaryFileSystem() == null) {
+                // When working in any mode except of primary, secondary FS config must be provided.
+                throw new IgniteCheckedException("Grid configuration parameter invalid: " +
+                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
+            }
+
+            cfgNames.add(name);
         }
+    }
+
+
+    /**
+     * @return Default IGFS cache configuration.
+     */
+    private static CacheConfiguration defaultCacheConfig() {
+        CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        return cfg;
+    }
+
+    /**
+     * @return Default IGFS meta cache configuration.
+     */
+    private static CacheConfiguration defaultMetaCacheConfig() {
+        CacheConfiguration cfg = defaultCacheConfig();
+
+        cfg.setBackups(1);
+
+        return cfg;
+    }
+
+    /**
+     * @return Default IGFS data cache configuration.
+     */
+    private static CacheConfiguration defaultDataCacheConfig() {
+        return defaultCacheConfig();
     }
 
     /**
@@ -516,6 +681,7 @@ public class IgfsUtils {
      *
      * @param in Reader.
      * @return Entry.
+     * @throws IOException If failed.
      */
     @Nullable public static IgfsListingEntry readListingEntry(DataInput in) throws IOException {
         if (in.readBoolean()) {
@@ -701,6 +867,89 @@ public class IgfsUtils {
     }
 
     /**
+     * Write IGFS path.
+     *
+     * @param writer Writer.
+     * @param path Path.
+     */
+    public static void writePath(BinaryRawWriter writer, @Nullable IgfsPath path) {
+        if (path != null) {
+            writer.writeBoolean(true);
+
+            path.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IGFS path.
+     *
+     * @param reader Reader.
+     * @return Path.
+     */
+    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsPath path = new IgfsPath();
+
+            path.readRawBinary(reader);
+
+            return path;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Read non-null path from the input.
+     *
+     * @param in Input.
+     * @return IGFS path.
+     * @throws IOException If failed.
+     */
+    public static IgfsPath readPath(ObjectInput in) throws IOException {
+        IgfsPath res = new IgfsPath();
+
+        res.readExternal(in);
+
+        return res;
+    }
+
+    /**
+     * Write IgfsFileAffinityRange.
+     *
+     * @param writer Writer
+     * @param affRange affinity range.
+     */
+    public static void writeFileAffinityRange(BinaryRawWriter writer, @Nullable IgfsFileAffinityRange affRange) {
+        if (affRange != null) {
+            writer.writeBoolean(true);
+
+            affRange.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IgfsFileAffinityRange.
+     *
+     * @param reader Reader.
+     * @return File affinity range.
+     */
+    public static IgfsFileAffinityRange readFileAffinityRange(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsFileAffinityRange affRange = new IgfsFileAffinityRange();
+
+            affRange.readRawBinary(reader);
+
+            return affRange;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
@@ -728,5 +977,255 @@ public class IgfsUtils {
      */
     static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
         return id.toString() + TRASH_NAME_SEPARATOR + path.toString();
+    }
+
+    /**
+     * Check whether provided node contains IGFS with the given name.
+     *
+     * @param node Node.
+     * @param igfsName IGFS name.
+     * @return {@code True} if it contains IGFS.
+     */
+    public static boolean isIgfsNode(ClusterNode node, String igfsName) {
+        assert node != null;
+
+        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+
+        if (igfs != null)
+            for (IgfsAttributes attrs : igfs)
+                if (F.eq(igfsName, attrs.igfsName()))
+                    return true;
+
+        return false;
+    }
+
+    /**
+     * Check whether mode is dual.
+     *
+     * @param mode Mode.
+     * @return {@code True} if dual.
+     */
+    public static boolean isDualMode(IgfsMode mode) {
+        return mode == DUAL_SYNC || mode == DUAL_ASYNC;
+    }
+
+    /**
+     * Answers if directory of this mode can contain a subdirectory of the given mode.
+     *
+     * @param parent Parent mode.
+     * @param child Child mode.
+     * @return {@code true} if directory of this mode can contain a directory of the given mode.
+     */
+    public static boolean canContain(IgfsMode parent, IgfsMode child) {
+        return isDualMode(parent) || parent == child;
+    }
+
+    /**
+     * Checks, filters and sorts the modes.
+     *
+     * @param dfltMode The root mode. Must always be not null.
+     * @param modes The subdirectory modes.
+     * @param dualParentsContainingPrimaryChildren The set to store parents into.
+     * @return Descending list of filtered and checked modes.
+     * @throws IgniteCheckedException On error.
+     */
+    public static ArrayList<T2<IgfsPath, IgfsMode>> preparePathModes(final IgfsMode dfltMode,
+        @Nullable List<T2<IgfsPath, IgfsMode>> modes, Set<IgfsPath> dualParentsContainingPrimaryChildren)
+        throws IgniteCheckedException {
+        if (modes == null)
+            return null;
+
+        // Sort by depth, shallow first.
+        Collections.sort(modes, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
+            @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {
+                return o1.getKey().depth() - o2.getKey().depth();
+            }
+        });
+
+        ArrayList<T2<IgfsPath, IgfsMode>> resModes = new ArrayList<>(modes.size() + 1);
+
+        resModes.add(new T2<>(IgfsPath.ROOT, dfltMode));
+
+        for (T2<IgfsPath, IgfsMode> mode : modes) {
+            assert mode.getKey() != null;
+
+            for (T2<IgfsPath, IgfsMode> resMode : resModes) {
+                if (mode.getKey().isSubDirectoryOf(resMode.getKey())) {
+                    assert resMode.getValue() != null;
+
+                    if (resMode.getValue() == mode.getValue())
+                        // No reason to add a sub-path of the same mode, ignore this pair.
+                        break;
+
+                    if (!canContain(resMode.getValue(), mode.getValue()))
+                        throw new IgniteCheckedException("Subdirectory " + mode.getKey() + " mode "
+                            + mode.getValue() + " is not compatible with upper level "
+                            + resMode.getKey() + " directory mode " + resMode.getValue() + ".");
+
+                    // Add to the 1st position (deep first).
+                    resModes.add(0, mode);
+
+                    // Store primary paths inside dual paths in separate collection:
+                    if (mode.getValue() == PRIMARY)
+                        dualParentsContainingPrimaryChildren.add(mode.getKey().parent());
+
+                    break;
+                }
+            }
+        }
+
+        // Remove root, because this class contract is that root mode is not contained in the list.
+        resModes.remove(resModes.size() - 1);
+
+        return resModes;
+    }
+
+    /**
+     * Create flags value.
+     *
+     * @param isDir Directory flag.
+     * @param isFile File flag.
+     * @return Result.
+     */
+    public static byte flags(boolean isDir, boolean isFile) {
+        byte res = isDir ? FLAG_DIR : 0;
+
+        if (isFile)
+            res |= FLAG_FILE;
+
+        return res;
+    }
+
+    /**
+     * Check whether passed flags represent directory.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is directory.
+     */
+    public static boolean isDirectory(byte flags) {
+        return hasFlag(flags, FLAG_DIR);
+    }
+
+    /**
+     * Check whether passed flags represent file.
+     *
+     * @param flags Flags.
+     * @return {@code True} if this is file.
+     */
+    public static boolean isFile(byte flags) {
+        return hasFlag(flags, FLAG_FILE);
+    }
+
+    /**
+     * Check whether certain flag is set.
+     *
+     * @param flags Flags.
+     * @param flag Flag to check.
+     * @return {@code True} if flag is set.
+     */
+    private static boolean hasFlag(byte flags, byte flag) {
+        return (flags & flag) == flag;
+    }
+
+    /**
+     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
+     *
+     * @param in Data input.
+     * @throws IOException If write failed.
+     * @return Read result.
+     */
+    public static Map<String, String> readStringMap(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+        else {
+            Map<String, String> map = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                map.put(readUTF(in), readUTF(in));
+
+            return map;
+        }
+    }
+
+    /**
+     * Writes string-to-string map to given data output.
+     *
+     * @param out Data output.
+     * @param map Map.
+     * @throws IOException If write failed.
+     */
+    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
     }
 }

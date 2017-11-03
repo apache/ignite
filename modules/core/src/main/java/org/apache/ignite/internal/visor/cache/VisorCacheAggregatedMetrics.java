@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for aggregated cache metrics.
  */
-public class VisorCacheAggregatedMetrics implements Serializable {
+public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,7 +46,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     private boolean sys;
 
     /** Node IDs with cache metrics. */
-    private final Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
+    private Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
 
     /** Minimum number of elements in heap. */
     private transient Long minHeapSize;
@@ -117,54 +121,56 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     private transient Integer failsQry;
 
     /**
+     * Default constructor.
+     */
+    public VisorCacheAggregatedMetrics() {
+        // No-op.
+    }
+
+    /**
      * Create data transfer object for aggregated cache metrics.
      *
      * @param cm Source cache metrics.
-     * @return Data transfer object for aggregated cache metrics.
      */
-    public static VisorCacheAggregatedMetrics from(VisorCacheMetrics cm) {
-        VisorCacheAggregatedMetrics acm = new VisorCacheAggregatedMetrics();
-
-        acm.name = cm.name();
-        acm.mode = cm.mode();
-        acm.sys = cm.system();
-
-        return acm;
+    public VisorCacheAggregatedMetrics(VisorCacheMetrics cm) {
+        name = cm.getName();
+        mode = cm.getMode();
+        sys = cm.isSystem();
     }
 
     /**
      * @return Cache name.
      */
-    public String name() {
+    public String getName() {
         return name;
     }
 
     /** @return Cache mode. */
-    public CacheMode mode() {
+    public CacheMode getMode() {
         return mode;
     }
 
     /** @return Cache system state. */
-    public boolean system() {
+    public boolean isSystem() {
         return sys;
     }
 
     /**
      * @return Nodes.
      */
-    public Collection<UUID> nodes() {
+    public Collection<UUID> getNodes() {
         return metrics.keySet();
     }
 
     /**
      * @return Minimum number of elements in heap.
      */
-    public long minimumHeapSize() {
+    public long getMinimumHeapSize() {
         if (minHeapSize == null) {
             minHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minHeapSize = Math.min(minHeapSize, metric.keySize());
+                minHeapSize = Math.min(minHeapSize, metric.getHeapEntriesCount());
         }
 
         return minHeapSize;
@@ -173,12 +179,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average number of elements in heap.
      */
-    public double averageHeapSize() {
+    public double getAverageHeapSize() {
         if (avgHeapSize == null) {
             avgHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgHeapSize += metric.keySize();
+                avgHeapSize += metric.getHeapEntriesCount();
 
             avgHeapSize /= metrics.size();
         }
@@ -189,12 +195,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum number of elements in heap.
      */
-    public long maximumHeapSize() {
+    public long getMaximumHeapSize() {
         if (maxHeapSize == null) {
             maxHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxHeapSize = Math.max(maxHeapSize, metric.keySize());
+                maxHeapSize = Math.max(maxHeapSize, metric.getHeapEntriesCount());
         }
 
         return maxHeapSize;
@@ -202,35 +208,35 @@ public class VisorCacheAggregatedMetrics implements Serializable {
 
     /**
      * @param metric Metrics to process.
-     * @return Off heap entries count.
+     * @return Off heap primary entries count.
      */
-    private long offHeapEntriesCount(VisorCacheMetrics metric) {
-        return metric instanceof VisorCacheMetricsV2 ? ((VisorCacheMetricsV2) metric).offHeapEntriesCount() : 0;
+    private long getOffHeapPrimaryEntriesCount(VisorCacheMetrics metric) {
+        return metric.getOffHeapPrimaryEntriesCount();
     }
 
     /**
-     * @return Minimum number of elements in off heap.
+     * @return Minimum number of primary elements in off heap.
      */
-    public long minimumOffHeapSize() {
+    public long getMinimumOffHeapPrimarySize() {
         if (minOffHeapSize == null) {
             minOffHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minOffHeapSize = Math.min(minOffHeapSize, offHeapEntriesCount(metric));
+                minOffHeapSize = Math.min(minOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return minOffHeapSize;
     }
 
     /**
-     * @return Average number of elements in off heap.
+     * @return Average number of primary elements in off heap.
      */
-    public double averageOffHeapSize() {
+    public double getAverageOffHeapPrimarySize() {
         if (avgOffHeapSize == null) {
             avgOffHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgOffHeapSize += offHeapEntriesCount(metric);
+                avgOffHeapSize += getOffHeapPrimaryEntriesCount(metric);
 
             avgOffHeapSize /= metrics.size();
         }
@@ -239,14 +245,14 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     }
 
     /**
-     * @return Maximum number of elements in off heap in the cache.
+     * @return Maximum number of primary elements in off heap.
      */
-    public long maximumOffHeapSize() {
+    public long getMaximumOffHeapPrimarySize() {
         if (maxOffHeapSize == null) {
             maxOffHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxOffHeapSize = Math.max(maxOffHeapSize, offHeapEntriesCount(metric));
+                maxOffHeapSize = Math.max(maxOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return maxOffHeapSize;
@@ -255,12 +261,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum hits of the owning cache.
      */
-    public long minimumHits() {
+    public long getMinimumHits() {
         if (minHits == null) {
             minHits = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minHits = Math.min(minHits, metric.hits());
+                minHits = Math.min(minHits, metric.getHits());
         }
 
         return minHits;
@@ -269,12 +275,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average hits of the owning cache.
      */
-    public double averageHits() {
+    public double getAverageHits() {
         if (avgHits == null) {
             avgHits = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgHits += metric.hits();
+                avgHits += metric.getHits();
 
             avgHits /= metrics.size();
         }
@@ -285,12 +291,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum hits of the owning cache.
      */
-    public long maximumHits() {
+    public long getMaximumHits() {
         if (maxHits == null) {
             maxHits = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxHits = Math.max(maxHits, metric.hits());
+                maxHits = Math.max(maxHits, metric.getHits());
         }
 
         return maxHits;
@@ -299,12 +305,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum misses of the owning cache.
      */
-    public long minimumMisses() {
+    public long getMinimumMisses() {
         if (minMisses == null) {
             minMisses = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minMisses = Math.min(minMisses, metric.misses());
+                minMisses = Math.min(minMisses, metric.getMisses());
         }
 
         return minMisses;
@@ -313,12 +319,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average misses of the owning cache.
      */
-    public double averageMisses() {
+    public double getAverageMisses() {
         if (avgMisses == null) {
             avgMisses = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgMisses += metric.misses();
+                avgMisses += metric.getMisses();
 
             avgMisses /= metrics.size();
         }
@@ -329,12 +335,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum misses of the owning cache.
      */
-    public long maximumMisses() {
+    public long getMaximumMisses() {
         if (maxMisses == null) {
             maxMisses = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxMisses = Math.max(maxMisses, metric.misses());
+                maxMisses = Math.max(maxMisses, metric.getMisses());
         }
 
         return maxMisses;
@@ -343,12 +349,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum total number of reads of the owning cache.
      */
-    public long minimumReads() {
+    public long getMinimumReads() {
         if (minReads == null) {
             minReads = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minReads = Math.min(minReads, metric.reads());
+                minReads = Math.min(minReads, metric.getReads());
         }
 
         return minReads;
@@ -357,12 +363,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average total number of reads of the owning cache.
      */
-    public double averageReads() {
+    public double getAverageReads() {
         if (avgReads == null) {
             avgReads = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgReads += metric.reads();
+                avgReads += metric.getReads();
 
             avgReads /= metrics.size();
         }
@@ -373,12 +379,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum total number of reads of the owning cache.
      */
-    public long maximumReads() {
+    public long getMaximumReads() {
         if (maxReads == null) {
             maxReads = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxReads = Math.max(maxReads, metric.reads());
+                maxReads = Math.max(maxReads, metric.getReads());
         }
 
         return maxReads;
@@ -387,12 +393,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum total number of writes of the owning cache.
      */
-    public long minimumWrites() {
+    public long getMinimumWrites() {
         if (minWrites == null) {
             minWrites = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minWrites = Math.min(minWrites, metric.writes());
+                minWrites = Math.min(minWrites, metric.getWrites());
         }
 
         return minWrites;
@@ -401,12 +407,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average total number of writes of the owning cache.
      */
-    public double averageWrites() {
+    public double getAverageWrites() {
         if (avgWrites == null) {
             avgWrites = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgWrites += metric.writes();
+                avgWrites += metric.getWrites();
 
             avgWrites /= metrics.size();
         }
@@ -417,12 +423,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum total number of writes of the owning cache.
      */
-    public long maximumWrites() {
+    public long getMaximumWrites() {
         if (maxWrites == null) {
             maxWrites = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxWrites = Math.max(maxWrites, metric.writes());
+                maxWrites = Math.max(maxWrites, metric.getWrites());
         }
 
         return maxWrites;
@@ -431,12 +437,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum execution time of query.
      */
-    public long minimumQueryTime() {
+    public long getMinimumQueryTime() {
         if (minQryTime == null) {
             minQryTime = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minQryTime = Math.min(minQryTime, metric.queryMetrics().minimumTime());
+                minQryTime = Math.min(minQryTime, metric.getQueryMetrics().getMinimumTime());
         }
 
         return minQryTime;
@@ -445,12 +451,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Average execution time of query.
      */
-    public double averageQueryTime() {
+    public double getAverageQueryTime() {
         if (avgQryTime == null) {
             avgQryTime = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgQryTime += metric.queryMetrics().averageTime();
+                avgQryTime += metric.getQueryMetrics().getAverageTime();
 
             avgQryTime /= metrics.size();
         }
@@ -461,12 +467,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum execution time of query.
      */
-    public long maximumQueryTime() {
+    public long getMaximumQueryTime() {
         if (maxQryTime == null) {
             maxQryTime = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxQryTime = Math.max(maxQryTime, metric.queryMetrics().maximumTime());
+                maxQryTime = Math.max(maxQryTime, metric.getQueryMetrics().getMaximumTime());
         }
 
         return maxQryTime;
@@ -475,9 +481,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Total execution time of query.
      */
-    public long totalQueryTime() {
+    public long getTotalQueryTime() {
         if (totalQryTime == null)
-            totalQryTime = (long)(averageQueryTime() * execsQuery());
+            totalQryTime = (long)(getAverageQueryTime() * getQueryExecutions());
 
         return totalQryTime;
     }
@@ -485,12 +491,12 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Number of executions.
      */
-    public int execsQuery() {
+    public int getQueryExecutions() {
         if (execsQry == null) {
             execsQry = 0;
 
             for (VisorCacheMetrics metric : metrics.values())
-                execsQry += metric.queryMetrics().executions();
+                execsQry += metric.getQueryMetrics().getExecutions();
         }
 
         return execsQry;
@@ -499,22 +505,86 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Total number of times a query execution failed.
      */
-    public int failsQuery() {
+    public int getQueryFailures() {
         if (failsQry == null) {
             failsQry = 0;
 
             for (VisorCacheMetrics metric : metrics.values())
-                failsQry += metric.queryMetrics().fails();
+                failsQry += metric.getQueryMetrics().getFailures();
         }
 
         return failsQry;
     }
 
     /**
-     * @return Node IDs with cache metrics.
+     * @return Map of Node IDs to cache metrics.
      */
-    public Map<UUID, VisorCacheMetrics> metrics() {
+    public Map<UUID, VisorCacheMetrics> getMetrics() {
         return metrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, name);
+        U.writeEnum(out, mode);
+        out.writeBoolean(sys);
+        U.writeMap(out, metrics);
+        out.writeObject(minHeapSize);
+        out.writeObject(avgHeapSize);
+        out.writeObject(maxHeapSize);
+        out.writeObject(minOffHeapSize);
+        out.writeObject(avgOffHeapSize);
+        out.writeObject(maxOffHeapSize);
+        out.writeObject(minHits);
+        out.writeObject(avgHits);
+        out.writeObject(maxHits);
+        out.writeObject(minMisses);
+        out.writeObject(avgMisses);
+        out.writeObject(maxMisses);
+        out.writeObject(minReads);
+        out.writeObject(avgReads);
+        out.writeObject(maxReads);
+        out.writeObject(minWrites);
+        out.writeObject(avgWrites);
+        out.writeObject(maxWrites);
+        out.writeObject(minQryTime);
+        out.writeObject(avgQryTime);
+        out.writeObject(maxQryTime);
+        out.writeObject(totalQryTime);
+        out.writeObject(execsQry);
+        out.writeObject(failsQry);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        name = U.readString(in);
+        mode = CacheMode.fromOrdinal(in.readByte());
+        sys = in.readBoolean();
+        metrics = U.readMap(in);
+        minHeapSize = (Long)in.readObject();
+        avgHeapSize = (Double)in.readObject();
+        maxHeapSize = (Long)in.readObject();
+        minOffHeapSize = (Long)in.readObject();
+        avgOffHeapSize = (Double)in.readObject();
+        maxOffHeapSize = (Long)in.readObject();
+        minHits = (Long)in.readObject();
+        avgHits = (Double)in.readObject();
+        maxHits = (Long)in.readObject();
+        minMisses = (Long)in.readObject();
+        avgMisses = (Double)in.readObject();
+        maxMisses = (Long)in.readObject();
+        minReads = (Long)in.readObject();
+        avgReads = (Double)in.readObject();
+        maxReads = (Long)in.readObject();
+        minWrites = (Long)in.readObject();
+        avgWrites = (Double)in.readObject();
+        maxWrites = (Long)in.readObject();
+        minQryTime = (Long)in.readObject();
+        avgQryTime = (Double)in.readObject();
+        maxQryTime = (Long)in.readObject();
+        totalQryTime = (Long)in.readObject();
+        execsQry = (Integer)in.readObject();
+        failsQry = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */

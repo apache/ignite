@@ -18,14 +18,13 @@
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for GridCacheParallelLoadStoreAdapter.
     /// </summary>
-    public class CacheParallelLoadStoreTest
+    public sealed class CacheParallelLoadStoreTest
     {
         // object store name
         private const string ObjectStoreCacheName = "object_store_parallel";
@@ -34,20 +33,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Set up test class.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void BeforeTests()
+        public void BeforeTests()
         {
-            TestUtils.KillProcesses();
-            TestUtils.JvmDebug = true;
-
-            Ignition.Start(new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    Types = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
-                }
             });
         }
 
@@ -55,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Tear down test class.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void AfterTests()
+        public void AfterTests()
         {
             Ignition.StopAll(true);
         }
@@ -96,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
 
             // check that items were processed in parallel
-            Assert.GreaterOrEqual(CacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount);
+            Assert.GreaterOrEqual(CacheTestParallelLoadStore.UniqueThreadCount, Environment.ProcessorCount - 1);
         }
 
         /// <summary>

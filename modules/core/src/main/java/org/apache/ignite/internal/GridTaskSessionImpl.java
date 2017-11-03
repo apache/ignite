@@ -103,6 +103,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final boolean fullSup;
 
     /** */
+    private final boolean internal;
+
+    /** */
     private final Collection<UUID> top;
 
     /** */
@@ -110,6 +113,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
     /** */
     private final IgniteFutureImpl mapFut;
+
+    /** */
+    private final String execName;
 
     /**
      * @param taskNodeId Task node ID.
@@ -124,7 +130,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param attrs Session attributes.
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
+     * @param internal Internal task flag.
      * @param subjId Subject ID.
+     * @param execName Custom executor name.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -139,7 +147,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         @Nullable Map<Object, Object> attrs,
         GridKernalContext ctx,
         boolean fullSup,
-        UUID subjId) {
+        boolean internal,
+        UUID subjId,
+        @Nullable String execName) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -166,7 +176,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         }
 
         this.fullSup = fullSup;
+        this.internal = internal;
         this.subjId = subjId;
+        this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
     }
@@ -858,6 +870,20 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> mapFuture() {
         return mapFut;
+    }
+
+    /**
+     * @return {@code True} if task is internal.
+     */
+    public boolean isInternal() {
+        return internal;
+    }
+
+    /**
+     * @return Custom executor name.
+     */
+    @Nullable public String executorName() {
+        return execName;
     }
 
     /** {@inheritDoc} */

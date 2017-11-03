@@ -59,6 +59,18 @@ public class IgniteCheckedException extends Exception {
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
+     * @param writableStackTrace whether or not the stack trace should
+     *                           be writable
+     */
+    public IgniteCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
+        super(msg, cause, true, writableStackTrace);
+    }
+
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
      */
     public IgniteCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);

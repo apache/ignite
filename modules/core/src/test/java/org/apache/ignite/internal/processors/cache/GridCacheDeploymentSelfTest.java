@@ -49,8 +49,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Name for grid without cache. */
-    protected static final String GRID_NAME = "grid-no-cache";
+    /** Name for Ignite instance without cache. */
+    protected static final String IGNITE_INSTANCE_NAME = "grid-no-cache";
 
     /** First test task name. */
     protected static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask1";
@@ -74,12 +74,12 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     protected DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
-        if (GRID_NAME.equals(gridName))
+        if (IGNITE_INSTANCE_NAME.equals(igniteInstanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -91,8 +91,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(null);
-
-        cfg.setLateAffinityAssignment(false);
 
         return cfg;
     }
@@ -133,7 +131,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -159,7 +157,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -170,7 +168,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -194,7 +192,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -205,24 +203,24 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.cache(null).localSize() == 0 && g2.cache(null).localSize() == 0)
+                if (g1.cache(DEFAULT_CACHE_NAME).localSize() == 0 && g2.cache(DEFAULT_CACHE_NAME).localSize() == 0)
                     break;
 
                 U.sleep(500);
             }
 
-            assertEquals(0, g1.cache(null).localSize());
+            assertEquals(0, g1.cache(DEFAULT_CACHE_NAME).localSize());
 
-            assertEquals(isCacheUndeployed(g1) ? 0 : 1, g2.cache(null).localSize());
+            assertEquals(isCacheUndeployed(g1) ? 0 : 1, g2.cache(DEFAULT_CACHE_NAME).localSize());
 
             startGrid(3);
         }
@@ -252,7 +250,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());
@@ -268,18 +266,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
-                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(DEFAULT_CACHE_NAME).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
             }
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
-            assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
+            assertEquals(1, g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
 
-            assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
+            assertEquals(1, g2.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
 
             startGrid(3);
         }
@@ -314,7 +312,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            IgniteCache<Object, Object> cache = g0.cache(null);
+            IgniteCache<Object, Object> cache = g0.cache(DEFAULT_CACHE_NAME);
 
             assert cache != null;
 
@@ -363,7 +361,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -396,7 +394,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -422,7 +420,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g = startGrid(0);
 
-            g.cache(null).put(0, valCls.newInstance());
+            g.cache(DEFAULT_CACHE_NAME).put(0, valCls.newInstance());
 
             info("Added value to cache 0.");
 
@@ -463,10 +461,10 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
 
             for (int i = 0; i < 20; i++)
-                g0.cache(null).put(i, valCls.newInstance());
+                g0.cache(DEFAULT_CACHE_NAME).put(i, valCls.newInstance());
 
-            assert g0.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
-            assert g1.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+            assert g0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+            assert g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
 
             g0.compute(g0.cluster().forRemotes()).execute(taskCls, g1.cluster().localNode());
 
@@ -474,23 +472,23 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             if (depMode == SHARED && isCacheUndeployed(g1)) {
                 for (int i = 0; i < 10; i++) {
-                    if (g1.cache(null).localSize(CachePeekMode.ALL) == 0)
+                    if (g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) == 0)
                         break;
 
                     Thread.sleep(500);
                 }
 
-                assertEquals(0, g1.cache(null).localSize(CachePeekMode.ALL));
+                assertEquals(0, g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
             }
             else {
                 for (int i = 0; i < 4; i++) {
-                    if (g1.cache(null).localSize(CachePeekMode.ALL) == 0)
+                    if (g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) == 0)
                         break;
 
                     Thread.sleep(500);
                 }
 
-                assert g1.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache undeployed unexpectadly";
+                assert g1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL) > 0 : "Cache undeployed unexpectadly";
             }
         }
         finally {
@@ -510,15 +508,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
      * @return Key with described properties.
      * @throws IllegalStateException if such a key could not be found after 10000 iterations.
      */
-    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near) {
+    private int getNextKey(int start, Ignite g, ClusterNode primary, ClusterNode backup, ClusterNode near)
+        throws Exception {
+        awaitPartitionMapExchange();
+
         info("Primary: " + primary);
         info("Backup: " + backup);
         info("Near: " + near);
 
         for (int i = start; i < start + 10000; i++) {
-            if (g.affinity(null).isPrimary(primary, i) && g.affinity(null).isBackup(backup, i)) {
-                assert !g.affinity(null).isPrimary(near, i) : "Key: " + i;
-                assert !g.affinity(null).isBackup(near, i) : "Key: " + i;
+            if (g.affinity(DEFAULT_CACHE_NAME).isPrimary(primary, i) && g.affinity(DEFAULT_CACHE_NAME).isBackup(backup, i)) {
+                assert !g.affinity(DEFAULT_CACHE_NAME).isPrimary(near, i) : "Key: " + i;
+                assert !g.affinity(DEFAULT_CACHE_NAME).isBackup(near, i) : "Key: " + i;
 
                 return i;
             }

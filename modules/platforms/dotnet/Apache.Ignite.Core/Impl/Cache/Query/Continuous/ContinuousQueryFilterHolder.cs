@@ -75,12 +75,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Initializes a new instance of the <see cref="ContinuousQueryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ContinuousQueryFilterHolder(IBinaryReader reader)
+        public ContinuousQueryFilterHolder(IBinaryRawReader reader)
         {
-            var rawReader = (BinaryReader) reader.GetRawReader();
-
-            _filter = rawReader.ReadObject<object>();
-            _keepBinary = rawReader.ReadBoolean();
+            _filter = reader.ReadObject<object>();
+            _keepBinary = reader.ReadBoolean();
         }
     }
 }

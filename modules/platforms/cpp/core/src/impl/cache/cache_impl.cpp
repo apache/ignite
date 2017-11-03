@@ -17,12 +17,11 @@
 
 #include <ignite/common/utils.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/interop/interop.h"
-#include "ignite/impl/binary/binary_reader_impl.h"
-#include "ignite/impl/binary/binary_type_updater_impl.h"
-#include "ignite/binary/binary.h"
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/binary/binary_type_updater_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -30,9 +29,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -72,8 +73,17 @@ namespace ignite
             /** Operation: GetAndReplace. */
             const int32_t OP_GET_AND_REPLACE = 10;
 
+            /** Operation: Invoke. */
+            const int32_t OP_INVOKE = 12;
+
+            /** Operation: LoadCache */
+            const int32_t OP_LOAD_CACHE = 15;
+
             /** Operation: LocalEvict. */
             const int32_t OP_LOCAL_EVICT = 16;
+
+            /** Operation: LocalLoadCache */
+            const int32_t OP_LOC_LOAD_CACHE = 17;
 
             /** Operation: LocalClear. */
             const int32_t OP_LOCAL_CLEAR = 20;
@@ -92,6 +102,9 @@ namespace ignite
 
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
+
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
 
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
@@ -120,6 +133,18 @@ namespace ignite
             /** Operation: Replace(K, V, V). */
             const int32_t OP_REPLACE_3 = 38;
 
+            /** Operation: Clear(). */
+            const int32_t OP_CLEAR_CACHE = 41;
+
+            /** Operation: RemoveAll(). */
+            const int32_t OP_REMOVE_ALL2 = 43;
+
+            /** Operation: Size(peekModes). */
+            const int32_t OP_SIZE = 48;
+
+            /** Operation: SizeLoc(peekModes). */
+            const int32_t OP_SIZE_LOC = 48;
+
             CacheImpl::CacheImpl(char* name, SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 InteropTarget(env, javaRef),
                 name(name)
@@ -139,181 +164,312 @@ namespace ignite
                 return name;
             }
 
-            bool CacheImpl::IsEmpty(IgniteError* err)
-            {
-                return Size(IGNITE_PEEK_MODE_ALL, err) == 0;
-            }
-
-            bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_CONTAINS_KEY, inOp, err);
             }
 
-            bool CacheImpl::ContainsKeys(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ContainsKeys(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_CONTAINS_KEYS, inOp, err);
             }
 
-            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError* err)
+            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError& err)
             {
-                OutInOp(OP_LOCAL_PEEK, inOp, outOp, err);
+                OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
             }
 
-            void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET, inOp, outOp, err);
+                OutInOpX(OP_GET, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET_ALL, inOp, outOp, err);
+                OutInOpX(OP_GET_ALL, inOp, outOp, err);
             }
 
-            void CacheImpl::Put(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::Put(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_PUT, inOp, err);
             }
 
-            void CacheImpl::PutAll(ignite::impl::InputOperation& inOp, IgniteError* err)
+            void CacheImpl::PutAll(ignite::impl::InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_PUT_ALL, inOp, err);
             }
 
-            void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET_AND_PUT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET_AND_REPLACE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET_AND_REMOVE, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
             }
 
-            bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_PUT_IF_ABSENT, inOp, err);
             }
 
-            void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
-                OutInOp(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
+                OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
-            bool CacheImpl::Replace(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::Replace(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REPLACE_2, inOp, err);
             }
 
-            bool CacheImpl::ReplaceIfEqual(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ReplaceIfEqual(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REPLACE_3, inOp, err);
             }
 
-            void CacheImpl::LocalEvict(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalEvict(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_EVICT, inOp, err);
             }
 
-            void CacheImpl::Clear(IgniteError* err)
+            void CacheImpl::Clear(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheClear(GetTarget(), &jniErr);
+                OutOp(OP_CLEAR_CACHE, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            void CacheImpl::Clear(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::Clear(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_CLEAR, inOp, err);
             }
 
-            void CacheImpl::ClearAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::ClearAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_CLEAR_ALL, inOp, err);
             }
 
-            void CacheImpl::LocalClear(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalClear(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_CLEAR, inOp, err);
             }
 
-            void CacheImpl::LocalClearAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalClearAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_CLEAR_ALL, inOp, err);
             }
 
-            bool CacheImpl::Remove(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::Remove(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REMOVE_1, inOp, err);
             }
 
-            bool CacheImpl::RemoveIfEqual(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::RemoveIfEqual(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REMOVE_2, inOp, err);
             }
 
-            void CacheImpl::RemoveAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::RemoveAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_REMOVE_ALL, inOp, err);
             }
 
-            void CacheImpl::RemoveAll(IgniteError* err)
+            void CacheImpl::RemoveAll(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                GetEnvironment().Context()->CacheRemoveAll(GetTarget(), &jniErr);
+                OutOp(OP_REMOVE_ALL2, err);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            int32_t CacheImpl::Size(const int32_t peekModes, IgniteError* err)
+            int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError& err)
             {
-                return SizeInternal(peekModes, false, err);
+                int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
+
+                return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
             }
 
-            int32_t CacheImpl::LocalSize(const int32_t peekModes, IgniteError* err)
-            {
-                return SizeInternal(peekModes, true, err);
-            }
-
-            QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SQL, err);
             }
 
-            QueryCursorImpl* CacheImpl::QueryText(const TextQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QueryText(const TextQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_TEXT, err);
             }
 
-            QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SCAN, err);
             }
 
-            QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
+            void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
+            {
+                OutInOpX(OP_INVOKE, inOp, outOp, err);
+            }
+
+            QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
             }
 
-            int CacheImpl::SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err)
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const SqlQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const TextQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const ScanQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+            }
+
+            void CacheImpl::LoadCache(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
-                int res = GetEnvironment().Context()->CacheSize(GetTarget(), peekModes, loc, &jniErr);
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            }
+
+            void CacheImpl::LocalLoadCache(IgniteError & err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+            }
+
+            struct Dummy
+            {
+                void Write(BinaryRawWriter&) const
+                {
+                    // No-op.
+                }
+            };
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
+            {
+                Dummy dummy;
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
+            }
+
+            template <typename T>
+            QueryCursorImpl* CacheImpl::QueryInternal(const T& qry, int32_t typ, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                qry.Write(rawWriter);
+
+                out.Synchronize();
+
+                jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpQueryCursor(GetTarget(),
+                    typ, mem.Get()->PointerLong(), &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                 if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                    return res;
-                else
-                    return -1;
+                    return new QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
+
+                return 0;
+            }
+
+            template <typename T>
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                const ContinuousQueryImplBase& qry0 = *qry.Get();
+
+                int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
+
+                rawWriter.WriteInt64(handle);
+                rawWriter.WriteBool(qry0.GetLocal());
+
+                event::CacheEntryEventFilterHolderBase& filterOp = qry0.GetFilterHolder();
+
+                filterOp.Write(writer);
+
+                rawWriter.WriteInt32(qry0.GetBufferSize());
+                rawWriter.WriteInt64(qry0.GetTimeInterval());
+
+                // Autounsubscribe is a filter feature.
+                rawWriter.WriteBool(false);
+
+                // Writing initial query. When there is not initial query writing -1.
+                rawWriter.WriteInt32(typ);
+                if (typ != -1)
+                    initialQry.Write(rawWriter);
+
+                out.Synchronize();
+
+                jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
+                    cmd, mem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                    return new ContinuousQueryHandleImpl(GetEnvironmentPointer(), handle, qryJavaRef);
+
+                return 0;
             }
         }
     }

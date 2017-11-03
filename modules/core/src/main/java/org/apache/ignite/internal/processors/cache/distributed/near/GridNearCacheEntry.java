@@ -21,15 +21,18 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,16 +66,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /**
      * @param ctx Cache context.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     public GridNearCacheEntry(
         GridCacheContext ctx,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
 
         part = ctx.affinity().partition(key);
     }
@@ -111,7 +110,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 return false;
             }
 
-            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+            if (cctx.affinity().backupByPartition(cctx.localNode(), part, topVer)) {
                 this.topVer = AffinityTopologyVersion.NONE;
 
                 return false;
@@ -143,6 +142,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 GridCacheVersion enqueueVer = null;
 
                 try {
+                    ClusterNode primaryNode = cctx.affinity().primaryByKey(key, topVer);
+
                     synchronized (this) {
                         checkObsolete();
 
@@ -160,8 +161,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                         enqueueVer = e.version();
                                 }
                             }
-
-                            ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
 
                             if (primaryNode == null)
                                 this.topVer = AffinityTopologyVersion.NONE;
@@ -250,7 +249,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 // If we are here, then we already tried to evict this entry.
                 // If cannot evict, then update.
                 if (this.dhtVer == null) {
-                    if (!markObsolete(dhtVer)) {
+                    if (!markObsolete(cctx.versions().next())) {
                         value(val);
 
                         ttlAndExpireTimeExtras((int) ttl, expireTime);
@@ -283,7 +282,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         if (dhtVer == null)
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = val;
 
             return F.t(dhtVer, val0);
         }
@@ -327,10 +326,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             subjId,
             taskName,
             true,
+            /*recovery should have already been checked*/
+            false,
             null,
             false,
             /*skip store*/false,
-            /*can remap*/true,
             false
         ).get().get(keyValue(false));
     }
@@ -426,14 +426,24 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(CacheObject val, long expireTime,
-        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
+    @Override protected void storeValue(CacheObject val, long expireTime, GridCacheVersion ver, CacheDataRow oldRow) {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(CacheObject val) {
+    @Override protected void removeValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime, long updCntr)
+        throws IgniteCheckedException {
+        // No-op: queries are disabled for near cache.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheDataRow unswap(CacheDataRow row, boolean checkExpire) {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -444,7 +454,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long timeout,
         boolean reenter,
         boolean tx,
-        boolean implicitSingle) throws GridCacheEntryRemovedException {
+        boolean implicitSingle,
+        boolean read) throws GridCacheEntryRemovedException {
         return addNearLocal(
             null,
             threadId,
@@ -453,7 +464,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             timeout,
             reenter,
             tx,
-            implicitSingle
+            implicitSingle,
+            read
         );
     }
 
@@ -468,10 +480,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param reenter Reentry flag.
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
+     * @param read Read lock flag.
      * @return New candidate.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public GridCacheMvccCandidate addNearLocal(
+    @Nullable GridCacheMvccCandidate addNearLocal(
         @Nullable UUID dhtNodeId,
         long threadId,
         GridCacheVersion ver,
@@ -479,10 +492,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long timeout,
         boolean reenter,
         boolean tx,
-        boolean implicitSingle)
+        boolean implicitSingle,
+        boolean read)
         throws GridCacheEntryRemovedException {
-        GridCacheMvccCandidate prev;
-        GridCacheMvccCandidate owner;
+        CacheLockCandidates prev;
+        CacheLockCandidates owner = null;
         GridCacheMvccCandidate cand;
 
         CacheObject val;
@@ -505,7 +519,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             if (c != null)
                 return reenter ? c.reenter() : null;
 
-            prev = mvcc.anyOwner();
+            prev = mvcc.allOwners();
 
             boolean emptyBefore = mvcc.isEmpty();
 
@@ -520,13 +534,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 dhtNodeId,
                 threadId,
                 ver,
-                timeout,
                 tx,
-                implicitSingle);
+                implicitSingle,
+                read);
 
             cand.topologyVersion(topVer);
-
-            owner = mvcc.anyOwner();
 
             boolean emptyAfter = mvcc.isEmpty();
 
@@ -536,6 +548,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
             if (emptyAfter)
                 mvccExtras(null);
+            else
+                owner = mvcc.allOwners();
         }
 
         // This call must be outside of synchronization.
@@ -572,8 +586,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return Removed candidate, or <tt>null</tt> if thread still holds the lock.
      */
     @Nullable @Override public GridCacheMvccCandidate removeLock() {
-        GridCacheMvccCandidate prev = null;
-        GridCacheMvccCandidate owner = null;
+        CacheLockCandidates prev = null;
+        CacheLockCandidates owner = null;
 
         CacheObject val;
 
@@ -585,7 +599,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
-                prev = mvcc.anyOwner();
+                prev = mvcc.allOwners();
 
                 boolean emptyBefore = mvcc.isEmpty();
 
@@ -605,7 +619,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                     mvcc.remove(cand.version());
 
-                    owner = mvcc.anyOwner();
+                    owner = mvcc.allOwners();
                 }
                 else
                     return null;
@@ -630,13 +644,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
         cctx.mvcc().removeExplicitLock(cand);
 
-        if (prev != null && owner != prev)
-            checkThreadChain(prev);
+        checkThreadChain(cand);
 
         // This call must be outside of synchronization.
         checkOwnerChanged(prev, owner, val);
 
-        return owner != prev ? prev : null;
+        return cand;
     }
 
     /** {@inheritDoc} */
@@ -648,7 +661,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /**
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public synchronized void reserveEviction() throws GridCacheEntryRemovedException {
+    synchronized void reserveEviction() throws GridCacheEntryRemovedException {
         checkObsolete();
 
         evictReservations++;
@@ -657,7 +670,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /**
      *
      */
-    public synchronized void releaseEviction() {
+    synchronized void releaseEviction() {
         assert evictReservations > 0 : this;
         assert !obsolete() : this;
 
@@ -682,7 +695,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         ClusterNode primary = null;
 
         try {
-            primary = cctx.affinity().primary(part, topVer);
+            primary = cctx.affinity().primaryByPartition(part, topVer);
         }
         catch (IllegalStateException ignore) {
             // Do not have affinity history.

@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
@@ -30,16 +27,22 @@ import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopHome;
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopUrls;
+import java.io.IOException;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Hadoop processor.
  */
 public class HadoopProcessor extends HadoopProcessorAdapter {
+    /** Class to probe for Hadoop libraries in Ignite classpath. */
+    private static final String HADOOP_PROBE_CLS = "org.apache.hadoop.conf.Configuration";
+
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
 
@@ -52,6 +55,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private Hadoop hadoop;
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      */
     public HadoopProcessor(GridKernalContext ctx) {
@@ -72,64 +77,26 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
         initializeDefaults(cfg);
 
-        validate(cfg);
+        hctx = new HadoopContext(
+            ctx,
+            cfg,
+            new HadoopJobTracker(),
+            new HadoopEmbeddedTaskExecutor(),
+            // TODO: IGNITE-404: Uncomment when fixed.
+            //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
+            new HadoopShuffle());
 
-        if (hadoopHome() != null)
-            U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
+        for (HadoopComponent c : hctx.components())
+            c.start(hctx);
 
-        boolean ok = false;
+        hadoop = new HadoopImpl(this);
 
-        try { // Check for Hadoop installation.
-            hadoopUrls();
-
-            ok = true;
-        }
-        catch (IgniteCheckedException e) {
-            U.quietAndWarn(log, e.getMessage());
-        }
-
-        if (ok) {
-            hctx = new HadoopContext(
-                ctx,
-                cfg,
-                new HadoopJobTracker(),
-                new HadoopEmbeddedTaskExecutor(),
-                // TODO: IGNITE-404: Uncomment when fixed.
-                //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
-                new HadoopShuffle());
-
-
-            for (HadoopComponent c : hctx.components())
-                c.start(hctx);
-
-            hadoop = new HadoopImpl(this);
-        }
+        ctx.addNodeAttribute(HadoopAttributes.NAME, new HadoopAttributes(cfg));
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HadoopProcessor.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        if (hctx == null)
-            return;
-
-        List<HadoopComponent> components = hctx.components();
-
-        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
-            HadoopComponent c = it.previous();
-
-            c.stop(cancel);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
 
         if (hctx == null)
             return;
@@ -151,6 +118,22 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             HadoopComponent c = it.previous();
 
             c.onKernalStop(cancel);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        if (hctx == null)
+            return;
+
+        List<HadoopComponent> components = hctx.components();
+
+        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
+            HadoopComponent c = it.previous();
+
+            c.stop(cancel);
         }
     }
 
@@ -184,7 +167,14 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
-        return hctx.jobTracker().submit(jobId, jobInfo);
+        ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
+
+        try {
+            return hctx.jobTracker().submit(jobId, jobInfo);
+        }
+        finally {
+            HadoopCommonUtils.restoreContextClassLoader(oldLdr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -207,6 +197,45 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
         return hctx.jobTracker().killJob(jobId);
     }
 
+    /** {@inheritDoc} */
+    @Override public void validateEnvironment() throws IgniteCheckedException {
+        // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
+        try {
+            HadoopLocations loc = HadoopClasspathUtils.locations();
+
+            if (!F.isEmpty(loc.home()))
+                U.quietAndInfo(log, HadoopClasspathUtils.HOME + " is set to " + loc.home());
+
+            U.quietAndInfo(log, "Resolved Hadoop classpath locations: " + loc.common() + ", " + loc.hdfs() + ", " +
+                loc.mapred());
+        }
+        catch (IOException ioe) {
+            throw new IgniteCheckedException(ioe.getMessage(), ioe);
+        }
+
+        // Check if Hadoop is in parent class loader classpath.
+        try {
+            Class cls = Class.forName(HADOOP_PROBE_CLS, false, getClass().getClassLoader());
+
+            try {
+                String path = cls.getProtectionDomain().getCodeSource().getLocation().toString();
+
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath) [path=" + path + ']');
+            }
+            catch (Throwable ignore) {
+                U.warn(log, "Hadoop libraries are found in Ignite classpath, this could lead to class loading " +
+                    "errors (please remove all Hadoop libraries from Ignite classpath)");
+            }
+        }
+        catch (Throwable ignore) {
+            // All is fine.
+        }
+
+        // Try assembling Hadoop URLs.
+        HadoopClassLoader.hadoopUrls();
+    }
+
     /**
      * Initializes default hadoop configuration.
      *
@@ -214,18 +243,11 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
      */
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
-            cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
+            cfg.setMapReducePlanner(new IgniteHadoopWeightedMapReducePlanner());
     }
 
-    /**
-     * Validates Grid and Hadoop configuration for correctness.
-     *
-     * @param hadoopCfg Hadoop configuration.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void validate(HadoopConfiguration hadoopCfg) throws IgniteCheckedException {
-        if (ctx.config().isPeerClassLoadingEnabled())
-            throw new IgniteCheckedException("Peer class loading cannot be used with Hadoop (disable it using " +
-                "IgniteConfiguration.setPeerClassLoadingEnabled()).");
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HadoopProcessor.class, this);
     }
 }

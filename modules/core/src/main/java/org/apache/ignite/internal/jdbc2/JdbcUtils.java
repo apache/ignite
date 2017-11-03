@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.math.BigDecimal;
 import java.net.URL;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
+
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -132,24 +136,51 @@ public class JdbcUtils {
     }
 
     /**
-     * Checks whether type of the object is SQL-complaint.
+     * Checks whether a class is SQL-compliant.
      *
-     * @param obj Object.
-     * @return Whether type of the object is SQL-complaint.
+     * @param cls Class.
+     * @return Whether given type is SQL-compliant.
      */
-    public static boolean sqlType(Object obj) {
-        return obj == null ||
-            obj instanceof BigDecimal ||
-            obj instanceof Boolean ||
-            obj instanceof Byte ||
-            obj instanceof byte[] ||
-            obj instanceof java.util.Date ||
-            obj instanceof Double ||
-            obj instanceof Float ||
-            obj instanceof Integer ||
-            obj instanceof Long ||
-            obj instanceof Short ||
-            obj instanceof String ||
-            obj instanceof URL;
+    static boolean isSqlType(Class<?> cls) {
+        return QueryUtils.isSqlType(cls) || cls == URL.class;
+    }
+
+
+    /**
+     * Convert exception to {@link SQLException}.
+     *
+     * @param e Converted Exception.
+     * @param msgForUnknown Message non-convertable exception.
+     * @return JDBC {@link SQLException}.
+     * @see IgniteQueryErrorCode
+     */
+    public static SQLException convertToSqlException(Exception e, String msgForUnknown) {
+        return convertToSqlException(e, msgForUnknown, null);
+    }
+
+    /**
+     * Convert exception to {@link SQLException}.
+     *
+     * @param e Converted Exception.
+     * @param msgForUnknown Message for non-convertable exception.
+     * @param sqlStateForUnknown SQLSTATE for non-convertable exception.
+     * @return JDBC {@link SQLException}.
+     * @see IgniteQueryErrorCode
+     */
+    public static SQLException convertToSqlException(Exception e, String msgForUnknown, String sqlStateForUnknown) {
+        SQLException sqlEx = null;
+
+        Throwable t = e;
+
+        while (sqlEx == null && t != null) {
+            if (t instanceof SQLException)
+                return (SQLException)t;
+            else if (t instanceof IgniteSQLException)
+                return ((IgniteSQLException)t).toJdbcException();
+
+            t = t.getCause();
+        }
+
+        return new SQLException(msgForUnknown, sqlStateForUnknown, e);
     }
 }

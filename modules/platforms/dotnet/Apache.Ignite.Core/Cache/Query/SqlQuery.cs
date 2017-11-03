@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
@@ -97,6 +98,29 @@ namespace Apache.Ignite.Core.Cache.Query
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         public object[] Arguments { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether distributed joins should be enabled for this query.
+        /// <para />
+        /// When disabled, join results will only contain colocated data (joins work locally).
+        /// When enabled, joins work as expected, no matter how the data is distributed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if enable distributed joins should be enabled; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnableDistributedJoins { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
         /** <inheritDoc /> */
         internal override void Write(BinaryWriter writer, bool keepBinary)
         {
@@ -113,6 +137,10 @@ namespace Apache.Ignite.Core.Cache.Query
             writer.WriteInt(PageSize);
 
             WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+            writer.WriteBoolean(ReplicatedOnly);
         }
 
         /** <inheritDoc /> */
@@ -120,5 +148,21 @@ namespace Apache.Ignite.Core.Cache.Query
         {
             get { return CacheOp.QrySql; }
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            return string.Format("SqlQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
+                                 "EnableDistributedJoins={4}, Timeout={5}, ReplicatedOnly={6}]", Sql, args, Local,
+                PageSize, EnableDistributedJoins, Timeout, ReplicatedOnly);
+        }
+
     }
 }

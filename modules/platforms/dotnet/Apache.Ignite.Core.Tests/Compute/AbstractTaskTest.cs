@@ -18,9 +18,8 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
-    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -83,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             if (_fork)
             {
-                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-standalone.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-standalone.xml"));
 
                 _proc2 = Fork("config\\compute\\compute-standalone.xml");
 
@@ -113,9 +112,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             else
             {
-                Grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-                _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+                Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+                _grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+                _grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
             }
         }
 
@@ -128,32 +127,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (Grid1 != null)
-                Ignition.Stop(Grid1.Name, true);
-
-            if (_fork)
-            {
-                if (_proc2 != null) {
-                    _proc2.Kill();
-
-                    _proc2.Join();
-                }
-
-                if (_proc3 != null)
-                {
-                    _proc3.Kill();
-
-                    _proc3.Join();
-                }
-            }
-            else
-            {
-                if (_grid2 != null)
-                    Ignition.Stop(_grid2.Name, true);
-
-                if (_grid3 != null)
-                    Ignition.Stop(_grid3.Name, true);
-            }
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
         }
 
         /// <summary>
@@ -161,30 +136,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="path">Path to Java XML configuration.</param>
         /// <returns>Node configuration.</returns>
-        protected IgniteConfiguration Configuration(string path)
+        private static IgniteConfiguration GetConfiguration(string path)
         {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            if (!_fork)
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration portCfg = new BinaryConfiguration();
-
-                ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-                GetBinaryTypeConfigurations(portTypeCfgs);
-
-                portCfg.TypeConfigurations = portTypeCfgs;
-
-                cfg.BinaryConfiguration = portCfg;
-            }
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
+                SpringConfigUrl = path,
+            };
         }
 
         /// <summary>
@@ -206,12 +163,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Define binary types.
+        /// Gets the server count.
         /// </summary>
-        /// <param name="portTypeCfgs">Binary type configurations.</param>
-        protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected int GetServerCount()
         {
-            // No-op.
+            return Grid1.GetCluster().GetNodes().Count(x => !x.IsClient);
         }
     }
 }

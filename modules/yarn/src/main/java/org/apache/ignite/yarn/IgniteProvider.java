@@ -154,7 +154,7 @@ public class IgniteProvider {
         try {
             fileStatuses = fs.listStatus(new Path(folder));
         }
-        catch (FileNotFoundException e) {
+        catch (FileNotFoundException ignored) {
             // Ignore. Folder doesn't exist.
         }
         catch (Exception e) {

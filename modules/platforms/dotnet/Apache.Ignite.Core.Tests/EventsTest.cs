@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedParameter.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -23,12 +28,14 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Events;
+    using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -37,6 +44,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class EventsTest
     {
+        /** */
+        public const string CacheName = "eventsTest";
+
         /** */
         private IIgnite _grid1;
 
@@ -48,15 +58,6 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private IIgnite[] _grids;
-        
-        /** */
-        public static int IdGen;
-
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            StopGrids();
-        }
 
         /// <summary>
         /// Executes before each test.
@@ -72,7 +73,7 @@ namespace Apache.Ignite.Core.Tests
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -92,6 +93,15 @@ namespace Apache.Ignite.Core.Tests
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
             }
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            StopGrids();
         }
 
         /// <summary>
@@ -141,7 +151,7 @@ namespace Apache.Ignite.Core.Tests
             CheckSend(2);
 
             // Unsubscribe from all events
-            events.StopLocalListen(listener);
+            events.StopLocalListen(listener, Enumerable.Empty<int>());
 
             CheckNoEvent();
 
@@ -236,9 +246,9 @@ namespace Apache.Ignite.Core.Tests
                 {
                     EventType = EventType.CacheAll,
                     EventObjectType = typeof (CacheEvent),
-                    GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
+                    GenerateEvent = g => g.GetCache<int, int>(CacheName).Put(TestUtils.GetPrimaryKey(g, CacheName), 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
-                    EventCount = 2
+                    EventCount = 3
                 };
 
                 yield return new EventTestCase
@@ -255,7 +265,7 @@ namespace Apache.Ignite.Core.Tests
                     EventType = EventType.JobExecutionAll,
                     EventObjectType = typeof (JobEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
-                    EventCount = 9
+                    EventCount = 7
                 };
                 
                 yield return new EventTestCase
@@ -299,10 +309,19 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the record local.
+        /// </summary>
+        [Test]
+        public void TestRecordLocal()
+        {
+            Assert.Throws<NotSupportedException>(() => _grid1.GetEvents().RecordLocal(new MyEvent()));
+        }
+
+        /// <summary>
         /// Tests the WaitForLocal.
         /// </summary>
         [Test]
-        public void TestWaitForLocal([Values(true, false)] bool async)
+        public void TestWaitForLocal()
         {
             var events = _grid1.GetEvents();
 
@@ -312,50 +331,80 @@ namespace Apache.Ignite.Core.Tests
 
             events.EnableLocal(eventType);
 
-            Func<IEventFilter<IEvent>, int[], Task<IEvent>> getWaitTask;
+            var taskFuncs = GetWaitTasks(events).Select(
+                func => (Func<IEventFilter<IEvent>, int[], Task<IEvent>>) (
+                    (filter, types) =>
+                    {
+                        var task = func(filter, types);
 
-            if (async)
-                getWaitTask = (filter, types) =>
+                        Thread.Sleep(100); // allow task to start and begin waiting for events
+
+                        GenerateTaskEvent();
+
+                        return task;
+                    })).ToArray();
+
+            for (int i = 0; i < taskFuncs.Length; i++)
+            {
+                var getWaitTask = taskFuncs[i];
+
+                // No params
+                var waitTask = getWaitTask(null, new int[0]);
+
+                waitTask.Wait(timeout);
+
+                // Event types
+                waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
+
+                Assert.IsTrue(waitTask.Wait(timeout));
+                Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+
+                if (i > 3)
                 {
-                    var task = events.WaitForLocalAsync(filter, types);
-                    GenerateTaskEvent();
-                    return task;
-                };
-            else
-                getWaitTask = (filter, types) =>
-                {
-                    var task = Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-                    Thread.Sleep(500); // allow task to start and begin waiting for events
-                    GenerateTaskEvent();
-                    return task;
-                };
+                    // Filter
+                    waitTask = getWaitTask(new LocalEventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
 
-            // No params
-            var waitTask = getWaitTask(null, new int[0]);
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
 
-            waitTask.Wait(timeout);
+                    // Filter & types
+                    waitTask = getWaitTask(new LocalEventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
+                        new[] {EventType.TaskReduced});
 
-            // Event types
-            waitTask = getWaitTask(null, new[] {EventType.TaskReduced});
+                    Assert.IsTrue(waitTask.Wait(timeout));
+                    Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
+                    Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+                }
+            }
+        }
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+        /// <summary>
+        /// Gets the wait tasks for different overloads of WaitForLocal.
+        /// </summary>
+        private static IEnumerable<Func<IEventFilter<IEvent>, int[], Task<IEvent>>> GetWaitTasks(IEvents events)
+        {
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
 
-            // Filter
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced), new int[0]);
+            yield return (filter, types) => events.WaitForLocalAsync(types);
+            yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
 
-            // Filter & types
-            waitTask = getWaitTask(new EventFilter<IEvent>(e => e.Type == EventType.TaskReduced),
-                new[] {EventType.TaskReduced});
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types);
+            yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());
+        }
 
-            Assert.IsTrue(waitTask.Wait(timeout));
-            Assert.IsInstanceOf(typeof(TaskEvent), waitTask.Result);
-            Assert.AreEqual(EventType.TaskReduced, waitTask.Result.Type);
+        /// <summary>
+        /// Tests the wait for local overloads.
+        /// </summary>
+        [Test]
+        public void TestWaitForLocalOverloads()
+        {
+            
         }
 
         /*
@@ -447,7 +496,7 @@ namespace Apache.Ignite.Core.Tests
 
             var qryResult = remoteQuery.Except(oldEvents).Cast<JobEvent>().ToList();
 
-            Assert.AreEqual(_grids.Length, qryResult.Count);
+            Assert.AreEqual(_grids.Length - 1, qryResult.Count);
 
             Assert.IsTrue(qryResult.All(x => x.Type == EventType.JobStarted));
         }
@@ -484,7 +533,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(true, cacheEvent.IsNear);
                 Assert.AreEqual(2, cacheEvent.Key);
                 Assert.AreEqual(expectedGridGuid, cacheEvent.Xid);
-                Assert.AreEqual(null, cacheEvent.LockId);
                 Assert.AreEqual(4, cacheEvent.NewValue);
                 Assert.AreEqual(true, cacheEvent.HasNewValue);
                 Assert.AreEqual(5, cacheEvent.OldValue);
@@ -492,6 +540,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, cacheEvent.SubjectId);
                 Assert.AreEqual("cloClsName", cacheEvent.ClosureClassName);
                 Assert.AreEqual("taskName", cacheEvent.TaskName);
+                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("NODE_FAILED: IsNear="));
 
                 var qryExecEvent = EventReader.Read<CacheQueryExecutedEvent>(reader);
                 CheckEventBase(qryExecEvent);
@@ -501,6 +550,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("clause", qryExecEvent.Clause);
                 Assert.AreEqual(expectedGuid, qryExecEvent.SubjectId);
                 Assert.AreEqual("taskName", qryExecEvent.TaskName);
+                Assert.AreEqual(
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName", qryExecEvent.ToShortString());
 
                 var qryReadEvent = EventReader.Read<CacheQueryReadEvent>(reader);
                 CheckEventBase(qryReadEvent);
@@ -514,6 +566,10 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(2, qryReadEvent.Value);
                 Assert.AreEqual(3, qryReadEvent.OldValue);
                 Assert.AreEqual(4, qryReadEvent.Row);
+                Assert.AreEqual(
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName, Key=1, Value=2, " +
+                    "OldValue=3, Row=4", qryReadEvent.ToShortString());
 
                 var cacheRebalancingEvent = EventReader.Read<CacheRebalancingEvent>(reader);
                 CheckEventBase(cacheRebalancingEvent);
@@ -522,15 +578,19 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, cacheRebalancingEvent.DiscoveryNode);
                 Assert.AreEqual(2, cacheRebalancingEvent.DiscoveryEventType);
                 Assert.AreEqual(3, cacheRebalancingEvent.DiscoveryTimestamp);
-                
+                Assert.IsTrue(cacheRebalancingEvent.ToShortString().StartsWith(
+                    "NODE_FAILED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
+
                 var checkpointEvent = EventReader.Read<CheckpointEvent>(reader);
                 CheckEventBase(checkpointEvent);
                 Assert.AreEqual("cpKey", checkpointEvent.Key);
-                
+                Assert.AreEqual("NODE_FAILED: Key=cpKey", checkpointEvent.ToShortString());
+
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
                 Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
+                Assert.IsTrue(discoEvent.ToShortString().StartsWith("NODE_FAILED: EventNode=GridNode"));
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -540,10 +600,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, jobEvent.TaskNode);
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
-
-                var spaceEvent = EventReader.Read<SwapSpaceEvent>(reader);
-                CheckEventBase(spaceEvent);
-                Assert.AreEqual("space", spaceEvent.Space);
+                Assert.IsTrue(jobEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
@@ -552,7 +609,35 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("taskClsName", taskEvent.TaskClassName);
                 Assert.AreEqual("taskName", taskEvent.TaskName);
                 Assert.AreEqual(expectedGridGuid, taskEvent.TaskSessionId);
+                Assert.IsTrue(taskEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
             }
+        }
+
+        /// <summary>
+        /// Tests the event store configuration.
+        /// </summary>
+        [Test]
+        public void TestConfiguration()
+        {
+            var cfg = _grid1.GetConfiguration().EventStorageSpi as MemoryEventStorageSpi;
+
+            Assert.IsNotNull(cfg);
+
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultExpirationTimeout, cfg.ExpirationTimeout);
+            Assert.AreEqual(MemoryEventStorageSpi.DefaultMaxEventCount, cfg.MaxEventCount);
+
+            // Test user-defined event storage.
+            var igniteCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = "grid4",
+                EventStorageSpi = new MyEventStorage()
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(igniteCfg));
+            Assert.AreEqual("Unsupported IgniteConfiguration.EventStorageSpi: " +
+                            "'Apache.Ignite.Core.Tests.MyEventStorage'. Supported implementations: " +
+                            "'Apache.Ignite.Core.Events.NoopEventStorageSpi', " +
+                            "'Apache.Ignite.Core.Events.MemoryEventStorageSpi'.", ex.Message);
         }
 
         /// <summary>
@@ -565,11 +650,16 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
-            Assert.AreEqual(EventType.SwapSpaceCleared, evt.Type);
+            Assert.AreEqual(EventType.NodeFailed, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
                 "Invalid event timestamp: '{0}', current time: '{1}'", evt.Timestamp, DateTime.Now);
+
+            Assert.Greater(evt.LocalOrder, 0);
+
+            Assert.IsTrue(evt.ToString().Contains("[Name=NODE_FAILED"));
+            Assert.IsTrue(evt.ToShortString().StartsWith("NODE_FAILED"));
         }
 
         /// <summary>
@@ -606,20 +696,14 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string name, bool client = false)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
-                    }
-                }
+                IgniteInstanceName = name,
+                EventStorageSpi = new MemoryEventStorageSpi(),
+                CacheConfiguration = new [] {new CacheConfiguration(CacheName) },
+                ClientMode = client
             };
         }
 
@@ -649,11 +733,11 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void GenerateCacheQueryEvent(IIgnite g)
         {
-            var cache = g.GetCache<int, int>(null);
+            var cache = g.GetCache<int, int>(CacheName);
 
             cache.Clear();
 
-            cache.Put(1, 1);
+            cache.Put(TestUtils.GetPrimaryKey(g, CacheName), 1);
 
             cache.Query(new ScanQuery<int, int>()).GetAll();
         }
@@ -667,7 +751,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var cacheEvent in e)
             {
-                Assert.AreEqual(null, cacheEvent.CacheName);
+                Assert.AreEqual(CacheName, cacheEvent.CacheName);
                 Assert.AreEqual(null, cacheEvent.ClosureClassName);
                 Assert.AreEqual(null, cacheEvent.TaskName);
                 Assert.AreEqual(grid.GetCluster().GetLocalNode(), cacheEvent.EventNode);
@@ -686,6 +770,11 @@ namespace Apache.Ignite.Core.Tests
                     Assert.AreEqual(false, cacheEvent.HasNewValue);
                     Assert.AreEqual(null, cacheEvent.NewValue);
                 }
+                else if (cacheEvent.Type == EventType.CacheEntryDestroyed)
+                {
+                    Assert.IsFalse(cacheEvent.HasNewValue);
+                    Assert.IsFalse(cacheEvent.HasOldValue);
+                }
                 else
                 {
                     Assert.Fail("Unexpected event type");
@@ -701,9 +790,9 @@ namespace Apache.Ignite.Core.Tests
             if (_grid1 != null)
                 return;
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("grid1"));
+            _grid2 = Ignition.Start(GetConfiguration("grid2"));
+            _grid3 = Ignition.Start(GetConfiguration("grid3", true));
 
             _grids = new[] {_grid1, _grid2, _grid3};
         }
@@ -779,7 +868,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>New instance of event listener.</returns>
         public static IEventListener<IEvent> GetListener()
         {
-            return new EventFilter<IEvent>(Listen);
+            return new LocalEventFilter<IEvent>(Listen);
         }
 
         /// <summary>
@@ -828,7 +917,7 @@ namespace Apache.Ignite.Core.Tests
     /// Test event filter.
     /// </summary>
     [Serializable]
-    public class EventFilter<T> : IEventFilter<T>, IEventListener<T> where T : IEvent
+    public class LocalEventFilter<T> : IEventFilter<T>, IEventListener<T> where T : IEvent
     {
         /** */
         private readonly Func<T, bool> _invoke;
@@ -837,7 +926,7 @@ namespace Apache.Ignite.Core.Tests
         /// Initializes a new instance of the <see cref="RemoteListenEventFilter"/> class.
         /// </summary>
         /// <param name="invoke">The invoke delegate.</param>
-        public EventFilter(Func<T, bool> invoke)
+        public LocalEventFilter(Func<T, bool> invoke)
         {
             _invoke = invoke;
         }
@@ -855,6 +944,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /** <inheritdoc /> */
+        // ReSharper disable once UnusedMember.Global
         public bool Invoke(T evt)
         {
             throw new Exception("Invalid method");
@@ -870,6 +960,10 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private readonly int _type;
 
+        /** */
+        [InstanceResource]
+        public IIgnite Ignite { get; set; }
+
         public RemoteEventFilter(int type)
         {
             _type = type;
@@ -878,43 +972,9 @@ namespace Apache.Ignite.Core.Tests
         /** <inheritdoc /> */
         public bool Invoke(IEvent evt)
         {
+            Assert.IsNotNull(Ignite);
+
             return evt.Type == _type;
-        }
-    }
-
-    /// <summary>
-    /// Binary remote event filter.
-    /// </summary>
-    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
-    {
-        /** */
-        private int _type;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
-        /// </summary>
-        /// <param name="type">The event type.</param>
-        public RemoteEventBinarizableFilter(int type)
-        {
-            _type = type;
-        }
-
-        /** <inheritdoc /> */
-        public bool Invoke(IEvent evt)
-        {
-            return evt.Type == _type;
-        }
-
-        /** <inheritdoc /> */
-        public void WriteBinary(IBinaryWriter writer)
-        {
-            writer.GetRawWriter().WriteInt(_type);
-        }
-
-        /** <inheritdoc /> */
-        public void ReadBinary(IBinaryReader reader)
-        {
-            _type = reader.GetRawReader().ReadInt();
         }
     }
 
@@ -953,5 +1013,64 @@ namespace Apache.Ignite.Core.Tests
         {
             return EventObjectType.ToString();
         }
+    }
+
+    /// <summary>
+    /// Custom event.
+    /// </summary>
+    public class MyEvent : IEvent
+    {
+        /** <inheritdoc /> */
+        public IgniteGuid Id
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public long LocalOrder
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public IClusterNode Node
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Message
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public int Type
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string Name
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public DateTime Timestamp
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /** <inheritdoc /> */
+        public string ToShortString()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class MyEventStorage : IEventStorageSpi
+    {
+        // No-op.
     }
 }

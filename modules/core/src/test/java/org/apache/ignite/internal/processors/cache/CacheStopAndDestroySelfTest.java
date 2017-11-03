@@ -27,8 +27,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -49,37 +51,36 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Checks stop and destroy methods behavior.
  */
+@SuppressWarnings("unchecked")
 public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** key-value used at test. */
-    protected static String KEY_VAL = "1";
+    /** Key-value used at test. */
+    private static String KEY_VAL = "1";
 
-    /** cache name 1. */
-    protected static String CACHE_NAME_DHT = "cache";
+    /** Cache name 1. */
+    private static String CACHE_NAME_DHT = "cache";
 
-    /** cache name 2. */
-    protected static String CACHE_NAME_CLIENT = "cache_client";
+    /** Cache name 2. */
+    private static String CACHE_NAME_CLIENT = "cache_client";
 
-    /** near cache name. */
-    protected static String CACHE_NAME_NEAR = "cache_near";
+    /** Near cache name. */
+    private static String CACHE_NAME_NEAR = "cache_near";
 
-    /** local cache name. */
-    protected static String CACHE_NAME_LOC = "cache_local";
+    /** Local cache name. */
+    private static String CACHE_NAME_LOC = "cache_local";
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        startGridsMultiThreaded(gridCount());
-    }
+    /** Memory configuration to be used on client nodes with local caches. */
+    private static DataStorageConfiguration memCfg;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+
+        memCfg = null;
     }
 
     /**
@@ -90,11 +91,14 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(2).equals(gridName))
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
             iCfg.setClientMode(true);
+
+            iCfg.setDataStorageConfiguration(memCfg);
+        }
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
@@ -119,12 +123,12 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         public static AtomicInteger cnt = new AtomicInteger();
 
         /** Node filter. */
-        public static UUID nodeFilter;
+        static UUID nodeFilter;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
 
             if (nodeFilter != null &&
                 node.id().equals(nodeFilter) &&
@@ -192,6 +196,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDhtDoubleDestroy() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         dhtDestroy();
 
         dhtDestroy();
@@ -230,6 +236,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientDoubleDestroy() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         clientDestroy();
 
         clientDestroy();
@@ -268,6 +276,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearDoubleDestroy() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         nearDestroy();
 
         nearDestroy();
@@ -306,6 +316,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalDoubleDestroy() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         localDestroy();
 
         localDestroy();
@@ -339,6 +351,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDhtClose() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         IgniteCache<Integer, Integer> dhtCache0 = grid(0).getOrCreateCache(getDhtConfig());
 
         final Integer key = primaryKey(dhtCache0);
@@ -418,6 +432,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDhtCloseWithTry() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         String curVal = null;
 
         for (int i = 0; i < 3; i++) {
@@ -453,6 +469,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientClose() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getClientConfig());
 
         assert cache0.get(KEY_VAL) == null;
@@ -502,6 +520,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientCloseWithTry() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         String curVal = null;
 
         for (int i = 0; i < 3; i++) {
@@ -539,7 +559,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearClose() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2189");
+        startGridsMultiThreaded(gridCount());
 
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
 
@@ -575,9 +595,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         cache0.put(KEY_VAL, KEY_VAL + 0);
 
         U.sleep(1000);
-
-        // Ensure near cache was NOT automatically updated.
-        assert CountingTxRequestsToClientNodeTcpCommunicationSpi.cnt.get() == 0;
 
         assert cache0.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
         assert cache1.get(KEY_VAL).equals(KEY_VAL + 0);// Not affected.
@@ -615,6 +632,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearCloseWithTry() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         String curVal = null;
 
         grid(0).getOrCreateCache(getNearConfig());
@@ -651,6 +670,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalClose() throws Exception {
+        memCfg = new DataStorageConfiguration();
+
+        startGridsMultiThreaded(gridCount());
+
         grid(0).getOrCreateCache(getLocalConfig());
 
         assert grid(0).cache(CACHE_NAME_LOC).get(KEY_VAL) == null;
@@ -676,7 +699,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = grid(1).context().cache().context().exchange().lastTopologyFuture().get();
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(topVer).get();
+        IgniteInternalFuture<?> fut = grid(0).context().cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
 
         grid(0).getOrCreateCache(getLocalConfig());
 
@@ -695,6 +721,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalCloseWithTry() throws Exception {
+        memCfg = new DataStorageConfiguration();
+
+        startGridsMultiThreaded(gridCount());
+
         String curVal = null;
 
         for (int i = 0; i < 3; i++) {
@@ -722,7 +752,9 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /**
      * Tests start -> destroy -> start -> close using CacheManager.
      */
-    public void testTckStyleCreateDestroyClose() {
+    public void testTckStyleCreateDestroyClose() throws Exception {
+        startGridsMultiThreaded(gridCount());
+
         CacheManager mgr = Caching.getCachingProvider().getCacheManager();
 
         String cacheName = "cache";
@@ -736,6 +768,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
         cache.close();
 
+        // Check second close succeeds without exception.
         cache.close();
 
         try {
@@ -743,7 +776,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             // No-op;
         }
     }
@@ -773,7 +806,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             // No-op.
         }
     }

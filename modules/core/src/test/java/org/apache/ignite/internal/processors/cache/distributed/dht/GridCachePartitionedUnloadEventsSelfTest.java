@@ -47,9 +47,12 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final int EVENTS_COUNT = 40;
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
@@ -78,11 +81,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     public void testUnloadEvents() throws Exception {
         final Ignite g1 = startGrid("g1");
 
-        Collection<Integer> allKeys = new ArrayList<>(100);
+        Collection<Integer> allKeys = new ArrayList<>(EVENTS_COUNT);
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < EVENTS_COUNT; i++) {
             cache.put(i, "val");
             allKeys.add(i);
         }
@@ -91,13 +94,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         awaitPartitionMapExchange();
 
-        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
-
-        Thread.sleep(5000);
 
         Collection<Event> objEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
@@ -107,7 +108,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Collection <Event> partEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
 
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
+        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(DEFAULT_CACHE_NAME)).topology().localPartitions());
     }
 
     /**
@@ -122,7 +123,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             CacheEvent cacheEvt = ((CacheEvent)evt);
 
             assertEquals(EVT_CACHE_REBALANCE_OBJECT_UNLOADED, cacheEvt.type());
-            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
@@ -151,7 +152,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                     }
                 }));
 
-            assertEquals(g.cache(null).getName(), unloadEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), unloadEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());
         }
     }

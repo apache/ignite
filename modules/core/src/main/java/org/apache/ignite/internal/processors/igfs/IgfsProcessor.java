@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -26,54 +35,27 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsJob;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
  * Fully operational Ignite file system processor.
  */
 public class IgfsProcessor extends IgfsProcessorAdapter {
-    /** Null IGFS name. */
-    private static final String NULL_NAME = UUID.randomUUID().toString();
-
-    /** Min available TCP port. */
-    private static final int MIN_TCP_PORT = 1;
-
-    /** Max available TCP port. */
-    private static final int MAX_TCP_PORT = 0xFFFF;
-
     /** Converts context to IGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
         @Override public IgniteFileSystem apply(IgfsContext igfsCtx) {
@@ -94,23 +76,44 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+        IgniteConfiguration igniteCfg = ctx.config();
+
+        if (igniteCfg.isDaemon())
             return;
 
-        FileSystemConfiguration[] cfgs = ctx.config().getFileSystemConfiguration();
+        FileSystemConfiguration[] cfgs = igniteCfg.getFileSystemConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
 
-        validateLocalIgfsConfigurations(cfgs);
-
         // Start IGFS instances.
         for (FileSystemConfiguration cfg : cfgs) {
+            assert cfg.getName() != null;
+
             FileSystemConfiguration cfg0 = new FileSystemConfiguration(cfg);
+
+            boolean metaClient = true;
+
+            CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
+
+            String metaCacheName = cfg.getMetaCacheConfiguration().getName();
+
+            if (cacheCfgs != null) {
+                for (CacheConfiguration cacheCfg : cacheCfgs) {
+                    if (F.eq(cacheCfg.getName(), metaCacheName)) {
+                        metaClient = false;
+
+                        break;
+                    }
+                }
+            }
+
+            if (igniteCfg.isClientMode() != null && igniteCfg.isClientMode())
+                metaClient = true;
 
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
                 cfg0,
-                new IgfsMetaManager(cfg0.isRelaxedConsistency()),
+                new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
                 new IgfsFragmentizerManager());
@@ -119,35 +122,35 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.start(igfsCtx);
 
-            igfsCache.put(maskName(cfg0.getName()), igfsCtx);
+            igfsCache.put(cfg0.getName(), igfsCtx);
         }
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
 
-        IgniteConfiguration gridCfg = ctx.config();
-
         // Node doesn't have IGFS if it:
         // is daemon;
         // doesn't have configured IGFS;
         // doesn't have configured caches.
-        if (gridCfg.isDaemon() || F.isEmpty(gridCfg.getFileSystemConfiguration()) ||
-            F.isEmpty(gridCfg.getCacheConfiguration()))
+        if (igniteCfg.isDaemon() || F.isEmpty(igniteCfg.getFileSystemConfiguration()) ||
+            F.isEmpty(igniteCfg.getCacheConfiguration()))
             return;
 
         final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        assert gridCfg.getCacheConfiguration() != null;
+        assert igniteCfg.getCacheConfiguration() != null;
 
-        for (CacheConfiguration ccfg : gridCfg.getCacheConfiguration())
+        for (CacheConfiguration ccfg : igniteCfg.getCacheConfiguration())
             cacheCfgs.put(ccfg.getName(), ccfg);
 
         Collection<IgfsAttributes> attrVals = new ArrayList<>();
 
-        assert gridCfg.getFileSystemConfiguration() != null;
+        assert igniteCfg.getFileSystemConfiguration() != null;
 
-        for (FileSystemConfiguration igfsCfg : gridCfg.getFileSystemConfiguration()) {
-            CacheConfiguration cacheCfg = cacheCfgs.get(igfsCfg.getDataCacheName());
+        for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
+            String dataCacheName = igfsCfg.getDataCacheConfiguration().getName();
+
+            CacheConfiguration cacheCfg = cacheCfgs.get(dataCacheName);
 
             if (cacheCfg == null)
                 continue; // No cache for the given IGFS configuration.
@@ -163,8 +166,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
                 ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
-                igfsCfg.getMetaCacheName(),
-                igfsCfg.getDataCacheName(),
+                igfsCfg.getMetaCacheConfiguration().getName(),
+                dataCacheName,
                 igfsCfg.getDefaultMode(),
                 igfsCfg.getPathModes(),
                 igfsCfg.isFragmentizerEnabled()));
@@ -174,8 +177,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (!active || ctx.config().isDaemon())
             return;
 
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
@@ -186,6 +189,16 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (IgfsContext igfsCtx : igfsCache.values())
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.onKernalStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        onKernalStart(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        onKernalStop(true);
     }
 
     /** {@inheritDoc} */
@@ -234,7 +247,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   igfsCacheSize: " + igfsCache.size());
     }
 
@@ -245,15 +258,21 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public IgniteFileSystem igfs(@Nullable String name) {
-        IgfsContext igfsCtx = igfsCache.get(maskName(name));
+    @Override @Nullable public IgniteFileSystem igfs(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
+        IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? null : igfsCtx.igfs();
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
-        IgfsContext igfsCtx = igfsCache.get(maskName(name));
+    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("IGFS name cannot be null");
+
+        IgfsContext igfsCtx = igfsCache.get(name);
 
         return igfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : igfsCtx.server().endpoints();
     }
@@ -262,125 +281,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long len, IgfsRecordResolver recRslv) {
         return new IgfsJobImpl(job, igfsName, path, start, len, recRslv);
-    }
-
-    /**
-     * @param name Cache name.
-     * @return Masked name accounting for {@code nulls}.
-     */
-    private String maskName(@Nullable String name) {
-        return name == null ? NULL_NAME : name;
-    }
-
-    /**
-     * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
-     * @param cfgs IGFS configurations
-     * @throws IgniteCheckedException If any of IGFS configurations is invalid.
-     */
-    private void validateLocalIgfsConfigurations(FileSystemConfiguration[] cfgs) throws IgniteCheckedException {
-        Collection<String> cfgNames = new HashSet<>();
-
-        for (FileSystemConfiguration cfg : cfgs) {
-            String name = cfg.getName();
-
-            if (cfgNames.contains(name))
-                throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
-                    "assign unique name to each): " + name);
-
-            CacheConfiguration dataCacheCfg = config(cfg.getDataCacheName());
-            CacheConfiguration metaCacheCfg = config(cfg.getMetaCacheName());
-
-            if (dataCacheCfg == null)
-                throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
-
-            if (GridQueryProcessor.isEnabled(dataCacheCfg))
-                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
-
-            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
-
-            if (metaCacheCfg == null)
-                throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
-
-            if (GridQueryProcessor.isEnabled(metaCacheCfg))
-                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
-
-            if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
-                throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
-
-            if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
-                throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
-
-            if (!(dataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
-                throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
-                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
-
-            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
-
-            if (ipcCfg != null) {
-                final int tcpPort = ipcCfg.getPort();
-
-                if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
-                    throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
-                        ".." + MAX_TCP_PORT + "]: " + tcpPort);
-
-                if (ipcCfg.getThreadCount() <= 0)
-                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
-                        ipcCfg.getThreadCount());
-            }
-
-            long maxSpaceSize = cfg.getMaxSpaceSize();
-
-            if (maxSpaceSize > 0) {
-                // Max space validation.
-                long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
-
-                if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
-                    // Offheap is disabled.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater that size of available heap " +
-                        "memory [maxHeapSize=" + maxHeapSize + ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-                else if (offHeapSize > 0 && maxSpaceSize > maxHeapSize + offHeapSize)
-                    // Offheap is enabled, but limited.
-                    throw new IgniteCheckedException("Maximum IGFS space size cannot be greater than size of available heap " +
-                        "memory and offheap storage [maxHeapSize=" + maxHeapSize + ", offHeapSize=" + offHeapSize +
-                        ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
-            }
-
-            if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
-                U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
-                    "space will be limited to 80% of max JVM heap size): " + cfg.getName());
-
-            boolean secondary = cfg.getDefaultMode() == PROXY;
-
-            if (cfg.getPathModes() != null) {
-                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
-                    if (mode.getValue() == PROXY)
-                        secondary = true;
-                }
-            }
-
-            if (secondary) {
-                // When working in any mode except of primary, secondary FS config must be provided.
-                assertParameter(cfg.getSecondaryFileSystem() != null,
-                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
-            }
-
-            cfgNames.add(name);
-        }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Configuration.
-     */
-    private CacheConfiguration config(String cacheName) {
-        for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
-                return ccfg;
-        }
-
-        return null;
     }
 
     /**
@@ -449,6 +349,18 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
     }
 
+    /**
+     * Check IGFS property equality on local and remote nodes.
+     *
+     * @param name Property human readable name.
+     * @param propName Property name/
+     * @param rmtNodeId Remote node ID.
+     * @param rmtVal Remote value.
+     * @param locVal Local value.
+     * @param igfsName IGFS name.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkSame(String name, String propName, UUID rmtNodeId, Object rmtVal, Object locVal, String igfsName)
         throws IgniteCheckedException {
         if (!F.eq(rmtVal, locVal))

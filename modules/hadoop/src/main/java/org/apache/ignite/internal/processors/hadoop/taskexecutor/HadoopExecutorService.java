@@ -50,7 +50,7 @@ public class HadoopExecutorService {
     private final int maxTasks;
 
     /** */
-    private final String gridName;
+    private final String igniteInstanceName;
 
     /** */
     private final IgniteLogger log;
@@ -84,17 +84,17 @@ public class HadoopExecutorService {
 
     /**
      * @param log Logger.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param maxTasks Max number of tasks.
      * @param maxQueue Max queue length.
      */
-    public HadoopExecutorService(IgniteLogger log, String gridName, int maxTasks, int maxQueue) {
+    public HadoopExecutorService(IgniteLogger log, String igniteInstanceName, int maxTasks, int maxQueue) {
         assert maxTasks > 0 : maxTasks;
         assert maxQueue > 0 : maxQueue;
 
         this.maxTasks = maxTasks;
         this.queue = new LinkedBlockingQueue<>(maxQueue);
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.log = log.getLogger(HadoopExecutorService.class);
     }
 
@@ -130,7 +130,7 @@ public class HadoopExecutorService {
                     return; // Rejected due to shutdown.
             }
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
 
             return;
@@ -180,7 +180,7 @@ public class HadoopExecutorService {
         else
             workerName = task.toString();
 
-        GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
+        GridWorker w = new GridWorker(igniteInstanceName, workerName, log, lsnr) {
             @Override protected void body() {
                 try {
                     task.call();
@@ -217,7 +217,7 @@ public class HadoopExecutorService {
 
                 awaitTimeMillis -= 100;
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 break;
             }
         }

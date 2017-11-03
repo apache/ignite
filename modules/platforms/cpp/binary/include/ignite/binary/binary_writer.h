@@ -36,6 +36,17 @@ namespace ignite
     {
         /**
          * Binary writer.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryWriter
         {
@@ -43,9 +54,11 @@ namespace ignite
             /**
              * Constructor.
              *
+             * Internal method. Should not be used by user.
+             *
              * @param impl Implementation.
              */
-            BinaryWriter(ignite::impl::binary::BinaryWriterImpl* impl);
+            BinaryWriter(impl::binary::BinaryWriterImpl* impl);
 
             /**
              * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -235,6 +248,23 @@ namespace ignite
             void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
 
             /**
+             * Write Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Value.
+             */
+            void WriteTime(const char* fieldName, const Time& val);
+
+            /**
+             * Write array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteTimeArray(const char* fieldName, const Time* val, const int32_t len);
+
+            /**
              * Write string.
              *
              * @param fieldName Field name.
@@ -300,18 +330,18 @@ namespace ignite
             template<typename T>
             BinaryCollectionWriter<T> WriteCollection(const char* fieldName)
             {
-                return WriteCollection<T>(fieldName, IGNITE_COLLECTION_UNDEFINED);
+                return WriteCollection<T>(fieldName, CollectionType::UNDEFINED);
             }
 
             /**
              * Start collection write.
              *
              * @param fieldName Field name.
-             * @param type Collection type.
+             * @param typ Collection type.
              * @return Collection writer.
              */
             template<typename T>
-            BinaryCollectionWriter<T> WriteCollection(const char* fieldName, ignite::binary::CollectionType typ)
+            BinaryCollectionWriter<T> WriteCollection(const char* fieldName, CollectionType::Type typ)
             {
                 int32_t id = impl->WriteCollection(fieldName, typ);
 
@@ -328,7 +358,7 @@ namespace ignite
             template<typename InputIterator>
             void WriteCollection(const char* fieldName, InputIterator first, InputIterator last)
             {
-                WriteCollection(fieldName, first, last, IGNITE_COLLECTION_UNDEFINED);
+                WriteCollection(fieldName, first, last, CollectionType::UNDEFINED);
             }
 
             /**
@@ -340,7 +370,7 @@ namespace ignite
              * @param typ Collection type.
              */
             template<typename InputIterator>
-            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, CollectionType typ)
+            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, CollectionType::Type typ)
             {
                 impl->WriteCollection(fieldName, first, last, typ);
             }
@@ -349,13 +379,12 @@ namespace ignite
              * Start map write.
              *
              * @param fieldName Field name.
-             * @param typ Map type.
              * @return Map writer.
              */
             template<typename K, typename V>
             BinaryMapWriter<K, V> WriteMap(const char* fieldName)
             {
-                return WriteMap<K, V>(fieldName, IGNITE_MAP_UNDEFINED);
+                return WriteMap<K, V>(fieldName, MapType::UNDEFINED);
             }
 
             /**
@@ -366,7 +395,7 @@ namespace ignite
              * @return Map writer.
              */
             template<typename K, typename V>
-            BinaryMapWriter<K, V> WriteMap(const char* fieldName, ignite::binary::MapType typ)
+            BinaryMapWriter<K, V> WriteMap(const char* fieldName, MapType::Type typ)
             {
                 int32_t id = impl->WriteMap(fieldName, typ);
 
@@ -380,7 +409,7 @@ namespace ignite
              * @param val Value.
              */
             template<typename T>
-            void WriteObject(const char* fieldName, T val)
+            void WriteObject(const char* fieldName, const T& val)
             {
                 impl->WriteObject<T>(fieldName, val);
             }

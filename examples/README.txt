@@ -11,14 +11,12 @@ The examples folder contains he following subfolders:
 - `config` - contains Ignite configuration files needed for examples.
 - `memcached` - contains PHP script demonstrating how Ignite Cache can be accessed using Memcached client.
 - `rest` - contains PHP script demonstrating how Ignite Cache can be accessed via HTTP API.
-- `schema-import` - contains demo project for Apache Ignite Schema Import Utility. Refer to enclosed
-  README.txt file for more information on how to build and run the demo.
 - `src/main/java` - contains Java examples for different Ignite modules and features.
 - `src/main/java8` - contains additional set of Java examples utilizing Java 8 lambdas. These examples
   are excluded by default, enable `java8` Maven profile to include them (JDK8 is required).
 - `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
 - `src/main/java-lgpl` - contains lgpl-based examples for different Ignite modules and features.
-
+- `src/main/ml` - contains Java examples for Ignite-ML module.
 
 Starting Remote Nodes
 =====================
@@ -49,3 +47,11 @@ This case will install lgpl-based libs to local maven repository.
 2) Run "mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl" at Apache Ignite sources.
 Required libs will appear at /target/release-package/libs/optional subfolders.
 Found libs should be copied to global or project's classpath.
+
+ML
+==
+Math/Machine Learning examples can be activated by turning ml profile on.
+
+This module also required java8 and ignite-ml module.
+
+Like the lgpl examples we could build required module running "mvn clean install -Pml -DskipTests -pl modules/ml -am".

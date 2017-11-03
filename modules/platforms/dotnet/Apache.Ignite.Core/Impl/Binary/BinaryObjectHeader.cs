@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -57,7 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             OffsetTwoBytes  = 0x10,
 
             /** Flag: compact footer, no field IDs. */
-            CompactFooter   = 0x20
+            CompactFooter   = 0x20,
+
+            /** Flag: raw data contains .NET type information. */
+            CustomDotNetType   = 0x40
         }
 
         /** Actual header layout */
@@ -100,6 +104,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryObjectHeader"/> struct from specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        [ExcludeFromCodeCoverage]   // big-endian only
         private BinaryObjectHeader(IBinaryStream stream)
         {
             Header = stream.ReadByte();
@@ -116,6 +121,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Writes this instance to the specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        [ExcludeFromCodeCoverage]   // big-endian only
         private void Write(IBinaryStream stream)
         {
             stream.WriteByte(Header);
@@ -158,6 +164,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool IsCompactFooter
         {
             get { return (Flags & Flag.CompactFooter) == Flag.CompactFooter; }
+        }
+
+        /// <summary>
+        /// Gets the custom .NET type flag.
+        /// </summary>
+        public bool IsCustomDotNetType
+        {
+            get { return (Flags & Flag.CustomDotNetType) == Flag.CustomDotNetType; }
         }
 
         /// <summary>
@@ -208,18 +222,37 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the raw offset of this object in specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
+        /// <param name="position">The binary object position in the stream.</param>
         /// <returns>Raw offset.</returns>
         public int GetRawOffset(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
+            // Either schema or raw is not present - offset is in the header.
             if (!HasRaw || !HasSchema)
                 return SchemaOffset;
 
+            // Both schema and raw data are present: raw offset is in the last 4 bytes.
             stream.Seek(position + Length - 4, SeekOrigin.Begin);
 
             return stream.ReadInt();
+        }
+
+        /// <summary>
+        /// Gets the footer offset where raw and non-raw data ends.
+        /// </summary>
+        /// <value>Footer offset.</value>
+        public int FooterStartOffset
+        {
+            get
+            {
+                // No schema: all we have is data. There is no offset in last 4 bytes.
+                if (!HasSchema)
+                    return Length;
+
+                // There is schema. Regardless of raw data presence, footer starts with schema.
+                return SchemaOffset;
+            }
         }
 
         /// <summary>
@@ -262,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 Debug.Assert(hdr.Version == BinaryUtils.ProtoVer);
                 Debug.Assert(hdr.SchemaOffset <= hdr.Length);
-                Debug.Assert(hdr.SchemaOffset >= Size);
+                Debug.Assert(hdr.SchemaOffset >= Size || !hdr.HasSchema);
 
             }
             else
@@ -292,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            
+
             return obj is BinaryObjectHeader && Equals((BinaryObjectHeader) obj);
         }
 
@@ -323,6 +356,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("BinaryObjectHeader [Header={0}, Version={1}, Flags={2}, TypeId={3}, " +
+                                 "HashCode={4}, Length={5}, SchemaId={6}, SchemaOffset={7}]", 
+                                 Header, Version, Flags, TypeId, HashCode, Length, SchemaId, SchemaOffset);
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -50,6 +52,36 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
         Map<IgniteTxKey, IgniteTxEntry> writeMap) {
         this.readMap = readMap;
         this.writeMap = writeMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        assert readMap == null || readMap.isEmpty();
+
+        int singleCacheId = 0;
+        Set<Integer> cacheIds = null;
+
+        for (IgniteTxKey writeKey : writeMap.keySet()) {
+            int cacheId = writeKey.cacheId();
+
+            assert cacheId != 0;
+
+            // Have we already notified this cache?
+            if (cacheId == singleCacheId || cacheIds != null && !cacheIds.add(cacheId))
+                continue;
+
+            if (singleCacheId == 0)
+                singleCacheId = cacheId;
+            else if (cacheIds == null) {
+                cacheIds = new HashSet<>(2);
+                cacheIds.add(cacheId);
+            }
+
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -103,12 +135,12 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
+    @Override public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
         writeMap.put(key, e);
     }
 
     /** {@inheritDoc} */
-    public void clearEntry(IgniteTxKey key) {
+    @Override public void clearEntry(IgniteTxKey key) {
         readMap.remove(key);
         writeMap.remove(key);
     }
@@ -126,7 +158,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     @Override public void invalidPartition(int part) {
         if (writeMap != null) {
-            for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
+            for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext(); ) {
                 IgniteTxEntry e = it.next();
 
                 GridCacheContext cacheCtx = e.context();

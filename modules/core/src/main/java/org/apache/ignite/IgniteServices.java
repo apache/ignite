@@ -20,8 +20,10 @@ package org.apache.ignite;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -62,9 +64,9 @@ import org.jetbrains.annotations.Nullable;
  * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
- * IgniteConfiguration gridCfg = new IgniteConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg1 = new ServiceConfiguration();
  *
  * // Cluster-wide singleton configuration.
  * svcCfg1.setName("myClusterSingletonService");
@@ -72,16 +74,16 @@ import org.jetbrains.annotations.Nullable;
  * svcCfg1.setTotalCount(1);
  * svcCfg1.setService(new MyClusterSingletonService());
  *
- * GridServiceConfiguration svcCfg2 = new GridServiceConfiguration();
+ * ServiceConfiguration svcCfg2 = new ServiceConfiguration();
  *
  * // Per-node singleton configuration.
  * svcCfg2.setName("myNodeSingletonService");
  * svcCfg2.setMaxPerNodeCount(1);
  * svcCfg2.setService(new MyNodeSingletonService());
  *
- * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
+ * cfg.setServiceConfiguration(svcCfg1, svcCfg2);
  * ...
- * Ignition.start(gridCfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h1 class="header">Load Balancing</h1>
  * In all cases, other than singleton service deployment, Ignite will automatically make sure that
@@ -106,18 +108,18 @@ import org.jetbrains.annotations.Nullable;
  * Here is an example of how an distributed service may be implemented and deployed:
  * <pre name="code" class="java">
  * // Simple service implementation.
- * public class MyGridService implements GridService {
+ * public class MyIgniteService implements Service {
  *      ...
  *      // Example of ignite resource injection. All resources are optional.
  *      // You should inject resources only as needed.
  *      &#64;IgniteInstanceResource
- *      private Grid grid;
+ *      private Ignite ignite;
  *      ...
- *      &#64;Override public void cancel(GridServiceContext ctx) {
+ *      &#64;Override public void cancel(ServiceContext ctx) {
  *          // No-op.
  *      }
  *
- *      &#64;Override public void execute(GridServiceContext ctx) {
+ *      &#64;Override public void execute(ServiceContext ctx) {
  *          // Loop until service is cancelled.
  *          while (!ctx.isCancelled()) {
  *              // Do something.
@@ -126,16 +128,16 @@ import org.jetbrains.annotations.Nullable;
  *      }
  *  }
  * ...
- * GridServices svcs = grid.services();
+ * IgniteServices svcs = ignite.services();
  *
- * svcs.deployClusterSingleton("mySingleton", new MyGridService());
+ * svcs.deployClusterSingleton("mySingleton", new MyIgniteService());
  * </pre>
  */
 public interface IgniteServices extends IgniteAsyncSupport {
     /**
-     * Gets the cluster group to which this {@code GridServices} instance belongs.
+     * Gets the cluster group to which this {@code IgniteServices} instance belongs.
      *
-     * @return Cluster group to which this {@code GridServices} instance belongs.
+     * @return Cluster group to which this {@code IgniteServices} instance belongs.
      */
     public ClusterGroup clusterGroup();
 
@@ -150,14 +152,35 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 1, 1)} method.
+     * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 1, 1)}
+     * method.
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @throws IgniteException If failed to deploy service.
+     * @throws ServiceDeploymentException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployClusterSingleton(String name, Service svc) throws IgniteException;
+    public void deployClusterSingleton(String name, Service svc) throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys a cluster-wide singleton service. Ignite will guarantee that there is always
+     * one instance of the service in the cluster. In case if grid node on which the service
+     * was deployed crashes or stops, Ignite will automatically redeploy it on another node.
+     * However, if the node on which the service is deployed remains in topology, then the
+     * service will always be deployed on that node only, regardless of topology changes.
+     * <p>
+     * Note that in case of topology changes, due to network delays, there may be a temporary situation
+     * when a singleton service instance will be active on more than one node (e.g. crash detection delay).
+     * <p>
+     * This method is analogous to calling
+     * {@link #deployMultipleAsync(String, org.apache.ignite.services.Service, int, int)
+     * deployMultipleAsync(name, svc, 1, 1)} method.
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> deployClusterSingletonAsync(String name, Service svc);
 
     /**
      * Deploys a per-node singleton service. Ignite will guarantee that there is always
@@ -166,14 +189,31 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * the service on every new node.
      * <p>
      * This method is analogous to calling
-     * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 0, 1)} method.
+     * {@link #deployMultiple(String, org.apache.ignite.services.Service, int, int) deployMultiple(name, svc, 0, 1)}
+     * method.
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @throws IgniteException If failed to deploy service.
+     * @throws ServiceDeploymentException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployNodeSingleton(String name, Service svc) throws IgniteException;
+    public void deployNodeSingleton(String name, Service svc) throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys a per-node singleton service. Ignite will guarantee that there is always
+     * one instance of the service running on each node. Whenever new nodes are started
+     * within the underlying cluster group, Ignite will automatically deploy one instance of
+     * the service on every new node.
+     * <p>
+     * This method is analogous to calling
+     * {@link #deployMultipleAsync(String, org.apache.ignite.services.Service, int, int)
+     * deployMultipleAsync(name, svc, 0, 1)} method.
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> deployNodeSingletonAsync(String name, Service svc);
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -184,10 +224,10 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * Note that in case of topology changes, due to network delays, there may be a temporary situation
      * when a service instance will be active on more than one node (e.g. crash detection delay).
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)} method
-     * as follows:
+     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)}
+     * method as follows:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
@@ -196,7 +236,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *     cfg.setTotalCount(1);
      *     cfg.setMaxPerNodeCount(1);
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param name Service name.
@@ -204,11 +244,45 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
      *      default cache.
      * @param affKey Affinity cache key.
-     * @throws IgniteException If failed to deploy service.
+     * @throws ServiceDeploymentException If failed to deploy service.
      */
     @IgniteAsyncSupported
     public void deployKeyAffinitySingleton(String name, Service svc, @Nullable String cacheName, Object affKey)
-        throws IgniteException;
+        throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys one instance of this service on the primary node for a given affinity key.
+     * Whenever topology changes and primary node assignment changes, Ignite will always
+     * make sure that the service is undeployed on the previous primary node and deployed
+     * on the new primary node.
+     * <p>
+     * Note that in case of topology changes, due to network delays, there may be a temporary situation
+     * when a service instance will be active on more than one node (e.g. crash detection delay).
+     * <p>
+     * This method is analogous to the invocation of
+     * {@link #deployAsync(org.apache.ignite.services.ServiceConfiguration)} method as follows:
+     * <pre name="code" class="java">
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setCacheName(cacheName);
+     *     cfg.setAffinityKey(affKey);
+     *     cfg.setTotalCount(1);
+     *     cfg.setMaxPerNodeCount(1);
+     *
+     *     ignite.services().deployAsync(cfg);
+     * </pre>
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
+     *      default cache.
+     * @param affKey Affinity cache key.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> deployKeyAffinitySingletonAsync(String name, Service svc, @Nullable String cacheName,
+        Object affKey);
 
     /**
      * Deploys multiple instances of the service on the grid. Ignite will deploy a
@@ -221,43 +295,79 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
      * value greater than {@code 0}.
      * <p>
-     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)} method
-     * as follows:
+     * This method is analogous to the invocation of {@link #deploy(org.apache.ignite.services.ServiceConfiguration)}
+     * method as follows:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
      *     cfg.setTotalCount(totalCnt);
      *     cfg.setMaxPerNodeCount(maxPerNodeCnt);
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param name Service name.
      * @param svc Service instance.
      * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
-     * @throws IgniteException If failed to deploy service.
+     * @throws ServiceDeploymentException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployMultiple(String name, Service svc, int totalCnt, int maxPerNodeCnt) throws IgniteException;
+    public void deployMultiple(String name, Service svc, int totalCnt, int maxPerNodeCnt)
+        throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys multiple instances of the service on the grid. Ignite will deploy a
+     * maximum amount of services equal to {@code 'totalCnt'} parameter making sure that
+     * there are no more than {@code 'maxPerNodeCnt'} service instances running
+     * on each node. Whenever topology changes, Ignite will automatically rebalance
+     * the deployed services within cluster to make sure that each node will end up with
+     * about equal number of deployed instances whenever possible.
+     * <p>
+     * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
+     * value greater than {@code 0}.
+     * <p>
+     * This method is analogous to the invocation of
+     * {@link #deployAsync(org.apache.ignite.services.ServiceConfiguration)} method as follows:
+     * <pre name="code" class="java">
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setTotalCount(totalCnt);
+     *     cfg.setMaxPerNodeCount(maxPerNodeCnt);
+     *
+     *     ignite.services().deployAsync(cfg);
+     * </pre>
+     *
+     * @param name Service name.
+     * @param svc Service instance.
+     * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
+     * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> deployMultipleAsync(String name, Service svc, int totalCnt, int maxPerNodeCnt);
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
      * configuration. Ignite will deploy a maximum amount of services equal to
      * {@link org.apache.ignite.services.ServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
-     * making sure that there are no more than {@link org.apache.ignite.services.ServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * making sure that there are no more than
+     * {@link org.apache.ignite.services.ServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
      * service instances running on each node. Whenever topology changes, Ignite will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
-     * If {@link org.apache.ignite.services.ServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then Ignite
-     * will deploy the service on the primary node for given affinity key. The affinity will be calculated
-     * on the cache with {@link org.apache.ignite.services.ServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getAffinityKey() cfg.getAffinityKey()}
+     * is not {@code null}, then Ignite  will deploy the service on the primary node for given affinity key.
+     * The affinity will be calculated on the cache with
+     * {@link org.apache.ignite.services.ServiceConfiguration#getCacheName() cfg.getCacheName()} name.
      * <p>
-     * If {@link org.apache.ignite.services.ServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
-     * Ignite will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getNodeFilter() cfg.getNodeFilter()}
+     * is not {@code null}, then  Ignite will deploy service on all grid nodes for which
+     * the provided filter evaluates to {@code true}.
      * The node filter will be checked in addition to the underlying cluster group filter, or the
      * whole grid, if the underlying cluster group includes all the cluster nodes.
      * <p>
@@ -266,29 +376,109 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * <p>
      * Here is an example of creating service deployment configuration:
      * <pre name="code" class="java">
-     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
      *
      *     cfg.setName(name);
      *     cfg.setService(svc);
      *     cfg.setTotalCount(0); // Unlimited.
      *     cfg.setMaxPerNodeCount(2); // Deploy 2 instances of service on each node.
      *
-     *     grid.services().deploy(cfg);
+     *     ignite.services().deploy(cfg);
      * </pre>
      *
      * @param cfg Service configuration.
-     * @throws IgniteException If failed to deploy service.
+     * @throws ServiceDeploymentException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deploy(ServiceConfiguration cfg) throws IgniteException;
+    public void deploy(ServiceConfiguration cfg) throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys multiple instances of the service on the grid according to provided
+     * configuration. Ignite will deploy a maximum amount of services equal to
+     * {@link org.apache.ignite.services.ServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
+     * making sure that there are no more than
+     * {@link org.apache.ignite.services.ServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * service instances running on each node. Whenever topology changes, Ignite will automatically rebalance
+     * the deployed services within cluster to make sure that each node will end up with
+     * about equal number of deployed instances whenever possible.
+     * <p>
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getAffinityKey() cfg.getAffinityKey()}
+     * is not {@code null}, then Ignite
+     * will deploy the service on the primary node for given affinity key. The affinity will be calculated
+     * on the cache with {@link org.apache.ignite.services.ServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * <p>
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getNodeFilter() cfg.getNodeFilter()}
+     * is not {@code null}, then Ignite will deploy service on all grid nodes
+     * for which the provided filter evaluates to {@code true}.
+     * The node filter will be checked in addition to the underlying cluster group filter, or the
+     * whole grid, if the underlying cluster group includes all the cluster nodes.
+     * <p>
+     * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
+     * value greater than {@code 0}.
+     * <p>
+     * Here is an example of creating service deployment configuration:
+     * <pre name="code" class="java">
+     *     ServiceConfiguration cfg = new ServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setTotalCount(0); // Unlimited.
+     *     cfg.setMaxPerNodeCount(2); // Deploy 2 instances of service on each node.
+     *
+     *     ignite.services().deployAsync(cfg);
+     * </pre>
+     *
+     * @param cfg Service configuration.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> deployAsync(ServiceConfiguration cfg);
+
+    /**
+     * Deploys multiple services described by provided configurations. Depending on specified parameters, multiple
+     * instances of the same service may be deployed (see {@link ServiceConfiguration}). Whenever topology changes,
+     * Ignite will automatically rebalance the deployed services within cluster to make sure that each node will end up
+     * with about equal number of deployed instances whenever possible.
+     *
+     * If deployment of some of the provided services fails, then {@link ServiceDeploymentException} containing a list
+     * of failed services will be thrown. It is guaranteed that all services that were provided to this method and are
+     * not present in the list of failed services are successfully deployed by the moment of the exception being thrown.
+     * Note that if exception is thrown, then partial deployment may have occurred.
+     *
+     * @param cfgs {@link Collection} of service configurations to be deployed.
+     * @throws ServiceDeploymentException If failed to deploy services.
+     * @see IgniteServices#deploy(ServiceConfiguration)
+     * @see IgniteServices#deployAllAsync(Collection)
+     */
+    public void deployAll(Collection<ServiceConfiguration> cfgs) throws ServiceDeploymentException;
+
+    /**
+     * Asynchronously deploys multiple services described by provided configurations. Depending on specified parameters,
+     * multiple instances of the same service may be deployed (see {@link ServiceConfiguration}). Whenever topology
+     * changes, Ignite will automatically rebalance the deployed services within cluster to make sure that each node
+     * will end up with about equal number of deployed instances whenever possible.
+     *
+     * If deployment of some of the provided services fails, then {@link ServiceDeploymentException} containing a list
+     * of failed services will be thrown from {@link IgniteFuture#get get()} method of the returned future. It is
+     * guaranteed that all services, that were provided to this method and are not present in the list of failed
+     * services, are successfully deployed by the moment of the exception being thrown. Note that if exception is
+     * thrown, then partial deployment may have occurred.
+     *
+     * @param cfgs {@link Collection} of service configurations to be deployed.
+     * @return a Future representing pending completion of the operation.
+     * @see IgniteServices#deploy(ServiceConfiguration)
+     * @see IgniteServices#deployAll(Collection)
+     */
+    public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs);
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
-     * then {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)} method will be called on it.
+     * then {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)}
+     * method will be called on it.
      * <p>
-     * Note that Ignite cannot guarantee that the service exits from {@link org.apache.ignite.services.Service#execute(org.apache.ignite.services.ServiceContext)}
-     * method whenever {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)} is called. It is up to the user to
-     * make sure that the service code properly reacts to cancellations.
+     * Note that Ignite cannot guarantee that the service exits from
+     * {@link org.apache.ignite.services.Service#execute(org.apache.ignite.services.ServiceContext)}
+     * method whenever {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)}
+     * is called. It is up to the user to  make sure that the service code properly reacts to cancellations.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -297,6 +487,47 @@ public interface IgniteServices extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void cancel(String name) throws IgniteException;
+
+    /**
+     * Asynchronously cancels service deployment. If a service with specified name was deployed on the grid,
+     * then {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)}
+     * method will be called on it.
+     * <p>
+     * Note that Ignite cannot guarantee that the service exits from
+     * {@link org.apache.ignite.services.Service#execute(org.apache.ignite.services.ServiceContext)}
+     * method whenever {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)}
+     * is called. It is up to the user to
+     * make sure that the service code properly reacts to cancellations.
+     *
+     * @param name Name of service to cancel.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> cancelAsync(String name);
+
+    /**
+     * Cancels services with specified names.
+     * <p>
+     * Note that depending on user logic, it may still take extra time for a service to
+     * finish execution, even after it was cancelled.
+     * <p>
+     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
+     *
+     * @param names Names of services to cancel.
+     * @throws IgniteException If failed to cancel services.
+     */
+    @IgniteAsyncSupported
+    public void cancelAll(Collection<String> names) throws IgniteException;
+
+    /**
+     * Asynchronously cancels services with specified names.
+     * <p>
+     * Note that depending on user logic, it may still take extra time for a service to
+     * finish execution, even after it was cancelled.
+     *
+     * @param names Names of services to cancel.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> cancelAllAsync(Collection<String> names);
 
     /**
      * Cancels all deployed services.
@@ -312,14 +543,24 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public void cancelAll() throws IgniteException;
 
     /**
-     * Gets metadata about all deployed services.
+     * Asynchronously cancels all deployed services.
+     * <p>
+     * Note that depending on user logic, it may still take extra time for a service to
+     * finish execution, even after it was cancelled.
      *
-     * @return Metadata about all deployed services.
+     * @return a Future representing pending completion of the operation.
+     */
+    public IgniteFuture<Void> cancelAllAsync();
+
+    /**
+     * Gets metadata about all deployed services in the grid.
+     *
+     * @return Metadata about all deployed services in the grid.
      */
     public Collection<ServiceDescriptor> serviceDescriptors();
 
     /**
-     * Gets deployed service with specified name.
+     * Gets locally deployed service with specified name.
      *
      * @param name Service name.
      * @param <T> Service type
@@ -328,7 +569,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public <T> T service(String name);
 
     /**
-     * Gets all deployed services with specified name.
+     * Gets all locally deployed services with specified name.
      *
      * @param name Service name.
      * @param <T> Service type.
@@ -350,6 +591,24 @@ public interface IgniteServices extends IgniteAsyncSupport {
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 
+    /**
+     * Gets a remote handle on the service with timeout. If service is available locally,
+     * then local instance is returned and timeout ignored, otherwise, a remote proxy is dynamically
+     * created and provided for the specified service.
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service.
+     * @param sticky Whether or not Ignite should always contact the same remote
+     *      service or try to load-balance between services.
+     * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time.
+     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @throws IgniteException If failed to create service proxy.
+     */
+    public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
+        throws IgniteException;
+
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteServices withAsync();
 }

@@ -21,8 +21,10 @@
   <IgnoreGeneratedCode>False</IgnoreGeneratedCode>
  </ProjectOptions>
  <Targets>
+  <Target Name="$(ProjectDir)/Apache.Ignite.AspNet/bin/Debug/Apache.Ignite.AspNet.dll" Analyze="True" AnalyzeAllChildren="True" />
   <Target Name="$(ProjectDir)/Apache.Ignite.Core/bin/Debug/Apache.Ignite.Core.dll" Analyze="True" AnalyzeAllChildren="True" />
   <Target Name="$(ProjectDir)/Apache.Ignite.Linq/bin/Debug/Apache.Ignite.Linq.dll" Analyze="True" AnalyzeAllChildren="True" />
+  <Target Name="$(ProjectDir)/Apache.Ignite.NLog/bin/Debug/Apache.Ignite.NLog.dll" Analyze="True" AnalyzeAllChildren="True" />
  </Targets>
  <Rules>
   <RuleFiles>
@@ -31,7 +33,6 @@
     <Rule Name="AssembliesShouldHaveValidStrongNames" Enabled="True" />
     <Rule Name="AvoidEmptyInterfaces" Enabled="True" />
     <Rule Name="CollectionsShouldImplementGenericInterface" Enabled="True" />
-    <Rule Name="ConsiderPassingBaseTypesAsParameters" Enabled="True" />
     <Rule Name="DeclareEventHandlersCorrectly" Enabled="True" />
     <Rule Name="DeclareTypesInNamespaces" Enabled="True" />
     <Rule Name="DefineAccessorsForAttributeArguments" Enabled="True" />

@@ -45,10 +45,10 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         Collection<String> hostNames = Arrays.asList("h_1", "h_2", "h_3");
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
@@ -75,7 +75,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
         try {
             assertEquals(0, ignite.cluster().forHost(null, null, null).nodes().size());
         }
-        catch (NullPointerException e) {
+        catch (NullPointerException ignored) {
             gotNpe = true;
         }
         finally {
@@ -99,7 +99,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
         try {
             clusterHosts.add("valueShouldNotToBeAdded");
         }
-        catch (UnsupportedOperationException e) {
+        catch (UnsupportedOperationException ignored) {
             gotNpe = true;
         }
         finally {

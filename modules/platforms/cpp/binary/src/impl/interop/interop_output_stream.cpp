@@ -204,6 +204,11 @@ namespace ignite
                 mem->Length(pos);
             }
 
+            InteropMemory* InteropOutputStream::GetMemory()
+            {
+                return mem;
+            }
+
             void InteropOutputStream::EnsureCapacity(int32_t reqCap) {
                 if (reqCap > cap) {
                     int newCap = cap << 1;

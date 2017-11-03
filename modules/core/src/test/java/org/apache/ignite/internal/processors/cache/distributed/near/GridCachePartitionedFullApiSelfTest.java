@@ -39,8 +39,8 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -48,13 +48,10 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setEvictSynchronized(false);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setAtomicityMode(atomicityMode());
-        cfg.setSwapEnabled(true);
 
         return cfg;
     }
@@ -62,35 +59,17 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionEntrySetToString() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
-
-        for (int i = 0; i < 100; i++) {
-            String key = String.valueOf(i);
-
-            cache.getAndPut(key, i);
-        }
-
-        Affinity aff = grid(0).affinity(cache.name());
-
-        for (int i = 0 ; i < aff.partitions(); i++)
-            String.valueOf(cache.entrySet(i));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testUpdate() throws Exception {
         if (gridCount() > 1) {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             Integer key = nearKey(cache);
 
-            primaryCache(key, null).put(key, 1);
+            primaryCache(key, DEFAULT_CACHE_NAME).put(key, 1);
 
             assertEquals(1, cache.get(key));
 
-            primaryCache(key, null).put(key, 2);
+            primaryCache(key, DEFAULT_CACHE_NAME).put(key, 2);
 
             if (cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null)
                 assertEquals(2, cache.localPeek(key));

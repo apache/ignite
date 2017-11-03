@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -152,6 +153,50 @@ namespace Apache.Ignite.Core.Impl.Common
 
             return Expression.Lambda<T>(callExpr, argParams).Compile();
         }
+        /// <summary>
+        /// Compiles a function with a single object[] argument which maps array items to actual arguments.
+        /// </summary>
+        /// <param name="method">Method.</param>
+        /// <returns>
+        /// Compiled function that calls specified method.
+        /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object[], object> CompileFuncFromArray(MethodInfo method)
+        {
+            Debug.Assert(method != null);
+            Debug.Assert(method.DeclaringType != null);
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = Expression.Convert(targetParam, method.DeclaringType);
+
+            var arrParam = Expression.Parameter(typeof(object[]));
+
+            var methodParams = method.GetParameters();
+            var argParams = new Expression[methodParams.Length];
+
+            for (var i = 0; i < methodParams.Length; i++)
+            {
+                var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
+                argParams[i] = Expression.Convert(arrElem, methodParams[i].ParameterType);
+            }
+            
+            Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
+
+            if (callExpr.Type == typeof(void))
+            {
+                // Convert action to function
+                var action = Expression.Lambda<Action<object, object[]>>(callExpr, targetParam, arrParam).Compile();
+                return (obj, args) =>
+                {
+                    action(obj, args);
+                    return null;
+                };
+            }
+
+            callExpr = Expression.Convert(callExpr, typeof(object));
+
+            return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
+        }
 
         /// <summary>
         /// Compiles a generic ctor with arbitrary number of arguments.
@@ -159,13 +204,16 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <typeparam name="T">Result func type.</typeparam>
         /// <param name="ctor">Contructor info.</param>
         /// <param name="argTypes">Argument types.</param>
-        /// <param name="convertResultToObject">if set to <c>true</c> [convert result to object].
+        /// <param name="convertResultToObject">
         /// Flag that indicates whether ctor return value should be converted to object.</param>
+        /// <param name="convertParamsFromObject">
+        /// Flag that indicates whether ctor args are object and should be converted to concrete type.</param>
         /// <returns>
         /// Compiled generic constructor.
         /// </returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static T CompileCtor<T>(ConstructorInfo ctor, Type[] argTypes, bool convertResultToObject = true)
+        public static T CompileCtor<T>(ConstructorInfo ctor, Type[] argTypes, bool convertResultToObject = true,
+            bool convertParamsFromObject = true)
         {
             Debug.Assert(ctor != null);
 
@@ -174,9 +222,16 @@ namespace Apache.Ignite.Core.Impl.Common
 
             for (var i = 0; i < argTypes.Length; i++)
             {
-                var arg = Expression.Parameter(typeof(object));
-                args[i] = arg;
-                argsConverted[i] = Expression.Convert(arg, argTypes[i]);
+                if (convertParamsFromObject)
+                {
+                    var arg = Expression.Parameter(typeof(object));
+                    args[i] = arg;
+                    argsConverted[i] = Expression.Convert(arg, argTypes[i]);
+                }
+                else
+                {
+                    argsConverted[i] = args[i] = Expression.Parameter(argTypes[i]);
+                }
             }
 
             Expression ctorExpr = Expression.New(ctor, argsConverted);  // ctor takes args of specific types
@@ -185,6 +240,50 @@ namespace Apache.Ignite.Core.Impl.Common
                 ctorExpr = Expression.Convert(ctorExpr, typeof(object)); // convert ctor result to object
 
             return Expression.Lambda<T>(ctorExpr, args).Compile();  // lambda takes args as objects
+        }
+
+        /// <summary>
+        /// Compiles a generic ctor with arbitrary number of arguments
+        /// that takes an uninitialized object as a first arguments.
+        /// </summary>
+        /// <typeparam name="T">Result func type.</typeparam>
+        /// <param name="ctor">Contructor info.</param>
+        /// <param name="argTypes">Argument types.</param>
+        /// <returns>
+        /// Compiled generic constructor.
+        /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static T CompileUninitializedObjectCtor<T>(ConstructorInfo ctor, Type[] argTypes)
+        {
+            Debug.Assert(ctor != null);
+            Debug.Assert(ctor.DeclaringType != null);
+            Debug.Assert(argTypes != null);
+
+            argTypes = new[] {typeof(object)}.Concat(argTypes).ToArray();
+
+            var helperMethod = new DynamicMethod(string.Empty, typeof(void), argTypes, ctor.Module, true);
+            var il = helperMethod.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+
+            if (ctor.DeclaringType.IsValueType)
+                il.Emit(OpCodes.Unbox, ctor.DeclaringType);   // modify boxed copy
+
+            if (argTypes.Length > 1)
+                il.Emit(OpCodes.Ldarg_1);
+
+            if (argTypes.Length > 2)
+                il.Emit(OpCodes.Ldarg_2);
+
+            if (argTypes.Length > 3)
+                throw new NotSupportedException("Not supported: too many ctor args.");
+
+            il.Emit(OpCodes.Call, ctor);
+            il.Emit(OpCodes.Ret);
+
+            var constructorInvoker = helperMethod.CreateDelegate(typeof(T));
+
+            return (T) (object) constructorInvoker;
         }
 
         /// <summary>
@@ -395,6 +494,32 @@ namespace Apache.Ignite.Core.Impl.Common
             il.Emit(OpCodes.Ret);
 
             return method;
+        }
+
+        /// <summary>
+        /// Gets the constructor with exactly matching signature.
+        /// <para />
+        /// Type.GetConstructor matches compatible ones (i.e. taking object instead of concrete type).
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="types">The argument types.</param>
+        /// <returns>Constructor info.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static ConstructorInfo GetConstructorExact(Type type, Type[] types)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(types != null);
+
+            foreach (var constructorInfo in type.GetConstructors(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                var ctorTypes = constructorInfo.GetParameters().Select(x => x.ParameterType);
+
+                if (ctorTypes.SequenceEqual(types))
+                    return constructorInfo;
+            }
+
+            return null;
         }
     }
 }

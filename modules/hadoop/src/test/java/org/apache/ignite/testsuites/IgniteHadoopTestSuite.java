@@ -22,56 +22,71 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.client.hadoop.HadoopClientProtocolEmbeddedSelfTest;
-import org.apache.ignite.client.hadoop.HadoopClientProtocolSelfTest;
-import org.apache.ignite.hadoop.cache.HadoopTxConfigCacheTest;
-import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactorySelfTest;
-import org.apache.ignite.igfs.Hadoop1OverIgfsDualAsyncTest;
-import org.apache.ignite.igfs.Hadoop1OverIgfsDualSyncTest;
-import org.apache.ignite.igfs.HadoopFIleSystemFactorySelfTest;
-import org.apache.ignite.igfs.HadoopIgfs20FileSystemLoopbackPrimarySelfTest;
-import org.apache.ignite.igfs.HadoopIgfsDualAsyncSelfTest;
-import org.apache.ignite.igfs.HadoopIgfsDualSyncSelfTest;
-import org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest;
-import org.apache.ignite.igfs.IgfsEventsTestSuite;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemClientSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemHandshakeSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoggerSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoggerStateSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedPrimarySelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualAsyncSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalDualSyncSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest;
-import org.apache.ignite.igfs.IgniteHadoopFileSystemSecondaryModeSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoaderTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopCommandLineTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopDefaultMapReducePlannerSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopFileSystemsTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopGroupingTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceErrorResilienceTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopNoHadoopMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSnappyFullMapReduceTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSnappyTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSortingTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapperSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopTaskExecutionSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopTasksV1Test;
-import org.apache.ignite.internal.processors.hadoop.HadoopTasksV2Test;
-import org.apache.ignite.internal.processors.hadoop.HadoopV2JobSelfTest;
-import org.apache.ignite.internal.processors.hadoop.HadoopValidationSelfTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopHashMapSelfTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipListSelfTest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.streams.HadoopDataStreamSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTeraSortTest;
+import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolMultipleServersSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
+import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.Hadoop1OverIgfsProxyTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientBasedDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientBasedDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientBasedOpenTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientBasedPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientBasedProxySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalToClientProxySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.Hadoop1OverIgfsDualAsyncTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.Hadoop1OverIgfsDualSyncTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopFIleSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfs20FileSystemLoopbackPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopSecondaryFileSystemConfigurationTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgfsEventsTestSuite;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemClientSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemHandshakeSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoggerSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoggerStateSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackEmbeddedPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalDualAsyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalDualSyncSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalPrimarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopCommandLineTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopFileSystemsTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopGroupingTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopJobTrackerSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceErrorResilienceTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopNoHadoopMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSerializationWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSnappyFullMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSnappyTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSortingTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSplitWrapperSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTaskExecutionSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTasksV1Test;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTasksV2Test;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopUserLibsSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopV2JobSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopValidationSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedMapReducePlannerTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopWeightedPlannerMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopConcurrentHashMultimapSelftest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopHashMapSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections.HadoopSkipListSelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.shuffle.streams.HadoopDataStreamSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,16 +117,24 @@ public class IgniteHadoopTestSuite extends TestSuite {
         downloadHadoop();
         downloadHive();
 
-        final ClassLoader ldr = TestSuite.class.getClassLoader();
+        final ClassLoader ldr = new HadoopTestClassLoader();
 
         TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopUserLibsSelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedMapReducePlannerTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(BasicUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(KerberosUserNameMapperSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(ChainedUserNameMapperSelfTest.class.getName())));
+
         suite.addTest(new TestSuite(ldr.loadClass(KerberosHadoopFileSystemFactorySelfTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSnappyFullMapReduceTest.class.getName())));
-
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopClassLoaderTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopIgfs20FileSystemLoopbackPrimarySelfTest.class.getName())));
 
@@ -120,6 +143,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsProxyTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 
@@ -131,9 +155,14 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualSyncSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest.class.getName())));
-
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemSecondaryModeSelfTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedProxySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientPrimarySelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualSyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemLoopbackExternalToClientProxySelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientSelfTest.class.getName())));
 
@@ -148,7 +177,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopValidationSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJobTrackerSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopHashMapSelfTest.class.getName())));
@@ -168,6 +196,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedPlannerMapReduceTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
 
@@ -183,6 +212,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolEmbeddedSelfTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopClientProtocolMultipleServersSelfTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopCommandLineTest.class.getName())));
 
@@ -190,7 +220,9 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTxConfigCacheTest.class.getName())));
 
-        return suite;
+        suite.addTest(new TestSuite(ldr.loadClass(IgniteHadoopFileSystemClientBasedOpenTest.class.getName())));
+
+         return suite;
     }
 
     /**

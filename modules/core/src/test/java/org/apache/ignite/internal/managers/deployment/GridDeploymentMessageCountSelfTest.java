@@ -27,6 +27,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -57,8 +58,15 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        assert G.allGrids().isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -77,7 +85,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
         MessageCountingCommunicationSpi commSpi = new MessageCountingCommunicationSpi();
 
-        commSpis.put(gridName, commSpi);
+        commSpis.put(igniteInstanceName, commSpi);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -126,6 +134,8 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheValueDeploymentOnPut() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-4551");
+
         ClassLoader ldr = getExternalClassLoader();
 
         Class valCls = ldr.loadClass(TEST_VALUE);
@@ -133,12 +143,12 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).cache(null).localPeek("key", CachePeekMode.ONHEAP));
+                assertNotNull("For grid: " + i, grid(i).cache(DEFAULT_CACHE_NAME).localPeek("key", CachePeekMode.ONHEAP));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -152,7 +162,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).cache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertNotNull(grid(k).cache(DEFAULT_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

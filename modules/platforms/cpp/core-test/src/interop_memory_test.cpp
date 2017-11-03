@@ -16,7 +16,7 @@
  */
 
 #ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
+#   define BOOST_TEST_DYN_LINK
 #endif
 
 #include <boost/test/unit_test.hpp>
@@ -35,11 +35,13 @@ BOOST_AUTO_TEST_CASE(MemoryReallocationTest)
     using impl::interop::InteropMemory;
     using common::concurrent::SharedPointer;
 
-    IgniteEnvironment env;
+    IgniteConfiguration cfg;
+    IgniteEnvironment env(cfg);
 
     SharedPointer<InteropMemory> mem = env.AllocateMemory();
 
-    BOOST_CHECK_EQUAL(mem.Get()->Capacity(), IgniteEnvironment::DEFAULT_ALLOCATION_SIZE);
+    BOOST_CHECK_EQUAL(mem.Get()->Capacity(),
+        static_cast<int32_t>(IgniteEnvironment::DEFAULT_ALLOCATION_SIZE));
 
     BOOST_CHECK(mem.Get()->Data() != NULL);
 

@@ -25,6 +25,7 @@
 #include "ignite/odbc/parser.h"
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
+#include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
@@ -40,15 +41,6 @@ namespace ignite
         {
             friend class Environment;
         public:
-            /** ODBC communication protocol version. */
-            enum { PROTOCOL_VERSION = 1 };
-
-            /**
-             * Apache Ignite version when the current ODBC communication
-             * protocol version has been introduced.
-             */
-            static const std::string PROTOCOL_VERSION_SINCE;
-
             /**
              * Destructor.
              */
@@ -74,18 +66,16 @@ namespace ignite
             /**
              * Establish connection to ODBC server.
              *
-             * @param server Server (DSN).
+             * @param connectStr Connection string.
              */
-            void Establish(const std::string& server);
+            void Establish(const std::string& connectStr);
 
             /**
              * Establish connection to ODBC server.
              *
-             * @param host Host.
-             * @param port Port.
-             * @param cache Cache name to connect to.
+             * @param cfg Configuration.
              */
-            void Establish(const std::string& host, uint16_t port, const std::string& cache);
+            void Establish(const config::Configuration cfg);
 
             /**
              * Release established connection.
@@ -117,11 +107,18 @@ namespace ignite
             void Receive(std::vector<int8_t>& msg);
 
             /**
-             * Get name of the assotiated cache.
+             * Get name of the assotiated schema.
              *
-             * @return Cache name.
+             * @return Schema name.
              */
-            const std::string& GetCache() const;
+            const std::string& GetSchema() const;
+
+            /**
+             * Get configuration.
+             *
+             * @return Connection configuration.
+             */
+            const config::Configuration& GetConfiguration() const;
 
             /**
              * Create diagnostic record associated with the Connection instance.
@@ -132,8 +129,8 @@ namespace ignite
              * @param columnNum Associated column number.
              * @return DiagnosticRecord associated with the instance.
              */
-            diagnostic::DiagnosticRecord CreateStatusRecord(SqlState sqlState,
-                const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0) const;
+            static diagnostic::DiagnosticRecord CreateStatusRecord(SqlState::Type sqlState,
+                const std::string& message, int32_t rowNum = 0, int32_t columnNum = 0);
 
             /**
              * Synchronously send request message and receive response.
@@ -165,6 +162,25 @@ namespace ignite
              */
             void TransactionRollback();
 
+            /**
+             * Get connection attribute.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             */
+            void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
+
+            /**
+             * Set connection attribute.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             */
+            void SetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
@@ -172,21 +188,19 @@ namespace ignite
              * Establish connection to ODBC server.
              * Internal call.
              *
-             * @param server Server (DNS).
+             * @param connectStr Connection string.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const std::string& server);
+            SqlResult::Type InternalEstablish(const std::string& connectStr);
 
             /**
              * Establish connection to ODBC server.
              * Internal call.
              *
-             * @param host Host.
-             * @param port Port.
-             * @param cache Cache name to connect to.
+             * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult InternalEstablish(const std::string& host, uint16_t port, const std::string& cache);
+            SqlResult::Type InternalEstablish(const config::Configuration cfg);
 
             /**
              * Release established connection.
@@ -194,7 +208,12 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalRelease();
+            SqlResult::Type InternalRelease();
+
+            /**
+             * Close connection.
+             */
+            void Close();
 
             /**
              * Get info of any type.
@@ -206,16 +225,16 @@ namespace ignite
              * @param reslen Result value length pointer.
              * @return Operation result.
              */
-            SqlResult InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
+            SqlResult::Type InternalGetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen);
 
             /**
              * Create statement associated with the connection.
              * Internal call.
              *
-             * @param Pointer to valid instance on success and NULL on failure.
+             * @param statement Pointer to valid instance on success and NULL on failure.
              * @return Operation result.
              */
-            SqlResult InternalCreateStatement(Statement*& statement);
+            SqlResult::Type InternalCreateStatement(Statement*& statement);
 
             /**
              * Perform transaction commit on all the associated connections.
@@ -223,7 +242,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionCommit();
+            SqlResult::Type InternalTransactionCommit();
 
             /**
              * Perform transaction rollback on all the associated connections.
@@ -231,7 +250,30 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionRollback();
+            SqlResult::Type InternalTransactionRollback();
+
+            /**
+             * Get connection attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             * @return Operation result.
+             */
+            SqlResult::Type InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
+
+            /**
+             * Set connection attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             * @return Operation result.
+             */
+            SqlResult::Type InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
 
             /**
              * Receive specified number of bytes.
@@ -256,7 +298,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult MakeRequestHandshake();
+            SqlResult::Type MakeRequestHandshake();
 
             /**
              * Constructor.
@@ -269,11 +311,14 @@ namespace ignite
             /** State flag. */
             bool connected;
 
-            /** Cache name. */
-            std::string cache;
-
             /** Message parser. */
             Parser parser;
+
+            /** Configuration. */
+            config::Configuration config;
+
+            /** Connection info. */
+            config::ConnectionInfo info;
         };
     }
 }

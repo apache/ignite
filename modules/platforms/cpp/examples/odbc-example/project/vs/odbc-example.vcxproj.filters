@@ -8,6 +8,9 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{6400d7ba-6390-4cdb-aa25-9525f8a71444}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{d054b826-ae5e-4a0c-833f-ae0b975f57d8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc_example.cpp">
@@ -24,5 +27,10 @@
     <ClInclude Include="..\..\..\include\ignite\examples\person.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\example-odbc.xml">
+      <Filter>Config</Filter>
+    </None>
   </ItemGroup>
 </Project>

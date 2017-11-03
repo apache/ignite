@@ -97,14 +97,14 @@ public class BundleDelegatingClassLoader extends ClassLoader {
         try {
             cls = findClass(name);
         }
-        catch (ClassNotFoundException e) {
+        catch (ClassNotFoundException ignored) {
             if (clsLdr == null)
                 throw classNotFoundException(name);
 
             try {
                 cls = clsLdr.loadClass(name);
             }
-            catch (ClassNotFoundException e2) {
+            catch (ClassNotFoundException ignored2) {
                 throw classNotFoundException(name);
             }
 

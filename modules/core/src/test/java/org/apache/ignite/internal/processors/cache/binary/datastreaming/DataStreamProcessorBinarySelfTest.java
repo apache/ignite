@@ -31,8 +31,8 @@ import org.apache.ignite.stream.StreamReceiver;
  */
 public class DataStreamProcessorBinarySelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 

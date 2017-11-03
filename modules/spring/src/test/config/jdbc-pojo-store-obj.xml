@@ -25,7 +25,10 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="gridName" value="test-cluster"/>
+        <property name="localHost" value="127.0.0.1"/>
+
+        <property name="igniteInstanceName" value="test-cluster"/>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
@@ -70,7 +73,7 @@
                                         <property name="keyFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="id"/>
+                                                    <property name="databaseFieldName" value="ID"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.INTEGER"/>
                                                     </property>
@@ -83,7 +86,7 @@
                                         <property name="valueFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="name"/>
+                                                    <property name="databaseFieldName" value="NAME"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -91,7 +94,7 @@
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                 </bean>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="city"/>
+                                                    <property name="databaseFieldName" value="CITY"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -112,7 +115,7 @@
                                         <property name="keyFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="id"/>
+                                                    <property name="databaseFieldName" value="ID"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.INTEGER"/>
                                                     </property>
@@ -125,7 +128,7 @@
                                         <property name="valueFields">
                                             <list>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="name"/>
+                                                    <property name="databaseFieldName" value="NAME"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.VARCHAR"/>
                                                     </property>
@@ -133,7 +136,7 @@
                                                     <property name="javaFieldType" value="java.lang.String"/>
                                                 </bean>
                                                 <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
-                                                    <property name="databaseFieldName" value="birthday"/>
+                                                    <property name="databaseFieldName" value="BIRTHDAY"/>
                                                     <property name="databaseFieldType">
                                                         <util:constant static-field="java.sql.Types.DATE"/>
                                                     </property>
@@ -147,6 +150,14 @@
                                                     </property>
                                                     <property name="javaFieldName" value="orgId"/>
                                                     <property name="javaFieldType" value="java.lang.Integer"/>
+                                                </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldName" value="GENDER"/>
+                                                    <property name="databaseFieldType">
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="javaFieldName" value="gender"/>
+                                                    <property name="javaFieldType" value="org.apache.ignite.cache.store.jdbc.model.Gender"/>
                                                 </bean>
                                             </list>
                                         </property>

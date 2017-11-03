@@ -19,21 +19,25 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -42,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Query request.
  */
-public class GridCacheQueryResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -124,12 +128,12 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = U.marshal(ctx, err);
 
-        if (metaDataBytes == null)
+        if (metaDataBytes == null && metadata != null)
             metaDataBytes = marshalCollection(metadata, cctx);
 
-        if (dataBytes == null)
+        if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
@@ -149,13 +153,56 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (metadata == null)
             metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
 
         if (data == null)
-            data = unmarshalCollection(dataBytes, ctx, ldr);
+            data = unmarshalCollection0(dataBytes, ctx, ldr);
+    }
+
+    /**
+     * @param byteCol Collection to unmarshal.
+     * @param ctx Context.
+     * @param ldr Loader.
+     * @return Unmarshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
+        GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert ldr != null;
+        assert ctx != null;
+
+        if (byteCol == null)
+            return null;
+
+        List<T> col = new ArrayList<>(byteCol.size());
+
+        Marshaller marsh = ctx.marshaller();
+
+        ClassLoader ldr0 = U.resolveClassLoader(ldr, ctx.gridConfig());
+
+        CacheObjectContext cacheObjCtx = null;
+
+        for (byte[] bytes : byteCol) {
+            Object obj = bytes == null ? null : marsh.<T>unmarshal(bytes, ldr0);
+
+            if (obj instanceof Map.Entry) {
+                Object key = ((Map.Entry)obj).getKey();
+
+                if (key instanceof KeyCacheObject) {
+                    if (cacheObjCtx == null)
+                        cacheObjCtx = ctx.cacheContext(cacheId).cacheObjectContext();
+
+                    ((KeyCacheObject)key).finishUnmarshal(cacheObjCtx, ldr0);
+                }
+            }
+
+            col.add((T)obj);
+        }
+
+        return col;
     }
 
     /** {@inheritDoc} */
@@ -346,7 +393,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 59;
     }
 

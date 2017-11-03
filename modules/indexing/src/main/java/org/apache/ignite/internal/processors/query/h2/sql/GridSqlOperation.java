@@ -32,8 +32,8 @@ public class GridSqlOperation extends GridSqlElement {
      * @param opType Operation type.
      */
     public GridSqlOperation(GridSqlOperationType opType) {
-        super(opType == IN ? new ArrayList<GridSqlElement>() :
-            new ArrayList<GridSqlElement>(opType.childrenCount()));
+        super(opType == IN ? new ArrayList<GridSqlAst>() :
+            new ArrayList<GridSqlAst>(opType.childrenCount()));
 
         this.opType = opType;
     }
@@ -53,7 +53,7 @@ public class GridSqlOperation extends GridSqlElement {
      * @param left Left.
      * @param right Right.
      */
-    public GridSqlOperation(GridSqlOperationType opType, GridSqlElement left, GridSqlElement right) {
+    public GridSqlOperation(GridSqlOperationType opType, GridSqlAst left, GridSqlAst right) {
         this(opType);
 
         addChild(left);
@@ -63,7 +63,7 @@ public class GridSqlOperation extends GridSqlElement {
     /**
      * @return Operation type.
      */
-    public GridSqlOperationType opType() {
+    public GridSqlOperationType operationType() {
         return opType;
     }
 

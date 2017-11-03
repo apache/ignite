@@ -54,8 +54,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                 final int timeout = args.cacheOperationTimeoutMillis();
 
                 for (String key : keys) {
-                    asyncCache.get(key);
-                    Long val = asyncCache.<Long>future().get(timeout);
+                    Long val = cache.getAsync(key).get(timeout);
 
                     map.put(key, val);
                 }
@@ -72,8 +71,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                         for (int i = 0; i < args.keysCount(); i++) {
                             String key = "key-" + k + "-" + i;
 
-                            asyncCache.get(key);
-                            Long val = asyncCache.<Long>future().get(timeout);
+                            Long val = cache.getAsync(key).get(timeout);
 
                             if (val != null)
                                 println(cfg, "Entry [key=" + key + ", val=" + val + "]");
@@ -87,10 +85,8 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
 
                 final Long newVal = oldVal == null ? 0 : oldVal + 1;
 
-                for (String key : keys) {
-                    asyncCache.put(key, newVal);
-                    asyncCache.future().get(timeout);
-                }
+                for (String key : keys)
+                    cache.putAsync(key, newVal).get(timeout);
 
                 return true;
             }

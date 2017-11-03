@@ -31,9 +31,9 @@ import org.apache.ignite.examples.ExamplesUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistryBuilder;
 import org.hibernate.stat.SecondLevelCacheStatistics;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -125,71 +125,71 @@ public class HibernateL2CacheExample {
             ) {
                 URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
 
-                SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
+                try (SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg)) {
+                    System.out.println();
+                    System.out.println(">>> Creating objects.");
 
-                System.out.println();
-                System.out.println(">>> Creating objects.");
+                    final long userId;
 
-                final long userId;
-
-                Session ses = sesFactory.openSession();
-
-                try {
-                    Transaction tx = ses.beginTransaction();
-
-                    User user = new User("jedi", "Luke", "Skywalker");
-
-                    user.getPosts().add(new Post(user, "Let the Force be with you."));
-
-                    ses.save(user);
-
-                    tx.commit();
-
-                    // Create a user object, store it in DB, and save the database-generated
-                    // object ID. You may try adding more objects in a similar way.
-                    userId = user.getId();
-                }
-                finally {
-                    ses.close();
-                }
-
-                // Output L2 cache and Ignite cache stats. You may notice that
-                // at this point the object is not yet stored in L2 cache, because
-                // the read was not yet performed.
-                printStats(sesFactory);
-
-                System.out.println();
-                System.out.println(">>> Querying object by ID.");
-
-                // Query user by ID several times. First time we get an L2 cache
-                // miss, and the data is queried from DB, but it is then stored
-                // in cache and successive queries hit the cache and return
-                // immediately, no SQL query is made.
-                for (int i = 0; i < 3; i++) {
-                    ses = sesFactory.openSession();
+                    Session ses = sesFactory.openSession();
 
                     try {
                         Transaction tx = ses.beginTransaction();
 
-                        User user = (User)ses.get(User.class, userId);
+                        User user = new User("jedi", "Luke", "Skywalker");
 
-                        System.out.println("User: " + user);
+                        user.getPosts().add(new Post(user, "Let the Force be with you."));
 
-                        for (Post post : user.getPosts())
-                            System.out.println("\tPost: " + post);
+                        ses.save(user);
 
                         tx.commit();
+
+                        // Create a user object, store it in DB, and save the database-generated
+                        // object ID. You may try adding more objects in a similar way.
+                        userId = user.getId();
                     }
                     finally {
                         ses.close();
                     }
-                }
 
-                // Output the stats. We should see 1 miss and 2 hits for
-                // User and Collection object (stored separately in L2 cache).
-                // The Post is loaded with the collection, so it won't imply
-                // a miss.
-                printStats(sesFactory);
+                    // Output L2 cache and Ignite cache stats. You may notice that
+                    // at this point the object is not yet stored in L2 cache, because
+                    // the read was not yet performed.
+                    printStats(sesFactory);
+
+                    System.out.println();
+                    System.out.println(">>> Querying object by ID.");
+
+                    // Query user by ID several times. First time we get an L2 cache
+                    // miss, and the data is queried from DB, but it is then stored
+                    // in cache and successive queries hit the cache and return
+                    // immediately, no SQL query is made.
+                    for (int i = 0; i < 3; i++) {
+                        ses = sesFactory.openSession();
+
+                        try {
+                            Transaction tx = ses.beginTransaction();
+
+                            User user = (User)ses.get(User.class, userId);
+
+                            System.out.println("User: " + user);
+
+                            for (Post post : user.getPosts())
+                                System.out.println("\tPost: " + post);
+
+                            tx.commit();
+                        }
+                        finally {
+                            ses.close();
+                        }
+                    }
+
+                    // Output the stats. We should see 1 miss and 2 hits for
+                    // User and Collection object (stored separately in L2 cache).
+                    // The Post is loaded with the collection, so it won't imply
+                    // a miss.
+                    printStats(sesFactory);
+                }
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -226,14 +226,14 @@ public class HibernateL2CacheExample {
      * @return New Hibernate {@link SessionFactory}.
      */
     private static SessionFactory createHibernateSessionFactory(URL hibernateCfg) {
-        ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
-        return new Configuration()
-            .configure(hibernateCfg)
-            .buildSessionFactory(builder.buildServiceRegistry());
+        builder.configure(hibernateCfg);
+
+        return new MetadataSources(builder.build()).buildMetadata().buildSessionFactory();
     }
 
     /**
@@ -251,7 +251,7 @@ public class HibernateL2CacheExample {
             SecondLevelCacheStatistics stats =
                 sesFactory.getStatistics().getSecondLevelCacheStatistics(entityName);
 
-            System.out.println("\t\tL2 cache entries: " + stats.getEntries());
+            System.out.println("\t\tPuts: " + stats.getPutCount());
             System.out.println("\t\tHits: " + stats.getHitCount());
             System.out.println("\t\tMisses: " + stats.getMissCount());
         }

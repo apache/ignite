@@ -28,6 +28,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -35,34 +36,156 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="nunit-console-runner">
-      <HintPath>..\libs\nunit-console-runner.dll</HintPath>
+    <Reference Include="log4net, Version=1.2.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.5\lib\net40-full\log4net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.4.3.7\lib\net40\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit-console-runner, Version=2.6.3.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs\nunit.framework.dll</HintPath>
+      <HintPath>..\packages\NUnit.Runners.2.6.3\tools\lib\nunit-console-runner.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework, Version=2.6.3.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NUnit.Runners.2.6.3\tools\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataStorageConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\IgniteConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ParityTest.cs" />
+    <Compile Include="ApiParity\CacheConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
+    <Compile Include="Binary\BinaryDateTimeTest.cs" />
+    <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
+    <Compile Include="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
+    <Compile Include="Binary\BinaryFooterTest.cs" />
+    <Compile Include="Binary\BinaryNameMapperTest.cs" />
+    <Compile Include="Binary\BinaryReaderWriterTest.cs" />
+    <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
+    <Compile Include="Binary\EnumsTestOnline.cs" />
+    <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
+    <Compile Include="Cache\DataRegionMetricsTest.cs" />
+    <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\PersistenceTest.cs" />
+    <Compile Include="Cache\PersistentStoreTestObsolete.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Numerics.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Introspection.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
+    <Compile Include="Client\Cache\EmptyObject.cs" />
+    <Compile Include="Client\Cache\ScanQueryTest.cs" />
+    <Compile Include="Client\Cache\Person.cs" />
+    <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\RawSocketTest.cs" />
+    <Compile Include="Client\ClientConnectionTest.cs" />
+    <Compile Include="Client\IgniteClientConfigurationTest.cs" />
+    <Compile Include="Deployment\CacheGetFunc.cs" />
+    <Compile Include="Deployment\GetAddressFunc.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingVersioningTest.cs" />
+    <Compile Include="Deployment\ProcessNameFunc.cs" />
+    <Compile Include="Deployment\ProcessNameTask.cs" />
+    <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
+    <Compile Include="Binary\JavaBinaryInteropTest.cs" />
+    <Compile Include="Binary\JavaTypeMappingTest.cs" />
+    <Compile Include="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="Binary\Serializable\DelegatesTest.cs" />
+    <Compile Include="Binary\Serializable\BasicSerializableObjectsTest.cs" />
+    <Compile Include="Binary\EnumsTest.cs" />
+    <Compile Include="Binary\Serializable\ObjectReferenceTests.cs" />
+    <Compile Include="Binary\Serializable\PrimitivesTest.cs" />
+    <Compile Include="Binary\Serializable\SqlDmlTest.cs" />
+    <Compile Include="Binary\TypeNameParserTest.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingTest.cs" />
+    <Compile Include="Binary\TypeResolverTest.cs" />
+    <Compile Include="Cache\AddArgCacheEntryProcessor.cs" />
+    <Compile Include="Cache\Affinity\AffinityKeyTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersionTest.cs" />
+    <Compile Include="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
+    <Compile Include="Cache\BinarizableTestException.cs" />
+    <Compile Include="Cache\CacheMetricsTest.cs" />
+    <Compile Include="Cache\CacheResultTest.cs" />
+    <Compile Include="Cache\CacheTestKey.cs" />
+    <Compile Include="Cache\MemoryMetricsTest.cs" />
+    <Compile Include="Cache\NonSerializableCacheEntryProcessor.cs" />
+    <Compile Include="Cache\NonSerializableException.cs" />
+    <Compile Include="Cache\PartitionLossTest.cs" />
+    <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
+    <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
+    <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
+    <Compile Include="Cache\TestReferenceObject.cs" />
+    <Compile Include="Collections\MultiValueDictionaryTest.cs" />
+    <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
+    <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
+    <Compile Include="Common\IgniteGuidTest.cs" />
+    <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
+    <Compile Include="EventsTestLocalListeners.cs" />
+    <Compile Include="Log\ConcurrentMemoryTarget.cs" />
+    <Compile Include="Log\DefaultLoggerTest.cs" />
+    <Compile Include="Log\Log4NetLoggerTest.cs" />
+    <Compile Include="Log\NLogLoggerTest.cs" />
+    <Compile Include="Plugin\Cache\CacheJavaPluginConfiguration.cs" />
+    <Compile Include="Plugin\Cache\CacheJavaPluginTest.cs" />
+    <Compile Include="Plugin\PluginTest.cs" />
+    <Compile Include="Plugin\TestIgnitePlugin.cs" />
+    <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
+    <Compile Include="Plugin\TestIgnitePluginException.cs" />
+    <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
+    <Compile Include="Binary\BinaryDynamicRegistrationTest.cs" />
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
-    <Compile Include="Cache\CacheAffinityFieldTest.cs" />
+    <Compile Include="Binary\BinaryStringTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFieldTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheNearTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
-    <Compile Include="Cache\CacheAffinityTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityTest.cs" />
     <Compile Include="Cache\CacheEntryTest.cs" />
     <Compile Include="Cache\CacheForkedTest.cs" />
     <Compile Include="Cache\CacheLocalAtomicTest.cs" />
@@ -73,7 +196,7 @@
     <Compile Include="Cache\CachePartitionedTest.cs" />
     <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
     <Compile Include="Cache\CacheReplicatedTest.cs" />
-    <Compile Include="Cache\Query\CacheLinqTest.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs" />
@@ -108,6 +231,7 @@
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
+    <Compile Include="ConsoleRedirectTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
     <Compile Include="Dataload\DataStreamerTestTopologyChange.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
@@ -130,6 +254,7 @@
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
+    <Compile Include="Log\CustomLoggerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="BinaryConfigurationTest.cs" />
@@ -137,7 +262,7 @@
     <Compile Include="ProcessExtensions.cs" />
     <Compile Include="ProjectFilesTest.cs" />
     <Compile Include="ReconnectTest.cs" />
-    <Compile Include="SerializationTest.cs" />
+    <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
     <Compile Include="TestUtils.cs" />
@@ -156,7 +281,6 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
-    <Compile Include="TypeResolverTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +292,14 @@
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj">
+      <Project>{6F82D669-382E-4435-8092-68C4440146D8}</Project>
+      <Name>Apache.Ignite.Log4Net</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.NLog\Apache.Ignite.NLog.csproj">
+      <Project>{C6B58E4A-A2E9-4554-AD02-68CE6DA5CFB7}</Project>
+      <Name>Apache.Ignite.NLog</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
       <Name>Apache.Ignite</Name>
@@ -175,6 +307,7 @@
     <ProjectReference Include="..\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
+      <Aliases>ExamplesDll</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
       <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
@@ -189,6 +322,10 @@
     <Content Include="Config\cache-binarizables.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\cache-default.xml">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\cache-local-node.xml">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -199,6 +336,15 @@
     <Content Include="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Config\Cache\Affinity\affinity-function2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Cache\Affinity\affinity-function.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Cache\Store\cache-store-session-shared-factory.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Store\cache-store-session.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -224,10 +370,25 @@
     <Content Include="Config\Dynamic\dynamic-data.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\full-config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\Lifecycle\lifecycle-beans.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Lifecycle\lifecycle-no-beans.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\dotnet-log4j.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\custom-log.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\dotnet-log4j.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Log\custom-log.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\spring-test.xml">
@@ -275,6 +436,12 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="Deployment\peer_assembly_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="app.config" />
     <Content Include="Config\ignite-dotnet-cfg.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -285,6 +452,7 @@
     <None Include="Config\Apache.Ignite.exe.config.test2">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">

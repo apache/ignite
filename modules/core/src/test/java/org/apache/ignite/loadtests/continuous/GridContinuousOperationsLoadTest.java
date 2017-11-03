@@ -102,7 +102,7 @@ public class GridContinuousOperationsLoadTest {
 
             // Continuous query manager, used to monitor queue size.
             final CacheContinuousQueryManager contQryMgr =
-                ((IgniteKernal)ignite).context().cache().cache().context().continuousQueries();
+                ((IgniteKernal)ignite).context().cache().cache(cacheName).context().continuousQueries();
 
             if (contQryMgr == null)
                 throw new IgniteCheckedException("Could not access CacheContinuousQueryManager");

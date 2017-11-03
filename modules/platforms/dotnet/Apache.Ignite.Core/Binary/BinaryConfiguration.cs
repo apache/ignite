@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -35,9 +36,9 @@ namespace Apache.Ignite.Core.Binary
         public const bool DefaultCompactFooter = true;
 
         /// <summary>
-        /// Default <see cref="DefaultKeepDeserialized"/> setting.
+        /// Default <see cref="KeepDeserialized"/> setting.
         /// </summary>
-        public const bool DefaultDefaultKeepDeserialized = true;
+        public const bool DefaultKeepDeserialized = true;
 
         /** Footer setting. */
         private bool? _compactFooter;
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public BinaryConfiguration()
         {
-            DefaultKeepDeserialized = DefaultDefaultKeepDeserialized;
+            KeepDeserialized = DefaultKeepDeserialized;
         }
 
         /// <summary>
@@ -58,10 +59,24 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
-            DefaultIdMapper = cfg.DefaultIdMapper;
-            DefaultNameMapper = cfg.DefaultNameMapper;
-            DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
-            DefaultSerializer = cfg.DefaultSerializer;
+            CopyLocalProperties(cfg);
+        }
+
+        /// <summary>
+        /// Copies the local properties.
+        /// </summary>
+        internal void CopyLocalProperties(BinaryConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
+            IdMapper = cfg.IdMapper;
+            NameMapper = cfg.NameMapper;
+            KeepDeserialized = cfg.KeepDeserialized;
+
+            if (cfg.Serializer != null)
+            {
+                Serializer = cfg.Serializer;
+            }
 
             TypeConfigurations = cfg.TypeConfigurations == null
                 ? null
@@ -69,7 +84,10 @@ namespace Apache.Ignite.Core.Binary
 
             Types = cfg.Types == null ? null : cfg.Types.ToList();
 
-            CompactFooter = cfg.CompactFooter;
+            if (cfg.CompactFooterInternal != null)
+            {
+                CompactFooter = cfg.CompactFooterInternal.Value;
+            }
         }
 
         /// <summary>
@@ -88,7 +106,10 @@ namespace Apache.Ignite.Core.Binary
         public ICollection<BinaryTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
-        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
+        /// Gets or sets a collection of assembly-qualified type names 
+        /// (the result of <see cref="Type.AssemblyQualifiedName"/>) for binarizable types.
+        /// <para />
+        /// Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Types { get; set; }
@@ -96,23 +117,23 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default name mapper.
         /// </summary>
-        public IBinaryNameMapper DefaultNameMapper { get; set; }
+        public IBinaryNameMapper NameMapper { get; set; }
 
         /// <summary>
         /// Default ID mapper.
         /// </summary>
-        public IBinaryIdMapper DefaultIdMapper { get; set; }
+        public IBinaryIdMapper IdMapper { get; set; }
 
         /// <summary>
         /// Default serializer.
         /// </summary>
-        public IBinarySerializer DefaultSerializer { get; set; }
+        public IBinarySerializer Serializer { get; set; }
 
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
-        [DefaultValue(DefaultDefaultKeepDeserialized)]
-        public bool DefaultKeepDeserialized { get; set; }
+        [DefaultValue(DefaultKeepDeserialized)]
+        public bool KeepDeserialized { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to write footers in compact form.

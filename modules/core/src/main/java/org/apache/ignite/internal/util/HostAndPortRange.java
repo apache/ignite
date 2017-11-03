@@ -113,7 +113,7 @@ public class HostAndPortRange {
 
             return port;
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw createParseError(addrStr, errMsgPrefix, "port range contains invalid port " + portStr);
         }
     }

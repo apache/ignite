@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -30,14 +32,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -47,14 +47,11 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
  */
 public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final long OFFHEAP_MEM = 10L * 1024L;
-
-    /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -64,27 +61,24 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
-        cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-        cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setIndexedTypes(Long.class, Long.class, String.class, TestEntity.class);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
         cfg.setDeploymentMode(SHARED);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setCacheMode(PARTITIONED);
+        cacheCfg.setBackups(1);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setEvictionPolicy(null);
+
+        return cacheCfg;
     }
 
     /** {@inheritDoc} */
@@ -99,7 +93,11 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clear();
+        for(String cacheName : grid(0).cacheNames()) {
+            info("Clear cache: " + cacheName);
+
+            grid(0).cache(cacheName).clear();
+        }
     }
 
     /**
@@ -108,7 +106,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        IgniteCache<Long, Long> cache = grid(0).cache(null);
+        IgniteCache<Long, Long> cache = jcache(grid(0), cacheConfiguration(), Long.class, Long.class);
 
         for (long i = 0; i < 100; i++)
             cache.put(i, i);
@@ -132,7 +130,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutGet() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = jcache(grid(0), cacheConfiguration(), Object.class, Object.class);
 
         Map map = new HashMap();
 
@@ -152,6 +150,52 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             cache.get("key" + i);
             cache.get(i);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithExpiryPolicy() throws Exception {
+        IgniteCache<Long, Long> cache = jcache(grid(0), cacheConfiguration(), Long.class, Long.class);
+
+        cache = cache.withExpiryPolicy(new TestExiryPolicy());
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        for (long i = 0; i < 100; i++)
+            assertEquals((Long)i, cache.get(i));
+
+        SqlQuery<Long, Long> qry = new SqlQuery<>(Long.class, "_val >= 90");
+
+        List<Cache.Entry<Long, Long>> res = cache.query(qry).getAll();
+
+        assertEquals(10, res.size());
+
+        for (Cache.Entry<Long, Long> e : res) {
+            assertNotNull(e.getKey());
+            assertNotNull(e.getValue());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestExiryPolicy implements ExpiryPolicy {
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForCreation() {
+            return Duration.ONE_MINUTE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForAccess() {
+            return Duration.FIVE_MINUTES;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForUpdate() {
+            return Duration.TWENTY_MINUTES;
         }
     }
 

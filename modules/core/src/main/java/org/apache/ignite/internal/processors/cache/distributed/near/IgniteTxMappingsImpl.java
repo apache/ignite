@@ -50,7 +50,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
 
     /** {@inheritDoc} */
     @Override public void put(GridDistributedTxMapping mapping) {
-        mappings.put(mapping.node().id(), mapping);
+        mappings.put(mapping.primary().id(), mapping);
     }
 
     /** {@inheritDoc} */
@@ -61,7 +61,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     /** {@inheritDoc} */
     @Nullable @Override public GridDistributedTxMapping localMapping() {
         for (GridDistributedTxMapping m : mappings.values()) {
-            if (m.node().isLocal())
+            if (m.primary().isLocal())
                 return m;
         }
 

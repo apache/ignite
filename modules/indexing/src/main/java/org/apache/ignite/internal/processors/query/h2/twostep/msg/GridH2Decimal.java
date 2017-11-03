@@ -26,6 +26,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.h2.value.Value;
 import org.h2.value.ValueDecimal;
 
+import static org.h2.util.StringUtils.convertBytesToHex;
+
 /**
  * H2 Decimal.
  */
@@ -121,16 +123,21 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Decimal.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -10;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return scale + "_" + convertBytesToHex(b);
     }
 }

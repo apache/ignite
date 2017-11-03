@@ -1,0 +1,175 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/modules/states/configuration/clusters/general/discovery/cloud
+include /app/modules/states/configuration/clusters/general/discovery/google
+include /app/modules/states/configuration/clusters/general/discovery/jdbc
+include /app/modules/states/configuration/clusters/general/discovery/multicast
+include /app/modules/states/configuration/clusters/general/discovery/s3
+include /app/modules/states/configuration/clusters/general/discovery/shared
+include /app/modules/states/configuration/clusters/general/discovery/vm
+include /app/modules/states/configuration/clusters/general/discovery/zookeeper
+include /app/modules/states/configuration/clusters/general/discovery/kubernetes
+include mixins/pcb-form-field-size
+
+- const model = '$ctrl.state.cluster'
+- const modelDiscoveryKind = `${model}.discovery.kind`
+- const form = '$ctrl.form'
+- const tipOpts = {placement: 'top'}
+
+form(novalidate name=form)
+    .docs-header
+        h1 Step 1. Cluster Configuration
+
+    ignite-information
+        ul
+            li(ng-if='!$ctrl.clusters.size')
+                | You have no clusters.
+                | Let’s configure your first one and associate it with caches and in-memory file systems!
+            li(ng-if='$ctrl.clusters.size')
+                | You have {{$ctrl.clusters.size}} cluster(s).
+                | You can create a new one on this tab or #[a(ui-sref='^.advanced.clusters') edit existing ones].
+
+    .settings-row
+        +ignite-form-field-dropdown('Cluster:', '$ctrl.clusterID', '"clusters"', false, true, false, 'Select a cluster', '', '$ctrl.clustersMenu', 'Add new cluster or select existing one.')(
+            bs-options='cluster._id as cluster.name for cluster in $ctrl.clustersMenu'
+        )
+    .settings-row
+        +text('Name:', `${model}.name`, '"clusterName"', 'true', 'Input name', 'Grid name allows to indicate to what grid this particular grid instance belongs to')
+    .settings-row
+        +dropdown('Discovery:', modelDiscoveryKind, '"discovery"', 'true', 'Choose discovery', '$ctrl.discoveries',
+        'Discovery allows to discover remote nodes in grid\
+        <ul>\
+            <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+            <li>Multicast - Multicast based IP finder</li>\
+            <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
+            <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
+            <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
+            <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
+            <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
+            <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+            <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+        </ul>')
+
+
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'Cloud'`)
+        +discovery-cloud(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'GoogleStorage'`)
+        +discovery-google(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'Jdbc'`)
+        +discovery-jdbc(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'Multicast'`)
+        +discovery-multicast(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'S3'`)
+        +discovery-s3(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'SharedFs'`)
+        +discovery-shared(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'Vm'`)
+        +discovery-vm(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
+        +discovery-zookeeper(model)
+    div.pcb-form-flex-grid.panel-details(ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
+        +discovery-kubernetes(model)        
+
+    .docs-header(style='margin-top:30px')
+        h1 Step 2. Caches Configuration
+
+    .settings-row(ng-show='!$ctrl.caches.size').pcb-no-caches
+        | You have no caches.
+
+    .settings-row.pcb-memory-size(ng-if='$ctrl.defaultMemoryPolicy && $ctrl.memorySizeInputVisible')
+        +pcb-form-field-size('Off-heap Size:', '$ctrl.defaultMemoryPolicy.maxSize', '"memory"', 'false', 'false', '0.8 * totalMemoryAvailable', '{{ $ctrl.minMemorySize/$ctrl.memorySizeScale.value }}', null, '1', '“default” cluster memory policy off-heap max memory size. Leave empty to use 80% of physical memory available on current machine. Should be at least 10Mb.')(
+            pcb-scale-number="$ctrl.memorySizeScale.value"
+        )
+            button.btn-ignite.btn-ignite--secondary(
+                bs-select
+                bs-options='size as size.label for size in $ctrl.sizesMenu'
+                ng-model='$ctrl.memorySizeScale'
+                protect-from-bs-select-render
+            )
+                | {{ $ctrl.memorySizeScale.label }}
+                span.fa.fa-caret-down.icon-right
+    .margin-top-dflt-2x(ng-repeat='cache in $ctrl.allClusterCaches track by cache._id' ng-form).pcb-caches
+        .panel-details
+            .settings-row.pcb-cache-name-row
+                +text('Name:', 'cache.name', '"cacheName"', 'true', 'Input name', 'Cache name')
+                .pcb-cache-remove
+                    a.link-primary(
+                        ng-click='$ctrl.removeCache(cache)'
+                    )
+                        | Remove from cluster
+            .settings-row
+                +cacheMode('Mode:', 'cache.cacheMode', '"cacheMode"', 'PARTITIONED')
+            .settings-row
+                +dropdown('Atomicity:', 'cache.atomicityMode', '"atomicityMode"', 'true', 'ATOMIC',
+                    '[\
+                        {value: "ATOMIC", label: "ATOMIC"},\
+                        {value: "TRANSACTIONAL", label: "TRANSACTIONAL"}\
+                    ]',
+                    'Atomicity:\
+                    <ul>\
+                        <li>ATOMIC - in this mode distributed transactions and distributed locking are not supported</li>\
+                        <li>TRANSACTIONAL - in this mode specified fully ACID-compliant transactional cache behavior</li>\
+                    </ul>')
+            .settings-row(ng-show='cache.cacheMode === "PARTITIONED"')
+                +number('Backups:', 'cache.backups', '"backups"', 'true', '0', '0', 'Number of nodes used to back up single partition for partitioned cache')
+            .settings-row(ng-show='cache.cacheMode === "PARTITIONED" && cache.backups')
+                +checkbox('Read from backup', 'cache.readFromBackup', '"readFromBackup"',
+                    'Flag indicating whether data can be read from backup<br/>\
+                    If not set then always get data from primary node (never from backup)')
+            .settings-row(ng-show='cache.cacheMode === "PARTITIONED" && cache.atomicityMode === "TRANSACTIONAL"')
+                +checkbox('Invalidate near cache', 'cache.invalidate', '"invalidate"',
+                    'Invalidation flag for near cache entries in transaction<br/>\
+                    If set then values will be invalidated (nullified) upon commit in near cache')
+
+    .pcb-buttons-group.margin-top-dflt-2x
+        a.link-primary(
+            ng-click='$ctrl.addCache()'
+        )
+            | + Add one more cache
+        a.link-primary.pcb-select-existing-cache(ng-show='$ctrl.caches.size')
+            button(
+                bs-select
+                ng-model='$ctrl.oldClusterCaches'
+                ng-model-options=`{
+                    debounce: {
+                        default: 5
+                    }
+                }`
+                bs-options='cache._id as cache.name for cache in $ctrl.cachesMenu'
+                data-multiple='true'
+                data-placement='top-left'
+                protect-from-bs-select-render
+            )
+                | + Select from existing caches
+        
+    hr
+
+    div.pcb-buttons-group
+        button.btn-ignite.btn-ignite--primary(
+            type='button'
+            ng-click='$ctrl.save()'
+            ng-disabled='$ctrl.form.$invalid'
+        )
+            | Save project
+        button.btn-ignite.btn-ignite--primary(
+            type='button'
+            ng-click='$ctrl.saveAndDownload()'
+            ng-disabled='$ctrl.form.$invalid'
+        )
+            svg(ignite-icon='download').icon-left
+            | Save and Download project

@@ -17,10 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
@@ -28,16 +36,21 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
+import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
+import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
+import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
+import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop projection.
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_ALL_METADATA = 1;
-
     /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
 
@@ -55,9 +68,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_FOR_NODE_IDS = 7;
-
-    /** */
-    private static final int OP_METADATA = 8;
 
     /** */
     private static final int OP_METRICS = 9;
@@ -78,7 +88,70 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_TOPOLOGY = 14;
 
     /** */
-    private static final int OP_SCHEMA = 15;
+    private static final int OP_FOR_OTHERS = 16;
+
+    /** */
+    private static final int OP_FOR_REMOTES = 17;
+
+    /** */
+    private static final int OP_FOR_DAEMONS = 18;
+
+    /** */
+    private static final int OP_FOR_RANDOM = 19;
+
+    /** */
+    private static final int OP_FOR_OLDEST = 20;
+
+    /** */
+    private static final int OP_FOR_YOUNGEST = 21;
+
+    /** */
+    private static final int OP_RESET_METRICS = 22;
+
+    /** */
+    private static final int OP_FOR_SERVERS = 23;
+
+    /** */
+    private static final int OP_CACHE_METRICS = 24;
+
+    /** */
+    private static final int OP_RESET_LOST_PARTITIONS = 25;
+
+    /** */
+    private static final int OP_MEMORY_METRICS = 26;
+
+    /** */
+    private static final int OP_MEMORY_METRICS_BY_NAME = 27;
+
+    /** */
+    private static final int OP_SET_ACTIVE = 28;
+
+    /** */
+    private static final int OP_IS_ACTIVE = 29;
+
+    /** */
+    private static final int OP_PERSISTENT_STORE_METRICS = 30;
+
+    /** */
+    private static final int OP_GET_COMPUTE = 31;
+
+    /** */
+    private static final int OP_GET_MESSAGING = 32;
+
+    /** */
+    private static final int OP_GET_EVENTS = 33;
+
+    /** */
+    private static final int OP_GET_SERVICES = 34;
+
+    /** */
+    private static final int OP_DATA_REGION_METRICS = 35;
+
+    /** */
+    private static final int OP_DATA_REGION_METRICS_BY_NAME = 36;
+
+    /** */
+    private static final int OP_DATA_STORAGE_METRICS = 37;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -97,17 +170,52 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS:
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
 
                 break;
 
-            case OP_ALL_METADATA:
-                platformCtx.writeAllMetadata(writer);
+            case OP_MEMORY_METRICS: {
+                Collection<MemoryMetrics> metrics = prj.ignite().memoryMetrics();
+
+                writer.writeInt(metrics.size());
+
+                for (MemoryMetrics m : metrics) {
+                    writeMemoryMetrics(writer, m);
+                }
 
                 break;
+            }
+
+            case OP_PERSISTENT_STORE_METRICS: {
+                PersistenceMetrics metrics = prj.ignite().persistentStoreMetrics();
+
+                writePersistentStoreMetrics(writer, metrics);
+
+                break;
+            }
+
+            case OP_DATA_STORAGE_METRICS: {
+                DataStorageMetrics metrics = prj.ignite().dataStorageMetrics();
+
+                writeDataStorageMetrics(writer, metrics);
+
+                break;
+            }
+
+            case OP_DATA_REGION_METRICS: {
+                Collection<DataRegionMetrics> metrics = prj.ignite().dataRegionMetrics();
+
+                writer.writeInt(metrics.size());
+
+                for (DataRegionMetrics m : metrics) {
+                    writeDataRegionMetrics(writer, m);
+                }
+
+                break;
+            }
 
             default:
                 super.processOutStream(type, writer);
@@ -116,7 +224,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions", "deprecation"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_METRICS_FILTERED: {
@@ -175,14 +283,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_METADATA: {
-                int typeId = reader.readInt();
-
-                platformCtx.writeMetadata(writer, typeId);
-
-                break;
-            }
-
             case OP_TOPOLOGY: {
                 long topVer = reader.readLong();
 
@@ -191,11 +291,44 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_SCHEMA: {
-                int typeId = reader.readInt();
-                int schemaId = reader.readInt();
+            case OP_CACHE_METRICS: {
+                String cacheName = reader.readString();
 
-                platformCtx.writeSchema(writer, typeId, schemaId);
+                IgniteCache cache = platformCtx.kernalContext().grid().cache(cacheName);
+
+                PlatformCache.writeCacheMetrics(writer, cache.metrics(prj));
+
+                break;
+            }
+
+            case OP_MEMORY_METRICS_BY_NAME: {
+                String plcName = reader.readString();
+
+                MemoryMetrics metrics = platformCtx.kernalContext().grid().memoryMetrics(plcName);
+
+                if (metrics != null) {
+                    writer.writeBoolean(true);
+                    writeMemoryMetrics(writer, metrics);
+                }
+                else {
+                    writer.writeBoolean(false);
+                }
+
+                break;
+            }
+
+            case OP_DATA_REGION_METRICS_BY_NAME: {
+                String name = reader.readString();
+
+                DataRegionMetrics metrics = platformCtx.kernalContext().grid().dataRegionMetrics(name);
+
+                if (metrics != null) {
+                    writer.writeBoolean(true);
+                    writeDataRegionMetrics(writer, metrics);
+                }
+                else {
+                    writer.writeBoolean(false);
+                }
 
                 break;
             }
@@ -206,10 +339,23 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
+
+            case OP_RESET_LOST_PARTITIONS:
+                int cnt = reader.readInt();
+
+                Collection<String> cacheNames = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    cacheNames.add(reader.readString());
+                }
+
+                platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
+
+                return TRUE;
 
             default:
                 return super.processInStreamOutLong(type, reader);
@@ -217,7 +363,8 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_FOR_NODE_IDS: {
                 Collection<UUID> ids = PlatformUtils.readCollection(reader);
@@ -260,47 +407,83 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         }
     }
 
-    /**
-     * @param exclude Projection to exclude.
-     * @return New projection.
-     */
-    public PlatformClusterGroup forOthers(PlatformClusterGroup exclude) {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(
+            int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_OTHERS: {
+                PlatformClusterGroup exclude = (PlatformClusterGroup) arg;
+
+                assert exclude != null;
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
+            }
+        }
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forRemotes() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_REMOTES:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
+
+            case OP_FOR_DAEMONS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDaemons());
+
+            case OP_FOR_RANDOM:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRandom());
+
+            case OP_FOR_OLDEST:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOldest());
+
+            case OP_FOR_YOUNGEST:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
+
+            case OP_FOR_SERVERS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
+
+            case OP_GET_COMPUTE:
+                return new PlatformCompute(platformCtx, prj, PlatformUtils.ATTR_PLATFORM);
+
+            case OP_GET_MESSAGING:
+                return new PlatformMessaging(platformCtx, platformCtx.kernalContext().grid().message(prj));
+
+            case OP_GET_EVENTS:
+                return new PlatformEvents(platformCtx, platformCtx.kernalContext().grid().events(prj));
+
+            case OP_GET_SERVICES:
+                return new PlatformServices(platformCtx, platformCtx.kernalContext().grid().services(prj),false);
+        }
+
+        return super.processOutObject(type);
     }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forDaemons() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDaemons());
-    }
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_RESET_METRICS: {
+                assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forRandom() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRandom());
-    }
+                ((IgniteCluster)prj).resetMetrics();
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forOldest() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOldest());
-    }
+                return TRUE;
+            }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forYoungest() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
+            case OP_SET_ACTIVE: {
+                prj.ignite().active(val == TRUE);
+
+                return TRUE;
+            }
+
+            case OP_IS_ACTIVE: {
+                return prj.ignite().active() ? TRUE : FALSE;
+            }
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 
     /**
@@ -308,15 +491,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      */
     public ClusterGroupEx projection() {
         return prj;
-    }
-
-    /**
-     * Resets local I/O, job, and task execution metrics.
-     */
-    public void resetMetrics() {
-        assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
-
-        ((IgniteCluster)prj).resetMetrics();
     }
 
     /**
@@ -336,12 +510,98 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
+     *      topology history. Currently only {@link TcpDiscoverySpi}
      *      supports topology history.
      */
     private Collection<ClusterNode> topology(long topVer) {
         assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
 
         return ((IgniteCluster)prj).topology(topVer);
+    }
+
+    /**
+     * Writes the memory metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    @SuppressWarnings("deprecation")
+    private static void writeMemoryMetrics(BinaryRawWriter writer, MemoryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeString(metrics.getName());
+        writer.writeLong(metrics.getTotalAllocatedPages());
+        writer.writeFloat(metrics.getAllocationRate());
+        writer.writeFloat(metrics.getEvictionRate());
+        writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
+        writer.writeFloat(metrics.getPagesFillFactor());
+    }
+
+    /**
+     * Writes the data region metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    private static void writeDataRegionMetrics(BinaryRawWriter writer, DataRegionMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeString(metrics.getName());
+        writer.writeLong(metrics.getTotalAllocatedPages());
+        writer.writeFloat(metrics.getAllocationRate());
+        writer.writeFloat(metrics.getEvictionRate());
+        writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
+        writer.writeFloat(metrics.getPagesFillFactor());
+    }
+
+    /**
+     * Writes persistent store metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics
+     */
+    @SuppressWarnings("deprecation")
+    private void writePersistentStoreMetrics(BinaryRawWriter writer, PersistenceMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeFloat(metrics.getWalLoggingRate());
+        writer.writeFloat(metrics.getWalWritingRate());
+        writer.writeInt(metrics.getWalArchiveSegments());
+        writer.writeFloat(metrics.getWalFsyncTimeAverage());
+        writer.writeLong(metrics.getLastCheckpointingDuration());
+        writer.writeLong(metrics.getLastCheckpointLockWaitDuration());
+        writer.writeLong(metrics.getLastCheckpointMarkDuration());
+        writer.writeLong(metrics.getLastCheckpointPagesWriteDuration());
+        writer.writeLong(metrics.getLastCheckpointFsyncDuration());
+        writer.writeLong(metrics.getLastCheckpointTotalPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointDataPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointCopiedOnWritePagesNumber());
+    }
+
+    /**
+     * Writes data storage metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics
+     */
+    private void writeDataStorageMetrics(BinaryRawWriter writer, DataStorageMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeFloat(metrics.getWalLoggingRate());
+        writer.writeFloat(metrics.getWalWritingRate());
+        writer.writeInt(metrics.getWalArchiveSegments());
+        writer.writeFloat(metrics.getWalFsyncTimeAverage());
+        writer.writeLong(metrics.getLastCheckpointDuration());
+        writer.writeLong(metrics.getLastCheckpointLockWaitDuration());
+        writer.writeLong(metrics.getLastCheckpointMarkDuration());
+        writer.writeLong(metrics.getLastCheckpointPagesWriteDuration());
+        writer.writeLong(metrics.getLastCheckpointFsyncDuration());
+        writer.writeLong(metrics.getLastCheckpointTotalPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointDataPagesNumber());
+        writer.writeLong(metrics.getLastCheckpointCopiedOnWritePagesNumber());
     }
 }

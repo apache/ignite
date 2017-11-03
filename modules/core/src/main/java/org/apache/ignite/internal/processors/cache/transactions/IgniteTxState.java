@@ -45,6 +45,12 @@ public interface IgniteTxState {
     @Nullable public Integer firstCacheId();
 
     /**
+     * Unwind evicts for caches involved in this transaction.
+     * @param cctx Grid cache shared context.
+     */
+    public void unwindEvicts(GridCacheSharedContext cctx);
+
+    /**
      * @param cctx Context.
      * @return cctx Non-null cache context if tx has only one active cache.
      */
@@ -53,14 +59,18 @@ public interface IgniteTxState {
     /**
      * @param cctx Awaits for previous async operations on active caches to be completed.
      */
-    public void awaitLastFut(GridCacheSharedContext cctx);
+    public void awaitLastFuture(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.
+     * @param read {@code True} if validating for a read operation, {@code false} for write.
      * @param topFut Topology future.
      * @return Error if validation failed.
      */
-    public IgniteCheckedException validateTopology(GridCacheSharedContext cctx, GridDhtTopologyFuture topFut);
+    public IgniteCheckedException validateTopology(
+        GridCacheSharedContext cctx,
+        boolean read,
+        GridDhtTopologyFuture topFut);
 
     /**
      * @param cctx Context.
@@ -69,17 +79,12 @@ public interface IgniteTxState {
     public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx);
 
     /**
-     * @param cctx Context.
-     * @return {@code True} is tx has active near cache.
-     */
-    public boolean hasNearCache(GridCacheSharedContext cctx);
-
-    /**
-     * @param cacheCtx Ccntext.
+     * @param cacheCtx Context.
      * @param tx Transaction.
      * @throws IgniteCheckedException If cache check failed.
      */
-    public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx) throws IgniteCheckedException;
+    public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+        throws IgniteCheckedException;
 
     /**
      * @param cctx Context.
@@ -98,7 +103,7 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is allowed to use store and transactions spans one or more caches with
      *      store enabled.
      */
-    public boolean storeUsed(GridCacheSharedContext cctx);
+    public boolean storeWriteThrough(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

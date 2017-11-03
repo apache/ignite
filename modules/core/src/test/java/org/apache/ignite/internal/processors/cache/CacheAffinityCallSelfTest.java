@@ -50,17 +50,14 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 500;
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -69,20 +66,21 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
-        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
         cfg.setFailoverSpi(failSpi);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        if (gridName.equals(getTestGridName(SRVS))) {
+        // Do not configure cache on client.
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);
+        }
+        else {
+            CacheConfiguration ccfg = defaultCacheConfiguration();
+            ccfg.setName(CACHE_NAME);
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setBackups(1);
+
+            cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
@@ -99,7 +97,27 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     public void testAffinityCallRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS);
 
-        final int ITERS = 5;
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallFromClientRestartNode() throws Exception {
+        startGridsMultiThreaded(SRVS + 1);
+
+        Ignite client = grid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void affinityCallRestartNode() throws Exception {
+        final int ITERS = 10;
 
         for (int i = 0; i < ITERS; i++) {
             log.info("Iteration: " + i);
@@ -157,8 +175,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             while (!fut.isDone())
                 client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
         }
-        catch (ClusterTopologyException ignore) {
-            log.info("Expected error: " + ignore);
+        catch (ClusterTopologyException e) {
+            log.info("Expected error: " + e);
         }
         finally {
             stopAllGrids();
@@ -196,12 +214,12 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode loc = ignite.cluster().localNode();
 
-                if (loc.equals(aff.primary(key, topVer)))
+                if (loc.equals(aff.primaryByKey(key, topVer)))
                     return true;
 
                 AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
 
-                assertEquals(loc, aff.primary(key, topVer0));
+                assertEquals(loc, aff.primaryByKey(key, topVer0));
             }
 
             return null;

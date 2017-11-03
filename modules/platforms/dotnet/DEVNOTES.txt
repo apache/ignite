@@ -5,12 +5,18 @@ Requirements:
 * Windows (XP and up), Windows Server (2008 and up)
 * Oracle JDK 7 and above
 * .NET Framework 4.0
+* PowerShell 3.0+
 * Visual Studio 2010 (later versions require upgrading "common" C++ project, see below)
-* JAVA_HOME environment variable set to the corresponding JDK (x64 or x86).
+* JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
+* Apache Maven bin directory in PATH, or MAVEN_HOME environment variable
 
 Building binaries:
-  msbuild Apache.Ignite.sln /p:Configuration=Release
-Resulting binaries will be in Apache.Ignite\bin folder
+  build.bat -skipCodeAnalysis
+Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
+
+Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
+  bin\Apache.Ignite.exe  
+
 NOTE: 
 * x86 solution platform requires x86 Oracle JDK.
 * x64 solution platform requires x64 Oracle JDK.

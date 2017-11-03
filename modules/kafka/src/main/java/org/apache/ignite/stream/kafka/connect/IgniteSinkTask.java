@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -45,6 +46,9 @@ public class IgniteSinkTask extends SinkTask {
 
     /** Cache name. */
     private static String cacheName;
+
+    /** Entry transformer. */
+    private static StreamSingleTupleExtractor<SinkRecord, Object, Object> extractor;
 
     /** {@inheritDoc} */
     @Override public String version() {
@@ -76,6 +80,22 @@ public class IgniteSinkTask extends SinkTask {
             StreamerContext.getStreamer().perNodeParallelOperations(
                 Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
 
+        if (props.containsKey(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS)) {
+            String transformerCls = props.get(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
+            if (transformerCls != null && !transformerCls.isEmpty()) {
+                try {
+                    Class<? extends StreamSingleTupleExtractor> clazz =
+                        (Class<? extends StreamSingleTupleExtractor<SinkRecord, Object, Object>>)
+                            Class.forName(transformerCls);
+
+                    extractor = clazz.newInstance();
+                }
+                catch (Exception e) {
+                    throw new ConnectException("Failed to instantiate the provided transformer!", e);
+                }
+            }
+        }
+
         stopped = false;
     }
 
@@ -88,14 +108,19 @@ public class IgniteSinkTask extends SinkTask {
     @Override public void put(Collection<SinkRecord> records) {
         try {
             for (SinkRecord record : records) {
-                if (record.key() != null) {
-                    // Data is flushed asynchronously when CACHE_PER_NODE_DATA_SIZE is reached.
-                    StreamerContext.getStreamer().addData(record.key(), record.value());
+                // Data is flushed asynchronously when CACHE_PER_NODE_DATA_SIZE is reached.
+                if (extractor != null) {
+                    Map.Entry<Object, Object> entry = extractor.extract(record);
+                    StreamerContext.getStreamer().addData(entry.getKey(), entry.getValue());
                 }
                 else {
-                    log.error("Failed to stream a record with null key!");
+                    if (record.key() != null) {
+                        StreamerContext.getStreamer().addData(record.key(), record.value());
+                    }
+                    else {
+                        log.error("Failed to stream a record with null key!");
+                    }
                 }
-
             }
         }
         catch (ConnectException e) {
@@ -126,8 +151,18 @@ public class IgniteSinkTask extends SinkTask {
 
         stopped = true;
 
-        StreamerContext.getStreamer().close();
         StreamerContext.getIgnite().close();
+    }
+
+    /**
+     * Used by unit test to avoid restart node and valid state of the <code>stopped</code> flag.
+     *
+     * @param stopped Stopped flag.
+     */
+    protected static void setStopped(boolean stopped) {
+        IgniteSinkTask.stopped = stopped;
+
+        extractor = null;
     }
 
     /**

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -65,26 +67,33 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setIncludeEventTypes(new int[0]);
+        cfg.setIncludeEventTypes(getIncludeEventTypes());
 
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
 
-        if ("client".equals(gridName)) {
+        if ("client".equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setClassLoader(ldr);
         }
 
         return cfg;
+    }
+
+    /**
+     * @return EventTypes to record.
+     */
+    protected int[] getIncludeEventTypes() {
+        return new int[0];
     }
 
     /**
@@ -127,9 +136,14 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
             assertEquals(PERSON_CLS_NAME, entry.getValue().getClass().getName());
         }
 
-        entries = cache.query(new ScanQuery<>(1)).getAll();
+        entries = new ArrayList<>();
 
-        assertFalse(entries.isEmpty());
+        int partCnt = client.affinity("testCache").partitions();
+
+        for (int i = 0; i < partCnt; i++)
+            entries.addAll(cache.query(new ScanQuery<>(i)).getAll());
+
+        assertEquals(100, entries.size());
 
         for (Cache.Entry<Object, Object> entry : entries) {
             assertEquals(PERSON_KEY_CLS_NAME, entry.getKey().getClass().getName());

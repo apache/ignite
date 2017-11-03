@@ -27,15 +27,22 @@ namespace Apache.Ignite.Core
     using System.Runtime;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Resource;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -48,8 +55,10 @@ namespace Apache.Ignite.Core
     /// </summary>
     public static class Ignition
     {
-        /** */
-        internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
+        /// <summary>
+        /// Default configuration section name.
+        /// </summary>
+        public const string ConfigurationSectionName = "igniteConfiguration";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -77,7 +86,7 @@ namespace Apache.Ignite.Core
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Ignition()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
         }
 
         /// <summary>
@@ -116,22 +125,15 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
-        /// application configuration and starts Ignite.
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration
+        /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
+        /// name and starts Ignite.
         /// </summary>
         /// <returns>Started Ignite.</returns>
         public static IIgnite StartFromApplicationConfiguration()
         {
-            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
-            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
-
-            if (section == null)
-                throw new ConfigurationErrorsException(
-                    string.Format("Could not find {0} in current application configuration",
-                        typeof(IgniteConfigurationSection).Name));
-
-            return Start(section.IgniteConfiguration);
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartFromApplicationConfiguration(ConfigurationSectionName);
         }
 
         /// <summary>
@@ -150,48 +152,114 @@ namespace Apache.Ignite.Core
                 throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
                     typeof(IgniteConfigurationSection).Name, sectionName));
 
+            if (section.IgniteConfiguration == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteConfigurationSection).Name, sectionName));
+
             return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration(string sectionName, string configPath)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+            IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
+
+            var fileMap = GetConfigMap(configPath);
+            var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+
+            var section = config.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} with name '{1}' in file '{2}'",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+
+            if (section.IgniteConfiguration == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration file map.
+        /// </summary>
+        private static ExeConfigurationFileMap GetConfigMap(string fileName)
+        {
+            var fullFileName = Path.GetFullPath(fileName);
+
+            if (!File.Exists(fullFileName))
+                throw new ConfigurationErrorsException("Specified config file does not exist: " + fileName);
+
+            return new ExeConfigurationFileMap { ExeConfigFilename = fullFileName };
         }
 
         /// <summary>
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public unsafe static IIgnite Start(IgniteConfiguration cfg)
+        public static unsafe IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
+
             lock (SyncRoot)
             {
+                // 0. Init logger
+                var log = cfg.Logger ?? new JavaLogger();
+
+                log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
+
                 // 1. Check GC settings.
-                CheckServerGc(cfg);
+                CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath);
+                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks();
+                var cbs = new UnmanagedCallbacks(log);
 
-                IgniteManager.CreateJvmContext(cfg, cbs);
+                IgniteManager.CreateJvmContext(cfg, cbs, log);
+                log.Debug("JVM started.");
 
-                var gridName = cfg.GridName;
+                var gridName = cfg.IgniteInstanceName;
 
-                var cfgPath = cfg.SpringConfigUrl == null 
-                    ? null 
-                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
+                if (cfg.AutoGenerateIgniteInstanceName)
+                {
+                    gridName = (gridName ?? "ignite-instance-") + Guid.NewGuid();
+                }
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
-                IUnmanagedTarget interopProc = null;
+                PlatformJniTarget interopProc = null;
 
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfgPath, gridName, ClientMode);
+                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
+
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
-                    interopProc = node.InteropProcessor;
+                    interopProc = (PlatformJniTarget)node.InteropProcessor;
+
+                    var javaLogger = log as JavaLogger;
+                    if (javaLogger != null)
+                    {
+                        javaLogger.SetIgnite(node);
+                    }
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -215,20 +283,28 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Context, gridName, true);
+                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
-                        throw _startup.Error;
+                    {
+                        // Wrap in a new exception to preserve original stack trace.
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details",
+                            _startup.Error);
+                    }
 
                     throw;
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }
@@ -237,10 +313,11 @@ namespace Apache.Ignite.Core
         /// Check whether GC is set to server mode.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg)
+        /// <param name="log">Log.</param>
+        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                Logger.LogWarning("GC server mode is not enabled, this could lead to less " +
+                log.Warn("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }
@@ -248,19 +325,24 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Prepare callback invoked from Java.
         /// </summary>
-        /// <param name="inStream">Intput stream with data.</param>
+        /// <param name="inStream">Input stream with data.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream, 
-            HandleRegistry handleRegistry)
+        /// <param name="log">Log.</param>
+        internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream,
+            HandleRegistry handleRegistry, ILogger log)
         {
             try
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader, outStream);
+                PrepareConfiguration(reader, outStream, log);
 
-                PrepareLifecycleBeans(reader, outStream, handleRegistry);
+                PrepareLifecycleHandlers(reader, outStream, handleRegistry);
+
+                PrepareAffinityFunctions(reader, outStream);
+
+                outStream.SynchronizeOutput();
             }
             catch (Exception e)
             {
@@ -271,11 +353,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Preapare configuration.
+        /// Prepare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Response stream.</param>
-        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
+        /// <param name="log">Log.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream, ILogger log)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -293,66 +376,77 @@ namespace Apache.Ignite.Core
             if (cfg.BinaryConfiguration == null)
                 cfg.BinaryConfiguration = binaryCfg;
 
-            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration, log);
 
             // 3. Send configuration details to Java
-            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
+            cfg.Validate(log);
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));  // Use system marshaller.
         }
 
         /// <summary>
-        /// Prepare lifecycle beans.
+        /// Prepare lifecycle handlers.
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
-        private static void PrepareLifecycleBeans(BinaryReader reader, PlatformMemoryStream outStream, 
+        private static void PrepareLifecycleHandlers(IBinaryRawReader reader, IBinaryStream outStream,
             HandleRegistry handleRegistry)
         {
-            IList<LifecycleBeanHolder> beans = new List<LifecycleBeanHolder>();
+            IList<LifecycleHandlerHolder> beans = new List<LifecycleHandlerHolder>
+            {
+                new LifecycleHandlerHolder(new InternalLifecycleHandler())   // add internal bean for events
+            };
 
             // 1. Read beans defined in Java.
             int cnt = reader.ReadInt();
 
             for (int i = 0; i < cnt; i++)
-                beans.Add(new LifecycleBeanHolder(CreateLifecycleBean(reader)));
+                beans.Add(new LifecycleHandlerHolder(CreateObject<ILifecycleHandler>(reader)));
 
-            // 2. Append beans definied in local configuration.
-            ICollection<ILifecycleBean> nativeBeans = _startup.Configuration.LifecycleBeans;
+            // 2. Append beans defined in local configuration.
+            ICollection<ILifecycleHandler> nativeBeans = _startup.Configuration.LifecycleHandlers;
 
             if (nativeBeans != null)
             {
-                foreach (ILifecycleBean nativeBean in nativeBeans)
-                    beans.Add(new LifecycleBeanHolder(nativeBean));
+                foreach (ILifecycleHandler nativeBean in nativeBeans)
+                    beans.Add(new LifecycleHandlerHolder(nativeBean));
             }
 
             // 3. Write bean pointers to Java stream.
             outStream.WriteInt(beans.Count);
 
-            foreach (LifecycleBeanHolder bean in beans)
+            foreach (LifecycleHandlerHolder bean in beans)
                 outStream.WriteLong(handleRegistry.AllocateCritical(bean));
 
-            outStream.SynchronizeOutput();
-
             // 4. Set beans to STARTUP object.
-            _startup.LifecycleBeans = beans;
+            _startup.LifecycleHandlers = beans;
         }
 
         /// <summary>
-        /// Create lifecycle bean.
+        /// Prepares the affinity functions.
+        /// </summary>
+        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream)
+        {
+            var cnt = reader.ReadInt();
+
+            var writer = reader.Marshaller.StartMarshal(outStream);
+
+            for (var i = 0; i < cnt; i++)
+            {
+                var objHolder = new ObjectInfoHolder(reader);
+                AffinityFunctionSerializer.Write(writer, objHolder.CreateInstance<IAffinityFunction>(), objHolder);
+            }
+        }
+
+        /// <summary>
+        /// Creates an object and sets the properties.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        /// <returns>Lifecycle bean.</returns>
-        private static ILifecycleBean CreateLifecycleBean(BinaryReader reader)
+        /// <returns>Resulting object.</returns>
+        private static T CreateObject<T>(IBinaryRawReader reader)
         {
-            // 1. Instantiate.
-            var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
-
-            // 2. Set properties.
-            var props = reader.ReadDictionaryAsGeneric<string, object>();
-
-            IgniteUtils.SetProperties(bean, props);
-
-            return bean;
+            return IgniteUtils.CreateInstance<T>(reader.ReadString(),
+                reader.ReadDictionaryAsGeneric<string, object>());
         }
 
         /// <summary>
@@ -360,6 +454,8 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "PlatformJniTarget is passed further")]
         internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
         {
             try
@@ -376,8 +472,9 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
-                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
-                    _startup.LifecycleBeans, _startup.Callbacks);
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name,
+                    new PlatformJniTarget(interopProc, _startup.Marshaller), _startup.Marshaller,
+                    _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)
             {
@@ -497,15 +594,49 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets an instance of default no-name grid. Note that
-        /// caller of this method should not assume that it will return the same
-        /// instance every time.
+        /// Gets the default Ignite instance with null name, or an instance with any name when there is only one.
+        /// <para />
+        /// Note that caller of this method should not assume that it will return the same instance every time.
         /// </summary>
-        /// <returns>An instance of default no-name grid.</returns>
-        /// <exception cref="IgniteException">When there is no Ignite instance with specified name.</exception>
+        /// <returns>Default Ignite instance.</returns>
+        /// <exception cref="IgniteException">When there is no matching Ignite instance.</exception>
         public static IIgnite GetIgnite()
         {
-            return GetIgnite(null);
+            lock (SyncRoot)
+            {
+                if (Nodes.Count == 0)
+                {
+                    throw new IgniteException("Failed to get default Ignite instance: " +
+                                              "there are no instances started.");
+                }
+
+                if (Nodes.Count == 1)
+                {
+                    return Nodes.Single().Value;
+                }
+
+                Ignite result;
+
+                if (Nodes.TryGetValue(new NodeKey(null), out result))
+                {
+                    return result;
+                }
+
+                throw new IgniteException(string.Format("Failed to get default Ignite instance: " +
+                    "there are {0} instances started, and none of them has null name.", Nodes.Count));
+            }
+        }
+
+        /// <summary>
+        /// Gets all started Ignite instances.
+        /// </summary>
+        /// <returns>All Ignite instances.</returns>
+        public static ICollection<IIgnite> GetAll()
+        {
+            lock (SyncRoot)
+            {
+                return Nodes.Values.ToArray();
+            }
         }
 
         /// <summary>
@@ -532,14 +663,22 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets an instance of default no-name grid, or <c>null</c> if none found. Note that
-        /// caller of this method should not assume that it will return the same
-        /// instance every time.
+        /// Gets the default Ignite instance with null name, or an instance with any name when there is only one.
+        /// Returns null when there are no Ignite instances started, or when there are more than one,
+        /// and none of them has null name.
         /// </summary>
         /// <returns>An instance of default no-name grid, or null.</returns>
         public static IIgnite TryGetIgnite()
         {
-            return TryGetIgnite(null);
+            lock (SyncRoot)
+            {
+                if (Nodes.Count == 1)
+                {
+                    return Nodes.Single().Value;
+                }
+
+                return TryGetIgnite(null);
+            }
         }
 
         /// <summary>
@@ -595,20 +734,37 @@ namespace Apache.Ignite.Core
 
             GC.Collect();
         }
-        
+
         /// <summary>
-        /// Handles the AssemblyResolve event of the CurrentDomain control.
+        /// Connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="args">The <see cref="ResolveEventArgs"/> instance containing the event data.</param>
-        /// <returns>Manually resolved assembly, or null.</returns>
-        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        /// <param name="clientConfiguration">The client configuration.</param>
+        /// <returns>Ignite instance.</returns>
+        public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
-            return LoadedAssembliesResolver.Instance.GetAssembly(args.Name);
+            IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
+            IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
+
+            return new IgniteClient(clientConfiguration);
         }
 
         /// <summary>
-        /// Grid key.
+        /// Handles the DomainUnload event of the CurrentDomain control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            // If we don't stop Ignite.NET on domain unload,
+            // we end up with broken instances in Java (invalid callbacks, etc).
+            // IIS, in particular, is known to unload and reload domains within the same process.
+            StopAll(true);
+        }
+
+        /// <summary>
+        /// Grid key. Workaround for non-null key requirement in Dictionary.
         /// </summary>
         private class NodeKey
         {
@@ -665,9 +821,9 @@ namespace Apache.Ignite.Core
             internal UnmanagedCallbacks Callbacks { get; private set; }
 
             /// <summary>
-            /// Lifecycle beans.
+            /// Lifecycle handlers.
             /// </summary>
-            internal IList<LifecycleBeanHolder> LifecycleBeans { get; set; }
+            internal IList<LifecycleHandlerHolder> LifecycleHandlers { get; set; }
 
             /// <summary>
             /// Node name.
@@ -688,6 +844,23 @@ namespace Apache.Ignite.Core
             /// Gets or sets the ignite.
             /// </summary>
             internal Ignite Ignite { get; set; }
+        }
+
+        /// <summary>
+        /// Internal handler for event notification.
+        /// </summary>
+        private class InternalLifecycleHandler : ILifecycleHandler
+        {
+            /** */
+            #pragma warning disable 649   // unused field
+            [InstanceResource] private readonly IIgnite _ignite;
+
+            /** <inheritdoc /> */
+            public void OnLifecycleEvent(LifecycleEventType evt)
+            {
+                if (evt == LifecycleEventType.BeforeNodeStop && _ignite != null)
+                    ((Ignite) _ignite).BeforeNodeStop();
+            }
         }
     }
 }

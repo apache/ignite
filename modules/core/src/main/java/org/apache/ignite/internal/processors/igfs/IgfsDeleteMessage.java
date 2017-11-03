@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -95,7 +96,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
         super.prepareMarshal(marsh);
 
         if (err != null)
-            errBytes = marsh.marshal(err);
+            errBytes = U.marshal(marsh, err);
     }
 
     /** {@inheritDoc} */
@@ -103,7 +104,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)
-            err = marsh.unmarshal(errBytes, ldr);
+            err = U.unmarshal(marsh, errBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -176,7 +177,7 @@ public class IgfsDeleteMessage extends IgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 67;
     }
 

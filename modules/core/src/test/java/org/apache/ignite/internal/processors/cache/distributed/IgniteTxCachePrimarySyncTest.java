@@ -23,13 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -41,7 +41,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -50,10 +49,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -62,6 +62,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -88,8 +89,8 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     private boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -102,6 +103,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 15 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -135,13 +141,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommitFromPrimary() throws Exception {
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        singleKeyCommitFromPrimary(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -208,9 +214,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         commSpi0.record(GridDhtTxFinishRequest.class);
 
-        commSpi0.blockMessages(new IgnitePredicateX<GridIoMessage>() {
-            @Override public boolean applyx(GridIoMessage e) throws IgniteCheckedException {
-                return e.message() instanceof GridDhtTxFinishRequest;
+        commSpi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtTxFinishRequest;
             }
         });
 
@@ -224,7 +230,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             Ignite node = ignite(i);
 
             if (node != ignite)
-                assertNull(node.cache(null).localPeek(key));
+                assertNull(node.cache(DEFAULT_CACHE_NAME).localPeek(key));
         }
 
         commSpi0.stopBlock(true);
@@ -248,18 +254,18 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyPrimaryNodeFail1() throws Exception {
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testSingleKeyPrimaryNodeFail2() throws Exception {
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 2, true, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, true, false));
 
-        singleKeyPrimaryNodeLeft(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -317,6 +323,8 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         final IgniteBiInClosure<Integer, IgniteCache<Object, Object>> c) throws Exception {
         Ignite ignite = startGrid(NODES);
 
+        awaitPartitionMapExchange();
+
         final TestRecordingCommunicationSpi commSpiClient =
             (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
@@ -371,13 +379,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleKeyCommit() throws Exception {
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        singleKeyCommit(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -459,9 +467,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         commSpi0.record(GridDhtTxFinishRequest.class);
 
-        commSpi0.blockMessages(new IgnitePredicateX<GridIoMessage>() {
-            @Override public boolean applyx(GridIoMessage e) throws IgniteCheckedException {
-                return e.message() instanceof GridDhtTxFinishRequest;
+        commSpi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtTxFinishRequest;
             }
         });
 
@@ -479,9 +487,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
             if (nearCache
                 && node == client &&
                 !node.affinity(ccfg.getName()).isPrimaryOrBackup(node.cluster().localNode(), key))
-                assertEquals("Invalid value for node: " + i, key, ignite(i).cache(null).localPeek(key));
+                assertEquals("Invalid value for node: " + i, key, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
             else
-                assertNull("Invalid value for node: " + i, ignite(i).cache(null).localPeek(key));
+                assertNull("Invalid value for node: " + i, ignite(i).cache(DEFAULT_CACHE_NAME).localPeek(key));
         }
 
         commSpi0.stopBlock(true);
@@ -513,13 +521,13 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWaitPrimaryResponse() throws Exception {
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 1, true, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 2, false, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 2, false, true));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, true));
 
-        checkWaitPrimaryResponse(cacheConfiguration(null, PRIMARY_SYNC, 3, false, false));
+        checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 3, false, false));
     }
 
     /**
@@ -651,7 +659,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnePhaseMessages() throws Exception {
-        checkOnePhaseMessages(cacheConfiguration(null, PRIMARY_SYNC, 1, false, false));
+        checkOnePhaseMessages(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, false, false));
     }
 
     /**
@@ -1065,12 +1073,12 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @param nearCache If {@code true} configures near cache.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(String name,
+    private CacheConfiguration<Object, Object> cacheConfiguration(@NotNull String name,
         CacheWriteSynchronizationMode syncMode,
         int backups,
         boolean store,
         boolean nearCache) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -1096,19 +1104,30 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public CacheStore<Object, Object> create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
+            return new TestCacheStore();
+        }
+    }
 
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
+    /**
+     *
+     */
+    private static class TestCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** Store map. */
+        private static final Map STORE_MAP = new ConcurrentHashMap();
 
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return STORE_MAP.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+            STORE_MAP.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            STORE_MAP.remove(key);
         }
     }
 }

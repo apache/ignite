@@ -32,12 +32,11 @@ namespace Apache.Ignite.Config
         public static IEnumerable<Tuple<string, string>> GetArgs(IEnumerable<string> args)
         {
             return args
-                .Select(x => x.TrimStart('-'))
+                .Select(x => x.Trim().TrimStart('-'))
                 .Select(x => x.StartsWith(Configurator.CmdJvmOpt + "-")
                     ? new[] {Configurator.CmdJvmOpt, x.Substring(Configurator.CmdJvmOpt.Length)}
-                    : x.Split('='))
-                .Where(x => x.Length == 2)
-                .Select(x => Tuple.Create(x[0], x[1]));
+                    : x.Split(new[] {'='}, 2))
+                .Select(x => Tuple.Create(x[0], x.Length > 1 ? x[1] : string.Empty));
         }
     }
 }

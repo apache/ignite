@@ -29,9 +29,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
 <!--
@@ -76,7 +74,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="memoryMode" value="ONHEAP_TIERED"/>
                     <property name="offHeapMaxMemory" value="-1"/>
-                    <property name="swapEnabled" value="false"/>
                 </bean>
             </list>
         </property>

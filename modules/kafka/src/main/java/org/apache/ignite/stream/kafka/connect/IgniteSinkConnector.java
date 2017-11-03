@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.utils.AppInfoParser;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -33,6 +34,9 @@ import org.apache.kafka.connect.sink.SinkConnector;
 public class IgniteSinkConnector extends SinkConnector {
     /** Sink properties. */
     private Map<String, String> configProps;
+
+    /** Expected configurations. */
+    private static final ConfigDef CONFIG_DEF = new ConfigDef();
 
     /** {@inheritDoc} */
     @Override public String version() {
@@ -87,5 +91,10 @@ public class IgniteSinkConnector extends SinkConnector {
     /** {@inheritDoc} */
     @Override public void stop() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public ConfigDef config() {
+        return CONFIG_DEF;
     }
 }

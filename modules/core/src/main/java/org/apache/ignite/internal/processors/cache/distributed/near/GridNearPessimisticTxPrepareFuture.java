@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +27,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -43,8 +46,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -77,7 +78,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         for (IgniteInternalFuture<?> fut : futures()) {
             MiniFuture f = (MiniFuture)fut;
 
-            if (f.node().id().equals(nodeId)) {
+            if (f.primary().id().equals(nodeId)) {
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                     nodeId);
 
@@ -100,12 +101,25 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             MiniFuture f = miniFuture(res.miniId());
 
             if (f != null) {
-                assert f.node().id().equals(nodeId);
+                assert f.primary().id().equals(nodeId);
 
-                if (log.isDebugEnabled())
-                    log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + f);
-
-                f.onResult(res);
+                f.onResult(res, true);
+            }
+            else {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near pessimistic prepare, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", node=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near pessimistic prepare, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", node=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
             }
         }
     }
@@ -117,14 +131,16 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
-            // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                MiniFuture mini = (MiniFuture)futs.get(i);
+        synchronized (this) {
+            int size = futuresCountNoLock();
 
-                if (mini.futureId().equals(miniId)) {
+            // Avoid iterator creation.
+            for (int i = 0; i < size; i++) {
+                MiniFuture mini = (MiniFuture)future(i);
+
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -140,7 +156,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public void prepare() {
         if (!tx.state(PREPARING)) {
             if (tx.setRollbackOnly()) {
-                if (tx.timedOut())
+                if (tx.remainingTime() == -1)
                     onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
                 else
                     onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
@@ -154,7 +170,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         }
 
         try {
-            tx.userPrepare();
+            tx.userPrepare(Collections.<IgniteTxEntry>emptyList());
 
             cctx.mvcc().addFuture(this);
 
@@ -166,37 +182,122 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /**
+     * @param txNodes Tx nodes.
+     * @param m Mapping.
+     * @param timeout Timeout.
+     * @param reads Reads.
+     * @param writes Writes.
+     * @return Request.
+     */
+    private GridNearTxPrepareRequest createRequest(Map<UUID, Collection<UUID>> txNodes,
+        GridDistributedTxMapping m,
+        long timeout,
+        Collection<IgniteTxEntry> reads,
+        Collection<IgniteTxEntry> writes) {
+        GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
+            futId,
+            tx.topologyVersion(),
+            tx,
+            timeout,
+            reads,
+            writes,
+            m.hasNearCacheEntries(),
+            txNodes,
+            true,
+            tx.onePhaseCommit(),
+            tx.needReturnValue() && tx.implicit(),
+            tx.implicitSingle(),
+            m.explicitLock(),
+            tx.subjectId(),
+            tx.taskNameHash(),
+            false,
+            true,
+            tx.activeCachesDeploymentEnabled());
+
+        for (IgniteTxEntry txEntry : writes) {
+            if (txEntry.op() == TRANSFORM)
+                req.addDhtVersion(txEntry.txKey(), null);
+        }
+
+        return req;
+    }
+
+    /**
+     * @param req Request.
+     * @param m Mapping.
+     * @param miniId Mini future ID.
+     * @param nearEntries {@code True} if prepare near cache entries.
+     */
+    private void prepareLocal(GridNearTxPrepareRequest req,
+        GridDistributedTxMapping m,
+        int miniId,
+        final boolean nearEntries) {
+        final MiniFuture fut = new MiniFuture(m, miniId);
+
+        req.miniId(fut.futureId());
+
+        add(fut);
+
+        IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = nearEntries ?
+            cctx.tm().txHandler().prepareNearTxLocal(req) :
+            cctx.tm().txHandler().prepareColocatedTx(tx, req);
+
+        prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+            @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                try {
+                    fut.onResult(prepFut.get(), nearEntries);
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onError(e);
+                }
+            }
+        });
+    }
+
+    /**
      *
      */
     private void preparePessimistic() {
-        Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
+        Map<UUID, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        txMapping = new GridDhtTxMapping();
+        GridDhtTxMapping txMapping = new GridDhtTxMapping();
+
+        boolean hasNearCache = false;
 
         for (IgniteTxEntry txEntry : tx.allEntries()) {
             txEntry.clearEntryReadVersion();
 
             GridCacheContext cacheCtx = txEntry.context();
 
-            List<ClusterNode> nodes = cacheCtx.affinity().nodes(txEntry.key(), topVer);
+            if (cacheCtx.isNear())
+                hasNearCache = true;
 
-            ClusterNode primary = F.first(nodes);
+            List<ClusterNode> nodes;
 
-            boolean near = cacheCtx.isNear();
+            if (!cacheCtx.isLocal()) {
+                GridDhtPartitionTopology top = cacheCtx.topology();
 
-            IgniteBiTuple<ClusterNode, Boolean> key = F.t(primary, near);
-
-            GridDistributedTxMapping nodeMapping = mappings.get(key);
-
-            if (nodeMapping == null) {
-                nodeMapping = new GridDistributedTxMapping(primary);
-
-                nodeMapping.near(cacheCtx.isNear());
-
-                mappings.put(key, nodeMapping);
+                nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
             }
+            else
+                nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
+
+            if (F.isEmpty(nodes)) {
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
+                    "is not mapped to any node) [key=" + txEntry.key() +
+                    ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
+
+                return;
+            }
+
+            ClusterNode primary = nodes.get(0);
+
+            GridDistributedTxMapping nodeMapping = mappings.get(primary.id());
+
+            if (nodeMapping == null)
+                mappings.put(primary.id(), nodeMapping = new GridDistributedTxMapping(primary));
 
             txEntry.nodeId(primary.id());
 
@@ -207,59 +308,68 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        if (!hasNearCache)
+            checkOnePhase(txMapping);
+
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1) {
+            onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+
+            return;
+        }
+
+        int miniId = 0;
+
+        Map<UUID, Collection<UUID>> txNodes = txMapping.transactionNodes();
 
         for (final GridDistributedTxMapping m : mappings.values()) {
-            final ClusterNode node = m.node();
+            final ClusterNode primary = m.primary();
 
-            GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-                futId,
-                tx.topologyVersion(),
-                tx,
-                m.reads(),
-                m.writes(),
-                m.near(),
-                txMapping.transactionNodes(),
-                true,
-                tx.onePhaseCommit(),
-                tx.needReturnValue() && tx.implicit(),
-                tx.implicitSingle(),
-                m.explicitLock(),
-                tx.subjectId(),
-                tx.taskNameHash(),
-                false,
-                tx.activeCachesDeploymentEnabled());
+            if (primary.isLocal()) {
+                if (m.hasNearCacheEntries() && m.hasColocatedCacheEntries()) {
+                    GridNearTxPrepareRequest nearReq = createRequest(txMapping.transactionNodes(),
+                        m,
+                        timeout,
+                        m.nearEntriesReads(),
+                        m.nearEntriesWrites());
 
-            for (IgniteTxEntry txEntry : m.entries()) {
-                if (txEntry.op() == TRANSFORM)
-                    req.addDhtVersion(txEntry.txKey(), null);
-            }
+                    prepareLocal(nearReq, m, ++miniId, true);
 
-            final MiniFuture fut = new MiniFuture(m);
+                    GridNearTxPrepareRequest colocatedReq = createRequest(txNodes,
+                        m,
+                        timeout,
+                        m.colocatedEntriesReads(),
+                        m.colocatedEntriesWrites());
 
-            req.miniId(fut.futureId());
+                    prepareLocal(colocatedReq, m, ++miniId, false);
+                }
+                else {
+                    GridNearTxPrepareRequest req = createRequest(txNodes, m, timeout, m.reads(), m.writes());
 
-            add(fut);
-
-            if (node.isLocal()) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(node.id(),
-                    tx,
-                    req);
-
-                prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
-                        try {
-                            fut.onResult(prepFut.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.onError(e);
-                        }
-                    }
-                });
+                    prepareLocal(req, m, ++miniId, m.hasNearCacheEntries());
+                }
             }
             else {
+                GridNearTxPrepareRequest req = createRequest(txNodes,
+                    m,
+                    timeout,
+                    m.reads(),
+                    m.writes());
+
+                final MiniFuture fut = new MiniFuture(m, ++miniId);
+
+                req.miniId(fut.futureId());
+
+                add(fut);
+
                 try {
-                    cctx.io().send(node, req, tx.ioPolicy());
+                    cctx.io().send(primary, req, tx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +
+                            ", node=" + primary.id() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException e) {
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
@@ -267,7 +377,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     fut.onNodeLeft(e);
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
+                            ", node=" + primary.id() + ", err=" + e + ']');
+                    }
+
                     fut.onError(e);
+
+                    break;
                 }
             }
         }
@@ -291,7 +408,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }
@@ -303,8 +420,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
+                return "[node=" + ((MiniFuture)f).primary().id() +
+                    ", loc=" + ((MiniFuture)f).primary().isLocal() +
                     ", done=" + f.isDone() + "]";
             }
         });
@@ -319,43 +436,43 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** */
         private GridDistributedTxMapping m;
 
         /**
          * @param m Mapping.
+         * @param futId Mini future ID.
          */
-        MiniFuture(GridDistributedTxMapping m) {
+        MiniFuture(GridDistributedTxMapping m, int futId) {
             this.m = m;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
         /**
          * @return Node ID.
          */
-        public ClusterNode node() {
-            return m.node();
+        public ClusterNode primary() {
+            return m.primary();
         }
 
         /**
          * @param res Response.
+         * @param updateMapping Update mapping flag.
          */
-        void onResult(GridNearTxPrepareResponse res) {
+        void onResult(GridNearTxPrepareResponse res, boolean updateMapping) {
             if (res.error() != null)
                 onError(res.error());
             else {
-                onPrepareResponse(m, res);
+                onPrepareResponse(m, res, updateMapping);
 
                 onDone(res);
             }
@@ -365,6 +482,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param e Error.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near pessimistic prepare, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", nodeId=" + m.primary().id() + ']');
+            }
+
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
 

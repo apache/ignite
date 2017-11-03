@@ -39,7 +39,12 @@ import org.apache.ignite.plugin.Extension;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.PLUGIN;
 
 /**
  *
@@ -61,7 +66,8 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param providers Plugin providers.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers) {
+    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers)
+        throws IgniteCheckedException {
         super(ctx);
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
@@ -148,40 +154,83 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return DiscoveryDataExchangeType.PLUGIN;
+        return PLUGIN;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        HashMap<String, Serializable> discData = null;
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (pluginsData != null)
+            dataBag.addJoiningNodeData(PLUGIN.ordinal(), pluginsData);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        Serializable pluginsData = getDiscoveryData(dataBag.joiningNodeId());
+
+        if (pluginsData != null)
+            dataBag.addNodeSpecificData(PLUGIN.ordinal(), pluginsData);
+    }
+
+    /**
+     * @param joiningNodeId Joining node id.
+     */
+    private Serializable getDiscoveryData(UUID joiningNodeId) {
+        HashMap<String, Serializable> pluginsData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
-            Serializable data = e.getValue().provideDiscoveryData(nodeId);
+            Serializable data = e.getValue().provideDiscoveryData(joiningNodeId);
 
             if (data != null) {
-                if (discData == null)
-                    discData = new HashMap<>();
+                if (pluginsData == null)
+                    pluginsData = new HashMap<>();
 
-                discData.put(e.getKey(), data);
+                pluginsData.put(e.getKey(), data);
             }
         }
 
-        return discData;
+        return pluginsData;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Serializable data) {
-        Map<String, Serializable> discData = (Map<String, Serializable>)data;
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
+        if (data.hasJoiningNodeData()) {
+            Map<String, Serializable> pluginsData = (Map<String, Serializable>) data.joiningNodeData();
 
-        if (discData != null) {
-            for (Map.Entry<String, Serializable> e : discData.entrySet()) {
-                PluginProvider provider = plugins.get(e.getKey());
+            applyPluginsData(data.joiningNodeId(), pluginsData);
+        }
+    }
 
-                if (provider != null)
-                    provider.receiveDiscoveryData(nodeId, e.getValue());
-                else
-                    U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        Map<UUID, Serializable> nodeSpecificData = data.nodeSpecificData();
+
+        if (nodeSpecificData != null) {
+            UUID joiningNodeId = data.joiningNodeId();
+
+            for (Serializable v : nodeSpecificData.values()) {
+                if (v != null) {
+                    Map<String, Serializable> pluginsData = (Map<String, Serializable>) v;
+
+                    applyPluginsData(joiningNodeId, pluginsData);
+                }
             }
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param pluginsData Plugins data.
+     */
+    private void applyPluginsData(UUID nodeId, Map<String, Serializable> pluginsData) {
+        for (Map.Entry<String, Serializable> e : pluginsData.entrySet()) {
+            PluginProvider provider = plugins.get(e.getKey());
+
+            if (provider != null)
+                provider.receiveDiscoveryData(nodeId, e.getValue());
+            else
+                U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
         }
     }
 
@@ -227,7 +276,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         /**
          * @return Map extension interface to array of implementation.
          */
-        public Map<Class<?>, Object[]> createExtensionMap() {
+        Map<Class<?>, Object[]> createExtensionMap() {
             Map<Class<?>, Object[]> extensions = new HashMap<>(extensionsCollector.size() * 2, 0.5f);
 
             for (Map.Entry<Class<?>, List<Object>> entry : extensionsCollector.entrySet()) {

@@ -19,3 +19,17 @@ $currentPostBuildCmd = $project.Properties.Item("PostBuildEvent").Value
 
 # Remove our post build command from it (if it's there)
 $project.Properties.Item("PostBuildEvent").Value = $currentPostBuildCmd.Replace($IgnitePostBuildCmd, "")
+
+# Save
+$project.Save()
+
+# Remove bin\Libs folders with jars
+$project.ConfigurationManager | % { 
+    $projPath = $project.Properties.Item("FullPath").Value
+    $binDir = ($_.Properties | Where Name -match OutputPath).Value
+
+    $binPath = Join-Path $projPath $binDir
+    $libsPath = Join-Path $binPath "Libs"
+
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $libsPath
+}

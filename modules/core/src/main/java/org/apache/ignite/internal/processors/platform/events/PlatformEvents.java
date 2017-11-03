@@ -21,25 +21,26 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Interop events.
  */
+@SuppressWarnings("unchecked")
 public class PlatformEvents extends PlatformAbstractTarget {
     /** */
     private static final int OP_REMOTE_QUERY = 1;
@@ -69,6 +70,24 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_GET_ENABLED_EVENTS = 10;
 
     /** */
+    private static final int OP_WITH_ASYNC = 11;
+
+    /** */
+    private static final int OP_IS_ENABLED = 12;
+
+    /** */
+    private static final int OP_LOCAL_LISTEN = 13;
+
+    /** */
+    private static final int OP_STOP_LOCAL_LISTEN = 14;
+
+    /** */
+    private static final int OP_REMOTE_QUERY_ASYNC = 15;
+
+    /** */
+    private static final int OP_WAIT_FOR_LOCAL_ASYNC = 16;
+
+    /** */
     private final IgniteEvents events;
 
     /** */
@@ -94,52 +113,8 @@ public class PlatformEvents extends PlatformAbstractTarget {
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
     }
 
-    /**
-     * Gets events with asynchronous mode enabled.
-     *
-     * @return Events with asynchronous mode enabled.
-     */
-    public PlatformEvents withAsync() {
-        if (events.isAsync())
-            return this;
-
-        return new PlatformEvents(platformCtx, events.withAsync());
-    }
-
-    /**
-     * Adds an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     * @param type Event type.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void localListen(long hnd, int type) {
-        events.localListen(localFilter(hnd), type);
-    }
-
-    /**
-     * Removes an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     */
-    @SuppressWarnings({"UnusedDeclaration", "unchecked"})
-    public boolean stopLocalListen(long hnd) {
-        return events.stopLocalListen(localFilter(hnd));
-    }
-
-    /**
-     * Check if event is enabled.
-     *
-     * @param type Event type.
-     * @return {@code True} if event of passed in type is enabled.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean isEnabled(int type) {
-        return events.isEnabled(type);
-    }
-
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
@@ -163,6 +138,22 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 return TRUE;
 
+            case OP_LOCAL_LISTEN:
+                events.localListen(localFilter(reader.readLong()), reader.readInt());
+
+                return TRUE;
+
+            case OP_REMOTE_QUERY_ASYNC:
+                readAndListenFuture(reader, startRemoteQueryAsync(reader, events), eventColResWriter);
+
+                return TRUE;
+
+            case OP_WAIT_FOR_LOCAL_ASYNC: {
+                readAndListenFuture(reader, startWaitForLocalAsync(reader, events), eventResWriter);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -170,7 +161,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
@@ -186,13 +177,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_WAIT_FOR_LOCAL: {
-                boolean hasFilter = reader.readBoolean();
-
-                IgnitePredicate pred = hasFilter ? localFilter(reader.readLong()) : null;
-
-                int[] eventTypes = readEventTypes(reader);
-
-                EventAdapter result = (EventAdapter) events.waitForLocal(pred, eventTypes);
+                EventAdapter result = startWaitForLocal(reader, events);
 
                 platformCtx.writeEvent(writer, result);
 
@@ -230,24 +215,22 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_QUERY: {
-                Object pred = reader.readObjectDetached();
+                Collection<Event> result = startRemoteQuery(reader, events);
 
-                long timeout = reader.readLong();
+                eventColResWriter.write(writer, result, null);
 
-                int[] types = readEventTypes(reader);
+                break;
+            }
 
-                PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+            case OP_STOP_LOCAL_LISTEN: {
+                int id = reader.readInt();
+                int[] types = reader.readIntArray();
 
-                Collection<Event> result = events.remoteQuery(filter, timeout);
+                IgnitePredicate lsnr = new PlatformLocalEventListener(id);
 
-                if (result == null)
-                    writer.writeInt(-1);
-                else {
-                    writer.writeInt(result.size());
+                boolean res = events.stopLocalListen(lsnr, types);
 
-                    for (Event e : result)
-                        platformCtx.writeEvent(writer, e);
-                }
+                writer.writeBoolean(res);
 
                 break;
             }
@@ -257,8 +240,80 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 
+    /**
+     * Starts the waitForLocal.
+     *
+     * @param reader Reader
+     * @param events Events.
+     * @return Result.
+     */
+    private EventAdapter startWaitForLocal(BinaryRawReaderEx reader, IgniteEvents events) {
+        Long filterHnd = reader.readObject();
+
+        IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
+
+        int[] eventTypes = readEventTypes(reader);
+
+        return (EventAdapter) events.waitForLocal(filter, eventTypes);
+    }
+
+    /**
+     * Starts the waitForLocal asynchronously.
+     *
+     * @param reader Reader
+     * @param events Events.
+     * @return Result.
+     */
+    private IgniteFuture<EventAdapter> startWaitForLocalAsync(BinaryRawReaderEx reader, IgniteEvents events) {
+        Long filterHnd = reader.readObject();
+
+        IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
+
+        int[] eventTypes = readEventTypes(reader);
+
+        return events.waitForLocalAsync(filter, eventTypes);
+    }
+
+    /**
+     * Starts the remote query.
+     *
+     * @param reader Reader.
+     * @param events Events.
+     * @return Result.
+     */
+    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader, IgniteEvents events) {
+        Object pred = reader.readObjectDetached();
+
+        long timeout = reader.readLong();
+
+        int[] types = readEventTypes(reader);
+
+        PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+
+        return events.remoteQuery(filter, timeout);
+    }
+
+    /**
+     * Starts the remote query asynchronously.
+     *
+     * @param reader Reader.
+     * @param events Events.
+     * @return Result.
+     */
+    private IgniteFuture<List<Event>> startRemoteQueryAsync(BinaryRawReaderEx reader, IgniteEvents events) {
+        Object pred = reader.readObjectDetached();
+
+        long timeout = reader.readLong();
+
+        int[] types = readEventTypes(reader);
+
+        PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+
+        return events.remoteQueryAsync(filter, timeout);
+    }
+
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -270,22 +325,30 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)events.future()).internalFuture();
-    }
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (events.isAsync())
+                    return this;
 
-    /** <inheritDoc /> */
-    @Nullable @Override protected PlatformFutureUtils.Writer futureWriter(int opId) {
-        switch (opId) {
-            case OP_WAIT_FOR_LOCAL:
-                return eventResWriter;
-
-            case OP_REMOTE_QUERY:
-                return eventColResWriter;
+                return new PlatformEvents(platformCtx, events.withAsync());
         }
 
-        return null;
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_IS_ENABLED:
+                return events.isEnabled((int)val) ? TRUE : FALSE;
+
+            case OP_STOP_LOCAL_LISTEN:
+                return events.stopLocalListen(localFilter(val)) ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 
     /**
@@ -382,12 +445,17 @@ public class PlatformEvents extends PlatformAbstractTarget {
         /** <inheritDoc /> */
         @SuppressWarnings("unchecked")
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
-            Collection<EventAdapter> events = (Collection<EventAdapter>)obj;
+            Collection<Event> events = (Collection<Event>)obj;
 
-            writer.writeInt(events.size());
+            if (obj != null) {
+                writer.writeInt(events.size());
 
-            for (EventAdapter e : events)
-                platformCtx.writeEvent(writer, e);
+                for (Event e : events)
+                    platformCtx.writeEvent(writer, e);
+            }
+            else {
+                writer.writeInt(-1);
+            }
         }
 
         /** <inheritDoc /> */

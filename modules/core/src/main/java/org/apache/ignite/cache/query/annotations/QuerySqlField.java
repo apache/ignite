@@ -22,6 +22,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
@@ -31,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQuery;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.FIELD})
 public @interface QuerySqlField {
     /**
      * Specifies whether cache should maintain an index for this field or not.
@@ -53,6 +55,13 @@ public @interface QuerySqlField {
      * @return {@code True} if field index should be in descending order.
      */
     boolean descending() default false;
+
+    /**
+     * Specifies whether the specified field can be {@code null}.
+     *
+     * @return {@code True} if the field is not allowed to accept {@code null} values.
+     */
+    boolean notNull() default false;
 
     /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,
@@ -86,6 +95,27 @@ public @interface QuerySqlField {
      * @return Name of property.
      */
     String name() default "";
+
+    /**
+     * Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus incraesing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
+     * <p>
+     * When index group is used, inline size must be defined in {@link QueryGroupIndex#inlineSize()}. Any value
+     * except of {@code -1} defined on a specific column will lead to exception.
+     *
+     * @return Index inline size in bytes.
+     */
+    int inlineSize() default QueryIndex.DFLT_INLINE_SIZE;
 
     /**
      * Describes group of index and position of field in this group.

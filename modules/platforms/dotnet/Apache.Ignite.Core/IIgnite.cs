@@ -26,18 +26,23 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.PersistentStore;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Main entry point for all Ignite APIs.
-    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.GetIgnite()"/>,
+    /// You can obtain an instance of <see cref="IIgnite"/> through <see cref="Ignition.GetIgnite()"/>,
     /// or for named grids you can use <see cref="Ignition.GetIgnite(string)"/>. Note that you
-    /// can have multiple instances of <c>IGrid</c> running in the same process by giving
+    /// can have multiple instances of <see cref="IIgnite"/> running in the same process by giving
     /// each instance a different name.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
@@ -249,7 +254,8 @@ namespace Apache.Ignite.Core
         IgniteConfiguration GetConfiguration();
 
         /// <summary>
-        /// Starts a near cache on local node if cache with specified was previously started.
+        /// Starts a near cache on local client node if cache with specified was previously started.
+        /// This method does not work on server nodes.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="configuration">The configuration.</param>
@@ -274,5 +280,126 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <returns>Collection of names of currently available caches.</returns>
         ICollection<string> GetCacheNames();
+
+        /// <summary>
+        /// Gets the logger.
+        /// <para />
+        /// See <see cref="IgniteConfiguration.Logger"/> for customization.
+        /// </summary>
+        ILogger Logger { get; }
+
+        /// <summary>
+        /// Occurs when node begins to stop. Node is fully functional at this point.
+        /// See also: <see cref="LifecycleEventType.BeforeNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopping;
+
+        /// <summary>
+        /// Occurs when node has stopped. Node can't be used at this point.
+        /// See also: <see cref="LifecycleEventType.AfterNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopped;
+
+        /// <summary>
+        /// Occurs when client node disconnects from the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler ClientDisconnected;
+
+        /// <summary>
+        /// Occurs when client node reconnects to the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /// <summary>
+        /// Gets the plugin by name.
+        /// </summary>
+        /// <typeparam name="T">Plugin type</typeparam>
+        /// <param name="name">Plugin name.</param>
+        /// <exception cref="PluginNotFoundException">When plugin with specified name has not been found.</exception>
+        /// <returns>Plugin instance.</returns>
+        T GetPlugin<T>(string name) where T : class;
+
+        /// <summary>
+        /// Clears partitions' lost state and moves caches to a normal mode.
+        /// </summary>
+        /// <param name="cacheNames">Names of caches to reset partitions for.</param>
+        void ResetLostPartitions(IEnumerable<string> cacheNames);
+
+        /// <summary>
+        /// Clears partitions' lost state and moves caches to a normal mode.
+        /// </summary>
+        /// <param name="cacheNames">Names of caches to reset partitions for.</param>
+        void ResetLostPartitions(params string[] cacheNames);
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
+        /// <para />
+        /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
+        /// <para />
+        /// Obsolete, use <see cref="GetDataRegionMetrics()"/>.
+        /// </summary>
+        [Obsolete("Use GetDataRegionMetrics.")]
+        ICollection<IMemoryMetrics> GetMemoryMetrics();
+
+        /// <summary>
+        /// Gets the memory metrics for the specified memory policy.
+        /// <para />
+        /// To get metrics for the default memory region,
+        /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
+        /// <para />
+        /// Obsolete, use <see cref="GetDataRegionMetrics(string)"/>.
+        /// </summary>
+        /// <param name="memoryPolicyName">Name of the memory policy.</param>
+        [Obsolete("Use GetDataRegionMetrics.")]
+        IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// <para />
+        /// To enable metrics set <see cref="PersistentStoreConfiguration.MetricsEnabled"/> property
+        /// in <see cref="IgniteConfiguration.PersistentStoreConfiguration"/>.
+        /// </summary>
+        [Obsolete("Use GetDataStorageMetrics.")]
+        IPersistentStoreMetrics GetPersistentStoreMetrics();
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each 
+        /// <see cref="DataStorageConfiguration.DataRegionConfigurations"/>.
+        /// <para />
+        /// Metrics should be enabled with <see cref="DataStorageConfiguration.MetricsEnabled"/>.
+        /// </summary>
+        ICollection<IDataRegionMetrics> GetDataRegionMetrics();
+
+        /// <summary>
+        /// Gets the memory metrics for the specified data region.
+        /// <para />
+        /// To get metrics for the default memory region,
+        /// use <see cref="DataStorageConfiguration.DefaultDataRegionName"/>.
+        /// </summary>
+        /// <param name="dataRegionName">Name of the data region.</param>
+        IDataRegionMetrics GetDataRegionMetrics(string dataRegionName);
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// <para />
+        /// To enable metrics set <see cref="DataStorageConfiguration.MetricsEnabled"/> property
+        /// in <see cref="IgniteConfiguration.DataStorageConfiguration"/>.
+        /// </summary>
+        IDataStorageMetrics GetDataStorageMetrics();
     }
 }

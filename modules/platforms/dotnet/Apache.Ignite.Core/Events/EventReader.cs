@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Event reader.
@@ -32,16 +32,14 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Deserialized event.</returns>
         /// <exception cref="System.InvalidCastException">Incompatible event type.</exception>
-        public static T Read<T>(IBinaryReader reader) where T : IEvent
+        public static T Read<T>(BinaryReader reader) where T : IEvent
         {
-            var r = reader.GetRawReader();
-
-            var clsId = r.ReadInt();
+            var clsId = reader.ReadInt();
 
             if (clsId == -1)
                 return default(T);
 
-            return (T) CreateInstance(clsId, r);
+            return (T) CreateInstance(clsId, reader);
         }
 
         /// <summary>
@@ -51,7 +49,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="reader">Reader.</param>
         /// <returns>Created and deserialized instance.</returns>
         /// <exception cref="System.InvalidOperationException">Invalid event class id:  + clsId</exception>
-        private static IEvent CreateInstance(int clsId, IBinaryRawReader reader)
+        private static IEvent CreateInstance(int clsId, BinaryReader reader)
         {
             switch (clsId)
             {
@@ -62,7 +60,6 @@ namespace Apache.Ignite.Core.Events
                 case 6: return new CheckpointEvent(reader);
                 case 7: return new DiscoveryEvent(reader);
                 case 8: return new JobEvent(reader);
-                case 9: return new SwapSpaceEvent(reader);
                 case 10: return new TaskEvent(reader);
             }
 

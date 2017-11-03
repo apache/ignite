@@ -34,9 +34,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRead()
         {
-            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
+            var section = (IgniteConfigurationSection) ConfigurationManager.GetSection(
+                Ignition.ConfigurationSectionName);
 
-            Assert.AreEqual("myGrid1", section.IgniteConfiguration.GridName);
+            Assert.AreEqual("myGrid1", section.IgniteConfiguration.IgniteInstanceName);
             Assert.AreEqual("cacheName", section.IgniteConfiguration.CacheConfiguration.Single().Name);
         }
 
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         {
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration(Ignition.ConfigurationSectionName))
             {
                 Assert.AreEqual("myGrid1", ignite.Name);
                 Assert.IsNotNull(ignite.GetCache<int, int>("cacheName"));
@@ -62,8 +63,60 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
-                Assert.IsTrue(ignite.Name.StartsWith("myGrid"));
+                Assert.AreEqual("myGrid1", ignite.Name);
             }
+
+            using (var ignite = Ignition.StartFromApplicationConfiguration(
+                "igniteConfiguration3", "custom_app.config"))
+            {
+                Assert.AreEqual("myGrid3", ignite.Name);
+            }
+        }
+
+        /// <summary>
+        /// Tests the ignite start error.
+        /// </summary>
+        [Test]
+        public void TestIgniteStartError()
+        {
+            // Missing section in default file.
+            var ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration111"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration111'", 
+                ex.Message);
+
+
+            // Missing section body.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfigurationMissing"));
+
+            Assert.AreEqual("IgniteConfigurationSection with name 'igniteConfigurationMissing' " +
+                            "is defined in <configSections>, but not present in configuration.", ex.Message);
+
+
+            // Missing custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "somefile"));
+
+            Assert.AreEqual("Specified config file does not exist: somefile", ex.Message);
+
+
+            // Missing section in custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfiguration", "custom_app.config"));
+
+            Assert.AreEqual("Could not find IgniteConfigurationSection with name 'igniteConfiguration' " +
+                            "in file 'custom_app.config'", ex.Message);
+            
+            
+            // Missing section body in custom file.
+            ex = Assert.Throws<ConfigurationErrorsException>(() =>
+                Ignition.StartFromApplicationConfiguration("igniteConfigurationMissing", "custom_app.config"));
+
+            Assert.AreEqual("IgniteConfigurationSection with name 'igniteConfigurationMissing' in file " +
+                            "'custom_app.config' is defined in <configSections>, but not present in configuration.",
+                ex.Message);
         }
     }
 }

@@ -24,4 +24,18 @@ if (!$currentPostBuildCmd.Contains($IgnitePostBuildCmd)) {
     $project.Properties.Item("PostBuildEvent").Value += $IgnitePostBuildCmd
 }
 
+# Save
+$project.Save()
+
+# Remove bin\Libs folders with old jars
+$project.ConfigurationManager | % { 
+    $projPath = $project.Properties.Item("FullPath").Value
+    $binDir = ($_.Properties | Where Name -match OutputPath).Value
+
+    $binPath = Join-Path $projPath $binDir
+    $libsPath = Join-Path $binPath "Libs"
+
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $libsPath
+}
+
 Write-Host "Welcome to Apache Ignite.NET!"

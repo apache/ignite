@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -29,15 +27,15 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.GridReflectionCache;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Default key affinity mapper. If key class has annotation {@link AffinityKeyMapped},
- * then the value of annotated method or field will be used to get affinity value instead
+ * then the value of annotated field will be used to get affinity value instead
  * of the key itself. If there is no annotation, then the key is used as is.
  * <p>
  * Convenience affinity key adapter, {@link AffinityKey} can be used in
@@ -61,22 +59,7 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
                 return f.getAnnotation(AffinityKeyMapped.class) != null;
             }
         },
-        new P1<Method>() {
-            @Override public boolean apply(Method m) {
-                // Account for anonymous inner classes.
-                Annotation ann = m.getAnnotation(AffinityKeyMapped.class);
-
-                if (ann != null) {
-                    if (!F.isEmpty(m.getParameterTypes()))
-                        throw new IllegalStateException("Method annotated with @AffinityKeyMapped annotation " +
-                            "cannot have parameters: " + m);
-
-                    return true;
-                }
-
-                return false;
-            }
-        }
+        null
     );
 
     /** Logger. */
@@ -105,18 +88,20 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
                 reflectCache.firstField(key.getClass()) + ", key=" + key + ']', e);
         }
 
-        try {
-            Object o = reflectCache.firstMethodValue(key);
-
-            if (o != null)
-                return o;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to invoke affinity method for key [mtd=" +
-                reflectCache.firstMethod(key.getClass()) + ", key=" + key + ']', e);
-        }
-
         return key;
+    }
+
+    /**
+     * @param cls Key class.
+     * @return Name of
+     */
+    @Nullable public String affinityKeyPropertyName(Class<?> cls) {
+        Field field = reflectCache.firstField(cls);
+
+        if (field != null)
+            return field.getName();
+
+        return null;
     }
 
     /**

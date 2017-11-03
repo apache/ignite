@@ -73,9 +73,10 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param endTime Execution end time.
      * @param siblings Collection of siblings.
      * @param attrs Map of attributes.
-     * @param fullSup {@code True} to enable distributed session attributes
-     *      and checkpoints.
+     * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
+     * @param internal {@code True} in case of internal task.
      * @param subjId Subject ID.
+     * @param execName Custom executor name.
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
@@ -90,7 +91,9 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
-        UUID subjId) {
+        boolean internal,
+        UUID subjId,
+        @Nullable String execName) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
                 taskNodeId,
@@ -105,7 +108,9 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 attrs,
                 ctx,
                 false,
-                subjId);
+                internal,
+                subjId,
+                execName);
         }
 
         while (true) {
@@ -127,7 +132,9 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         attrs,
                         ctx,
                         true,
-                        subjId));
+                        internal,
+                        subjId,
+                        execName));
 
                 if (old != null)
                     ses = old;
@@ -174,7 +181,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  sesMapSize: " + sesMap.size());
     }
 }

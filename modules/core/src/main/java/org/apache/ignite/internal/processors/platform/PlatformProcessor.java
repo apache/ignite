@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Platform processor.
  */
-@SuppressWarnings("UnusedDeclaration")
+@SuppressWarnings({"UnusedDeclaration", "UnnecessaryInterfaceModifier"})
 public interface PlatformProcessor extends GridProcessor {
     /**
      * Gets owning Ignite instance.
@@ -63,132 +62,6 @@ public interface PlatformProcessor extends GridProcessor {
     public void awaitStart() throws IgniteCheckedException;
 
     /**
-     * Get cache.
-     *
-     * @param name Cache name.
-     * @return Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException;
-
-    /**
-     * Create cache.
-     *
-     * @param name Cache name.
-     * @return Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException;
-
-    /**
-     * Get or create cache.
-     *
-     * @param name Cache name.
-     * @return Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
-
-    /**
-     * Create cache.
-     *
-     * @param memPtr Stream with cache config.
-     * @return Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException;
-
-    /**
-     * Get or create cache.
-     *
-     * @param memPtr Stream with cache config.
-     * @return Cache.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
-
-    /**
-     * Destroy dynamically created cache.
-     *
-     * @param name Cache name.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void destroyCache(@Nullable String name) throws IgniteCheckedException;
-
-    /**
-     * Get affinity.
-     *
-     * @param name Cache name.
-     * @return Affinity.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException;
-
-    /**
-     * Get data streamer.
-     *
-     * @param cacheName Cache name.
-     * @param keepBinary Binary flag.
-     * @return Data streamer.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
-
-    /**
-     * Get transactions.
-     *
-     * @return Transactions.
-     */
-    public PlatformTarget transactions();
-
-    /**
-     * Get projection.
-     *
-     * @return Projection.
-     * @throws IgniteCheckedException If failed.
-     */
-    public PlatformTarget projection() throws IgniteCheckedException;
-
-    /**
-     * Create interop compute.
-     *
-     * @param grp Cluster group.
-     * @return Compute instance.
-     */
-    public PlatformTarget compute(PlatformTarget grp);
-
-    /**
-     * Create interop messaging.
-     *
-     * @param grp Cluster group.
-     * @return Messaging instance.
-     */
-    public PlatformTarget message(PlatformTarget grp);
-
-    /**
-     * Create interop events.
-     *
-     * @param grp Cluster group.
-     * @return Events instance.
-     */
-    public PlatformTarget events(PlatformTarget grp);
-
-    /**
-     * Create interop services.
-     *
-     * @param grp Cluster group.
-     * @return Services instance.
-     */
-    public PlatformTarget services(PlatformTarget grp);
-
-    /**
-     * Get platform extensions. Override this method to provide any additional targets and operations you need.
-     *
-     * @return Platform extensions.
-     */
-    public PlatformTarget extensions();
-
-    /**
      * Register cache store.
      *
      * @param store Store.
@@ -196,67 +69,4 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;
-
-    /**
-     * Get or create AtomicLong.
-     * @param name Name.
-     * @param initVal Initial value.
-     * @param create Create flag.
-     * @return Platform atomic long.
-     * @throws IgniteException
-     */
-    public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
-
-    /**
-     * Get or create AtomicSequence.
-     * @param name Name.
-     * @param initVal Initial value.
-     * @param create Create flag.
-     * @return Platform atomic long.
-     * @throws IgniteException
-     */
-    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
-
-    /**
-     * Get or create AtomicReference.
-     * @param name Name.
-     * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
-     * @param create Create flag.
-     * @return Platform atomic long.
-     * @throws IgniteException
-     */
-    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
-
-    /**
-     * Gets the configuration of the current Ignite instance.
-     *
-     * @param memPtr Stream to write data to.
-     */
-    public void getIgniteConfiguration(long memPtr);
-
-    /**
-     * Gets the cache names.
-     *
-     * @param memPtr Stream to write data to.
-     */
-    public void getCacheNames(long memPtr);
-
-    /**
-     * Starts a near cache on local node if cache was previously started.
-     *
-     * @param cacheName Cache name.
-     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
-     * @return Cache.
-     */
-    public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr);
-
-    /**
-     * Gets existing near cache with the given name or creates a new one.
-     *
-     * @param cacheName Cache name.
-     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
-     * @return Cache.
-     */
-    public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
-
 }

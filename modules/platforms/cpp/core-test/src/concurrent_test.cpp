@@ -23,6 +23,7 @@
 
 #include <ignite/common/concurrent.h>
 
+using namespace ignite;
 using namespace ignite::common::concurrent;
 
 BOOST_AUTO_TEST_SUITE(ConcurrentTestSuite)
@@ -274,6 +275,52 @@ BOOST_AUTO_TEST_CASE(TestEnableSharedFromThis)
 
     ptr3 = SharedPointer<TestT>();
     BOOST_CHECK(deleted);
+}
+
+BOOST_AUTO_TEST_CASE(ConditionVariableBasic)
+{
+    CriticalSection cs;
+    ConditionVariable cv;
+
+    CsLockGuard guard(cs);
+
+    bool notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+
+    cv.NotifyOne();
+
+    notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+
+    cv.NotifyAll();
+
+    notified = cv.WaitFor(cs, 100);
+
+    BOOST_REQUIRE(!notified);
+}
+
+BOOST_AUTO_TEST_CASE(ManualEventBasic)
+{
+    ManualEvent evt;
+
+    bool triggered = evt.WaitFor(100);
+    BOOST_CHECK(!triggered);
+
+    evt.Set();
+
+    triggered = evt.WaitFor(100);
+    BOOST_REQUIRE(triggered);
+
+    triggered = evt.WaitFor(100);
+    BOOST_REQUIRE(triggered);
+
+    evt.Wait();
+    evt.Reset();
+
+    triggered = evt.WaitFor(100);
+    BOOST_CHECK(!triggered);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

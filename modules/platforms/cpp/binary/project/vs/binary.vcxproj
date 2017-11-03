@@ -140,7 +140,6 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -162,7 +161,6 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -182,16 +180,21 @@
     <ClInclude Include="..\..\include\ignite\binary\binary.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_consts.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_containers.h" />
+    <ClInclude Include="..\..\include\ignite\binary\binary_object.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_type.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_field_meta.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_header.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_object_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_manager.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_snapshot.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h" />
@@ -210,12 +213,15 @@
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_type.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_field_meta.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_object_header.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_object_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_manager.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_snapshot.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_updater.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_utils.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_writer_impl.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp" />

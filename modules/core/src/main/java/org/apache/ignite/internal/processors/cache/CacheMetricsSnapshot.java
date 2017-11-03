@@ -74,9 +74,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Cache name */
     private String cacheName;
 
-    /** Number of entries that was swapped to disk. */
-    private long overflowSize;
-
     /** Number of reads from off-heap. */
     private long offHeapGets;
 
@@ -98,6 +95,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of entries stored in off-heap memory. */
     private long offHeapEntriesCnt;
 
+    /** Number of entries stored in heap. */
+    private long heapEntriesCnt;
+
     /** Number of primary entries stored in off-heap memory. */
     private long offHeapPrimaryEntriesCnt;
 
@@ -106,30 +106,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** Memory size allocated in off-heap. */
     private long offHeapAllocatedSize;
-
-    /** Off-heap memory maximum size*/
-    private long offHeapMaxSize;
-
-    /** Number of reads from swap. */
-    private long swapGets;
-
-    /** Number of writes to swap. */
-    private long swapPuts;
-
-    /** Number of removed entries from swap. */
-    private long swapRemoves;
-
-    /** Number of entries stored in swap. */
-    private long swapEntriesCnt;
-
-    /** Swap hits number. */
-    private long swapHits;
-
-    /** Swap misses number. */
-    private long swapMisses;
-
-    /** Swap size. */
-    private long swapSize;
 
     /** Number of non-{@code null} values in the cache. */
     private int size;
@@ -212,6 +188,27 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Total count of entries in cache store internal buffer. */
     private int writeBehindBufSize;
 
+    /** Total partitions count. */
+    private int totalPartitionsCnt;
+
+    /** Rebalancing partitions count. */
+    private int rebalancingPartitionsCnt;
+
+    /** Keys to rebalance left. */
+    private long keysToRebalanceLeft;
+
+    /** Rebalancing keys rate. */
+    private long rebalancingKeysRate;
+
+    /** Get rebalancing bytes rate. */
+    private long rebalancingBytesRate;
+
+    /** Start rebalance time. */
+    private long rebalanceStartTime;
+
+    /** Estimate rebalance finish time. */
+    private long rebalanceFinishTime;
+
     /** */
     private String keyType;
 
@@ -262,7 +259,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rollbackAvgTimeNanos = m.getAverageTxRollbackTime();
 
         cacheName = m.name();
-        overflowSize = m.getOverflowSize();
 
         offHeapGets = m.getOffHeapGets();
         offHeapPuts = m.getOffHeapPuts();
@@ -271,18 +267,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
         offHeapEntriesCnt = m.getOffHeapEntriesCount();
+        heapEntriesCnt = m.getHeapEntriesCount();
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
-        offHeapMaxSize = m.getOffHeapMaxSize();
-
-        swapGets = m.getSwapGets();
-        swapPuts = m.getSwapPuts();
-        swapRemoves = m.getSwapRemovals();
-        swapHits = m.getSwapHits();
-        swapMisses = m.getSwapMisses();
-        swapEntriesCnt = m.getSwapEntriesCount();
-        swapSize = m.getSwapSize();
 
         size = m.getSize();
         keySize = m.getKeySize();
@@ -319,6 +307,14 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = m.isManagementEnabled();
         isReadThrough = m.isReadThrough();
         isWriteThrough = m.isWriteThrough();
+
+        totalPartitionsCnt = m.getTotalPartitionsCount();
+        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        keysToRebalanceLeft = m.getKeysToRebalanceLeft();
+        rebalancingBytesRate = m.getRebalancingBytesRate();
+        rebalancingKeysRate = m.getRebalancingKeysRate();
+        rebalanceStartTime = m.rebalancingStartTime();
+        rebalanceFinishTime = m.estimateRebalancingFinishTime();
     }
 
     /**
@@ -347,8 +343,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isReadThrough = loc.isReadThrough();
         isWriteThrough = loc.isWriteThrough();
 
-        offHeapMaxSize = loc.getOffHeapMaxSize();
-
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
             puts += e.getCachePuts();
@@ -365,11 +359,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             commitAvgTimeNanos += e.getAverageTxCommitTime();
             rollbackAvgTimeNanos += e.getAverageTxRollbackTime();
 
-            if (e.getOverflowSize() > -1)
-                overflowSize += e.getOverflowSize();
-            else
-                overflowSize = -1;
-
             offHeapGets += e.getOffHeapGets();
             offHeapPuts += e.getOffHeapPuts();
             offHeapRemoves += e.getOffHeapRemovals();
@@ -377,17 +366,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapHits += e.getOffHeapHits();
             offHeapMisses += e.getOffHeapMisses();
             offHeapEntriesCnt += e.getOffHeapEntriesCount();
+            heapEntriesCnt += e.getHeapEntriesCount();
             offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
-
-            swapGets += e.getSwapGets();
-            swapPuts += e.getSwapPuts();
-            swapRemoves += e.getSwapRemovals();
-            swapHits += e.getSwapHits();
-            swapMisses += e.getSwapMisses();
-            swapEntriesCnt += e.getSwapEntriesCount();
-            swapSize += e.getSwapSize();
 
             if (e.getDhtEvictQueueCurrentSize() > -1)
                 dhtEvictQueueCurrSize += e.getDhtEvictQueueCurrentSize();
@@ -451,6 +433,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
                 writeBehindErrorRetryCnt += e.getWriteBehindErrorRetryCount();
             else
                 writeBehindErrorRetryCnt = -1;
+
+            totalPartitionsCnt += e.getTotalPartitionsCount();
+            rebalancingPartitionsCnt += e.getRebalancingPartitionsCount();
+            keysToRebalanceLeft += e.getKeysToRebalanceLeft();
+            rebalancingBytesRate += e.getRebalancingBytesRate();
+            rebalancingKeysRate += e.getRebalancingKeysRate();
         }
 
         int size = metrics.size();
@@ -551,11 +539,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return overflowSize;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
         return offHeapGets;
     }
@@ -606,6 +589,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return heapEntriesCnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return offHeapPrimaryEntriesCnt;
     }
@@ -618,62 +606,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return offHeapAllocatedSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return offHeapMaxSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return swapGets;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return swapPuts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return swapRemoves;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return swapHits;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return swapMisses;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        if (swapHits == 0 || swapGets == 0)
-            return 0;
-
-        return (float) swapHits / swapGets * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        if (swapMisses == 0 || swapGets == 0)
-            return 0;
-
-        return (float) swapMisses / swapGets * 100.0f;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        return swapEntriesCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return swapSize;
     }
 
     /** {@inheritDoc} */
@@ -764,6 +696,51 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
         return txDhtRolledbackVersionsSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return totalPartitionsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return rebalancingPartitionsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return keysToRebalanceLeft;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return rebalancingKeysRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return rebalancingBytesRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long estimateRebalancingFinishTime() {
+        return rebalanceFinishTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return rebalanceFinishTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return rebalanceStartTime;
     }
 
     /** {@inheritDoc} */
@@ -868,7 +845,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeFloat(commitAvgTimeNanos);
         out.writeFloat(rollbackAvgTimeNanos);
 
-        out.writeLong(overflowSize);
         out.writeLong(offHeapGets);
         out.writeLong(offHeapPuts);
         out.writeLong(offHeapRemoves);
@@ -876,18 +852,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(offHeapHits);
         out.writeLong(offHeapMisses);
         out.writeLong(offHeapEntriesCnt);
+        out.writeLong(heapEntriesCnt);
         out.writeLong(offHeapPrimaryEntriesCnt);
         out.writeLong(offHeapBackupEntriesCnt);
         out.writeLong(offHeapAllocatedSize);
-        out.writeLong(offHeapMaxSize);
-
-        out.writeLong(swapGets);
-        out.writeLong(swapPuts);
-        out.writeLong(swapRemoves);
-        out.writeLong(swapHits);
-        out.writeLong(swapMisses);
-        out.writeLong(swapEntriesCnt);
-        out.writeLong(swapSize);
 
         out.writeInt(dhtEvictQueueCurrSize);
         out.writeInt(txThreadMapSize);
@@ -907,6 +875,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeInt(writeBehindTotalCriticalOverflowCnt);
         out.writeInt(writeBehindCriticalOverflowCnt);
         out.writeInt(writeBehindErrorRetryCnt);
+
+        out.writeInt(totalPartitionsCnt);
+        out.writeInt(rebalancingPartitionsCnt);
+        out.writeLong(keysToRebalanceLeft);
+        out.writeLong(rebalancingBytesRate);
+        out.writeLong(rebalancingKeysRate);
     }
 
     /** {@inheritDoc} */
@@ -926,7 +900,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         commitAvgTimeNanos = in.readFloat();
         rollbackAvgTimeNanos = in.readFloat();
 
-        overflowSize = in.readLong();
         offHeapGets = in.readLong();
         offHeapPuts = in.readLong();
         offHeapRemoves = in.readLong();
@@ -934,18 +907,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = in.readLong();
         offHeapMisses = in.readLong();
         offHeapEntriesCnt = in.readLong();
+        heapEntriesCnt = in.readLong();
         offHeapPrimaryEntriesCnt = in.readLong();
         offHeapBackupEntriesCnt = in.readLong();
         offHeapAllocatedSize = in.readLong();
-        offHeapMaxSize = in.readLong();
-
-        swapGets = in.readLong();
-        swapPuts = in.readLong();
-        swapRemoves = in.readLong();
-        swapHits = in.readLong();
-        swapMisses = in.readLong();
-        swapEntriesCnt = in.readLong();
-        swapSize = in.readLong();
 
         dhtEvictQueueCurrSize = in.readInt();
         txThreadMapSize = in.readInt();
@@ -965,5 +930,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindTotalCriticalOverflowCnt = in.readInt();
         writeBehindCriticalOverflowCnt = in.readInt();
         writeBehindErrorRetryCnt = in.readInt();
+
+        totalPartitionsCnt = in.readInt();
+        rebalancingPartitionsCnt = in.readInt();
+        keysToRebalanceLeft = in.readLong();
+        rebalancingBytesRate = in.readLong();
+        rebalancingKeysRate = in.readLong();
     }
 }

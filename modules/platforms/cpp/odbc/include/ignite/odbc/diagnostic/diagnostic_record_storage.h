@@ -64,7 +64,7 @@ namespace ignite
                  *
                  * @param retCode Operation return code.
                  */
-                void SetHeaderRecord(SqlResult result);
+                void SetHeaderRecord(SqlResult::Type result);
 
                 /**
                  * Add status record to diagnostic records.
@@ -83,7 +83,7 @@ namespace ignite
                  *
                  * @return Result of the last operation.
                  */
-                SqlResult GetOperaionResult() const;
+                SqlResult::Type GetOperaionResult() const;
 
                 /**
                  * Get return code of the last operation.
@@ -139,6 +139,22 @@ namespace ignite
                 const DiagnosticRecord& GetStatusRecord(int32_t idx) const;
 
                 /**
+                 * Get specified status record.
+                 *
+                 * @param idx Status record index.
+                 * @return Status record instance reference.
+                 */
+                DiagnosticRecord& GetStatusRecord(int32_t idx);
+
+                /**
+                 * Get last non-retrieved status record index.
+                 *
+                 * @return Index of the last non-retrieved status record or zero
+                 *  if nothing was found.
+                 */
+                int32_t GetLastNonRetrieved() const;
+
+                /**
                  * Check if the record is in the success state.
                  *
                  * @return True if the record is in the success state.
@@ -153,7 +169,7 @@ namespace ignite
                  * @param buffer Buffer to put data to.
                  * @return Operation result.
                  */
-                SqlResult GetField(int32_t recNum, DiagnosticField field, app::ApplicationDataBuffer& buffer) const;
+                SqlResult::Type GetField(int32_t recNum, DiagnosticField::Type field, app::ApplicationDataBuffer& buffer) const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DiagnosticRecordStorage);
@@ -180,7 +196,7 @@ namespace ignite
                  * Operation result. This field is mapped to "Return code" header
                  * record field.
                  */
-                SqlResult result;
+                SqlResult::Type result;
 
                 /**
                  * Header record field. The number of rows affected by an insert,

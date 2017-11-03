@@ -1,19 +1,6 @@
-$ng = (Get-Item .).FullName + '\nuget.exe'
+$ver = (gi ..\Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion
 
-if (!(Test-Path $ng)) {
-    $ng = 'nuget'
-}
-
-rmdir nupkg -Force -Recurse
-rmdir pkg -Force -Recurse
-
-mkdir nupkg
-mkdir pkg
-
-& $ng pack ..\Apache.Ignite.Core\Apache.Ignite.Core.csproj -Prop Configuration=Release -OutputDirectory nupkg
-& $ng pack ..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj -Prop Configuration=Release -OutputDirectory nupkg
-
-$ver = (Get-ChildItem nupkg\Apache.Ignite.Linq*)[0].Name -replace '\D+([\d.]+)\.\D+','$1'
+rmdir packages -Force -Recurse
 
 # Replace versions in project files
 (Get-Content packages.config) `
@@ -21,5 +8,22 @@ $ver = (Get-ChildItem nupkg\Apache.Ignite.Linq*)[0].Name -replace '\D+([\d.]+)\.
     | Out-File packages.config -Encoding utf8
 
 (Get-Content Apache.Ignite.Core.Tests.NuGet.csproj) `
-    -replace '<HintPath>packages\\Apache.Ignite(.*?)\.[\d.]+\\', ('<HintPath>packages\Apache.Ignite$1.' + "$ver\") `
+    -replace 'packages\\Apache.Ignite(.*?)\.\d.*?\\', ('packages\Apache.Ignite$1.' + "$ver\") `
     | Out-File Apache.Ignite.Core.Tests.NuGet.csproj  -Encoding utf8
+	
+# Detect NuGet
+$ng = "nuget"
+if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
+    $ng = ".\nuget.exe"
+
+    if (-not (Test-Path $ng)) {
+        echo "Downloading NuGet..."
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+    }
+}
+
+# restore packages
+& $ng restore
+
+# refresh content files
+ls packages\*\content | % {copy ($_.FullName + "\*.*") .\ }

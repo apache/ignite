@@ -18,12 +18,27 @@
 ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = \
-    ignite/common/concurrent.h \
-    ignite/common/utils.h \
-    ignite/ignite_error.h \
-    ignite/date.h \
-    ignite/guid.h \
-    ignite/timestamp.h
+	ignite/common/big_integer.h \
+	ignite/common/bits.h \
+	ignite/common/cancelable.h \
+	ignite/common/concurrent.h \
+	ignite/common/decimal.h \
+	ignite/common/default_allocator.h \
+	ignite/common/reference_impl.h \
+	ignite/common/dynamic_size_array.h \
+	ignite/common/fixed_size_array.h \
+	ignite/common/lazy.h \
+	ignite/common/utils.h \
+	ignite/common/platform_utils.h \
+	ignite/common/shared_state.h \
+	ignite/common/promise.h \
+	ignite/date.h \
+	ignite/guid.h \
+	ignite/ignite_error.h \
+	ignite/timestamp.h \
+	ignite/time.h \
+	ignite/reference.h \
+	ignite/future.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

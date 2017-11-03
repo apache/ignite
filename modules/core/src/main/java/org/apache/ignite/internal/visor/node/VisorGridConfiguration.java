@@ -17,21 +17,30 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactArray;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
 /**
  * Data transfer object for node configuration data.
  */
-public class VisorGridConfiguration implements Serializable {
+public class VisorGridConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,8 +77,8 @@ public class VisorGridConfiguration implements Serializable {
     /** User attributes. */
     private Map<String, ?> userAttrs;
 
-    /** Igfss. */
-    private Iterable<VisorIgfsConfiguration> igfss;
+    /** IGFSs. */
+    private List<VisorIgfsConfiguration> igfss;
 
     /** Environment. */
     private Map<String, String> env;
@@ -83,145 +92,362 @@ public class VisorGridConfiguration implements Serializable {
     /** Transactions configuration. */
     private VisorTransactionConfiguration txCfg;
 
+    /** Memory configuration. */
+    private VisorMemoryConfiguration memCfg;
+
+    /** Persistence configuration. */
+    private VisorPersistentStoreConfiguration psCfg;
+
+    /** Cache store session listeners. */
+    private String storeSesLsnrs;
+
+    /** Warmup closure. Will be invoked before actual grid start. */
+    private String warmupClos;
+
+    /** Binary configuration. */
+    private VisorBinaryConfiguration binaryCfg;
+
+    /** List of cache key configurations. */
+    private List<VisorCacheKeyConfiguration> cacheKeyCfgs;
+
+    /** Hadoop configuration. */
+    private VisorHadoopConfiguration hadoopCfg;
+
+    /** SQL connector configuration. */
+    private VisorSqlConnectorConfiguration sqlConnCfg;
+
+    /** List of service configurations. */
+    private List<VisorServiceConfiguration> srvcCfgs;
+
+    /** Configuration of data storage. */
+    private VisorDataStorageConfiguration dataStorage;
+
+    /** Client connector configuration */
+    private VisorClientConnectorConfiguration clnConnCfg;
+
     /**
-     * @param ignite Grid.
-     * @return Fill data transfer object with node configuration data.
+     * Default constructor.
      */
-    public VisorGridConfiguration from(IgniteEx ignite) {
+    public VisorGridConfiguration() {
+        // No-op.
+    }
+
+    /**
+     * Create data transfer object with node configuration data.
+     *
+     * @param ignite Grid.
+     */
+    public VisorGridConfiguration(IgniteEx ignite) {
         assert ignite != null;
 
         IgniteConfiguration c = ignite.configuration();
 
-        basic = VisorBasicConfiguration.from(ignite, c);
-        metrics = VisorMetricsConfiguration.from(c);
-        spis = VisorSpisConfiguration.from(c);
-        p2p = VisorPeerToPeerConfiguration.from(c);
-        lifecycle = VisorLifecycleConfiguration.from(c);
-        execSvc = VisorExecutorServiceConfiguration.from(c);
-        seg = VisorSegmentationConfiguration.from(c);
+        basic = new VisorBasicConfiguration(ignite, c);
+        metrics = new VisorMetricsConfiguration(c);
+        spis = new VisorSpisConfiguration(c);
+        p2p = new VisorPeerToPeerConfiguration(c);
+        lifecycle = new VisorLifecycleConfiguration(c);
+        execSvc = new VisorExecutorServiceConfiguration(c);
+        seg = new VisorSegmentationConfiguration(c);
         inclProps = compactArray(c.getIncludeProperties());
         inclEvtTypes = c.getIncludeEventTypes();
-        rest = VisorRestConfiguration.from(c);
+        rest = new VisorRestConfiguration(c);
         userAttrs = c.getUserAttributes();
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
-        atomic = VisorAtomicConfiguration.from(c.getAtomicConfiguration());
-        txCfg = VisorTransactionConfiguration.from(c.getTransactionConfiguration());
+        atomic = new VisorAtomicConfiguration(c.getAtomicConfiguration());
+        txCfg = new VisorTransactionConfiguration(c.getTransactionConfiguration());
 
-        return this;
+        if (c.getDataStorageConfiguration() != null)
+            memCfg = null;
+
+        if (c.getDataStorageConfiguration() != null)
+            psCfg = null;
+
+        storeSesLsnrs = compactArray(c.getCacheStoreSessionListenerFactories());
+        warmupClos = compactClass(c.getWarmupClosure());
+
+        BinaryConfiguration bc = c.getBinaryConfiguration();
+
+        if (bc != null)
+            binaryCfg = new VisorBinaryConfiguration(bc);
+
+        cacheKeyCfgs = VisorCacheKeyConfiguration.list(c.getCacheKeyConfiguration());
+
+        HadoopConfiguration hc = c.getHadoopConfiguration();
+
+        if (hc != null)
+            hadoopCfg = new VisorHadoopConfiguration(hc);
+
+        ClientConnectorConfiguration ccc = c.getClientConnectorConfiguration();
+
+        if (ccc != null)
+            clnConnCfg = new VisorClientConnectorConfiguration(ccc);
+
+        srvcCfgs = VisorServiceConfiguration.list(c.getServiceConfiguration());
+
+        dataStorage = new VisorDataStorageConfiguration(c.getDataStorageConfiguration());
     }
 
     /**
      * @return Basic.
      */
-    public VisorBasicConfiguration basic() {
+    public VisorBasicConfiguration getBasic() {
         return basic;
     }
 
     /**
      * @return Metrics.
      */
-    public VisorMetricsConfiguration metrics() {
+    public VisorMetricsConfiguration getMetrics() {
         return metrics;
     }
 
     /**
      * @return SPIs.
      */
-    public VisorSpisConfiguration spis() {
+    public VisorSpisConfiguration getSpis() {
         return spis;
     }
 
     /**
      * @return P2P.
      */
-    public VisorPeerToPeerConfiguration p2p() {
+    public VisorPeerToPeerConfiguration getP2p() {
         return p2p;
     }
 
     /**
      * @return Lifecycle.
      */
-    public VisorLifecycleConfiguration lifecycle() {
+    public VisorLifecycleConfiguration getLifecycle() {
         return lifecycle;
     }
 
     /**
      * @return Executors service configuration.
      */
-    public VisorExecutorServiceConfiguration executeService() {
+    public VisorExecutorServiceConfiguration getExecutorService() {
         return execSvc;
     }
 
     /**
      * @return Segmentation.
      */
-    public VisorSegmentationConfiguration segmentation() {
+    public VisorSegmentationConfiguration getSegmentation() {
         return seg;
     }
 
     /**
      * @return Include properties.
      */
-    public String includeProperties() {
+    public String getIncludeProperties() {
         return inclProps;
     }
 
     /**
      * @return Include events types.
      */
-    public int[] includeEventTypes() {
+    public int[] getIncludeEventTypes() {
         return inclEvtTypes;
     }
 
     /**
      * @return Rest.
      */
-    public VisorRestConfiguration rest() {
+    public VisorRestConfiguration getRest() {
         return rest;
     }
 
     /**
      * @return User attributes.
      */
-    public Map<String, ?> userAttributes() {
+    public Map<String, ?> getUserAttributes() {
         return userAttrs;
     }
 
     /**
      * @return Igfss.
      */
-    public Iterable<VisorIgfsConfiguration> igfss() {
+    public List<VisorIgfsConfiguration> getIgfss() {
         return igfss;
     }
 
     /**
      * @return Environment.
      */
-    public Map<String, String> env() {
+    public Map<String, String> getEnv() {
         return env;
     }
 
     /**
      * @return System properties.
      */
-    public Properties systemProperties() {
+    public Properties getSystemProperties() {
         return sysProps;
     }
 
     /**
      * @return Configuration of atomic data structures.
      */
-    public VisorAtomicConfiguration atomic() {
+    public VisorAtomicConfiguration getAtomic() {
         return atomic;
     }
 
     /**
      * @return Transactions configuration.
      */
-    public VisorTransactionConfiguration transaction() {
+    public VisorTransactionConfiguration getTransaction() {
         return txCfg;
+    }
+
+    /**
+     * @return Memory configuration.
+     */
+    public VisorMemoryConfiguration getMemoryConfiguration() {
+        return memCfg;
+    }
+
+    /**
+     * @return Persistent store configuration.
+     */
+    public VisorPersistentStoreConfiguration getPersistentStoreConfiguration() {
+        return psCfg;
+    }
+
+    /**
+     * @return Cache store session listener factories.
+     */
+    public String getCacheStoreSessionListenerFactories() {
+        return storeSesLsnrs;
+    }
+
+    /**
+     * @return Warmup closure to execute.
+     */
+    public String getWarmupClosure() {
+        return warmupClos;
+    }
+
+    /**
+     * @return Binary configuration.
+     */
+    public VisorBinaryConfiguration getBinaryConfiguration() {
+        return binaryCfg;
+    }
+
+    /**
+     * @return List of cache key configurations.
+     */
+    public List<VisorCacheKeyConfiguration> getCacheKeyConfigurations() {
+        return cacheKeyCfgs;
+    }
+
+    /**
+     * @return Hadoop configuration.
+     */
+    public VisorHadoopConfiguration getHadoopConfiguration() {
+        return hadoopCfg;
+    }
+
+    /**
+     * @return SQL connector configuration.
+     */
+    public VisorSqlConnectorConfiguration getSqlConnectorConfiguration() {
+        return sqlConnCfg;
+    }
+
+    /**
+     * @return Client connector configuration.
+     */
+    public VisorClientConnectorConfiguration getClientConnectorConfiguration() {
+        return clnConnCfg;
+    }
+
+    /**
+     * @return List of service configurations
+     */
+    public List<VisorServiceConfiguration> getServiceConfigurations() {
+        return srvcCfgs;
+    }
+
+    /**
+     * @return Configuration of data storage.
+     */
+    public VisorDataStorageConfiguration getDataStorageConfiguration() {
+        return dataStorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeObject(basic);
+        out.writeObject(metrics);
+        out.writeObject(spis);
+        out.writeObject(p2p);
+        out.writeObject(lifecycle);
+        out.writeObject(execSvc);
+        out.writeObject(seg);
+        U.writeString(out, inclProps);
+        out.writeObject(inclEvtTypes);
+        out.writeObject(rest);
+        U.writeMap(out, userAttrs);
+        U.writeCollection(out, igfss);
+        U.writeMap(out, env);
+        out.writeObject(sysProps);
+        out.writeObject(atomic);
+        out.writeObject(txCfg);
+        out.writeObject(memCfg);
+        out.writeObject(psCfg);
+        U.writeString(out, storeSesLsnrs);
+        U.writeString(out, warmupClos);
+        out.writeObject(binaryCfg);
+        U.writeCollection(out, cacheKeyCfgs);
+        out.writeObject(hadoopCfg);
+        out.writeObject(sqlConnCfg);
+        U.writeCollection(out, srvcCfgs);
+        out.writeObject(dataStorage);
+        out.writeObject(clnConnCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        basic = (VisorBasicConfiguration)in.readObject();
+        metrics = (VisorMetricsConfiguration)in.readObject();
+        spis = (VisorSpisConfiguration)in.readObject();
+        p2p = (VisorPeerToPeerConfiguration)in.readObject();
+        lifecycle = (VisorLifecycleConfiguration)in.readObject();
+        execSvc = (VisorExecutorServiceConfiguration)in.readObject();
+        seg = (VisorSegmentationConfiguration)in.readObject();
+        inclProps = U.readString(in);
+        inclEvtTypes = (int[])in.readObject();
+        rest = (VisorRestConfiguration)in.readObject();
+        userAttrs = U.readMap(in);
+        igfss = U.readList(in);
+        env = U.readMap(in);
+        sysProps = (Properties)in.readObject();
+        atomic = (VisorAtomicConfiguration)in.readObject();
+        txCfg = (VisorTransactionConfiguration)in.readObject();
+        memCfg = (VisorMemoryConfiguration)in.readObject();
+        psCfg = (VisorPersistentStoreConfiguration)in.readObject();
+        storeSesLsnrs = U.readString(in);
+        warmupClos = U.readString(in);
+        binaryCfg = (VisorBinaryConfiguration)in.readObject();
+        cacheKeyCfgs = U.readList(in);
+        hadoopCfg = (VisorHadoopConfiguration)in.readObject();
+        sqlConnCfg = (VisorSqlConnectorConfiguration) in.readObject();
+        srvcCfgs = U.readList(in);
+
+        if (protoVer >= V2)
+            dataStorage = (VisorDataStorageConfiguration)in.readObject();
+
+        if (protoVer >= V3)
+            clnConnCfg = (VisorClientConnectorConfiguration)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cache.Store
     /// Session for the cache store operations. The main purpose of cache store session
     /// is to hold context between multiple store invocations whenever in transaction. For example,
     /// you can save current database connection in the session <see cref="Properties"/> map. You can then
-    /// commit this connection in the <see cref="ICacheStore.SessionEnd(bool)"/> method.
+    /// commit this connection in the <see cref="ICacheStore{K,V}.SessionEnd(bool)"/> method.
     /// </summary>
     public interface ICacheStoreSession
     {

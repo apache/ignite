@@ -28,16 +28,16 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Base class for cache queryables.
     /// </summary>
-    internal class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryableInternal
+    internal abstract class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryableInternal
     {
         /** <inheritdoc /> */
-        public CacheQueryableBase(IQueryProvider provider) : base(provider)
+        protected CacheQueryableBase(IQueryProvider provider) : base(provider)
         {
             // No-op.
         }
 
         /** <inheritdoc /> */
-        public CacheQueryableBase(IQueryProvider provider, Expression expression) : base(provider, expression)
+        protected CacheQueryableBase(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
         }
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Linq.Impl
             var data = GetQueryData();
             var executor = CacheQueryProvider.Executor;
 
-            return new SqlFieldsQuery(data.QueryText, executor.Local, data.Parameters.ToArray());
+            return executor.GetFieldsQuery(data.QueryText, data.Parameters.ToArray());
         }
 
         /** <inheritdoc /> */
@@ -82,11 +82,25 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Delegate queryCaller)
+        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(LambdaExpression queryExpression)
         {
             var executor = CacheQueryProvider.Executor;
 
-            return executor.CompileQuery<TQ>(GetQueryModel(), queryCaller);
+            // Generate two models: from current expression, and from provided lambda.
+            // Lambda expression provides a way to identify argument mapping.
+            // Comparing two models allows to check whether whole query is within lambda.
+            var model = GetQueryModel();
+            var lambdaModel = CacheQueryProvider.GenerateQueryModel(queryExpression.Body);
+
+            return executor.CompileQuery<TQ>(model, lambdaModel, queryExpression);
+        }
+
+        /** <inheritdoc /> */
+        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>()
+        {
+            var executor = CacheQueryProvider.Executor;
+
+            return executor.CompileQuery<TQ>(GetQueryModel());
         }
 
         /// <summary>
@@ -116,7 +130,8 @@ namespace Apache.Ignite.Linq.Impl
         /// </returns>
         public override string ToString()
         {
-            return GetQueryData().ToString();
+            return string.Format("CacheQueryable [CacheName={0}, TableName={1}, Query={2}]", 
+                CacheName, TableName, GetFieldsQuery());
         }
     }
 }

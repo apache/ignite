@@ -30,13 +30,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -70,8 +68,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private boolean offheap;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(2000);
 
@@ -83,12 +81,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new JdkMarshaller());
 
-        FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
-
-        swap.setWriteBufferSize(1);
-
-        cfg.setSwapSpaceSpi(swap);
-
         CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
         repCacheCfg.setName("replicated");
@@ -97,10 +89,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (offheap)
-            repCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-        else
-            repCacheCfg.setSwapEnabled(true);
+        // TODO GG-10884.
+//        if (offheap)
+//            repCacheCfg.setOffHeapMaxMemory(OFFHEAP);
+//        else
+//            repCacheCfg.setSwapEnabled(true);
 
         CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
@@ -111,10 +104,11 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (offheap)
-            partCacheCfg.setOffHeapMaxMemory(OFFHEAP);
-        else
-            partCacheCfg.setSwapEnabled(true);
+        // TODO GG-10884.
+//        if (offheap)
+//            partCacheCfg.setOffHeapMaxMemory(OFFHEAP);
+//        else
+//            partCacheCfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(repCacheCfg, partCacheCfg);
 
@@ -196,7 +190,9 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         if (offheap)
             return ((IgniteKernal)g).getCache(cacheName).offHeapEntriesCount();
 
-        return g.context().swap().swapSize(swapSpaceName(cacheName, g));
+        return 0;
+        // TODO GG-10884.
+        // return g.context().swap().swapSize(swapSpaceName(cacheName, g));
     }
 
     /**
@@ -278,17 +274,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param grid Kernal.
-     * @return Name for swap space.
-     */
-    private String swapSpaceName(String cacheName, IgniteKernal grid) {
-        GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
-
-        return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);
     }
 
     /**

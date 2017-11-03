@@ -214,7 +214,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testCommits(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean put)
         throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < TX_CNT; i++) {
             Transaction tx = grid(0).transactions().txStart(concurrency, isolation);
@@ -231,7 +231,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             TransactionMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).cache(null).localMetrics();
+            CacheMetrics cacheMetrics = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
@@ -259,7 +259,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testRollbacks(TransactionConcurrency concurrency, TransactionIsolation isolation,
         boolean put) throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < TX_CNT; i++) {
             Transaction tx = grid(0).transactions().txStart(concurrency, isolation);
@@ -276,7 +276,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             TransactionMetrics metrics = grid(i).transactions().metrics();
-            CacheMetrics cacheMetrics = grid(i).cache(null).localMetrics();
+            CacheMetrics cacheMetrics = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             assertEquals(0, metrics.txCommits());
             assertEquals(0, cacheMetrics.getCacheTxCommits());

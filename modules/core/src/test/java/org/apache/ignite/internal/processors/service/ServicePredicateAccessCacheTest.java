@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,7 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -51,8 +52,8 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     private static CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -81,12 +82,11 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
     public void testPredicateAccessCache() throws Exception {
         final Ignite ignite0 = startGrid(0);
 
-        ignite0.getOrCreateCache(new CacheConfiguration<String, Object>()
+        ignite0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setName("testCache")
             .setAtomicityMode(ATOMIC)
             .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setAtomicWriteOrderMode(PRIMARY));
+            .setWriteSynchronizationMode(FULL_SYNC));
 
         latch = new CountDownLatch(1);
 
@@ -105,7 +105,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
 
                 System.out.println("Call contains key [thread=" + Thread.currentThread().getName() + ']');
 
-                boolean ret = ignite0.cache("testCache").containsKey(node.id().toString());
+                boolean ret = Ignition.localIgnite().cache("testCache").containsKey(node.id().toString());
 
                 System.out.println("After contains key [ret=" + ret +
                     ", thread=" + Thread.currentThread().getName() + ']');

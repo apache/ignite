@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
@@ -26,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Closure execution tests for binary objects.
     /// </summary>
+    [TestFixture]
     public class BinarizableClosureTaskTest : ClosureTaskTest
     {
         /// <summary>
@@ -38,15 +38,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         /// <param name="fork">Fork flag.</param>
         protected BinarizableClosureTaskTest(bool fork) : base(fork) { }
-
-        /** <inheritDoc /> */
-        protected override void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
-        {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableOutFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFunc)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableException)));
-        }
 
         /** <inheritDoc /> */
         protected override IComputeFunc<object> OutFunc(bool err)
@@ -65,9 +56,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(res != null);
 
-            BinarizableResult res0 = res as BinarizableResult;
+            var res0 = res as BinarizableResult;
 
-            Assert.IsTrue(res0 != null);
+            Assert.IsNotNull(res0);
             Assert.AreEqual(1, res0.Res);
         }
 
@@ -76,9 +67,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(err != null);
 
-            BinarizableException err0 = err as BinarizableException;
+            err = err.InnerException;
+            Assert.IsNotNull(err);
 
-            Assert.IsTrue(err0 != null);
+            var err0 = err.InnerException as BinarizableException;
+
+            Assert.IsNotNull(err0);
             Assert.AreEqual(ErrMsg, err0.Msg);
         }
 

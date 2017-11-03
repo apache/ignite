@@ -58,6 +58,9 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
  * Common stuff for cache load tests.
  */
 abstract class GridCacheAbstractLoadTest {
+    /** */
+    protected static final String DEFAULT_CACHE_NAME = "test-cache";
+
     /** Random. */
     protected static final Random RAND = new Random();
 
@@ -146,7 +149,7 @@ abstract class GridCacheAbstractLoadTest {
 
         final Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -269,7 +272,7 @@ abstract class GridCacheAbstractLoadTest {
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
 
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         try {
             fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);

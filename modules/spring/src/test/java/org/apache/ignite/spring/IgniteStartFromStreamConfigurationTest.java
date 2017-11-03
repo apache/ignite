@@ -30,21 +30,25 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Checks starts from Stream.
  */
 public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTest {
-    /** Tests starts from Stream. */
+    /**
+     * Tests starts from stream.
+     *
+     * @throws Exception If failed.
+     */
     public void testStartFromStream() throws Exception {
         String cfg = "examples/config/example-cache.xml";
 
         URL cfgLocation = U.resolveIgniteUrl(cfg);
 
-        Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()));
+        try (Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()))) {
+            grid.cache(DEFAULT_CACHE_NAME).put("1", "1");
 
-        grid.cache(null).put("1", "1");
+            assert grid.cache(DEFAULT_CACHE_NAME).get("1").equals("1");
 
-        assert grid.cache(null).get("1").equals("1");
+            IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
 
-        IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
-
-        assert icfg.getCacheConfiguration()[0].getAtomicityMode() == CacheAtomicityMode.ATOMIC;
+            assert icfg.getCacheConfiguration()[0].getAtomicityMode() == CacheAtomicityMode.ATOMIC;
+        }
     }
 
 }

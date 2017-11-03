@@ -125,6 +125,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     }
 
     /**
+     * @param stopFromClient If {@code true} stops listener from client node, otherwise from server.
      * @throws Exception If failed.
      */
     private void testMessageListenerReconnect(boolean stopFromClient) throws Exception {
@@ -178,9 +179,11 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
         assertTrue(locLsnr.latch.await(5000, MILLISECONDS));
         assertTrue(latch.await(5000, MILLISECONDS));
 
-        log.info("Stop listen, should not get remote messages anymore.");
+        Ignite stopFrom = (stopFromClient ? client : srv);
 
-        (stopFromClient ? client : srv).message().stopRemoteListen(opId);
+        log.info("Stop listen, should not get remote messages anymore [from=" + stopFrom.name() + ']');
+
+        stopFrom.message().stopRemoteListen(opId);
 
         srv.message().send(topic, "msg3");
 
@@ -213,7 +216,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -240,6 +243,59 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
         clientCache.put(3, 3);
 
         assertFalse(lsnr.latch.await(3000, MILLISECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheContinuousQueryReconnectNewServer() throws Exception {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        CacheEventListener lsnr = new CacheEventListener();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setAutoUnsubscribe(true);
+
+        qry.setLocalListener(lsnr);
+
+        QueryCursor<?> cur = clientCache.query(qry);
+
+        continuousQueryReconnect(client, clientCache, lsnr);
+
+        // Check new server registers listener for reconnected client.
+        try (Ignite newSrv = startGrid(serverCount() + 1)) {
+            awaitPartitionMapExchange();
+
+            lsnr.latch = new CountDownLatch(10);
+
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
+
+            for (Integer key : primaryKeys(newSrvCache, 10))
+                newSrvCache.put(key, key);
+
+            assertTrue(lsnr.latch.await(5000, MILLISECONDS));
+        }
+
+        cur.close();
+
+        // Check new server does not register listener for closed query.
+        try (Ignite newSrv = startGrid(serverCount() + 1)) {
+            awaitPartitionMapExchange();
+
+            lsnr.latch = new CountDownLatch(5);
+
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
+
+            for (Integer key : primaryKeys(newSrvCache, 5))
+                newSrvCache.put(key, key);
+
+            assertFalse(lsnr.latch.await(3000, MILLISECONDS));
+        }
     }
 
     /**
@@ -287,7 +343,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         lsnr.latch = new CountDownLatch(1);
 
-        srv.cache(null).put(2, 2);
+        srv.cache(DEFAULT_CACHE_NAME).put(2, 2);
 
         assertTrue(lsnr.latch.await(5000, MILLISECONDS));
     }

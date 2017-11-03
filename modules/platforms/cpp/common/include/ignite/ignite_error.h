@@ -72,11 +72,16 @@
     throw ignite::IgniteError(code, stream.str().c_str()); \
 }
 
+#ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 4275)
+#endif //_MSC_VER
+
 namespace ignite
 {
     namespace java
     {
-        /* Error constants. */
+        /* JNI error constants. */
         const int IGNITE_JNI_ERR_SUCCESS = 0;
         const int IGNITE_JNI_ERR_GENERIC = 1;
         const int IGNITE_JNI_ERR_JVM_INIT = 2;
@@ -84,7 +89,7 @@ namespace ignite
     }
 
     /**
-     * Ignite error information.
+     * %Ignite error information.
      */
     class IGNITE_IMPORT_EXPORT IgniteError : public std::exception
     {
@@ -119,7 +124,10 @@ namespace ignite
         /** Binary error. */
         static const int IGNITE_ERR_BINARY = 1002;
 
-        /** Generic Ignite error. */
+        /** Standard library exception. */
+        static const int IGNITE_ERR_STD = 1003;
+
+        /** Generic %Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;
 
         /** Illegal argument passed. */
@@ -190,6 +198,9 @@ namespace ignite
 
         /** Security error. */
         static const int IGNITE_ERR_SECURITY = 2023;
+
+        /** Future state error. */
+        static const int IGNITE_ERR_FUTURE_STATE = 2024;
         
         /** Unknown error. */
         static const int IGNITE_ERR_UNKNOWN = -1;
@@ -199,15 +210,16 @@ namespace ignite
          *
          * @param err Error.
          */
-        static void ThrowIfNeeded(IgniteError& err);
+        static void ThrowIfNeeded(const IgniteError& err);
 
         /**
-         * Create empty error.
+         * Default constructor.
+         * Creates empty error. Code is IGNITE_SUCCESS and message is NULL.
          */
         IgniteError();
 
         /**
-         * Create error with specific code.
+         * Create error with specific code. Message is set to NULL.
          *
          * @param code Error code.
          */
@@ -232,14 +244,14 @@ namespace ignite
          * Assignment operator.
          *
          * @param other Other instance.
-         * @return Assignment result.
+         * @return *this.
          */
         IgniteError& operator=(const IgniteError& other);
 
         /**
          * Destructor.
          */
-        ~IgniteError();
+        ~IgniteError() IGNITE_NO_THROW;
 
         /**
          * Get error code.
@@ -251,7 +263,7 @@ namespace ignite
         /**
          * Get error message.
          *
-         * @return Error message.
+         * @return Error message. Can be NULL.
          */
         const char* GetText() const IGNITE_NO_THROW;
 
@@ -264,14 +276,14 @@ namespace ignite
         virtual const char* what() const IGNITE_NO_THROW;
 
         /**
-         * Set error.
+         * Initializes IgniteError instance from the JNI error.
          *
          * @param jniCode Error code.
          * @param jniCls Error class.
          * @param jniMsg Error message.
-         * @param err Error.
+         * @param err Error. Can not be NULL.
          */
-        static void SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err);
+        static void SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError& err);
     private:
         /** Error code. */
         int32_t code;    
@@ -280,5 +292,9 @@ namespace ignite
         char* msg;       
     };    
 }
+
+#ifdef _MSC_VER
+#   pragma warning(pop)
+#endif //_MSC_VER
 
 #endif //_IGNITE_IGNITE_ERROR

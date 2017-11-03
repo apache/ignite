@@ -119,16 +119,21 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Uuid.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -20;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return ValueUuid.get(high, low).getString();
     }
 }

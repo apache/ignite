@@ -30,11 +30,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -45,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringRepresentation;
 
 /**
  * Result set test.
@@ -55,20 +60,21 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
-            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val " +
+            "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val, " +
+            "boolVal2, boolVal3, boolVal4 " +
             "from TestObject where id = 1";
 
     /** Statement. */
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -96,7 +102,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -105,8 +111,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.put(1, o);
         cache.put(2, new TestObject(2));
         cache.put(3, new TestObject(3));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -142,6 +146,9 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         TestObject o = new TestObject(id);
 
         o.boolVal = true;
+        o.boolVal2 = true;
+        o.boolVal3 = true;
+        o.boolVal4 = true;
         o.byteVal = 1;
         o.shortVal = 1;
         o.intVal = 1;
@@ -171,6 +178,66 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             if (cnt == 0) {
                 assert rs.getBoolean("boolVal");
                 assert rs.getBoolean(2);
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBoolean2() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                assert rs.getBoolean("boolVal2");
+                assert rs.getBoolean(20);
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBoolean3() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                assert rs.getBoolean("boolVal3");
+                assert rs.getBoolean(21);
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBoolean4() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                assert rs.getBoolean("boolVal4");
+                assert rs.getBoolean(22);
             }
 
             cnt++;
@@ -431,8 +498,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "http://abc.com/".equals(rs.getURL("urlVal").toString());
-                assert "http://abc.com/".equals(rs.getURL(15).toString());
+                assertTrue("http://abc.com/".equals(rs.getURL("urlVal").toString()));
+                assertTrue("http://abc.com/".equals(rs.getURL(15).toString()));
             }
 
             cnt++;
@@ -445,6 +512,9 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testObject() throws Exception {
+        final Ignite ignite = ignite(0);
+        final boolean binaryMarshaller = ignite.configuration().getMarshaller() instanceof BinaryMarshaller;
+        final IgniteBinary binary = binaryMarshaller ? ignite.binary() : null;
         ResultSet rs = stmt.executeQuery(SQL);
 
         TestObjectField f1 = new TestObjectField(100, "AAAA");
@@ -454,19 +524,19 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         assertTrue(rs.next());
 
-        assertEquals(f1.toString(), rs.getObject("f1"));
-        assertEquals(f1.toString(), rs.getObject(16));
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject("f1"));
+        assertEqualsToStringRepresentation(f1, binary, rs.getObject(16));
 
-        assertEquals(f2.toString(), rs.getObject("f2"));
-        assertEquals(f2.toString(), rs.getObject(17));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject("f2"));
+        assertEqualsToStringRepresentation(f2, binary, rs.getObject(17));
 
         assertNull(rs.getObject("f3"));
         assertTrue(rs.wasNull());
         assertNull(rs.getObject(18));
         assertTrue(rs.wasNull());
 
-        assertEquals(o.toString(), rs.getObject("_val"));
-        assertEquals(o.toString(), rs.getObject(19));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject("_val"));
+        assertEqualsToStringRepresentation(o, binary, rs.getObject(19));
 
         assertFalse(rs.next());
     }
@@ -532,6 +602,24 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         stmt.setFetchSize(0);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNewQueryTaskFetchSize() throws Exception {
+        stmt.setFetchSize(1);
+
+        boolean res = stmt.execute("select * from TestObject where id > 0");
+
+        assertTrue(res);
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+        assertTrue(rs.next());
+
+        stmt.setFetchSize(0);
+    }
 
     /**
      * @throws Exception If failed.
@@ -562,7 +650,30 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
      * Test object.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static class TestObject implements Serializable {
+    private static class BaseTestObject implements Serializable {
+        /** */
+        @QuerySqlField(index = false)
+        protected Boolean boolVal2;
+
+        /** */
+        @QuerySqlField(index = false)
+        protected boolean boolVal3;
+
+        /** */
+        @QuerySqlField(index = false)
+        protected boolean boolVal4;
+
+        /** */
+        public boolean isBoolVal4() {
+            return boolVal4;
+        }
+    }
+
+    /**
+     * Test object.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class TestObject extends BaseTestObject {
         /** */
         @QuerySqlField
         private final int id;
@@ -710,10 +821,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class TestObjectField implements Serializable {
         /** */
-        final int a;
+        @GridToStringInclude final int a;
 
         /** */
-        final String b;
+        @GridToStringInclude final String b;
 
         /**
          * @param a A.

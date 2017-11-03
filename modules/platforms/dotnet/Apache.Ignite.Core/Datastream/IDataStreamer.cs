@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Store;
 
@@ -34,7 +35,7 @@ namespace Apache.Ignite.Core.Datastream
     /// <para />
     /// Also note that <c>IDataStreamer</c> is not the only way to load data into cache.
     /// Alternatively you can use 
-    /// <see cref="ICacheStore.LoadCache(Action{object, object}, object[])"/>
+    /// <see cref="ICacheStore{K, V}.LoadCache(Action{K, V}, object[])"/>
     /// method to load data from underlying data store. You can also use standard cache
     /// <c>put</c> and <c>putAll</c> operations as well, but they most likely will not perform 
     /// as well as this class for loading data. And finally, data can be loaded from underlying 
@@ -86,7 +87,11 @@ namespace Apache.Ignite.Core.Datastream
         string CacheName { get; }
 
         /// <summary>
-        /// Flag value indicating that this data streamer assumes that there could be concurrent updates to the cache. 
+        /// Gets or sets a value indicating whether existing values can be overwritten by the data streamer.
+        /// Performance is better when this flag is false.
+        /// <para />
+        /// NOTE: When false, cache updates won't be propagated to cache store
+        /// (even if <see cref="SkipStore"/> is false).
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
@@ -94,6 +99,8 @@ namespace Apache.Ignite.Core.Datastream
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
+        /// <para />
+        /// <see cref="AllowOverwrite"/> must be true for write-through to work.
         /// <para />
         /// Default is <c>false</c>.
         /// </summary>
@@ -104,8 +111,9 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <c>1024</c>.
+        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
+        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
         int PerNodeBufferSize { get; set; }
 
         /// <summary>
@@ -113,7 +121,9 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <c>16</c>.
+        /// Default is 0, which means Ignite calculates this automatically as 
+        /// <see cref="IgniteConfiguration.DataStreamerThreadPoolSize"/> * 
+        /// <see cref="DataStreamerDefaults.DefaultParallelOperationsMultiplier"/>.
         /// </summary>
         int PerNodeParallelOperations { get; set; }
 
@@ -202,5 +212,18 @@ namespace Apache.Ignite.Core.Datastream
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Streamer instance with binary mode enabled.</returns>
         IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>();
+
+        /// <summary>
+        /// Gets or sets the timeout. Negative values mean no timeout.
+        /// Default is <see cref="DataStreamerDefaults.DefaultTimeout"/>.
+        /// <para />
+        /// Timeout is used in the following cases:
+        /// <li>Any data addition method can be blocked when all per node parallel operations are exhausted.
+        /// The timeout defines the max time you will be blocked waiting for a permit to add a chunk of data
+        /// into the streamer;</li> 
+        /// <li>Total timeout time for <see cref="Flush"/> operation;</li>
+        /// <li>Total timeout time for <see cref="Close"/> operation.</li>
+        /// </summary>
+        TimeSpan Timeout { get; set; }
     }
 }

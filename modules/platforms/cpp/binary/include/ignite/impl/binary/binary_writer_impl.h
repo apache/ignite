@@ -31,12 +31,13 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
+#include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_object_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
-#include "binary_type_manager.h"
 
 namespace ignite
 {
@@ -58,7 +59,7 @@ namespace ignite
                  * @param metaMgr Type manager.
                  * @param metaHnd Type handler.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
                     BinaryTypeManager* metaMgr, BinaryTypeHandler* metaHnd, int32_t start);
                 
                 /**
@@ -68,7 +69,7 @@ namespace ignite
                  * @param stream Interop stream.
                  * @param metaMgr Type manager.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
 
                 /**
                  * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -423,6 +424,38 @@ namespace ignite
                 void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
 
                 /**
+                 * Write Time. Maps to "Time" type in Java.
+                 *
+                 * @param val Value.
+                 */
+                void WriteTime(const Time& val);
+
+                /**
+                 * Write array of Time. Maps to "Time[]" type in Java.
+                 *
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimeArray(const Time* val, const int32_t len);
+
+                /**
+                 * Write Time. Maps to "Time" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Value.
+                 */
+                void WriteTime(const char* fieldName, const Time& val);
+
+                /**
+                 * Write array of Times. Maps to "Time[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimeArray(const char* fieldName, const Time* val, const int32_t len);
+
+                /**
                  * Write string.
                  *
                  * @param val String.
@@ -477,6 +510,11 @@ namespace ignite
                 void WriteNull(const char* fieldName);
 
                 /**
+                 * Write NULL value.
+                 */
+                void WriteNull0();
+
+                /**
                  * Start array write.
                  *
                  * @param typ Collection type.
@@ -498,7 +536,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(ignite::binary::CollectionType typ);
+                int32_t WriteCollection(ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Start collection write.
@@ -507,7 +545,7 @@ namespace ignite
                  * @param typ Collection type.
                  * @return Session ID.
                  */
-                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType typ);
+                int32_t WriteCollection(const char* fieldName, ignite::binary::CollectionType::Type typ);
 
                 /**
                  * Write values in interval [first, last).
@@ -517,7 +555,7 @@ namespace ignite
                  * @param typ Collection type.
                  */
                 template<typename InputIterator>
-                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType typ)
+                void WriteCollection(InputIterator first, InputIterator last, ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(true);
 
@@ -534,7 +572,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollection(const char* fieldName, InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     StartContainerSession(false);
 
@@ -549,7 +587,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(ignite::binary::MapType typ);
+                int32_t WriteMap(ignite::binary::MapType::Type typ);
 
                 /**
                  * Start map write.
@@ -558,7 +596,7 @@ namespace ignite
                  * @param typ Map type.
                  * @return Session ID.
                  */
-                int32_t WriteMap(const char* fieldName, ignite::binary::MapType typ);
+                int32_t WriteMap(const char* fieldName, ignite::binary::MapType::Type typ);
 
                 /**
                  * Write collection element.
@@ -599,7 +637,7 @@ namespace ignite
                  *
                  * @param id Session ID.
                  */
-                void CommitContainer(int32_t id);                
+                void CommitContainer(int32_t id);
 
                 /**
                  * Write object.
@@ -621,7 +659,7 @@ namespace ignite
                  * @param val Object.
                  */
                 template<typename T>
-                void WriteObject(const char* fieldName, T val)
+                void WriteObject(const char* fieldName, const T& val)
                 {
                     CheckRawMode(false);
 
@@ -648,17 +686,32 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
-                    ignite::binary::BinaryType<T> type;
+                    ignite::binary::WriteHelper<T>::Write(*this, obj);
+                }
 
-                    if (type.IsNull(obj))
+                /**
+                 * Write object.
+                 * Does not work for primitive pointer types.
+                 *
+                 * @param obj Object to write.
+                 */
+                template<typename T>
+                void WriteTopObject0(const T& obj)
+                {
+                    typedef ignite::binary::BinaryType<T> BType;
+
+                    if (BType::IsNull(obj))
                         stream->WriteInt8(IGNITE_HDR_NULL);
                     else
                     {
-                        TemplatedBinaryIdResolver<T> idRslvr(type);
-                        ignite::common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+                        TemplatedBinaryIdResolver<T> idRslvr;
+                        common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+
+                        std::string typeName;
+                        BType::GetTypeName(typeName);
 
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(typeName, idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
@@ -669,17 +722,28 @@ namespace ignite
                         stream->WriteInt8(IGNITE_PROTO_VER);
                         stream->WriteInt16(IGNITE_BINARY_FLAG_USER_TYPE);
                         stream->WriteInt32(idRslvr.GetTypeId());
-                        stream->WriteInt32(type.GetHashCode(obj));
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        int32_t hashPos = stream->Reserve(4);
+
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
-                        type.Write(writer, obj);
+                        BType::Write(writer, obj);
 
                         writerImpl.PostWrite();
 
+                        stream->Synchronize();
+
                         if (metaMgr)
-                            metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
+                            metaMgr->SubmitHandler(*metaHnd.Get());
+
+                        // We are using direct constructor here to avoid check-overhead, as we know
+                        // at this point that underlying memory contains valid binary object.
+                        BinaryObjectImpl binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
+
+                        int32_t hash = BinaryUtils::GetDataHashCode(binObj.GetData(), binObj.GetLength());
+
+                        stream->WriteInt32(hashPos, hash);
                     }
                 }
 
@@ -710,10 +774,10 @@ namespace ignite
                  *
                  * @return Stream.
                  */
-                impl::interop::InteropOutputStream* GetStream();
+                interop::InteropOutputStream* GetStream();
             private:
                 /** Underlying stream. */
-                ignite::impl::interop::InteropOutputStream* stream; 
+                interop::InteropOutputStream* stream; 
                 
                 /** ID resolver. */
                 BinaryIdResolver* idRslvr;
@@ -871,7 +935,7 @@ namespace ignite
                  */
                 template<typename InputIterator>
                 void WriteCollectionWithinSession(InputIterator first, InputIterator last,
-                    ignite::binary::CollectionType typ)
+                    ignite::binary::CollectionType::Type typ)
                 {
                     stream->WriteInt8(IGNITE_TYPE_COLLECTION);
                     stream->Position(stream->Position() + 4);
@@ -907,7 +971,7 @@ namespace ignite
                 /**
                  * Check whether session ID matches.
                  *
-                 * @param ses Expected session ID.
+                 * @param expSes Expected session ID.
                  */
                 void CheckSession(int32_t expSes) const;
 
@@ -935,49 +999,43 @@ namespace ignite
             };
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int8_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int8_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const bool& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const bool& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int16_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const uint16_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const uint16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int32_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int32_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int64_t& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const int64_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const float& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const float& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const double& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const double& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Guid& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Guid& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Date& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Date& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Timestamp& obj);
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Timestamp& obj);
 
             template<>
-            inline void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj)
-            {
-                const char* obj0 = obj.c_str();
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const Time& obj);
 
-                int32_t len = static_cast<int32_t>(strlen(obj0));
-
-                stream->WriteInt8(IGNITE_TYPE_STRING);
-
-                BinaryUtils::WriteString(stream, obj0, len);
-            }
+            template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject0(const std::string& obj);
         }
     }
 }

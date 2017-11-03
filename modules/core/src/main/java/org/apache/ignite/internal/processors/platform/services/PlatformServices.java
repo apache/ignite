@@ -20,23 +20,25 @@ package org.apache.ignite.internal.processors.platform.services;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetService;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -67,6 +69,33 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
+    private static final int OP_WITH_ASYNC = 6;
+
+    /** */
+    private static final int OP_WITH_SERVER_KEEP_BINARY = 7;
+
+    /** */
+    private static final int OP_SERVICE_PROXY = 8;
+
+    /** */
+    private static final int OP_CANCEL = 9;
+
+    /** */
+    private static final int OP_CANCEL_ALL = 10;
+
+    /** */
+    private static final int OP_DOTNET_DEPLOY_ASYNC = 11;
+
+    /** */
+    private static final int OP_DOTNET_DEPLOY_MULTIPLE_ASYNC = 12;
+
+    /** */
+    private static final int OP_CANCEL_ASYNC = 13;
+
+    /** */
+    private static final int OP_CANCEL_ALL_ASYNC = 14;
+
+    /** */
     private static final byte PLATFORM_JAVA = 0;
 
     /** */
@@ -75,6 +104,9 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** */
     private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
         = new CopyOnWriteConcurrentMap<>();
+
+    /** Future result writer. */
+    private static final PlatformFutureUtils.Writer RESULT_WRITER = new ServiceDeploymentResultWriter();
 
     /** */
     private final IgniteServices services;
@@ -99,63 +131,6 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /**
-     * Gets services with asynchronous mode enabled.
-     *
-     * @return Services with asynchronous mode enabled.
-     */
-    public PlatformServices withAsync() {
-        if (services.isAsync())
-            return this;
-
-        return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
-    }
-
-    /**
-     * Gets services with server "keep binary" mode enabled.
-     *
-     * @return Services with server "keep binary" mode enabled.
-     */
-    public PlatformServices withServerKeepBinary() {
-        return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
-    }
-
-    /**
-     * Cancels service deployment.
-     *
-     * @param name Name of service to cancel.
-     */
-    public void cancel(String name) {
-        services.cancel(name);
-    }
-
-    /**
-     * Cancels all deployed services.
-     */
-    public void cancelAll() {
-        services.cancelAll();
-    }
-
-    /**
-     * Gets a remote handle on the service.
-     *
-     * @param name Service name.
-     * @param sticky Whether or not Ignite should always contact the same remote service.
-     * @return Either proxy over remote service or local service if it is deployed locally.
-     */
-    public Object serviceProxy(String name, boolean sticky) {
-        ServiceDescriptor d = findDescriptor(name);
-
-        if (d == null)
-            throw new IgniteException("Failed to find deployed service: " + name);
-
-        Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-            ? services.serviceProxy(name, PlatformService.class, sticky)
-            : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, platformCtx.kernalContext());
-
-        return new ServiceProxyHolder(proxy, d.serviceClass());
-    }
-
-    /**
      * Finds a service descriptor by name.
      *
      * @param name Service name.
@@ -170,37 +145,35 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_DEPLOY: {
-                ServiceConfiguration cfg = new ServiceConfiguration();
-
-                cfg.setName(reader.readString());
-                cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
-                cfg.setTotalCount(reader.readInt());
-                cfg.setMaxPerNodeCount(reader.readInt());
-                cfg.setCacheName(reader.readString());
-                cfg.setAffinityKey(reader.readObjectDetached());
-
-                Object filter = reader.readObjectDetached();
-
-                if (filter != null)
-                    cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
-
-                services.deploy(cfg);
+            case OP_DOTNET_DEPLOY_ASYNC: {
+                readAndListenFuture(reader, dotnetDeployAsync(reader, services), RESULT_WRITER);
 
                 return TRUE;
             }
 
-            case OP_DOTNET_DEPLOY_MULTIPLE: {
-                String name = reader.readString();
-                Object svc = reader.readObjectDetached();
-                int totalCnt = reader.readInt();
-                int maxPerNodeCnt = reader.readInt();
+            case OP_DOTNET_DEPLOY_MULTIPLE_ASYNC: {
+                readAndListenFuture(reader, dotnetDeployMultipleAsync(reader), RESULT_WRITER);
 
-                services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
-                    totalCnt, maxPerNodeCnt);
+                return TRUE;
+            }
+
+            case OP_CANCEL: {
+                services.cancel(reader.readString());
+
+                return TRUE;
+            }
+
+            case OP_CANCEL_ASYNC: {
+                readAndListenFuture(reader, services.cancelAsync(reader.readString()));
+
+                return TRUE;
+            }
+
+            case OP_CANCEL_ALL_ASYNC: {
+                readAndListenFuture(reader, services.cancelAllAsync());
 
                 return TRUE;
             }
@@ -211,7 +184,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_DOTNET_SERVICES: {
@@ -233,14 +206,40 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return;
             }
 
+            case OP_DOTNET_DEPLOY: {
+                try {
+                    dotnetDeploy(reader, services);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
+
+                return;
+            }
+
+            case OP_DOTNET_DEPLOY_MULTIPLE: {
+                try {
+                    dotnetDeployMultiple(reader);
+
+                    PlatformUtils.writeInvocationResult(writer, null, null);
+                }
+                catch (Exception e) {
+                    PlatformUtils.writeInvocationResult(writer, null, e);
+                }
+
+                return;
+            }
+
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInObjectStreamOutStream(int type, Object arg, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public PlatformTarget processInObjectStreamOutObjectStream(int type, PlatformTarget arg,
+        BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_INVOKE: {
                 assert arg != null;
@@ -268,16 +267,15 @@ public class PlatformServices extends PlatformAbstractTarget {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
-                return;
+                return null;
             }
-
-            default:
-                super.processInObjectStreamOutStream(type, arg, reader, writer);
         }
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_DESCRIPTORS: {
                 Collection<ServiceDescriptor> descs = services.serviceDescriptors();
@@ -315,16 +313,142 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)services.future()).internalFuture();
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (services.isAsync())
+                    return this;
+
+                return new PlatformServices(platformCtx, services.withAsync(), srvKeepBinary);
+
+            case OP_WITH_SERVER_KEEP_BINARY:
+                return srvKeepBinary ? this : new PlatformServices(platformCtx, services, true);
+        }
+
+        return super.processOutObject(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CANCEL_ALL:
+                services.cancelAll();
+
+                return TRUE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SERVICE_PROXY: {
+                String name = reader.readString();
+                boolean sticky = reader.readBoolean();
+
+                ServiceDescriptor d = findDescriptor(name);
+
+                if (d == null)
+                    throw new IgniteException("Failed to find deployed service: " + name);
+
+                Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
+                    ? services.serviceProxy(name, PlatformService.class, sticky)
+                    : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
+                        platformCtx.kernalContext());
+
+                return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
+            }
+        }
+        return super.processInStreamOutObject(type, reader);
+    }
+
+    /**
+     * Deploys multiple dotnet services.
+     *
+     * @param reader Binary reader.
+     */
+    private void dotnetDeployMultiple(BinaryRawReaderEx reader) {
+        String name = reader.readString();
+        Object svc = reader.readObjectDetached();
+        int totalCnt = reader.readInt();
+        int maxPerNodeCnt = reader.readInt();
+
+        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
+                totalCnt, maxPerNodeCnt);
+    }
+
+    /**
+     * Asynchronously deploys multiple dotnet services.
+     *
+     * @param reader Binary reader.
+     * @return Future of the operation.
+     */
+    private IgniteFuture<Void> dotnetDeployMultipleAsync(BinaryRawReaderEx reader) {
+        String name = reader.readString();
+        Object svc = reader.readObjectDetached();
+        int totalCnt = reader.readInt();
+        int maxPerNodeCnt = reader.readInt();
+
+        return services.deployMultipleAsync(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
+            totalCnt, maxPerNodeCnt);
+    }
+
+    /**
+     * Deploys dotnet service.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     */
+    private void dotnetDeploy(BinaryRawReaderEx reader, IgniteServices services) {
+        ServiceConfiguration cfg = dotnetConfiguration(reader);
+
+        services.deploy(cfg);
+    }
+
+    /**
+     * Deploys dotnet service asynchronously.
+     *
+     * @param reader Binary reader.
+     * @param services Services.
+     * @return Future of the operation.
+     */
+    private IgniteFuture<Void> dotnetDeployAsync(BinaryRawReaderEx reader, IgniteServices services) {
+        ServiceConfiguration cfg = dotnetConfiguration(reader);
+
+        return services.deployAsync(cfg);
+    }
+
+    /**
+     * Read the dotnet service configuration.
+     *
+     * @param reader Binary reader,
+     * @return Service configuration.
+     */
+    @NotNull private ServiceConfiguration dotnetConfiguration(BinaryRawReaderEx reader) {
+        ServiceConfiguration cfg = new ServiceConfiguration();
+
+        cfg.setName(reader.readString());
+        cfg.setService(new PlatformDotNetServiceImpl(reader.readObjectDetached(), platformCtx, srvKeepBinary));
+        cfg.setTotalCount(reader.readInt());
+        cfg.setMaxPerNodeCount(reader.readInt());
+        cfg.setCacheName(reader.readString());
+        cfg.setAffinityKey(reader.readObjectDetached());
+
+        Object filter = reader.readObjectDetached();
+
+        if (filter != null)
+            cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
+
+        return cfg;
     }
 
     /**
      * Proxy holder.
      */
     @SuppressWarnings("unchecked")
-    private static class ServiceProxyHolder {
+    private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
 
@@ -334,8 +458,8 @@ public class PlatformServices extends PlatformAbstractTarget {
         /** */
         private static final Map<Class<?>, Class<?>> PRIMITIVES_TO_WRAPPERS = new HashMap<>();
 
-        /**
-         * Class initializer.
+        /*
+          Class initializer.
          */
         static  {
             PRIMITIVES_TO_WRAPPERS.put(boolean.class, Boolean.class);
@@ -353,8 +477,11 @@ public class PlatformServices extends PlatformAbstractTarget {
          *
          * @param proxy Proxy object.
          * @param clazz Proxy class.
+         * @param ctx Platform context.
          */
-        private ServiceProxyHolder(Object proxy, Class clazz) {
+        private ServiceProxyHolder(Object proxy, Class clazz, PlatformContext ctx) {
+            super(ctx);
+
             assert proxy != null;
             assert clazz != null;
 
@@ -364,18 +491,18 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         /**
          * Invokes the proxy.
+         *
          * @param mthdName Method name.
          * @param srvKeepBinary Binary flag.
          * @param args Args.
          * @return Invocation result.
-         * @throws IgniteCheckedException
-         * @throws NoSuchMethodException
+         * @throws IgniteCheckedException On error.
+         * @throws NoSuchMethodException On error.
          */
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
             throws IgniteCheckedException, NoSuchMethodException {
-            if (proxy instanceof PlatformService) {
+            if (proxy instanceof PlatformService)
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
-            }
             else {
                 assert proxy instanceof GridServiceProxy;
 
@@ -396,6 +523,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param mthdName Name.
          * @param args Args.
          * @return Method.
+         * @throws NoSuchMethodException On error.
          */
         private static Method getMethod(Class clazz, String mthdName, Object[] args) throws NoSuchMethodException {
             assert clazz != null;
@@ -511,4 +639,20 @@ public class PlatformServices extends PlatformAbstractTarget {
             }
         }
     }
+
+    /**
+     * Writes an EventBase.
+     */
+    private static class ServiceDeploymentResultWriter implements PlatformFutureUtils.Writer {
+        /** <inheritDoc /> */
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+            PlatformUtils.writeInvocationResult(writer, obj, err);
+        }
+
+        /** <inheritDoc /> */
+        @Override public boolean canWrite(Object obj, Throwable err) {
+            return true;
+        }
+    }
+
 }

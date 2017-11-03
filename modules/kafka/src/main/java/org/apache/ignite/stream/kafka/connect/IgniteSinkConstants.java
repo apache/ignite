@@ -35,4 +35,7 @@ public class IgniteSinkConstants {
 
     /** Maximum number of parallel stream operations per node. */
     public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
+
+    /** Class to transform the entry before feeding into cache. */
+    public static final String SINGLE_TUPLE_EXTRACTOR_CLASS = "singleTupleExtractorCls";
 }

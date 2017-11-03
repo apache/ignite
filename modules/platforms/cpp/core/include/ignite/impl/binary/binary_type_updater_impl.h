@@ -18,13 +18,11 @@
 #ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
 #define _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
 
-#include <ignite/jni/exports.h>
-
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/binary/binary_type_updater.h"
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace binary
@@ -41,25 +39,27 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to Java object which is able to process type request.
                  */
-                BinaryTypeUpdaterImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                BinaryTypeUpdaterImpl(IgniteEnvironment& env, jobject javaRef);
 
                 /**
                  * Destructor.
                  */
                 ~BinaryTypeUpdaterImpl();
 
-                bool Update(Snap* snapshot, IgniteError* err);
+                virtual bool Update(const Snap& snap, IgniteError& err);
+
+                virtual SPSnap GetMeta(int32_t typeId, IgniteError& err);
             private:
                 /** Environment. */
-                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-                
+                IgniteEnvironment& env;
+
                 /** Handle to Java object. */
-                jobject javaRef;                 
+                jobject javaRef;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeUpdaterImpl)
             };
         }
-    }    
+    }
 }
 
 #endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL

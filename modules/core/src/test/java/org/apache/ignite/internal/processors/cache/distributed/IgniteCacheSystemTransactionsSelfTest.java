@@ -18,26 +18,25 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests that system transactions do not interact with user transactions.
@@ -49,8 +48,8 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -59,7 +58,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (String cacheName : new String[] {null, CU.UTILITY_CACHE_NAME, CU.MARSH_CACHE_NAME}) {
+        for (String cacheName : new String[] {DEFAULT_CACHE_NAME, CU.UTILITY_CACHE_NAME}) {
             IgniteKernal kernal = (IgniteKernal)ignite(0);
 
             GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
@@ -74,7 +73,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     public void testSystemTxInsideUserTx() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
-        IgniteCache<Object, Object> jcache = ignite.cache(null);
+        IgniteCache<Object, Object> jcache = ignite.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             jcache.get("1");
@@ -84,7 +83,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
             utilityCache.getAndPutIfAbsent("2", "2");
 
-            try (IgniteInternalTx itx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+            try (GridNearTxLocal itx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(null, utilityCache.get("1"));
                 assertEquals("2", utilityCache.get("2"));
                 assertEquals(null, utilityCache.get("3"));
@@ -101,24 +100,24 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
         checkTransactionsCommitted();
 
-        checkEntries(null,                  "1", "11", "2", "22", "3", null);
+        checkEntries(DEFAULT_CACHE_NAME,                  "1", "11", "2", "22", "3", null);
         checkEntries(CU.UTILITY_CACHE_NAME, "1", null, "2", "2",  "3", "3");
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMarshallerCacheShouldNotStartTx() throws Exception {
+    public void testGridNearTxLocalDuplicateAsyncCommit() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
-        final GridCacheAdapter<String,String> marshallerCache = (GridCacheAdapter<String, String>)(GridCacheAdapter)
-            ignite.context().cache().marshallerCache();
+        IgniteInternalCache<Object, Object> utilityCache = ignite.context().cache().utilityCache();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return marshallerCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
-            }
-        }, IgniteException.class, null);
+        try (GridNearTxLocal itx = utilityCache.txStartEx(OPTIMISTIC, SERIALIZABLE)) {
+            utilityCache.put("1", "1");
+
+            itx.commitNearTxLocalAsync();
+            itx.commitNearTxLocalAsync().get();
+        }
     }
 
     /**

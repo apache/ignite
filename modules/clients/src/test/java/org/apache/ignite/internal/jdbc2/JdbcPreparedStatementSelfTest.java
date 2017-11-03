@@ -17,24 +17,44 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Date;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static java.sql.Types.*;
-import static org.apache.ignite.IgniteJdbcDriver.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static java.sql.Types.BIGINT;
+import static java.sql.Types.BINARY;
+import static java.sql.Types.BOOLEAN;
+import static java.sql.Types.DATALINK;
+import static java.sql.Types.DATE;
+import static java.sql.Types.DOUBLE;
+import static java.sql.Types.FLOAT;
+import static java.sql.Types.INTEGER;
+import static java.sql.Types.OTHER;
+import static java.sql.Types.SMALLINT;
+import static java.sql.Types.TIME;
+import static java.sql.Types.TIMESTAMP;
+import static java.sql.Types.TINYINT;
+import static java.sql.Types.VARCHAR;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Prepared statement test.
@@ -44,7 +64,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Connection. */
     private Connection conn;
@@ -53,8 +73,8 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     private PreparedStatement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -82,7 +102,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -98,6 +118,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
         o.dateVal = new Date(1);
         o.timeVal = new Time(1);
         o.tsVal = new Timestamp(1);
@@ -105,8 +126,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -135,6 +154,41 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
             assert conn.isClosed();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatableUsage() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where id = ?");
+
+        stmt.setInt(1, 1);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        cnt = 0;
+
+        rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
     }
 
     /**
@@ -510,6 +564,47 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBlob() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        blob.setBytes(1, new byte[] {1});
+
+        stmt.setBlob(1, blob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 1;
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        stmt.setNull(1, BINARY);
+
+        rs = stmt.executeQuery();
+
+        cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 2;
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDate() throws Exception {
         stmt = conn.prepareStatement("select * from TestObject where dateVal is not distinct from ?");
 
@@ -703,6 +798,10 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField
         private byte[] arrVal;
+
+        /** */
+        @QuerySqlField
+        private byte[] blobVal;
 
         /** */
         @QuerySqlField

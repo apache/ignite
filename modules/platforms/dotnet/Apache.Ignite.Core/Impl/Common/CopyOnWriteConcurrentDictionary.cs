@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable InconsistentlySynchronizedField
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
@@ -68,6 +69,32 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 return res;
             }
+        }
+
+        /// <summary>
+        /// Sets a value for the key unconditionally.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public void Set(TKey key, TValue value)
+        {
+            lock (this)
+            {
+                var dict0 = new Dictionary<TKey, TValue>(_dict);
+
+                dict0[key] = value;
+
+                _dict = dict0;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified key exists in the dictionary.
+        /// </summary>
+        public bool ContainsKey(TKey key)
+        {
+            return _dict.ContainsKey(key);
         }
     }
 }

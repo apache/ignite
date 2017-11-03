@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Binary;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// This example demonstrates several put-get operations on Ignite cache
     /// with binary values. Note that binary object can be retrieved in
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class PutGetExample
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache put-get example started.");
@@ -159,13 +160,13 @@ namespace Apache.Ignite.Examples.Datagrid
             cache.PutAll(map);
 
             // Get recently created organizations as a strongly-typed fully de-serialized instances.
-            IDictionary<int, Organization> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
+            ICollection<ICacheEntry<int, Organization>> mapFromCache = cache.GetAll(new List<int> { 1, 2 });
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization instances from cache:");
 
-            foreach (Organization org in mapFromCache.Values)
-                Console.WriteLine(">>>     " + org);
+            foreach (ICacheEntry<int, Organization> org in mapFromCache)
+                Console.WriteLine(">>>     " + org.Value);
         }
 
         /// <summary>
@@ -200,13 +201,13 @@ namespace Apache.Ignite.Examples.Datagrid
             var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
 
             // Get recently created organizations as binary objects.
-            IDictionary<int, IBinaryObject> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
+            ICollection<ICacheEntry<int, IBinaryObject>> binaryMap = binaryCache.GetAll(new List<int> { 1, 2 });
 
             Console.WriteLine();
             Console.WriteLine(">>> Retrieved organization names from binary objects:");
 
-            foreach (IBinaryObject poratbleOrg in binaryMap.Values)
-                Console.WriteLine(">>>     " + poratbleOrg.GetField<string>("name"));
+            foreach (var pair in binaryMap)
+                Console.WriteLine(">>>     " + pair.Value.GetField<string>("name"));
         }
     }
 }

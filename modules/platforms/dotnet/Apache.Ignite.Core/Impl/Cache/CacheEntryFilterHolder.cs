@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Non-generic binary filter wrapper.
@@ -60,6 +61,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             _invoker = invoker;
             _marsh = marsh;
             _keepBinary = keepBinary;
+
+            InjectResources();
         }
 
         /// <summary>
@@ -79,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_pred));
+            writer0.WriteObjectDetached(_pred);
             
             writer0.WriteBoolean(_keepBinary);
         }
@@ -88,17 +91,25 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public CacheEntryFilterHolder(IBinaryReader reader)
+        public CacheEntryFilterHolder(BinaryReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
+            _pred = reader.ReadObject<object>();
 
-            _pred = reader0.ReadObject<object>();
+            _keepBinary = reader.ReadBoolean();
 
-            _keepBinary = reader0.ReadBoolean();
-
-            _marsh = reader0.Marshaller;
+            _marsh = reader.Marshaller;
 
             _invoker = GetInvoker(_pred);
+
+            InjectResources();
+        }
+
+        /// <summary>
+        /// Injects the resources.
+        /// </summary>
+        private void InjectResources()
+        {
+            ResourceProcessor.Inject(_pred, _marsh.Ignite);
         }
 
         /// <summary>

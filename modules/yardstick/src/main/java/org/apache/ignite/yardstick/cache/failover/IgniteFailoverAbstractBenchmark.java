@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -57,17 +57,12 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     /** */
     private static final AtomicBoolean restarterStarted = new AtomicBoolean();
 
-    /** Async Cache. */
-    protected IgniteCache<K, V> asyncCache;
-
     /** */
     private final AtomicBoolean firtsExProcessed = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-
-        asyncCache = cache.withAsync();
     }
 
     /** {@inheritDoc} */
@@ -116,11 +111,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             println("Waiting for partitioned map exchage of all nodes");
 
-                            IgniteCompute asyncCompute = ignite.compute().withAsync();
-
-                            asyncCompute.broadcast(new AwaitPartitionMapExchangeTask());
-
-                            asyncCompute.future().get(args.cacheOperationTimeoutMillis());
+                            ignite.compute().broadcastAsync(new AwaitPartitionMapExchangeTask())
+                                .get(args.cacheOperationTimeoutMillis());
 
                             println("Start servers restarting [numNodesToRestart=" + numNodesToRestart
                                 + ", shuffledIds=" + ids + "]");
@@ -196,7 +188,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                 GridDhtPartitionFullMap partMap = dht.topology().partitionMap(true);
 
-                for (Map.Entry<UUID, GridDhtPartitionMap2> e : partMap.entrySet()) {
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : partMap.entrySet()) {
                     log.info("Checking node: " + e.getKey());
 
                     for (Map.Entry<Integer, GridDhtPartitionState> e1 : e.getValue().entrySet()) {
@@ -242,10 +234,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
-            IgniteCompute asyncCompute = ignite.compute(srvs).withAsync();
-
-            asyncCompute.broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
-            asyncCompute.future().get(10_000);
+            ignite.compute(srvs).broadcastAsync(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e))
+                .get(10_000);
         }
     }
 

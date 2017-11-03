@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -25,9 +27,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -48,53 +51,47 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int MaxItemCnt = 100;
 
         /// <summary>
-        /// 
+        /// Fixture setup.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void StartGrids()
+        public void StartGrids()
         {
-            TestUtils.JvmDebug = true;
-            TestUtils.KillProcesses();
-
-            IgniteConfiguration cfg = new IgniteConfiguration
-            {
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new[]
-                    {
-                        new BinaryTypeConfiguration(typeof (QueryPerson)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<QueryPerson>)),
-                        new BinaryTypeConfiguration(typeof (BinarizableScanQueryFilter<BinaryObject>))
-                    }
-                },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = CfgPath
-            };
-
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.GridName = "grid-" + i;
-
-                Ignition.Start(cfg);
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    BinaryConfiguration = new BinaryConfiguration
+                    {
+                        NameMapper = GetNameMapper()
+                    },
+                    SpringConfigUrl = CfgPath,
+                    IgniteInstanceName = "grid-" + i
+                });
             }
+        }
+        
+        /// <summary>
+        /// Gets the name mapper.
+        /// </summary>
+        protected virtual IBinaryNameMapper GetNameMapper()
+        {
+            return BinaryBasicNameMapper.FullNameInstance;
         }
 
         /// <summary>
-        /// 
+        /// Fixture teardown.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids()
+        public void StopGrids()
         {
-            for (int i = 0; i < GridCnt; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         /// 
         /// </summary>
         [SetUp]
-        public virtual void BeforeTest()
+        public void BeforeTest()
         {
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
@@ -103,14 +100,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// 
         /// </summary>
         [TearDown]
-        public virtual void AfterTest()
+        public void AfterTest()
         {
             var cache = Cache();
 
             for (int i = 0; i < GridCnt; i++)
             {
-                for (int j = 0; j < MaxItemCnt; j++)
-                    cache.Remove(j);
+                cache.Clear();
 
                 Assert.IsTrue(cache.IsEmpty());
             }
@@ -122,32 +118,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        /// Gets the ignite.
         /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        public IIgnite GetIgnite(int idx)
+        private static IIgnite GetIgnite()
         {
-            return Ignition.GetIgnite("grid-" + idx);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="idx"></param>
-        /// <returns></returns>
-        public ICache<int, QueryPerson> Cache(int idx)
-        {
-            return GetIgnite(idx).GetCache<int, QueryPerson>(CacheName);
+            return Ignition.GetIgnite("grid-0");
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        public ICache<int, QueryPerson> Cache()
+        private static ICache<int, QueryPerson> Cache()
         {
-            return Cache(0);
+            return GetIgnite().GetCache<int, QueryPerson>(CacheName);
         }
 
         /// <summary>
@@ -235,8 +219,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(4, new QueryPerson("Unknown", 60));
 
             // 1. Empty result set.
-            using (
-                IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
+            using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
                     Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
             {
                 IEnumerator<ICacheEntry<int, QueryPerson>> e = cursor.GetEnumerator();
@@ -250,9 +233,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     { ICacheEntry<int, QueryPerson> entry = e.Current; });
 
                 Assert.Throws<NotSupportedException>(() => e.Reset());
+
+                e.Dispose();
             }
 
             SqlQuery qry = new SqlQuery(typeof (QueryPerson), "age < 60");
+
+            Assert.AreEqual(QueryBase.DefaultPageSize, qry.PageSize);
 
             // 2. Page size is bigger than result set.
             qry.PageSize = 4;
@@ -270,6 +257,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test SQL query arguments passing.
         /// </summary>
+        [Test]
         public void TestSqlQueryArguments()
         {
             Cache().Put(1, new QueryPerson("Ivanov", 30));
@@ -289,6 +277,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Test SQL fields query arguments passing.
         /// </summary>
+        [Test]
         public void TestSqlFieldsQueryArguments()
         {
             Cache().Put(1, new QueryPerson("Ivanov", 30));
@@ -352,53 +341,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL query.
         /// </summary>
         [Test]
-        public void TestSqlQuery()
-        {
-            CheckSqlQuery(MaxItemCnt, false, false);
-        }
-
-        /// <summary>
-        /// Check SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryBinary()
-        {
-            CheckSqlQuery(MaxItemCnt, false, true);
-        }
-
-        /// <summary>
-        /// Check local SQL query.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryLocal()
-        {
-            CheckSqlQuery(MaxItemCnt, true, false);
-        }
-
-        /// <summary>
-        /// Check local SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestSqlQueryLocalBinary()
-        {
-            CheckSqlQuery(MaxItemCnt, true, true);
-        }
-
-        /// <summary>
-        /// Check SQL query.
-        /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckSqlQuery(int cnt, bool loc, bool keepBinary)
+        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary, 
+            [Values(true, false)] bool distrJoin)
         {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
-            var exp = PopulateCache(cache, loc, cnt, x => x < 50);
+            var exp = PopulateCache(cache, loc, MaxItemCnt, x => x < 50);
 
             // 2. Validate results.
-            var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc);
+            var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
+            {
+                EnableDistributedJoins = distrJoin,
+                ReplicatedOnly = false,
+                Timeout = TimeSpan.FromSeconds(3)
+            };
+
+            Assert.AreEqual(string.Format("SqlQuery [Sql=age < 50, Arguments=[], Local={0}, " +
+                                          "PageSize=1024, EnableDistributedJoins={1}, Timeout={2}, " +
+                                          "ReplicatedOnly=False]", loc, distrJoin, qry.Timeout), qry.ToString());
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -407,35 +368,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL fields query.
         /// </summary>
         [Test]
-        public void TestSqlFieldsQuery()
+        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
+            [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
         {
-            CheckSqlFieldsQuery(MaxItemCnt, false);
-        }
+            int cnt = MaxItemCnt;
 
-        /// <summary>
-        /// Check local SQL fields query.
-        /// </summary>
-        [Test]
-        public void TestSqlFieldsQueryLocal()
-        {
-            CheckSqlFieldsQuery(MaxItemCnt, true);
-        }
-
-        /// <summary>
-        /// Check SQL fields query.
-        /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        private void CheckSqlFieldsQuery(int cnt, bool loc)
-        {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
             var exp = PopulateCache(cache, loc, cnt, x => x < 50);
 
-            // 2. Vlaidate results.
-            SqlFieldsQuery qry = loc ? new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50", true) :
-                new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50");
+            // 2. Validate results.
+            var qry = new SqlFieldsQuery("SELECT name, age FROM QueryPerson WHERE age < 50")
+            {
+                EnableDistributedJoins = distrJoin,
+                EnforceJoinOrder = enforceJoinOrder,
+                Colocated = !distrJoin,
+                ReplicatedOnly = false,
+                Local = loc,
+                Timeout = TimeSpan.FromSeconds(2),
+                Lazy = lazy
+            };
 
             using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
             {
@@ -468,57 +421,49 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Check text query.
+        /// Tests that query configuration propagates from Spring XML correctly.
         /// </summary>
         [Test]
-        public void TestTextQuery()
+        public void TestQueryConfiguration()
         {
-            CheckTextQuery(MaxItemCnt, false, false);
-        }
+            var qe = Cache().GetConfiguration().QueryEntities.Single();
 
-        /// <summary>
-        /// Check SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestTextQueryBinary()
-        {
-            CheckTextQuery(MaxItemCnt, false, true);
-        }
+            Assert.AreEqual(typeof(QueryPerson).FullName, qe.ValueTypeName);
 
-        /// <summary>
-        /// Check local SQL query.
-        /// </summary>
-        [Test]
-        public void TestTextQueryLocal()
-        {
-            CheckTextQuery(MaxItemCnt, true, false);
-        }
+            var age = qe.Fields.First();
+            Assert.AreEqual("age", age.Name);
+            Assert.AreEqual(typeof(int), age.FieldType);
+            Assert.IsFalse(age.IsKeyField);
 
-        /// <summary>
-        /// Check local SQL query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestTextQueryLocalBinary()
-        {
-            CheckTextQuery(MaxItemCnt, true, true);
+            var name = qe.Fields.Last();
+            Assert.AreEqual("name", name.Name);
+            Assert.AreEqual(typeof(string), name.FieldType);
+            Assert.IsFalse(name.IsKeyField);
+
+            var textIdx = qe.Indexes.First();
+            Assert.AreEqual(QueryIndexType.FullText, textIdx.IndexType);
+            Assert.AreEqual("name", textIdx.Fields.Single().Name);
+            Assert.AreEqual(QueryIndex.DefaultInlineSize, textIdx.InlineSize);
+
+            var sqlIdx = qe.Indexes.Last();
+            Assert.AreEqual(QueryIndexType.Sorted, sqlIdx.IndexType);
+            Assert.AreEqual("age", sqlIdx.Fields.Single().Name);
+            Assert.AreEqual(2345, sqlIdx.InlineSize);
         }
 
         /// <summary>
         /// Check text query.
         /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
-        /// <param name="loc">Local query flag.</param>
-        /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckTextQuery(int cnt, bool loc, bool keepBinary)
+        [Test]
+        public void TestTextQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary)
         {
             var cache = Cache();
 
             // 1. Populate cache with data, calculating expected count in parallel.
-            var exp = PopulateCache(cache, loc, cnt, x => x.ToString().StartsWith("1"));
+            var exp = PopulateCache(cache, loc, MaxItemCnt, x => x.ToString().StartsWith("1"));
 
             // 2. Validate results.
-            TextQuery qry = loc ? new TextQuery(typeof(QueryPerson), "1*", true) :
-                new TextQuery(typeof(QueryPerson), "1*");
+            var qry = new TextQuery(typeof(QueryPerson), "1*", loc);
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -527,36 +472,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check scan query.
         /// </summary>
         [Test]
-        public void TestScanQuery()
+        public void TestScanQuery([Values(true, false)]  bool loc)
         {
-            CheckScanQuery<QueryPerson>(MaxItemCnt, false, false);
+            CheckScanQuery<QueryPerson>(loc, false);
         }
 
         /// <summary>
         /// Check scan query in binary mode.
         /// </summary>
         [Test]
-        public void TestScanQueryBinary()
+        public void TestScanQueryBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQuery<BinaryObject>(MaxItemCnt, false, true);
-        }
-
-        /// <summary>
-        /// Check local scan query.
-        /// </summary>
-        [Test]
-        public void TestScanQueryLocal()
-        {
-            CheckScanQuery<QueryPerson>(MaxItemCnt, true, false);
-        }
-
-        /// <summary>
-        /// Check local scan query in binary mode.
-        /// </summary>
-        [Test]
-        public void TestScanQueryLocalBinary()
-        {
-            CheckScanQuery<BinaryObject>(MaxItemCnt, true, true);
+            CheckScanQuery<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -565,7 +492,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPartitions([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<QueryPerson>(MaxItemCnt, loc, false);
+            CheckScanQueryPartitions<QueryPerson>(loc, false);
         }
 
         /// <summary>
@@ -574,7 +501,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScanQueryPartitionsBinary([Values(true, false)]  bool loc)
         {
-            CheckScanQueryPartitions<BinaryObject>(MaxItemCnt, loc, true);
+            CheckScanQueryPartitions<IBinaryObject>(loc, true);
         }
 
         /// <summary>
@@ -583,32 +510,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestIndexingDisabledError()
         {
-            var cache = GetIgnite(0).GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>("nonindexed_cache");
 
-            var queries = new QueryBase[]
-            {
-                new TextQuery(typeof (QueryPerson), "1*"),
-                new SqlQuery(typeof (QueryPerson), "age < 50")
-            };
+            // Text query.
+            var err = Assert.Throws<IgniteException>(() => cache.Query(new TextQuery(typeof(QueryPerson), "1*")));
 
-            foreach (var qry in queries)
-            {
-                var err = Assert.Throws<IgniteException>(() => cache.Query(qry));
+            Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
+                "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
 
-                Assert.AreEqual("Indexing is disabled for cache: nonindexed_cache. " +
-                    "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
-            }
+            // SQL query.
+            err = Assert.Throws<IgniteException>(() => cache.Query(new SqlQuery(typeof(QueryPerson), "age < 50")));
+
+            Assert.AreEqual("Failed to find SQL table for type: QueryPerson", err.Message);
         }
 
         /// <summary>
         /// Check scan query.
         /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckScanQuery<TV>(int cnt, bool loc, bool keepBinary)
+        private static void CheckScanQuery<TV>(bool loc, bool keepBinary)
         {
             var cache = Cache();
+            int cnt = MaxItemCnt;
 
             // No predicate
             var exp = PopulateCache(cache, loc, cnt, x => true);
@@ -641,15 +565,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks scan query with partitions.
         /// </summary>
-        /// <param name="cnt">Amount of cache entries to create.</param>
         /// <param name="loc">Local query flag.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        private void CheckScanQueryPartitions<TV>(int cnt, bool loc, bool keepBinary)
+        private void CheckScanQueryPartitions<TV>(bool loc, bool keepBinary)
         {
             StopGrids();
             StartGrids();
 
             var cache = Cache();
+            int cnt = MaxItemCnt;
 
             var aff = cache.Ignite.GetAffinity(CacheName);
             var exp = PopulateCache(cache, loc, cnt, x => true);  // populate outside the loop (slow)
@@ -683,6 +607,185 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
             
+        }
+
+        /// <summary>
+        /// Tests custom schema name.
+        /// </summary>
+        [Test]
+        public void TestCustomSchema()
+        {
+            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles", typeof(double)));
+            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings", typeof(string)));
+
+            doubles[1] = 36.6;
+            strings[1] = "foo";
+
+            // Default schema.
+            var res = doubles.QueryFields(new SqlFieldsQuery(
+                    "select S._val from double as D join \"strings\".string as S on S._key = D._key"))
+                .Select(x => (string) x[0])
+                .Single();
+
+            Assert.AreEqual("foo", res);
+
+            // Custom schema.
+            res = doubles.QueryFields(new SqlFieldsQuery(
+                    "select S._val from \"doubles\".double as D join string as S on S._key = D._key")
+                {
+                    Schema = strings.Name
+                })
+                .Select(x => (string)x[0])
+                .Single();
+
+            Assert.AreEqual("foo", res);
+        }
+
+        /// <summary>
+        /// Tests the distributed joins flag.
+        /// </summary>
+        [Test]
+        public void TestDistributedJoins()
+        {
+            var cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("replicatedCache")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[] {new QueryField("age", "int")}
+                        }
+                    }
+                });
+
+            const int count = 100;
+
+            cache.PutAll(Enumerable.Range(0, count).ToDictionary(x => x, x => new QueryPerson("Name" + x, x)));
+
+            // Test non-distributed join: returns partial results
+            var sql = "select T0.Age from QueryPerson as T0 " +
+                      "inner join QueryPerson as T1 on ((? - T1.Age - 1) = T0._key)";
+
+            var res = cache.QueryFields(new SqlFieldsQuery(sql, count)).GetAll().Distinct().Count();
+
+            Assert.Greater(res, 0);
+            Assert.Less(res, count);
+
+            // Test distributed join: returns complete results
+            res = cache.QueryFields(new SqlFieldsQuery(sql, count) {EnableDistributedJoins = true})
+                .GetAll().Distinct().Count();
+
+            Assert.AreEqual(count, res);
+        }
+
+        /// <summary>
+        /// Tests the get configuration.
+        /// </summary>
+        [Test]
+        public void TestGetConfiguration()
+        {
+            var entity = Cache().GetConfiguration().QueryEntities.Single();
+
+            var ageField = entity.Fields.Single(x => x.Name == "age");
+            Assert.AreEqual(typeof(int), ageField.FieldType);
+            Assert.IsFalse(ageField.NotNull);
+            Assert.IsFalse(ageField.IsKeyField);
+
+            var nameField = entity.Fields.Single(x => x.Name == "name");
+            Assert.AreEqual(typeof(string), nameField.FieldType);
+            Assert.IsTrue(nameField.NotNull);
+            Assert.IsFalse(nameField.IsKeyField);
+        }
+
+        /// <summary>
+        /// Tests custom key and value field names.
+        /// </summary>
+        [Test]
+        public void TestCustomKeyValueFieldNames()
+        {
+            // Check select * with default config - does not include _key, _val.
+            var cache = Cache();
+
+            cache[1] = new QueryPerson("Joe", 48);
+
+            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(2, row.Count);
+            Assert.AreEqual(48, row[0]);
+            Assert.AreEqual("Joe", row[1]);
+
+            // Check select * with custom names - fields are included.
+            cache = GetIgnite().GetOrCreateCache<int, QueryPerson>(
+                new CacheConfiguration("customKeyVal")
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(QueryPerson))
+                        {
+                            Fields = new[]
+                            {
+                                new QueryField("age", "int"),
+                                new QueryField("FullKey", "int"),
+                                new QueryField("FullVal", "QueryPerson")
+                            },
+                            KeyFieldName = "FullKey",
+                            ValueFieldName = "FullVal"
+                        }
+                    }
+                });
+
+            cache[1] = new QueryPerson("John", 33);
+
+            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            
+            Assert.AreEqual(3, row.Count);
+            Assert.AreEqual(33, row[0]);
+            Assert.AreEqual(1, row[1]);
+
+            var person = (QueryPerson) row[2];
+            Assert.AreEqual("John", person.Name);
+
+            // Check explicit select.
+            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            Assert.AreEqual(1, row[0]);
+        }
+
+        /// <summary>
+        /// Tests query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 500 AND name like '%1%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(2)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests fields query timeouts.
+        /// </summary>
+        [Test]
+        public void TestSqlFieldsQueryTimeout()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 20000, x => true);
+
+            var fieldsQry = new SqlFieldsQuery("SELECT * FROM QueryPerson WHERE age < 5000 AND name like '%0%'")
+            {
+                Timeout = TimeSpan.FromMilliseconds(3)
+            };
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).ToArray());
+            Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
 
         /// <summary>
@@ -825,23 +928,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var rand = new Random();
 
-            var exp = new HashSet<int>();
-
-            var aff = cache.Ignite.GetAffinity(cache.Name);
-
-            var localNode = cache.Ignite.GetCluster().GetLocalNode();
-
             for (var i = 0; i < cnt; i++)
             {
-                var val = rand.Next(100);
+                var val = rand.Next(cnt);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
-
-                if (expectedEntryFilter(val) && (!loc || aff.IsPrimary(localNode, val)))
-                    exp.Add(val);
             }
 
-            return exp;
+            var entries = loc
+                ? cache.GetLocalEntries(CachePeekMode.Primary)
+                : cache;
+
+            return new HashSet<int>(entries.Select(x => x.Key).Where(expectedEntryFilter));
         }
     }
 
@@ -853,20 +951,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Constructor.
         /// </summary>
-        public QueryPerson()
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Constructor.
-        /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="age">Age.</param>
         public QueryPerson(string name, int age)
         {
             Name = name;
-            Age = age;
+            Age = age % 2000;
+            Birthday = DateTime.UtcNow.AddYears(-Age);
         }
 
         /// <summary>
@@ -878,6 +969,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Age.
         /// </summary>
         public int Age { get; set; }
+
+        /// <summary>
+        /// Gets or sets the birthday.
+        /// </summary>
+        [QuerySqlField]  // Enforce Timestamp serialization
+        public DateTime Birthday { get; set; }
     }
 
     /// <summary>
@@ -892,9 +989,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Injection test
+        [InstanceResource]
+        public IIgnite Ignite { get; set; }
+
         /** <inheritdoc /> */
         public bool Invoke(ICacheEntry<int, TV> entry)
         {
+            Assert.IsNotNull(Ignite);
+
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
@@ -927,8 +1030,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// <summary>
     /// Filter that can't be serialized.
     /// </summary>
-    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>
+    public class InvalidScanQueryFilter<TV> : ScanQueryFilter<TV>, IBinarizable
     {
-        // No-op.
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            throw new BinaryObjectException("Expected");
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            throw new BinaryObjectException("Expected");
+        }
     }
 }

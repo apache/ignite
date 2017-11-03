@@ -24,7 +24,6 @@
 #define _IGNITE_TRANSACTIONS_TRANSACTION
 
 #include <ignite/common/concurrent.h>
-#include <ignite/jni/java.h>
 
 #include "ignite/impl/transactions/transaction_impl.h"
 #include "ignite/transactions/transaction_consts.h"
@@ -34,13 +33,26 @@ namespace ignite
     namespace transactions
     {
         /**
-         * Transaction.
+         * %Ignite cache transaction.
+         * Cache transactions have a default 2PC (two-phase-commit) behavior.
+         *
+         * @see TransactionConcurrency and TransactionIsolation for details on
+         * the supported isolation levels and concurrency models.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object. Underlying object released automatically once all
+         * the instances are destructed.
          */
         class IGNITE_FRIEND_EXPORT Transaction
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
+             *
+             * @param impl Implementation.
              */
             Transaction(common::concurrent::SharedPointer<impl::transactions::TransactionImpl> impl);
 
@@ -66,11 +78,19 @@ namespace ignite
 
             /**
              * Commit the transaction.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
             void Commit();
 
             /**
              * Commit the transaction.
+             *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              */
@@ -78,11 +98,19 @@ namespace ignite
 
             /**
              * Rollback the transaction.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
             void Rollback();
 
             /**
              * Rollback the transaction.
+             *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              */
@@ -90,11 +118,19 @@ namespace ignite
 
             /**
              * Close the transaction.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
             void Close();
 
             /**
              * Close the transaction.
+             *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              */
@@ -106,6 +142,10 @@ namespace ignite
              * After transaction have been marked as rollback-only it may
              * only be rolled back. Error occurs if such transaction is
              * being commited.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
             void SetRollbackOnly();
 
@@ -115,6 +155,10 @@ namespace ignite
              * After transaction have been marked as rollback-only it may
              * only be rolled back. Error occurs if such transaction is
              * being commited.
+             *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              */
@@ -128,6 +172,8 @@ namespace ignite
              * being commited.
              *
              * @return True if the transaction is rollback-only.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
             bool IsRollbackOnly();
 
@@ -138,6 +184,10 @@ namespace ignite
              * only be rolled back. Error occurs if such transaction is
              * being commited.
              *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
+             *
              * @param err Error.
              * @return True if the transaction is rollback-only.
              */
@@ -146,40 +196,54 @@ namespace ignite
             /**
              * Get current state.
              *
+             * This method should only be used on the valid instance.
+             *
              * @return Transaction state.
+             *
+             * @throw IgniteError class instance in case of failure.
              */
-            TransactionState GetState();
+            TransactionState::Type GetState();
 
             /**
              * Get current state.
              *
+             * Properly sets error param in case of failure.
+             *
+             * This method should only be used on the valid instance.
+             *
              * @param err Error.
              * @return Transaction state.
              */
-            TransactionState GetState(IgniteError& err);
+            TransactionState::Type GetState(IgniteError& err);
 
             /**
              * Get concurrency.
              *
+             * This method should only be used on the valid instance.
+             *
              * @return Concurrency.
              */
-            TransactionConcurrency GetConcurrency() const
+            TransactionConcurrency::Type GetConcurrency() const
             {
-                return static_cast<TransactionConcurrency>(impl.Get()->GetConcurrency());
+                return static_cast<TransactionConcurrency::Type>(impl.Get()->GetConcurrency());
             }
 
             /**
              * Get isolation.
              *
+             * This method should only be used on the valid instance.
+             *
              * @return Isolation.
              */
-            TransactionIsolation GetIsolation() const
+            TransactionIsolation::Type GetIsolation() const
             {
-                return static_cast<TransactionIsolation>(impl.Get()->GetIsolation());
+                return static_cast<TransactionIsolation::Type>(impl.Get()->GetIsolation());
             }
 
             /**
              * Get timeout.
+             *
+             * This method should only be used on the valid instance.
              *
              * @return Timeout in milliseconds. Zero if timeout is infinite.
              */

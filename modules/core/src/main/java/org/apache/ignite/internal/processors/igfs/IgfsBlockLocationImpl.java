@@ -24,20 +24,28 @@ import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * File block location in the grid.
  */
-public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable {
+public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,6 +63,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
     private Collection<String> names;
 
     /** */
+    @GridToStringInclude
     private Collection<String> hosts;
 
     /**
@@ -96,6 +105,44 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
     }
 
     /**
+     * @param start Start.
+     * @param len Length.
+     * @param block Block.
+     */
+    public IgfsBlockLocationImpl(long start, long len, IgfsBlockLocation block) {
+        assert start >= 0;
+        assert len > 0;
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = block.nodeIds();
+        names = block.names();
+        hosts = block.hosts();
+    }
+
+    /**
+     * @param start Start.
+     * @param len Length.
+     * @param names Collection of host:port addresses.
+     * @param hosts Collection of host:port addresses.
+     */
+    public IgfsBlockLocationImpl(long start, long len, Collection<String> names, Collection<String> hosts) {
+        assert start >= 0;
+        assert len > 0;
+        assert names != null && !names.isEmpty();
+        assert hosts != null && !hosts.isEmpty();
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = Collections.emptySet();
+
+        this.names = names;
+        this.hosts = hosts;
+    }
+
+    /**
      * @return Start position.
      */
     @Override public long start() {
@@ -107,6 +154,20 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
      */
     @Override public long length() {
         return len;
+    }
+
+    /**
+     * @param addLen Length to increase.
+     */
+    public void increaseLength(long addLen) {
+        len += addLen;
+    }
+
+    /**
+     * @param len Block length.
+     */
+    public void length(long len) {
+        this.len = len;
     }
 
     /**
@@ -155,13 +216,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
         return S.toString(IgfsBlockLocationImpl.class, this);
     }
 
-    /**
-     * Writes this object to data output. Note that this is not externalizable
-     * interface because we want to eliminate any marshaller.
-     *
-     * @param out Data output to write.
-     * @throws IOException If write failed.
-     */
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         assert names != null;
         assert hosts != null;
@@ -189,13 +244,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
             out.writeUTF(host);
     }
 
-    /**
-     * Reads object from data input. Note we do not use externalizable interface
-     * to eliminate marshaller.
-     *
-     * @param in Data input.
-     * @throws IOException If read failed.
-     */
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         start = in.readLong();
         len = in.readLong();
@@ -224,6 +273,69 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable 
 
         for (int i = 0; i < size; i++)
             hosts.add(in.readUTF());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        assert names != null;
+        assert hosts != null;
+
+        rawWriter.writeLong(start);
+        rawWriter.writeLong(len);
+
+        rawWriter.writeBoolean(nodeIds != null);
+
+        if (nodeIds != null) {
+            rawWriter.writeInt(nodeIds.size());
+
+            for (UUID nodeId : nodeIds)
+                U.writeUuid(rawWriter, nodeId);
+        }
+
+        rawWriter.writeInt(names.size());
+
+        for (String name : names)
+            rawWriter.writeString(name);
+
+        rawWriter.writeInt(hosts.size());
+
+        for (String host : hosts)
+            rawWriter.writeString(host);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        start = rawReader.readLong();
+        len = rawReader.readLong();
+
+        int size;
+
+        if (rawReader.readBoolean()) {
+            size = rawReader.readInt();
+
+            nodeIds = new ArrayList<>(size);
+
+            for (int i = 0; i < size; i++)
+                nodeIds.add(U.readUuid(rawReader));
+        }
+
+        size = rawReader.readInt();
+
+        names = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            names.add(rawReader.readString());
+
+        size = rawReader.readInt();
+
+        hosts = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            hosts.add(rawReader.readString());
     }
 
     /**

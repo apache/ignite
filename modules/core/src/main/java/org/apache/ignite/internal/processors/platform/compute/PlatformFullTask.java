@@ -80,26 +80,26 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
             PlatformMemoryManager memMgr = ctx.memory();
 
-            try (PlatformMemory outMem = memMgr.allocate()) {
-                PlatformOutputStream out = outMem.output();
+            try (PlatformMemory mem = memMgr.allocate()) {
+                PlatformOutputStream out = mem.output();
 
                 BinaryRawWriterEx writer = ctx.writer(out);
+
+                writer.writeLong(taskPtr);
 
                 write(writer, nodes, subgrid);
 
                 out.synchronize();
 
-                try (PlatformMemory inMem = memMgr.allocate()) {
-                    PlatformInputStream in = inMem.input();
+                ctx.gateway().computeTaskMap(mem.pointer());
 
-                    ctx.gateway().computeTaskMap(taskPtr, outMem.pointer(), inMem.pointer());
+                PlatformInputStream in = mem.input();
 
-                    in.synchronize();
+                in.synchronize();
 
-                    BinaryRawReaderEx reader = ctx.reader(in);
+                BinaryRawReaderEx reader = ctx.reader(in);
 
-                    return read(reader, nodes);
-                }
+                return read(reader, nodes);
             }
         }
         finally {

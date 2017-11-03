@@ -21,7 +21,6 @@
 #include <jni.h>
 
 #include "ignite/common/common.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -31,7 +30,7 @@ namespace ignite
         {
             /* Handlers for callbacks from Java. */
             typedef long long(JNICALL *CacheStoreCreateHandler)(void* target, long long memPtr);
-            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr, void* cb);
+            typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr);
             typedef void(JNICALL *CacheStoreDestroyHandler)(void* target, long long objPtr);
             typedef long long(JNICALL *CacheStoreSessionCreateHandler)(void* target, long long storePtr);
 
@@ -93,7 +92,7 @@ namespace ignite
 
             typedef void(JNICALL *OnStartHandler)(void* target, void* proc, long long memPtr);
             typedef void(JNICALL *OnStopHandler)(void* target);
-            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
+            typedef void(JNICALL *ErrorHandler)(void* target, int errCode, const char* errClsChars, int errClsCharsLen, const char* errMsgChars, int errMsgCharsLen, const char* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
@@ -101,83 +100,33 @@ namespace ignite
             typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
             typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
 
+            typedef long long(JNICALL *AffinityFunctionInitHandler)(void* target, long long memPtr, void* baseFunc);
+            typedef int(JNICALL *AffinityFunctionPartitionHandler)(void* target, long long ptr, long long memPtr);
+            typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
+            typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
+            typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
+
+            typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
+
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
+            typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
+            
+            typedef long long(JNICALL *InLongOutLongHandler)(void* target, int type, long long val);
+            typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
+
             /**
              * JNI handlers holder.
              */
             struct JniHandlers {
                 void* target;
 
-                CacheStoreCreateHandler cacheStoreCreate;
-                CacheStoreInvokeHandler cacheStoreInvoke;
-                CacheStoreDestroyHandler cacheStoreDestroy;
-                CacheStoreSessionCreateHandler cacheStoreSessionCreate;
-
-                CacheEntryFilterCreateHandler cacheEntryFilterCreate;
-                CacheEntryFilterApplyHandler cacheEntryFilterApply;
-                CacheEntryFilterDestroyHandler cacheEntryFilterDestroy;
-
-                CacheInvokeHandler cacheInvoke;
-
-                ComputeTaskMapHandler computeTaskMap;
-                ComputeTaskJobResultHandler computeTaskJobRes;
-                ComputeTaskReduceHandler computeTaskReduce;
-                ComputeTaskCompleteHandler computeTaskComplete;
-                ComputeJobSerializeHandler computeJobSerialize;
-                ComputeJobCreateHandler computeJobCreate;
-                ComputeJobExecuteHandler computeJobExec;
-                ComputeJobCancelHandler computeJobCancel;
-                ComputeJobDestroyHandler computeJobDestroy;
-
-                ContinuousQueryListenerApplyHandler contQryLsnrApply;
-                ContinuousQueryFilterCreateHandler contQryFilterCreate;
-                ContinuousQueryFilterApplyHandler contQryFilterApply;
-                ContinuousQueryFilterReleaseHandler contQryFilterRelease;
-
-                DataStreamerTopologyUpdateHandler dataStreamerTopologyUpdate;
-                DataStreamerStreamReceiverInvokeHandler streamReceiverInvoke;
-
-                FutureByteResultHandler futByteRes;
-                FutureBoolResultHandler futBoolRes;
-                FutureShortResultHandler futShortRes;
-                FutureCharResultHandler futCharRes;
-                FutureIntResultHandler futIntRes;
-                FutureFloatResultHandler futFloatRes;
-                FutureLongResultHandler futLongRes;
-                FutureDoubleResultHandler futDoubleRes;
-                FutureObjectResultHandler futObjRes;
-                FutureNullResultHandler futNullRes;
-                FutureErrorHandler futErr;
-
-                LifecycleEventHandler lifecycleEvt;
-
-                MemoryReallocateHandler memRealloc;
-
-                MessagingFilterCreateHandler messagingFilterCreate;
-                MessagingFilterApplyHandler messagingFilterApply;
-                MessagingFilterDestroyHandler messagingFilterDestroy;
-                
-                EventFilterCreateHandler eventFilterCreate;
-                EventFilterApplyHandler eventFilterApply;
-                EventFilterDestroyHandler eventFilterDestroy;
-
-                ServiceInitHandler serviceInit;
-                ServiceExecuteHandler serviceExecute;
-                ServiceCancelHandler serviceCancel;
-                ServiceInvokeMethodHandler serviceInvokeMethod;
-
-                ClusterNodeFilterApplyHandler clusterNodeFilterApply;
-
-                NodeInfoHandler nodeInfo;
-
-                OnStartHandler onStart;
-                OnStopHandler onStop;
                 ErrorHandler error;
 
-                ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
-                ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
+                LoggerLogHandler loggerLog;
+                LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
 
-                OnClientDisconnectedHandler onClientDisconnected;
-                OnClientReconnectedHandler onClientReconnected;
+                InLongOutLongHandler inLongOutLong;
+                InLongLongLongObjectOutLongHandler inLongLongLongObjectOutLong;
             };
 
             /**
@@ -190,6 +139,9 @@ namespace ignite
                 jclass c_Throwable;
                 jmethodID m_Throwable_getMessage;
                 jmethodID m_Throwable_printStackTrace;
+
+				jclass c_PlatformUtils;
+				jmethodID m_PlatformUtils_getFullStackTrace;
 
                 /**
                  * Constructor.
@@ -204,84 +156,15 @@ namespace ignite
                 /**
                  * Write error information.
                  */
-                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen);
+                bool WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg, int* errMsgLen,
+					char** stackTrace, int* stackTraceLen);
             };
 
             /**
              * JNI members.
              */
             struct JniMembers {
-                jclass c_PlatformAbstractQryCursor;
-                jmethodID m_PlatformAbstractQryCursor_iter;
-                jmethodID m_PlatformAbstractQryCursor_iterHasNext;
-                jmethodID m_PlatformAbstractQryCursor_close;
-
-                jclass c_PlatformAffinity;
-                jmethodID m_PlatformAffinity_partitions;
-
-                jclass c_PlatformCache;
-                jmethodID m_PlatformCache_withSkipStore;
-                jmethodID m_PlatformCache_withNoRetries;
-                jmethodID m_PlatformCache_withExpiryPolicy;
-                jmethodID m_PlatformCache_withAsync;
-                jmethodID m_PlatformCache_withKeepPortable;
-                jmethodID m_PlatformCache_clear;
-                jmethodID m_PlatformCache_removeAll;
-                jmethodID m_PlatformCache_iterator;
-                jmethodID m_PlatformCache_localIterator;
-                jmethodID m_PlatformCache_enterLock;
-                jmethodID m_PlatformCache_exitLock;
-                jmethodID m_PlatformCache_tryEnterLock;
-                jmethodID m_PlatformCache_closeLock;
-                jmethodID m_PlatformCache_rebalance;
-                jmethodID m_PlatformCache_size;
-
-                jclass c_PlatformCacheStoreCallback;
-                jmethodID m_PlatformCacheStoreCallback_invoke;
-
                 jclass c_IgniteException;
-
-                jclass c_PlatformClusterGroup;
-                jmethodID m_PlatformClusterGroup_forOthers;
-                jmethodID m_PlatformClusterGroup_forRemotes;
-                jmethodID m_PlatformClusterGroup_forDaemons;
-                jmethodID m_PlatformClusterGroup_forRandom;
-                jmethodID m_PlatformClusterGroup_forOldest;
-                jmethodID m_PlatformClusterGroup_forYoungest;
-                jmethodID m_PlatformClusterGroup_resetMetrics;
-
-                jclass c_PlatformCompute;
-                jmethodID m_PlatformCompute_withNoFailover;
-                jmethodID m_PlatformCompute_withTimeout;
-                jmethodID m_PlatformCompute_executeNative;
-
-                jclass c_PlatformContinuousQuery;
-                jmethodID m_PlatformContinuousQuery_close;
-                jmethodID m_PlatformContinuousQuery_getInitialQueryCursor;
-
-                jclass c_PlatformDataStreamer;
-                jmethodID m_PlatformDataStreamer_listenTopology;
-                jmethodID m_PlatformDataStreamer_getAllowOverwrite;
-                jmethodID m_PlatformDataStreamer_setAllowOverwrite;
-                jmethodID m_PlatformDataStreamer_getSkipStore;
-                jmethodID m_PlatformDataStreamer_setSkipStore;
-                jmethodID m_PlatformDataStreamer_getPerNodeBufSize;
-                jmethodID m_PlatformDataStreamer_setPerNodeBufSize;
-                jmethodID m_PlatformDataStreamer_getPerNodeParallelOps;
-                jmethodID m_PlatformDataStreamer_setPerNodeParallelOps;
-
-                jclass c_PlatformEvents;
-                jmethodID m_PlatformEvents_withAsync;
-                jmethodID m_PlatformEvents_stopLocalListen;
-                jmethodID m_PlatformEvents_localListen;
-                jmethodID m_PlatformEvents_isEnabled;
-
-                jclass c_PlatformServices;
-                jmethodID m_PlatformServices_withAsync;
-                jmethodID m_PlatformServices_withServerKeepPortable;
-                jmethodID m_PlatformServices_cancel;
-                jmethodID m_PlatformServices_cancelAll;
-                jmethodID m_PlatformServices_serviceProxy;
 
                 jclass c_PlatformIgnition;
                 jmethodID m_PlatformIgnition_start;
@@ -290,93 +173,20 @@ namespace ignite
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
 
-                jclass c_PlatformMessaging;
-                jmethodID m_PlatformMessaging_withAsync;
-
-                jclass c_PlatformProcessor;
-                jmethodID m_PlatformProcessor_releaseStart;
-                jmethodID m_PlatformProcessor_cache;
-                jmethodID m_PlatformProcessor_createCache;
-                jmethodID m_PlatformProcessor_getOrCreateCache;
-                jmethodID m_PlatformProcessor_createCacheFromConfig;
-                jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
-                jmethodID m_PlatformProcessor_createNearCache;
-                jmethodID m_PlatformProcessor_getOrCreateNearCache;
-                jmethodID m_PlatformProcessor_destroyCache;
-                jmethodID m_PlatformProcessor_affinity;
-                jmethodID m_PlatformProcessor_dataStreamer;
-                jmethodID m_PlatformProcessor_transactions;
-                jmethodID m_PlatformProcessor_projection;
-                jmethodID m_PlatformProcessor_compute;
-                jmethodID m_PlatformProcessor_message;
-                jmethodID m_PlatformProcessor_events;
-                jmethodID m_PlatformProcessor_services;
-                jmethodID m_PlatformProcessor_extensions;
-                jmethodID m_PlatformProcessor_atomicLong;
-                jmethodID m_PlatformProcessor_getIgniteConfiguration;
-                jmethodID m_PlatformProcessor_getCacheNames;
-                jmethodID m_PlatformProcessor_atomicSequence;
-                jmethodID m_PlatformProcessor_atomicReference;
-
                 jclass c_PlatformTarget;
+                jmethodID m_PlatformTarget_inLongOutLong;
                 jmethodID m_PlatformTarget_inStreamOutLong;
                 jmethodID m_PlatformTarget_inStreamOutObject;
-                jmethodID m_PlatformTarget_outLong;
                 jmethodID m_PlatformTarget_outStream;
                 jmethodID m_PlatformTarget_outObject;
+                jmethodID m_PlatformTarget_inStreamAsync;
+                jmethodID m_PlatformTarget_inStreamOutObjectAsync;
                 jmethodID m_PlatformTarget_inStreamOutStream;
-                jmethodID m_PlatformTarget_inObjectStreamOutStream;
-                jmethodID m_PlatformTarget_listenFuture;
-                jmethodID m_PlatformTarget_listenFutureForOperation;
-                jmethodID m_PlatformTarget_listenFutureAndGet;
-                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
-
-                jclass c_PlatformTransactions;
-                jmethodID m_PlatformTransactions_txStart;
-                jmethodID m_PlatformTransactions_txCommit;
-                jmethodID m_PlatformTransactions_txCommitAsync;
-                jmethodID m_PlatformTransactions_txRollback;
-                jmethodID m_PlatformTransactions_txRollbackAsync;
-                jmethodID m_PlatformTransactions_txState;
-                jmethodID m_PlatformTransactions_txSetRollbackOnly;
-                jmethodID m_PlatformTransactions_txClose;
-                jmethodID m_PlatformTransactions_resetMetrics;
+                jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
 
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
                 jmethodID m_PlatformUtils_errData;
-
-                jclass c_PlatformAtomicLong;
-                jmethodID m_PlatformAtomicLong_get;
-                jmethodID m_PlatformAtomicLong_incrementAndGet;
-                jmethodID m_PlatformAtomicLong_getAndIncrement;
-                jmethodID m_PlatformAtomicLong_addAndGet;
-                jmethodID m_PlatformAtomicLong_getAndAdd;
-                jmethodID m_PlatformAtomicLong_decrementAndGet;
-                jmethodID m_PlatformAtomicLong_getAndDecrement;
-                jmethodID m_PlatformAtomicLong_getAndSet;
-                jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
-                jmethodID m_PlatformAtomicLong_isClosed;
-                jmethodID m_PlatformAtomicLong_close;
-
-                jclass c_PlatformAtomicSequence;
-                jmethodID m_PlatformAtomicSequence_get;
-                jmethodID m_PlatformAtomicSequence_incrementAndGet;
-                jmethodID m_PlatformAtomicSequence_getAndIncrement;
-                jmethodID m_PlatformAtomicSequence_addAndGet;
-                jmethodID m_PlatformAtomicSequence_getAndAdd;
-                jmethodID m_PlatformAtomicSequence_getBatchSize;
-                jmethodID m_PlatformAtomicSequence_setBatchSize;
-                jmethodID m_PlatformAtomicSequence_isClosed;
-                jmethodID m_PlatformAtomicSequence_close;
-
-                jclass c_PlatformAtomicReference;
-                jmethodID m_PlatformAtomicReference_isClosed;
-                jmethodID m_PlatformAtomicReference_close;
-
-                jclass c_PlatformListenable;
-                jmethodID m_PlatformListenable_cancel;
-                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -493,11 +303,11 @@ namespace ignite
                 static int Reallocate(long long memPtr, int cap);
                 static void Detach();
                 static void Release(jobject obj);
+                static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
+                static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
-                jobject IgnitionInstance(char* name);
-                jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
                 long long IgnitionEnvironmentPointer(char* name);
                 long long IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
                 bool IgnitionStop(char* name, bool cancel);
@@ -505,150 +315,18 @@ namespace ignite
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
-                void ProcessorReleaseStart(jobject obj);
-                jobject ProcessorProjection(jobject obj);
-                jobject ProcessorCache(jobject obj, const char* name);
-                jobject ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorCreateCache(jobject obj, const char* name);
-                jobject ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateCache(jobject obj, const char* name);
-                jobject ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorCreateCacheFromConfig(jobject obj, long long memPtr);
-                jobject ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr);
-                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
-                jobject ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr);
-                jobject ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr);
-                void ProcessorDestroyCache(jobject obj, const char* name);
-                void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorAffinity(jobject obj, const char* name);
-                jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
-                jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo = NULL);
-                jobject ProcessorCompute(jobject obj, jobject prj);
-                jobject ProcessorMessage(jobject obj, jobject prj);
-                jobject ProcessorEvents(jobject obj, jobject prj);
-                jobject ProcessorServices(jobject obj, jobject prj);
-                jobject ProcessorExtensions(jobject obj);
-                jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
-                jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
-                jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
-				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-                
+                long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetInStreamOutObject(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                void TargetInObjectStreamOutStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
-                long long TargetOutLong(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
+                jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
-                void TargetListenFuture(jobject obj, long long futId, int typ);
-                void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
-                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
-                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
-                
-                int AffinityPartitions(jobject obj);
+                void TargetInStreamAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInStreamOutObjectAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
-                jobject CacheWithSkipStore(jobject obj);
-                jobject CacheWithNoRetries(jobject obj);
-                jobject CacheWithExpiryPolicy(jobject obj, long long create, long long update, long long access);
-                jobject CacheWithAsync(jobject obj);
-                jobject CacheWithKeepPortable(jobject obj);
-                void CacheClear(jobject obj, JniErrorInfo* errInfo = NULL);
-                void CacheRemoveAll(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
-                jobject CacheIterator(jobject obj);
-                jobject CacheLocalIterator(jobject obj, int peekModes);
-                void CacheEnterLock(jobject obj, long long id);
-                void CacheExitLock(jobject obj, long long id);
-                bool CacheTryEnterLock(jobject obj, long long id, long long timeout);
-                void CacheCloseLock(jobject obj, long long id);
-                void CacheRebalance(jobject obj, long long futId);
-                int CacheSize(jobject obj, int peekModes, bool loc, JniErrorInfo* errInfo = NULL);
-
-                void CacheStoreCallbackInvoke(jobject obj, long long memPtr);
-
-                void ComputeWithNoFailover(jobject obj);
-                void ComputeWithTimeout(jobject obj, long long timeout);
-                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
-
-                void ContinuousQueryClose(jobject obj);
-                jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
-
-                void DataStreamerListenTopology(jobject obj, long long ptr);
-                bool DataStreamerAllowOverwriteGet(jobject obj);
-                void DataStreamerAllowOverwriteSet(jobject obj, bool val);
-                bool DataStreamerSkipStoreGet(jobject obj);
-                void DataStreamerSkipStoreSet(jobject obj, bool val);
-                int DataStreamerPerNodeBufferSizeGet(jobject obj);
-                void DataStreamerPerNodeBufferSizeSet(jobject obj, int val);
-                int DataStreamerPerNodeParallelOperationsGet(jobject obj);
-                void DataStreamerPerNodeParallelOperationsSet(jobject obj, int val);
-
-                jobject MessagingWithAsync(jobject obj);
-
-                jobject ProjectionForOthers(jobject obj, jobject prj);
-                jobject ProjectionForRemotes(jobject obj);
-                jobject ProjectionForDaemons(jobject obj);
-                jobject ProjectionForRandom(jobject obj);
-                jobject ProjectionForOldest(jobject obj);
-                jobject ProjectionForYoungest(jobject obj);
-                void ProjectionResetMetrics(jobject obj);
-                jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
-
-                void QueryCursorIterator(jobject obj, JniErrorInfo* errInfo = NULL);
-                bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);
-                void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
-
-                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
-                int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsCommitAsync(jobject obj, long long id, long long futId);
-                int TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsRollbackAsync(jobject obj, long long id, long long futId);
-                int TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                int TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                bool TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
-                void TransactionsResetMetrics(jobject obj);
-
-                jobject EventsWithAsync(jobject obj);
-                bool EventsStopLocalListen(jobject obj, long long hnd);
-                void EventsLocalListen(jobject obj, long long hnd, int type);
-                bool EventsIsEnabled(jobject obj, int type);
-                
-                jobject ServicesWithAsync(jobject obj);
-                jobject ServicesWithServerKeepPortable(jobject obj);
-                void ServicesCancel(jobject obj, char* name);
-                void ServicesCancelAll(jobject obj);
-                void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
-
-                long long AtomicLongGet(jobject obj);
-                long long AtomicLongIncrementAndGet(jobject obj);
-                long long AtomicLongGetAndIncrement(jobject obj);
-                long long AtomicLongAddAndGet(jobject obj, long long value);
-                long long AtomicLongGetAndAdd(jobject obj, long long value);
-                long long AtomicLongDecrementAndGet(jobject obj);
-                long long AtomicLongGetAndDecrement(jobject obj);
-                long long AtomicLongGetAndSet(jobject obj, long long value);
-                long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
-                bool AtomicLongIsClosed(jobject obj);
-                void AtomicLongClose(jobject obj);
-
-                long long AtomicSequenceGet(jobject obj);
-                long long AtomicSequenceIncrementAndGet(jobject obj);
-                long long AtomicSequenceGetAndIncrement(jobject obj);
-                long long AtomicSequenceAddAndGet(jobject obj, long long l);
-                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
-                int AtomicSequenceGetBatchSize(jobject obj);
-                void AtomicSequenceSetBatchSize(jobject obj, int size);
-                bool AtomicSequenceIsClosed(jobject obj);
-                void AtomicSequenceClose(jobject obj);
-
-                bool AtomicReferenceIsClosed(jobject obj);
-                void AtomicReferenceClose(jobject obj);
-
-                bool ListenableCancel(jobject obj);
-                bool ListenableIsCancelled(jobject obj);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 
@@ -664,13 +342,10 @@ namespace ignite
                 void ExceptionCheck(JNIEnv* env);
                 void ExceptionCheck(JNIEnv* env, JniErrorInfo* errInfo);
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
-                jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorCacheFromConfig0(jobject proc, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
-            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr, jobject cb);
+            JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr);
             JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr);
             JNIEXPORT jlong JNICALL JniCacheStoreSessionCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong storePtr);
 
@@ -738,6 +413,20 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr);
             JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted);
+
+            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jobject baseFunc);
+            JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr);
+
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr);
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
+
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val);
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg);
         }
     }
 }

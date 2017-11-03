@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Structure;
 
@@ -51,23 +52,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="id">Type ID.</param>
-        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, int id)
+        /// <param name="typeName">Name of the type.</param>
+        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, int id, string typeName)
         {
+            Debug.Assert(cfg != null);
+
             _cfg = cfg;
             _id = id;
-        }
-
-        /// <summary>
-        /// Constrcutor.
-        /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        /// <param name="name">Type name.</param>
-        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, string name)
-        {
-            _cfg = cfg;
-            _name = name;
-
-            _id = BinaryUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
+            _name = typeName;
         }
 
         /** <inheritDoc /> */
@@ -97,25 +89,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public bool KeepDeserialized
         {
-            get { return _cfg.DefaultKeepDeserialized; }
+            get { return _cfg.KeepDeserialized; }
         }
 
         /** <inheritDoc /> */
         public IBinaryNameMapper NameMapper
         {
-            get { return _cfg.DefaultNameMapper; }
+            get { return _cfg.NameMapper; }
         }
 
         /** <inheritDoc /> */
         public IBinaryIdMapper IdMapper
         {
-            get { return _cfg.DefaultIdMapper; }
+            get { return _cfg.IdMapper; }
         }
 
         /** <inheritDoc /> */
-        public IBinarySerializer Serializer
+        public IBinarySerializerInternal Serializer
         {
-            get { return _cfg.DefaultSerializer; }
+            get { return new UserSerializerProxy(_cfg.Serializer); }
         }
 
         /** <inheritDoc /> */
@@ -142,20 +134,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void UpdateWriteStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates)
+        public void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _writerTypeStruct = _writerTypeStruct.Merge(exp, pathIdx, updates);
+                _writerTypeStruct = _writerTypeStruct.Merge(pathIdx, updates);
             }
         }
 
         /** <inheritDoc /> */
-        public void UpdateReadStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates)
+        public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
+                _readerTypeStructure = _readerTypeStructure.Merge(pathIdx, updates);
             }
         }
 
@@ -163,6 +155,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchema Schema
         {
             get { return _schema; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return false; }
         }
     }
 }

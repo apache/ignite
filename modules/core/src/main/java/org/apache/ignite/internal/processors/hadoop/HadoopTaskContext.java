@@ -22,13 +22,14 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 
 /**
  * Task context.
  */
 public abstract class HadoopTaskContext {
     /** */
-    protected final HadoopJob job;
+    protected final HadoopJobEx job;
 
     /** */
     private HadoopTaskInput input;
@@ -43,7 +44,7 @@ public abstract class HadoopTaskContext {
      * @param taskInfo Task info.
      * @param job Job.
      */
-    protected HadoopTaskContext(HadoopTaskInfo taskInfo, HadoopJob job) {
+    protected HadoopTaskContext(HadoopTaskInfo taskInfo, HadoopJobEx job) {
         this.taskInfo = taskInfo;
         this.job = job;
     }
@@ -87,7 +88,7 @@ public abstract class HadoopTaskContext {
     /**
      * @return Job.
      */
-    public HadoopJob job() {
+    public HadoopJobEx job() {
         return job;
     }
 
@@ -157,6 +158,13 @@ public abstract class HadoopTaskContext {
     public abstract Comparator<Object> sortComparator();
 
     /**
+     * Get semi-raw sorting comparator.
+     *
+     * @return Semi-raw sorting comparator.
+     */
+    public abstract PartiallyOffheapRawComparatorEx<Object> partialRawSortComparator();
+
+    /**
      * Gets comparator for grouping on combine or reduce operation.
      *
      * @return Comparator.
@@ -199,4 +207,14 @@ public abstract class HadoopTaskContext {
      * @throws IgniteCheckedException On any error in callable.
      */
     public abstract <T> T runAsJobOwner(Callable<T> c) throws IgniteCheckedException;
+
+    /**
+     * Callback invoked from mapper thread when map is finished.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onMapperFinished() throws IgniteCheckedException {
+        if (output instanceof HadoopMapperAwareTaskOutput)
+            ((HadoopMapperAwareTaskOutput)output).onMapperFinished();
+    }
 }

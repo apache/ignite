@@ -117,8 +117,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Local node ID. */
     private UUID locNodeId;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
+
+    /** Work directory. */
+    private final String workDir;
 
     /** Flag allowing not to print out of resources warning. */
     private boolean omitOutOfResourcesWarn;
@@ -139,9 +142,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /**
      * Use this constructor when dependencies could be injected
      * with {@link GridResourceProcessor#injectGeneric(Object)}.
+     *
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint() {
-        // No-op.
+    public IpcSharedMemoryServerEndpoint(String workDir) {
+        this.workDir = workDir;
     }
 
     /**
@@ -149,12 +154,14 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      *
      * @param log Log.
      * @param locNodeId Node id.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String igniteInstanceName, String workDir) {
         this.log = log;
         this.locNodeId = locNodeId;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
+        this.workDir = workDir;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -181,7 +188,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
-        tokDir = U.resolveWorkDirectory(tokDirPath, false);
+        tokDir = U.resolveWorkDirectory(workDir, tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
             throw new IpcEndpointBindException("Port value is illegal: " + port);
@@ -200,7 +207,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 "in use?): " + port, e);
         }
 
-        gcWorker = new GcWorker(gridName, "ipc-shmem-gc", log);
+        gcWorker = new GcWorker(igniteInstanceName, "ipc-shmem-gc", log);
 
         new IgniteThread(gcWorker).start();
 
@@ -297,13 +304,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                     String msg = "Failed to process incoming connection (most probably, shared memory " +
                         "rest endpoint has been configured by mistake).";
 
-                    LT.warn(log, null, msg);
+                    LT.warn(log, msg);
 
                     sendErrorResponse(out, e);
                 }
                 catch (IpcOutOfSystemResourcesException e) {
                     if (!omitOutOfResourcesWarn)
-                        LT.warn(log, null, OUT_OF_RESOURCES_MSG);
+                        LT.warn(log, OUT_OF_RESOURCES_MSG);
 
                     sendErrorResponse(out, e);
                 }
@@ -348,12 +355,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private void injectResources(Ignite ignite){
         if (ignite != null) {
             // Inject resources.
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
         }
         else {
             // Cleanup resources.
-            gridName = null;
+            igniteInstanceName = null;
             locNodeId = null;
         }
     }
@@ -530,12 +537,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      */
     private class GcWorker extends GridWorker {
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Name.
          * @param log Log.
          */
-        protected GcWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected GcWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
         }
 
         /** {@inheritDoc} */

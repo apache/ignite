@@ -52,8 +52,8 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -66,6 +66,8 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testNotifierEnabledForCluster() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5413");
+
         checkNotifierStatusForCluster(true);
     }
 

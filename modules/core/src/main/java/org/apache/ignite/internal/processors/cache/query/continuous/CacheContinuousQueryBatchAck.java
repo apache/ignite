@@ -21,10 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -32,10 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Batch acknowledgement.
  */
-public class CacheContinuousQueryBatchAck extends GridCacheMessage {
-    /** */
-    public static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.0");
-
+public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -151,7 +147,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 118;
     }
 

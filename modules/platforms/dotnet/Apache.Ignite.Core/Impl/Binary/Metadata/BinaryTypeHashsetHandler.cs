@@ -25,13 +25,13 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     internal class BinaryTypeHashsetHandler : IBinaryTypeHandler
     {
         /** Empty fields collection. */
-        private static readonly IDictionary<string, int> EmptyFields = new Dictionary<string, int>();
+        private static readonly IDictionary<string, BinaryField> EmptyFields = new Dictionary<string, BinaryField>();
 
         /** IDs known when serialization starts. */
         private readonly ICollection<int> _ids;
 
         /** New fields. */
-        private IDictionary<string, int> _fieldMap;
+        private IDictionary<string, BinaryField> _fieldMap;
 
         /** */
         private readonly bool _newType;
@@ -53,15 +53,15 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             if (!_ids.Contains(fieldId))
             {
                 if (_fieldMap == null)
-                    _fieldMap = new Dictionary<string, int>();
+                    _fieldMap = new Dictionary<string, BinaryField>();
 
                 if (!_fieldMap.ContainsKey(fieldName))
-                    _fieldMap[fieldName] = typeId;
+                    _fieldMap[fieldName] = new BinaryField(typeId, fieldId);
             }
         }
 
         /** <inheritdoc /> */
-        public IDictionary<string, int> OnObjectWriteFinished()
+        public IDictionary<string, BinaryField> OnObjectWriteFinished()
         {
             return _fieldMap ?? (_newType ? EmptyFields : null);
         }

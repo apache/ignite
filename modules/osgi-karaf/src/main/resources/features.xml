@@ -110,7 +110,7 @@
             NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
         </details>
         <feature>hibernate</feature>
-        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate/${project.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate_4.2/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-indexing" version="${project.version}" description="Apache Ignite :: Indexing">
@@ -154,7 +154,7 @@
 
     <feature name="ignite-kafka" version="${project.version}" description="Apache Ignite :: Kafka">
         <details>
-            <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.1 library bundle.]]>
+            <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.11 library bundle.]]>
         </details>
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
@@ -190,21 +190,20 @@
     </feature>   
 
     <feature name="ignite-rest-http" version="${project.version}" description="Apache Ignite :: REST HTTP">
-         <!-- NOTICE: XOM cannot be included by default due to an incompatible license; 
+         <!-- NOTICE: XOM cannot be included by default due to an incompatible license;
                       please review its license model and install the dependency manually if you agree. -->
         <details>
-            <![CDATA[The Apache Ignite REST HTTP module + dependencies. 
-            
+            <![CDATA[The Apache Ignite REST HTTP module + dependencies.
+
             Installing this feature will trigger the installation of the 'http' feature from the Apache Karaf distribution.
-            
-            NOTE: Before using this feature you must review the license of the XOM bundle and install it manually if you accept it: 
+
+            NOTE: Before using this feature you must review the license of the XOM bundle and install it manually if you accept it:
             install -s mvn:xom/xom/1.2.5]]>
         </details>
         <feature dependency="true">http</feature>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-beanutils/${commons.beanutils.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.oro/${oro.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ezmorph/${ezmorph.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.json-lib/${jsonlib.bundle.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/${jackson2.version}</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson2.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/${commons.lang.version}</bundle>
         <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/${commons.collections.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/${project.version}</bundle>

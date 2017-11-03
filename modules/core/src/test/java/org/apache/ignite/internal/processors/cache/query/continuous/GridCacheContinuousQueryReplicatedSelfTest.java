@@ -49,8 +49,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      * @throws Exception If failed.
      */
     public void testRemoteNodeCallback() throws Exception {
-        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
@@ -89,8 +89,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      */
     public void testCrossCallback() throws Exception {
         // Prepare.
-        IgniteCache<Integer, Integer> cache1 = grid(0).cache(null);
-        IgniteCache<Integer, Integer> cache2 = grid(1).cache(null);
+        IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
 
         final int key1 = primaryKey(cache1);
         final int key2 = primaryKey(cache2);

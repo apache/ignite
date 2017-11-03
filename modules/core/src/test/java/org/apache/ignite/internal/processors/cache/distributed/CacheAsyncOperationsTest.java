@@ -51,12 +51,12 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     private static volatile CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -122,19 +122,11 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
 
         latch = new CountDownLatch(1);
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+        IgniteFuture<?> fut1 = cache.putAsync(0, 0);
 
-        asyncCache.put(0, 0);
+        IgniteFuture<?> fut2 = cache.getAndPutAsync(1, 2);
 
-        IgniteFuture<?> fut1 = asyncCache.future();
-
-        asyncCache.getAndPut(1, 2);
-
-        IgniteFuture<?> fut2 = asyncCache.future();
-
-        asyncCache.getAndPut(1, 3);
-
-        IgniteFuture<?> fut3 = asyncCache.future();
+        IgniteFuture<?> fut3 = cache.getAndPutAsync(1, 3);
 
         assertFalse(fut1.isDone());
         assertFalse(fut2.isDone());
@@ -166,23 +158,13 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
 
         latch = new CountDownLatch(1);
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+        IgniteFuture<?> fut1 = cache.putAsync(0, 0);
 
-        asyncCache.put(0, 0);
+        IgniteFuture<?> fut2 = cache.putAsync(0, 0);
 
-        IgniteFuture<?> fut1 = asyncCache.future();
+        IgniteFuture<?> fut3 = cache.getAndPutAsync(1, 2);
 
-        asyncCache.put(0, 0);
-
-        IgniteFuture<?> fut2 = asyncCache.future();
-
-        asyncCache.getAndPut(1, 2);
-
-        IgniteFuture<?> fut3 = asyncCache.future();
-
-        asyncCache.put(0, 0);
-
-        IgniteFuture<?> fut4 = asyncCache.future();
+        IgniteFuture<?> fut4 = cache.putAsync(0, 0);
 
         assertFalse(fut1.isDone());
         assertFalse(fut2.isDone());
@@ -229,7 +211,7 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);

@@ -29,12 +29,12 @@ import org.jetbrains.annotations.Nullable;
  * Ack task to run on node.
  */
 @GridInternal
-public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
+public class VisorAckTask extends VisorMultiNodeTask<VisorAckTaskArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorAckJob job(String arg) {
+    @Override protected VisorAckJob job(VisorAckTaskArg arg) {
         return new VisorAckJob(arg, debug);
     }
 
@@ -46,7 +46,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     /**
      * Ack job to run on node.
      */
-    private static class VisorAckJob extends VisorJob<String, Void> {
+    private static class VisorAckJob extends VisorJob<VisorAckTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -56,13 +56,13 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
          * @param arg Message to ack in node console.
          * @param debug Debug flag.
          */
-        private VisorAckJob(String arg, boolean debug) {
+        private VisorAckJob(VisorAckTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String arg) {
-            System.out.println("<visor>: ack: " + (arg == null ? ignite.localNode().id() : arg));
+        @Override protected Void run(VisorAckTaskArg arg) {
+            System.out.println("<visor>: ack: " + (arg.getMessage() == null ? ignite.localNode().id() : arg.getMessage()));
 
             return null;
         }

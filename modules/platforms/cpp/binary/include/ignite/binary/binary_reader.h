@@ -39,12 +39,25 @@ namespace ignite
     {
         /**
          * Binary reader.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryReader
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
              *
              * @param impl Implementation.
              */
@@ -283,6 +296,27 @@ namespace ignite
             int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
 
             /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @return Result.
+             */
+            Time ReadTime(const char* fieldName);
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
+
+            /**
              * Read string.
              *
              * @param fieldName Field name.
@@ -308,11 +342,11 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::common::SafeArray<char> arr(len + 1);
+                    ignite::common::FixedSizeArray<char> arr(len + 1);
 
-                    ReadString(fieldName, arr.target, len + 1);
+                    ReadString(fieldName, arr.GetData(), static_cast<int32_t>(arr.GetSize()));
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
                 else
                     return std::string();
@@ -351,7 +385,7 @@ namespace ignite
             template<typename T>
             BinaryCollectionReader<T> ReadCollection(const char* fieldName)
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(fieldName, &typ, &size);
@@ -381,7 +415,7 @@ namespace ignite
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap(const char* fieldName)
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(fieldName, &typ, &size);
@@ -395,7 +429,7 @@ namespace ignite
              * @param fieldName Field name.
              * @return Collection type.
              */
-            CollectionType ReadCollectionType(const char* fieldName);
+            CollectionType::Type ReadCollectionType(const char* fieldName);
 
             /**
              * Read type of the collection.

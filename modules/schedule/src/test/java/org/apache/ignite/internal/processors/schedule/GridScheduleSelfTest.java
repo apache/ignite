@@ -19,21 +19,29 @@ package org.apache.ignite.internal.processors.schedule;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Test for task scheduler.
@@ -43,8 +51,14 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 2;
 
+    /** Custom thread name. */
+    private static final String CUSTOM_THREAD_NAME = "custom-async-test";
+
     /** */
     private static AtomicInteger execCntr = new AtomicInteger(0);
+
+    /** Custom executor. */
+    private ExecutorService exec;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -61,6 +75,22 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         execCntr.set(0);
+        exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+
+                t.setName(CUSTOM_THREAD_NAME);
+
+                return t;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        U.shutdownNow(getClass(), exec, log);
+
+        exec = null;
     }
 
     /**
@@ -124,6 +154,54 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
+            final SchedulerFuture<?> fut0 = fut;
+
+            //noinspection ThrowableNotThrown
+            assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    fut0.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                        @Override public void apply(IgniteFuture<?> fut) {
+                            // No-op
+                        }
+                    }, null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> fut) {
+                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+
+                    notifyCnt.incrementAndGet();
+                }
+            }, exec);
+
+            //noinspection ThrowableNotThrown
+            assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    fut0.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
+                        @Override public String apply(IgniteFuture<?> fut) {
+                            // No-op
+
+                            return null;
+                        }
+                    }, null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            IgniteFuture<String> chained1 = fut.chainAsync(new IgniteClosure<IgniteFuture<?>, String>() {
+                @Override public String apply(IgniteFuture<?> fut) {
+                    assertEquals(Thread.currentThread().getName(), CUSTOM_THREAD_NAME);
+
+                    fut.get();
+
+                    return "done-custom";
+                }
+            }, exec);
+
             long timeTillRun = freq + delay;
 
             info("Going to wait for the first run: " + timeTillRun);
@@ -135,6 +213,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             assert !fut.isDone();
             assert !fut.isCancelled();
             assert fut.last() == null;
+            assertFalse(chained1.isDone());
 
             info("Going to wait for 2nd run: " + timeTillRun);
 
@@ -142,10 +221,13 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             Thread.sleep(timeTillRun * 1000);
 
             assert fut.isDone();
-            assert notifyCnt.get() == 2;
+            assert notifyCnt.get() == 2 * 2;
             assert !fut.isCancelled();
             assert fut.last() == null;
 
+            assertEquals("done-custom", chained1.get());
+
+            assertTrue(chained1.isDone());
         }
         finally {
             assert fut != null;
@@ -333,8 +415,36 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to call specified number
-     * of attempts with 100ms interval between them.
+     * @throws Exception If failed.
+     */
+    public void testNoNextExecutionTime() throws Exception {
+        Callable<Integer> run = new Callable<Integer>() {
+            @Override public Integer call() {
+                return 1;
+            }
+        };
+
+        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
+
+        try {
+            future.get();
+
+            fail("Accepted wrong cron expression");
+        }
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Invalid cron expression in schedule pattern"));
+        }
+
+        assertTrue(future.isDone());
+
+        assertEquals(0, future.nextExecutionTime());
+
+        assertEquals(0, future.nextExecutionTimes(2, System.currentTimeMillis()).length);
+    }
+
+    /**
+     * Waits until method {@link org.apache.ignite.scheduler.SchedulerFuture#last()} returns not a null value. Tries to
+     * call specified number of attempts with 100ms interval between them.
      *
      * @param fut Schedule future to call method on.
      * @param attempts Max number of attempts to try.
@@ -383,6 +493,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             execCntr.incrementAndGet();
         }
     }
+
     /**
      * Test callable job.
      */

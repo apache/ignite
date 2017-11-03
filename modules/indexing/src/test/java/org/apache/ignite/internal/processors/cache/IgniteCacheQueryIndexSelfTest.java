@@ -55,7 +55,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testWithoutStoreLoad() throws Exception {
-        IgniteCache<Integer, CacheValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, CacheValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ENTRY_CNT; i++)
             cache.put(i, new CacheValue(i));
@@ -74,9 +74,9 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      */
     public void testWithStoreLoad() throws Exception {
         for (int i = 0; i < ENTRY_CNT; i++)
-            putToStore(i, new CacheValue(i));
+            storeStgy.putToStore(i, new CacheValue(i));
 
-        IgniteCache<Integer, CacheValue> cache0 = grid(0).cache(null);
+        IgniteCache<Integer, CacheValue> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache0.loadCache(null);
 

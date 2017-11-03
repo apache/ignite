@@ -26,12 +26,6 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-
-        <!-- Enabling ODBC. -->
-        <property name="odbcConfiguration">
-            <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
-        </property>
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -39,25 +33,33 @@
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-            
-                    <!-- Configure type metadata to enable queries. -->
-                    <property name="typeMetadata">
+
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="Person"/>
-                                <property name="ascendingFields">
+
+                                <property name="fields">
                                     <map>
                                         <entry key="orgId" value="java.lang.Long"/>
-                                    </map>
-                                </property>
-                                <property name="queryFields">
-                                    <map>
                                         <entry key="firstName" value="java.lang.String"/>
                                         <entry key="lastName" value="java.lang.String"/>
                                         <entry key="resume" value="java.lang.String"/>
                                         <entry key="salary" value="java.lang.Double"/>
                                     </map>
+                                </property>
+
+                                <property name="keyFields">
+                                    <list></list>
+                                </property>
+
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <constructor-arg value="orgId"/>
+                                        </bean>
+                                    </list>
                                 </property>
                             </bean>
                         </list>
@@ -70,16 +72,20 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
             
-                    <!-- Configure type metadata to enable queries. -->
-                    <property name="typeMetadata">
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Long"/>
                                 <property name="valueType" value="Organization"/>
-                                <property name="ascendingFields">
+
+                                <property name="fields">
                                     <map>
                                         <entry key="name" value="java.lang.String"/>
                                     </map>
+                                </property>
+
+                                <property name="keyFields">
+                                    <list></list>
                                 </property>
                             </bean>
                         </list>

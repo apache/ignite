@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -34,47 +35,119 @@ public class GridServiceClientNodeTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int NODE_CNT = 3;
+    private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(NODE_CNT - 1)))
-            cfg.setClientMode(true);
+        cfg.setClientFailureDetectionTimeout(30000);
+
+        cfg.setClientMode(client);
+        cfg.setMetricsUpdateFrequency(1000);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(NODE_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployFromClient() throws Exception {
-        Ignite ignite = ignite(NODE_CNT - 1);
+        startGrids(3);
 
-        assertTrue(ignite.configuration().isClientMode());
+        client = true;
 
-        String svcName = "testService";
+        Ignite ignite = startGrid(3);
+
+        checkDeploy(ignite, "service1");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployFromClientAfterRouterStop1() throws Exception {
+        startGrid(0);
+
+        client = true;
+
+        Ignite ignite = startGrid(1);
+
+        client = false;
+
+        startGrid(2);
+
+        U.sleep(1000);
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
+
+        checkDeploy(ignite, "service1");
+
+        startGrid(3);
+
+        for (int i = 0; i < 10; i++)
+            checkDeploy(ignite, "service2-" + i);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployFromClientAfterRouterStop2() throws Exception {
+        startGrid(0);
+
+        client = true;
+
+        Ignite ignite = startGrid(1);
+
+        client = false;
+
+        startGrid(2);
+
+        client = true;
+
+        startGrid(3);
+
+        client = false;
+
+        startGrid(4);
+
+        U.sleep(1000);
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
+
+        checkDeploy(ignite, "service1");
+
+        startGrid(5);
+
+        for (int i = 0; i < 10; i++)
+            checkDeploy(ignite, "service2-" + i);
+    }
+
+    /**
+     * @param client Client node.
+     * @param svcName Service name.
+     * @throws Exception If failed.
+     */
+    private void checkDeploy(Ignite client, String svcName) throws Exception {
+        assertTrue(client.configuration().isClientMode());
 
         CountDownLatch latch = new CountDownLatch(1);
 
         DummyService.exeLatch(svcName, latch);
 
-        ignite.services().deployClusterSingleton(svcName, new DummyService());
+        client.services().deployClusterSingleton(svcName, new DummyService());
 
         assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
     }

@@ -45,8 +45,8 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -54,7 +54,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
@@ -104,7 +104,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
             dataBytes.put(i, ignite.configuration().getMarshaller().marshal(obj));
         }
 
-        ignite.cache(null).putAll(data);
+        ignite.cache(DEFAULT_CACHE_NAME).putAll(data);
 
         stopGrid(0);
 
@@ -119,7 +119,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
 
                     Ignite ignite = startGrid(node);
 
-                    IgniteCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (Map.Entry<Integer, byte[]> e : dataBytes.entrySet()) {
                         Object obj = ignite.configuration().getMarshaller().unmarshal(e.getValue(), null);
@@ -127,7 +127,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
                         cache.put(e.getKey(), obj);
                     }
 
-                    ignite.cache(null).getAll(dataBytes.keySet());
+                    ignite.cache(DEFAULT_CACHE_NAME).getAll(dataBytes.keySet());
 
                     return null;
                 }

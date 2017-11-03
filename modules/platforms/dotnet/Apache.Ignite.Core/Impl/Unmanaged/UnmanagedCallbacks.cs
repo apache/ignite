@@ -21,14 +21,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
-
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -36,11 +39,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
     using UU = UnmanagedUtils;
 
@@ -48,29 +53,46 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// Unmanaged callbacks.
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable", 
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
-    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable", 
+    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
+        /** Console write delegate. */
+        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
+
+        /** Console write pointer. */
+        private static readonly void* ConsoleWritePtr =
+            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
+
         /** Unmanaged context. */
         private volatile UnmanagedContext _ctx;
 
         /** Handle registry. */
         private readonly HandleRegistry _handleRegistry = new HandleRegistry();
-        
+
         /** Grid. */
         private volatile Ignite _ignite;
 
         /** Keep references to created delegates. */
         // ReSharper disable once CollectionNeverQueried.Local
-        private readonly List<Delegate> _delegates = new List<Delegate>(50);
+        private readonly List<Delegate> _delegates = new List<Delegate>(5);
+
+        /** Max op code. */
+        private static readonly int MaxOpCode = Enum.GetValues(typeof(UnmanagedCallbackOp)).Cast<int>().Max();
+
+        /** Handlers array. */
+        private readonly InLongOutLongHandler[] _inLongOutLongHandlers = new InLongOutLongHandler[MaxOpCode + 1];
+
+        /** Handlers array. */
+        private readonly InLongLongLongObjectOutLongHandler[] _inLongLongLongObjectOutLongHandlers
+            = new InLongLongLongObjectOutLongHandler[MaxOpCode + 1];
 
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon Ignite initialisation. */
+        /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
@@ -79,6 +101,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Callbacks pointer. */
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
+
+        /** Log. */
+        private readonly ILogger _log;
 
         /** Error type: generic. */
         private const int ErrGeneric = 1;
@@ -89,165 +114,43 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Error type: attach. */
         private const int ErrJvmAttach = 3;
 
-        /** Opeartion: prepare .Net. */
+        /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
-        private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheStoreInvokeCallbackDelegate(void* target, long objPtr, long memPtr, void* cb);
-        private delegate void CacheStoreDestroyCallbackDelegate(void* target, long objPtr);
-        private delegate long CacheStoreSessionCreateCallbackDelegate(void* target, long storePtr);
+        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen);
 
-        private delegate long CacheEntryFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int CacheEntryFilterApplyCallbackDelegate(void* target, long objPtr, long memPtr);
-        private delegate void CacheEntryFilterDestroyCallbackDelegate(void* target, long objPtr);
+        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
+        private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
-        private delegate void CacheInvokeCallbackDelegate(void* target, long inMemPtr, long outMemPtr);
+        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
-        private delegate void ComputeTaskMapCallbackDelegate(void* target, long taskPtr, long inMemPtr, long outMemPtr);
-        private delegate int ComputeTaskJobResultCallbackDelegate(void* target, long taskPtr, long jobPtr, long memPtr);
-        private delegate void ComputeTaskReduceCallbackDelegate(void* target, long taskPtr);
-        private delegate void ComputeTaskCompleteCallbackDelegate(void* target, long taskPtr, long memPtr);
-        private delegate int ComputeJobSerializeCallbackDelegate(void* target, long jobPtr, long memPtr);
-        private delegate long ComputeJobCreateCallbackDelegate(void* target, long memPtr);
-        private delegate void ComputeJobExecuteCallbackDelegate(void* target, long jobPtr, int cancel, long memPtr);
-        private delegate void ComputeJobCancelCallbackDelegate(void* target, long jobPtr);
-        private delegate void ComputeJobDestroyCallbackDelegate(void* target, long jobPtr);
+        private delegate long InLongOutLongDelegate(void* target, int type, long val);
+        private delegate long InLongLongLongObjectOutLongDelegate(void* target, int type, long val1, long val2, long val3, void* arg);
 
-        private delegate void ContinuousQueryListenerApplyCallbackDelegate(void* target, long lsnrPtr, long memPtr);
-        private delegate long ContinuousQueryFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int ContinuousQueryFilterApplyCallbackDelegate(void* target, long filterPtr, long memPtr);
-        private delegate void ContinuousQueryFilterReleaseCallbackDelegate(void* target, long filterPtr);
-
-        private delegate void DataStreamerTopologyUpdateCallbackDelegate(void* target, long ldrPtr, long topVer, int topSize);
-        private delegate void DataStreamerStreamReceiverInvokeCallbackDelegate(void* target, long ptr, void* cache, long memPtr, byte keepPortable);
-
-        private delegate void FutureByteResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureBoolResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureShortResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureCharResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureIntResultCallbackDelegate(void* target, long futPtr, int res);
-        private delegate void FutureFloatResultCallbackDelegate(void* target, long futPtr, float res);
-        private delegate void FutureLongResultCallbackDelegate(void* target, long futPtr, long res);
-        private delegate void FutureDoubleResultCallbackDelegate(void* target, long futPtr, double res);
-        private delegate void FutureObjectResultCallbackDelegate(void* target, long futPtr, long memPtr);
-        private delegate void FutureNullResultCallbackDelegate(void* target, long futPtr);
-        private delegate void FutureErrorCallbackDelegate(void* target, long futPtr, long memPtr);
-
-        private delegate void LifecycleOnEventCallbackDelegate(void* target, long ptr, int evt);
-
-        private delegate void MemoryReallocateCallbackDelegate(void* target, long memPtr, int cap);
-
-        private delegate long MessagingFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int MessagingFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
-        private delegate void MessagingFilterDestroyCallbackDelegate(void* target, long ptr);
-        
-        private delegate long EventFilterCreateCallbackDelegate(void* target, long memPtr);
-        private delegate int EventFilterApplyCallbackDelegate(void* target, long ptr, long memPtr);
-        private delegate void EventFilterDestroyCallbackDelegate(void* target, long ptr);
-
-        private delegate long ServiceInitCallbackDelegate(void* target, long memPtr);
-        private delegate void ServiceExecuteCallbackDelegate(void* target, long svcPtr, long memPtr);
-        private delegate void ServiceCancelCallbackDelegate(void* target, long svcPtr, long memPtr);
-        private delegate void ServiceInvokeMethodCallbackDelegate(void* target, long svcPtr, long inMemPtr, long outMemPtr);
-
-        private delegate int СlusterNodeFilterApplyCallbackDelegate(void* target, long memPtr);
-
-        private delegate void NodeInfoCallbackDelegate(void* target, long memPtr);
-
-        private delegate void OnStartCallbackDelegate(void* target, void* proc, long memPtr);
-        private delegate void OnStopCallbackDelegate(void* target);
-        
-        private delegate void ErrorCallbackDelegate(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars, int errMsgCharsLen, void* errData, int errDataLen);
-
-        private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
-        private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
-
-        private delegate void OnClientDisconnectedDelegate(void* target);
-        private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+        private delegate long InLongOutLongFunc(long val);
+        private delegate long InLongLongLongObjectOutLongFunc(long val1, long val2, long val3, void* arg);
 
         /// <summary>
-        /// constructor.
+        /// Constructor.
         /// </summary>
-        public UnmanagedCallbacks()
+        /// <param name="log">Logger.</param>
+        public UnmanagedCallbacks(ILogger log)
         {
+            Debug.Assert(log != null);
+
+            _log = log;
+
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
 
-                cacheStoreCreate = CreateFunctionPointer((CacheStoreCreateCallbackDelegate) CacheStoreCreate),
-                cacheStoreInvoke = CreateFunctionPointer((CacheStoreInvokeCallbackDelegate) CacheStoreInvoke),
-                cacheStoreDestroy = CreateFunctionPointer((CacheStoreDestroyCallbackDelegate) CacheStoreDestroy),
-
-                cacheStoreSessionCreate = CreateFunctionPointer((CacheStoreSessionCreateCallbackDelegate) CacheStoreSessionCreate),
-                
-                cacheEntryFilterCreate = CreateFunctionPointer((CacheEntryFilterCreateCallbackDelegate)CacheEntryFilterCreate),
-                cacheEntryFilterApply = CreateFunctionPointer((CacheEntryFilterApplyCallbackDelegate)CacheEntryFilterApply),
-                cacheEntryFilterDestroy = CreateFunctionPointer((CacheEntryFilterDestroyCallbackDelegate)CacheEntryFilterDestroy),
-
-                cacheInvoke = CreateFunctionPointer((CacheInvokeCallbackDelegate) CacheInvoke),
-
-                computeTaskMap = CreateFunctionPointer((ComputeTaskMapCallbackDelegate) ComputeTaskMap),
-                computeTaskJobResult =
-                    CreateFunctionPointer((ComputeTaskJobResultCallbackDelegate) ComputeTaskJobResult),
-                computeTaskReduce = CreateFunctionPointer((ComputeTaskReduceCallbackDelegate) ComputeTaskReduce),
-                computeTaskComplete = CreateFunctionPointer((ComputeTaskCompleteCallbackDelegate) ComputeTaskComplete),
-                computeJobSerialize = CreateFunctionPointer((ComputeJobSerializeCallbackDelegate) ComputeJobSerialize),
-                computeJobCreate = CreateFunctionPointer((ComputeJobCreateCallbackDelegate) ComputeJobCreate),
-                computeJobExecute = CreateFunctionPointer((ComputeJobExecuteCallbackDelegate) ComputeJobExecute),
-                computeJobCancel = CreateFunctionPointer((ComputeJobCancelCallbackDelegate) ComputeJobCancel),
-                computeJobDestroy = CreateFunctionPointer((ComputeJobDestroyCallbackDelegate) ComputeJobDestroy),
-                continuousQueryListenerApply =
-                    CreateFunctionPointer((ContinuousQueryListenerApplyCallbackDelegate) ContinuousQueryListenerApply),
-                continuousQueryFilterCreate =
-                    CreateFunctionPointer((ContinuousQueryFilterCreateCallbackDelegate) ContinuousQueryFilterCreate),
-                continuousQueryFilterApply =
-                    CreateFunctionPointer((ContinuousQueryFilterApplyCallbackDelegate) ContinuousQueryFilterApply),
-                continuousQueryFilterRelease =
-                    CreateFunctionPointer((ContinuousQueryFilterReleaseCallbackDelegate) ContinuousQueryFilterRelease),
-                dataStreamerTopologyUpdate =
-                    CreateFunctionPointer((DataStreamerTopologyUpdateCallbackDelegate) DataStreamerTopologyUpdate),
-                dataStreamerStreamReceiverInvoke =
-                    CreateFunctionPointer((DataStreamerStreamReceiverInvokeCallbackDelegate) DataStreamerStreamReceiverInvoke),
-                
-                futureByteResult = CreateFunctionPointer((FutureByteResultCallbackDelegate) FutureByteResult),
-                futureBoolResult = CreateFunctionPointer((FutureBoolResultCallbackDelegate) FutureBoolResult),
-                futureShortResult = CreateFunctionPointer((FutureShortResultCallbackDelegate) FutureShortResult),
-                futureCharResult = CreateFunctionPointer((FutureCharResultCallbackDelegate) FutureCharResult),
-                futureIntResult = CreateFunctionPointer((FutureIntResultCallbackDelegate) FutureIntResult),
-                futureFloatResult = CreateFunctionPointer((FutureFloatResultCallbackDelegate) FutureFloatResult),
-                futureLongResult = CreateFunctionPointer((FutureLongResultCallbackDelegate) FutureLongResult),
-                futureDoubleResult = CreateFunctionPointer((FutureDoubleResultCallbackDelegate) FutureDoubleResult),
-                futureObjectResult = CreateFunctionPointer((FutureObjectResultCallbackDelegate) FutureObjectResult),
-                futureNullResult = CreateFunctionPointer((FutureNullResultCallbackDelegate) FutureNullResult),
-                futureError = CreateFunctionPointer((FutureErrorCallbackDelegate) FutureError),
-                lifecycleOnEvent = CreateFunctionPointer((LifecycleOnEventCallbackDelegate) LifecycleOnEvent),
-                memoryReallocate = CreateFunctionPointer((MemoryReallocateCallbackDelegate) MemoryReallocate),
-                nodeInfo = CreateFunctionPointer((NodeInfoCallbackDelegate) NodeInfo),
-                
-                messagingFilterCreate = CreateFunctionPointer((MessagingFilterCreateCallbackDelegate)MessagingFilterCreate),
-                messagingFilterApply = CreateFunctionPointer((MessagingFilterApplyCallbackDelegate)MessagingFilterApply),
-                messagingFilterDestroy = CreateFunctionPointer((MessagingFilterDestroyCallbackDelegate)MessagingFilterDestroy),
-
-                eventFilterCreate = CreateFunctionPointer((EventFilterCreateCallbackDelegate)EventFilterCreate),
-                eventFilterApply = CreateFunctionPointer((EventFilterApplyCallbackDelegate)EventFilterApply),
-                eventFilterDestroy = CreateFunctionPointer((EventFilterDestroyCallbackDelegate)EventFilterDestroy),
-
-                serviceInit = CreateFunctionPointer((ServiceInitCallbackDelegate)ServiceInit),
-                serviceExecute = CreateFunctionPointer((ServiceExecuteCallbackDelegate)ServiceExecute),
-                serviceCancel = CreateFunctionPointer((ServiceCancelCallbackDelegate)ServiceCancel),
-                serviceInvokeMethod = CreateFunctionPointer((ServiceInvokeMethodCallbackDelegate)ServiceInvokeMethod),
-
-                clusterNodeFilterApply = CreateFunctionPointer((СlusterNodeFilterApplyCallbackDelegate)СlusterNodeFilterApply),
-                
-                onStart = CreateFunctionPointer((OnStartCallbackDelegate)OnStart),
-                onStop = CreateFunctionPointer((OnStopCallbackDelegate)OnStop),
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
-                
-                extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
 
-                onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
-                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+                loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
+                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled),
+
+                inLongOutLong = CreateFunctionPointer((InLongOutLongDelegate)InLongOutLong),
+                inLongLongObjectOutLong = CreateFunctionPointer((InLongLongLongObjectOutLongDelegate)InLongLongLongObjectOutLong)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -255,6 +158,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             Marshal.StructureToPtr(cbs, _cbsPtr, false);
 
             _thisHnd = GCHandle.Alloc(this);
+
+            InitHandlers();
         }
 
         /// <summary>
@@ -265,99 +170,265 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             get { return _handleRegistry; }
         }
 
+        #region HANDLERS
+
+        /// <summary>
+        /// Initializes the handlers.
+        /// </summary>
+        private void InitHandlers()
+        {
+            AddHandler(UnmanagedCallbackOp.CacheStoreCreate, CacheStoreCreate, true);
+            AddHandler(UnmanagedCallbackOp.CacheStoreInvoke, CacheStoreInvoke);
+            AddHandler(UnmanagedCallbackOp.CacheStoreDestroy, CacheStoreDestroy);
+            AddHandler(UnmanagedCallbackOp.CacheStoreSessionCreate, CacheStoreSessionCreate);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterCreate, CacheEntryFilterCreate);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterApply, CacheEntryFilterApply);
+            AddHandler(UnmanagedCallbackOp.CacheEntryFilterDestroy, CacheEntryFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.CacheInvoke, CacheInvoke);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskMap, ComputeTaskMap);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskJobResult, ComputeTaskJobResult);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskReduce, ComputeTaskReduce);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskComplete, ComputeTaskComplete);
+            AddHandler(UnmanagedCallbackOp.ComputeJobSerialize, ComputeJobSerialize);
+            AddHandler(UnmanagedCallbackOp.ComputeJobCreate, ComputeJobCreate);
+            AddHandler(UnmanagedCallbackOp.ComputeJobExecute, ComputeJobExecute);
+            AddHandler(UnmanagedCallbackOp.ComputeJobCancel, ComputeJobCancel);
+            AddHandler(UnmanagedCallbackOp.ComputeJobDestroy, ComputeJobDestroy);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryListenerApply, ContinuousQueryListenerApply);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterCreate, ContinuousQueryFilterCreate);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterApply, ContinuousQueryFilterApply);
+            AddHandler(UnmanagedCallbackOp.ContinuousQueryFilterRelease, ContinuousQueryFilterRelease);
+            AddHandler(UnmanagedCallbackOp.DataStreamerTopologyUpdate, DataStreamerTopologyUpdate);
+            AddHandler(UnmanagedCallbackOp.DataStreamerStreamReceiverInvoke, DataStreamerStreamReceiverInvoke);
+            AddHandler(UnmanagedCallbackOp.FutureByteResult, FutureByteResult);
+            AddHandler(UnmanagedCallbackOp.FutureBoolResult, FutureBoolResult);
+            AddHandler(UnmanagedCallbackOp.FutureShortResult, FutureShortResult);
+            AddHandler(UnmanagedCallbackOp.FutureCharResult, FutureCharResult);
+            AddHandler(UnmanagedCallbackOp.FutureIntResult, FutureIntResult);
+            AddHandler(UnmanagedCallbackOp.FutureFloatResult, FutureFloatResult);
+            AddHandler(UnmanagedCallbackOp.FutureLongResult, FutureLongResult);
+            AddHandler(UnmanagedCallbackOp.FutureDoubleResult, FutureDoubleResult);
+            AddHandler(UnmanagedCallbackOp.FutureObjectResult, FutureObjectResult);
+            AddHandler(UnmanagedCallbackOp.FutureNullResult, FutureNullResult);
+            AddHandler(UnmanagedCallbackOp.FutureError, FutureError);
+            AddHandler(UnmanagedCallbackOp.LifecycleOnEvent, LifecycleOnEvent, true);
+            AddHandler(UnmanagedCallbackOp.MemoryReallocate, MemoryReallocate, true);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterCreate, MessagingFilterCreate);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterApply, MessagingFilterApply);
+            AddHandler(UnmanagedCallbackOp.MessagingFilterDestroy, MessagingFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventFilterCreate, EventFilterCreate);
+            AddHandler(UnmanagedCallbackOp.EventFilterApply, EventFilterApply);
+            AddHandler(UnmanagedCallbackOp.EventFilterDestroy, EventFilterDestroy);
+            AddHandler(UnmanagedCallbackOp.EventLocalListenerApply, EventLocalListenerApply);
+            AddHandler(UnmanagedCallbackOp.ServiceInit, ServiceInit);
+            AddHandler(UnmanagedCallbackOp.ServiceExecute, ServiceExecute);
+            AddHandler(UnmanagedCallbackOp.ServiceCancel, ServiceCancel);
+            AddHandler(UnmanagedCallbackOp.ServiceInvokeMethod, ServiceInvokeMethod);
+            AddHandler(UnmanagedCallbackOp.ClusterNodeFilterApply, ClusterNodeFilterApply);
+            AddHandler(UnmanagedCallbackOp.NodeInfo, NodeInfo);
+            AddHandler(UnmanagedCallbackOp.OnStart, OnStart, true);
+            AddHandler(UnmanagedCallbackOp.OnStop, OnStop, true);
+            AddHandler(UnmanagedCallbackOp.ExtensionInLongLongOutLong, ExtensionCallbackInLongLongOutLong, true);
+            AddHandler(UnmanagedCallbackOp.OnClientDisconnected, OnClientDisconnected);
+            AddHandler(UnmanagedCallbackOp.OnClientReconnected, OnClientReconnected);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionInit, AffinityFunctionInit);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionPartition, AffinityFunctionPartition);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionAssignPartitions, AffinityFunctionAssignPartitions);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionRemoveNode, AffinityFunctionRemoveNode);
+            AddHandler(UnmanagedCallbackOp.AffinityFunctionDestroy, AffinityFunctionDestroy);
+            AddHandler(UnmanagedCallbackOp.ComputeTaskLocalJobResult, ComputeTaskLocalJobResult);
+            AddHandler(UnmanagedCallbackOp.ComputeJobExecuteLocal, ComputeJobExecuteLocal);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
+            AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
+            AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
+        }
+
+        /// <summary>
+        /// Adds the handler.
+        /// </summary>
+        private void AddHandler(UnmanagedCallbackOp op, InLongOutLongFunc func, bool allowUninitialized = false)
+        {
+            _inLongOutLongHandlers[(int)op] = new InLongOutLongHandler(func, allowUninitialized);
+        }
+
+        /// <summary>
+        /// Adds the handler.
+        /// </summary>
+        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, 
+            bool allowUninitialized = false)
+        {
+            _inLongLongLongObjectOutLongHandlers[(int)op] 
+                = new InLongLongLongObjectOutLongHandler(func, allowUninitialized);
+        }
+
+        #endregion
+
+        #region IMPLEMENTATION: GENERAL PURPOSE
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private long InLongOutLong(void* target, int type, long val)
+        {
+            try
+            {
+                if (type < 0 || type > _inLongOutLongHandlers.Length)
+                    throw GetInvalidOpError("InLongOutLong", type);
+
+                var hnd = _inLongOutLongHandlers[type];
+
+                if (hnd.Handler == null)
+                    throw GetInvalidOpError("InLongOutLong", type);
+
+                if (!hnd.AllowUninitialized)
+                    _initEvent.Wait();
+
+                return hnd.Handler(val);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, "Failure in Java callback");
+
+                UU.ThrowToJava(_ctx.NativeContext, e);
+
+                return 0;
+            }
+        }
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private long InLongLongLongObjectOutLong(void* target, int type, long val1, long val2, long val3, void* arg)
+        {
+            try
+            {
+                if (type < 0 || type > _inLongLongLongObjectOutLongHandlers.Length)
+                    throw GetInvalidOpError("InLongLongLongObjectOutLong", type);
+
+                var hnd = _inLongLongLongObjectOutLongHandlers[type];
+
+                if (hnd.Handler == null)
+                    throw GetInvalidOpError("InLongLongLongObjectOutLong", type);
+
+                if (!hnd.AllowUninitialized)
+                    _initEvent.Wait();
+
+                return hnd.Handler(val1, val2, val3, arg);
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, "Failure in Java callback");
+
+                UU.ThrowToJava(_ctx.NativeContext, e);
+
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Throws the invalid op error.
+        /// </summary>
+        private static Exception GetInvalidOpError(string method, int type)
+        {
+            return new InvalidOperationException(
+                string.Format("Invalid {0} callback code: {1}", method, (UnmanagedCallbackOp) type));
+        }
+
+        #endregion
+
         #region IMPLEMENTATION: CACHE
 
-        private long CacheStoreCreate(void* target, long memPtr)
+        private long CacheStoreCreate(long memPtr)
         {
-            return SafeCall(() =>
+            var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
+
+            if (_ignite != null)
+                cacheStore.Init(_ignite);
+            else
             {
-                var cacheStore = CacheStore.CreateInstance(memPtr, _handleRegistry);
-
-                if (_ignite != null)
-                    cacheStore.Init(_ignite);
-                else
+                lock (_initActions)
                 {
-                    lock (_initActions)
-                    {
-                        if (_ignite != null)
-                            cacheStore.Init(_ignite);
-                        else
-                            _initActions.Add(cacheStore.Init);
-                    }
+                    if (_ignite != null)
+                        cacheStore.Init(_ignite);
+                    else
+                        _initActions.Add(cacheStore.Init);
                 }
+            }
 
-                return cacheStore.Handle;
-            }, true);
+            return cacheStore.Handle;
         }
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
+        private long CacheStoreInvoke(long memPtr)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var t = _handleRegistry.Get<CacheStore>(objPtr, true);
-
-                IUnmanagedTarget cb0 = null;
-
-                if ((long) cb != 0)
-                    cb0 = new UnmanagedNonReleaseableTarget(_ctx, cb);
-
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                try
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    var store = _handleRegistry.Get<CacheStore>(stream.ReadLong(), true);
+
+                    return store.Invoke(stream, _ignite);
                 }
-            });
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    writer.WriteObject(e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
+
+                    return -1;
+                }
+            }
         }
 
-        private void CacheStoreDestroy(void* target, long objPtr)
+        private long CacheStoreDestroy(long objPtr)
         {
-            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
+            _ignite.HandleRegistry.Release(objPtr);
+
+            return 0;
         }
 
-        private long CacheStoreSessionCreate(void* target, long storePtr)
+        private long CacheStoreSessionCreate(long val)
         {
-            return SafeCall(() => _ignite.HandleRegistry.Allocate(new CacheStoreSession()));
+            return _ignite.HandleRegistry.Allocate(new CacheStoreSession());
         }
 
-        private long CacheEntryFilterCreate(void* target, long memPtr)
+        private long CacheEntryFilterCreate(long memPtr)
         {
-            return SafeCall(() => _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite)));
+            return _handleRegistry.Allocate(CacheEntryFilterHolder.CreateInstance(memPtr, _ignite));
         }
 
-        private int CacheEntryFilterApply(void* target, long objPtr, long memPtr)
+        private long CacheEntryFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(objPtr);
+                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong());
 
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return t.Invoke(stream);
-                }
-            });
+                return t.Invoke(stream);
+            }
         }
 
-        private void CacheEntryFilterDestroy(void* target, long objPtr)
+        private long CacheEntryFilterDestroy(long objPtr)
         {
-            SafeCall(() => _ignite.HandleRegistry.Release(objPtr));
+            _ignite.HandleRegistry.Release(objPtr);
+
+            return 0;
         }
 
-        private void CacheInvoke(void* target, long inMemPtr, long outMemPtr)
+        private long CacheInvoke(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
-                {
-                    var result = ReadAndRunCacheEntryProcessor(inStream, _ignite);
+                var result = ReadAndRunCacheEntryProcessor(stream, _ignite);
 
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                    {
-                        result.Write(outStream, _ignite.Marshaller);
+                stream.Reset();
 
-                        outStream.SynchronizeOutput();
-                    }
-                }
-            });
+                result.Write(stream, _ignite.Marshaller);
+
+                stream.SynchronizeOutput();
+            }
+
+            return 0;
         }
 
         /// <summary>
@@ -371,13 +442,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var marsh = grid.Marshaller;
 
-            var key = marsh.Unmarshal<object>(inOutStream);
-            var val = marsh.Unmarshal<object>(inOutStream);
             var isLocal = inOutStream.ReadBool();
 
             var holder = isLocal
                 ? _handleRegistry.Get<CacheEntryProcessorHolder>(inOutStream.ReadLong(), true)
                 : marsh.Unmarshal<CacheEntryProcessorHolder>(inOutStream);
+
+            var key = marsh.Unmarshal<object>(inOutStream);
+            var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
         }
@@ -386,122 +458,110 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: COMPUTE
 
-        private void ComputeTaskMap(void* target, long taskPtr, long inMemPtr, long outMemPtr)
+        private long ComputeTaskMap(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
-                {
-                    using (PlatformMemoryStream outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                    {
-                        Task(taskPtr).Map(inStream, outStream);
-                    }
-                }
-            });
+                Task(stream.ReadLong()).Map(stream);
+
+                return 0;
+            }
         }
 
-        private int ComputeTaskJobResult(void* target, long taskPtr, long jobPtr, long memPtr)
+        private long ComputeTaskLocalJobResult(long taskPtr, long jobPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
-            {
-                var task = Task(taskPtr);
-
-                if (memPtr == 0)
-                {
-                    return task.JobResultLocal(Job(jobPtr));
-                }
-                
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return task.JobResultRemote(Job(jobPtr), stream);
-                }
-            });
+            return Task(taskPtr).JobResultLocal(Job(jobPtr));
         }
 
-        private void ComputeTaskReduce(void* target, long taskPtr)
+        private long ComputeTaskJobResult(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
+                var task = Task(stream.ReadLong());
 
-                task.Reduce();
-            });
+                var job = Job(stream.ReadLong());
+
+                return task.JobResultRemote(job, stream);
+            }
         }
 
-        private void ComputeTaskComplete(void* target, long taskPtr, long memPtr)
+        private long ComputeTaskReduce(long taskPtr)
         {
-            SafeCall(() =>
-            {
-                var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
+            _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true).Reduce();
 
-                if (memPtr == 0)
-                    task.Complete(taskPtr);
-                else
-                {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        task.CompleteWithError(taskPtr, stream);
-                    }
-                }
-            });
+            return 0;
         }
 
-        private int ComputeJobSerialize(void* target, long jobPtr, long memPtr)
+        private long ComputeTaskComplete(long taskPtr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
+            var task = _handleRegistry.Get<IComputeTaskHolder>(taskPtr, true);
+
+            if (memPtr == 0)
+                task.Complete(taskPtr);
+            else
             {
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return Job(jobPtr).Serialize(stream) ? 1 : 0;
+                    task.CompleteWithError(taskPtr, stream);
                 }
-            });
+            }
+
+            return 0;
         }
 
-        private long ComputeJobCreate(void* target, long memPtr)
+        private long ComputeJobSerialize(long jobPtr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
-
-                    return _handleRegistry.Allocate(job);
-                }
-            });
+                return Job(jobPtr).Serialize(stream) ? 1 : 0;
+            }
         }
 
-        private void ComputeJobExecute(void* target, long jobPtr, int cancel, long memPtr)
+        private long ComputeJobCreate(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var job = Job(jobPtr);
+                ComputeJobHolder job = ComputeJobHolder.CreateJob(_ignite, stream);
 
-                if (memPtr == 0)
-                    job.ExecuteLocal(cancel == 1);
-                else
-                {
-                    using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        job.ExecuteRemote(stream, cancel == 1);
-                    }
-                }
-            });
+                return _handleRegistry.Allocate(job);
+            }
         }
 
-        private void ComputeJobCancel(void* target, long jobPtr)
+        private long ComputeJobExecuteLocal(long jobPtr, long cancel, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                Job(jobPtr).Cancel();
-            });
+            Job(jobPtr).ExecuteLocal(cancel == 1);
+
+            return 0;
         }
 
-        private void ComputeJobDestroy(void* target, long jobPtr)
+        private long ComputeJobExecute(long memPtr)
         {
-            SafeCall(() =>
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                _handleRegistry.Release(jobPtr);
-            });
+                var job = Job(stream.ReadLong());
+
+                var cancel = stream.ReadBool();
+
+                stream.Reset();
+
+                job.ExecuteRemote(stream, cancel);
+            }
+
+            return 0;
+        }
+
+        private long ComputeJobCancel(long jobPtr)
+        {
+            Job(jobPtr).Cancel();
+
+            return 0;
+        }
+
+        private long ComputeJobDestroy(long jobPtr)
+        {
+            _handleRegistry.Release(jobPtr);
+
+            return 0;
         }
 
         /// <summary>
@@ -515,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
-        /// Get comptue job using it's GC handle pointer.
+        /// Get compute job using it's GC handle pointer.
         /// </summary>
         /// <param name="jobPtr">Job pointer.</param>
         /// <returns>Compute job.</returns>
@@ -528,217 +588,182 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region  IMPLEMENTATION: CONTINUOUS QUERY
 
-        private void ContinuousQueryListenerApply(void* target, long lsnrPtr, long memPtr)
+        private long ContinuousQueryListenerApply(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(lsnrPtr);
+                var hnd = _handleRegistry.Get<IContinuousQueryHandleImpl>(stream.ReadLong());
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    hnd.Apply(stream);
-                }
-            });
+                hnd.Apply(stream);
+
+                return 0;
+            }
         }
 
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        private long ContinuousQueryFilterCreate(void* target, long memPtr)
+        private long ContinuousQueryFilterCreate(long memPtr)
         {
-            return SafeCall(() =>
+            // 1. Unmarshal filter holder.
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                // 1. Unmarshal filter holder.
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
+                var filterHolder = reader.ReadObject<ContinuousQueryFilterHolder>();
 
-                    // 2. Create real filter from it's holder.
-                    var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
-                        filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
+                // 2. Create real filter from it's holder.
+                var filter = (IContinuousQueryFilter) DelegateTypeDescriptor.GetContinuousQueryFilterCtor(
+                    filterHolder.Filter.GetType())(filterHolder.Filter, filterHolder.KeepBinary);
 
-                    // 3. Inject grid.
-                    filter.Inject(_ignite);
+                // 3. Inject grid.
+                filter.Inject(_ignite);
 
-                    // 4. Allocate GC handle.
-                    return filter.Allocate();
-                }
-            });
+                // 4. Allocate GC handle.
+                return filter.Allocate();
+            }
         }
 
-        private int ContinuousQueryFilterApply(void* target, long filterPtr, long memPtr)
+        private long ContinuousQueryFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
+                var holder = _handleRegistry.Get<IContinuousQueryFilter>(stream.ReadLong());
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return holder.Evaluate(stream) ? 1 : 0;
-                }
-            });
+                return holder.Evaluate(stream) ? 1 : 0;
+            }
         }
 
-        private void ContinuousQueryFilterRelease(void* target, long filterPtr)
+        private long ContinuousQueryFilterRelease(long filterPtr)
         {
-            SafeCall(() =>
-            {
-                var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
+            var holder = _handleRegistry.Get<IContinuousQueryFilter>(filterPtr);
 
-                holder.Release();
-            });
+            holder.Release();
+
+            return 0;
         }
-        
+
         #endregion
 
         #region IMPLEMENTATION: DATA STREAMER
 
-        private void DataStreamerTopologyUpdate(void* target, long ldrPtr, long topVer, int topSize)
+        private long DataStreamerTopologyUpdate(long ldrPtr, long topVer, long topSize, void* unused)
         {
-            SafeCall(() =>
-            {
-                var ldrRef = _handleRegistry.Get<WeakReference>(ldrPtr);
+            var ldrRef = _handleRegistry.Get<WeakReference>(ldrPtr);
 
-                if (ldrRef == null)
-                    return;
+            if (ldrRef == null)
+                return 0;
 
-                var ldr = ldrRef.Target as IDataStreamer;
+            var ldr = ldrRef.Target as IDataStreamer;
 
-                if (ldr != null)
-                    ldr.TopologyChange(topVer, topSize);
-                else
-                    _handleRegistry.Release(ldrPtr, true);
-            });
+            if (ldr != null)
+                ldr.TopologyChange(topVer, (int) topSize);
+            else
+                _handleRegistry.Release(ldrPtr, true);
+
+            return 0;
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
-            byte keepBinary)
+        private long DataStreamerStreamReceiverInvoke(long memPtr, long unused, long unused1, void* cache)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                var rcvPtr = stream.ReadLong();
+
+                var keepBinary = stream.ReadBool();
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
+
+                var binaryReceiver = reader.ReadObject<BinaryObject>();
+
+                var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
+                               binaryReceiver.Deserialize<StreamReceiverHolder>();
+
+                if (receiver != null)
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream, BinaryMode.ForceBinary);
-
-                    var binaryReceiver = reader.ReadObject<BinaryObject>();
-
-                    var receiver = _handleRegistry.Get<StreamReceiverHolder>(rcvPtr) ??
-                                   binaryReceiver.Deserialize<StreamReceiverHolder>();
-
-                    if (receiver != null)
-                        receiver.Receive(_ignite, new UnmanagedNonReleaseableTarget(_ctx, cache), stream,
-                            keepBinary != 0);
+                    var target = new PlatformJniTarget(new UnmanagedNonReleaseableTarget(_ctx, cache), 
+                        _ignite.Marshaller);
+                    receiver.Receive(_ignite, target, stream, keepBinary);
                 }
-            });
+
+                return 0;
+            }
         }
 
         #endregion
-        
+
         #region IMPLEMENTATION: FUTURES
 
-        private void FutureByteResult(void* target, long futPtr, int res)
+        private long FutureByteResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<byte>(futPtr, fut => { fut.OnResult((byte)res); });
-            });
+            return ProcessFuture<byte>(futPtr, fut => { fut.OnResult((byte) res); });
         }
 
-        private void FutureBoolResult(void* target, long futPtr, int res)
+        private long FutureBoolResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<bool>(futPtr, fut => { fut.OnResult(res == 1); });
-            });
+            return ProcessFuture<bool>(futPtr, fut => { fut.OnResult(res == 1); });
         }
 
-        private void FutureShortResult(void* target, long futPtr, int res)
+        private long FutureShortResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<short>(futPtr, fut => { fut.OnResult((short)res); });
-            });
+            return ProcessFuture<short>(futPtr, fut => { fut.OnResult((short)res); });
         }
 
-        private void FutureCharResult(void* target, long futPtr, int res)
+        private long FutureCharResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<char>(futPtr, fut => { fut.OnResult((char)res); });
-            });
+            return ProcessFuture<char>(futPtr, fut => { fut.OnResult((char)res); });
         }
 
-        private void FutureIntResult(void* target, long futPtr, int res)
+        private long FutureIntResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<int>(futPtr, fut => { fut.OnResult(res); });
-            });
+            return ProcessFuture<int>(futPtr, fut => { fut.OnResult((int) res); });
         }
 
-        private void FutureFloatResult(void* target, long futPtr, float res)
+        private long FutureFloatResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<float>(futPtr, fut => { fut.OnResult(res); });
-            });
+            return ProcessFuture<float>(futPtr, fut => { fut.OnResult(BinaryUtils.IntToFloatBits((int) res)); });
         }
 
-        private void FutureLongResult(void* target, long futPtr, long res)
+        private long FutureLongResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<long>(futPtr, fut => { fut.OnResult(res); });
-            });
+            return ProcessFuture<long>(futPtr, fut => { fut.OnResult(res); });
         }
 
-        private void FutureDoubleResult(void* target, long futPtr, double res)
+        private long FutureDoubleResult(long futPtr, long res, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture<double>(futPtr, fut => { fut.OnResult(res); });
-            });
+            return ProcessFuture<double>(futPtr, fut => { fut.OnResult(BinaryUtils.LongToDoubleBits(res)); });
         }
 
-        private void FutureObjectResult(void* target, long futPtr, long memPtr)
+        private long FutureObjectResult(long futPtr, long memPtr, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                ProcessFuture(futPtr, fut =>
-                {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        fut.OnResult(stream);
-                    }
-                });
-            });
-        }
-
-        private void FutureNullResult(void* target, long futPtr)
-        {
-            SafeCall(() =>
-            {
-                ProcessFuture(futPtr, fut => { fut.OnNullResult(); });
-            });
-        }
-
-        private void FutureError(void* target, long futPtr, long memPtr)
-        {
-            SafeCall(() =>
+            return ProcessFuture(futPtr, fut =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    string errCls = reader.ReadString();
-                    string errMsg = reader.ReadString();
-
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
-
-                    ProcessFuture(futPtr, fut => { fut.OnError(err); });
+                    fut.OnResult(stream);
                 }
             });
+        }
+
+        private long FutureNullResult(long futPtr)
+        {
+            return ProcessFuture(futPtr, fut => { fut.OnNullResult(); });
+        }
+
+        private long FutureError(long futPtr, long memPtr, long unused, void* arg)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                string errCls = reader.ReadString();
+                string errMsg = reader.ReadString();
+                string stackTrace = reader.ReadString();
+                Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
+
+                Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace, reader, inner);
+
+                return ProcessFuture(futPtr, fut => { fut.OnError(err); });
+            }
         }
 
         /// <summary>
@@ -746,11 +771,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="futPtr">Future pointer.</param>
         /// <param name="action">Action.</param>
-        private void ProcessFuture(long futPtr, Action<IFutureInternal> action)
+        private long ProcessFuture(long futPtr, Action<IFutureInternal> action)
         {
             try
             {
                 action(_handleRegistry.Get<IFutureInternal>(futPtr, true));
+
+                return 0;
             }
             finally
             {
@@ -763,11 +790,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="futPtr">Future pointer.</param>
         /// <param name="action">Action.</param>
-        private void ProcessFuture<T>(long futPtr, Action<Future<T>> action)
+        private long ProcessFuture<T>(long futPtr, Action<Future<T>> action)
         {
             try
             {
                 action(_handleRegistry.Get<Future<T>>(futPtr, true));
+
+                return 0;
             }
             finally
             {
@@ -779,252 +808,278 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: LIFECYCLE
 
-        private void LifecycleOnEvent(void* target, long ptr, int evt)
+        private long LifecycleOnEvent(long ptr, long evt, long unused, void* arg)
         {
-            SafeCall(() =>
-            {
-                var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
+            var bean = _handleRegistry.Get<LifecycleHandlerHolder>(ptr);
 
-                bean.OnLifecycleEvent((LifecycleEventType)evt);
-            }, true);
+            bean.OnLifecycleEvent((LifecycleEventType) evt);
+
+            return 0;
         }
 
         #endregion
 
         #region IMPLEMENTATION: MESSAGING
 
-        private long MessagingFilterCreate(void* target, long memPtr)
+        private long MessagingFilterCreate(long memPtr)
         {
-            return SafeCall(() =>
-            {
-                MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
+            MessageListenerHolder holder = MessageListenerHolder.CreateRemote(_ignite, memPtr);
 
-                return _ignite.HandleRegistry.AllocateSafe(holder);
-            });
+            return _ignite.HandleRegistry.AllocateSafe(holder);
         }
 
-        private int MessagingFilterApply(void* target, long ptr, long memPtr)
+        private long MessagingFilterApply(long ptr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
-            {
-                var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
-                
-                if (holder == null)
-                    return 0;
+            var holder = _ignite.HandleRegistry.Get<MessageListenerHolder>(ptr, false);
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    return holder.Invoke(stream);
-                }
-            });
+            if (holder == null)
+                return 0;
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                return holder.Invoke(stream);
+            }
         }
 
-        private void MessagingFilterDestroy(void* target, long ptr)
+        private long MessagingFilterDestroy(long ptr)
         {
-            SafeCall(() =>
-            {
-                _ignite.HandleRegistry.Release(ptr);
-            });
+            _ignite.HandleRegistry.Release(ptr);
+
+            return 0;
         }
-        
+
         #endregion
 
         #region IMPLEMENTATION: EXTENSIONS
 
-        private long ExtensionCallbackInLongOutLong(void* target, int op, long arg1)
+        private long ExtensionCallbackInLongLongOutLong(long op, long arg1, long arg2, void* arg)
         {
-            throw new InvalidOperationException("Unsupported operation type: " + op);
-        }
-
-        private long ExtensionCallbackInLongLongOutLong(void* target, int op, long arg1, long arg2)
-        {
-            return SafeCall(() =>
+            switch (op)
             {
-                switch (op)
-                {
-                    case OpPrepareDotNet:
-                        using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
-                        using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
-                        {
-                            Ignition.OnPrepare(inStream, outStream, _handleRegistry);
+                case OpPrepareDotNet:
+                    using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
+                    using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
+                    {
+                        Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
 
-                            return 0;
-                        }
+                        return 0;
+                    }
 
-                    default:
-                        throw new InvalidOperationException("Unsupported operation type: " + op);
-                }
-            }, op == OpPrepareDotNet);
+                default:
+                    throw new InvalidOperationException("Unsupported operation type: " + op);
+            }
         }
 
         #endregion
 
         #region IMPLEMENTATION: EVENTS
 
-        private long EventFilterCreate(void* target, long memPtr)
+        private long EventFilterCreate(long memPtr)
         {
-            return SafeCall(() => _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite)));
+            return _handleRegistry.Allocate(RemoteListenEventFilter.CreateInstance(memPtr, _ignite));
         }
 
-        private int EventFilterApply(void* target, long ptr, long memPtr)
+        private long EventFilterApply(long ptr, long memPtr, long unused, void* arg)
         {
-            return SafeCall(() =>
+            var holder = _ignite.HandleRegistry.Get<IInteropCallback>(ptr, false);
+
+            if (holder == null)
+                return 0;
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var holder = _ignite.HandleRegistry.Get<IInteropCallback>(ptr, false);
+                return holder.Invoke(stream);
+            }
+        }
 
-                if (holder == null)
-                    return 0;
+        private long EventFilterDestroy(long ptr)
+        {
+            _ignite.HandleRegistry.Release(ptr);
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            return 0;
+        }
+
+        private long EventLocalListenerApply(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var id = stream.ReadInt();
+
+                var listeners = _ignite.Configuration.LocalEventListenersInternal;
+
+                if (listeners == null || id >= listeners.Length)
                 {
-                    return holder.Invoke(stream);
+                    return 0;
                 }
-            });
+
+                var listener = listeners[id];
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                var res = listener.Invoke(reader);
+
+                return res ? 1 : 0;
+            }
         }
 
-        private void EventFilterDestroy(void* target, long ptr)
-        {
-            SafeCall(() =>
-            {
-                _ignite.HandleRegistry.Release(ptr);
-            });
-        }
-        
         #endregion
 
         #region IMPLEMENTATION: SERVICES
 
-        private long ServiceInit(void* target, long memPtr)
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
+        private long ServiceInit(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                try
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    bool srvKeepBinary = reader.ReadBoolean();
+                    var srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
 
                     ResourceProcessor.Inject(svc, _ignite);
 
                     svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
+                    stream.Reset();
+
+                    stream.WriteBool(true);  // Success.
+
+                    stream.SynchronizeOutput();
+
                     return _handleRegistry.Allocate(svc);
                 }
-            });
+                catch (Exception e)
+                {
+                    stream.Reset();
+
+                    var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                    BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                    _ignite.Marshaller.FinishMarshal(writer);
+
+                    stream.SynchronizeOutput();
+
+                    return 0;
+                }
+            }
         }
 
-        private void ServiceExecute(void* target, long svcPtr, long memPtr)
+        private long ServiceExecute(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(stream.ReadLong());
 
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return 0;
+
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                bool srvKeepBinary = reader.ReadBoolean();
+
+                svc.Execute(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+
+                return 0;
+            }
+        }
+
+        private long ServiceCancel(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                long svcPtr = stream.ReadLong();
+
+                try
                 {
+                    var svc = _handleRegistry.Get<IService>(svcPtr, true);
+
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
                     bool srvKeepBinary = reader.ReadBoolean();
 
-                    svc.Execute(new ServiceContext(
-                        _ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
-                }
-            });
-        }
+                    svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-        private void ServiceCancel(void* target, long svcPtr, long memPtr)
-        {
-            SafeCall(() =>
-            {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
-
-                try
-                {
-                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                    {
-                        var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                        bool srvKeepBinary = reader.ReadBoolean();
-
-                        svc.Cancel(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
-                    }
+                    return 0;
                 }
                 finally
                 {
                     _ignite.HandleRegistry.Release(svcPtr);
                 }
-            });
+            }
         }
 
-        private void ServiceInvokeMethod(void* target, long svcPtr, long inMemPtr, long outMemPtr)
+        private long ServiceInvokeMethod(long memPtr)
         {
-            SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
-                using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
-                {
-                    var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(stream.ReadLong(), true);
 
-                    string mthdName;
-                    object[] mthdArgs;
+                string mthdName;
+                object[] mthdArgs;
 
-                    ServiceProxySerializer.ReadProxyMethod(inStream, _ignite.Marshaller, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs);
 
-                    var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(svc, mthdName, mthdArgs);
 
-                    ServiceProxySerializer.WriteInvocationResult(outStream, _ignite.Marshaller, result.Key, result.Value);
+                stream.Reset();
 
-                    outStream.SynchronizeOutput();
-                }
-            });
+                ServiceProxySerializer.WriteInvocationResult(stream, _ignite.Marshaller, result.Key, result.Value);
+
+                stream.SynchronizeOutput();
+
+                return 0;
+            }
         }
 
-        private int СlusterNodeFilterApply(void* target, long memPtr)
+        private long ClusterNodeFilterApply(long memPtr)
         {
-            return SafeCall(() =>
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                    var filter = reader.ReadObject<IClusterNodeFilter>();
+                var filter = reader.ReadObject<IClusterNodeFilter>();
 
-                    return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
-                }
-            });
+                return filter.Invoke(_ignite.GetNode(reader.ReadGuid())) ? 1 : 0;
+            }
         }
 
         #endregion
 
         #region IMPLEMENTATION: MISCELLANEOUS
 
-        private void NodeInfo(void* target, long memPtr)
+        private long NodeInfo(long memPtr)
         {
-            SafeCall(() => _ignite.UpdateNodeInfo(memPtr));
+            _ignite.UpdateNodeInfo(memPtr);
+
+            return 0;
         }
 
-        private void MemoryReallocate(void* target, long memPtr, int cap)
+        private static long MemoryReallocate(long memPtr, long cap, long unused, void* arg)
         {
-            SafeCall(() =>
+            IgniteManager.Memory.Get(memPtr).Reallocate((int)cap);
+
+            return 0;
+        }
+
+        private long OnStart(long memPtr, long unused, long unused1, void* proc)
+        {
+            var proc0 = UU.Acquire(_ctx, proc);
+
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                IgniteManager.Memory.Get(memPtr).Reallocate(cap);
-            }, true);
+                Ignition.OnStart(proc0, stream);
+            }
+
+            return 0;
         }
 
-        private void OnStart(void* target, void* proc, long memPtr)
-        {
-            SafeCall(() =>
-            {
-                var proc0 = UnmanagedUtils.Acquire(_ctx, proc);
-
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    Ignition.OnStart(proc0, stream);
-                }
-            }, true);
-        }
-
-        private void OnStop(void* target)
+        private long OnStop(long unused)
         {
             Marshal.FreeHGlobal(_cbsPtr);
 
@@ -1039,29 +1094,29 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             if (ignite != null)
                 ignite.AfterNodeStop();
+
+            return 0;
         }
-        
+
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
-            int errMsgCharsLen, void* errData, int errDataLen)
+            int errMsgCharsLen, sbyte* stackTraceChars, int stackTraceCharsLen, void* errData, int errDataLen)
         {
+            // errData mechanism is only needed for CachePartialUpdateException and is no longer used,
+            // since CacheImpl handles all errors itself.
+            Debug.Assert(errDataLen == 0);
+            Debug.Assert(errData == null);
+
             string errCls = IgniteUtils.Utf8UnmanagedToString(errClsChars, errClsCharsLen);
             string errMsg = IgniteUtils.Utf8UnmanagedToString(errMsgChars, errMsgCharsLen);
+            string stackTrace = IgniteUtils.Utf8UnmanagedToString(stackTraceChars, stackTraceCharsLen);
 
             switch (errType)
             {
                 case ErrGeneric:
-                    if (_ignite != null && errDataLen > 0)
-                    {
-                        // Stream disposal intentionally omitted: IGNITE-1598
-                        var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
-
-                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
-                    }
-
-                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg, stackTrace);
 
                 case ErrJvmInit:
-                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
+                    throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg, stackTrace);
 
                 case ErrJvmAttach:
                     throw new IgniteException("Failed to attach to JVM.");
@@ -1071,20 +1126,173 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
-        private void OnClientDisconnected(void* target)
+        private long OnClientDisconnected(long unused)
         {
-            SafeCall(() =>
-            {
-                _ignite.OnClientDisconnected();
-            });
+            _ignite.OnClientDisconnected();
+
+            return 0;
         }
 
-        private void OnClientReconnected(void* target, bool clusterRestarted)
+        private long OnClientReconnected(long clusterRestarted)
         {
+            _ignite.OnClientReconnected(clusterRestarted != 0);
+
+            return 0;
+        }
+
+        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
+            int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr)
+        {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
             SafeCall(() =>
             {
-                _ignite.OnClientReconnected(clusterRestarted);
-            });
+                var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
+                var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
+                var nativeError = IgniteUtils.Utf8UnmanagedToString(errorInfoChars, errorInfoCharsLen);
+
+                Exception ex = null;
+
+                if (memPtr != 0 && _ignite != null)
+                {
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    {
+                        ex = _ignite.Marshaller.Unmarshal<Exception>(stream);
+                    }
+                }
+
+                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, nativeError, ex);
+            }, true);
+        }
+
+        private bool LoggerIsLevelEnabled(void* target, int level)
+        {
+            // When custom logger in .NET is not defined, Java should not call us.
+            Debug.Assert(!(_log is JavaLogger));
+
+            return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
+        }
+
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
+        {
+            try
+            {
+                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+
+                var target = isErr ? Console.Error : Console.Out;
+
+                target.Write(str);
+
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
+            }
+        }
+
+        private long PluginProcessorIgniteStop(long val)
+        {
+            _ignite.PluginProcessor.OnIgniteStop(val != 0);
+
+            return 0;
+        }
+
+        private long PluginProcessorStop(long val)
+        {
+            _ignite.PluginProcessor.Stop(val != 0);
+
+            return 0;
+        }
+
+        #endregion
+
+        #region AffinityFunction
+
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        private long AffinityFunctionInit(long memPtr, long unused, long unused1, void* baseFunc)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var reader = BinaryUtils.Marshaller.StartUnmarshal(stream);
+
+                var func = reader.ReadObjectEx<IAffinityFunction>();
+
+                ResourceProcessor.Inject(func, _ignite);
+
+                var affBase = func as AffinityFunctionBase;
+
+                if (affBase != null)
+                {
+                    var baseFunc0 = new PlatformJniTarget(UU.Acquire(_ctx, baseFunc), _ignite.Marshaller);
+
+                    affBase.SetBaseFunction(new PlatformAffinityFunction(baseFunc0));
+                }
+
+                return _handleRegistry.Allocate(func);
+            }
+        }
+
+        private long AffinityFunctionPartition(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var ptr = stream.ReadLong();
+
+                var key = _ignite.Marshaller.Unmarshal<object>(stream);
+
+                return _handleRegistry.Get<IAffinityFunction>(ptr, true).GetPartition(key);
+            }
+        }
+
+        private long AffinityFunctionAssignPartitions(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var ptr = stream.ReadLong();
+                var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(stream));
+                var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                var parts = func.AssignPartitions(ctx);
+
+                if (parts == null)
+                    throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
+
+                stream.Reset();
+
+                AffinityFunctionSerializer.WritePartitions(parts, stream, _ignite.Marshaller);
+
+                return 0;
+            }
+        }
+
+        private long AffinityFunctionRemoveNode(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var ptr = stream.ReadLong();
+                var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+
+                _handleRegistry.Get<IAffinityFunction>(ptr, true).RemoveNode(nodeId);
+
+                return 0;
+            }
+        }
+
+        private long AffinityFunctionDestroy(long ptr)
+        {
+            _handleRegistry.Release(ptr);
+
+            return 0;
+        }
+
+        #endregion
+
+        #region PLUGINS
+  
+        private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
+        {
+            return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
         }
 
         #endregion
@@ -1103,6 +1311,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                _log.Error(e, "Failure in Java callback");
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
             }
         }
@@ -1119,6 +1329,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                _log.Error(e, "Failure in Java callback");
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
 
                 return default(T);
@@ -1126,7 +1338,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         #endregion
-
+        
         /// <summary>
         /// Callbacks pointer.
         /// </summary>
@@ -1141,6 +1353,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public UnmanagedContext Context
         {
             get { return _ctx; }
+        }
+
+        /// <summary>
+        /// Gets the log.
+        /// </summary>
+        public ILogger Log
+        {
+            get { return _log; }
         }
 
         /// <summary>
@@ -1180,6 +1400,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
 
             _initEvent.Set();
+
+            ResourceProcessor.Inject(_log, grid);
         }
 
         /// <summary>
@@ -1188,8 +1410,58 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public void Cleanup()
         {
             _ignite = null;
-            
+
             _handleRegistry.Close();
+        }
+
+        /// <summary>
+        /// Gets the console write handler.
+        /// </summary>
+        public static void* ConsoleWriteHandler
+        {
+            get { return ConsoleWritePtr; }
+        }
+
+        /// <summary>
+        /// InLongOutLong handler struct.
+        /// </summary>
+        private struct InLongOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongOutLongFunc Handler;
+
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongOutLongHandler"/> struct.
+            /// </summary>
+            public InLongOutLongHandler(InLongOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
+        }
+
+        /// <summary>
+        /// InLongLongLongObjectOutLong handler struct.
+        /// </summary>
+        private struct InLongLongLongObjectOutLongHandler
+        {
+            /// <summary> The handler func. </summary>
+            public readonly InLongLongLongObjectOutLongFunc Handler;
+
+            /// <summary> Allow uninitialized flag. </summary>
+            public readonly bool AllowUninitialized;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InLongLongLongObjectOutLongHandler"/> struct.
+            /// </summary>
+            public InLongLongLongObjectOutLongHandler(InLongLongLongObjectOutLongFunc handler, bool allowUninitialized)
+            {
+                Handler = handler;
+                AllowUninitialized = allowUninitialized;
+            }
         }
     }
 }

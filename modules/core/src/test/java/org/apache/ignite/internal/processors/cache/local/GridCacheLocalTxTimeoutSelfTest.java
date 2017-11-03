@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -142,7 +141,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         Transaction tx = null;
 
         try {
-            IgniteCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             tx = ignite.transactions().txStart(concurrency, isolation, 50, 0);
 
@@ -154,7 +153,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (CacheException e) {
+        catch (Exception e) {
             assertTrue(X.hasCause(e, TransactionTimeoutException.class));
 
             info("Received expected optimistic exception: " + e.getMessage());

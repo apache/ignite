@@ -46,7 +46,7 @@ import scala.util.control.Breaks._
  * {{{
  *     kill
  *     kill "-in|-ih"
- *     kill "{-r|-k} {-id8=<node-id8>|-id=<node-id>}"
+ *     kill "{-r|-k} {-sc} {-al|-ar|-id8=<node-id8>|-id=<node-id>}"
  * }}}
  *
  * ====Arguments====
@@ -61,17 +61,28 @@ import scala.util.control.Breaks._
  *         Run command in interactive mode with ability to
  *         choose a host where to kill or restart nodes.
  *         Note that either '-in' or '-ih' can be specified.
+ *     -al
+ *         Kill or restart all nodes on this host.
+ *         Note that either '-al' or '-ar' can be specified.
+ *     -ar
+ *         Kill or restart all nodes on other hosts.
+ *         Note that either '-al', '-ar' can be specified.
+ *     -sc
+ *         Skip kill or restart of client nodes for group nodes command.
  *     -r
  *         Restart node mode.
  *         Note that either '-r' or '-k' can be specified.
- *         If no parameters provided - command starts in interactive mode.
+ *         If no other parameters provided - command executes on all nodes.
  *     -k
  *         Kill (stop) node mode.
  *         Note that either '-r' or '-k' can be specified.
- *         If no parameters provided - command starts in interactive mode.
+ *         If no other parameters provided - command executes on all nodes.
  *     -id8=<node-id8>
  *         ID8 of the node to kill or restart.
- *         Note that either '-id8' or '-id' can be specified.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
  *         If no parameters provided - command starts in interactive mode.
  *     -id=<node-id>
  *         ID of the node to kill or restart.
@@ -85,6 +96,16 @@ import scala.util.control.Breaks._
  *         Starts command in interactive mode.
  *     kill "-id8=12345678 -r"
  *         Restart node with '12345678' ID8.
+ *     kill -id8=@n0 -r" ->
+ *         Restart specified node with id8 taken from 'n0' memory variable.
+ *     kill -id8=@nl -r" ->
+ *         Restart oldest local node with id8 taken from 'nl' memory variable.
+ *     kill -id8=@nl -k" ->
+ *         Kill (stop) oldest remote node with id8 taken from 'nr' memory variable.
+ *     kill -r -ar" ->
+ *         Restart all remote nodes.
+ *     kill -k -sc -al" ->
+ *         Kill (stop) all local server nodes.
  *     kill "-k"
  *         Kill (stop) all nodes.
  * }}}
@@ -114,8 +135,12 @@ class VisorKillCommand extends VisorConsoleCommand {
             val iNodes = hasArgFlag("in", argLst)
             val iHosts = hasArgFlag("ih", argLst)
 
+            val skipClient = hasArgFlag("sc", argLst)
+
             if (iNodes && iHosts)
                 scold("Only one of '-in' or '-ih' can be specified.").^^
+            else if ((iNodes || iHosts) && skipClient)
+                scold("Skip client flag is not allowed in interactive mode.").^^
             else if (iNodes)
                 interactiveNodes().^^
             else if (iHosts)
@@ -126,52 +151,94 @@ class VisorKillCommand extends VisorConsoleCommand {
             val restart = hasArgFlag("r", argLst)
             val kill = hasArgFlag("k", argLst)
 
-            var node: ClusterNode = null
+            val allLocal = hasArgFlag("al", argLst)
+            val allRemote = hasArgFlag("ar", argLst)
 
             if (kill && restart)
                 scold("Only one of '-k' or '-r' can be specified.")
             else if (!kill && !restart)
                 scold("Missing '-k' or '-r' option in command: " + args)
-            else if (id8.isDefined && id.isDefined)
-                scold("Only one of -id8 or -id is allowed.")
+            else if (Seq(allLocal, allRemote, id8.isDefined, id.isDefined).count((v) => v) > 1)
+                scold("Only one of -al, -ar, -id8 or -id is allowed.")
+            else if ((id8.isDefined || id.isDefined) && skipClient)
+                scold("Skip client flag is allowed only for group command.")
             else {
-                if (id8.isDefined) {
+                val localGroup = ignite.cluster.forHost(ignite.localNode)
+
+                var nodes = if (id8.isDefined) {
                     val ns = nodeById8(id8.get)
 
                     if (ns.isEmpty)
                         scold("Unknown 'id8' value: " + id8.get).^^
-                    else if (ns.size != 1) {
-                        scold("'id8' resolves to more than one node (use full 'id' instead) : " + args).^^
-                    }
-                    else
-                        node = ns.head
-                }
-                else if (id.isDefined)
-                    try {
-                        node = ignite.cluster.node(java.util.UUID.fromString(id.get))
 
-                        if (node == null)
-                            scold("'id' does not match any node : " + args).^^
+                    if (ns.size != 1)
+                        scold("'id8' resolves to more than one node (use full 'id' instead) : " + args).^^
+
+                    ns.toSeq
+                }
+                else if (id.isDefined) {
+                    var nid: UUID = null
+
+                    try {
+                        nid = UUID.fromString(id.get)
                     }
                     catch {
                         case e: IllegalArgumentException => scold("Invalid node 'id' in args: " + args).^^
                     }
 
-                if (node == null && (id.isDefined || id8.isDefined))
-                    scold("Node with given ID cannot be found.").^^
+                    val nodes = ignite.cluster.forNodeId(nid).nodes()
 
-                try
+                    if (nodes.isEmpty)
+                        scold("'id' does not match any node : " + args).^^
+
+                    nodes.toSeq
+                } else if (allLocal) {
+                    if (skipClient)
+                        localGroup.forServers().nodes().toSeq
+                    else
+                        localGroup.nodes().toSeq
+                }
+                else if (allRemote) {
+                    val remoteGroup = ignite.cluster.forOthers(localGroup)
+
+                    if (skipClient)
+                        remoteGroup.forServers().nodes().toSeq
+                    else
+                        remoteGroup.nodes().toSeq
+                }
+                else {
+                    if (skipClient)
+                        ignite.cluster.forServers().nodes().toSeq
+                    else
+                        ignite.cluster.nodes().toSeq
+                }
+
+                if (nodes.isEmpty) {
+                    if (id.isDefined || id8.isDefined)
+                        scold("Node with given ID cannot be found.").^^
+                    else if (allLocal)
+                        scold("Local nodes cannot be found.").^^
+                    else if (allRemote)
+                        scold("Remote nodes cannot be found.").^^
+                }
+
+                if (restart) {
+                    val excludeNodes = nodes.filter(_.attribute[String](ATTR_RESTART_ENABLED) == "false")
+
+                    nodes = nodes.filter(_.attribute[String](ATTR_RESTART_ENABLED) == "true")
+
                     // In case of the restart - check that target node supports it.
-                    if (restart && node != null && node.attribute[String](ATTR_RESTART_ENABLED) != "true")
-                        scold("Node doesn't support restart: " + nid8(node)).^^
-                catch {
-                    case e: IgniteException => scold("Failed to restart the node. " + e.getMessage).^^
+                    if (excludeNodes.nonEmpty)
+                        scold("Node(s) doesn't support restart: " + excludeNodes.map(nid8).mkString("[", ", ", "]")).^^
+
+                    if (nodes.isEmpty)
+                        break
                 }
 
                 val op = if (restart) "restart" else "kill"
 
                 try
-                    killOrRestart(if (node == null) ignite.cluster.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
+                    killOrRestart(nodes.map(_.id()), restart)
                 catch {
                     case _: IgniteException => scold("Failed to " + op + " due to system error.").^^
                 }
@@ -205,29 +272,31 @@ class VisorKillCommand extends VisorConsoleCommand {
 
         val op = if (restart) "restart" else "kill"
 
-        if (nodes.size == ignite.cluster.nodes().size())
-            ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
-                case "y" | "Y" =>  ask("You are about to " + op + " ALL nodes. " +
-                    "Are you 100% sure? (y/n) [n]: ", "n") match {
+        if (!batchMode) {
+            if (nodes.size == ignite.cluster.nodes().size())
+                ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
+                    case "y" | "Y" => ask("You are about to " + op + " ALL nodes. " +
+                        "Are you 100% sure? (y/n) [n]: ", "n") match {
                         case "y" | "Y" => ()
                         case "n" | "N" => break()
                         case x => nl(); warn("Invalid answer: " + x); break()
                     }
-                case "n" | "N" => break()
-                case x => nl(); warn("Invalid answer: " + x); break()
-            }
-        else if (nodes.size > 1)
-            ask("Are you sure you want to " + op + " several nodes? (y/n) [n]: ", "n") match {
-                case "y" | "Y" => ()
-                case "n" | "N" => break()
-                case x => nl(); warn("Invalid answer: " + x); break()
-            }
-        else
-            ask("Are you sure you want to " + op + " this node? (y/n) [n]: ", "n") match {
-                case "y" | "Y" => ()
-                case "n" | "N" => break()
-                case x => nl(); warn("Invalid answer: " + x); break()
-            }
+                    case "n" | "N" => break()
+                    case x => nl(); warn("Invalid answer: " + x); break()
+                }
+            else if (nodes.size > 1)
+                ask("Are you sure you want to " + op + " several nodes? (y/n) [n]: ", "n") match {
+                    case "y" | "Y" => ()
+                    case "n" | "N" => break()
+                    case x => nl(); warn("Invalid answer: " + x); break()
+                }
+            else
+                ask("Are you sure you want to " + op + " " + nid8(nodes.head) + " node? (y/n) [n]: ", "n") match {
+                    case "y" | "Y" => ()
+                    case "n" | "N" => break()
+                    case x => nl(); warn("Invalid answer: " + x); break()
+                }
+        }
 
         if (restart)
             ignite.cluster.restartNodes(nodes)
@@ -278,7 +347,7 @@ object VisorKillCommand {
         spec = List(
             cmd.name,
             s"${cmd.name} -in|-ih",
-            s"${cmd.name} {-r|-k} {-id8=<node-id8>|-id=<node-id>}"
+            s"${cmd.name} {-r|-k} {-sc} {-al|-ar|-id8=<node-id8>|-id=<node-id>}"
         ),
         args = List(
             "-in" -> List(
@@ -293,6 +362,17 @@ object VisorKillCommand {
                 "choose a host where to kill or restart nodes.",
                 "Note that either '-in' or '-ih' can be specified."
             ),
+            "-al" -> List(
+                "Kill (stop) all local nodes.",
+                "Note that either '-al' or '-ar' can be specified."
+            ),
+            "-ar" -> List(
+                "Kill (stop) all remote nodes.",
+                "Note that either '-al' or '-ar' can be specified."
+            ),
+            "-sc" -> List(
+                "Skip kill or restart of client nodes for group nodes command."
+            ),
             "-r" -> List(
                 "Restart node mode.",
                 "Note that either '-r' or '-k' can be specified.",
@@ -305,8 +385,10 @@ object VisorKillCommand {
             ),
             "-id8=<node-id8>" -> List(
                 "ID8 of the node to kill or restart.",
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
                 "If no parameters provided - command starts in interactive mode."
             ),
             "-id=<node-id>" -> List(
@@ -322,6 +404,14 @@ object VisorKillCommand {
                 "Restart node with id8.",
             s"${cmd.name} -id8=@n0 -r" ->
                 "Restart specified node with id8 taken from 'n0' memory variable.",
+            s"${cmd.name} -id8=@nl -r" ->
+                "Restart oldest local node with id8 taken from 'nl' memory variable.",
+            s"${cmd.name} -id8=@nl -k" ->
+                "Kill (stop) oldest remote node with id8 taken from 'nr' memory variable.",
+            s"${cmd.name} -r -ar" ->
+                "Restart all remote nodes.",
+            s"${cmd.name} -k -sc -al" ->
+                "Kill (stop) all local server nodes.",
             s"${cmd.name} -k" ->
                 "Kill (stop) all nodes."
         ),

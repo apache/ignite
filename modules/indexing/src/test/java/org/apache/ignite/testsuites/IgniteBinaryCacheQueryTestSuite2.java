@@ -18,8 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueriesLoadTest1;
 
 /**
  * Cache query suite with binary marshaller.
@@ -30,9 +29,9 @@ public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
         TestSuite suite = IgniteCacheQuerySelfTestSuite2.suite();
+
+        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
 
         return suite;
     }

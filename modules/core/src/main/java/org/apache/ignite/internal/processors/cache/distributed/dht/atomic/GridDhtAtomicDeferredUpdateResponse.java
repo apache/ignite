@@ -19,20 +19,23 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Deferred dht atomic update response.
  */
-public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,13 +43,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** ACK future versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> futVers;
+    private GridLongList futIds;
 
-    /** {@inheritDoc} */
-    @Override public int lookupIndex() {
-        return CACHE_MSG_IDX;
-    }
+    /** */
+    @GridDirectTransient
+    @GridToStringExclude
+    private GridTimeoutObject timeoutSnd;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -59,27 +61,47 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      * Constructor.
      *
      * @param cacheId Cache ID.
-     * @param futVers Future versions.
-     * @param addDepInfo Deployment info.
+     * @param futIds Future IDs.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers, boolean addDepInfo) {
-        assert !F.isEmpty(futVers);
-
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, GridLongList futIds) {
         this.cacheId = cacheId;
-        this.futVers = futVers;
-        this.addDepInfo = addDepInfo;
+        this.futIds = futIds;
+    }
+
+    /**
+     * @param timeoutSnd Callback sending response on timeout.
+     */
+    void timeoutSender(@Nullable GridTimeoutObject timeoutSnd) {
+        this.timeoutSnd = timeoutSnd;
+    }
+
+    /**
+     * @return Callback sending response on timeout.
+     */
+    @Nullable GridTimeoutObject timeoutSender() {
+        return timeoutSnd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
+        return false;
     }
 
     /**
-     * @return List of ACKed future versions.
+     * @return List of ACKed future ids.
      */
-    public Collection<GridCacheVersion> futureVersions() {
-        return futVers;
+    GridLongList futureIds() {
+        return futIds;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.atomicMessageLogger();
     }
 
     /** {@inheritDoc} */
@@ -98,7 +120,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("futIds", futIds))
                     return false;
 
                 writer.incrementState();
@@ -120,7 +142,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (reader.state()) {
             case 3:
-                futVers = reader.readCollection("futVers", MessageCollectionItemType.MSG);
+                futIds = reader.readMessage("futIds");
 
                 if (!reader.isLastRead())
                     return false;
@@ -133,12 +155,17 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 37;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtAtomicDeferredUpdateResponse.class, this);
     }
 }

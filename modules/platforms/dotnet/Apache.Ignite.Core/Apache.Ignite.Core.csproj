@@ -21,6 +21,7 @@
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -30,6 +31,7 @@
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -39,6 +41,7 @@
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x86\Debug\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -48,6 +51,7 @@
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x86\Release\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -67,6 +71,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -75,25 +80,109 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <DebugType>none</DebugType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryBasicNameMapper.cs" />
+    <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
+    <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\CheckpointWriteOrder.cs" />
+    <Compile Include="Configuration\DataPageEvictionMode.cs" />
+    <Compile Include="Configuration\DataRegionConfiguration.cs" />
+    <Compile Include="Configuration\DataStorageConfiguration.cs" />
+    <Compile Include="Cache\Configuration\MemoryPolicyConfiguration.cs" />
+    <Compile Include="Cache\Configuration\PartitionLossPolicy.cs" />
+    <Compile Include="Cache\IMemoryMetrics.cs" />
+    <Compile Include="Client\Cache\ICacheClient.cs" />
+    <Compile Include="Client\IgniteClientConfiguration.cs" />
+    <Compile Include="Client\IgniteClientException.cs" />
+    <Compile Include="Client\IIgniteClient.cs" />
+    <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Configuration\Package-Info.cs" />
+    <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
+    <Compile Include="Datastream\DataStreamerDefaults.cs" />
+    <Compile Include="IDataRegionMetrics.cs" />
+    <Compile Include="IDataStorageMetrics.cs" />
+    <Compile Include="Configuration\WalMode.cs" />
+    <Compile Include="Impl\Binary\BinaryTypeId.cs" />
+    <Compile Include="Impl\Binary\IBinaryRawWriteAware.cs" />
+    <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
+    <Compile Include="Impl\Client\Cache\Query\ClientQueryCursor.cs" />
+    <Compile Include="Impl\Cache\Query\PlatformQueryQursorBase.cs" />
+    <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
+    <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
+    <Compile Include="Impl\Client\ClientStatus.cs" />
+    <Compile Include="Events\LocalEventListener.cs" />
+    <Compile Include="Impl\DataStorageMetrics.cs" />
+    <Compile Include="Impl\IIgniteInternal.cs" />
+    <Compile Include="Impl\Client\Cache\CacheClient.cs" />
+    <Compile Include="Impl\Client\ClientOp.cs" />
+    <Compile Include="Impl\Client\ClientProtocolVersion.cs" />
+    <Compile Include="Impl\Client\ClientSocket.cs" />
+    <Compile Include="Impl\Client\IgniteClient.cs" />
+    <Compile Include="Impl\IPlatformTargetInternal.cs" />
+    <Compile Include="Impl\DataRegionMetrics.cs" />
+    <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
+    <Compile Include="Impl\PlatformJniTarget.cs" />
+    <Compile Include="PersistentStore\CheckpointWriteOrder.cs" />
+    <Compile Include="PersistentStore\IPersistentStoreMetrics.cs" />
+    <Compile Include="PersistentStore\Package-Info.cs" />
+    <Compile Include="PersistentStore\PersistentStoreConfiguration.cs" />
+    <Compile Include="Configuration\SqlConnectorConfiguration.cs" />
+    <Compile Include="PersistentStore\WalMode.cs" />
+    <Compile Include="Deployment\PeerAssemblyLoadingMode.cs" />
+    <Compile Include="Events\IEventStorageSpi.cs" />
+    <Compile Include="Events\MemoryEventStorageSpi.cs" />
+    <Compile Include="Events\NoopEventStorageSpi.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Common\JavaException.cs" />
+    <Compile Include="DataStructures\Configuration\Package-Info.cs" />
+    <Compile Include="Discovery\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Package-Info.cs" />
+    <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Impl\Binary\BinaryProcessor.cs" />
+    <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
+    <Compile Include="Impl\Deployment\AssemblyLoader.cs" />
+    <Compile Include="Impl\Deployment\AssemblyRequest.cs" />
+    <Compile Include="Impl\Deployment\AssemblyRequestResult.cs" />
+    <Compile Include="Impl\Deployment\GetAssemblyFunc.cs" />
+    <Compile Include="Impl\Deployment\PeerAssemblyResolver.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingExtensions.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingObjectHolder.cs" />
+    <Compile Include="Impl\Deployment\PeerLoadingObjectHolderSerializer.cs" />
+    <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
+    <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
+    <Compile Include="Cache\Configuration\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\Package-Info.cs" />
     <Compile Include="Communication\ICommunicationSpi.cs" />
+    <Compile Include="Communication\Package-Info.cs" />
+    <Compile Include="Communication\Tcp\Package-Info.cs" />
     <Compile Include="Communication\Tcp\TcpCommunicationSpi.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
@@ -152,8 +241,28 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
+    <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
+    <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
+    <Compile Include="Impl\Binary\ReflectionUtils.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Binary\TypeNameParser.cs" />
+    <Compile Include="Impl\Cache\IQueryEntityInternal.cs" />
+    <Compile Include="Impl\Cache\MemoryMetrics.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
+    <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
+    <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
+    <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
+    <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
+    <Compile Include="Impl\Common\Listenable.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
+    <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
+    <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
+    <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
+    <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
@@ -173,9 +282,7 @@
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
     <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
-    <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
-    <Compile Include="Cache\Configuration\CacheMemoryMode.cs" />
     <Compile Include="Cache\Configuration\CacheMode.cs" />
     <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
     <Compile Include="Cache\Configuration\CacheWriteSynchronizationMode.cs" />
@@ -216,7 +323,6 @@
     <Compile Include="Events\IEvents.cs" />
     <Compile Include="Events\JobEvent.cs" />
     <Compile Include="Events\Package-Info.cs" />
-    <Compile Include="Events\SwapSpaceEvent.cs" />
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
@@ -245,20 +351,19 @@
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
     <Compile Include="Impl\Cache\ICacheInternal.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
-    <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
+    <Compile Include="Impl\Cache\Query\QueryCursorBase.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilterHolder.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryHandleImpl.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryUtils.cs" />
     <Compile Include="Impl\Cache\Query\FieldsQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursor.cs" />
-    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStoreInternal.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSession.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSessionProxy.cs" />
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterMetricsImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterNodeImpl.cs" />
-    <Compile Include="Impl\Cluster\IClusterGroupEx.cs" />
     <Compile Include="Impl\Collections\CollectionExtensions.cs" />
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
@@ -270,6 +375,7 @@
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Common\SerializableTypeDescriptor.cs" />
     <Compile Include="Impl\Events\EventTypeConverter.cs" />
     <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
@@ -281,8 +387,6 @@
     <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
-    <Compile Include="Impl\Common\Logger.cs" />
-    <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Common\TypeStringConverter.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
@@ -315,15 +419,14 @@
     <Compile Include="Impl\ExceptionUtils.cs" />
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
-    <Compile Include="Impl\IgniteProxy.cs" />
-    <Compile Include="Impl\PlatformTarget.cs" />
+    <Compile Include="Impl\Log\JavaLogger.cs" />
+    <Compile Include="Impl\PlatformTargetAdapter.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\IInteropCallback.cs" />
-    <Compile Include="Impl\InteropExceptionHolder.cs" />
-    <Compile Include="Impl\LifecycleBeanHolder.cs" />
+    <Compile Include="Impl\LifecycleHandlerHolder.cs" />
     <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
     <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
     <Compile Include="Impl\Memory\IPlatformMemory.cs" />
@@ -334,17 +437,12 @@
     <Compile Include="Impl\Memory\PlatformMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemoryUtils.cs" />
     <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
-    <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\NativeMethods.cs" />
-    <Compile Include="Impl\Binary\DateTimeHolder.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
-    <Compile Include="Impl\Binary\IBinarySystemTypeSerializer.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
@@ -358,7 +456,6 @@
     <Compile Include="Impl\Binary\BinarizableSerializer.cs" />
     <Compile Include="Impl\Binary\Marshaller.cs" />
     <Compile Include="Impl\Binary\BinaryMode.cs" />
-    <Compile Include="Impl\Binary\BinaryObjectHandle.cs" />
     <Compile Include="Impl\Binary\BinaryObjectHeader.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchema.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchemaField.cs" />
@@ -375,12 +472,15 @@
     <Compile Include="Impl\Binary\BinaryObject.cs" />
     <Compile Include="Impl\Binary\BinaryUtils.cs" />
     <Compile Include="Impl\Binary\BinaryWriter.cs" />
-    <Compile Include="Impl\Binary\SerializableObjectHolder.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructure.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureEntry.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureJumpTable.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureUpdate.cs" />
     <Compile Include="Impl\Binary\TypeResolver.cs" />
+    <Compile Include="Impl\Plugin\IPluginProviderProxy.cs" />
+    <Compile Include="Impl\Plugin\PluginContext.cs" />
+    <Compile Include="Impl\Plugin\PluginProcessor.cs" />
+    <Compile Include="Impl\Plugin\PluginProviderProxy.cs" />
     <Compile Include="Impl\Resource\IResourceInjector.cs" />
     <Compile Include="Impl\Resource\ResourceFieldInjector.cs" />
     <Compile Include="Impl\Resource\ResourceMethodInjector.cs" />
@@ -400,16 +500,25 @@
     <Compile Include="Impl\Unmanaged\IgniteJniNativeMethods.cs" />
     <Compile Include="Impl\Unmanaged\IUnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbackHandlers.cs" />
+    <Compile Include="Impl\Unmanaged\UnmanagedCallbackOp.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbacks.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedContext.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\IPlatformTarget.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Interop\Package-Info.cs" />
+    <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
+    <Compile Include="Log\CategoryLogger.cs" />
+    <Compile Include="Log\ILogger.cs" />
+    <Compile Include="Log\LoggerExtensions.cs" />
+    <Compile Include="Log\LogLevel.cs" />
+    <Compile Include="Cache\Configuration\MemoryConfiguration.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
-    <Compile Include="Lifecycle\ILifecycleBean.cs" />
+    <Compile Include="Lifecycle\ILifecycleHandler.cs" />
     <Compile Include="Lifecycle\LifecycleEventType.cs" />
     <Compile Include="Messaging\IMessageListener.cs" />
     <Compile Include="Messaging\IMessaging.cs" />
@@ -429,6 +538,13 @@
     <Compile Include="Binary\BinaryObjectException.cs" />
     <Compile Include="Binary\BinaryTypeConfiguration.cs" />
     <Compile Include="Binary\BinaryTypeNames.cs" />
+    <Compile Include="Plugin\IPluginConfiguration.cs" />
+    <Compile Include="Plugin\IPluginContext.cs" />
+    <Compile Include="Plugin\IPluginProvider.cs" />
+    <Compile Include="Plugin\PluginCallback.cs" />
+    <Compile Include="Plugin\PluginNotFoundException.cs" />
+    <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
+    <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource\InstanceResourceAttribute.cs" />
     <Compile Include="Resource\Package-Info.cs" />
@@ -439,6 +555,7 @@
     <Compile Include="Services\IServices.cs" />
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
+    <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
@@ -446,6 +563,7 @@
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
     <Compile Include="Transactions\TransactionConfiguration.cs" />
+    <Compile Include="Transactions\TransactionDeadlockException.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />
@@ -475,15 +593,16 @@
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\x64\$(Configuration)\ignite.jni.dll">
-      <Link>resources\$(Configuration)\x64\ignite.jni.dll</Link>
+      <Link>resources\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll')">
-      <Link>resources\$(Configuration)\x86\ignite.jni.dll</Link>
+      <Link>resources\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
@@ -493,15 +612,6 @@
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Impl\Common\JavaObjects\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\cpp\jni\project\vs\jni.vcxproj">
-      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
-      <Name>jni</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">

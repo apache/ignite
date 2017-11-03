@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -31,26 +32,31 @@ public class CacheObjectBinaryContext extends CacheObjectContext {
 
     /**
      * @param kernalCtx Kernal context.
+     * @param ccfg Cache configuration.
      * @param binaryEnabled Binary enabled flag.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param depEnabled {@code true} if deployment is enabled for the given cache.
      */
     public CacheObjectBinaryContext(GridKernalContext kernalCtx,
+        CacheConfiguration ccfg,
         boolean cpyOnGet,
         boolean storeVal,
         boolean binaryEnabled,
         boolean depEnabled) {
-        super(kernalCtx, binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper() :
-            new GridCacheDefaultAffinityKeyMapper(), cpyOnGet, storeVal, depEnabled);
+        super(kernalCtx,
+            ccfg.getName(),
+            binaryEnabled ? new CacheDefaultBinaryAffinityKeyMapper(ccfg.getKeyConfiguration()) :
+                new GridCacheDefaultAffinityKeyMapper(),
+            cpyOnGet,
+            storeVal,
+            depEnabled);
 
         this.binaryEnabled = binaryEnabled;
     }
 
-    /**
-     * @return Binary enabled flag.
-     */
-    public boolean binaryEnabled() {
+    /** {@inheritDoc} */
+    @Override public boolean binaryEnabled() {
         return binaryEnabled;
     }
 }

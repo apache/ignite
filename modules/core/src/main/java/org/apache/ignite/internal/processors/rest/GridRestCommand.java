@@ -72,6 +72,9 @@ public enum GridRestCommand {
     /** Remove several values from cache. */
     CACHE_REMOVE_ALL("rmvall"),
 
+    /** Clear the specified cache, or all caches if none is specified. */
+    CACHE_CLEAR("clear"),
+
     /** Replace cache value only if there is currently a mapping for it. */
     CACHE_REPLACE("rep"),
 
@@ -95,6 +98,9 @@ public enum GridRestCommand {
 
     /** Cache size. */
     CACHE_SIZE("size"),
+
+    /** Set TTL for the key. */
+    CACHE_UPDATE_TLL("updatettl"),
 
     /** Cache metadata. */
     CACHE_METADATA("metadata"),
@@ -151,7 +157,16 @@ public enum GridRestCommand {
     FETCH_SQL_QUERY("qryfetch"),
 
     /** Close query. */
-    CLOSE_SQL_QUERY("qrycls");
+    CLOSE_SQL_QUERY("qrycls"),
+
+    /** */
+    CLUSTER_ACTIVE("active"),
+
+    /** */
+    CLUSTER_INACTIVE("inactive"),
+
+    /** */
+    CLUSTER_CURRENT_STATE("currentstate");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

@@ -22,18 +22,25 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -42,7 +49,9 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -53,9 +62,9 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.security.Timestamp;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -387,6 +396,34 @@ public class PlatformUtils {
     }
 
     /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Read nullable map.
      *
      * @param reader Reader.
@@ -500,6 +537,8 @@ public class PlatformUtils {
 
             BinaryRawWriterEx writer = ctx.writer(out);
 
+            writer.writeLong(lsnrPtr);
+
             int cntPos = writer.reserveInt();
 
             int cnt = 0;
@@ -514,7 +553,7 @@ public class PlatformUtils {
 
             out.synchronize();
 
-            ctx.gateway().continuousQueryListenerApply(lsnrPtr, mem.pointer());
+            ctx.gateway().continuousQueryListenerApply(mem.pointer());
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
@@ -537,11 +576,13 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
+            out.writeLong(filterPtr);
+
             writeCacheEntryEvent(ctx.writer(out), evt);
 
             out.synchronize();
 
-            return ctx.gateway().continuousQueryFilterApply(filterPtr, mem.pointer()) == 1;
+            return ctx.gateway().continuousQueryFilterApply(mem.pointer()) == 1;
         }
         catch (Exception e) {
             throw toCacheEntryListenerException(e);
@@ -571,6 +612,31 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+    }
+
+    /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+
+        writer.writeObjectDetached(ex.getMessage());
+
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+
+            writer.writeObjectDetached(nativeCause.cause());
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -616,7 +682,7 @@ public class PlatformUtils {
                 try {
                     innerMsg = e.getMessage();
                 }
-                catch (Exception innerErr) {
+                catch (Exception ignored) {
                     innerMsg = "Exception message is not available.";
                 }
 
@@ -711,7 +777,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
     {
         if (err == null) {
             writer.writeBoolean(true);
@@ -731,6 +797,7 @@ public class PlatformUtils {
                 writer.writeBoolean(false);
                 writer.writeString(err.getClass().getName());
                 writer.writeString(err.getMessage());
+                writer.writeString(X.getFullStackTrace(err));
             }
             else {
                 writer.writeBoolean(true);
@@ -785,21 +852,16 @@ public class PlatformUtils {
      */
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
-        try {
-            BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx =
+            new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
-            BinaryMarshaller marsh = new BinaryMarshaller();
+        BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
-            ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh, new IgniteConfiguration());
 
-            return new GridBinaryMarshaller(ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return new GridBinaryMarshaller(ctx);
     }
 
     /**
@@ -888,7 +950,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
 
     /**
@@ -986,6 +1048,180 @@ public class PlatformUtils {
                 throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
             }
         }
+    }
+
+    /**
+     * Gets the entire nested stack-trace of an throwable.
+     *
+     * @param throwable The {@code Throwable} to be examined.
+     * @return The nested stack trace, with the root cause first.
+     */
+    public static String getFullStackTrace(Throwable throwable) {
+        return X.getFullStackTrace(throwable);
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null) {
+                schemaReg.addSchema(schemaId, schema);
+            }
+        }
+
+        return schema == null ? null : schema.fieldIds();
+    }
+
+    /**
+     * Writes the binary metadata to a writer.
+     *
+     * @param writer Writer.
+     * @param meta Meta.
+     */
+    public static void writeBinaryMetadata(BinaryRawWriter writer, BinaryMetadata meta, boolean includeSchemas) {
+        assert meta != null;
+
+        Map<String, BinaryFieldMetadata> fields = meta.fieldsMap();
+
+        writer.writeInt(meta.typeId());
+        writer.writeString(meta.typeName());
+        writer.writeString(meta.affinityKeyFieldName());
+
+        writer.writeInt(fields.size());
+
+        for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+            writer.writeString(e.getKey());
+
+            writer.writeInt(e.getValue().typeId());
+            writer.writeInt(e.getValue().fieldId());
+        }
+
+        if (meta.isEnum()) {
+            writer.writeBoolean(true);
+
+            Map<String, Integer> enumMap = meta.enumMap();
+
+            writer.writeInt(enumMap.size());
+
+            for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeInt(e.getValue());
+            }
+        }
+        else {
+            writer.writeBoolean(false);
+        }
+
+        if (!includeSchemas) {
+            return;
+        }
+
+        // Schemas.
+        Collection<BinarySchema> schemas = meta.schemas();
+
+        writer.writeInt(schemas.size());
+
+        for (BinarySchema schema : schemas) {
+            writer.writeInt(schema.schemaId());
+            writer.writeIntArray(schema.fieldIds());
+        }
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Collection of metas.
+     */
+    public static Collection<BinaryMetadata> readBinaryMetadataCollection(BinaryRawReaderEx reader) {
+        return readCollection(reader,
+                new PlatformReaderClosure<BinaryMetadata>() {
+                    @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
+                        return readBinaryMetadata(reader);
+                    }
+                }
+        );
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Binary type metadata.
+     */
+    public static BinaryMetadata readBinaryMetadata(BinaryRawReaderEx reader) {
+        int typeId = reader.readInt();
+        String typeName = reader.readString();
+        String affKey = reader.readString();
+
+        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
+                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                    @Override
+                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                        String name = reader.readString();
+                        int typeId = reader.readInt();
+                        int fieldId = reader.readInt();
+
+                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                new BinaryFieldMetadata(typeId, fieldId));
+                    }
+                });
+
+        Map<String, Integer> enumMap = null;
+
+        boolean isEnum = reader.readBoolean();
+
+        if (isEnum) {
+            int size = reader.readInt();
+
+            enumMap = new LinkedHashMap<>(size);
+
+            for (int idx = 0; idx < size; idx++)
+                enumMap.put(reader.readString(), reader.readInt());
+        }
+
+        // Read schemas
+        int schemaCnt = reader.readInt();
+
+        List<BinarySchema> schemas = null;
+
+        if (schemaCnt > 0) {
+            schemas = new ArrayList<>(schemaCnt);
+
+            for (int i = 0; i < schemaCnt; i++) {
+                int id = reader.readInt();
+                int fieldCnt = reader.readInt();
+                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                for (int j = 0; j < fieldCnt; j++)
+                    fieldIds.add(reader.readInt());
+
+                schemas.add(new BinarySchema(id, fieldIds));
+            }
+        }
+
+        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
     }
 
     /**

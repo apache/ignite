@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal TcpCommunicationSpi(BinaryReader reader)
+        internal TcpCommunicationSpi(IBinaryRawReader reader)
         {
             AckSendThreshold = reader.ReadInt();
             ConnectTimeout = reader.ReadLongAsTimespan();

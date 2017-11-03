@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 
@@ -31,19 +30,19 @@ public enum CacheType {
     USER(true, SYSTEM_POOL),
 
     /**
-     * Internal cache, should not be visible via public API (caches used by IGFS, Hadoop, data structures).
+     * Internal cache, should not be visible via public API (caches used by IGFS, Hadoop).
      */
     INTERNAL(false, SYSTEM_POOL),
 
     /**
-     * Internal replicated cache, should use separate thread pool.
+     * Cache for data structures, should not be visible via public API.
      */
-    UTILITY(false, UTILITY_CACHE_POOL),
+    DATA_STRUCTURES(false, SYSTEM_POOL),
 
     /**
-     * Internal marshaller cache, should use separate thread pool.
+     * Internal replicated cache, should use separate thread pool.
      */
-    MARSHALLER(false, MARSH_CACHE_POOL);
+    UTILITY(false, UTILITY_CACHE_POOL);
 
     /** */
     private final boolean userCache;

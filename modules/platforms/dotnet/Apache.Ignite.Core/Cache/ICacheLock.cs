@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="timeout">
         /// A <see cref="TimeSpan" /> representing the amount of time to wait for the lock. 
-        /// A value of –1 millisecond specifies an infinite wait.
+        /// A value of -1 millisecond specifies an infinite wait.
         /// </param>
         /// <returns>True if the current thread acquires the lock; otherwise, false.</returns>
         bool TryEnter(TimeSpan timeout);

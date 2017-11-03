@@ -57,7 +57,11 @@ import scala.util.control.Breaks._
  * ====Arguments====
  * {{{
  *     -id8=<node-id8>
- *         ID8 of node. Either '-id8' or '-id' can be specified.
+ *         ID8 of node.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
  *         If neither specified - command starts in interactive mode.
  *     -id=<node-id>
  *         Full ID of node. Either '-id8' or '-id' can  be specified.
@@ -164,7 +168,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
 
                         val m = node.metrics
 
-                        val gridName: String = node.attribute(ATTR_GRID_NAME)
+                        val igniteInstanceName: String = node.attribute(ATTR_IGNITE_INSTANCE_NAME)
 
                         val ver = U.productVersion(node)
                         val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
@@ -183,7 +187,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
-                            t += ("Grid name", escapeName(gridName))
+                            t += ("Ignite instance name", escapeName(igniteInstanceName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
@@ -238,7 +242,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
                             t += ("Ignite version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
-                            t += ("Grid name", escapeName(gridName))
+                            t += ("Ignite instance name", escapeName(igniteInstanceName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
@@ -295,8 +299,11 @@ object VisorNodeCommand {
         ),
         args = List(
             "-id8=<node-id8>" -> List(
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
+                "ID8 of node.",
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'.",
                 "If neither specified - command starts in interactive mode."
             ),
             "-id=<node-id>" -> List(

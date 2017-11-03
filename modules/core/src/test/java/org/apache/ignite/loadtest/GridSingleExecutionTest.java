@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.compute.ComputeJob;
@@ -89,9 +88,8 @@ public final class GridSingleExecutionTest {
             System.exit(1);
         }
         else if (args.length >= 2) {
-            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0])) {
+            for (IgniteConfiguration cfg: getConfigurations(args[1], args[0]))
                 G.start(cfg);
-            }
         }
 
         boolean useSes = false;
@@ -104,12 +102,8 @@ public final class GridSingleExecutionTest {
         try {
             Ignite ignite = G.ignite();
 
-            IgniteCompute comp = ignite.compute().withAsync();
-
             // Execute Hello World task.
-            comp.execute(!useSes ? TestTask.class : TestSessionTask.class, null);
-
-            ComputeTaskFuture<Object> fut = comp.future();
+            ComputeTaskFuture<Object> fut = ignite.compute().executeAsync(!useSes ? TestTask.class : TestSessionTask.class, null);
 
             if (useSes) {
                 fut.getTaskSession().setAttribute("attr1", 1);
@@ -146,7 +140,7 @@ public final class GridSingleExecutionTest {
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
 
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         try {
             fileApp = new RollingFileAppender(new PatternLayout(fmt), fileName);

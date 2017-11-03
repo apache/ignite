@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(Ignite grid)
+        public void Inject(IIgniteInternal grid)
         {
             ResourceProcessor.Inject(_clo, grid);
         }
@@ -62,14 +62,15 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_clo));
+            writer0.WriteObjectDetached(_clo);
         }
 
-        public ComputeOutFuncJob(IBinaryReader reader)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeOutFuncJob" /> class.
+        /// </summary>
+        public ComputeOutFuncJob(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader) reader.GetRawReader();
-
-            _clo = reader0.ReadObject<IComputeOutFunc>();
+            _clo = reader.ReadObject<IComputeOutFunc>();
         }
     }
 }

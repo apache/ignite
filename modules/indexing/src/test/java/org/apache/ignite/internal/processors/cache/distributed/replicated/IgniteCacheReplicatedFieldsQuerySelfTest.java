@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -48,15 +48,15 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = intCache;
 
         QueryCursor<List<?>> qry = null;
 
-        int maximumQueryIteratorCount = GridCacheQueryManager.MAX_ITERATORS;
+        int maximumQryIterCnt = cache.getConfiguration(CacheConfiguration.class).getMaxQueryIteratorsCount();
 
-        for (int i = 0; i < maximumQueryIteratorCount + 1; i++) {
+        for (int i = 0; i < maximumQryIterCnt + 1; i++) {
             QueryCursor<List<?>> q = cache
-               .query(new SqlFieldsQuery("select _key from Integer where _key >= 0 order by _key"));
+                .query(new SqlFieldsQuery("select _key from Integer where _key >= 0 order by _key"));
 
             assertEquals(0, q.iterator().next().get(0));
 

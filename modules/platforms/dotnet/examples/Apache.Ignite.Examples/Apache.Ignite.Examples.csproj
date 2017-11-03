@@ -35,6 +35,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
@@ -46,19 +49,34 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ThinClient\ThinClientPutGetExample.cs" />
+    <Compile Include="ThinClient\ThinClientQueryExample.cs" />
     <Compile Include="Compute\ClosureExample.cs" />
     <Compile Include="Compute\TaskExample.cs" />
+    <Compile Include="Compute\PeerAssemblyLoadingExample.cs" />
     <Compile Include="Datagrid\ContinuousQueryExample.cs" />
     <Compile Include="Datagrid\DataStreamerExample.cs" />
+    <Compile Include="Datagrid\MultiTieredCacheExample.cs" />
+    <Compile Include="Datagrid\EntryProcessorExample.cs" />
+    <Compile Include="Datagrid\NearCacheExample.cs" />
+    <Compile Include="Datagrid\OptimisticTransactionExample.cs" />
     <Compile Include="Datagrid\PutGetExample.cs" />
     <Compile Include="Datagrid\LinqExample.cs" />
+    <Compile Include="Datagrid\BinaryModeExample.cs" />
+    <Compile Include="Datagrid\QueryDmlExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
+    <Compile Include="Datagrid\TransactionDeadlockDetectionExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
+    <Compile Include="DataStructures\AtomicLongExample.cs" />
+    <Compile Include="DataStructures\AtomicReferenceExample.cs" />
+    <Compile Include="DataStructures\AtomicSequenceExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
+    <Compile Include="Misc\ClientReconnectExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IMapService.cs" />

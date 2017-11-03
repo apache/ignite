@@ -3,25 +3,33 @@ Ignite Web Console Instructions
 
 How to deploy locally:
 
-1. Install locally MongoDB (version >=3.x) follow instructions from site http://docs.mongodb.org/manual/installation
-2. Install locally NodeJS (version >=4.x) using installer from site https://nodejs.org for your OS.
-3. Change directory '$IGNITE_HOME/modules/web-console/src/main/js'.
-4. Run "npm install" in terminal for download all dependencies.
-5. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
-6. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
+1. Install locally MongoDB (version >=3.2.x) follow instructions from site http://docs.mongodb.org/manual/installation.
+2. Install locally NodeJS (version >=6.5.x) using installer from site https://nodejs.org/en/download/current for your OS.
+3. Change directory to '$IGNITE_HOME/modules/web-console/backend' and
+ run "npm install --no-optional" for download backend dependencies.
+4. Change directory to '$IGNITE_HOME/modules/web-console/frontend' and
+ run "npm install --no-optional" for download frontend dependencies.
+5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
+6. Copy ignite-web-agent-<version>.zip from '$IGNITE_HOME/modules/web-console/web-agent/target'
+ to '$IGNITE_HOME/modules/web-console/backend/agent_dists' folder.
 
 Steps 1 - 6 should be executed once.
 
 How to run console in development mode:
 
-1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.0/bin
+1. Configure MongoDB to run as service or in terminal change dir to $MONGO_INSTALL_DIR/server/3.2/bin
   and start MongoDB by executing "mongod".
 
-2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'
-  and start application by executing "npm start" (for first time) or "node serve" to start backend.
+2. In new terminal change directory to '$IGNITE_HOME/modules/web-console/backend'.
+   If needed run "npm install --no-optional" (if dependencies changed) and run "npm start" to start backend.
 
-3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/src/main/js'
-  and start virtual server and local changes watcher by executing "gulp watch --debug"
-  or "gulp connect" to start web server only.
+3. In new terminal change directory to '$IGNITE_HOME/modules/web-console/frontend'.
+  If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
 
-4. In browser open: http://localhost:8090
+4. In browser open: http://localhost:9000
+
+How to migrate model:
+
+1. Model will be upgraded on first start.
+2. To downgrade model execute in terminal following command: "./node_modules/.bin/migrate down <migration-name> -d <dbConnectionUri>".
+   Example: "./node_modules/.bin/migrate down add_index -d mongodb://localhost/console".

@@ -17,44 +17,16 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgniteProperties;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-
-import static java.net.URLEncoder.encode;
 
 /**
  * This class is responsible for notification about new version availability.
@@ -66,20 +38,26 @@ class GridUpdateNotifier {
     /** Default encoding. */
     private static final String CHARSET = "UTF-8";
 
-    /** Access URL to be used to access latest version data. */
-    private final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
+    /** Version comparator. */
+    private static final VersionComparator VER_COMPARATOR = new VersionComparator();
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
     /** Sleep milliseconds time for worker thread. */
-    public static final int WORKER_THREAD_SLEEP_TIME = 5000;
+    private static final int WORKER_THREAD_SLEEP_TIME = 5000;
+
+    /** Default URL for request Ignite updates. */
+    private final static String DEFAULT_IGNITE_UPDATES_URL = "https://ignite.apache.org/latest";
+
+    /** Default HTTP parameter for request Ignite updates. */
+    private final static String DEFAULT_IGNITE_UPDATES_PARAMS = "?ver=";
 
     /** Grid version. */
     private final String ver;
 
-    /** Site. */
-    private final String url;
+    /** Error during obtaining data. */
+    private volatile Exception err;
 
     /** Latest version. */
     private volatile String latestVer;
@@ -87,26 +65,11 @@ class GridUpdateNotifier {
     /** Download url for latest version. */
     private volatile String downloadUrl;
 
-    /** HTML parsing helper. */
-    private final DocumentBuilder documentBuilder;
-
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
-
-    /** */
-    private volatile int topSize;
-
-    /** System properties */
-    private final String vmProps;
-
-    /** Plugins information for request */
-    private final String pluginsVers;
-
-    /** Kernal gateway */
-    private final GridKernalGateway gw;
 
     /** */
     private long lastLog = -1;
@@ -117,102 +80,58 @@ class GridUpdateNotifier {
     /** Worker thread to process http request. */
     private final Thread workerThread;
 
+    /** Http client for getting Ignite updates */
+    private final HttpIgniteUpdatesChecker updatesChecker;
+
     /**
      * Creates new notifier with default values.
      *
-     * @param gridName gridName
+     * @param igniteInstanceName igniteInstanceName
      * @param ver Compound Ignite version.
-     * @param gw Kernal gateway.
-     * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
+     * @param updatesChecker Service for getting Ignite updates
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
-        boolean reportOnlyNew) throws IgniteCheckedException {
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    GridUpdateNotifier(
+        String igniteInstanceName,
+        String ver,
+        boolean reportOnlyNew,
+        HttpIgniteUpdatesChecker updatesChecker
+    ) throws IgniteCheckedException {
+        this.ver = ver;
+        this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
+        this.updatesChecker = updatesChecker;
+        this.reportOnlyNew = reportOnlyNew;
 
-            documentBuilder = factory.newDocumentBuilder();
+        workerThread = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while(!Thread.currentThread().isInterrupted()) {
+                        Runnable cmd0 = cmd.getAndSet(null);
 
-            documentBuilder.setEntityResolver(new EntityResolver() {
-                @Override public InputSource resolveEntity(String publicId, String sysId) {
-                    if (sysId.endsWith(".dtd"))
-                        return new InputSource(new StringReader(""));
-
-                    return null;
-                }
-            });
-
-            this.ver = ver;
-
-            url = "http://ignite.run/update_status_ignite.php";
-
-            this.gridName = gridName == null ? "null" : gridName;
-            this.gw = gw;
-
-            SB pluginsBuilder = new SB();
-
-            for (PluginProvider provider : pluginProviders)
-                pluginsBuilder.a("&").a(provider.name() + "-plugin-version").a("=").
-                    a(encode(provider.version(), CHARSET));
-
-            pluginsVers = pluginsBuilder.toString();
-
-            this.reportOnlyNew = reportOnlyNew;
-
-            vmProps = getSystemProperties();
-
-            workerThread = new Thread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        while(!Thread.currentThread().isInterrupted()) {
-                            Runnable cmd0 = cmd.getAndSet(null);
-
-                            if (cmd0 != null)
-                                cmd0.run();
-                            else
-                                Thread.sleep(WORKER_THREAD_SLEEP_TIME);
-                        }
-                    }
-                    catch (InterruptedException ignore) {
-                        // No-op.
+                        if (cmd0 != null)
+                            cmd0.run();
+                        else
+                            Thread.sleep(WORKER_THREAD_SLEEP_TIME);
                     }
                 }
-            }, "upd-ver-checker");
+                catch (InterruptedException ignore) {
+                    // No-op.
+                }
+            }
+        }, "upd-ver-checker");
 
-            workerThread.setDaemon(true);
+        workerThread.setDaemon(true);
 
-            workerThread.start();
-        }
-        catch (ParserConfigurationException e) {
-            throw new IgniteCheckedException("Failed to create xml parser.", e);
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new IgniteCheckedException("Failed to encode.", e);
-        }
+        workerThread.start();
     }
 
     /**
-     * Gets system properties.
-     *
-     * @return System properties.
+     * Creates new notifier with default Ignite updates URL
      */
-    private static String getSystemProperties() {
-        try {
-            StringWriter sw = new StringWriter();
-
-            try {
-                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
-            }
-            catch (IOException ignore) {
-                return null;
-            }
-
-            return sw.toString();
-        }
-        catch (SecurityException ignore) {
-            return null;
-        }
+    GridUpdateNotifier(String igniteInstanceName, String ver, boolean reportOnlyNew) throws IgniteCheckedException {
+        this(igniteInstanceName, ver, reportOnlyNew,
+            new HttpIgniteUpdatesChecker(DEFAULT_IGNITE_UPDATES_URL, DEFAULT_IGNITE_UPDATES_PARAMS + ver, CHARSET));
     }
 
     /**
@@ -223,13 +142,6 @@ class GridUpdateNotifier {
     }
 
     /**
-     * @param topSize Size of topology for license verification purpose.
-     */
-    void topologySize(int topSize) {
-        this.topSize = topSize;
-    }
-
-    /**
      * @return Latest version.
      */
     String latestVersion() {
@@ -237,17 +149,25 @@ class GridUpdateNotifier {
     }
 
     /**
+     * @return Error.
+     */
+    Exception error() {
+        return err;
+    }
+
+    /**
      * Starts asynchronous process for retrieving latest version data.
      *
      * @param log Logger.
+     * @param first First checking.
      */
-    void checkForNewVersion(IgniteLogger log) {
+    void checkForNewVersion(IgniteLogger log, boolean first) {
         assert log != null;
 
         log = log.getLogger(getClass());
 
         try {
-            cmd.set(new UpdateChecker(log));
+            cmd.set(new UpdateChecker(log, first));
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to schedule a thread due to execution rejection (safely ignoring): " +
@@ -270,13 +190,16 @@ class GridUpdateNotifier {
 
         downloadUrl = downloadUrl != null ? downloadUrl : IgniteKernal.SITE;
 
-        if (latestVer != null)
-            if (latestVer.equals(ver)) {
+        if (latestVer != null) {
+            int cmp = VER_COMPARATOR.compare(latestVer, ver);
+
+            if (cmp == 0) {
                 if (!reportOnlyNew)
                     throttle(log, false, "Your version is up to date.");
             }
-            else
+            else if (cmp > 0)
                 throttle(log, true, "New version is available at " + downloadUrl + ": " + latestVer);
+        }
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");
@@ -322,80 +245,50 @@ class GridUpdateNotifier {
         /** Logger. */
         private final IgniteLogger log;
 
+        /** First. */
+        private final boolean first;
+
         /**
          * Creates checked with given logger.
          *
          * @param log Logger.
          */
-        UpdateChecker(IgniteLogger log) {
-            super(gridName, "grid-version-checker", log);
+        UpdateChecker(IgniteLogger log, boolean first) {
+            super(igniteInstanceName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());
+            this.first = first;
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                String stackTrace = gw != null ? gw.userStackTrace() : null;
-
-                String postParams =
-                    "gridName=" + encode(gridName, CHARSET) +
-                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
-                    (topSize > 0 ? "&topSize=" + topSize : "") +
-                    (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
-                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
-                        pluginsVers;
-
-                URLConnection conn = new URL(url).openConnection();
-
                 if (!isCancelled()) {
-                    conn.setDoOutput(true);
-                    conn.setRequestProperty("Accept-Charset", CHARSET);
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
-
-                    conn.setConnectTimeout(3000);
-                    conn.setReadTimeout(3000);
-
-                    Document dom = null;
-
                     try {
-                        try (OutputStream os = conn.getOutputStream()) {
-                            os.write(postParams.getBytes(CHARSET));
+                        String updatesRes = updatesChecker.getUpdates(first);
+
+                        String[] lines = updatesRes.split("\n");
+
+                        for (String line : lines) {
+                            if (line.contains("version"))
+                                latestVer = obtainVersionFrom(line);
+                            else if (line.contains("downloadUrl"))
+                                downloadUrl = obtainDownloadUrlFrom(line);
                         }
 
-                        try (InputStream in = conn.getInputStream()) {
-                            if (in == null)
-                                return;
-
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
-
-                            StringBuilder xml = new StringBuilder();
-
-                            String line;
-
-                            while ((line = reader.readLine()) != null) {
-                                if (line.contains("<meta") && !line.contains("/>"))
-                                    line = line.replace(">", "/>");
-
-                                xml.append(line).append('\n');
-                            }
-
-                            dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes(CHARSET)));
-                        }
+                        err = null;
                     }
                     catch (IOException e) {
+                        err = e;
+
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
-                    }
-
-                    if (dom != null) {
-                        latestVer = obtainVersionFrom(dom);
-
-                        downloadUrl = obtainDownloadUrlFrom(dom);
                     }
                 }
             }
             catch (Exception e) {
+                err = e;
+
                 if (log.isDebugEnabled())
                     log.debug("Unexpected exception in update checker. " + e.getMessage());
             }
@@ -404,55 +297,66 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param  line Line which contains value for extract.
+         * @param  metaName Name for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainMeta(String metaName, Node node) {
-            assert node != null;
+        @Nullable private String obtainMeta(String metaName, String line) {
+            assert line.contains(metaName);
 
-            if (node instanceof Element && "meta".equals(node.getNodeName().toLowerCase())) {
-                Element meta = (Element)node;
+            return line.substring(line.indexOf(metaName) + metaName.length()).trim();
 
-                String name = meta.getAttribute("name");
-
-                if (metaName.equals(name)) {
-                    String content = meta.getAttribute("content");
-
-                    if (content != null && !content.isEmpty())
-                        return content;
-                }
-            }
-
-            NodeList childNodes = node.getChildNodes();
-
-            for (int i = 0; i < childNodes.getLength(); i++) {
-                String ver = obtainMeta(metaName, childNodes.item(i));
-
-                if (ver != null)
-                    return ver;
-            }
-
-            return null;
         }
 
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param  line Line which contains value for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainVersionFrom(Node node) {
-            return obtainMeta("version", node);
+        @Nullable private String obtainVersionFrom(String line) {
+            return obtainMeta("version=", line);
         }
 
         /**
          * Gets the download url from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param line Which contains value for extract.
          * @return download url or {@code null} if one's not found.
          */
-        @Nullable private String obtainDownloadUrlFrom(Node node) {
-            return obtainMeta("downloadUrl", node);
+        @Nullable private String obtainDownloadUrlFrom(String line) {
+            return obtainMeta("downloadUrl=", line);
+        }
+    }
+
+    /**
+     * Ignite version comparator.
+     */
+    private static final class VersionComparator implements Comparator<String> {
+        /** Dot pattern. */
+        private static final String DOT_PATTERN = "\\.";
+
+        /** Dash pattern. */
+        private static final String DASH_PATTERN = "-";
+
+        /** {@inheritDoc} */
+        @Override public int compare(String o1, String o2) {
+            if (o1.equals(o2))
+                return 0;
+
+            String[] ver1 = o1.split(DOT_PATTERN, 3);
+            String[] ver2 = o2.split(DOT_PATTERN, 3);
+
+            assert ver1.length == 3;
+            assert ver2.length == 3;
+
+            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0]) &&
+                Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1]) &&
+                Integer.valueOf(ver1[2].split(DASH_PATTERN)[0]) >= Integer.valueOf(ver2[2].split(DASH_PATTERN)[0]))
+
+                return 1;
+            else
+                return -1;
         }
     }
 }

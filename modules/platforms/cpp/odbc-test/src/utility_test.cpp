@@ -54,28 +54,43 @@ BOOST_AUTO_TEST_CASE(TestUtilityCopyStringToBuffer)
     BOOST_REQUIRE(!strcmp(buffer, str.substr(0, 10).c_str()));
 }
 
-BOOST_AUTO_TEST_CASE(TestUtilityReadString)
+BOOST_AUTO_TEST_CASE(TestUtilityWriteReadString)
 {
     using namespace ignite::impl::binary;
     using namespace ignite::impl::interop;
 
-    std::string inputStr("Hello World!");
-    std::string outputStr;
+    std::string inStr1("Hello World!");
+    std::string inStr2;
+    std::string inStr3("Lorem ipsum");
+
+    std::string outStr1;
+    std::string outStr2;
+    std::string outStr3;
+    std::string outStr4;
 
     ignite::impl::interop::InteropUnpooledMemory mem(1024);
     InteropOutputStream outStream(&mem);
     BinaryWriterImpl writer(&outStream, 0);
 
-    writer.WriteString(inputStr.data(), static_cast<int32_t>(inputStr.size()));
+    WriteString(writer, inStr1);
+    WriteString(writer, inStr2);
+    WriteString(writer, inStr3);
+    writer.WriteNull();
 
     outStream.Synchronize();
 
     InteropInputStream inStream(&mem);
     BinaryReaderImpl reader(&inStream);
 
-    ReadString(reader, outputStr);
+    ReadString(reader, outStr1);
+    ReadString(reader, outStr2);
+    ReadString(reader, outStr3);
+    ReadString(reader, outStr4);
 
-    BOOST_REQUIRE(inputStr == outputStr);
+    BOOST_REQUIRE(inStr1 == outStr1);
+    BOOST_REQUIRE(inStr2 == outStr2);
+    BOOST_REQUIRE(inStr3 == outStr3);
+    BOOST_REQUIRE(outStr4.empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

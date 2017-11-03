@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
 
     /// <summary>
     /// SQL fields query.
@@ -25,7 +27,7 @@ namespace Apache.Ignite.Core.Cache.Query
     public class SqlFieldsQuery
     {
         /// <summary> Default page size. </summary>
-        public const int DfltPageSize = 1024;
+        public const int DefaultPageSize = 1024;
 
         /// <summary>
         /// Constructor.
@@ -49,7 +51,7 @@ namespace Apache.Ignite.Core.Cache.Query
             Local = loc;
             Arguments = args;
 
-            PageSize = DfltPageSize;
+            PageSize = DefaultPageSize;
         }
 
         /// <summary>
@@ -74,8 +76,93 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary>
         /// Optional page size.
         /// <para />
-        /// Defautls to <see cref="DfltPageSize"/>.
+        /// Defaults to <see cref="DefaultPageSize"/>.
         /// </summary>
         public int PageSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether distributed joins should be enabled for this query.
+        /// <para />
+        /// When disabled, join results will only contain colocated data (joins work locally).
+        /// When enabled, joins work as expected, no matter how the data is distributed.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if enable distributed joins should be enabled; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnableDistributedJoins { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether join order of tables should be enforced.
+        /// <para />
+        /// When true, query optimizer will not reorder tables in join.
+        /// <para />
+        /// It is not recommended to enable this property until you are sure that your indexes
+        /// and the query itself are correct and tuned as much as possible but
+        /// query optimizer still produces wrong join order.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
+        /// </value>
+        public bool EnforceJoinOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query operates on colocated data.
+        /// <para />
+        /// Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+        /// If you know in advance that the elements of your query selection are colocated together on the same
+        /// node and you group by colocated key (primary or affinity key), then Ignite can make significant
+        /// performance and network optimizations by grouping data on remote nodes.
+        /// </summary>
+        public bool Colocated { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default schema name for the query.
+        /// <para />
+        /// If not set, current cache name is used,
+        /// which means you can omit schema name for tables within the current cache.
+        /// </summary>
+        public string Schema { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="SqlFieldsQuery"/> is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
+                                 ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
+                                 Colocated, Schema, Lazy);
+        }
     }
 }

@@ -25,224 +25,446 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// </summary>
     internal class CacheMetricsImpl : ICacheMetrics
     {
+        /** */
+        private readonly long _cacheHits;
+
+        /** */
+        private readonly float _cacheHitPercentage;
+
+        /** */
+        private readonly long _cacheMisses;
+
+        /** */
+        private readonly float _cacheMissPercentage;
+
+        /** */
+        private readonly long _cacheGets;
+
+        /** */
+        private readonly long _cachePuts;
+
+        /** */
+        private readonly long _cacheRemovals;
+
+        /** */
+        private readonly long _cacheEvictions;
+
+        /** */
+        private readonly float _averageGetTime;
+
+        /** */
+        private readonly float _averagePutTime;
+
+        /** */
+        private readonly float _averageRemoveTime;
+
+        /** */
+        private readonly float _averageTxCommitTime;
+
+        /** */
+        private readonly float _averageTxRollbackTime;
+
+        /** */
+        private readonly long _cacheTxCommits;
+
+        /** */
+        private readonly long _cacheTxRollbacks;
+
+        /** */
+        private readonly string _cacheName;
+
+        /** */
+        private readonly long _offHeapGets;
+
+        /** */
+        private readonly long _offHeapPuts;
+
+        /** */
+        private readonly long _offHeapRemovals;
+
+        /** */
+        private readonly long _offHeapEvictions;
+
+        /** */
+        private readonly long _offHeapHits;
+
+        /** */
+        private readonly float _offHeapHitPercentage;
+
+        /** */
+        private readonly long _offHeapMisses;
+
+        /** */
+        private readonly float _offHeapMissPercentage;
+
+        /** */
+        private readonly long _offHeapEntriesCount;
+
+        /** */
+        private readonly long _offHeapPrimaryEntriesCount;
+
+        /** */
+        private readonly long _offHeapBackupEntriesCount;
+
+        /** */
+        private readonly long _offHeapAllocatedSize;
+
+        /** */
+        private readonly int _size;
+
+        /** */
+        private readonly int _keySize;
+
+        /** */
+        private readonly bool _isEmpty;
+
+        /** */
+        private readonly int _dhtEvictQueueCurrentSize;
+
+        /** */
+        private readonly int _txThreadMapSize;
+
+        /** */
+        private readonly int _txXidMapSize;
+
+        /** */
+        private readonly int _txCommitQueueSize;
+
+        /** */
+        private readonly int _txPrepareQueueSize;
+
+        /** */
+        private readonly int _txStartVersionCountsSize;
+
+        /** */
+        private readonly int _txCommittedVersionsSize;
+
+        /** */
+        private readonly int _txRolledbackVersionsSize;
+
+        /** */
+        private readonly int _txDhtThreadMapSize;
+
+        /** */
+        private readonly int _txDhtXidMapSize;
+
+        /** */
+        private readonly int _txDhtCommitQueueSize;
+
+        /** */
+        private readonly int _txDhtPrepareQueueSize;
+
+        /** */
+        private readonly int _txDhtStartVersionCountsSize;
+
+        /** */
+        private readonly int _txDhtCommittedVersionsSize;
+
+        /** */
+        private readonly int _txDhtRolledbackVersionsSize;
+
+        /** */
+        private readonly bool _isWriteBehindEnabled;
+
+        /** */
+        private readonly int _writeBehindFlushSize;
+
+        /** */
+        private readonly int _writeBehindFlushThreadCount;
+
+        /** */
+        private readonly long _writeBehindFlushFrequency;
+
+        /** */
+        private readonly int _writeBehindStoreBatchSize;
+
+        /** */
+        private readonly int _writeBehindTotalCriticalOverflowCount;
+
+        /** */
+        private readonly int _writeBehindCriticalOverflowCount;
+
+        /** */
+        private readonly int _writeBehindErrorRetryCount;
+
+        /** */
+        private readonly int _writeBehindBufferSize;
+
+        /** */
+        private readonly string _keyType;
+
+        /** */
+        private readonly string _valueType;
+
+        /** */
+        private readonly bool _isStoreByValue;
+
+        /** */
+        private readonly bool _isStatisticsEnabled;
+
+        /** */
+        private readonly bool _isManagementEnabled;
+
+        /** */
+        private readonly bool _isReadThrough;
+
+        /** */
+        private readonly bool _isWriteThrough;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
         public CacheMetricsImpl(IBinaryRawReader reader)
         {
-            CacheGets = reader.ReadLong();
-            CachePuts = reader.ReadLong();
-            CacheHits = reader.ReadLong();
-            CacheMisses = reader.ReadLong();
-            CacheTxCommits = reader.ReadLong();
-            CacheTxRollbacks = reader.ReadLong();
-            CacheEvictions = reader.ReadLong();
-            CacheRemovals = reader.ReadLong();
-            AveragePutTime = reader.ReadFloat();
-            AverageGetTime = reader.ReadFloat();
-            AverageRemoveTime = reader.ReadFloat();
-            AverageTxCommitTime = reader.ReadFloat();
-            AverageTxRollbackTime = reader.ReadFloat();
-            CacheName = reader.ReadString();
-            OverflowSize = reader.ReadLong();
-            OffHeapEntriesCount = reader.ReadLong();
-            OffHeapAllocatedSize = reader.ReadLong();
-            Size = reader.ReadInt();
-            KeySize = reader.ReadInt();
-            IsEmpty = reader.ReadBoolean();
-            DhtEvictQueueCurrentSize = reader.ReadInt();
-            TxThreadMapSize = reader.ReadInt();
-            TxXidMapSize = reader.ReadInt();
-            TxCommitQueueSize = reader.ReadInt();
-            TxPrepareQueueSize = reader.ReadInt();
-            TxStartVersionCountsSize = reader.ReadInt();
-            TxCommittedVersionsSize = reader.ReadInt();
-            TxRolledbackVersionsSize = reader.ReadInt();
-            TxDhtThreadMapSize = reader.ReadInt();
-            TxDhtXidMapSize = reader.ReadInt();
-            TxDhtCommitQueueSize = reader.ReadInt();
-            TxDhtPrepareQueueSize = reader.ReadInt();
-            TxDhtStartVersionCountsSize = reader.ReadInt();
-            TxDhtCommittedVersionsSize = reader.ReadInt();
-            TxDhtRolledbackVersionsSize = reader.ReadInt();
-            IsWriteBehindEnabled = reader.ReadBoolean();
-            WriteBehindFlushSize = reader.ReadInt();
-            WriteBehindFlushThreadCount = reader.ReadInt();
-            WriteBehindFlushFrequency = reader.ReadLong();
-            WriteBehindStoreBatchSize = reader.ReadInt();
-            WriteBehindTotalCriticalOverflowCount = reader.ReadInt();
-            WriteBehindCriticalOverflowCount = reader.ReadInt();
-            WriteBehindErrorRetryCount = reader.ReadInt();
-            WriteBehindBufferSize = reader.ReadInt();
-            KeyType = reader.ReadString();
-            ValueType = reader.ReadString();
-            IsStoreByValue = reader.ReadBoolean();
-            IsStatisticsEnabled = reader.ReadBoolean();
-            IsManagementEnabled = reader.ReadBoolean();
-            IsReadThrough = reader.ReadBoolean();
-            IsWriteThrough = reader.ReadBoolean();
-            CacheHitPercentage = reader.ReadFloat();
-            CacheMissPercentage = reader.ReadFloat();
+            _cacheHits = reader.ReadLong();
+            _cacheHitPercentage = reader.ReadFloat();
+            _cacheMisses = reader.ReadLong();
+            _cacheMissPercentage = reader.ReadFloat();
+            _cacheGets = reader.ReadLong();
+            _cachePuts = reader.ReadLong();
+            _cacheRemovals = reader.ReadLong();
+            _cacheEvictions = reader.ReadLong();
+            _averageGetTime = reader.ReadFloat();
+            _averagePutTime = reader.ReadFloat();
+            _averageRemoveTime = reader.ReadFloat();
+            _averageTxCommitTime = reader.ReadFloat();
+            _averageTxRollbackTime = reader.ReadFloat();
+            _cacheTxCommits = reader.ReadLong();
+            _cacheTxRollbacks = reader.ReadLong();
+            _cacheName = reader.ReadString();
+            _offHeapGets = reader.ReadLong();
+            _offHeapPuts = reader.ReadLong();
+            _offHeapRemovals = reader.ReadLong();
+            _offHeapEvictions = reader.ReadLong();
+            _offHeapHits = reader.ReadLong();
+            _offHeapHitPercentage = reader.ReadFloat();
+            _offHeapMisses = reader.ReadLong();
+            _offHeapMissPercentage = reader.ReadFloat();
+            _offHeapEntriesCount = reader.ReadLong();
+            _offHeapPrimaryEntriesCount = reader.ReadLong();
+            _offHeapBackupEntriesCount = reader.ReadLong();
+            _offHeapAllocatedSize = reader.ReadLong();
+            _size = reader.ReadInt();
+            _keySize = reader.ReadInt();
+            _isEmpty = reader.ReadBoolean();
+            _dhtEvictQueueCurrentSize = reader.ReadInt();
+            _txThreadMapSize = reader.ReadInt();
+            _txXidMapSize = reader.ReadInt();
+            _txCommitQueueSize = reader.ReadInt();
+            _txPrepareQueueSize = reader.ReadInt();
+            _txStartVersionCountsSize = reader.ReadInt();
+            _txCommittedVersionsSize = reader.ReadInt();
+            _txRolledbackVersionsSize = reader.ReadInt();
+            _txDhtThreadMapSize = reader.ReadInt();
+            _txDhtXidMapSize = reader.ReadInt();
+            _txDhtCommitQueueSize = reader.ReadInt();
+            _txDhtPrepareQueueSize = reader.ReadInt();
+            _txDhtStartVersionCountsSize = reader.ReadInt();
+            _txDhtCommittedVersionsSize = reader.ReadInt();
+            _txDhtRolledbackVersionsSize = reader.ReadInt();
+            _isWriteBehindEnabled = reader.ReadBoolean();
+            _writeBehindFlushSize = reader.ReadInt();
+            _writeBehindFlushThreadCount = reader.ReadInt();
+            _writeBehindFlushFrequency = reader.ReadLong();
+            _writeBehindStoreBatchSize = reader.ReadInt();
+            _writeBehindTotalCriticalOverflowCount = reader.ReadInt();
+            _writeBehindCriticalOverflowCount = reader.ReadInt();
+            _writeBehindErrorRetryCount = reader.ReadInt();
+            _writeBehindBufferSize = reader.ReadInt();
+            _keyType = reader.ReadString();
+            _valueType = reader.ReadString();
+            _isStoreByValue = reader.ReadBoolean();
+            _isStatisticsEnabled = reader.ReadBoolean();
+            _isManagementEnabled = reader.ReadBoolean();
+            _isReadThrough = reader.ReadBoolean();
+            _isWriteThrough = reader.ReadBoolean();
         }
 
-        /** <inheritdoc /> */
-        public long CacheHits { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheHits { get { return _cacheHits; } }
 
-        /** <inheritdoc /> */
-        public float CacheHitPercentage { get; private set; }
+        /** <inheritDoc /> */
+        public float CacheHitPercentage { get { return _cacheHitPercentage; } }
 
-        /** <inheritdoc /> */
-        public long CacheMisses { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheMisses { get { return _cacheMisses; } }
 
-        /** <inheritdoc /> */
-        public float CacheMissPercentage { get; private set; }
+        /** <inheritDoc /> */
+        public float CacheMissPercentage { get { return _cacheMissPercentage; } }
 
-        /** <inheritdoc /> */
-        public long CacheGets { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheGets { get { return _cacheGets; } }
 
-        /** <inheritdoc /> */
-        public long CachePuts { get; private set; }
+        /** <inheritDoc /> */
+        public long CachePuts { get { return _cachePuts; } }
 
-        /** <inheritdoc /> */
-        public long CacheRemovals { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheRemovals { get { return _cacheRemovals; } }
 
-        /** <inheritdoc /> */
-        public long CacheEvictions { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheEvictions { get { return _cacheEvictions; } }
 
-        /** <inheritdoc /> */
-        public float AverageGetTime { get; private set; }
+        /** <inheritDoc /> */
+        public float AverageGetTime { get { return _averageGetTime; } }
 
-        /** <inheritdoc /> */
-        public float AveragePutTime { get; private set; }
+        /** <inheritDoc /> */
+        public float AveragePutTime { get { return _averagePutTime; } }
 
-        /** <inheritdoc /> */
-        public float AverageRemoveTime { get; private set; }
+        /** <inheritDoc /> */
+        public float AverageRemoveTime { get { return _averageRemoveTime; } }
 
-        /** <inheritdoc /> */
-        public float AverageTxCommitTime { get; private set; }
+        /** <inheritDoc /> */
+        public float AverageTxCommitTime { get { return _averageTxCommitTime; } }
 
-        /** <inheritdoc /> */
-        public float AverageTxRollbackTime { get; private set; }
+        /** <inheritDoc /> */
+        public float AverageTxRollbackTime { get { return _averageTxRollbackTime; } }
 
-        /** <inheritdoc /> */
-        public long CacheTxCommits { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheTxCommits { get { return _cacheTxCommits; } }
 
-        /** <inheritdoc /> */
-        public long CacheTxRollbacks { get; private set; }
+        /** <inheritDoc /> */
+        public long CacheTxRollbacks { get { return _cacheTxRollbacks; } }
 
-        /** <inheritdoc /> */
-        public string CacheName { get; private set; }
+        /** <inheritDoc /> */
+        public string CacheName { get { return _cacheName; } }
 
-        /** <inheritdoc /> */
-        public long OverflowSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapGets { get { return _offHeapGets; } }
 
-        /** <inheritdoc /> */
-        public long OffHeapEntriesCount { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapPuts { get { return _offHeapPuts; } }
 
-        /** <inheritdoc /> */
-        public long OffHeapAllocatedSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapRemovals { get { return _offHeapRemovals; } }
 
-        /** <inheritdoc /> */
-        public int Size { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapEvictions { get { return _offHeapEvictions; } }
 
-        /** <inheritdoc /> */
-        public int KeySize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapHits { get { return _offHeapHits; } }
 
-        /** <inheritdoc /> */
-        public bool IsEmpty { get; private set; }
+        /** <inheritDoc /> */
+        public float OffHeapHitPercentage { get { return _offHeapHitPercentage; } }
 
-        /** <inheritdoc /> */
-        public int DhtEvictQueueCurrentSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapMisses { get { return _offHeapMisses; } }
 
-        /** <inheritdoc /> */
-        public int TxThreadMapSize { get; private set; }
+        /** <inheritDoc /> */
+        public float OffHeapMissPercentage { get { return _offHeapMissPercentage; } }
 
-        /** <inheritdoc /> */
-        public int TxXidMapSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapEntriesCount { get { return _offHeapEntriesCount; } }
 
-        /** <inheritdoc /> */
-        public int TxCommitQueueSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapPrimaryEntriesCount { get { return _offHeapPrimaryEntriesCount; } }
 
-        /** <inheritdoc /> */
-        public int TxPrepareQueueSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapBackupEntriesCount { get { return _offHeapBackupEntriesCount; } }
 
-        /** <inheritdoc /> */
-        public int TxStartVersionCountsSize { get; private set; }
+        /** <inheritDoc /> */
+        public long OffHeapAllocatedSize { get { return _offHeapAllocatedSize; } }
 
-        /** <inheritdoc /> */
-        public int TxCommittedVersionsSize { get; private set; }
+        /** <inheritDoc /> */
+        public int Size { get { return _size; } }
 
-        /** <inheritdoc /> */
-        public int TxRolledbackVersionsSize { get; private set; }
+        /** <inheritDoc /> */
+        public int KeySize { get { return _keySize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtThreadMapSize { get; private set; }
+        /** <inheritDoc /> */
+        public bool IsEmpty { get { return _isEmpty; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtXidMapSize { get; private set; }
+        /** <inheritDoc /> */
+        public int DhtEvictQueueCurrentSize { get { return _dhtEvictQueueCurrentSize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtCommitQueueSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxThreadMapSize { get { return _txThreadMapSize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtPrepareQueueSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxXidMapSize { get { return _txXidMapSize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtStartVersionCountsSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxCommitQueueSize { get { return _txCommitQueueSize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtCommittedVersionsSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxPrepareQueueSize { get { return _txPrepareQueueSize; } }
 
-        /** <inheritdoc /> */
-        public int TxDhtRolledbackVersionsSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxStartVersionCountsSize { get { return _txStartVersionCountsSize; } }
 
-        /** <inheritdoc /> */
-        public bool IsWriteBehindEnabled { get; private set; }
+        /** <inheritDoc /> */
+        public int TxCommittedVersionsSize { get { return _txCommittedVersionsSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindFlushSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxRolledbackVersionsSize { get { return _txRolledbackVersionsSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindFlushThreadCount { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtThreadMapSize { get { return _txDhtThreadMapSize; } }
 
-        /** <inheritdoc /> */
-        public long WriteBehindFlushFrequency { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtXidMapSize { get { return _txDhtXidMapSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindStoreBatchSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtCommitQueueSize { get { return _txDhtCommitQueueSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindTotalCriticalOverflowCount { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtPrepareQueueSize { get { return _txDhtPrepareQueueSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindCriticalOverflowCount { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtStartVersionCountsSize { get { return _txDhtStartVersionCountsSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindErrorRetryCount { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtCommittedVersionsSize { get { return _txDhtCommittedVersionsSize; } }
 
-        /** <inheritdoc /> */
-        public int WriteBehindBufferSize { get; private set; }
+        /** <inheritDoc /> */
+        public int TxDhtRolledbackVersionsSize { get { return _txDhtRolledbackVersionsSize; } }
 
-        /** <inheritdoc /> */
-        public string KeyType { get; private set; }
+        /** <inheritDoc /> */
+        public bool IsWriteBehindEnabled { get { return _isWriteBehindEnabled; } }
 
-        /** <inheritdoc /> */
-        public string ValueType { get; private set; }
+        /** <inheritDoc /> */
+        public int WriteBehindFlushSize { get { return _writeBehindFlushSize; } }
 
-        /** <inheritdoc /> */
-        public bool IsStoreByValue { get; private set; }
+        /** <inheritDoc /> */
+        public int WriteBehindFlushThreadCount { get { return _writeBehindFlushThreadCount; } }
 
-        /** <inheritdoc /> */
-        public bool IsStatisticsEnabled { get; private set; }
+        /** <inheritDoc /> */
+        public long WriteBehindFlushFrequency { get { return _writeBehindFlushFrequency; } }
 
-        /** <inheritdoc /> */
-        public bool IsManagementEnabled { get; private set; }
+        /** <inheritDoc /> */
+        public int WriteBehindStoreBatchSize { get { return _writeBehindStoreBatchSize; } }
 
-        /** <inheritdoc /> */
-        public bool IsReadThrough { get; private set; }
+        /** <inheritDoc /> */
+        public int WriteBehindTotalCriticalOverflowCount { get { return _writeBehindTotalCriticalOverflowCount; } }
 
-        /** <inheritdoc /> */
-        public bool IsWriteThrough { get; private set; }
+        /** <inheritDoc /> */
+        public int WriteBehindCriticalOverflowCount { get { return _writeBehindCriticalOverflowCount; } }
+
+        /** <inheritDoc /> */
+        public int WriteBehindErrorRetryCount { get { return _writeBehindErrorRetryCount; } }
+
+        /** <inheritDoc /> */
+        public int WriteBehindBufferSize { get { return _writeBehindBufferSize; } }
+
+        /** <inheritDoc /> */
+        public string KeyType { get { return _keyType; } }
+
+        /** <inheritDoc /> */
+        public string ValueType { get { return _valueType; } }
+
+        /** <inheritDoc /> */
+        public bool IsStoreByValue { get { return _isStoreByValue; } }
+
+        /** <inheritDoc /> */
+        public bool IsStatisticsEnabled { get { return _isStatisticsEnabled; } }
+
+        /** <inheritDoc /> */
+        public bool IsManagementEnabled { get { return _isManagementEnabled; } }
+
+        /** <inheritDoc /> */
+        public bool IsReadThrough { get { return _isReadThrough; } }
+
+        /** <inheritDoc /> */
+        public bool IsWriteThrough { get { return _isWriteThrough; } }
     }
 }

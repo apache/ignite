@@ -23,16 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -90,8 +85,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cCfg = defaultCacheConfiguration();
 
@@ -103,18 +98,18 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
-        if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0)
+        if (clientMode && ((igniteInstanceName.charAt(igniteInstanceName.length() - 1) - '0') & 1) != 0)
             cfg.setClientMode(true);
         else
-            disc.setMaxMissedClientHeartbeats(50);
+            cfg.setClientFailureDetectionTimeout(50000);
 
-        disc.setHeartbeatFrequency(500);
         disc.setIpFinder(IP_FINDER);
         disc.setAckTimeout(1000);
         disc.setSocketTimeout(1000);
 
         cfg.setCacheConfiguration(cCfg);
         cfg.setDiscoverySpi(disc);
+        cfg.setMetricsUpdateFrequency(500);
 
         return cfg;
     }
@@ -130,7 +125,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         for (int i = 0; i < PERM_NODES_CNT + TMP_NODES_CNT; i++)
-            F.rand(alive).cache(null).put(i, String.valueOf(i));
+            F.rand(alive).cache(DEFAULT_CACHE_NAME).put(i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */
@@ -158,8 +153,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
             stopTempNodes();
 
             latch.await();
-
-            validateAlives();
         }
     }
 
@@ -176,8 +169,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testAlivesClient() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1583");
-
         clientMode = true;
 
         doTestAlive();
@@ -196,53 +187,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
-        }
-    }
-
-    /**
-     * Validates that all node collections contain actual information.
-     */
-    @SuppressWarnings("SuspiciousMethodCalls")
-    private void validateAlives() {
-        for (Ignite g : alive) {
-            log.info("Validate node: " + g.name());
-
-            assertEquals("Unexpected nodes number for node: " + g.name(), PERM_NODES_CNT, g.cluster().nodes().size());
-        }
-
-        for (final Ignite g : alive) {
-            IgniteKernal k = (IgniteKernal)g;
-
-            GridDiscoveryManager discoMgr = k.context().discovery();
-
-            final Collection<ClusterNode> currTop = g.cluster().nodes();
-
-            long currVer = discoMgr.topologyVersion();
-
-            for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v > 0; v--) {
-                F.forAll(discoMgr.aliveCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e);
-                        }
-                    });
-
-                F.forAll(discoMgr.aliveRemoteCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e) || g.cluster().localNode().equals(e);
-                        }
-                    });
-
-                GridCacheSharedContext<?, ?> ctx = k.context().cache().context();
-
-                ClusterNode oldest =
-                    GridCacheUtils.oldestAliveCacheServerNode(ctx, new AffinityTopologyVersion(currVer));
-
-                assertNotNull(oldest);
-
-                assertTrue(currTop.contains(oldest));
-            }
         }
     }
 

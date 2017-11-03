@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -63,26 +62,21 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
-    }
-
-    /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
         }
 
-        if (getTestGridName(10).equals(gridName)) {
+        if (getTestIgniteInstanceName(10).equals(igniteInstanceName)) {
             CacheConfiguration cc = cfg.getCacheConfiguration()[0];
             cc.setRebalanceDelay(-1);
         }
@@ -148,7 +142,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      * @throws Exception If failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        // GridNearAtomicUpdateRequest unmarshalling failed test.
+        // GridNearAtomicFullUpdateRequest unmarshalling failed test.
         readCnt.set(1);
 
         failAtomicPut(++key);

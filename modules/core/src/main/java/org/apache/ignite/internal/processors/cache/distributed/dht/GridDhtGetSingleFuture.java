@@ -19,27 +19,25 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -51,9 +49,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCacheEntryInfo>
     implements GridDhtFuture<GridCacheEntryInfo> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -76,7 +71,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     private KeyCacheObject key;
 
     /** */
-    private boolean addRdr;
+    private final boolean addRdr;
 
     /** Reserved partitions. */
     private int part = -1;
@@ -90,11 +85,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
 
-    /** Transaction. */
-    private IgniteTxLocalEx tx;
-
-    /** Retries because ownership changed. */
-    private Collection<Integer> retries;
+    /** Retry because ownership changed. */
+    private Integer retry;
 
     /** Subject ID. */
     private UUID subjId;
@@ -108,6 +100,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Skip values flag. */
     private boolean skipVals;
 
+    /** Recovery context flag. */
+    private final boolean recovery;
+
     /**
      * @param cctx Context.
      * @param msgId Message ID.
@@ -115,7 +110,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param key Key.
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
-     * @param tx Transaction.
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -127,14 +121,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         long msgId,
         UUID reader,
         KeyCacheObject key,
-        Boolean addRdr,
+        boolean addRdr,
         boolean readThrough,
-        @Nullable IgniteTxLocalEx tx,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         assert reader != null;
         assert key != null;
@@ -145,16 +139,16 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.key = key;
         this.addRdr = addRdr;
         this.readThrough = readThrough;
-        this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
+        this.recovery = recovery;
 
         futId = IgniteUuid.randomUuid();
 
-        ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+        ver = cctx.versions().next();
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtGetSingleFuture.class);
@@ -198,17 +192,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map() {
-        if (cctx.dht().dhtPreloader().needForceKeys()) {
-            GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(
+        if (cctx.group().preloader().needForceKeys()) {
+            GridDhtFuture<Object> fut = cctx.group().preloader().request(
+                cctx,
                 Collections.singleton(key),
                 topVer);
 
             if (fut != null) {
-                if (F.isEmpty(fut.invalidPartitions())) {
-                    if (retries == null)
-                        retries = new HashSet<>();
+                if (!F.isEmpty(fut.invalidPartitions())) {
+                    assert fut.invalidPartitions().size() == 1 : fut.invalidPartitions();
 
-                    retries.addAll(fut.invalidPartitions());
+                    retry = F.first(fut.invalidPartitions());
+
+                    onDone((GridCacheEntryInfo)null);
+
+                    return;
                 }
 
                 fut.listen(
@@ -243,17 +241,14 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      *
      */
     private void map0() {
-        // Assign keys to primary nodes.
-        int part = cctx.affinity().partition(key);
+        assert retry == null : retry;
 
-        if (retries == null || !retries.contains(part)) {
-            if (!map(key)) {
-                retries = Collections.singleton(part);
+        if (!map(key)) {
+            retry = cctx.affinity().partition(key);
 
-                onDone((GridCacheEntryInfo)null);
+            onDone((GridCacheEntryInfo)null);
 
-                return;
-            }
+            return;
         }
 
         getAsync();
@@ -261,7 +256,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> invalidPartitions() {
-        return retries == null ? Collections.<Integer>emptyList() : retries;
+        return retry == null ? Collections.<Integer>emptyList() : Collections.singletonList(retry);
     }
 
     /**
@@ -269,23 +264,30 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @return {@code True} if mapped.
      */
     private boolean map(KeyCacheObject key) {
-        GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
-            cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
-            cache().topology().localPartition(key, false);
+        try {
+            int keyPart = cctx.affinity().partition(key);
 
-        if (part == null)
-            return false;
+            GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
+                cache().topology().localPartition(keyPart, topVer, true) :
+                cache().topology().localPartition(keyPart);
 
-        assert this.part == -1;
+            if (part == null)
+                return false;
 
-        // By reserving, we make sure that partition won't be unloaded while processed.
-        if (part.reserve()) {
-            this.part = part.id();
+            assert this.part == -1;
 
-            return true;
+            // By reserving, we make sure that partition won't be unloaded while processed.
+            if (part.reserve()) {
+                this.part = part.id();
+
+                return true;
+            }
+            else
+                return false;
         }
-        else
+        catch (GridDhtInvalidPartitionException ex) {
             return false;
+        }
     }
 
     /**
@@ -304,9 +306,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         IgniteInternalFuture<Boolean> rdrFut = null;
 
-        ClusterNode readerNode = cctx.discovery().node(reader);
+        ReaderArguments readerArgs = null;
 
-        if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
+        if (addRdr && !skipVals && !cctx.localNodeId().equals(reader)) {
             while (true) {
                 GridDhtCacheEntry e = cache().entryExx(key, topVer);
 
@@ -314,14 +316,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                     if (e.obsolete())
                         continue;
 
-                    boolean addReader = (!e.deleted() && addRdr && !skipVals);
+                    boolean addReader = !e.deleted();
 
-                    if (addReader)
+                    if (addReader) {
                         e.unswap(false);
+
+                        // Entry will be removed on touch() if no data in cache,
+                        // but they could be loaded from store,
+                        // we have to add reader again later.
+                        if (readerArgs == null)
+                            readerArgs = new ReaderArguments(reader, msgId, topVer);
+                    }
 
                     // Register reader. If there are active transactions for this entry,
                     // then will wait for their completion before proceeding.
-                    // TODO: GG-4003:
+                    // TODO: IGNITE-3498:
                     // TODO: What if any transaction we wait for actually removes this entry?
                     // TODO: In this case seems like we will be stuck with untracked near entry.
                     // TODO: To fix, check that reader is contained in the list of readers once
@@ -345,31 +354,22 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
         }
 
-        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
+        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut;
 
         if (rdrFut == null || rdrFut.isDone()) {
-            if (tx == null) {
-                fut = cache().getDhtAllAsync(
-                    Collections.singleton(key),
-                    readThrough,
-                    subjId,
-                    taskName,
-                    expiryPlc,
-                    skipVals,
-                    /*can remap*/true);
-            }
-            else {
-                fut = tx.getAllAsync(cctx,
-                    null,
-                    Collections.singleton(key),
-                    /*deserialize binary*/false,
-                    skipVals,
-                    /*keep cache objects*/true,
-                    /*skip store*/!readThrough,
-                    false);
-            }
+            fut = cache().getDhtAllAsync(
+                Collections.singleton(key),
+                readerArgs,
+                readThrough,
+                subjId,
+                taskName,
+                expiryPlc,
+                skipVals,
+                recovery);
         }
         else {
+            final ReaderArguments args = readerArgs;
+
             rdrFut.listen(
                 new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -381,29 +381,16 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                             return;
                         }
 
-                        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut0;
-
-                        if (tx == null) {
-                            fut0 = cache().getDhtAllAsync(
+                        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut0 =
+                            cache().getDhtAllAsync(
                                 Collections.singleton(key),
+                                args,
                                 readThrough,
                                 subjId,
                                 taskName,
                                 expiryPlc,
                                 skipVals,
-                                /*can remap*/true);
-                        }
-                        else {
-                            fut0 = tx.getAllAsync(cctx,
-                                null,
-                                Collections.singleton(key),
-                                /*deserialize binary*/false,
-                                skipVals,
-                                /*keep cache objects*/true,
-                                /*skip store*/!readThrough,
-                                false
-                            );
-                        }
+                                recovery);
 
                         fut0.listen(createGetFutureListener());
                     }
@@ -422,11 +409,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      * @return Listener for get future.
      */
-    @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>
+    @NotNull private IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>
     createGetFutureListener() {
-        return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>() {
+        return new IgniteInClosure<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>>() {
             @Override public void apply(
-                IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut
+                IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut
             ) {
                 onResult(fut);
             }
@@ -436,7 +423,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /**
      * @param fut Completed future to finish this process with.
      */
-    private void onResult(IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut) {
+    private void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut) {
         assert fut.isDone();
 
         if (fut.error() != null)
@@ -445,7 +432,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             try {
                 onDone(toEntryInfo(fut.get()));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignored) {
                 assert false; // Should never happen.
             }
         }
@@ -455,11 +442,11 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param map Map to convert.
      * @return List of infos.
      */
-    private GridCacheEntryInfo toEntryInfo(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+    private GridCacheEntryInfo toEntryInfo(Map<KeyCacheObject, EntryGetResult> map) {
         if (map.isEmpty())
             return null;
 
-        T2<CacheObject, GridCacheVersion> val = map.get(key);
+        EntryGetResult val = map.get(key);
 
         assert val != null;
 
@@ -467,8 +454,10 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         info.cacheId(cctx.cacheId());
         info.key(key);
-        info.value(skipVals ? null : val.get1());
-        info.version(val.get2());
+        info.value(skipVals ? null : (CacheObject)val.value());
+        info.version(val.version());
+        info.expireTime(val.expireTime());
+        info.ttl(val.ttl());
 
         return info;
     }

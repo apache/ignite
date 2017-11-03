@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Messaging;
-using Apache.Ignite.Core.Resource;
-
 namespace Apache.Ignite.ExamplesDll.Messaging
 {
+    using System;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Resource;
+
     /// <summary>
     /// Listener for Unordered topic.
     /// </summary>
-    [Serializable]
     public class RemoteUnorderedListener : IMessageListener<int>
     {
         /** Injected Ignite instance. */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
@@ -25,15 +26,19 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStoreCallback;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +47,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -57,7 +63,7 @@ import java.util.Map;
  * method in .NET during node startup. Refer to its documentation for
  * details.
  */
-public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore {
+public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, PlatformCacheStore, LifecycleAware {
     /** Load cache operation code. */
     private static final byte OP_LOAD_CACHE = (byte)0;
 
@@ -85,6 +91,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Key used to distinguish session deployment.  */
     private static final Object KEY_SES = new Object();
 
+    /** Key to designate a set of stores that share current session.  */
+    private static final Object KEY_SES_STORES = new Object();
+
     /** */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
@@ -96,12 +105,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     private Map<String, ?> props;
 
     /** Native factory. */
+    @GridToStringInclude
     private final Object nativeFactory;
 
     /** Interop processor. */
+    @GridToStringExclude
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
+    @GridToStringExclude
     protected long ptr;
 
     /**
@@ -168,7 +180,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObject(key);
                 }
-            }, new LoadCallback<>(platformCtx, val));
+            }, new IgniteInClosureX<BinaryRawReaderEx>() {
+                @Override public void applyx(BinaryRawReaderEx reader) {
+                    val.set((V)reader.readObjectDetached());
+                }
+            });
 
             return val.get();
         }
@@ -182,14 +198,27 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final Map<K, V> loaded = new HashMap<>();
 
+            final Collection keys0 = (Collection)keys;
+
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection((Collection)keys);
+
+                    writer.writeInt(keys0.size());
+
+                    for (Object o : keys0)
+                        writer.writeObject(o);
                 }
-            }, new LoadAllCallback<>(platformCtx, loaded));
+            }, new IgniteInClosureX<BinaryRawReaderEx>() {
+                @Override public void applyx(BinaryRawReaderEx reader) {
+                    int cnt = reader.readInt();
+
+                    for (int i = 0; i < cnt; i++)
+                        loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                }
+            });
 
             return loaded;
         }
@@ -208,7 +237,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeString(ses.cacheName());
                     writer.writeObjectArray(args);
                 }
-            }, new LoadCacheCallback<>(platformCtx, clo));
+            }, new IgniteInClosureX<BinaryRawReaderEx>() {
+                @Override public void applyx(BinaryRawReaderEx reader) {
+                    int cnt = reader.readInt();
+
+                    for (int i = 0; i < cnt; i++)
+                        clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             throw new CacheLoaderException(e);
@@ -283,7 +319,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys);
+
+                    writer.writeInt(keys.size());
+
+                    for (Object o : keys)
+                        writer.writeObject(o);
                 }
             }, null);
         }
@@ -301,12 +341,41 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeBoolean(commit);
+
+                    // When multiple stores (caches) participate in a single transaction,
+                    // they share a single session, but sessionEnd is called on each store.
+                    // Same thing happens on platform side: session is shared; each store must be notified,
+                    // then session should be closed.
+                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                    assert stores != null;
+
+                    stores.remove(ptr);
+                    boolean last = stores.isEmpty();
+
+                    writer.writeBoolean(last);
+
+                    if (last) {
+                        // Session object has been released on platform side, remove marker.
+                        ses.properties().remove(KEY_SES);
+                    }
                 }
             }, null);
         }
         catch (IgniteCheckedException e) {
             throw new CacheWriterException(U.convertExceptionNoWrap(e));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        assert platformCtx != null;
+
+        platformCtx.gateway().cacheStoreDestroy(ptr);
     }
 
     /**
@@ -362,10 +431,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         if (sesPtr == null) {
             // Session is not deployed yet, do that.
-            sesPtr = platformCtx.gateway().cacheStoreSessionCreate(ptr);
+            sesPtr = platformCtx.gateway().cacheStoreSessionCreate();
 
             ses.properties().put(KEY_SES, sesPtr);
         }
+
+        // Keep track of all stores that use current session (cross-cache tx uses single session for all caches).
+        Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+
+        if (stores == null) {
+            stores = new HashSet<>();
+            ses.properties().put(KEY_SES_STORES, stores);
+        }
+
+        stores.add(ptr);
 
         return sesPtr;
     }
@@ -374,111 +453,44 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Perform actual invoke.
      *
      * @param task Task.
-     * @param cb Optional callback.
+     * @param readClo Reader.
      * @return Result.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    protected int doInvoke(IgniteInClosureX<BinaryRawWriterEx> task, @Nullable PlatformCacheStoreCallback cb)
+    protected int doInvoke(IgniteInClosure<BinaryRawWriterEx> task, IgniteInClosure<BinaryRawReaderEx> readClo)
         throws IgniteCheckedException{
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
+            writer.writeLong(ptr);
+
             task.apply(writer);
 
             out.synchronize();
 
-            return platformCtx.gateway().cacheStoreInvoke(ptr, mem.pointer(), cb);
+            int res = platformCtx.gateway().cacheStoreInvoke(mem.pointer());
+
+            if (res != 0) {
+                // Read error
+                Object nativeErr = platformCtx.reader(mem.input()).readObjectDetached();
+
+                throw platformCtx.createNativeException(nativeErr);
+            }
+
+            if (readClo != null) {
+                BinaryRawReaderEx reader = platformCtx.reader(mem);
+
+                readClo.apply(reader);
+            }
+
+            return res;
         }
     }
 
-    /**
-     * Destroys interop-aware component.
-     *
-     * @param ctx Context.
-     */
-    public void destroy(GridKernalContext ctx) {
-        assert ctx != null;
-
-        platformCtx.gateway().cacheStoreDestroy(ptr);
-    }
-
-    /**
-     * Load callback.
-     */
-    private static class LoadCallback<V> extends PlatformCacheStoreCallback {
-        /** Value. */
-        private final GridTuple<V> val;
-
-        /**
-         * Constructor.
-         *
-         * @param ctx Context.
-         * @param val Value.
-         */
-        public LoadCallback(PlatformContext ctx, GridTuple<V> val) {
-            super(ctx);
-
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override protected void invoke0(BinaryRawReaderEx reader) {
-            val.set((V)reader.readObjectDetached());
-        }
-    }
-
-    /**
-     * Load callback.
-     */
-    private static class LoadAllCallback<K, V> extends PlatformCacheStoreCallback {
-        /** Value. */
-        private final Map<K, V> loaded;
-
-        /**
-         * Constructor.
-         *
-         * @param ctx Context.
-         * @param loaded Map with loaded values.
-         */
-        public LoadAllCallback(PlatformContext ctx, Map<K, V> loaded) {
-            super(ctx);
-
-            this.loaded = loaded;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override protected void invoke0(BinaryRawReaderEx reader) {
-            loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-        }
-    }
-
-    /**
-     * Load callback.
-     */
-    private static class LoadCacheCallback<K, V> extends PlatformCacheStoreCallback {
-        /** Value. */
-        private final IgniteBiInClosure<K, V> clo;
-
-        /**
-         * Constructor.
-         *
-         * @param ctx Context.
-         * @param clo Closure.
-         */
-        public LoadCacheCallback(PlatformContext ctx, IgniteBiInClosure<K, V> clo) {
-            super(ctx);
-
-            this.clo = clo;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override protected void invoke0(BinaryRawReaderEx reader) {
-            clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
-        }
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformDotNetCacheStore.class, this);
     }
 }

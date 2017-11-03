@@ -41,6 +41,11 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -99,7 +104,7 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            IgniteCache cache = ignite.cache(null);
+            IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 

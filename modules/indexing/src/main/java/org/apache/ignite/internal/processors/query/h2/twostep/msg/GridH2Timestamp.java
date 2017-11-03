@@ -50,7 +50,7 @@ public class GridH2Timestamp extends GridH2ValueMessage {
         ValueTimestamp t = (ValueTimestamp)val;
 
         date = t.getDateValue();
-        nanos = t.getNanos();
+        nanos = t.getTimeNanos();
     }
 
     /** {@inheritDoc} */
@@ -119,16 +119,21 @@ public class GridH2Timestamp extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Timestamp.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -15;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return date + "_" + nanos;
     }
 }

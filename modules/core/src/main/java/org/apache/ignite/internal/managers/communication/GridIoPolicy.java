@@ -22,6 +22,9 @@ package org.apache.ignite.internal.managers.communication;
  * message processing by the communication manager.
  */
 public class GridIoPolicy {
+    /** */
+    public static final byte UNDEFINED = -1;
+
     /** Public execution pool. */
     public static final byte PUBLIC_POOL = 0;
 
@@ -40,11 +43,23 @@ public class GridIoPolicy {
     /** Utility cache execution pool. */
     public static final byte UTILITY_CACHE_POOL = 5;
 
-    /** Marshaller cache execution pool. */
-    public static final byte MARSH_CACHE_POOL = 6;
+    /** IGFS pool. */
+    public static final byte IGFS_POOL = 6;
 
-    /** Marshaller cache execution pool. */
-    public static final byte IGFS_POOL = 7;
+    /** Pool for handling distributed index range requests. */
+    public static final byte IDX_POOL = 7;
+
+    /** Data streamer execution pool. */
+    public static final byte DATA_STREAMER_POOL = 9;
+
+    /** Query execution pool. */
+    public static final byte QUERY_POOL = 10;
+
+    /** Pool for service proxy executions. */
+    public static final byte SERVICE_POOL = 11;
+
+    /** Schema pool.  */
+    public static final byte SCHEMA_POOL = 12;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.

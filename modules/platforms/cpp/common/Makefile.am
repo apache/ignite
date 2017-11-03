@@ -20,34 +20,42 @@ ACLOCAL_AMFLAGS =-I m4
 lib_LTLIBRARIES = libignite-common.la
 
 SUBDIRS = \
-    include \
-    os/linux/include
+	include \
+	os/linux/include
 
 AM_CPPFLAGS = \
-    -I$(srcdir)/include \
-    -I$(srcdir)/os/linux/include \
-    -DIGNITE_IMPL
+	-I$(srcdir)/include \
+	-I$(srcdir)/os/linux/include \
+	-DIGNITE_IMPL \
+	-D__STDC_LIMIT_MACROS \
+	-D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
-    -Wall \
-    -std=c++0x
+	-Wall \
+	-std=c++03
 
 libignite_common_la_LDFLAGS = \
-    -no-undefined \
-    -L/usr/local/lib \
-    -ldl \
-    -version-info 0:0:0 \
-    -release $(PACKAGE_VERSION)
+	-no-undefined \
+	-L/usr/local/lib \
+	-ldl \
+	-version-info 0:0:0 \
+	-release $(PACKAGE_VERSION)
 
 libignite_common_la_SOURCES = \
-    os/linux/src/common/concurrent_os.cpp \
-    os/linux/src/common/utils.cpp \
-    src/common/concurrent.cpp \
-    src/ignite_error.cpp \
-    src/date.cpp \
-    src/guid.cpp \
-    src/timestamp.cpp
-	
+	os/linux/src/common/concurrent_os.cpp \
+	os/linux/src/common/platform_utils.cpp \
+	os/linux/src/common/dynamic_load_os.cpp \
+	src/common/big_integer.cpp \
+	src/common/concurrent.cpp \
+	src/common/decimal.cpp \
+	src/common/bits.cpp \
+	src/common/utils.cpp \
+	src/date.cpp \
+	src/ignite_error.cpp \
+	src/guid.cpp \
+	src/timestamp.cpp \
+	src/time.cpp
+
 clean-local:
 	$(RM) *.gcno *.gcda
 

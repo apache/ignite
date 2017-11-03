@@ -30,7 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
@@ -61,8 +63,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     private static final Random RAND = new Random();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -75,7 +77,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         if (svcs != null)
             c.setServiceConfiguration(svcs);
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(CacheMode.PARTITIONED);
@@ -129,6 +131,17 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             startGrid(nodeCount() + i);
     }
 
+    /** */
+    protected void startExtraNodes(int servers, int clients) throws Exception {
+        startExtraNodes(servers);
+
+        for (int i = 0; i < clients; i++) {
+            final String nodeName = getTestIgniteInstanceName(nodeCount() + servers + i);
+
+            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -147,8 +160,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testSameConfiguration() throws Exception {
-        String name = "dupService";
+    public void testSameConfigurationOld() throws Exception {
+        String name = "dupServiceOld";
 
         IgniteServices svcs1 = randomGrid().services().withAsync();
         IgniteServices svcs2 = randomGrid().services().withAsync();
@@ -176,8 +189,33 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDifferentConfiguration() throws Exception {
-        String name = "dupService";
+    public void testSameConfiguration() throws Exception {
+        String name = "dupServiceOld";
+
+        IgniteServices svcs1 = randomGrid().services();
+        IgniteServices svcs2 = randomGrid().services();
+
+        IgniteFuture<?> fut1 = svcs1.deployClusterSingletonAsync(name, new DummyService());
+
+        IgniteFuture<?> fut2 = svcs2.deployClusterSingletonAsync(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut1.get();
+
+        info("Finished waiting for service future1: " + name);
+
+        // This must succeed without exception because configuration is the same.
+        fut2.get();
+
+        info("Finished waiting for service future2: " + name);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentConfigurationOld() throws Exception {
+        String name = "dupServiceOld";
 
         IgniteServices svcs1 = randomGrid().services().withAsync();
         IgniteServices svcs2 = randomGrid().services().withAsync();
@@ -189,6 +227,35 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         svcs2.deployNodeSingleton(name, new DummyService());
 
         IgniteFuture<?> fut2 = svcs2.future();
+
+        info("Deployed service: " + name);
+
+        fut1.get();
+
+        info("Finished waiting for service future: " + name);
+
+        try {
+            fut2.get();
+
+            fail("Failed to receive mismatching configuration exception.");
+        }
+        catch (IgniteException e) {
+            info("Received mismatching configuration exception: " + e.getMessage());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDifferentConfiguration() throws Exception {
+        String name = "dupService";
+
+        IgniteServices svcs1 = randomGrid().services();
+        IgniteServices svcs2 = randomGrid().services();
+
+        IgniteFuture<?> fut1 = svcs1.deployClusterSingletonAsync(name, new DummyService());
+
+        IgniteFuture<?> fut2 = svcs2.deployNodeSingletonAsync(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -236,8 +303,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override
-            public void apply() {
+            @Override public void apply() {
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
@@ -255,10 +321,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDeployOnEachNode() throws Exception {
+    public void testDeployOnEachNodeOld() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceOnEachNode";
+        String name = "serviceOnEachNodeOld";
 
         CountDownLatch latch = new CountDownLatch(nodeCount());
 
@@ -287,10 +353,38 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDeploySingleton() throws Exception {
+    public void testDeployOnEachNode() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceSingleton";
+        String name = "serviceOnEachNode";
+
+        CountDownLatch latch = new CountDownLatch(nodeCount());
+
+        DummyService.exeLatch(name, latch);
+
+        IgniteFuture<?> fut = g.services().deployNodeSingletonAsync(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeploySingletonOld() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceSingletonOld";
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -319,7 +413,35 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testAffinityDeploy() throws Exception {
+    public void testDeploySingleton() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceSingleton";
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        DummyService.exeLatch(name, latch);
+
+        IgniteFuture<?> fut = g.services().deployClusterSingletonAsync(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        checkCount(name, g.services().serviceDescriptors(), 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityDeployOld() throws Exception {
         Ignite g = randomGrid();
 
         final Integer affKey = 1;
@@ -327,7 +449,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         // Store a cache key.
         g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
-        String name = "serviceAffinity";
+        String name = "serviceAffinityOld";
 
         IgniteServices svcs = g.services().withAsync();
 
@@ -348,10 +470,35 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDeployMultiple1() throws Exception {
+    public void testAffinityDeploy() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceMultiple1";
+        final Integer affKey = 1;
+
+        // Store a cache key.
+        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+
+        String name = "serviceAffinity";
+
+        IgniteFuture<?> fut = g.services().deployKeyAffinitySingletonAsync(name, new AffinityService(affKey),
+            CACHE_NAME, affKey);
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        checkCount(name, g.services().serviceDescriptors(), 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployMultiple1Old() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceMultiple1Old";
 
         CountDownLatch latch = new CountDownLatch(nodeCount() * 2);
 
@@ -380,10 +527,38 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    public void testDeployMultiple2() throws Exception {
+    public void testDeployMultiple1() throws Exception {
         Ignite g = randomGrid();
 
-        String name = "serviceMultiple2";
+        String name = "serviceMultiple1";
+
+        CountDownLatch latch = new CountDownLatch(nodeCount() * 2);
+
+        DummyService.exeLatch(name, latch);
+
+        IgniteFuture<?> fut = g.services().deployMultipleAsync(name, new DummyService(), nodeCount() * 2, 3);
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(name, nodeCount() * 2, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        checkCount(name, g.services().serviceDescriptors(), nodeCount() * 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployMultiple2Old() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceMultiple2Old";
 
         int cnt = nodeCount() * 2 + 1;
 
@@ -396,6 +571,36 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
         IgniteFuture<?> fut = svcs.future();
+
+        info("Deployed service: " + name);
+
+        fut.get();
+
+        info("Finished waiting for service future: " + name);
+
+        latch.await();
+
+        assertEquals(name, cnt, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        checkCount(name, g.services().serviceDescriptors(), cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployMultiple2() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceMultiple2";
+
+        int cnt = nodeCount() * 2 + 1;
+
+        CountDownLatch latch = new CountDownLatch(cnt);
+
+        DummyService.exeLatch(name, latch);
+
+        IgniteFuture<?> fut = g.services().deployMultipleAsync(name, new DummyService(), cnt, 3);
 
         info("Deployed service: " + name);
 
@@ -449,6 +654,41 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    public void testCancelSingletonAsync() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceCancelAsync";
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        DummyService.exeLatch(name, latch);
+
+        g.services().deployClusterSingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        latch.await();
+
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        latch = new CountDownLatch(1);
+
+        DummyService.cancelLatch(name, latch);
+
+        g.services().cancelAsync(name).get();
+
+        info("Cancelled service: " + name);
+
+        latch.await();
+
+        assertEquals(name, 1, DummyService.started(name));
+        assertEquals(name, 1, DummyService.cancelled(name));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCancelEachNode() throws Exception {
         Ignite g = randomGrid();
 
@@ -472,6 +712,41 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         DummyService.cancelLatch(name, latch);
 
         g.services().cancel(name);
+
+        info("Cancelled service: " + name);
+
+        latch.await();
+
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, nodeCount(), DummyService.cancelled(name));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCancelAsyncEachNode() throws Exception {
+        Ignite g = randomGrid();
+
+        String name = "serviceCancelEachNodeAsync";
+
+        CountDownLatch latch = new CountDownLatch(nodeCount());
+
+        DummyService.exeLatch(name, latch);
+
+        g.services().deployNodeSingleton(name, new DummyService());
+
+        info("Deployed service: " + name);
+
+        latch.await();
+
+        assertEquals(name, nodeCount(), DummyService.started(name));
+        assertEquals(name, 0, DummyService.cancelled(name));
+
+        latch = new CountDownLatch(nodeCount());
+
+        DummyService.cancelLatch(name, latch);
+
+        g.services().cancelAsync(name).get();
 
         info("Cancelled service: " + name);
 
@@ -506,6 +781,21 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         return sum;
+    }
+
+    /**
+     * @param srvcName Service name
+     * @param expectedDeps Expected number of service deployments
+     *
+     */
+    protected boolean waitForDeployment(final String srvcName, final int expectedDeps) throws IgniteInterruptedCheckedException {
+        final Ignite g = randomGrid();
+
+        return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() {
+                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
+            }
+        }, 1500);
     }
 
     /**

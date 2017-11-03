@@ -54,18 +54,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="position">The position.</param>
         /// <param name="hdr">The header.</param>
         /// <param name="schema">The schema.</param>
-        /// <param name="marsh">The marshaller.</param>
+        /// <param name="ignite">The ignite.</param>
         /// <returns>
         /// Schema.
         /// </returns>
         public static BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, BinaryObjectHeader hdr, 
-            BinaryObjectSchema schema, Marshaller marsh)
+            BinaryObjectSchema schema, IIgniteInternal ignite)
         {
             Debug.Assert(stream != null);
             Debug.Assert(schema != null);
-            Debug.Assert(marsh != null);
 
-            return ReadSchema(stream, position, hdr, () => GetFieldIds(hdr, schema, marsh));
+            return ReadSchema(stream, position, hdr, () => GetFieldIds(hdr, schema, ignite));
         }
 
         /// <summary>
@@ -78,8 +77,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>
         /// Schema.
         /// </returns>
-        public static BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, BinaryObjectHeader hdr, 
-            Func<int[]> fieldIdsFunc)
+        public static unsafe BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, 
+            BinaryObjectHeader hdr, Func<int[]> fieldIdsFunc)
         {
             Debug.Assert(stream != null);
             Debug.Assert(fieldIdsFunc != null);
@@ -110,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else if (offsetSize == 2)
                 {
                     for (var i = 0; i < schemaSize; i++)
-                        res[i] = new BinaryObjectSchemaField(fieldIds[i], stream.ReadShort());
+                        res[i] = new BinaryObjectSchemaField(fieldIds[i], (ushort) stream.ReadShort());
                 }
                 else
                 {
@@ -128,12 +127,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else if (offsetSize == 2)
                 {
                     for (var i = 0; i < schemaSize; i++)
-                        res[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+                        res[i] = new BinaryObjectSchemaField(stream.ReadInt(), (ushort) stream.ReadShort());
                 }
                 else
                 {
-                    for (var i = 0; i < schemaSize; i++)
-                        res[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        fixed (BinaryObjectSchemaField* ptr = &res[0])
+                        {
+                            stream.Read((byte*) ptr, schemaSize * BinaryObjectSchemaField.Size);
+                        }
+                    }
+                    else
+                    {
+                        for (var i = 0; i < schemaSize; i++)
+                            res[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                    }
                 }
             }
 
@@ -220,7 +229,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     {
                         fixed (BinaryObjectSchemaField* ptr = &fields[offset])
                         {
-                            stream.Write((byte*)ptr, count / BinaryObjectSchemaField.Size);
+                            stream.Write((byte*)ptr, count * BinaryObjectSchemaField.Size);
                         }
                     }
                     else
@@ -243,20 +252,68 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the field ids.
         /// </summary>
-        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, Marshaller marsh)
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite)
         {
-            var fieldIds = schema.Get(hdr.SchemaId);
+            Debug.Assert(hdr.TypeId != BinaryTypeId.Unregistered);
+
+            int[] fieldIds = null;
+
+            if (ignite != null)
+            {
+                fieldIds = ignite.BinaryProcessor.GetSchema(hdr.TypeId, hdr.SchemaId);
+            }
 
             if (fieldIds == null)
             {
-                if (marsh.Ignite != null)
-                    fieldIds = marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
-
-                if (fieldIds == null)
-                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                                                    "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
+                throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                                                "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
             }
+
             return fieldIds;
+        }
+
+        /// <summary>
+        /// Reads the schema, maintains stream position.
+        /// </summary>
+        public static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite, IBinaryStream stream, 
+            int objectPos)
+        {
+            Debug.Assert(stream != null);
+
+            if (hdr.IsCompactFooter)
+            {
+                // Get schema from Java
+                return GetFieldIds(hdr, ignite);
+            }
+
+            var pos = stream.Position;
+
+            stream.Seek(objectPos + hdr.SchemaOffset, SeekOrigin.Begin);
+
+            var count = hdr.SchemaFieldCount;
+
+            var offsetSize = hdr.SchemaFieldOffsetSize;
+
+            var res = new int[count];
+
+            for (var i = 0; i < count; i++)
+            {
+                res[i] = stream.ReadInt();
+                stream.Seek(offsetSize, SeekOrigin.Current);  // Skip offsets.
+            }
+
+            stream.Seek(pos, SeekOrigin.Begin);
+
+            return res;
+        }
+
+
+        /// <summary>
+        /// Gets the field ids.
+        /// </summary>
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, IIgniteInternal ignite)
+        {
+            return schema.Get(hdr.SchemaId) ?? GetFieldIds(hdr, ignite);
         }
     }
 }

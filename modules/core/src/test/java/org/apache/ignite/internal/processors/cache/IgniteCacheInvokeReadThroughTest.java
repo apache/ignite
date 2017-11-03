@@ -17,111 +17,91 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.configuration.Factory;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  *
  */
-public class IgniteCacheInvokeReadThroughTest extends IgniteCacheAbstractTest {
+public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-114");
-    }
+    @Override protected void startNodes() throws Exception {
+        startGridsMultiThreaded(4);
 
-    /** */
-    private static volatile boolean failed;
+        client = true;
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Factory<CacheStore> cacheStoreFactory() {
-        return new TestStoreFactory();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        failed = false;
+        startGrid(4);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThrough() throws Exception {
-        IgniteCache<Integer, Integer> cache = jcache(0);
-
-        checkReadThrough(cache, primaryKey(cache));
-
-        checkReadThrough(cache, backupKey(cache));
-
-        checkReadThrough(cache, nearKey(cache));
+    public void testInvokeReadThroughAtomic0() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 0, false));
     }
 
     /**
-     * @param cache Cache.
-     * @param key Key.
+     * @throws Exception If failed.
      */
-    private void checkReadThrough(IgniteCache<Integer, Integer> cache, Integer key) {
-        log.info("Test [key=" + key + ']');
+    public void testInvokeReadThroughAtomic1() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, false));
+    }
 
-        storeMap.put(key, key);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughAtomic2() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 2, false));
+    }
 
-        Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
-            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args) {
-                if (!entry.exists()) {
-                    failed = true;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughAtomicNearCache() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, true));
+    }
 
-                    fail();
-                }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughAtomicReplicated() throws Exception {
+        invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, 0, false));
+    }
 
-                Integer val = entry.getValue();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughTx0() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 0, false));
+    }
 
-                if (!val.equals(entry.getKey())) {
-                    failed = true;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughTx1() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, false));
+    }
 
-                    assertEquals(val, entry.getKey());
-                }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughTx2() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 2, false));
+    }
 
-                entry.setValue(val + 1);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughTxNearCache() throws Exception {
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, true));
+    }
 
-                return val;
-            }
-        });
-
-        assertEquals(key, ret);
-
-        for (int i = 0; i < gridCount(); i++)
-            assertEquals("Unexpected value for node: " + i, key + 1, jcache(i).get(key));
-
-        assertFalse(failed);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReadThroughTxReplicated() throws Exception {
+        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
     }
 }

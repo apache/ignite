@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,10 +35,12 @@ import java.util.concurrent.CyclicBarrier;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
  */
+@SuppressWarnings("ConstantConditions")
 public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     /**
      * Constructor.
@@ -51,25 +49,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     protected IgfsDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
-
-        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDefaultDirectories() throws Exception {
-        IgfsPath gg = new IgfsPath("/ignite");
-        IgfsPath[] paths = paths(
-            gg, new IgfsPath(gg, "sync"), new IgfsPath(gg, "async"), new IgfsPath(gg, "primary"));
-
-        create(igfs, paths, null);
-
-        for (IgfsPath p : paths)
-            assert igfs.exists(p);
-
-        assert igfs.listFiles(gg).size() == 3;
-        assert igfs.listPaths(gg).size() == 3;
     }
 
     /**
@@ -325,7 +304,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
@@ -341,7 +320,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, null, null);
 
-        igfs.rename(FILE, new IgfsPath());
+        igfs.rename(FILE, IgfsPath.ROOT);
 
         checkExist(igfs, DIR, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + FILE.name()));
@@ -692,7 +671,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
@@ -708,7 +687,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, null, null);
 
-        igfs.rename(SUBSUBDIR, new IgfsPath());
+        igfs.rename(SUBSUBDIR, IgfsPath.ROOT);
 
         checkExist(igfs, DIR, SUBDIR);
         checkExist(igfs, igfsSecondary, new IgfsPath("/" + SUBSUBDIR.name()));
@@ -960,7 +939,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdirsParentPathMissingPartially() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -971,13 +953,14 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -986,7 +969,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMkdrisParentPathMissing() throws Exception {
-        Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
+        Map<String, String> props = null;
+
+        if (permissionsSupported())
+            props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -998,13 +984,14 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, SUBDIR);
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
-        // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
+        if (permissionsSupported()) {
+            // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfsSecondary.permissions(SUBSUBDIR.toString()));
 
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
-            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+            // We check only permission because IGFS client adds username and group name explicitly.
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
+        }
     }
 
     /**
@@ -1057,6 +1044,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdatePathMissingPartially() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");
         Map<String, String> propsFile = properties("fileOwner", "fileGroup", "0666");
 
@@ -1085,6 +1075,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdatePathMissing() throws Exception {
+        if(!propertiesSupported())
+            return;
+
         Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");
         Map<String, String> propsFile = properties("fileOwner", "fileGroup", "0666");
 
@@ -1113,7 +1106,18 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdateParentRootPathMissing() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        doUpdateParentRootPathMissing(properties("owner", "group", "0555"));
+    }
+
+    /**
+     * Test update when parent is the root and the path being updated is missing locally.
+     *
+     * @param props Properties.
+     * @throws Exception If failed.
+     */
+    protected void doUpdateParentRootPathMissing(Map<String, String> props) throws Exception {
+        if (!propertiesSupported())
+            return;
 
         create(igfsSecondary, paths(DIR), null);
         create(igfs, null, null);
@@ -1122,8 +1126,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         checkExist(igfs, DIR);
 
-        assertEquals(props, igfsSecondary.properties(DIR.toString()));
-        assertEquals(props, igfs.info(DIR).properties());
+        assertTrue(propertiesContains(igfsSecondary.properties(DIR.toString()), props));
+        assertTrue(propertiesContains(igfs.info(DIR).properties(), props));
     }
 
     /**
@@ -1141,177 +1145,36 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     }
 
     /**
-     * Ensure that no prefetch occurs in case not enough block are read sequentially.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"ResultOfMethodCallIgnored", "ThrowableResultOfMethodCallIgnored"})
-    public void testOpenNoPrefetch() throws Exception {
-        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
-
-        // Write enough data to the secondary file system.
-        final int blockSize = IGFS_BLOCK_SIZE;
-
-        int totalWritten = 0;
-        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
-
-            while (totalWritten < blockSize * 2 + chunk.length) {
-                out.write(chunk);
-
-                totalWritten += chunk.length;
-            }
-        }
-
-        awaitFileClose(igfsSecondaryFileSystem, FILE);
-
-        // Read the first block.
-        int totalRead = 0;
-
-        IgfsInputStream in = igfs.open(FILE, blockSize);
-
-        final byte[] readBuf = new byte[1024];
-
-        while (totalRead + readBuf.length <= blockSize) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Now perform seek.
-        in.seek(blockSize * 2);
-
-        // Read the third block.
-        totalRead = 0;
-
-        while (totalRead < totalWritten - blockSize * 2) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Let's wait for a while because prefetch occurs asynchronously.
-        U.sleep(300);
-
-        // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE.toString(), false);
-
-        // Let's wait for file will be deleted.
-        U.sleep(300);
-
-        final IgfsInputStream in0 = in;
-
-        // Try reading the second block. Should fail.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                in0.seek(blockSize);
-
-                try {
-                    in0.read(readBuf);
-                }
-                finally {
-                    U.closeQuiet(in0);
-                }
-
-                return null;
-            }
-        }, IOException.class, "Failed to read data due to secondary file system exception: " +
-            "Failed to retrieve file's data block (corrupted file?) [path=/dir/subdir/file, blockIdx=1");
-    }
-
-    /**
-     * Ensure that prefetch occurs in case several blocks are read sequentially.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void testOpenPrefetch() throws Exception {
-        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
-
-        // Write enough data to the secondary file system.
-        final int blockSize = igfs.info(FILE).blockSize();
-
-        int totalWritten = 0;
-        try (OutputStream out = igfsSecondary.openOutputStream(FILE.toString(), false)) {
-            while (totalWritten < blockSize * 2 + chunk.length) {
-                out.write(chunk);
-
-                totalWritten += chunk.length;
-            }
-        }
-
-        awaitFileClose(igfsSecondaryFileSystem, FILE);
-
-        // Read the first two blocks.
-        int totalRead = 0;
-
-        IgfsInputStream in = igfs.open(FILE, blockSize);
-
-        final byte[] readBuf = new byte[1024];
-
-        while (totalRead + readBuf.length <= blockSize * 2) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        // Wait for a while for prefetch to finish.
-        IgfsMetaManager meta = igfs.context().meta();
-
-        IgfsEntryInfo info = meta.info(meta.fileId(FILE));
-
-        assert info != null;
-
-        IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
-
-        IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
-            igfs.configuration().getDataCacheName());
-
-        for (int i = 0; i < 10; i++) {
-            if (dataCache.containsKey(key))
-                break;
-            else
-                U.sleep(100);
-        }
-
-        // Remove the file from the secondary file system.
-        igfsSecondary.delete(FILE.toString(), false);
-
-        // Let's wait for file will be deleted.
-        U.sleep(300);
-
-        // Read the third block.
-        totalRead = 0;
-
-        in.seek(blockSize * 2);
-
-        while (totalRead + readBuf.length <= blockSize) {
-            in.read(readBuf);
-
-            totalRead += readBuf.length;
-        }
-
-        in.close();
-    }
-
-    /**
      * Test create when parent directory is partially missing locally.
      *
      * @throws Exception If failed.
      */
     public void testCreateParentMissingPartially() throws Exception {
+        create(igfsSecondary, paths(DIR, SUBDIR), null);
+        create(igfs, paths(DIR), null);
+
+        createFile(igfs, FILE, true, chunk);
+
+        // Ensure that directory structure was created.
+        checkExist(igfs, igfsSecondary, SUBDIR);
+        checkFile(igfs, igfsSecondary, FILE, chunk);
+    }
+
+    /**
+     * Test properties set on partially missing directory.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetPropertiesOnPartiallyMissingDirectory() throws Exception {
+        if (!propertiesSupported())
+            return;
+
         Map<String, String> props = properties("owner", "group", "0555");
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
         igfsSecondaryFileSystem.update(SUBDIR, props);
-
-        createFile(igfs.asSecondary(), FILE, true, chunk);
-
-        // Ensure that directory structure was created.
-        checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk);
 
         // Ensure properties propagation of the created subdirectory.
         assertEquals(props, igfs.info(SUBDIR).properties());
@@ -1323,6 +1186,24 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateParentMissing() throws Exception {
+        create(igfsSecondary, paths(DIR, SUBDIR), null);
+        create(igfs, null, null);
+
+        createFile(igfs, FILE, true, chunk);
+
+        checkExist(igfs, igfsSecondary, SUBDIR);
+        checkFile(igfs, igfsSecondary, FILE, chunk);
+    }
+
+    /**
+     * Test properties set on missing directory.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetPropertiesOnMissingDirectory() throws Exception {
+        if (!propertiesSupported())
+            return;
+
         Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
         Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
 
@@ -1331,11 +1212,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         igfsSecondaryFileSystem.update(DIR, propsDir);
         igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
-
-        createFile(igfs.asSecondary(), FILE, true, chunk);
-
-        checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk);
 
         // Ensure properties propagation of the created directories.
         assertEquals(propsDir, igfs.info(DIR).properties());
@@ -1348,12 +1224,11 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendParentMissingPartially() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        if (!appendSupported())
+            return;
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
-
-        igfsSecondaryFileSystem.update(SUBDIR, props);
 
         createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
@@ -1362,9 +1237,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
-
-        // Ensure properties propagation of the created subdirectory.
-        assertEquals(props, igfs.info(SUBDIR).properties());
     }
 
     /**
@@ -1373,14 +1245,11 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendParentMissing() throws Exception {
-        Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
-        Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
+        if (!appendSupported())
+            return;
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
-
-        igfsSecondaryFileSystem.update(DIR, propsDir);
-        igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
         createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
 
@@ -1388,10 +1257,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         checkExist(igfs, igfsSecondary, SUBDIR);
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
-
-        // Ensure properties propagation of the created directories.
-        assertEquals(propsDir, igfs.info(DIR).properties());
-        assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
     }
 
     /**
@@ -1629,8 +1494,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         T2<Long, Long> t0 = new T2<>(f0.accessTime(), f0.modificationTime());
 
         // Root cannot be seen through the parent listing:
-        if (!p.isSame(p.root())) {
-
+        if (!F.eq(IgfsPath.ROOT, p)) {
             assertNotNull(f0);
 
             Collection<IgfsFile> listing = fs.listFiles(p.parent());
@@ -1638,7 +1502,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             IgfsFile f1 = null;
 
             for (IgfsFile fi : listing) {
-                if (fi.path().isSame(p)) {
+                if (F.eq(fi.path(), p)) {
                     f1 = fi;
 
                     break;
@@ -1681,5 +1545,73 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assertEquals(timesSubDir0, timesSubDir1);
         assertEquals(timesFile0, timesFile1);
         assertEquals(timesFile20, timesFile21);
+    }
+
+    /**
+     * Test setTimes method when path is partially missing.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSetTimesMissingPartially() throws Exception {
+        if (!timesSupported())
+            return;
+
+        create(igfs, paths(DIR, SUBDIR), null);
+
+        createFile(igfsSecondary, FILE, chunk);
+
+        final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
+
+        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND - 1000);
+
+        IgfsFile info = igfs.info(FILE);
+
+        assert info != null;
+
+        assertEquals(MAX_ALIGN_ON_SECOND - 1000, info.accessTime());
+        assertEquals(MAX_ALIGN_ON_SECOND, info.modificationTime());
+
+        T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
+
+        assertEquals(info.modificationTime(), (long) secondaryTimes.get1());
+        assertEquals(info.accessTime(), (long) secondaryTimes.get2());
+
+        try {
+            igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);
+
+            fail("Exception is not thrown for missing file.");
+        } catch (Exception ignore) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    public void testSecondarySize() throws Exception {
+        igfs.mkdirs(SUBDIR);
+
+        createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, new IgfsPath(SUBDIR, "file2"), chunk);
+
+        assertEquals(chunk.length, igfs.size(FILE));
+        assertEquals(chunk.length * 2, igfs.size(SUBDIR));
+    }
+
+    /**
+     * @param allProps All properties.
+     * @param checkedProps Checked properies
+     * @return {@code true} If allchecked properties are contained in the #propsAll.
+     */
+    public static boolean propertiesContains(Map<String, String> allProps, Map<String, String> checkedProps) {
+        for (String name : checkedProps.keySet())
+            if (!checkedProps.get(name).equals(allProps.get(name))) {
+                System.err.println("All properties: " + allProps);
+                System.err.println("Checked properties: " + checkedProps);
+                return false;
+            }
+
+        return true;
     }
 }

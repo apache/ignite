@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.future.GridCompoundFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
+import org.apache.ignite.internal.util.future.IgniteCacheFutureImplTest;
 import org.apache.ignite.internal.util.future.IgniteFutureImplTest;
 import org.apache.ignite.internal.util.future.nio.GridNioEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.nio.GridNioFutureSelfTest;
@@ -32,6 +33,7 @@ import org.apache.ignite.lang.GridXSelfTest;
 import org.apache.ignite.lang.IgniteUuidSelfTest;
 import org.apache.ignite.lang.utils.GridBoundedConcurrentLinkedHashMapSelfTest;
 import org.apache.ignite.lang.utils.GridBoundedConcurrentOrderedMapSelfTest;
+import org.apache.ignite.lang.utils.GridBoundedPriorityQueueSelfTest;
 import org.apache.ignite.lang.utils.GridCircularBufferSelfTest;
 import org.apache.ignite.lang.utils.GridConcurrentLinkedHashMapSelfTest;
 import org.apache.ignite.lang.utils.GridConcurrentWeakHashSetSelfTest;
@@ -55,6 +57,7 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Lang Test Suite");
 
         suite.addTest(new TestSuite(GridTupleSelfTest.class));
+        suite.addTest(new TestSuite(GridBoundedPriorityQueueSelfTest.class));
         suite.addTest(new TestSuite(GridByteArrayListSelfTest.class));
         suite.addTest(new TestSuite(GridLeanMapSelfTest.class));
         suite.addTest(new TestSuite(GridLeanIdentitySetSelfTest.class));
@@ -78,7 +81,9 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridEmbeddedFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioEmbeddedFutureSelfTest.class));
+
         suite.addTest(new TestSuite(IgniteFutureImplTest.class));
+        suite.addTest(new TestSuite(IgniteCacheFutureImplTest.class));
 
         // Consistent hash tests.
         suite.addTest(new TestSuite(GridConsistentHashSelfTest.class));

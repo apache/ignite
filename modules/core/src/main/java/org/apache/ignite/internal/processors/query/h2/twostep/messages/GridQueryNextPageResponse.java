@@ -42,6 +42,9 @@ public class GridQueryNextPageResponse implements Message {
     private long qryReqId;
 
     /** */
+    private int segmentId;
+
+    /** */
     private int qry;
 
     /** */
@@ -64,6 +67,9 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     private AffinityTopologyVersion retry;
 
+    /** Last page flag. */
+    private boolean last;
+
     /**
      * For {@link Externalizable}.
      */
@@ -73,25 +79,29 @@ public class GridQueryNextPageResponse implements Message {
 
     /**
      * @param qryReqId Query request ID.
+     * @param segmentId Index segment ID.
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
      * @param cols Number of columns in row.
      * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
+     * @param last Last page flag.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, int cols,
-        Collection<Message> vals, Collection<?> plainRows) {
+    public GridQueryNextPageResponse(long qryReqId, int segmentId, int qry, int page, int allRows, int cols,
+        Collection<Message> vals, Collection<?> plainRows, boolean last) {
         assert vals != null ^ plainRows != null;
         assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
+        this.segmentId = segmentId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
         this.cols = cols;
         this.vals = vals;
         this.plainRows = plainRows;
+        this.last = last;
     }
 
     /**
@@ -99,6 +109,13 @@ public class GridQueryNextPageResponse implements Message {
      */
     public long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * @return Index segment ID.
+     */
+    public int segmentId() {
+        return segmentId;
     }
 
     /**
@@ -141,11 +158,6 @@ public class GridQueryNextPageResponse implements Message {
      */
     public Collection<?> plainRows() {
         return plainRows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridQueryNextPageResponse.class, this);
     }
 
     /** {@inheritDoc} */
@@ -207,6 +219,17 @@ public class GridQueryNextPageResponse implements Message {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeInt("segmentId", segmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeBoolean("last", last))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -276,19 +299,34 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                last = reader.readBoolean("last");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridQueryNextPageResponse.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 109;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 9;
     }
 
     /**
@@ -303,5 +341,26 @@ public class GridQueryNextPageResponse implements Message {
      */
     public void retry(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /**
+     * @return Last page flag.
+     */
+    public boolean last() {
+        return last;
+    }
+
+    /**
+     * @param last Last page flag.
+     */
+    public void last(boolean last) {
+        this.last = last;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryNextPageResponse.class, this,
+            "valsSize", vals != null ? vals.size() : 0,
+            "rowsSize", plainRows != null ? plainRows.size() : 0);
     }
 }

@@ -61,20 +61,8 @@ do
     if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
         IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
     fi
-
-    if [ -d ${file} ] && [ "${file}" == "${IGNITE_HOME}"/libs/ignite-hadoop ]; then
-        HADOOP_EDITION=1
-    fi
 done
 
 if [ "${USER_LIBS}" != "" ]; then
     IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}
-fi
-
-if [ "${HADOOP_EDITION}" == "1" ]; then
-    . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
-
-    if [ "${IGNITE_HADOOP_CLASSPATH}" != "" ]; then
-        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$IGNITE_HADOOP_CLASSPATH
-    fi
 fi

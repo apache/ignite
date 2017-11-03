@@ -157,8 +157,7 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
         return new TrustManager[]{
             new X509TrustManager() {
                 /** {@inheritDoc} */
-                @Nullable
-                @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+                @Nullable @Override public X509Certificate[] getAcceptedIssuers() { return null; }
 
                 /** {@inheritDoc} */
                 @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
@@ -343,11 +342,11 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
                     catch (IOException e) {
                         if (!scanCtx.isCancelled()) {
                             if (X.hasCause(e, ConnectException.class)) {
-                                LT.warn(scanCtx.getLogger(), e, "Failed to connect to HTTP server " +
+                                LT.error(scanCtx.getLogger(), e, "Failed to connect to HTTP server " +
                                     "(connection refused): " + U.hidePassword(url));
                             }
                             else if (X.hasCause(e, UnknownHostException.class)) {
-                                LT.warn(scanCtx.getLogger(), e, "Failed to connect to HTTP server " +
+                                LT.error(scanCtx.getLogger(), e, "Failed to connect to HTTP server " +
                                     "(host is unknown): " + U.hidePassword(url));
                             }
                             else
@@ -404,11 +403,11 @@ public class UriDeploymentHttpScanner implements UriDeploymentScanner {
             catch (IOException e) {
                 if (!scanCtx.isCancelled()) {
                     if (X.hasCause(e, ConnectException.class)) {
-                        LT.warn(scanCtx.getLogger(), e, "Failed to connect to HTTP server (connection refused): " +
+                        LT.error(scanCtx.getLogger(), e, "Failed to connect to HTTP server (connection refused): " +
                             U.hidePassword(url.toString()));
                     }
                     else if (X.hasCause(e, UnknownHostException.class)) {
-                        LT.warn(scanCtx.getLogger(), e, "Failed to connect to HTTP server (host is unknown): " +
+                        LT.error(scanCtx.getLogger(), e, "Failed to connect to HTTP server (host is unknown): " +
                             U.hidePassword(url.toString()));
                     }
                     else

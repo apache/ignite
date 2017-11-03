@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -41,7 +42,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-2229
  * Tests cache in-place modification logic with iterative value increment.
  */
 public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstractTest {
@@ -52,15 +52,16 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
     private static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
+        cache.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         QueryEntity qryEntity = new QueryEntity();
 
@@ -105,6 +106,8 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testFullTextQueryNodeJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-2229");
+
         for (int r = 0; r < 5; r++) {
             startGrids(GRID_CNT);
 
@@ -112,16 +115,16 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
                 for (int i = 0; i < 1000; i++) {
                     IndexedEntity entity = new IndexedEntity("indexed " + i);
 
-                    grid(0).cache(null).put(new AffinityKey<>(i, i), entity);
+                    grid(0).cache(DEFAULT_CACHE_NAME).put(new AffinityKey<>(i, i), entity);
                 }
 
                 Ignite started = startGrid(GRID_CNT);
 
                 for (int i = 0; i < 100; i++) {
-                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(null)
+                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(DEFAULT_CACHE_NAME)
                         .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));
 
-                    assertEquals(1000, res.getAll().size());
+                    assertEquals("Failed iteration: " + i, 1000, res.getAll().size());
                 }
             }
             finally {

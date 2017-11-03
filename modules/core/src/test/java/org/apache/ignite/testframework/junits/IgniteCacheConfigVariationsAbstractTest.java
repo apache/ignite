@@ -17,20 +17,15 @@
 
 package org.apache.ignite.testframework.junits;
 
-import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -38,19 +33,17 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.H2CacheStoreStrategy;
+import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
+import org.apache.ignite.internal.processors.cache.TestCacheStoreStrategy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
  * Abstract class for cache configuration variations tests.
@@ -62,8 +55,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
-    /** Store map. */
-    protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
+    /** */
+    protected static TestCacheStoreStrategy storeStgy;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -72,6 +65,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected final void beforeTestsStarted() throws Exception {
+        initStoreStrategy();
         assert testsCfg != null;
         assert !testsCfg.withClients() || testsCfg.gridCount() >= 3;
 
@@ -89,19 +83,19 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                 Ignition.stopAll(true);
 
                 for (int i = 0; i < cnt; i++) {
-                    String gridName = getTestGridName(i);
+                    String igniteInstanceName = getTestIgniteInstanceName(i);
 
-                    IgniteConfiguration cfg = optimize(getConfiguration(gridName));
+                    IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
 
                     if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                        CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
+                        CacheConfiguration cc = cacheConfiguration();
 
                         cc.setName(cacheName());
 
                         cfg.setCacheConfiguration(cc);
                     }
 
-                    startGrid(gridName, cfg, null);
+                    startGrid(igniteInstanceName, cfg, null);
                 }
 
                 if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
@@ -125,20 +119,26 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             info("Grid " + i + ": " + grid(i).localNode().id());
 
         if (testsCfg.withClients()) {
-            boolean testedNodeNearEnabled = grid(testedNodeIdx).cachex(cacheName()).context().isNear();
-
             if (testedNodeIdx != SERVER_NODE_IDX)
-                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, testedNodeNearEnabled);
+                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, nearEnabled());
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
                 + ", isClient=" + isClientMode()
-                + ", nearEnabled=" + testedNodeNearEnabled + "]");
+                + ", nearEnabled=" + nearEnabled() + "]");
         }
     }
 
+    /** Initialize {@link #storeStgy} with respect to the nature of the test */
+    void initStoreStrategy() throws IgniteCheckedException {
+        if (storeStgy == null)
+            storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
+    }
+
     /**
-     * Starts caches dinamically.
+     * Starts caches dynamically.
+     *
+     * @throws Exception If failed.
      */
     private void startCachesDinamically() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
@@ -147,14 +147,14 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             IgniteEx grid = grid(i);
 
             if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+                CacheConfiguration cc = cacheConfiguration();
 
                 cc.setName(cacheName());
 
                 grid.getOrCreateCache(cc);
             }
 
-            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX)
+            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX && grid(i).configuration().isClientMode())
                 grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
         }
 
@@ -170,8 +170,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NEAR_ONLY_IDX).equals(testGridName);
+        return getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestIgniteInstanceName(CLIENT_NEAR_ONLY_IDX).equals(testGridName);
     }
 
     /** {@inheritDoc} */
@@ -189,7 +189,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             }
         }
 
-        map.clear();
+        storeStgy.resetStore();
 
         super.afterTestsStopped();
     }
@@ -251,8 +251,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                                         + jcache(fi).localSize(CachePeekMode.BACKUP));
                                     info(">>>>> Debug NEAR    localSize for grid: " + fi + " is "
                                         + jcache(fi).localSize(CachePeekMode.NEAR));
-                                    info(">>>>> Debug SWAP    localSize for grid: " + fi + " is "
-                                        + jcache(fi).localSize(CachePeekMode.SWAP));
                                 }
 
                                 return locSize == 0;
@@ -303,9 +301,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
             if (cacheIsNotEmptyMsg != null)
                 break;
-
-            for (Cache.Entry entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
@@ -313,7 +308,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         if (cacheIsNotEmptyMsg == null)
             assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        resetStore();
+        storeStgy.resetStore();
 
         // Restore cache if current cache has garbage.
         if (cacheIsNotEmptyMsg != null) {
@@ -351,13 +346,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * Cleans up cache store.
-     */
-    protected void resetStore() {
-        map.clear();
-    }
-
-    /**
      * Put entry to cache store.
      *
      * @param key Key.
@@ -367,7 +355,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         if (!storeEnabled())
             throw new IllegalStateException("Failed to put to store because store is disabled.");
 
-        map.put(key, val);
+        storeStgy.putToStore(key, val);
     }
 
     /**
@@ -394,23 +382,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * @return {@code True} if values should be stored off-heap.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return cacheConfiguration().getMemoryMode();
-    }
-
-    /**
-     * @return {@code True} if swap should happend after localEvict() call.
-     */
-    protected boolean swapAfterLocalEvict() {
-        if (memoryMode() == OFFHEAP_TIERED)
-            return false;
-
-        return memoryMode() == ONHEAP_TIERED ? (!offheapEnabled() && swapEnabled()) : swapEnabled();
-    }
-
-    /**
      * @return {@code True} if store is enabled.
      */
     protected boolean storeEnabled() {
@@ -418,42 +389,12 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * @return {@code True} if offheap memory is enabled.
-     */
-    protected boolean offheapEnabled() {
-        return cacheConfiguration().getOffHeapMaxMemory() >= 0;
-    }
-
-    /**
      * @return {@code True} if swap is enabled.
      */
     protected boolean swapEnabled() {
-        return cacheConfiguration().isSwapEnabled();
-    }
-
-    /**
-     * @return Write through storage emulator.
-     */
-    public static CacheStore<?, ?> cacheStore() {
-        return new CacheStoreAdapter<Object, Object>() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-                Object... args) {
-                for (Map.Entry<Object, Object> e : map.entrySet())
-                    clo.apply(e.getKey(), e.getValue());
-            }
-
-            @Override public Object load(Object key) {
-                return map.get(key);
-            }
-
-            @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
-                map.put(e.getKey(), e.getValue());
-            }
-
-            @Override public void delete(Object key) {
-                map.remove(key);
-            }
-        };
+        return false;
+        // TODO GG-11148.
+        // return cacheConfiguration().isSwapEnabled();
     }
 
     /**
@@ -475,7 +416,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        return testsCfg.configurationFactory().cacheConfiguration(getTestGridName(testedNodeIdx));
+        return testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
     }
 
     /**
@@ -544,41 +485,12 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /**
      * @param cache Cache.
-     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
-     */
-    protected static <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
-        return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
-    }
-
-    /**
-     * Executes regular peek or peek from swap.
-     *
-     * @param cache Cache projection.
-     * @param key Key.
-     * @return Value.
-     */
-    @Nullable protected static <K, V> V peek(IgniteCache<K, V> cache, K key) {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localPeek(key, CachePeekMode.ONHEAP);
-    }
-
-    /**
-     * @param cache Cache.
      * @param key Key.
      * @return {@code True} if cache contains given key.
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
     protected static boolean containsKey(IgniteCache cache, Object key) throws Exception {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
-    }
-
-    /**
-     * Serializable factory.
-     */
-    public static class TestStoreFactory implements Factory<CacheStore> {
-        @Override public CacheStore create() {
-            return cacheStore();
-        }
+        return cache.containsKey(key);
     }
 }

@@ -28,66 +28,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
+    <import resource="cache-query-default.xml"/>
 
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
-                            <property name="partitions" value="256"/>
-                        </bean>
-                    </property>
-                    
-                    <property name="typeMetadata">
-                        <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="QueryPerson"/>
-                                <property name="ascendingFields">
-                                    <map>
-                                        <entry key="age" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="name" value="java.lang.String"/>
-                                        <entry key="age" value="java.lang.Integer"/>
-                                        <entry key="birthday" value="java.util.Date"/>
-                                        <entry key="recordCreated" value="java.sql.Timestamp"/>
-                                    </map>
-                                </property>
-                                <property name="textFields">
-                                    <list>
-                                        <value>name</value>
-                                    </list>
-                                </property>
-                            </bean>
-                        </list>
-                    </property>
-                </bean>
-            </list>
-        </property>
-
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-    </bean>
+    <bean parent="grid.cfg"/>
 </beans>

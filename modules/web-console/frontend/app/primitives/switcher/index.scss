@@ -1,0 +1,80 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@import '../../../public/stylesheets/variables';
+
+label.switcher--ignite {
+    width: 34px;
+    max-width: 34px !important;
+    height: 20px;
+
+    line-height: 20px;
+    vertical-align: middle;
+
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        position: absolute;
+        opacity: 0.0;
+
+        & + div {
+            position: relative;
+
+            width: 34px;
+            height: 14px;
+            margin: 3px 0;
+
+            border-radius: 8px;
+            background-color: #C5C5C5;
+            transition: background 0.2s ease;
+
+            &:before {
+                content: '';
+
+                position: absolute;
+                top: -3px;
+                left: 0;
+
+                width: 20px;
+                height: 20px;
+
+                border: solid 1px #C5C5C5;
+                border-radius: 50%;
+                background-color: #FFF;
+
+                transition: all 0.12s ease;
+            }
+
+            &:active:before {
+                transform: scale(1.15, 0.85);
+            }
+        }
+
+        &:checked + div {
+            background-color: #FF8485;
+
+            &:before {
+                content: '';
+
+                left: 14px;
+
+                border: 0;
+                background-color: #EE2B27;
+            }
+        }
+    }
+}

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.lang.GridTupleV;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -162,40 +161,6 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
         assert str1.equals(elems.get(0));
         assert str2.equals(elems.get(1));
         assert str3.equals(elems.get(2));
-
-        try {
-            iter.next();
-
-            fail("NoSuchElementException must have been thrown.");
-        }
-        catch (NoSuchElementException e) {
-            info("Caught expected exception: " + e);
-        }
-    }
-
-    /**
-     * JUnit.
-     */
-    public void testGridTupleVAsIterable() {
-        String strVal = "A test string";
-        Integer intVal = 1;
-        Double doubleVal = 2.5d;
-
-        Iterable<Object> tpl = new GridTupleV(strVal, intVal, doubleVal);
-
-        Iterator<Object> iter = tpl.iterator();
-
-        assert iter != null;
-
-        List<Object> elems = new ArrayList<>();
-
-        while (iter.hasNext())
-            elems.add(iter.next());
-
-        assert elems.size() == 3;
-        assert strVal.equals(elems.get(0));
-        assert intVal.equals(elems.get(1));
-        assert doubleVal.equals(elems.get(2));
 
         try {
             iter.next();

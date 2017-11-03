@@ -18,14 +18,18 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -38,8 +42,11 @@ namespace Apache.Ignite.Core.Tests
         /** Indicates long running and/or memory/cpu intensive test. */
         public const string CategoryIntensive = "LONG_TEST";
 
+        /** Indicates examples tests. */
+        public const string CategoryExamples = "EXAMPLES_TEST";
+
         /** */
-        public const int DfltBusywaitSleepInterval = 200;
+        private const int DfltBusywaitSleepInterval = 200;
 
         /** */
 
@@ -49,7 +56,9 @@ namespace Apache.Ignite.Core.Tests
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-Xms1g",
                 "-Xmx4g",
-                "-ea"
+                "-ea",
+                "-DIGNITE_QUIET=true",
+                "-Duser.timezone=UTC"
             }
             : new List<string>
             {
@@ -57,7 +66,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms512m",
                 "-Xmx512m",
                 "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000"
+                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
+                "-DIGNITE_QUIET=true"
             };
 
         /** */
@@ -94,11 +104,11 @@ namespace Apache.Ignite.Core.Tests
         ///
         /// </summary>
         /// <returns></returns>
-        public static IList<string> TestJavaOptions()
+        public static IList<string> TestJavaOptions(bool? jvmDebug = null)
         {
             IList<string> ops = new List<string>(TestJvmOpts);
 
-            if (JvmDebug)
+            if (jvmDebug ?? JvmDebug)
             {
                 foreach (string opt in JvmDebugOpts)
                     ops.Add(opt);
@@ -272,13 +282,16 @@ namespace Apache.Ignite.Core.Tests
         {
             var handleRegistry = ((Ignite)grid).HandleRegistry;
 
+            expectedCount++;  // Skip default lifecycle bean
+
             if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems();
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleHandlerHolder)).ToList();
 
             if (items.Any())
-                Assert.Fail("HandleRegistry is not empty in grid '{0}':\n '{1}'", grid.Name,
+                Assert.Fail("HandleRegistry is not empty in grid '{0}' (expected {1}, actual {2}):\n '{3}'", 
+                    grid.Name, expectedCount, handleRegistry.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
         }
 
@@ -309,7 +322,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the static discovery.
         /// </summary>
-        public static IDiscoverySpi GetStaticDiscovery()
+        public static TcpDiscoverySpi GetStaticDiscovery()
         {
             return new TcpDiscoverySpi
             {
@@ -324,15 +337,130 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the default code-based test configuration.
         /// </summary>
-        public static IgniteConfiguration GetTestConfiguration()
+        public static IgniteConfiguration GetTestConfiguration(bool? jvmDebug = null, string name = null)
         {
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
                 Localhost = "127.0.0.1",
-                JvmOptions = TestJavaOptions(),
-                JvmClasspath = CreateTestClasspath()
+                JvmOptions = TestJavaOptions(jvmDebug),
+                JvmClasspath = CreateTestClasspath(),
+                IgniteInstanceName = name
             };
+        }
+
+        /// <summary>
+        /// Runs the test in new process.
+        /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        public static void RunTestInNewProcess(string fixtureName, string testName)
+        {
+            var procStart = new ProcessStartInfo
+            {
+                FileName = typeof(TestUtils).Assembly.Location,
+                Arguments = fixtureName + " " + testName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(procStart);
+            Assert.IsNotNull(proc);
+
+            IgniteProcess.AttachProcessConsoleReader(proc);
+
+            Assert.IsTrue(proc.WaitForExit(19000));
+            Assert.AreEqual(0, proc.ExitCode);
+        }
+
+        /// <summary>
+        /// Serializes and deserializes back an object.
+        /// </summary>
+        public static T SerializeDeserialize<T>(T obj)
+        {
+            var marsh = new Marshaller(null) {CompactFooter = false};
+
+            return marsh.Unmarshal<T>(marsh.Marshal(obj));
+        }
+
+        /// <summary>
+        /// Gets the primary keys.
+        /// </summary>
+        public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
+            IClusterNode node = null)
+        {
+            var aff = ignite.GetAffinity(cacheName);
+            node = node ?? ignite.GetCluster().GetLocalNode();
+
+            return Enumerable.Range(1, int.MaxValue).Where(x => aff.IsPrimary(node, x));
+        }
+
+        /// <summary>
+        /// Gets the primary key.
+        /// </summary>
+        public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
+        {
+            return GetPrimaryKeys(ignite, cacheName, node).First();
+        }
+
+        /// <summary>
+        /// Asserts equality with reflection.
+        /// </summary>
+        public static void AssertReflectionEqual(object x, object y, string propertyPath = null,
+            HashSet<string> ignoredProperties = null)
+        {
+            if (x == null && y == null)
+            {
+                return;
+            }
+
+            Assert.IsNotNull(x, propertyPath);
+            Assert.IsNotNull(y, propertyPath);
+
+            var type = x.GetType();
+
+            if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                var xCol = ((IEnumerable)x).OfType<object>().ToList();
+                var yCol = ((IEnumerable)y).OfType<object>().ToList();
+
+                Assert.AreEqual(xCol.Count, yCol.Count, propertyPath);
+
+                for (var i = 0; i < xCol.Count; i++)
+                {
+                    AssertReflectionEqual(xCol[i], yCol[i], propertyPath, ignoredProperties);
+                }
+
+                return;
+            }
+
+            Assert.AreEqual(type, y.GetType());
+
+            propertyPath = propertyPath ?? type.Name;
+
+            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
+            {
+                Assert.AreEqual(x, y, propertyPath);
+                return;
+            }
+
+            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
+
+            foreach (var propInfo in props)
+            {
+                if (ignoredProperties != null && ignoredProperties.Contains(propInfo.Name))
+                {
+                    continue;
+                }
+
+                var propName = propertyPath + "." + propInfo.Name;
+
+                var xVal = propInfo.GetValue(x, null);
+                var yVal = propInfo.GetValue(y, null);
+
+                AssertReflectionEqual(xVal, yVal, propName, ignoredProperties);
+            }
         }
     }
 }

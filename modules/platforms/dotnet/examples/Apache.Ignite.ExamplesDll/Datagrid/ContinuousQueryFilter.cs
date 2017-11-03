@@ -15,15 +15,13 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Cache.Event;
-
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using Apache.Ignite.Core.Cache.Event;
+
     /// <summary>
     /// Filter for continuous query example.
     /// </summary>
-    [Serializable]
     public class ContinuousQueryFilter : ICacheEntryEventFilter<int, string>
     {
         /// <summary> Threshold. </summary>

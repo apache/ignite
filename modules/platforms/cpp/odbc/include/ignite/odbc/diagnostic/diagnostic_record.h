@@ -53,7 +53,7 @@ namespace ignite
                  * @param rowNum Associated row number.
                  * @param columnNum Associated column number.
                  */
-                DiagnosticRecord(SqlState sqlState, const std::string& message,
+                DiagnosticRecord(SqlState::Type sqlState, const std::string& message,
                     const std::string& connectionName, const std::string& serverName,
                     int32_t rowNum = 0, int32_t columnNum = 0);
 
@@ -84,7 +84,7 @@ namespace ignite
                  *
                  * @return An informational message on the error or warning.
                  */
-                const std::string& GetMessage() const;
+                const std::string& GetMessageText() const;
 
                 /**
                  * Get connection name.
@@ -127,9 +127,22 @@ namespace ignite
                  */
                 int32_t GetColumnNumber() const;
 
+                /**
+                 * Check if the record was retrieved with the SQLError previously.
+                 *
+                 * return True if the record was retrieved with the SQLError
+                 *  previously.
+                 */
+                bool IsRetrieved() const;
+
+                /**
+                 * Mark record as retrieved with the SQLError.
+                 */
+                void MarkRetrieved();
+
             private:
                 /** SQL state diagnostic code. */
-                SqlState sqlState;
+                SqlState::Type sqlState;
 
                 /** An informational message on the error or warning. */
                 std::string message;
@@ -157,6 +170,12 @@ namespace ignite
                  * result set or the parameter number in the set of parameters.
                  */
                 int32_t columnNum;
+
+                /**
+                 * Flag that shows if the record was retrieved with the 
+                 * SQLError previously.
+                 */
+                bool retrieved;
             };
         }
     }

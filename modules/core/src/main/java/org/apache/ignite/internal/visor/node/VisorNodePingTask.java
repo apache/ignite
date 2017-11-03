@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -32,29 +30,29 @@ import org.jetbrains.annotations.Nullable;
  * Ping other node.
  */
 @GridInternal
-public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean, Long, Long>> {
+public class VisorNodePingTask extends VisorOneNodeTask<VisorNodePingTaskArg, VisorNodePingTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorNodePingJob job(UUID arg) {
+    @Override protected VisorNodePingJob job(VisorNodePingTaskArg arg) {
         return new VisorNodePingJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) {
+    @Nullable @Override protected VisorNodePingTaskResult reduce0(List<ComputeJobResult> results) {
         try {
             return super.reduce0(results);
         }
         catch (ClusterTopologyException ignored) {
-            return new GridTuple3<>(false, -1L, -1L);
+            return new VisorNodePingTaskResult(false, -1L, -1L);
         }
     }
 
     /**
      * Job that ping node.
      */
-    private static class VisorNodePingJob extends VisorJob<UUID, GridTuple3<Boolean, Long, Long>> {
+    private static class VisorNodePingJob extends VisorJob<VisorNodePingTaskArg, VisorNodePingTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -62,15 +60,15 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
          * @param arg Node ID to ping.
          * @param debug Debug flag.
          */
-        protected VisorNodePingJob(UUID arg, boolean debug) {
+        protected VisorNodePingJob(VisorNodePingTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) {
+        @Override protected VisorNodePingTaskResult run(VisorNodePingTaskArg arg) {
             long start = System.currentTimeMillis();
 
-            return new GridTuple3<>(ignite.cluster().pingNode(nodeToPing), start, System.currentTimeMillis());
+            return new VisorNodePingTaskResult(ignite.cluster().pingNode(arg.getNodeId()), start, System.currentTimeMillis());
         }
 
         /** {@inheritDoc} */

@@ -51,7 +51,7 @@ public class TcpDiscoveryJdbcIpFinderSelfTest extends
         dataSrc.setDriverClass("org.h2.Driver");
 
         if (initSchema)
-            dataSrc.setJdbcUrl("jdbc:h2:mem");
+            dataSrc.setJdbcUrl("jdbc:h2:mem:./test");
         else {
             dataSrc.setJdbcUrl("jdbc:h2:mem:jdbc_ipfinder_not_initialized_schema");
 

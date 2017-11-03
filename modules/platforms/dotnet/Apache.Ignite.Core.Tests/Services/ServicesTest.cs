@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
@@ -155,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(1, Grid1.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
             Assert.AreEqual(1, Grid2.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
-            Assert.AreEqual(1, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(0, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
         }
 
         /// <summary>
@@ -204,7 +205,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployMultiple(SvcName, svc, Grids.Length * 5, 5);
 
-            foreach (var grid in Grids)
+            foreach (var grid in Grids.Where(x => !x.GetConfiguration().ClientMode))
                 CheckServiceStarted(grid, 5);
         }
 
@@ -250,15 +251,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 ? new TestIgniteServiceBinarizable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid3.GetCluster().GetLocalNode().Id).GetServices()
-                .DeployNodeSingleton(SvcName,
-                    svc);
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid1.GetCluster().GetLocalNode().Id)
+                .GetServices().DeployNodeSingleton(SvcName, svc);
 
-            // Make sure there is no local instance on grid1
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName));
+            // Make sure there is no local instance on grid3
+            Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
 
             // Get proxy
-            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Grid3.GetServices().GetServiceProxy<ITestIgniteService>(SvcName);
 
             // Check proxy properties
             Assert.IsNotNull(prx);
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, invokedIds.Count);
 
             // Check sticky = true: all calls should be to the same node
-            prx = Services.GetServiceProxy<ITestIgniteService>(SvcName, true);
+            prx = Grid3.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true);
             invokedIds = Enumerable.Range(1, 100).Select(x => prx.NodeId).Distinct().ToList();
             Assert.AreEqual(1, invokedIds.Count);
 
@@ -322,8 +322,8 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
-            Assert.AreEqual("Object of type 'System.Object' cannot be converted to type 'System.Int32'.",
-                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Specified cast is not valid.", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -432,15 +432,71 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests exception in Initialize.
         /// </summary>
         [Test]
-        public void TestInitException()
+        public void TestDeployMultipleException([Values(true, false)] bool keepBinary)
+        {
+            VerifyDeploymentException((services, svc) =>
+                services.DeployMultiple(SvcName, svc, Grids.Length, 1), keepBinary);
+        }
+
+        /// <summary>
+        /// Tests exception in Initialize.
+        /// </summary>
+        [Test]
+        public void TestDeployException([Values(true, false)] bool keepBinary)
+        {
+            VerifyDeploymentException((services, svc) =>
+                services.Deploy(new ServiceConfiguration
+                {
+                    Name = SvcName,
+                    Service = svc,
+                    TotalCount = Grids.Length,
+                    MaxPerNodeCount = 1
+                }), keepBinary);
+        }
+
+        /// <summary>
+        /// Verifies the deployment exception.
+        /// </summary>
+        private void VerifyDeploymentException(Action<IServices, IService> deploy, bool keepBinary)
         {
             var svc = new TestIgniteServiceSerializable { ThrowInit = true };
 
-            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+            var services = Services;
+
+            if (keepBinary)
+            {
+                services = services.WithKeepBinary();
+            }
+
+            var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
+
+            var text = keepBinary 
+                ? "Service deployment failed with a binary error. Examine BinaryCause for details."
+                : "Service deployment failed with an exception. Examine InnerException for details.";
+
+            Assert.AreEqual(text, deploymentException.Message);
+
+            Exception ex;
+
+            if (keepBinary)
+            {
+                Assert.IsNull(deploymentException.InnerException);
+
+                ex = deploymentException.BinaryCause.Deserialize<Exception>();
+            }
+            else
+            {
+                Assert.IsNull(deploymentException.BinaryCause);
+
+                ex = deploymentException.InnerException;
+            }
+
+            Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
+            Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
+                "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
-
             Assert.IsNull(svc0);
         }
 
@@ -469,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceSerializable { ThrowCancel = true };
 
-            Services.DeployMultiple(SvcName, svc, Grids.Length, 1);
+            Services.DeployMultiple(SvcName, svc, 2, 1);
 
             CheckServiceStarted(Grid1);
 
@@ -479,19 +535,28 @@ namespace Apache.Ignite.Core.Tests.Services
             AssertNoService();
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnRead()
         {
             var svc = new TestIgniteServiceBinarizableErr();
 
-            var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-            Assert.AreEqual("Expected exception", ex.Message);
+            var ex = Assert.Throws<ServiceDeploymentException>(() =>
+                Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
+            
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests exception in binarizable implementation.
+        /// </summary>
         [Test]
         public void TestMarshalExceptionOnWrite()
         {
@@ -505,6 +570,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
         [Test]
         public void TestCallJavaService()
         {
@@ -529,7 +597,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Basics
             Assert.IsTrue(svc.isInitialized());
-            Assert.IsTrue(svc.isExecuted());
+            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
             Assert.IsFalse(svc.isCancelled());
 
             // Primitives
@@ -639,11 +707,12 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void CheckServiceStarted(IIgnite grid, int count = 1)
         {
-            var services = grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
+            Func<ICollection<TestIgniteServiceSerializable>> getServices = () =>
+                grid.GetServices().GetServices<TestIgniteServiceSerializable>(SvcName);
 
-            Assert.AreEqual(count, services.Count);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => count == getServices().Count, 5000));
 
-            var svc = services.First();
+            var svc = getServices().First();
 
             Assert.IsNotNull(svc);
 
@@ -675,6 +744,9 @@ namespace Apache.Ignite.Core.Tests.Services
                     typeof (TestIgniteServiceBinarizableErr),
                     typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
+                {
+                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                }
             };
         }
 
@@ -686,6 +758,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
                 Assert.IsTrue(
+                    // ReSharper disable once AccessToForEachVariableInClosure
                     TestUtils.WaitForCondition(() => grid.GetServices()
                         .GetService<ITestIgniteService>(name) == null, 5000));
         }
@@ -775,6 +848,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public Guid NodeId
             {
+                // ReSharper disable once InconsistentlySynchronizedField
                 get { return _grid.GetCluster().GetLocalNode().Id; }
             }
 
@@ -805,41 +879,50 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                if (ThrowInit) 
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowInit)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Initialized = true;
+                    Assert.IsFalse(context.IsCancelled);
+                    Initialized = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Execute(IServiceContext context)
             {
-                if (ThrowExecute)
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowExecute)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Assert.IsTrue(Initialized);
-                Assert.IsFalse(Cancelled);
+                    Assert.IsFalse(context.IsCancelled);
+                    Assert.IsTrue(Initialized);
+                    Assert.IsFalse(Cancelled);
 
-                Executed = true;
+                    Executed = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Cancel(IServiceContext context)
             {
-                if (ThrowCancel)
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowCancel)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsTrue(context.IsCancelled);
+                    Assert.IsTrue(context.IsCancelled);
 
-                Cancelled = true;
+                    Cancelled = true;
+                }
             }
 
             /// <summary>

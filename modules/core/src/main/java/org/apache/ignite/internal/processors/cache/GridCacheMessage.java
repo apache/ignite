@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -49,7 +50,7 @@ public abstract class GridCacheMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of cache lookup indexes. */
-    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 256;
+    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 7;
 
     /** Cache message index field name. */
     public static final String CACHE_MSG_INDEX_FIELD_NAME = "CACHE_MSG_IDX";
@@ -83,9 +84,15 @@ public abstract class GridCacheMessage implements Message {
     @GridDirectTransient
     private boolean skipPrepare;
 
-    /** Cache ID. */
-    @GridToStringInclude
-    protected int cacheId;
+    /**
+     * @return ID to distinguish message handlers for the same messages but for different caches/cache groups.
+     */
+    public abstract int handlerId();
+
+    /**
+     * @return {@code True} if cache group message.
+     */
+    public abstract boolean cacheGroupMessage();
 
     /**
      * @return Error, if any.
@@ -128,6 +135,13 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @return Partition ID this message is targeted to or {@code -1} if it cannot be determined.
+     */
+    public int partition() {
+        return -1;
+    }
+
+    /**
      * If class loading error occurred during unmarshalling and {@link #ignoreClassErrors()} is
      * set to {@code true}, then the error will be passed into this method.
      *
@@ -162,20 +176,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /**
      * Gets topology version or -1 in case of topology version is not required for this message.
      *
      * @return Topology version.
@@ -197,6 +197,15 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void prepareObject(@Nullable Object o, GridCacheContext ctx) throws IgniteCheckedException {
+        prepareObject(o, ctx.shared());
+    }
+
+    /**
+     * @param o Object to prepare for marshalling.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void prepareObject(@Nullable Object o, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert addDepInfo || forceAddDepInfo;
 
         if (!skipPrepare && o != null) {
@@ -271,24 +280,28 @@ public abstract class GridCacheMessage implements Message {
     /**
      * @param info Entry to marshal.
      * @param ctx Context.
+     * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfo(GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
+    protected final void marshalInfo(GridCacheEntryInfo info,
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
+    ) throws IgniteCheckedException {
         assert ctx != null;
 
         if (info != null) {
-            info.marshal(ctx);
+            info.marshal(cacheObjCtx);
 
             if (addDepInfo) {
                 if (info.key() != null)
-                    prepareObject(info.key().value(ctx.cacheObjectContext(), false), ctx);
+                    prepareObject(info.key().value(cacheObjCtx, false), ctx);
 
                 CacheObject val = info.value();
 
                 if (val != null) {
-                    val.finishUnmarshal(ctx.cacheObjectContext(), ctx.deploy().globalLoader());
+                    val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
 
-                    prepareObject(CU.value(val, ctx, false), ctx);
+                    prepareObject(val.value(cacheObjCtx, false), ctx);
                 }
             }
         }
@@ -306,7 +319,7 @@ public abstract class GridCacheMessage implements Message {
         assert ctx != null;
 
         if (info != null)
-            info.unmarshal(ctx, ldr);
+            info.unmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**
@@ -316,13 +329,14 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void marshalInfos(
         Iterable<? extends GridCacheEntryInfo> infos,
-        GridCacheContext ctx
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
     ) throws IgniteCheckedException {
         assert ctx != null;
 
         if (infos != null)
             for (GridCacheEntryInfo e : infos)
-                marshalInfo(e, ctx);
+                marshalInfo(e, ctx, cacheObjCtx);
     }
 
     /**
@@ -361,14 +375,14 @@ public abstract class GridCacheMessage implements Message {
 
                 if (addDepInfo) {
                     if (e.key() != null)
-                        prepareObject(e.key().value(cctx.cacheObjectContext(), false), cctx);
+                        prepareObject(e.key().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.value() != null)
-                        prepareObject(e.value().value(cctx.cacheObjectContext(), false), cctx);
+                        prepareObject(e.value().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.entryProcessors() != null) {
                         for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                            prepareObject(entProc.get1(), cctx);
+                            prepareObject(entProc.get1(), ctx);
                     }
                 }
                 else if (p2pEnabled && e.entryProcessors() != null) {
@@ -376,7 +390,7 @@ public abstract class GridCacheMessage implements Message {
                         forceAddDepInfo = true;
 
                     for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                        prepareObject(entProc.get1(), cctx);
+                        prepareObject(entProc.get1(), ctx);
                 }
             }
         }
@@ -427,7 +441,7 @@ public abstract class GridCacheMessage implements Message {
             Object arg = args[i];
 
             if (addDepInfo)
-                prepareObject(arg, ctx);
+                prepareObject(arg, ctx.shared());
 
             argsBytes[i] = arg == null ? null : CU.marshal(ctx, arg);
         }
@@ -457,7 +471,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], U.resolveClassLoader(ldr, ctx.gridConfig()));
+            args[i] = byteCol[i] == null ? null : U.unmarshal(marsh, byteCol[i], U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         return args;
     }
@@ -479,7 +493,7 @@ public abstract class GridCacheMessage implements Message {
 
         for (Object o : col) {
             if (addDepInfo)
-                prepareObject(o, ctx);
+                prepareObject(o, ctx.shared());
 
             byteCol.add(o == null ? null : CU.marshal(ctx, o));
         }
@@ -493,7 +507,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
@@ -514,7 +528,7 @@ public abstract class GridCacheMessage implements Message {
             obj.prepareMarshal(ctx.cacheObjectContext());
 
             if (addDepInfo)
-                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
+                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
         }
     }
 
@@ -533,7 +547,7 @@ public abstract class GridCacheMessage implements Message {
                 obj.prepareMarshal(ctx.cacheObjectContext());
 
                 if (addDepInfo)
-                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
+                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
         }
     }
@@ -545,7 +559,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx,
         ClassLoader ldr)
         throws IgniteCheckedException
@@ -608,9 +622,22 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
+            col.add(bytes == null ? null : U.<T>unmarshal(marsh, bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.messageLogger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -626,18 +653,12 @@ public abstract class GridCacheMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("msgId", msgId))
                     return false;
 
@@ -657,14 +678,6 @@ public abstract class GridCacheMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 depInfo = reader.readMessage("depInfo");
 
                 if (!reader.isLastRead())
@@ -672,7 +685,7 @@ public abstract class GridCacheMessage implements Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
@@ -685,8 +698,19 @@ public abstract class GridCacheMessage implements Message {
         return reader.afterMessageRead(GridCacheMessage.class);
     }
 
+    /**
+     * @param str Bulder.
+     * @param name Flag name.
+     */
+    protected final void appendFlag(StringBuilder str, String name) {
+        if (str.length() > 0)
+            str.append('|');
+
+        str.append(name);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMessage.class, this, "cacheId", cacheId);
+        return S.toString(GridCacheMessage.class, this);
     }
 }

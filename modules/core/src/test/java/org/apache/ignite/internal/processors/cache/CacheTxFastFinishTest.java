@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFastFinishFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -58,12 +59,12 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private boolean nearCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -144,7 +145,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private void fastFinishTx(Ignite ignite) {
         IgniteTransactions txs = ignite.transactions();
 
-        IgniteCache cache = ignite.cache(null);
+        IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (boolean commit : new boolean[]{true, false}) {
             for (TransactionConcurrency c : TransactionConcurrency.values()) {
@@ -210,8 +211,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
         IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
         assertNull(fieldValue(tx0, "prepFut"));
-        assertNull(fieldValue(tx0, "commitFut"));
-        assertNull(fieldValue(tx0, "rollbackFut"));
+        assertTrue(fieldValue(tx0, "finishFut") instanceof GridNearTxFastFinishFuture);
     }
 
     /**
@@ -225,12 +225,13 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
             tx.commit();
 
             assertNotNull(fieldValue(tx0, "prepFut"));
-            assertNotNull(fieldValue(tx0, "commitFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
         else {
             tx.rollback();
 
-            assertNotNull(fieldValue(tx0, "rollbackFut"));
+            assertNull(fieldValue(tx0, "prepFut"));
+            assertNotNull(fieldValue(tx0, "finishFut"));
         }
     }
 

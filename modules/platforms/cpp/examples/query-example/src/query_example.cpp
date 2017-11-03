@@ -43,6 +43,57 @@ const char* PERSON_CACHE = "Person";
 const char* PERSON_TYPE = "Person";
 
 /**
+ * Example for SQL queries based on all employees working for a specific
+ * organization (query uses distributed join).
+ */
+void DoSqlQueryWithDistributedJoin()
+{
+    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+
+    Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
+
+    // SQL clause query which joins on 2 types to select people for a specific organization.
+    std::string joinSql(
+        "from Person, \"Organization\".Organization as org "
+        "where Person.orgId = org._key "
+        "and lower(org.name) = lower(?)");
+
+    SqlQuery qry("Person", joinSql);
+
+    qry.AddArgument<std::string>("ApacheIgnite");
+
+    // Enable distributed joins for query.
+    qry.SetDistributedJoins(true);
+
+    // Execute queries for find employees for different organizations.
+    ResVector igniters;
+    cache.Query(qry).GetAll(igniters);
+
+    // Printing first result set.
+    std::cout << "Following people are 'ApacheIgnite' employees (distributed join): " << std::endl;
+
+    for (ResVector::const_iterator i = igniters.begin(); i != igniters.end(); ++i)
+        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+
+    std::cout << std::endl;
+
+    qry.ClearArguments();
+
+    qry.AddArgument<std::string>("Other");
+
+    ResVector others;
+    cache.Query(qry).GetAll(others);
+
+    // Printing second result set.
+    std::cout << "Following people are 'Other' employees (distributed join): " << std::endl;
+
+    for (ResVector::const_iterator i = others.begin(); i != others.end(); ++i)
+        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
+
+    std::cout << std::endl;
+}
+
+/**
  * Example for SQL-based fields queries that return only required
  * fields instead of whole key-value pairs.
  *
@@ -207,7 +258,7 @@ void DoSqlQueryWithJoin()
 
     std::cout << "Following people are 'Other' employees: " << std::endl;
 
-    qry = SqlQuery(PERSON_TYPE, sql);
+    qry.ClearArguments();
 
     qry.AddArgument<std::string>("Other");
 
@@ -251,7 +302,7 @@ void DoSqlQuery()
 
     std::cout << std::endl;
 
-    qry = SqlQuery(PERSON_TYPE, sql);
+    qry.ClearArguments();
 
     // Execute queries for salary range 1000 - 2000.
     std::cout << "People with salaries between 1000 and 2000 (queried with SQL query): " << std::endl;
@@ -342,9 +393,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
 
     try
@@ -374,6 +422,9 @@ int main()
         // Example for SQL-based querying employees for a given organization (includes SQL join).
         DoSqlQueryWithJoin();
 
+        // Example for SQL-based querying employees for a given organization (includes distributed SQL join).
+        DoSqlQueryWithDistributedJoin();
+
         // Example for TEXT-based querying for a given string in peoples resumes.
         DoTextQuery();
 
@@ -393,10 +444,12 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;
-    std::cout << ">>> Example finished, press any key to exit ..." << std::endl;
+    std::cout << ">>> Example finished, press 'Enter' to exit ..." << std::endl;
     std::cout << std::endl;
 
     std::cin.get();

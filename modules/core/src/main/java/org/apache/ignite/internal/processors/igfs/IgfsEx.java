@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.net.URI;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,23 +40,6 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return IGFS context.
      */
     public IgfsContext context();
-
-    /**
-     * Get handshake message.
-     *
-     * @return Handshake message.
-     */
-    public IgfsPaths proxyPaths();
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException;
 
     /**
      * Gets global space counters.
@@ -86,26 +67,11 @@ public interface IgfsEx extends IgniteFileSystem {
     @Nullable public Boolean globalSampling();
 
     /**
-     * Get local metrics.
-     *
-     * @return Local metrics.
-     */
-    public IgfsLocalMetrics localMetrics();
-
-    /**
      * Gets group block size, i.e. block size multiplied by group size in affinity mapper.
      *
      * @return Group block size.
      */
     public long groupBlockSize();
-
-    /**
-     * Asynchronously await for all entries existing in trash to be removed.
-     *
-     * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
 
     /**
      * Gets client file system log directory.
@@ -151,4 +117,11 @@ public interface IgfsEx extends IgniteFileSystem {
      * @return Secondary file system wrapper.
      */
     public IgfsSecondaryFileSystem asSecondary();
+
+    /**
+     * Await for any pending finished writes on the children paths.
+     *
+     * @param paths Paths to check.
+     */
+    public void await(IgfsPath... paths);
 }

@@ -22,15 +22,16 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.MarshallerContextAdapter;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} to
+ * Wrapper, that adapts {@link OptimizedMarshaller} to
  * {@link GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
@@ -38,7 +39,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     public static final byte ID = 1;
 
     /** Optimized marshaller. */
-    private final OptimizedMarshaller opMarsh;
+    protected final OptimizedMarshaller opMarsh;
 
     /**
      * Default constructor.
@@ -84,7 +85,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
                 throw new IOException("Message serialization of given type is not supported: " +
                     obj.getClass().getName());
 
-            byte[] bytes = opMarsh.marshal(obj);
+            byte[] bytes = U.marshal(opMarsh, obj);
 
             ByteBuffer buf = ByteBuffer.allocate(off + bytes.length);
 
@@ -104,7 +105,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         try {
-            return opMarsh.unmarshal(bytes, null);
+            return U.unmarshal(opMarsh, bytes, null);
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);
@@ -113,7 +114,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
     /**
      */
-    private static class ClientMarshallerContext extends MarshallerContextAdapter {
+    private static class ClientMarshallerContext extends MarshallerContextImpl {
         /** */
         public ClientMarshallerContext() {
             super(null);
@@ -124,16 +125,6 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
          */
         public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
             super(plugins);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean registerClassName(int id, String clsName) {
-            throw new UnsupportedOperationException(clsName);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected String className(int id) {
-            throw new UnsupportedOperationException();
         }
     }
 }

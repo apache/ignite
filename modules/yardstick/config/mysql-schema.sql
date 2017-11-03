@@ -1,0 +1,11 @@
+create table if not exists SAMPLE (`id` int PRIMARY KEY, val int);
+create table if not exists ORGANIZATION (`id` int PRIMARY KEY, `name` varchar(255));
+create table if not exists PERSON (`id` int PRIMARY KEY, `org_id` int NULL, `first_name` varchar(255), `last_name` varchar(255), `salary` double, foreign key (`org_id`) references ORGANIZATION(`id`));
+create table if not exists VALUE8(`val1` int PRIMARY KEY, `val2` int, `val3` int, `val4` int, `val5` int, `val6` int, `val7` int, `val8` int);
+create index v8_2 using btree on VALUE8(`val2`);
+create index v8_3 using btree on VALUE8(`val3`);
+create index v8_4 using btree on VALUE8(`val4`);
+create index v8_5 using btree on VALUE8(`val5`);
+create index v8_6 using btree on VALUE8(`val6`);
+create index v8_7 using btree on VALUE8(`val7`);
+create index v8_8 using btree on VALUE8(`val8`);

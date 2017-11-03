@@ -62,8 +62,11 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;
 
+    /** Root path. */
+    public static final IgfsPath ROOT = new IgfsPath(SLASH);
+
     /**
-     * Constructs default root path.
+     * Default constructor.
      */
     public IgfsPath() {
         path = SLASH;
@@ -140,15 +143,6 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
      */
     public String name() {
         return GridFilenameUtils.getName(path);
-    }
-
-    /**
-     * Returns a root for this path.
-     *
-     * @return Root for this path.
-     */
-    public IgfsPath root() {
-        return new IgfsPath();
     }
 
     /**
@@ -239,19 +233,8 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
         return this.path.startsWith(path.path.endsWith(SLASH) ? path.path : path.path + SLASH);
     }
 
-    /**
-     * Checks if paths are identical.
-     *
-     * @param path Path to check.
-     * @return {@code True} if paths are identical.
-     */
-    public boolean isSame(IgfsPath path) {
-        A.notNull(path, "path");
-
-        return this == path || this.path.equals(path.path);
-    }
-
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }
@@ -268,16 +251,32 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter out = writer.rawWriter();
-
-        out.writeString(path);
+        writeRawBinary(writer.rawWriter());
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader in = reader.rawReader();
+        readRawBinary(reader.rawReader());
+    }
 
-        path = in.readString();
+    /**
+     * Write raw binary.
+     *
+     * @param writer Raw writer.
+     * @throws BinaryObjectException If failed.
+     */
+    public void writeRawBinary(BinaryRawWriter writer) throws BinaryObjectException {
+        writer.writeString(path);
+    }
+
+    /**
+     * Read raw binary.
+     *
+     * @param reader Raw reader.
+     * @throws BinaryObjectException If failed.
+     */
+    public void readRawBinary(BinaryRawReader reader) throws BinaryObjectException {
+        path = reader.readString();
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
 
@@ -66,27 +67,28 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             catch (TargetInvocationException ex)
             {
-                throw ex.InnerException;
+                if (ex.InnerException != null)
+                    throw ex.InnerException;
+
+                throw;
             }
         }
 
         /** <inheritDoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriter)writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_func));
+            writer0.WriteWithPeerDeployment(_func);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeFuncWrapper"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeFuncWrapper(IBinaryReader reader)
+        public ComputeFuncWrapper(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _func = reader0.ReadObject<object>();
+            _func = reader.ReadObject<object>();
 
             _invoker = DelegateTypeDescriptor.GetComputeFunc(_func.GetType());
         }
@@ -95,10 +97,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Injects the Ignite instance.
         /// </summary>
         [InstanceResource]
+        // ReSharper disable once UnusedMember.Global (used by injector)
         public void InjectIgnite(IIgnite ignite)
         {
             // Propagate injection
-            ResourceProcessor.Inject(_func, (IgniteProxy) ignite);
+            ResourceProcessor.Inject(_func, (Ignite) ignite);
         }
     }    
     

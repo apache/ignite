@@ -45,10 +45,12 @@ public class IgniteSpiOperationTimeoutHelper {
      * Constructor.
      *
      * @param adapter SPI adapter.
+     * @param srvOp {@code True} if communicates with server node.
      */
-    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter) {
+    public IgniteSpiOperationTimeoutHelper(IgniteSpiAdapter adapter, boolean srvOp) {
         failureDetectionTimeoutEnabled = adapter.failureDetectionTimeoutEnabled();
-        failureDetectionTimeout = adapter.failureDetectionTimeout();
+        failureDetectionTimeout = srvOp ? adapter.failureDetectionTimeout() :
+            adapter.clientFailureDetectionTimeout();
     }
 
     /**
@@ -96,7 +98,9 @@ public class IgniteSpiOperationTimeoutHelper {
         if (!failureDetectionTimeoutEnabled)
             return false;
 
-        return e instanceof IgniteSpiOperationTimeoutException || e instanceof SocketTimeoutException ||
-            X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketException.class);
+        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
+            return true;
+
+        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
     }
 }

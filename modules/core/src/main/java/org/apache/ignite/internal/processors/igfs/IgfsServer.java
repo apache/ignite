@@ -153,7 +153,7 @@ public class IgfsServer {
      * @return Server endpoint.
      * @throws IgniteCheckedException If failed.
      */
-    private static IpcServerEndpoint createEndpoint(IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt)
+    private IpcServerEndpoint createEndpoint(IgfsIpcEndpointConfiguration endpointCfg, boolean mgmt)
         throws IgniteCheckedException {
         A.notNull(endpointCfg, "endpointCfg");
 
@@ -164,7 +164,8 @@ public class IgfsServer {
 
         switch (typ) {
             case SHMEM: {
-                IpcSharedMemoryServerEndpoint endpoint = new IpcSharedMemoryServerEndpoint();
+                IpcSharedMemoryServerEndpoint endpoint =
+                    new IpcSharedMemoryServerEndpoint(igfsCtx.kernalContext().config().getWorkDirectory());
 
                 endpoint.setPort(endpointCfg.getPort());
                 endpoint.setSize(endpointCfg.getMemorySize());
@@ -269,7 +270,7 @@ public class IgfsServer {
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
         protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
-            super(igfsCtx.kernalContext().gridName(), "igfs-client-worker-" + idx, IgfsServer.this.log);
+            super(igfsCtx.kernalContext().igniteInstanceName(), "igfs-client-worker-" + idx, IgfsServer.this.log);
 
             this.endpoint = endpoint;
 
@@ -437,7 +438,7 @@ public class IgfsServer {
          * Creates accept worker.
          */
         protected AcceptWorker() {
-            super(igfsCtx.kernalContext().gridName(), "igfs-accept-worker", IgfsServer.this.log);
+            super(igfsCtx.kernalContext().igniteInstanceName(), "igfs-accept-worker", IgfsServer.this.log);
         }
 
         /** {@inheritDoc} */
@@ -447,7 +448,7 @@ public class IgfsServer {
                     IpcEndpoint client = srvEndpoint.accept();
 
                     if (log.isDebugEnabled())
-                        log.debug("IGFS client connected [igfsName=" + igfsCtx.kernalContext().gridName() +
+                        log.debug("IGFS client connected [igfsName=" + igfsCtx.kernalContext().igniteInstanceName() +
                             ", client=" + client + ']');
 
                     ClientWorker worker = new ClientWorker(client, acceptCnt++);

@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TreeSet;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
@@ -122,7 +121,11 @@ public class ClassesGenerator {
             for (String err : errs)
                 sb.append("    ").append(err).append('\n');
 
-            throw new Exception(sb.toString().trim());
+            String msg = sb.toString().trim();
+
+            System.out.println(msg);
+
+            throw new Exception(msg);
         }
 
         PrintStream out = new PrintStream(new File(basePath,
@@ -208,7 +211,8 @@ public class ClassesGenerator {
         if (included) {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
-            if (Serializable.class.isAssignableFrom(cls) && !AbstractQueuedSynchronizer.class.isAssignableFrom(cls)) {
+            if (Serializable.class.isAssignableFrom(cls) &&
+                !(cls.getName().endsWith("Future") || cls.getName().endsWith("FutureAdapter"))) {
                 if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
                     !cls.getSimpleName().isEmpty()) {
                     try {
@@ -236,7 +240,7 @@ public class ClassesGenerator {
                             if (!Modifier.isPublic(cons.getModifiers()))
                                 errs.add("Default constructor in Externalizable class is not public: " + cls.getName());
                         }
-                        catch (NoSuchMethodException e) {
+                        catch (NoSuchMethodException ignored) {
                             errs.add("No default constructor in Externalizable class: " + cls.getName());
                         }
                     }

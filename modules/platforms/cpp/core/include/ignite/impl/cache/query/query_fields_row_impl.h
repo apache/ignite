@@ -18,15 +18,8 @@
 #ifndef _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
 #define _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
 
-#include <vector>
-#include <memory>
-
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
-
-#include "ignite/cache/cache_entry.h"
-#include "ignite/impl/cache/query/query_impl.h"
-#include "ignite/impl/operations.h"
 
 namespace ignite
 {
@@ -45,23 +38,18 @@ namespace ignite
                     typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
 
                     /**
-                     * Default constructor.
-                     */
-                    QueryFieldsRowImpl() : mem(0), stream(0), reader(0), size(0), 
-                        processed(0)
-                    {
-                        // No-op.
-                    }
-
-                    /**
                      * Constructor.
                      *
                      * @param mem Memory containig row data.
                      */
-                    QueryFieldsRowImpl(SP_InteropMemory mem) : mem(mem), stream(mem.Get()), 
-                        reader(&stream), size(reader.ReadInt32()), processed(0)
+                    QueryFieldsRowImpl(SP_InteropMemory mem, int32_t rowBegin, int32_t columnNum) :
+                        mem(mem),
+                        stream(mem.Get()),
+                        reader(&stream),
+                        columnNum(columnNum),
+                        processed(0)
                     {
-                        // No-op.
+                        stream.Position(rowBegin);
                     }
 
                     /**
@@ -89,7 +77,7 @@ namespace ignite
                     bool HasNext(IgniteError& err)
                     {
                         if (IsValid())
-                            return processed < size;
+                            return processed < columnNum;
                         else
                         {
                             err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
@@ -139,6 +127,35 @@ namespace ignite
                     }
 
                     /**
+                     * Get next entry assuming it's an array of 8-byte signed
+                     * integers. Maps to "byte[]" type in Java.
+                     *
+                     * @param dst Array to store data to.
+                     * @param len Expected length of array.
+                     * @return Actual amount of elements read. If "len" argument is less than actual
+                     *     array size or resulting array is set to null, nothing will be written
+                     *     to resulting array and returned value will contain required array length.
+                     *     -1 will be returned in case array in stream was null.
+                     */
+                    int32_t GetNextInt8Array(int8_t* dst, int32_t len)
+                    {
+                        if (IsValid()) {
+
+                            int32_t actualLen = reader.ReadInt8Array(dst, len);
+
+                            if (actualLen == 0 || (dst && len >= actualLen))
+                                ++processed;
+
+                            return actualLen;
+                        }
+                        else
+                        {
+                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "Instance is not usable (did you check for error?).");
+                        }
+                    }
+
+                    /**
                      * Check if the instance is valid.
                      *
                      * Invalid instance can be returned if some of the previous
@@ -165,7 +182,7 @@ namespace ignite
                     binary::BinaryReaderImpl reader;
 
                     /** Number of elements in a row. */
-                    int32_t size;
+                    int32_t columnNum;
 
                     /** Number of elements that have been read by now. */
                     int32_t processed;

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite Hadoop Accelerator configuration.
@@ -31,10 +33,10 @@ public class HadoopConfiguration {
     public static final boolean DFLT_EXTERNAL_EXECUTION = false;
 
     /** Default value for the max parallel tasks. */
-    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
+    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors() * 2;
 
     /** Default value for the max task queue size. */
-    public static final int DFLT_MAX_TASK_QUEUE_SIZE = 1000;
+    public static final int DFLT_MAX_TASK_QUEUE_SIZE = 8192;
 
     /** Map reduce planner. */
     private HadoopMapReducePlanner planner;
@@ -50,6 +52,9 @@ public class HadoopConfiguration {
 
     /** */
     private int maxTaskQueueSize = DFLT_MAX_TASK_QUEUE_SIZE;
+
+    /** Library names. */
+    private String[] libNames;
 
     /**
      * Default constructor.
@@ -71,6 +76,7 @@ public class HadoopConfiguration {
         planner = cfg.getMapReducePlanner();
         maxParallelTasks = cfg.getMaxParallelTasks();
         maxTaskQueueSize = cfg.getMaxTaskQueueSize();
+        libNames = cfg.getNativeLibraryNames();
     }
 
     /**
@@ -86,9 +92,12 @@ public class HadoopConfiguration {
      * Sets max number of local tasks that may be executed in parallel.
      *
      * @param maxParallelTasks Max number of local tasks that may be executed in parallel.
+     * @return {@code this} for chaining.
      */
-    public void setMaxParallelTasks(int maxParallelTasks) {
+    public HadoopConfiguration setMaxParallelTasks(int maxParallelTasks) {
         this.maxParallelTasks = maxParallelTasks;
+
+        return this;
     }
 
     /**
@@ -104,9 +113,12 @@ public class HadoopConfiguration {
      * Sets max task queue size.
      *
      * @param maxTaskQueueSize Max task queue size.
+     * @return {@code this} for chaining.
      */
-    public void setMaxTaskQueueSize(int maxTaskQueueSize) {
+    public HadoopConfiguration setMaxTaskQueueSize(int maxTaskQueueSize) {
         this.maxTaskQueueSize = maxTaskQueueSize;
+
+        return this;
     }
 
     /**
@@ -122,9 +134,12 @@ public class HadoopConfiguration {
      * Sets finished job info time-to-live.
      *
      * @param finishedJobInfoTtl Finished job info time-to-live.
+     * @return {@code this} for chaining.
      */
-    public void setFinishedJobInfoTtl(long finishedJobInfoTtl) {
+    public HadoopConfiguration setFinishedJobInfoTtl(long finishedJobInfoTtl) {
         this.finishedJobInfoTtl = finishedJobInfoTtl;
+
+        return this;
     }
 
     /**
@@ -143,10 +158,14 @@ public class HadoopConfiguration {
      *
      * @param extExecution {@code True} if tasks should be executed in an external process.
      * @see #isExternalExecution()
+     * @return {@code this} for chaining.
      */
     // TODO: IGNITE-404: Uncomment when fixed.
-//    public void setExternalExecution(boolean extExecution) {
+//
+//    public HadoopConfiguration setExternalExecution(boolean extExecution) {
 //        this.extExecution = extExecution;
+//
+//        return this;
 //    }
 
     /**
@@ -164,9 +183,44 @@ public class HadoopConfiguration {
      * configuration and current grid topology.
      *
      * @param planner Map-reduce planner.
+     * @return {@code this} for chaining.
      */
-    public void setMapReducePlanner(HadoopMapReducePlanner planner) {
+    public HadoopConfiguration setMapReducePlanner(HadoopMapReducePlanner planner) {
         this.planner = planner;
+
+        return this;
+    }
+
+    /**
+     * Get native library names.
+     * <p>
+     * Ignite Hadoop Accelerator executes all Hadoop jobs and tasks in the same process, isolating them with help
+     * of classloaders. If Hadoop job or task loads a native library, it might lead to exception, because Java do
+     * not allow to load the same library multiple times from different classloaders. To overcome the problem,
+     * you should to the following:
+     * <ul>
+     *     <li>Load necessary libraries in advance from base classloader; {@link LifecycleBean} is a good candidate
+     *     for this;</li>
+     *     <li>Add names of loaded libraries to this property, so that Hadoop engine is able to link them;</li>
+     *     <li>Remove {@link System#load(String)} and {@link System#loadLibrary(String)} calls from your job/task.</li>     *
+     * </ul>
+     *
+     * @return Native library names.
+     */
+    @Nullable public String[] getNativeLibraryNames() {
+        return libNames;
+    }
+
+    /**
+     * Set native library names. See {@link #getNativeLibraryNames()} for more information.
+     *
+     * @param libNames Native library names.
+     * @return {@code this} for chaining.
+     */
+    public HadoopConfiguration setNativeLibraryNames(@Nullable String... libNames) {
+        this.libNames = libNames;
+
+        return this;
     }
 
     /** {@inheritDoc} */

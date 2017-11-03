@@ -69,11 +69,6 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * @return {@code True} if client was reserved.
-     */
-    public boolean reserved();
-
-    /**
      * Gets idle time of this client.
      *
      * @return Idle time of this client.
@@ -96,15 +91,20 @@ public interface GridCommunicationClient {
     /**
      * @param nodeId Remote node ID. Provided only for sync clients.
      * @param msg Message to send.
-     * @param closure Ack closure.
+     * @param c Ack closure.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
      */
-    public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> closure)
+    public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> c)
         throws IgniteCheckedException;
 
     /**
      * @return {@code True} if send is asynchronous.
      */
     public boolean async();
+
+    /**
+     * @return Connection index.
+     */
+    public int connectionIndex();
 }

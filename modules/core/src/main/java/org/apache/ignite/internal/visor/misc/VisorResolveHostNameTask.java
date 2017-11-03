@@ -66,7 +66,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
 
             try {
                 IgniteBiTuple<Collection<String>, Collection<String>> addrs =
-                    IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
+                    IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"), true);
 
                 assert (addrs.get1() != null);
                 assert (addrs.get2() != null);

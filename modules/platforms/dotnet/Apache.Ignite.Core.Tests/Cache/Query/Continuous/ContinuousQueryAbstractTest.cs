@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
@@ -29,9 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -92,31 +91,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [TestFixtureSetUp]
         public void SetUp()
         {
-            GC.Collect();
-            TestUtils.JvmDebug = true;
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(BinarizableEntry)),
+                        new BinaryTypeConfiguration(typeof(BinarizableFilter)),
+                        new BinaryTypeConfiguration(typeof(KeepBinaryFilter))
+                    }
+                },
+                SpringConfigUrl = "config\\cache-query-continuous.xml",
+                IgniteInstanceName = "grid-1"
+            };
 
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableEntry)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFilter)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepBinaryFilter)));
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
-
-            cfg.GridName = "grid-1";
             grid1 = Ignition.Start(cfg);
             cache1 = grid1.GetCache<int, BinarizableEntry>(cacheName);
 
-            cfg.GridName = "grid-2";
+            cfg.IgniteInstanceName = "grid-2";
             grid2 = Ignition.Start(cfg);
             cache2 = grid2.GetCache<int, BinarizableEntry>(cacheName);
         }
@@ -171,6 +164,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
+            Assert.AreNotEqual(key1, key2);
+
             ContinuousQuery<int, BinarizableEntry> qry =
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
@@ -180,11 +175,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
-                CheckCallbackSingle(key2, null, Entry(key2));
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
             }
 
             qryHnd.Dispose();
@@ -216,13 +211,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 cache1.GetAndPut(key1, Entry(key1 + 1));
-                CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1));
+                CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key1);
-                CheckCallbackSingle(key1, Entry(key1 + 1), null);
+                CheckCallbackSingle(key1, Entry(key1 + 1), null, CacheEntryEventType.Removed);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
@@ -230,21 +225,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, null, Entry(key2));
+                    CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
 
                 cache1.GetAndPut(key2, Entry(key2 + 1));
 
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));
+                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key2);
 
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2 + 1), null);
+                    CheckCallbackSingle(key2, Entry(key2 + 1), null, CacheEntryEventType.Removed);
             }
 
             cache1.Put(key1, Entry(key1));
@@ -289,6 +284,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
+        /// Tests the defaults.
+        /// </summary>
+        [Test]
+        public void TestDefaults()
+        {
+            var qry = new ContinuousQuery<int, int>(null);
+
+            Assert.AreEqual(ContinuousQuery.DefaultAutoUnsubscribe, qry.AutoUnsubscribe);
+            Assert.AreEqual(ContinuousQuery.DefaultBufferSize, qry.BufferSize);
+            Assert.AreEqual(ContinuousQuery.DefaultTimeInterval, qry.TimeInterval);
+            Assert.IsFalse(qry.Local);
+        }
+
+        /// <summary>
         /// Check filter.
         /// </summary>
         /// <param name="binarizable">Binarizable.</param>
@@ -309,7 +318,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 int key1 = PrimaryKey(cache1);
                 cache1.GetAndPut(key1, Entry(key1));
                 CheckFilterSingle(key1, null, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 int key2 = PrimaryKey(cache2);
@@ -323,7 +332,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                 {
                     CheckFilterSingle(key2, null, Entry(key2));
-                    CheckCallbackSingle(key2, null, Entry(key2));
+                    CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
                 }
 
                 AbstractFilter<BinarizableEntry>.res = false;
@@ -381,36 +390,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             using (cache1.QueryContinuous(qry))
             {
                 // Put from local node.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache1), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache1), Entry(1)));
 
                 // Put from remote node.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache2), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
         }
 
@@ -543,20 +526,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 CheckFilterSingle(key1, null, Entry(key1));
                 
                 // Remote put must fail.
-                try
-                {
-                    cache1.GetAndPut(PrimaryKey(cache2), Entry(1));
-
-                    Assert.Fail("Should not reach this place.");
-                }
-                catch (IgniteException)
-                {
-                    // No-op.
-                }
-                catch (Exception)
-                {
-                    Assert.Fail("Unexpected error.");
-                }
+                Assert.Throws<IgniteException>(() => cache1.GetAndPut(PrimaryKey(cache2), Entry(1)));
             }
         }
 
@@ -696,7 +666,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void TestBufferSize()
         {
             // Put two remote keys in advance.
-            List<int> rmtKeys = PrimaryKeys(cache2, 2);
+            var rmtKeys = TestUtils.GetPrimaryKeys(cache2.Ignite, cache2.Name).Take(2).ToList();
 
             ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
@@ -754,12 +724,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 // Put from local node.
                 cache1.GetAndPut(key1, Entry(key1));
-                CheckCallbackSingle(key1, null, Entry(key1));
+                CheckCallbackSingle(key1, null, Entry(key1), CacheEntryEventType.Created);
 
                 // Put from remote node.
                 cache1.GetAndPut(key2, Entry(key2));
                 CheckNoCallback(100);
-                CheckCallbackSingle(key2, null, Entry(key2), 1000);
+                CheckCallbackSingle(key2, null, Entry(key2), CacheEntryEventType.Created);
             }
         }
 
@@ -850,7 +820,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     // Check continuous query
                     cache1.Put(44, Entry(44));
-                    CheckCallbackSingle(44, null, Entry(44));
+                    CheckCallbackSingle(44, null, Entry(44), CacheEntryEventType.Created);
                 }
 
                 Assert.Throws<ObjectDisposedException>(() => contQry.GetInitialQueryCursor());
@@ -921,29 +891,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
-        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
-        {
-            CheckCallbackSingle(expKey, expOldVal, expVal, 1000);
-        }
-
-        /// <summary>
-        /// Check single callback event.
-        /// </summary>
-        /// <param name="expKey">Expected key.</param>
-        /// <param name="expOldVal">Expected old value.</param>
-        /// <param name="expVal">Expected new value.</param>
+        /// <param name="expType">Expected type.</param>
         /// <param name="timeout">Timeout.</param>
-        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal,
+            CacheEntryEventType expType, int timeout = 1000)
         {
             CallbackEvent evt;
 
             Assert.IsTrue(CB_EVTS.TryTake(out evt, timeout));
+            Assert.AreEqual(0, CB_EVTS.Count);
 
-            Assert.AreEqual(1, evt.entries.Count);
+            var e = evt.entries.Single();
 
-            Assert.AreEqual(expKey, evt.entries.First().Key);
-            Assert.AreEqual(expOldVal, evt.entries.First().OldValue);
-            Assert.AreEqual(expVal, evt.entries.First().Value);
+            Assert.AreEqual(expKey, e.Key);
+            Assert.AreEqual(expOldVal, e.OldValue);
+            Assert.AreEqual(expVal, e.Value);
+            Assert.AreEqual(expType, e.EventType);
         }
 
         /// <summary>
@@ -974,43 +937,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <returns>Primary key.</returns>
         private static int PrimaryKey<T>(ICache<int, T> cache)
         {
-            return PrimaryKeys(cache, 1)[0];
-        }
-
-        /// <summary>
-        /// Get primary keys for cache.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        /// <param name="cnt">Amount of keys.</param>
-        /// <param name="startFrom">Value to start from.</param>
-        /// <returns></returns>
-        private static List<int> PrimaryKeys<T>(ICache<int, T> cache, int cnt, int startFrom = 0)
-        {
-            IClusterNode node = cache.Ignite.GetCluster().GetLocalNode();
-
-            ICacheAffinity aff = cache.Ignite.GetAffinity(cache.Name);
-
-            List<int> keys = new List<int>(cnt);
-
-            Assert.IsTrue(
-                TestUtils.WaitForCondition(() =>
-                {
-                    for (int i = startFrom; i < startFrom + 100000; i++)
-                    {
-                        if (aff.IsPrimary(node, i))
-                        {
-                            keys.Add(i);
-
-                            if (keys.Count == cnt)
-                                return true;
-                        }
-                    }
-
-                    return false;
-                }, 5000), "Failed to find " + cnt + " primary keys.");
-
-
-            return keys;
+            return TestUtils.GetPrimaryKey(cache.Ignite, cache.Name);
         }
 
         /// <summary>
@@ -1055,6 +982,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 return obj != null && obj is BinarizableEntry && ((BinarizableEntry)obj).val == val;
             }
+
+            /** <inheritDoc /> */
+            public override string ToString()
+            {
+                return string.Format("BinarizableEntry [Val: {0}]", val);
+            }
         }
 
         /// <summary>
@@ -1094,9 +1027,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter which cannot be serialized.
         /// </summary>
-        public class LocalFilter : AbstractFilter<BinarizableEntry>
+        public class LocalFilter : AbstractFilter<BinarizableEntry>, IBinarizable
         {
-            // No-op.
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>
@@ -1191,7 +1134,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     IBinaryType meta = val.GetBinaryType();
 
-                    Assert.AreEqual(typeof(BinarizableEntry).Name, meta.TypeName);
+                    Assert.AreEqual(typeof(BinarizableEntry).FullName, meta.TypeName);
                 }
 
                 countDown.Signal();

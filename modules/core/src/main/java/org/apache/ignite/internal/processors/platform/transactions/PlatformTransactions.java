@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.transactions;
 
-import java.sql.Timestamp;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
@@ -34,6 +32,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
+
+import java.sql.Timestamp;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Native transaction wrapper implementation.
@@ -45,6 +47,36 @@ public class PlatformTransactions extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_METRICS = 2;
+
+    /** */
+    public static final int OP_START = 3;
+
+    /** */
+    public static final int OP_COMMIT = 4;
+
+    /** */
+    public static final int OP_ROLLBACK = 5;
+
+    /** */
+    public static final int OP_CLOSE = 6;
+
+    /** */
+    public static final int OP_STATE = 7;
+
+    /** */
+    public static final int OP_SET_ROLLBACK_ONLY = 8;
+
+    /** */
+    public static final int OP_COMMIT_ASYNC = 9;
+
+    /** */
+    public static final int OP_ROLLBACK_ASYNC = 10;
+
+    /** */
+    public static final int OP_RESET_METRICS = 11;
+
+    /** */
+    public static final int OP_PREPARE = 12;
 
     /** */
     private final IgniteTransactions txs;
@@ -64,129 +96,6 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         super(platformCtx);
 
         txs = platformCtx.kernalContext().grid().transactions();
-    }
-
-    /**
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @param timeout Timeout
-     * @param txSize Number of entries participating in transaction.
-     * @return Transaction thread ID.
-     */
-    public long txStart(int concurrency, int isolation, long timeout, int txSize) {
-        TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(concurrency);
-
-        assert txConcurrency != null;
-
-        TransactionIsolation txIsolation = TransactionIsolation.fromOrdinal(isolation);
-
-        assert txIsolation != null;
-
-        Transaction tx = txs.txStart(txConcurrency, txIsolation);
-
-        return registerTx(tx);
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    public int txCommit(long id) throws IgniteCheckedException {
-        tx(id).commit();
-
-        return txClose(id);
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    public int txRollback(long id) throws IgniteCheckedException {
-        tx(id).rollback();
-
-        return txClose(id);
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     * @return Transaction state.
-     */
-    public int txClose(long id) throws IgniteCheckedException {
-        Transaction tx = tx(id);
-
-        try {
-            tx.close();
-
-            return tx.state().ordinal();
-        }
-        finally {
-            unregisterTx(id);
-        }
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @return Transaction state.
-     */
-    public int txState(long id) {
-        Transaction tx = tx(id);
-
-        return tx.state().ordinal();
-    }
-
-    /**
-     * @param id Transaction ID.
-     * @return {@code True} if rollback only flag was set.
-     */
-    public boolean txSetRollbackOnly(long id) {
-        Transaction tx = tx(id);
-
-        return tx.setRollbackOnly();
-    }
-
-    /**
-     * Commits tx in async mode.
-     */
-    public void txCommitAsync(final long txId, final long futId) {
-        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
-
-        asyncTx.commit();
-
-        listenAndNotifyIntFuture(futId, asyncTx);
-    }
-
-    /**
-     * Rolls back tx in async mode.
-     */
-    public void txRollbackAsync(final long txId, final long futId) {
-        final Transaction asyncTx = (Transaction)tx(txId).withAsync();
-
-        asyncTx.rollback();
-
-        listenAndNotifyIntFuture(futId, asyncTx);
-    }
-
-    /**
-     * Listens to the transaction future and notifies .NET int future.
-     */
-    private void listenAndNotifyIntFuture(final long futId, final Transaction asyncTx) {
-        IgniteFuture fut = asyncTx.future().chain(new C1<IgniteFuture, Object>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public Object apply(IgniteFuture fut) {
-                return null;
-            }
-        });
-
-        PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, this);
-    }
-
-    /**
-     * Resets transaction metrics.
-     */
-    public void resetMetrics() {
-       txs.resetMetrics();
     }
 
     /**
@@ -217,6 +126,23 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /**
+     * @param id Transaction ID.
+     * @return Transaction state.
+     */
+    private int txClose(long id) {
+        Transaction tx = tx(id);
+
+        try {
+            tx.close();
+
+            return tx.state().ordinal();
+        }
+        finally {
+            unregisterTx(id);
+        }
+    }
+
+    /**
      * Get transaction by ID.
      *
      * @param id ID.
@@ -231,7 +157,103 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_PREPARE:
+                ((TransactionProxyImpl)tx(val)).tx().prepare(true);
+
+                return TRUE;
+
+            case OP_COMMIT:
+                tx(val).commit();
+
+                return txClose(val);
+
+            case OP_ROLLBACK:
+                tx(val).rollback();
+
+                return txClose(val);
+
+            case OP_CLOSE:
+                return txClose(val);
+
+            case OP_SET_ROLLBACK_ONLY:
+                return tx(val).setRollbackOnly() ? TRUE : FALSE;
+
+            case OP_STATE:
+                return tx(val).state().ordinal();
+
+            case OP_RESET_METRICS:
+                txs.resetMetrics();
+
+                return TRUE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        long txId = reader.readLong();
+
+        IgniteFuture fut0;
+
+        switch (type) {
+            case OP_COMMIT_ASYNC:
+                fut0 = tx(txId).commitAsync();
+
+                break;
+
+            case OP_ROLLBACK_ASYNC:
+                fut0 = tx(txId).rollbackAsync();
+
+                break;
+
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+
+        // Future result is the tx itself, we do not want to return it to the platform.
+        IgniteFuture fut = fut0.chain(new C1<IgniteFuture, Object>() {
+            private static final long serialVersionUID = 0L;
+
+            @Override public Object apply(IgniteFuture fut) {
+                return null;
+            }
+        });
+
+        readAndListenFuture(reader, fut);
+
+        return TRUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer) throws IgniteCheckedException {
+        switch (type) {
+            case OP_START: {
+                TransactionConcurrency txConcurrency = TransactionConcurrency.fromOrdinal(reader.readInt());
+
+                assert txConcurrency != null;
+
+                TransactionIsolation txIsolation = TransactionIsolation.fromOrdinal(reader.readInt());
+
+                assert txIsolation != null;
+
+                Transaction tx = txs.txStart(txConcurrency, txIsolation, reader.readLong(), reader.readInt());
+
+                long id = registerTx(tx);
+
+                writer.writeLong(id);
+
+                return;
+            }
+        }
+
+        super.processInStreamOutStream(type, reader, writer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_CACHE_CONFIG_PARAMETERS:
                 TransactionConfiguration txCfg = platformCtx.kernalContext().config().getTransactionConfiguration();

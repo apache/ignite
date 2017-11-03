@@ -32,6 +32,8 @@
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
+        <spark.folder>src/main/java</spark.folder>
+        <ml.folder>src/main/java</ml.folder>
         <java.ver>1.7</java.ver>
     </properties>
 
@@ -71,6 +73,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data</artifactId>
+            <version>to_be_replaced_by_ignite_version</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.code.simple-spring-memcached</groupId>
             <artifactId>spymemcached</artifactId>
             <version>2.7.3</version>
@@ -100,10 +108,20 @@
         <profile>
             <id>scala</id>
 
+            <properties>
+                <spark.folder>src/main/spark</spark.folder>
+            </properties>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-scalar</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-spark</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
@@ -143,6 +161,23 @@
         </profile>
 
         <profile>
+            <id>ml</id>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <java.ver>1.8</java.ver>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
             <id>lgpl</id>
 
             <activation>
@@ -156,13 +191,19 @@
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-hibernate</artifactId>
+                    <artifactId>ignite-hibernate_5.1</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
 
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-schedule</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-geospatial</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
@@ -204,9 +245,10 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
+                                <source>${spark.folder}</source>
+                                <source>${ml.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

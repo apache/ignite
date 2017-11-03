@@ -72,12 +72,12 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
 
@@ -89,11 +89,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -210,11 +210,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             final Ignite ignite = ignite(0);
 
-            final IgniteCache<Object, Object> cache = ignite.cache(null).withNoRetries();
+            final IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withNoRetries();
 
             final int key = generateKey(ignite, backup);
 
-            IgniteEx backupNode = (IgniteEx)backupNode(key, null);
+            IgniteEx backupNode = (IgniteEx)backupNode(key, DEFAULT_CACHE_NAME);
 
             assertNotNull(backupNode);
 
@@ -237,15 +237,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                         try (Transaction tx = ignite.transactions().txStart(conc, REPEATABLE_READ)) {
                             cache.put(key, key);
 
-                            Transaction asyncTx = (Transaction)tx.withAsync();
-
-                            asyncTx.commit();
+                            IgniteFuture<?> fut = tx.commitAsync();
 
                             commitLatch.countDown();
 
                             try {
-                                IgniteFuture<Object> fut = asyncTx.future();
-
                                 fut.get();
 
                                 if (!commit) {
@@ -266,16 +262,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
                         }
                     }
                     else {
-                        IgniteCache<Object, Object> cache0 = cache.withAsync();
-
-                        cache0.put(key, key);
+                        IgniteFuture fut = cache.putAsync(key, key);
 
                         Thread.sleep(1000);
 
                         commitLatch.countDown();
 
                         try {
-                            cache0.future().get();
+                            fut.get();
 
                             if (!commit) {
                                 error("Transaction has been committed");
@@ -299,6 +293,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             }, "tx-thread");
 
             commitLatch.await();
+
+            Thread.sleep(1000);
 
             stopGrid(1);
 
@@ -331,17 +327,19 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     private void dataCheck(IgniteKernal orig, IgniteKernal backup, int key, boolean commit) throws Exception {
         GridNearCacheEntry nearEntry = null;
 
-        GridCacheAdapter origCache = orig.internalCache(null);
+        GridCacheAdapter origCache = orig.internalCache(DEFAULT_CACHE_NAME);
 
         if (origCache.isNear())
             nearEntry = (GridNearCacheEntry)origCache.peekEx(key);
 
-        GridCacheAdapter backupCache = backup.internalCache(null);
+        GridCacheAdapter backupCache = backup.internalCache(DEFAULT_CACHE_NAME);
 
         if (backupCache.isNear())
             backupCache = backupCache.context().near().dht();
 
-        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)backupCache.peekEx(key);
+        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)backupCache.entryEx(key);
+
+        dhtEntry.unswap();
 
         if (commit) {
             assertNotNull(dhtEntry);
@@ -359,9 +357,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         }
         else {
             assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
-            assertTrue("Invalid backup cache entry: " + dhtEntry,
-                dhtEntry == null || dhtEntry.rawGetOrUnmarshal(false) == null);
+            assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
+
+        backupCache.context().evicts().touch(dhtEntry, null);
     }
 
     /**
@@ -379,7 +378,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      *      {@code ignite(1)}.
      */
     private int generateKey(Ignite ignite, boolean backup) {
-        Affinity<Object> aff = ignite.affinity(null);
+        Affinity<Object> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
         for (int key = 0;;key++) {
             if (backup) {
@@ -406,7 +405,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         /**
          * @param bannedClasses Banned classes.
          */
-        public void bannedClasses(Collection<Class> bannedClasses) {
+        void bannedClasses(Collection<Class> bannedClasses) {
             this.bannedClasses = bannedClasses;
         }
 

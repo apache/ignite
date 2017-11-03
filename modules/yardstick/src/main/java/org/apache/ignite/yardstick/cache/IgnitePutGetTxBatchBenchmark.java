@@ -47,6 +47,8 @@ public class IgnitePutGetTxBatchBenchmark extends IgniteCacheAbstractBenchmark<I
 
         clo = new Callable<Void>() {
             @Override public Void call() throws Exception {
+                IgniteCache<Integer, Object> cache = cacheForOperation();
+
                 Set<Integer> keys = new TreeSet<>();
 
                 while (keys.size() < args.batch())

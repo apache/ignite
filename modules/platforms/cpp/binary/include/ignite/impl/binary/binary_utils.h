@@ -20,11 +20,14 @@
 
 #include <stdint.h>
 
-#include "ignite/common/utils.h"
+#include <ignite/common/utils.h>
 
-#include "ignite/guid.h"
-#include "ignite/date.h"
-#include "ignite/timestamp.h"
+#include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
+#include <ignite/time.h>
+
+#include <ignite/binary/binary_type.h>
 
 namespace ignite
 {
@@ -34,6 +37,7 @@ namespace ignite
         {
             class InteropInputStream;
             class InteropOutputStream;
+            class InteropMemory;
         }
 
         namespace binary
@@ -45,12 +49,41 @@ namespace ignite
             {
             public:
                 /**
+                 * Get data hash code.
+                 *
+                 * @param data Data pointer.
+                 * @param size Data size in bytes.
+                 * @return Hash code.
+                 */
+                static int32_t GetDataHashCode(const void* data, size_t size);
+
+                /**
                  * Utility method to read signed 8-bit integer from stream.
                  *
                  * @param stream Stream.
                  * @return Value.
                  */
                 static int8_t ReadInt8(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 8-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int8_t ReadInt8(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 8-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int8_t UnsafeReadInt8(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 8-bit integer to stream.
@@ -121,6 +154,26 @@ namespace ignite
                 static int16_t ReadInt16(interop::InteropInputStream* stream);
 
                 /**
+                 * Utility method to read signed 16-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int16_t ReadInt16(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 16-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int16_t UnsafeReadInt16(interop::InteropMemory& mem, int32_t pos);
+
+                /**
                  * Utility method to write signed 16-bit integer to stream.
                  *
                  * @param stream Stream.
@@ -187,6 +240,26 @@ namespace ignite
                  * @return Value.
                  */
                 static int32_t ReadInt32(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to read signed 32-bit integer from memory.
+                 * @throw IgniteError if there is not enough memory.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int32_t ReadInt32(interop::InteropMemory& mem, int32_t pos);
+
+                /**
+                 * Utility method to read signed 32-bit integer from memory.
+                 * @warning Does not check if there is enough data in memory to read.
+                 *
+                 * @param mem Memory.
+                 * @param pos Position in memory.
+                 * @return Value.
+                 */
+                static int32_t UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos);
 
                 /**
                  * Utility method to write signed 32-bit integer to stream.
@@ -352,7 +425,7 @@ namespace ignite
                  * Utility method to read Timestamp from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
+                 * @return Value.
                  */
                 static Timestamp ReadTimestamp(interop::InteropInputStream* stream);
 
@@ -365,6 +438,22 @@ namespace ignite
                 static void WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val);
 
                 /**
+                 * Utility method to read Time from stream.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static Time ReadTime(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write Timestamp to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteTime(interop::InteropOutputStream* stream, const Time val);
+
+                /**
                  * Utility method to write string to stream.
                  *
                  * @param stream Stream.
@@ -374,171 +463,98 @@ namespace ignite
                 static void WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len);
 
                 /**
-                 * Convert Date type to standard C type time_t.
+                 * Get default value for the type.
                  *
-                 * @param date Date type value.
-                 * @return Corresponding value of time_t.
+                 * @return Null value for non primitive types and zeroes for primitives.
                  */
-                static inline time_t DateToCTime(const Date& date)
+                template<typename T>
+                static T GetDefaultValue()
                 {
-                    return static_cast<time_t>(date.GetSeconds());
+                    T res;
+
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
-
-                /**
-                 * Convert Timestamp type to standard C type time_t.
-                 *
-                 * @param ts Timestamp type value.
-                 * @return Corresponding value of time_t.
-                 */
-                static inline time_t TimestampToCTime(const Timestamp& ts)
-                {
-                    return static_cast<time_t>(ts.GetSeconds());
-                }
-
-                /**
-                 * Convert Date type to standard C type time_t.
-                 *
-                 * @param date Date type value.
-                 * @param ctime Corresponding value of struct tm.
-                 * @return True on success.
-                 */
-                static inline bool DateToCTm(const Date& date, tm& ctime)
-                {
-                    time_t tmt = DateToCTime(date);
-
-                    return common::IgniteGmTime(tmt, ctime);
-                }
-
-                /**
-                 * Convert Timestamp type to standard C type struct tm.
-                 *
-                 * @param ts Timestamp type value.
-                 * @param ctime Corresponding value of struct tm.
-                 * @return True on success.
-                 */
-                static inline bool TimestampToCTm(const Timestamp& ts, tm& ctime)
-                {
-                    time_t tmt = TimestampToCTime(ts);
-
-                    return common::IgniteGmTime(tmt, ctime);
-                }
-
-                /**
-                 * Convert standard C type time_t to Date struct tm.
-                 *
-                 * @param ctime Standard C type time_t.
-                 * @return Corresponding value of Date.
-                 */
-                static inline Date CTimeToDate(time_t ctime)
-                {
-                    return Date(ctime * 1000);
-                }
-
-                /**
-                 * Convert standard C type time_t to Timestamp type.
-                 *
-                 * @param ctime Standard C type time_t.
-                 * @param ns Nanoseconds second fraction.
-                 * @return Corresponding value of Timestamp.
-                 */
-                static inline Timestamp CTimeToTimestamp(time_t ctime, int32_t ns)
-                {
-                    return Timestamp(ctime, ns);
-                }
-
-                /**
-                 * Convert standard C type struct tm to Date type.
-                 *
-                 * @param ctime Standard C type struct tm.
-                 * @return Corresponding value of Date.
-                 */
-                static inline Date CTmToDate(const tm& ctime)
-                {
-                    time_t time = common::IgniteTimeGm(ctime);
-
-                    return CTimeToDate(time);
-                }
-
-                /**
-                 * Convert standard C type struct tm to Timestamp type.
-                 *
-                 * @param ctime Standard C type struct tm.
-                 * @param ns Nanoseconds second fraction.
-                 * @return Corresponding value of Timestamp.
-                 */
-                static inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
-                {
-                    time_t time = common::IgniteTimeGm(ctime);
-
-                    return CTimeToTimestamp(time, ns);
-                }
-
-                /**
-                 * Make Date in human understandable way.
-                 *
-                 * Created Date uses GMT timezone.
-                 *
-                 * @param year Year.
-                 * @param month Month.
-                 * @param day Day.
-                 * @param hour Hour.
-                 * @param min Min.
-                 * @param sec Sec.
-                 * @return Date.
-                 */
-                static Date MakeDateGmt(int year = 1900, int month = 1,
-                    int day = 1, int hour = 0, int min = 0, int sec = 0);
-
-                /**
-                 * Make Date in human understandable way.
-                 *
-                 * Created Date uses local timezone.
-                 *
-                 * @param year Year.
-                 * @param month Month.
-                 * @param day Day.
-                 * @param hour Hour.
-                 * @param min Min.
-                 * @param sec Sec.
-                 * @return Date.
-                 */
-                static Date MakeDateLocal(int year = 1900, int month = 1,
-                    int day = 1, int hour = 0, int min = 0, int sec = 0);
-
-                /**
-                 * Make Date in human understandable way.
-                 *
-                 * Created Timestamp uses GMT timezone.
-                 *
-                 * @param year Year.
-                 * @param month Month.
-                 * @param day Day.
-                 * @param hour Hour.
-                 * @param min Minute.
-                 * @param sec Second.
-                 * @param ns Nanosecond.
-                 * @return Timestamp.
-                 */
-                static Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
-                    int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
-
-                /**
-                 * Make Date in human understandable way.
-                 *
-                 * Created Timestamp uses Local timezone.
-                 *
-                 * @param year Year.
-                 * @param month Month.
-                 * @param day Day.
-                 * @param hour Hour.
-                 * @param min Minute.
-                 * @param sec Second.
-                 * @param ns Nanosecond.
-                 * @return Timestamp.
-                 */
-                static Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
-                    int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
             };
+
+            template<>
+            inline int8_t BinaryUtils::GetDefaultValue<int8_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int16_t BinaryUtils::GetDefaultValue<int16_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline uint16_t BinaryUtils::GetDefaultValue<uint16_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int32_t BinaryUtils::GetDefaultValue<int32_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline int64_t BinaryUtils::GetDefaultValue<int64_t>()
+            {
+                return 0;
+            }
+
+            template<>
+            inline bool BinaryUtils::GetDefaultValue<bool>()
+            {
+                return false;
+            }
+
+            template<>
+            inline float BinaryUtils::GetDefaultValue<float>()
+            {
+                return 0.0f;
+            }
+
+            template<>
+            inline double BinaryUtils::GetDefaultValue<double>()
+            {
+                return 0.0;
+            }
+
+            template<>
+            inline Guid BinaryUtils::GetDefaultValue<Guid>()
+            {
+                return Guid();
+            }
+
+            template<>
+            inline Date BinaryUtils::GetDefaultValue<Date>()
+            {
+                return Date();
+            }
+
+            template<>
+            inline Timestamp BinaryUtils::GetDefaultValue<Timestamp>()
+            {
+                return Timestamp();
+            }
+
+            template<>
+            inline Time BinaryUtils::GetDefaultValue<Time>()
+            {
+                return Time();
+            }
+
+            template<>
+            inline std::string BinaryUtils::GetDefaultValue<std::string>()
+            {
+                return std::string();
+            }
         }
     }
 }

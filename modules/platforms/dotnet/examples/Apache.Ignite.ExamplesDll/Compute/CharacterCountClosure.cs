@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using Apache.Ignite.Core.Compute;
-
 namespace Apache.Ignite.ExamplesDll.Compute
 {
+    using System;
+    using Apache.Ignite.Core.Compute;
+
     /// <summary>
     /// Closure counting characters in a string.
     /// </summary>
-    [Serializable]
     public class CharacterCountClosure : IComputeFunc<string, int>
     {
         /// <summary>

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
@@ -26,9 +25,8 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Stream capable of working with binary objects.
     /// </summary>
-    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe interface IBinaryStream : IDisposable
+    internal unsafe interface IBinaryStream : IDisposable
     {
         /// <summary>
         /// Write bool.
@@ -312,11 +310,21 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         bool IsSameArray(byte[] arr);
 
         /// <summary>
-        /// Seek to the given positoin.
+        /// Seek to the given position.
         /// </summary>
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>
         /// <returns>Position.</returns>
         int Seek(int offset, SeekOrigin origin);
+
+        /// <summary>
+        /// Applies specified processor to the raw stream data.
+        /// </summary>
+        T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg);
+
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        void Flush();
     }
 }

@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-#pragma warning disable 649
-#pragma warning disable 169
 namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
@@ -40,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestCustomDeployment()
         {
             // Create temp folder
-            var folder = GetTempFolder();
+            var folder = IgniteUtils.GetTempDirectoryName();
 
             // Copy jars
             var home = IgniteHome.Resolve(null);
@@ -53,15 +52,21 @@ namespace Apache.Ignite.Core.Tests
             Assert.Greater(jars.Length, 3);
 
             foreach (var jar in jars)
-                // ReSharper disable once AssignNullToNotNullAttribute
-                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)), true);
+            {
+                var fileName = Path.GetFileName(jar);
+                Assert.IsNotNull(fileName);
+                File.Copy(jar, Path.Combine(folder, fileName), true);
+            }
 
             // Build classpath
             var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly, GetType().Assembly})
+            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            {
+                Assert.IsNotNull(asm.Location);
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
+            }
 
             // Copy config
             var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
@@ -75,8 +80,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 "-springConfigUrl=" + springFile,
                 "-jvmClasspath=" + classpath,
+                "-assembly=" + Path.GetFileName(GetType().Assembly.Location),
                 "-J-ea",
-                "-J-Xcheck:jni",
                 "-J-Xms512m",
                 "-J-Xmx512m"
             });
@@ -87,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 VerifyNodeStarted(exePath);
             }
-            finally 
+            finally
             {
                 proc.Kill();
 
@@ -108,15 +113,23 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
+        }
+
+        /// <summary>
         /// Verifies that custom-deployed node has started.
         /// </summary>
         private static void VerifyNodeStarted(string exePath)
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
             }))
             {
                 Assert.IsTrue(ignite.WaitTopology(2));
@@ -127,36 +140,7 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-        /// <summary>
-        /// Gets the temporary folder.
-        /// </summary>
-        private static string GetTempFolder()
-        {
-            const string prefix = "ig-test-";
-            var temp = Path.GetTempPath();
-
-            for (int i = 0; i < int.MaxValue; i++)
-            {
-                {
-                    try
-                    {
-                        var path = Path.Combine(temp, prefix + i);
-
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
-
-                        return Directory.CreateDirectory(path).FullName;
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore
-                    }
-                }
-            }
-
-            throw new InvalidOperationException();
-        }
-
+        #pragma warning disable 649
         /// <summary>
         /// Function that returns process path.
         /// </summary>

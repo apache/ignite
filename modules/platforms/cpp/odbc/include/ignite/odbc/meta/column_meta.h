@@ -38,7 +38,6 @@ namespace ignite
             class ColumnMeta
             {
             public:
-#ifdef ODBC_DEBUG
                 /**
                  * Convert attribute ID to string containing its name.
                  * Debug function.
@@ -46,7 +45,6 @@ namespace ignite
                  * @return Null-terminated string containing attribute name.
                  */
                 static const char* AttrIdToString(uint16_t id);
-#endif
 
                 /**
                  * Default constructor.

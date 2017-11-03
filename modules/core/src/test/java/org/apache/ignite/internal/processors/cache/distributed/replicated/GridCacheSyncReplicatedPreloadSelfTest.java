@@ -41,9 +41,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private static final boolean DISCO_DEBUG_MODE = false;
-
     /**
      * Constructs test.
      */
@@ -52,8 +49,8 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -97,17 +94,17 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.cache(null).put(i, i);
+            g0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
-        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(DEFAULT_CACHE_NAME).size());
+        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).size());
 
         for (int n = 0; n < retries; n++) {
             info("Starting additional grid node...");
 
             Ignite g2 = startGrid(2);
 
-            assertEquals(keyCnt, ((IgniteKernal)g2).internalCache(null).size());
+            assertEquals(keyCnt, ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).size());
 
             info("Stopping additional grid node...");
 
@@ -128,10 +125,10 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         Ignite g1 = startGrid(1);
 
         for (int i = 0; i < keyCnt; i++)
-            g0.cache(null).put(i, i);
+            g0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(null).size());
-        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(null).size());
+        assertEquals(keyCnt, ((IgniteKernal)g0).internalCache(DEFAULT_CACHE_NAME).size());
+        assertEquals(keyCnt, ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).size());
 
         final AtomicInteger cnt = new AtomicInteger();
 

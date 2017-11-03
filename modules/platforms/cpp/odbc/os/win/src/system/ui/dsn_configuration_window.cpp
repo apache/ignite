@@ -1,0 +1,382 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <Windowsx.h>
+
+#include "ignite/odbc/log.h"
+
+#include "ignite/odbc/system/ui/dsn_configuration_window.h"
+
+namespace ignite
+{
+    namespace odbc
+    {
+        namespace system
+        {
+            namespace ui
+            {
+                DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
+                    CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
+                    width(360),
+                    height(300),
+                    connectionSettingsGroupBox(),
+                    nameLabel(),
+                    nameEdit(),
+                    addressLabel(),
+                    addressEdit(),
+                    schemaLabel(),
+                    schemaEdit(),
+                    pageSizeLabel(),
+                    pageSizeEdit(),
+                    distributedJoinsCheckBox(),
+                    enforceJoinOrderCheckBox(),
+                    replicatedOnlyCheckBox(),
+                    collocatedCheckBox(),
+                    protocolVersionLabel(),
+                    protocolVersionComboBox(),
+                    okButton(),
+                    cancelButton(),
+                    config(config),
+                    accepted(false)
+                {
+                    // No-op.
+                }
+
+                DsnConfigurationWindow::~DsnConfigurationWindow()
+                {
+                    // No-op.
+                }
+
+                void DsnConfigurationWindow::Create()
+                {
+                    // Finding out parent position.
+                    RECT parentRect;
+                    GetWindowRect(parent->GetHandle(), &parentRect);
+
+                    // Positioning window to the center of parent window.
+                    const int posX = parentRect.left + (parentRect.right - parentRect.left - width) / 2;
+                    const int posY = parentRect.top + (parentRect.bottom - parentRect.top - height) / 2;
+
+                    RECT desiredRect = {posX, posY, posX + width, posY + height};
+                    AdjustWindowRect(&desiredRect, WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME, FALSE);
+
+                    Window::Create(WS_OVERLAPPED | WS_SYSMENU, desiredRect.left, desiredRect.top,
+                        desiredRect.right - desiredRect.left, desiredRect.bottom - desiredRect.top, 0);
+
+                    if (!handle)
+                    {
+                        std::stringstream buf;
+
+                        buf << "Can not create window, error code: " << GetLastError();
+
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
+                    }
+                }
+
+                void DsnConfigurationWindow::OnCreate()
+                {
+                    int margin = 10;
+                    int interval = 10;
+
+                    int labelSizeX = 80;
+                    int labelPosX = margin + interval;
+
+                    int editSizeX = width - labelSizeX - 2 * margin - 3 * interval;
+                    int editPosX = margin + labelSizeX + 2 * interval;
+
+                    int rowSize = 20;
+                    int rowPos = margin + 2 * interval;
+
+                    int checkBoxSize = (editSizeX - interval) / 2;
+
+                    int sectionBegin = margin;
+
+                    const char* val = config.GetDsn().c_str();
+                    nameLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "DSN name:", ChildId::NAME_LABEL);
+                    nameEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::NAME_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    val = config.GetAddress().c_str();
+                    addressLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Address:", ChildId::ADDRESS_LABEL);
+                    addressEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::ADDRESS_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    val = config.GetSchema().c_str();
+                    schemaLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize, "Schema name:", ChildId::SCHEMA_LABEL);
+                    schemaEdit = CreateEdit(editPosX, rowPos, editSizeX, rowSize, val, ChildId::SCHEMA_EDIT);
+
+                    rowPos += interval + rowSize;
+
+                    std::string tmp = common::LexicalCast<std::string>(config.GetPageSize());
+                    val = tmp.c_str();
+                    pageSizeLabel = CreateLabel(labelPosX, rowPos, labelSizeX,
+                        rowSize, "Page size:", ChildId::PAGE_SIZE_LABEL);
+
+                    pageSizeEdit = CreateEdit(editPosX, rowPos, editSizeX, 
+                        rowSize, val, ChildId::PAGE_SIZE_EDIT, ES_NUMBER);
+
+                    rowPos += interval + rowSize;
+
+                    protocolVersionLabel = CreateLabel(labelPosX, rowPos, labelSizeX, rowSize,
+                        "Protocol version:", ChildId::PROTOCOL_VERSION_LABEL);
+                    protocolVersionComboBox = CreateComboBox(editPosX, rowPos, editSizeX, rowSize,
+                        "Protocol version", ChildId::PROTOCOL_VERSION_COMBO_BOX);
+
+                    int id = 0;
+
+                    const ProtocolVersion::VersionSet& supported = ProtocolVersion::GetSupported();
+
+                    ProtocolVersion version = ProtocolVersion::GetCurrent();
+                    ProtocolVersion::VersionSet::const_iterator it;
+                    for (it = supported.begin(); it != supported.end(); ++it)
+                    {
+                        protocolVersionComboBox->AddString(it->ToString());
+
+                        if (*it == config.GetProtocolVersion())
+                        {
+                            protocolVersionComboBox->SetSelection(id);
+                            version = *it;
+                        }
+
+                        ++id;
+                    }
+
+                    rowPos += interval + rowSize;
+
+                    distributedJoinsCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
+
+                    enforceJoinOrderCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+
+                    rowPos += rowSize;
+
+                    replicatedOnlyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Replicated Only", ChildId::REPLICATED_ONLY_CHECK_BOX, config.IsReplicatedOnly());
+
+                    collocatedCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos, checkBoxSize,
+                        rowSize, "Collocated", ChildId::COLLOCATED_CHECK_BOX, config.IsCollocated());
+
+                    rowPos += rowSize;
+
+                    lazyCheckBox = CreateCheckBox(editPosX, rowPos, checkBoxSize, rowSize,
+                        "Lazy", ChildId::LAZY_CHECK_BOX, config.IsLazy());
+
+                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+
+                    skipReducerOnUpdateCheckBox = CreateCheckBox(editPosX + checkBoxSize + interval, rowPos,
+                        checkBoxSize, rowSize, "Skip reducer on update", ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
+                        config.IsSkipReducerOnUpdate());
+
+                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
+                    rowPos += interval * 2 + rowSize;
+
+                    connectionSettingsGroupBox = CreateGroupBox(margin, sectionBegin, width - 2 * margin,
+                        rowPos - interval - sectionBegin, "Connection settings", ChildId::CONNECTION_SETTINGS_GROUP_BOX);
+
+                    int buttonSizeX = 80;
+                    int cancelPosX = width - margin - buttonSizeX;
+                    int okPosX = cancelPosX - interval - buttonSizeX;
+
+                    rowSize = 25;
+
+                    okButton = CreateButton(okPosX, rowPos, buttonSizeX, rowSize, "Ok", ChildId::OK_BUTTON);
+                    cancelButton = CreateButton(cancelPosX, rowPos, buttonSizeX, rowSize, "Cancel", ChildId::CANCEL_BUTTON);
+                }
+
+                bool DsnConfigurationWindow::OnMessage(UINT msg, WPARAM wParam, LPARAM lParam)
+                {
+                    switch (msg)
+                    {
+                        case WM_COMMAND:
+                        {
+                            switch (LOWORD(wParam))
+                            {
+                                case ChildId::OK_BUTTON:
+                                {
+                                    try
+                                    {
+                                        RetrieveParameters(config);
+
+                                        accepted = true;
+
+                                        PostMessage(GetHandle(), WM_CLOSE, 0, 0);
+                                    }
+                                    catch (IgniteError& err)
+                                    {
+                                        MessageBox(NULL, err.GetText(), "Error!", MB_ICONEXCLAMATION | MB_OK);
+                                    }
+
+                                    break;
+                                }
+
+                                case IDCANCEL:
+                                case ChildId::CANCEL_BUTTON:
+                                {
+                                    PostMessage(GetHandle(), WM_CLOSE, 0, 0);
+
+                                    break;
+                                }
+
+                                case ChildId::DISTRIBUTED_JOINS_CHECK_BOX:
+                                {
+                                    distributedJoinsCheckBox->SetChecked(!distributedJoinsCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX:
+                                {
+                                    enforceJoinOrderCheckBox->SetChecked(!enforceJoinOrderCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::REPLICATED_ONLY_CHECK_BOX:
+                                {
+                                    replicatedOnlyCheckBox->SetChecked(!replicatedOnlyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::COLLOCATED_CHECK_BOX:
+                                {
+                                    collocatedCheckBox->SetChecked(!collocatedCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::LAZY_CHECK_BOX:
+                                {
+                                    lazyCheckBox->SetChecked(!lazyCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::SKIP_REDUCER_ON_UPDATE_CHECK_BOX:
+                                {
+                                    skipReducerOnUpdateCheckBox->SetChecked(!skipReducerOnUpdateCheckBox->IsChecked());
+
+                                    break;
+                                }
+
+                                case ChildId::PROTOCOL_VERSION_COMBO_BOX:
+                                {
+                                    std::string versionStr;
+                                    protocolVersionComboBox->GetText(versionStr);
+
+                                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+                                    lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
+                                    skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
+                                    break;
+                                }
+
+                                default:
+                                    return false;
+                            }
+
+                            break;
+                        }
+
+                        case WM_DESTROY:
+                        {
+                            PostQuitMessage(accepted ? Result::OK : Result::CANCEL);
+
+                            break;
+                        }
+
+                        default:
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
+                {
+                    std::string dsn;
+                    std::string address;
+                    std::string schema;
+                    std::string pageSizeStr;
+                    std::string version;
+
+                    bool distributedJoins;
+                    bool enforceJoinOrder;
+                    bool replicatedOnly;
+                    bool collocated;
+                    bool lazy;
+                    bool skipReducerOnUpdate;
+
+                    nameEdit->GetText(dsn);
+                    addressEdit->GetText(address);
+                    schemaEdit->GetText(schema);
+                    protocolVersionComboBox->GetText(version);
+                    pageSizeEdit->GetText(pageSizeStr);
+
+                    int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
+
+                    if (pageSize <= 0)
+                        pageSize = config.GetPageSize();
+
+                    common::StripSurroundingWhitespaces(address);
+                    common::StripSurroundingWhitespaces(dsn);
+
+                    distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
+                    replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
+                    collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
+                    lazy = lazyCheckBox->IsEnabled() && lazyCheckBox->IsChecked();
+
+                    skipReducerOnUpdate =
+                        skipReducerOnUpdateCheckBox->IsEnabled() && skipReducerOnUpdateCheckBox->IsChecked();
+
+                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("DSN:                " << dsn);
+                    LOG_MSG("Address:            " << address);
+                    LOG_MSG("Schema:             " << schema);
+                    LOG_MSG("Page size:          " << pageSize);
+                    LOG_MSG("Protocol version:   " << version);
+                    LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:               " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update:   " << (skipReducerOnUpdate ? "true" : "false"));
+
+                    if (dsn.empty())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
+
+                    cfg.SetDsn(dsn);
+                    cfg.SetAddress(address);
+                    cfg.SetSchema(schema);
+                    cfg.SetPageSize(pageSize);
+                    cfg.SetProtocolVersion(version);
+                    cfg.SetDistributedJoins(distributedJoins);
+                    cfg.SetEnforceJoinOrder(enforceJoinOrder);
+                    cfg.SetReplicatedOnly(replicatedOnly);
+                    cfg.SetCollocated(collocated);
+                    cfg.SetLazy(lazy);
+                    cfg.SetSkipReducerOnUpdate(skipReducerOnUpdate);
+                }
+            }
+        }
+    }
+}

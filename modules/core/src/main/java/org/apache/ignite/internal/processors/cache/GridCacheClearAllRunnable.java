@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -79,59 +77,12 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        Iterator<? extends GridCacheEntryEx> iter = cache.entries().iterator();
+        for (GridCacheEntryEx gridCacheEntryEx : cache.entries())
+            clearEntry(gridCacheEntryEx);
 
-        while (iter.hasNext())
-            clearEntry(iter.next());
-
-        // Clear swapped entries.
         if (!ctx.isNear()) {
-            if (ctx.swap().offHeapEnabled()) {
-                if (GridQueryProcessor.isEnabled(ctx.config())) {
-                    for (Iterator<KeyCacheObject> it =
-                        ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE); it.hasNext();) {
-                        KeyCacheObject key = it.next();
-
-                        if (owns(key))
-                            clearEntry(cache.entryEx(key));
-
-                    }
-                }
-                else if (id == 0)
-                    ctx.swap().clearOffHeap();
-            }
-
-            if (ctx.isSwapOrOffheapEnabled()) {
-                if (ctx.swap().swapEnabled()) {
-                    if (GridQueryProcessor.isEnabled(ctx.config())) {
-                        Iterator<KeyCacheObject> it = null;
-
-                        try {
-                            it = ctx.swap().swapKeyIterator(true, true, AffinityTopologyVersion.NONE);
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to get iterator over swap.", e);
-                        }
-
-                        if (it != null) {
-                            while (it.hasNext()) {
-                                KeyCacheObject key = it.next();
-
-                                if (owns(key))
-                                    clearEntry(cache.entryEx(key));
-                            }
-                        }
-                    }
-                    else if (id == 0) {
-                        try {
-                            ctx.swap().clearSwap();
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to clearLocally entries from swap storage.", e);
-                        }
-                    }
-                }
-            }
+            if (id == 0)
+                ctx.offheap().clearCache(ctx, readers);
         }
     }
 
@@ -141,11 +92,16 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param e Entry.
      */
     protected void clearEntry(GridCacheEntryEx e) {
+        ctx.shared().database().checkpointReadLock();
+
         try {
             e.clear(obsoleteVer, readers);
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
     }
 

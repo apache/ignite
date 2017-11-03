@@ -33,10 +33,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
@@ -106,7 +106,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         log = ctx.kernalContext().log(HadoopExternalTaskExecutor.class);
 
-        outputBase = U.resolveWorkDirectory("hadoop", false);
+        outputBase = U.resolveWorkDirectory(ctx.kernalContext().config().getWorkDirectory(), "hadoop", false);
 
         pathSep = System.getProperty("path.separator", U.isWindows() ? ";" : ":");
 
@@ -118,7 +118,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             ctx.kernalContext().config().getMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName());
+            ctx.kernalContext().igniteInstanceName(),
+            ctx.kernalContext().config().getWorkDirectory());
 
         comm.setListener(new MessageListener());
 
@@ -197,7 +198,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             }
         }
         else if (ctx.isParticipating(meta)) {
-            HadoopJob job;
+            HadoopJobEx job;
 
             try {
                 job = jobTracker.job(meta.jobId(), meta.jobInfo());
@@ -214,7 +215,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run(final HadoopJob job, final Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
+    @Override public void run(final HadoopJobEx job, final Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
         if (!busyLock.tryReadLock()) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start hadoop tasks (grid is stopping, will ignore).");
@@ -292,7 +293,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job instance.
      * @param tasks Collection of tasks to execute in started process.
      */
-    private void sendExecutionRequest(HadoopProcess proc, HadoopJob job, Collection<HadoopTaskInfo> tasks)
+    private void sendExecutionRequest(HadoopProcess proc, HadoopJobEx job, Collection<HadoopTaskInfo> tasks)
         throws IgniteCheckedException {
         // Must synchronize since concurrent process crash may happen and will receive onConnectionLost().
         proc.lock();
@@ -348,7 +349,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job instance.
      * @param plan Map reduce plan.
      */
-    private HadoopProcess startProcess(final HadoopJob job, final HadoopMapReducePlan plan) {
+    private HadoopProcess startProcess(final HadoopJobEx job, final HadoopMapReducePlan plan) {
         final UUID childProcId = UUID.randomUUID();
 
         HadoopJobId jobId = job.id();
@@ -380,7 +381,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                         log.debug("Created hadoop child process metadata for job [job=" + job +
                             ", childProcId=" + childProcId + ", taskMeta=" + startMeta + ']');
 
-                    Process proc = startJavaProcess(childProcId, startMeta, job);
+                    Process proc = startJavaProcess(childProcId, startMeta, job,
+                        ctx.kernalContext().config().getWorkDirectory());
 
                     BufferedReader rdr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
@@ -517,10 +519,11 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param childProcId Child process ID.
      * @param startMeta Metadata.
      * @param job Job.
+     * @param igniteWorkDir Work directory.
      * @return Started process.
      */
     private Process startJavaProcess(UUID childProcId, HadoopExternalTaskMetadata startMeta,
-        HadoopJob job) throws Exception {
+        HadoopJobEx job, String igniteWorkDir) throws Exception {
         String outFldr = jobWorkFolder(job.id()) + File.separator + childProcId;
 
         if (log.isDebugEnabled())
@@ -528,7 +531,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         List<String> cmd = new ArrayList<>();
 
-        File workDir = U.resolveWorkDirectory("", false);
+        File workDir = U.resolveWorkDirectory(igniteWorkDir, "", false);
 
         cmd.add(javaCmd);
         cmd.addAll(startMeta.jvmOptions());
@@ -630,7 +633,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job.
      * @param plan Map reduce plan.
      */
-    private void prepareForJob(HadoopProcess proc, HadoopJob job, HadoopMapReducePlan plan) {
+    private void prepareForJob(HadoopProcess proc, HadoopJobEx job, HadoopMapReducePlan plan) {
         try {
             comm.sendMessage(proc.descriptor(), new HadoopPrepareForJobRequest(job.id(), job.info(),
                 plan.reducers(), plan.reducers(ctx.localNodeId())));
@@ -879,9 +882,6 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      */
     private class HadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, HadoopProcessDescriptor>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Child process ID. */
         private UUID childProcId;
 
@@ -961,7 +961,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
-                            ", desc=" + desc + ", initTime=" + duration() + ']');
+                            ", desc=" + desc + ']');
                 }
                 else
                     U.error(log, "Failed to initialize child process for external task execution [jobId=" + jobId +

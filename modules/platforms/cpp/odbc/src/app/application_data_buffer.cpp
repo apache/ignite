@@ -19,6 +19,8 @@
 #include <string>
 #include <sstream>
 
+#include "ignite/common/bits.h"
+
 #include "ignite/impl/binary/binary_utils.h"
 
 #include "ignite/odbc/system/odbc_constants.h"
@@ -31,23 +33,38 @@ namespace ignite
     {
         namespace app
         {
-            using ignite::impl::binary::BinaryUtils;
+            using impl::binary::BinaryUtils;
 
             ApplicationDataBuffer::ApplicationDataBuffer() :
-                type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0), offset(0)
+                type(type_traits::OdbcNativeType::AI_UNSUPPORTED),
+                buffer(0),
+                buflen(0),
+                reslen(0),
+                byteOffset(0),
+                elementOffset(0)
             {
                 // No-op.
             }
 
-            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type, 
-                void* buffer, SqlLen buflen, SqlLen* reslen, size_t** offset) :
-                type(type), buffer(buffer), buflen(buflen), reslen(reslen), offset(offset)
+            ApplicationDataBuffer::ApplicationDataBuffer(type_traits::OdbcNativeType::Type type,
+                void* buffer, SqlLen buflen, SqlLen* reslen) :
+                type(type),
+                buffer(buffer),
+                buflen(buflen),
+                reslen(reslen),
+                byteOffset(0),
+                elementOffset(0)
             {
                 // No-op.
             }
 
-            ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer & other) :
-                type(other.type), buffer(other.buffer), buflen(other.buflen), reslen(other.reslen), offset(other.offset)
+            ApplicationDataBuffer::ApplicationDataBuffer(const ApplicationDataBuffer& other) :
+                type(other.type),
+                buffer(other.buffer),
+                buflen(other.buflen),
+                reslen(other.reslen),
+                byteOffset(other.byteOffset),
+                elementOffset(other.elementOffset)
             {
                 // No-op.
             }
@@ -63,7 +80,8 @@ namespace ignite
                 buffer = other.buffer;
                 buflen = other.buflen;
                 reslen = other.reslen;
-                offset = other.offset;
+                byteOffset = other.byteOffset;
+                elementOffset = other.elementOffset;
 
                 return *this;
             }
@@ -72,146 +90,160 @@ namespace ignite
             void ApplicationDataBuffer::PutNum(T value)
             {
                 using namespace type_traits;
+
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
+
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<signed char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
                         PutNumToNumBuffer<unsigned char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
                     {
                         PutNumToNumBuffer<short>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
                         PutNumToNumBuffer<unsigned short>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_LONG:
                     {
                         PutNumToNumBuffer<long>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
                         PutNumToNumBuffer<unsigned long>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<int64_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         PutNumToNumBuffer<uint64_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         PutNumToNumBuffer<float>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         PutNumToNumBuffer<double>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
-                        if (GetData())
+                        if (dataPtr)
                         {
                             SQL_NUMERIC_STRUCT* out =
-                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
+                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(dataPtr);
 
-                            out->precision = 20; // Max int64_t precision
+                            uint64_t uval = static_cast<uint64_t>(value < 0 ? -value : value);
+
+                            out->precision = common::bits::DigitLength(uval);
                             out->scale = 0;
-                            out->sign = value < 0 ? 2 : 1;
+                            out->sign = value < 0 ? 0 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            int64_t intVal = static_cast<int64_t>(std::abs(value));
-
-                            memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
+                            memcpy(out->val, &uval, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(uval)));
                         }
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
-                        if (GetData())
+                        if (dataPtr)
                         {
                             if (buflen >= sizeof(value))
                             {
-                                memcpy(GetData(), &value, sizeof(value));
+                                memcpy(dataPtr, &value, sizeof(value));
 
-                                if (GetResLen())
-                                    *GetResLen() = sizeof(value);
+                                if (resLenPtr)
+                                    *resLenPtr = sizeof(value);
                             }
                             else
                             {
-                                memcpy(GetData(), &value, static_cast<size_t>(buflen));
+                                memcpy(dataPtr, &value, static_cast<size_t>(buflen));
 
-                                if (GetResLen())
-                                    *GetResLen() = SQL_NO_TOTAL;
+                                if (resLenPtr)
+                                    *resLenPtr = SQL_NO_TOTAL;
                             }
                         }
-                        else if (GetResLen())
-                        {
-                            *GetResLen() = sizeof(value);
-                        }
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof(value);
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         PutDate(Date(static_cast<int64_t>(value)));
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         PutTimestamp(Timestamp(static_cast<int64_t>(value)));
 
                         break;
                     }
 
+                    case OdbcNativeType::AI_TTIME:
+                    {
+                        PutTime(Time(static_cast<int64_t>(value)));
+
+                        break;
+                    }
+
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -219,11 +251,17 @@ namespace ignite
             template<typename Tbuf, typename Tin>
             void ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
             {
-                if (GetData())
+                void* dataPtr = GetData();
+                SqlLen* resLenPtr = GetResLen();
+
+                if (dataPtr)
                 {
-                    Tbuf* out = reinterpret_cast<Tbuf*>(GetData());
+                    Tbuf* out = reinterpret_cast<Tbuf*>(dataPtr);
                     *out = static_cast<Tbuf>(value);
                 }
+
+                if (resLenPtr)
+                    *resLenPtr = static_cast<SqlLen>(sizeof(Tbuf));
             }
 
             template<typename CharT, typename Tin>
@@ -255,11 +293,14 @@ namespace ignite
             {
                 SqlLen charSize = static_cast<SqlLen>(sizeof(OutCharT));
 
-                if (GetData())
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
+
+                if (dataPtr)
                 {
                     if (buflen >= charSize)
                     {
-                        OutCharT* out = reinterpret_cast<OutCharT*>(GetData());
+                        OutCharT* out = reinterpret_cast<OutCharT*>(dataPtr);
 
                         SqlLen outLen = (buflen / charSize) - 1;
 
@@ -271,38 +312,41 @@ namespace ignite
                         out[toCopy] = 0;
                     }
 
-                    if (GetResLen())
+                    if (resLenPtr)
                     {
                         if (buflen >= static_cast<SqlLen>((value.size() + 1) * charSize))
-                            *GetResLen() = static_cast<SqlLen>(value.size());
+                            *resLenPtr = static_cast<SqlLen>(value.size());
                         else
-                            *GetResLen() = SQL_NO_TOTAL;
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
-                else if (GetResLen())
-                    *GetResLen() = value.size();
+                else if (resLenPtr)
+                    *resLenPtr = value.size();
             }
 
             void ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
             {
                 SqlLen ilen = static_cast<SqlLen>(len);
 
-                if (GetData())
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
+
+                if (dataPtr)
                 {
                     size_t toCopy = static_cast<size_t>(std::min(buflen, ilen));
 
-                    memcpy(GetData(), data, toCopy);
+                    memcpy(dataPtr, data, toCopy);
 
-                    if (GetResLen())
+                    if (resLenPtr)
                     {
                         if (buflen >= ilen)
-                            *GetResLen() = ilen;
+                            *resLenPtr = ilen;
                         else
-                            *GetResLen() = SQL_NO_TOTAL;
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
-                else if (GetResLen())
-                    *GetResLen() = ilen;
+                else if (resLenPtr)
+                    *resLenPtr = ilen;
             }
 
             void ApplicationDataBuffer::PutInt8(int8_t value)
@@ -335,7 +379,7 @@ namespace ignite
                 PutNum(value);
             }
 
-            int32_t ApplicationDataBuffer::PutString(const std::string & value)
+            int32_t ApplicationDataBuffer::PutString(const std::string& value)
             {
                 using namespace type_traits;
 
@@ -343,18 +387,20 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
-                        std::stringstream converter(value);
+                        std::stringstream converter;
+
+                        converter << value;
 
                         int64_t numValue;
 
@@ -367,10 +413,12 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
-                        std::stringstream converter(value);
+                        std::stringstream converter;
+
+                        converter << value;
 
                         double numValue;
 
@@ -383,9 +431,9 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutStrToStrBuffer<char>(value);
 
@@ -394,7 +442,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutStrToStrBuffer<wchar_t>(value);
 
@@ -405,8 +453,10 @@ namespace ignite
 
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        SqlLen* resLenPtr = GetResLen();
+
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
 
@@ -417,23 +467,25 @@ namespace ignite
             {
                 using namespace type_traits;
 
+                SqlLen* resLenPtr = GetResLen();
+
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutValToStrBuffer<char>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         PutValToStrBuffer<wchar_t>(value);
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_GUID:
+                    case OdbcNativeType::AI_GUID:
                     {
                         SQLGUID* guid = reinterpret_cast<SQLGUID*>(GetData());
 
@@ -445,13 +497,16 @@ namespace ignite
                         for (size_t i = 0; i < sizeof(guid->Data4); ++i)
                             guid->Data4[i] = (lsb >> (sizeof(guid->Data4) - i - 1) * 8) & 0xFF;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQLGUID));
+
                         break;
                     }
 
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -464,8 +519,8 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
                         PutRawDataToBuffer(data, len);
 
@@ -474,7 +529,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
                         std::stringstream converter;
 
@@ -495,7 +550,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
                         std::wstringstream converter;
 
@@ -518,8 +573,10 @@ namespace ignite
 
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        SqlLen* resLenPtr = GetResLen();
+
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
 
@@ -528,51 +585,94 @@ namespace ignite
 
             void ApplicationDataBuffer::PutNull()
             {
-                if (GetResLen())
-                    *GetResLen() = SQL_NULL_DATA;
+                SqlLen* resLenPtr = GetResLen();
+
+                if (resLenPtr)
+                    *resLenPtr = SQL_NULL_DATA;
             }
 
-            void ApplicationDataBuffer::PutDecimal(const Decimal& value)
+            void ApplicationDataBuffer::PutDecimal(const common::Decimal& value)
             {
                 using namespace type_traits;
+
+                SqlLen* resLenPtr = GetResLen();
+
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_CHAR:
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
-                        PutNum<double>(static_cast<double>(value));
+                        PutNum<int64_t>(value.ToInt64());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
-                        if (GetData())
-                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
-
-                        if (GetResLen())
-                            *GetResLen() = sizeof(value);
+                        PutNum<double>(value.ToDouble());
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_WCHAR:
+                    {
+                        std::stringstream converter;
+
+                        converter << value;
+
+                        PutString(converter.str());
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_NUMERIC:
+                    {
+                        SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
+
+                        common::Decimal zeroScaled;
+                        value.SetScale(0, zeroScaled);
+
+                        common::FixedSizeArray<int8_t> bytesBuffer;
+
+                        const common::BigInteger& unscaled = zeroScaled.GetUnscaledValue();
+
+                        unscaled.MagnitudeToBytes(bytesBuffer);
+
+                        for (int32_t i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
+                        {
+                            int32_t bufIdx = bytesBuffer.GetSize() - 1 - i;
+                            if (bufIdx >= 0)
+                                numeric->val[i] = bytesBuffer[bufIdx];
+                            else
+                                numeric->val[i] = 0;
+                        }
+
+                        numeric->scale = 0;
+                        numeric->sign = unscaled.GetSign() < 0 ? 0 : 1;
+                        numeric->precision = unscaled.GetPrecision();
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -583,30 +683,33 @@ namespace ignite
 
                 tm tmTime;
 
-                BinaryUtils::DateToCTm(value, tmTime);
+                common::DateToCTm(value, tmTime);
+
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
-                        char* buffer = reinterpret_cast<char*>(GetData());
+                        char* buffer = reinterpret_cast<char*>(dataPtr);
 
                         if (buffer)
                         {
                             strftime(buffer, GetSize(), "%Y-%m-%d", &tmTime);
 
-                            if (GetResLen())
-                                *GetResLen() = strlen(buffer);
+                            if (resLenPtr)
+                                *resLenPtr = strlen(buffer);
                         }
-                        else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
-                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
+                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
 
                         if (buffer)
                         {
@@ -621,29 +724,46 @@ namespace ignite
 
                             buffer[toCopy] = 0;
 
-                            if (GetResLen())
-                                *GetResLen() = toCopy;
+                            if (resLenPtr)
+                                *resLenPtr = toCopy;
                         }
-                        else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
-                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
+                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(dataPtr);
 
                         buffer->year = tmTime.tm_year + 1900;
                         buffer->month = tmTime.tm_mon + 1;
                         buffer->day = tmTime.tm_mday;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIME:
                     {
-                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
+                        SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
+
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                    {
+                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
 
                         buffer->year = tmTime.tm_year + 1900;
                         buffer->month = tmTime.tm_mon + 1;
@@ -653,37 +773,40 @@ namespace ignite
                         buffer->second = tmTime.tm_sec;
                         buffer->fraction = 0;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
-                        if (GetData())
-                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
+                        if (dataPtr)
+                            memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
 
-                        if (GetResLen())
-                            *GetResLen() = sizeof(value);
+                        if (resLenPtr)
+                            *resLenPtr = sizeof(value);
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -694,30 +817,33 @@ namespace ignite
 
                 tm tmTime;
 
-                BinaryUtils::TimestampToCTm(value, tmTime);
+                common::TimestampToCTm(value, tmTime);
+
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
-                        char* buffer = reinterpret_cast<char*>(GetData());
+                        char* buffer = reinterpret_cast<char*>(dataPtr);
 
                         if (buffer)
                         {
                             strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
-                            if (GetResLen())
-                                *GetResLen() = strlen(buffer);
+                            if (resLenPtr)
+                                *resLenPtr = strlen(buffer);
                         }
-                        else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    case OdbcNativeType::AI_WCHAR:
                     {
-                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
+                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
 
                         if (buffer)
                         {
@@ -732,29 +858,46 @@ namespace ignite
 
                             buffer[toCopy] = 0;
 
-                            if (GetResLen())
-                                *GetResLen() = toCopy;
+                            if (resLenPtr)
+                                *resLenPtr = toCopy;
                         }
-                        else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
-                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
+                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(dataPtr);
 
                         buffer->year = tmTime.tm_year + 1900;
                         buffer->month = tmTime.tm_mon + 1;
                         buffer->day = tmTime.tm_mday;
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIME:
                     {
-                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
+                        SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
+
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                    {
+                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
 
                         buffer->year = tmTime.tm_year + 1900;
                         buffer->month = tmTime.tm_mon + 1;
@@ -764,37 +907,161 @@ namespace ignite
                         buffer->second = tmTime.tm_sec;
                         buffer->fraction = value.GetSecondFraction();
 
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BINARY:
-                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
                     {
-                        if (GetData())
-                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
+                        if (dataPtr)
+                            memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
 
-                        if (GetResLen())
-                            *GetResLen() = sizeof(value);
+                        if (resLenPtr)
+                            *resLenPtr = sizeof(value);
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
                     default:
                     {
-                        if (GetResLen())
-                            *GetResLen() = SQL_NO_TOTAL;
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
+                    }
+                }
+            }
+
+            void ApplicationDataBuffer::PutTime(const Time& value)
+            {
+                using namespace type_traits;
+
+                tm tmTime;
+
+                common::TimeToCTm(value, tmTime);
+
+                SqlLen* resLenPtr = GetResLen();
+                void* dataPtr = GetData();
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_CHAR:
+                    {
+                        char* buffer = reinterpret_cast<char*>(dataPtr);
+
+                        if (buffer)
+                        {
+                            strftime(buffer, GetSize(), "%H:%M:%S", &tmTime);
+
+                            if (resLenPtr)
+                                *resLenPtr = strlen(buffer);
+                        }
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HH:MM:SS") - 1;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_WCHAR:
+                    {
+                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(dataPtr);
+
+                        if (buffer)
+                        {
+                            std::string tmp(GetSize(), 0);
+
+                            strftime(&tmp[0], GetSize(), "%H:%M:%S", &tmTime);
+
+                            SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
+
+                            for (SqlLen i = 0; i < toCopy; ++i)
+                                buffer[i] = tmp[i];
+
+                            buffer[toCopy] = 0;
+
+                            if (resLenPtr)
+                                *resLenPtr = toCopy;
+                        }
+                        else if (resLenPtr)
+                            *resLenPtr = sizeof("HH:MM:SS") - 1;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIME:
+                    {
+                        SQL_TIME_STRUCT* buffer = reinterpret_cast<SQL_TIME_STRUCT*>(dataPtr);
+
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                    {
+                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(dataPtr);
+
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
+                        buffer->fraction = 0;
+
+                        if (resLenPtr)
+                            *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_BINARY:
+                    case OdbcNativeType::AI_DEFAULT:
+                    {
+                        if (dataPtr)
+                            memcpy(dataPtr, &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
+
+                        if (resLenPtr)
+                            *resLenPtr = sizeof(value);
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
+                    case OdbcNativeType::AI_TDATE:
+                    default:
+                    {
+                        if (resLenPtr)
+                            *resLenPtr = SQL_NO_TOTAL;
                     }
                 }
             }
@@ -806,17 +1073,26 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
-                        res.assign(reinterpret_cast<const char*>(GetData()),
-                                   std::min(maxLen, static_cast<size_t>(buflen)));
+                        size_t paramLen = GetInputSize();
+
+                        if (!paramLen)
+                            break;
+
+                        res = utility::SqlStringToString(
+                            reinterpret_cast<const unsigned char*>(GetData()), static_cast<int32_t>(paramLen));
+
+                        if (res.size() > maxLen)
+                            res.resize(maxLen);
+
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         std::stringstream converter;
 
@@ -827,11 +1103,11 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         std::stringstream converter;
 
@@ -842,7 +1118,7 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         std::stringstream converter;
 
@@ -853,8 +1129,8 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_NUMERIC:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         std::stringstream converter;
 
@@ -910,18 +1186,26 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
-                        std::string str(reinterpret_cast<const char*>(GetData()), static_cast<size_t>(buflen));
+                        SqlLen paramLen = GetInputSize();
 
-                        std::stringstream converter(str);
+                        if (!paramLen)
+                            break;
+
+                        std::string str = utility::SqlStringToString(
+                            reinterpret_cast<const unsigned char*>(GetData()), static_cast<int32_t>(paramLen));
+
+                        std::stringstream converter;
+
+                        converter << str;
 
                         converter >> res;
 
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_GUID:
+                    case OdbcNativeType::AI_GUID:
                     {
                         const SQLGUID* guid = reinterpret_cast<const SQLGUID*>(GetData());
 
@@ -948,22 +1232,22 @@ namespace ignite
 
             const void* ApplicationDataBuffer::GetData() const
             {
-                return ApplyOffset(buffer);
+                return ApplyOffset(buffer, GetElementSize());
             }
 
             const SqlLen* ApplicationDataBuffer::GetResLen() const
             {
-                return ApplyOffset(reslen);
+                return ApplyOffset(reslen, sizeof(*reslen));
             }
 
-            void* ApplicationDataBuffer::GetData() 
+            void* ApplicationDataBuffer::GetData()
             {
-                return ApplyOffset(buffer);
+                return ApplyOffset(buffer, GetElementSize());
             }
 
             SqlLen* ApplicationDataBuffer::GetResLen()
             {
-                return ApplyOffset(reslen);
+                return ApplyOffset(reslen, sizeof(*reslen));
             }
 
             template<typename T>
@@ -971,15 +1255,22 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                T res = 0;
+                T res = T();
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
-                        std::string str = GetString(static_cast<size_t>(buflen));
+                        SqlLen paramLen = GetInputSize();
 
-                        std::stringstream converter(str);
+                        if (!paramLen)
+                            break;
+
+                        std::string str = GetString(paramLen);
+
+                        std::stringstream converter;
+
+                        converter << str;
 
                         // Workaround for char types which are recognised as
                         // symbolyc types and not numeric types.
@@ -997,86 +1288,76 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed char*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_BIT:
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned char*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed short*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned short*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_LONG:
                     {
                         res = static_cast<T>(*reinterpret_cast<const signed long*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
                     {
                         res = static_cast<T>(*reinterpret_cast<const unsigned long*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const int64_t*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const uint64_t*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case OdbcNativeType::AI_FLOAT:
                     {
                         res = static_cast<T>(*reinterpret_cast<const float*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case OdbcNativeType::AI_DOUBLE:
                     {
                         res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    case OdbcNativeType::AI_NUMERIC:
                     {
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
 
-                        int64_t resInt;
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
 
-                        // TODO: implement propper conversation from numeric type.
-                        memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
-
-                        if (numeric->sign == 2)
-                            resInt *= -1;
-
-                        double resDouble = static_cast<double>(resInt);
-
-                        for (SQLSCHAR scale = numeric->scale; scale > 0; --scale)
-                            resDouble /= 10.0;
-
-                        res = static_cast<T>(resDouble);
+                        res = static_cast<T>(dec.ToInt64());
 
                         break;
                     }
@@ -1096,7 +1377,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
 
@@ -1107,7 +1388,20 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIME:
+                    {
+                        const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
+
+                        tmTime.tm_year = 70;
+                        tmTime.tm_mday = 1;
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
@@ -1121,11 +1415,15 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
+                        SqlLen paramLen = GetInputSize();
+
+                        if (!paramLen)
+                            break;
+
                         std::string str = utility::SqlStringToString(
-                            reinterpret_cast<const unsigned char*>(GetData()),
-                            static_cast<int32_t>(GetSize()));
+                            reinterpret_cast<const unsigned char*>(GetData()), static_cast<int32_t>(paramLen));
 
                         sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
                             &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
@@ -1140,7 +1438,7 @@ namespace ignite
                         break;
                 }
 
-                return BinaryUtils::CTmToDate(tmTime);
+                return common::CTmToDate(tmTime);
             }
 
             Timestamp ApplicationDataBuffer::GetTimestamp() const
@@ -1153,7 +1451,7 @@ namespace ignite
 
                 switch (type)
                 {
-                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    case OdbcNativeType::AI_TDATE:
                     {
                         const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
 
@@ -1164,7 +1462,20 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    case OdbcNativeType::AI_TTIME:
+                    {
+                        const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
+
+                        tmTime.tm_year = 70;
+                        tmTime.tm_mday = 1;
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
@@ -1180,11 +1491,15 @@ namespace ignite
                         break;
                     }
 
-                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case OdbcNativeType::AI_CHAR:
                     {
+                        SqlLen paramLen = GetInputSize();
+
+                        if (!paramLen)
+                            break;
+
                         std::string str = utility::SqlStringToString(
-                            reinterpret_cast<const unsigned char*>(GetData()),
-                            static_cast<int32_t>(GetSize()));
+                            reinterpret_cast<const unsigned char*>(GetData()), static_cast<int32_t>(paramLen));
 
                         sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
                             &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
@@ -1199,16 +1514,304 @@ namespace ignite
                         break;
                 }
 
-                return BinaryUtils::CTmToTimestamp(tmTime, nanos);
+                return common::CTmToTimestamp(tmTime, nanos);
+            }
+
+            Time ApplicationDataBuffer::GetTime() const
+            {
+                using namespace type_traits;
+
+                tm tmTime = { 0 };
+
+                tmTime.tm_year = 70;
+                tmTime.tm_mon = 0;
+                tmTime.tm_mday = 1;
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_TTIME:
+                    {
+                        const SQL_TIME_STRUCT* buffer = reinterpret_cast<const SQL_TIME_STRUCT*>(GetData());
+
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                    {
+                        const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
+
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_CHAR:
+                    {
+                        SqlLen paramLen = GetInputSize();
+
+                        if (!paramLen)
+                            break;
+
+                        std::string str = utility::SqlStringToString(
+                            reinterpret_cast<const unsigned char*>(GetData()), static_cast<int32_t>(paramLen));
+
+                        sscanf(str.c_str(), "%d:%d:%d", &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return common::CTmToTime(tmTime);
+            }
+
+            void ApplicationDataBuffer::GetDecimal(common::Decimal& val) const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_CHAR:
+                    {
+                        SqlLen paramLen = GetInputSize();
+
+                        if (!paramLen)
+                            break;
+
+                        std::string str = GetString(paramLen);
+
+                        std::stringstream converter;
+
+                        converter << str;
+
+                        converter >> val;
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    {
+                        val.AssignInt64(GetNum<int64_t>());
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                    {
+                        val.AssignUint64(GetNum<uint64_t>());
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_FLOAT:
+                    case OdbcNativeType::AI_DOUBLE:
+                    {
+                        val.AssignDouble(GetNum<double>());
+
+                        break;
+                    }
+
+                    case OdbcNativeType::AI_NUMERIC:
+                    {
+                        const SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
+
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
+
+                        val.Swap(dec);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        val.AssignInt64(0);
+
+                        break;
+                    }
+                }
             }
 
             template<typename T>
-            T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
+            T* ApplicationDataBuffer::ApplyOffset(T* ptr, size_t elemSize) const
             {
-                if (!ptr || !offset || !*offset)
+                if (!ptr)
                     return ptr;
 
-                return utility::GetPointerWithOffset(ptr, **offset);
+                return utility::GetPointerWithOffset(ptr, byteOffset + elemSize * elementOffset);
+            }
+
+            bool ApplicationDataBuffer::IsDataAtExec() const
+            {
+                const SqlLen* resLenPtr = GetResLen();
+
+                if (!resLenPtr)
+                    return false;
+
+                int32_t ilen = static_cast<int32_t>(*resLenPtr);
+
+                return ilen <= SQL_LEN_DATA_AT_EXEC_OFFSET || ilen == SQL_DATA_AT_EXEC;
+            }
+
+            SqlLen ApplicationDataBuffer::GetDataAtExecSize() const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_WCHAR:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                    {
+                        const SqlLen* resLenPtr = GetResLen();
+
+                        if (!resLenPtr)
+                            return 0;
+
+                        int32_t ilen = static_cast<int32_t>(*resLenPtr);
+
+                        if (ilen <= SQL_LEN_DATA_AT_EXEC_OFFSET)
+                            ilen = SQL_LEN_DATA_AT_EXEC(ilen);
+                        else
+                            ilen = 0;
+
+                        if (type == OdbcNativeType::AI_WCHAR)
+                            ilen *= 2;
+
+                        return ilen;
+                    }
+
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                        return static_cast<SqlLen>(sizeof(short));
+
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                        return static_cast<SqlLen>(sizeof(long));
+
+                    case OdbcNativeType::AI_FLOAT:
+                        return static_cast<SqlLen>(sizeof(float));
+
+                    case OdbcNativeType::AI_DOUBLE:
+                        return static_cast<SqlLen>(sizeof(double));
+
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                        return static_cast<SqlLen>(sizeof(char));
+
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                        return static_cast<SqlLen>(sizeof(SQLBIGINT));
+
+                    case OdbcNativeType::AI_TDATE:
+                        return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
+                    case OdbcNativeType::AI_TTIME:
+                        return static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                        return static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
+                    case OdbcNativeType::AI_NUMERIC:
+                        return static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
+                    case OdbcNativeType::AI_GUID:
+                        return static_cast<SqlLen>(sizeof(SQLGUID));
+
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_UNSUPPORTED:
+                    default:
+                        break;
+                }
+
+                return 0;
+            }
+
+            SqlLen ApplicationDataBuffer::GetElementSize() const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case OdbcNativeType::AI_WCHAR:
+                    case OdbcNativeType::AI_CHAR:
+                    case OdbcNativeType::AI_BINARY:
+                        return buflen;
+
+                    case OdbcNativeType::AI_SIGNED_SHORT:
+                    case OdbcNativeType::AI_UNSIGNED_SHORT:
+                        return static_cast<SqlLen>(sizeof(short));
+
+                    case OdbcNativeType::AI_SIGNED_LONG:
+                    case OdbcNativeType::AI_UNSIGNED_LONG:
+                        return static_cast<SqlLen>(sizeof(long));
+
+                    case OdbcNativeType::AI_FLOAT:
+                        return static_cast<SqlLen>(sizeof(float));
+
+                    case OdbcNativeType::AI_DOUBLE:
+                        return static_cast<SqlLen>(sizeof(double));
+
+                    case OdbcNativeType::AI_BIT:
+                    case OdbcNativeType::AI_SIGNED_TINYINT:
+                    case OdbcNativeType::AI_UNSIGNED_TINYINT:
+                        return static_cast<SqlLen>(sizeof(char));
+
+                    case OdbcNativeType::AI_SIGNED_BIGINT:
+                    case OdbcNativeType::AI_UNSIGNED_BIGINT:
+                        return static_cast<SqlLen>(sizeof(SQLBIGINT));
+
+                    case OdbcNativeType::AI_TDATE:
+                        return static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
+
+                    case OdbcNativeType::AI_TTIME:
+                        return static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
+
+                    case OdbcNativeType::AI_TTIMESTAMP:
+                        return static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
+
+                    case OdbcNativeType::AI_NUMERIC:
+                        return static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
+
+                    case OdbcNativeType::AI_GUID:
+                        return static_cast<SqlLen>(sizeof(SQLGUID));
+
+                    case OdbcNativeType::AI_DEFAULT:
+                    case OdbcNativeType::AI_UNSUPPORTED:
+                    default:
+                        break;
+                }
+
+                return 0;
+            }
+
+            SqlLen ApplicationDataBuffer::GetInputSize() const
+            {
+                if (!IsDataAtExec())
+                {
+                    const SqlLen *len = GetResLen();
+
+                    return len ? *len : SQL_DEFAULT_PARAM;
+                }
+
+                return GetDataAtExecSize();
             }
         }
     }

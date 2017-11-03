@@ -37,7 +37,7 @@ import org.apache.ignite.thread.IgniteThread;
  */
 public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** */
-    private final IgniteThread timeoutWorker;
+    private final TimeoutWorker timeoutWorker;
 
     /** Time-based sorted set for timeout objects. */
     private final GridConcurrentSkipListSet<GridTimeoutObject> timeoutObjs =
@@ -62,13 +62,12 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     public GridTimeoutProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        timeoutWorker = new IgniteThread(ctx.config().getGridName(), "grid-timeout-worker",
-            new TimeoutWorker());
+        timeoutWorker = new TimeoutWorker();
     }
 
     /** {@inheritDoc} */
     @Override public void start() {
-        timeoutWorker.start();
+        new IgniteThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");
@@ -76,7 +75,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        U.interrupt(timeoutWorker);
+        timeoutWorker.cancel();
         U.join(timeoutWorker);
 
         if (log.isDebugEnabled())
@@ -85,12 +84,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /**
      * @param timeoutObj Timeout object.
+     * @return {@code True} if object was added.
      */
     @SuppressWarnings({"NakedNotify", "CallToNotifyInsteadOfNotifyAll"})
-    public void addTimeoutObject(GridTimeoutObject timeoutObj) {
+    public boolean addTimeoutObject(GridTimeoutObject timeoutObj) {
         if (timeoutObj.endTime() <= 0 || timeoutObj.endTime() == Long.MAX_VALUE)
             // Timeout will never happen.
-            return;
+            return false;
 
         boolean added = timeoutObjs.add(timeoutObj);
 
@@ -101,6 +101,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 mux.notify(); // No need to notifyAll since we only have one thread.
             }
         }
+
+        return true;
     }
 
     /**
@@ -125,9 +127,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /**
      * @param timeoutObj Timeout object.
+     * @return {@code True} if timeout object was removed.
      */
-    public void removeTimeoutObject(GridTimeoutObject timeoutObj) {
-        timeoutObjs.remove(timeoutObj);
+    public boolean removeTimeoutObject(GridTimeoutObject timeoutObj) {
+        return timeoutObjs.remove(timeoutObj);
     }
 
     /**
@@ -138,7 +141,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getGridName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log);
         }
 
         /** {@inheritDoc} */
@@ -150,15 +153,23 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                     GridTimeoutObject timeoutObj = iter.next();
 
                     if (timeoutObj.endTime() <= now) {
-                        iter.remove();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Timeout has occurred: " + timeoutObj);
-
                         try {
-                            timeoutObj.onTimeout();
+                            boolean rmvd = timeoutObjs.remove(timeoutObj);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
+
+                            if (rmvd)
+                                timeoutObj.onTimeout();
                         }
                         catch (Throwable e) {
+                            if (isCancelled() && !(e instanceof Error)){
+                                if (log.isDebugEnabled())
+                                    log.debug("Error when executing timeout callback: " + timeoutObj);
+
+                                return;
+                            }
+
                             U.error(log, "Error when executing timeout callback: " + timeoutObj, e);
 
                             if (e instanceof Error)
@@ -170,7 +181,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 }
 
                 synchronized (mux) {
-                    while (true) {
+                    while (!isCancelled()) {
                         // Access of the first element must be inside of
                         // synchronization block, so we don't miss out
                         // on thread notification events sent from
@@ -196,7 +207,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Timeout processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Timeout processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   timeoutObjsSize: " + timeoutObjs.size());
     }
 

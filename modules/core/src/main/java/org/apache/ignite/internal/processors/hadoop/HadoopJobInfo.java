@@ -17,29 +17,29 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Compact job description.
+ * Extended job description.
  */
-public interface HadoopJobInfo extends Serializable {
+public interface HadoopJobInfo {
     /**
      * Gets optional configuration property for the job.
      *
      * @param name Property name.
      * @return Value or {@code null} if none.
      */
-    @Nullable public String property(String name);
+    @Nullable String property(String name);
 
     /**
      * Checks whether job has combiner.
      *
      * @return {@code true} If job has combiner.
      */
-    public boolean hasCombiner();
+    boolean hasCombiner();
 
     /**
      * Checks whether job has reducer.
@@ -47,39 +47,42 @@ public interface HadoopJobInfo extends Serializable {
      *
      * @return Number of reducer.
      */
-    public boolean hasReducer();
-
-    /**
-     * Creates new job instance for the given ID.
-     * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJob} is for one job execution.
-     * This method will be called once for the same ID on one node, though it can be called on the same host
-     * multiple times from different processes (in case of multiple nodes on the same host or external execution).
-     *
-     * @param jobCls The job class.
-     * @param jobId Job ID.
-     * @param log Logger.
-     * @return Job.
-     * @throws IgniteCheckedException If failed.
-     */
-    public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
-        HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException;
+    boolean hasReducer();
 
     /**
      * @return Number of reducers configured for job.
      */
-    public int reducers();
+    int reducers();
 
     /**
      * Gets job name.
      *
      * @return Job name.
      */
-    public String jobName();
+    String jobName();
 
     /**
      * Gets user name.
      *
      * @return User name.
      */
-    public String user();
+    String user();
+
+    /**
+     * Creates new job instance for the given ID.
+     * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJobEx} is for one job execution.
+     * This method will be called once for the same ID on one node, though it can be called on the same host
+     * multiple times from different processes (in case of multiple nodes on the same host or external execution).
+     *
+     * @param jobCls The job class.
+     * @param jobId Job ID.
+     * @param log Logger.
+     * @param libNames Optional additional native library names.
+     * @param helper HadoopHelper.
+     * @return Job.
+     * @throws IgniteCheckedException If failed.
+     */
+    public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls,
+        HadoopJobId jobId, IgniteLogger log, @Nullable String[] libNames, HadoopHelper helper)
+            throws IgniteCheckedException;
 }

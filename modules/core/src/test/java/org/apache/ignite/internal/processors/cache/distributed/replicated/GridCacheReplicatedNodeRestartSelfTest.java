@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstractNodeRestartSelfTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,13 +42,16 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setStartSize(20);
-
         cc.setRebalanceMode(SYNC);
 
         cc.setRebalanceBatchSize(20);
 
         return cc;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        //outcommented to get failure on TC: fail("https://issues.apache.org/jira/browse/IGNITE-5515");
     }
 
     /** {@inheritDoc} */

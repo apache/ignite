@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.igfs;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.GridTopic;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
  * IGFS context holding all required components for IGFS instance.
@@ -57,6 +58,18 @@ public class IgfsContext {
     /** IGFS instance. */
     private final IgfsEx igfs;
 
+    /** Local metrics holder. */
+    private final IgfsLocalMetrics metrics = new IgfsLocalMetrics();
+
+    /** Local cluster node. */
+    private volatile ClusterNode locNode;
+
+    /** IGFS executor service. */
+    private ExecutorService igfsSvc;
+
+    /** Logger. */
+    protected IgniteLogger log;
+
     /**
      * @param ctx Kernal context.
      * @param cfg IGFS configuration.
@@ -81,6 +94,10 @@ public class IgfsContext {
         this.dataMgr = add(dataMgr);
         this.srvMgr = add(srvMgr);
         this.fragmentizerMgr = add(fragmentizerMgr);
+
+        log = ctx.log(IgfsContext.class);
+
+        igfsSvc = ctx.getIgfsExecutorService();
 
         igfs = new IgfsImpl(this);
     }
@@ -153,22 +170,10 @@ public class IgfsContext {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 
-        kernalContext().io().send(nodeId, topic, msg, plc);
-    }
-
-    /**
-     * @param node Node.
-     * @param topic Topic.
-     * @param msg Message.
-     * @param plc Policy.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, byte plc)
-        throws IgniteCheckedException {
-        if (!kernalContext().localNodeId().equals(node.id()))
-            msg.prepareMarshal(kernalContext().config().getMarshaller());
-
-        kernalContext().io().send(node, topic, msg, plc);
+        if (topic instanceof GridTopic)
+            kernalContext().io().sendToGridTopic(nodeId, (GridTopic)topic, msg, plc);
+        else
+            kernalContext().io().sendToCustomTopic(nodeId, topic, msg, plc);
     }
 
     /**
@@ -178,16 +183,50 @@ public class IgfsContext {
      * @return {@code True} if node has IGFS with this name, {@code false} otherwise.
      */
     public boolean igfsNode(ClusterNode node) {
-        assert node != null;
+        return IgfsUtils.isIgfsNode(node, cfg.getName());
+    }
 
-        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+    /**
+     * Get local metrics.
+     *
+     * @return Local metrics.
+     */
+    public IgfsLocalMetrics metrics() {
+        return metrics;
+    }
 
-        if (igfs != null)
-            for (IgfsAttributes attrs : igfs)
-                if (F.eq(cfg.getName(), attrs.igfsName()))
-                    return true;
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    public ClusterNode localNode() {
+        if (locNode == null)
+            locNode = ctx.discovery().localNode();
 
-        return false;
+        return locNode;
+    }
+
+    /**
+     * Executes runnable in IGFS executor service. If execution rejected, runnable will be executed
+     * in caller thread.
+     *
+     * @param r Runnable to execute.
+     */
+    public void runInIgfsThreadPool(Runnable r) {
+        try {
+            igfsSvc.execute(r);
+        }
+        catch (RejectedExecutionException ignored) {
+            // This exception will happen if network speed is too low and data comes faster
+            // than we can send it to remote nodes.
+            try {
+                r.run();
+            }
+            catch (Exception e) {
+                log.warning("Failed to execute IGFS runnable: " + r, e);
+            }
+        }
     }
 
     /**

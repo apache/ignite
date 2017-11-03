@@ -37,7 +37,7 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
     }
 
     /**
-     * @param isSimpleName Whether to use simple name of class or not.
+     * @param isSimpleName Whether to use simple (no package) name of class or not.
      * <p>
      * Defaults to {@link #DFLT_SIMPLE_NAME}.
      */
@@ -58,9 +58,12 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
      * Sets whether to use simple name of class or not.
      *
      * @param isSimpleName Whether to use simple name of class or not.
+     * @return {@code this} for chaining.
      */
-    public void setSimpleName(boolean isSimpleName) {
+    public BinaryBasicNameMapper setSimpleName(boolean isSimpleName) {
         this.isSimpleName = isSimpleName;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -106,6 +109,9 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
                     return typeName;
             }
         }
+
+        if (idx < 0)
+            idx = clsName.lastIndexOf('+');   // .NET inner class.
 
         if (idx < 0)
             idx = clsName.lastIndexOf('.');

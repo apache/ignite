@@ -159,6 +159,7 @@ public class TxLock implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -203,13 +204,14 @@ public class TxLock implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(TxLock.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -25;
     }
 

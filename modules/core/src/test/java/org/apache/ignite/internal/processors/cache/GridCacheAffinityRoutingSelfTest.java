@@ -69,8 +69,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -82,7 +82,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
         cfg.setFailoverSpi(failSpi);
 
-        if (!gridName.equals(getTestGridName(GRID_CNT))) {
+        if (!igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT))) {
             // Default cache configuration.
             CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
@@ -118,7 +118,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).cache(null).put(i, i);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
 
             grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
         }
@@ -276,8 +276,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
         }
     }
 
@@ -412,8 +412,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
 
             return null;
         }

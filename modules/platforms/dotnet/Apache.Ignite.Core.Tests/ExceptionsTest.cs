@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests 
 {
     using System;
@@ -27,7 +28,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +37,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ExceptionsTest
     {
+        /** */
+        private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
+
         /// <summary>
         /// Before test.
         /// </summary>
@@ -43,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
         }
-        
+
         /// <summary>
         /// After test.
         /// </summary>
@@ -61,39 +66,78 @@ namespace Apache.Ignite.Core.Tests
         {
             var grid = StartGrid();
 
-            try
-            {
-                grid.GetCache<object, object>("invalidCacheName");
+            Assert.Throws<ArgumentException>(() => grid.GetCache<object, object>("invalidCacheName"));
 
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ArgumentException);
-            }
+            var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
-            try
-            {
-                grid.GetCluster().ForRemotes().GetMetrics();
+            Assert.IsNotNull(e.InnerException);
 
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.IsTrue(e is ClusterGroupEmptyException);
-            }
+            Assert.IsTrue(e.InnerException.Message.StartsWith(
+                "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
+            // Check all exceptions mapping.
+            var comp = grid.GetCompute();
+
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<IgniteException>(comp, "IgniteException");
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<ClusterTopologyException>(comp, "ClusterTopologyException");
+            CheckException<ComputeExecutionRejectedException>(comp, "ComputeExecutionRejectedException");
+            CheckException<ComputeJobFailoverException>(comp, "ComputeJobFailoverException");
+            CheckException<ComputeTaskCancelledException>(comp, "ComputeTaskCancelledException");
+            CheckException<ComputeTaskTimeoutException>(comp, "ComputeTaskTimeoutException");
+            CheckException<ComputeUserUndeclaredException>(comp, "ComputeUserUndeclaredException");
+            CheckException<TransactionOptimisticException>(comp, "TransactionOptimisticException");
+            CheckException<TransactionTimeoutException>(comp, "TransactionTimeoutException");
+            CheckException<TransactionRollbackException>(comp, "TransactionRollbackException");
+            CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
+            CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
+            CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
+
+            // Check stopped grid.
             grid.Dispose();
 
-            try
-            {
-                grid.GetCache<object, object>("cache1");
+            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+        }
 
-                Assert.Fail();
-            }
-            catch (Exception e)
+        /// <summary>
+        /// Checks the exception.
+        /// </summary>
+        private static void CheckException<T>(ICompute comp, string name) where T : Exception
+        {
+            var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
+
+            var javaEx = ex.InnerException as JavaException;
+
+            Assert.IsNotNull(javaEx);
+            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
+            Assert.AreEqual(name, javaEx.JavaMessage);
+            Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
+
+            // Check serialization.
+            var formatter = new BinaryFormatter();
+            using (var ms = new MemoryStream())
             {
-                Assert.IsTrue(e is InvalidOperationException);
+                formatter.Serialize(ms, ex);
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var res = (T) formatter.Deserialize(ms);
+
+                Assert.AreEqual(ex.Message, res.Message);
+                Assert.AreEqual(ex.Source, res.Source);
+                Assert.AreEqual(ex.StackTrace, res.StackTrace);
+                Assert.AreEqual(ex.HelpLink, res.HelpLink);
+
+                var resJavaEx = res.InnerException as JavaException;
+
+                Assert.IsNotNull(resJavaEx);
+                Assert.AreEqual(javaEx.Message, resJavaEx.Message);
+                Assert.AreEqual(javaEx.JavaClassName, resJavaEx.JavaClassName);
+                Assert.AreEqual(javaEx.JavaMessage, resJavaEx.JavaMessage);
+                Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
+                Assert.AreEqual(javaEx.Source, resJavaEx.Source);
+                Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
             }
         }
 
@@ -139,10 +183,57 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateExceptionSerialization(new CachePartialUpdateException("Msg",
                 new object[]
                 {
-                    new SerializableEntry(1), 
+                    new SerializableEntry(1),
                     new SerializableEntry(2),
                     new SerializableEntry(3)
                 }));
+        }
+
+        /// <summary>
+        /// Tests that all exceptions have mandatory constructors and are serializable.
+        /// </summary>
+        [Test]
+        public void TestAllExceptionsConstructors()
+        {
+            var types = typeof(IIgnite).Assembly.GetTypes().Where(x => x.IsSubclassOf(typeof(Exception)));
+
+            foreach (var type in types)
+            {
+                Assert.IsTrue(type.IsSerializable, "Exception is not serializable: " + type);
+
+                // Default ctor.
+                var defCtor = type.GetConstructor(new Type[0]);
+                Assert.IsNotNull(defCtor);
+
+                var ex = (Exception) defCtor.Invoke(new object[0]);
+                Assert.AreEqual(string.Format("Exception of type '{0}' was thrown.", type.FullName), ex.Message);
+
+                // Message ctor.
+                var msgCtor = type.GetConstructor(new[] {typeof(string)});
+                Assert.IsNotNull(msgCtor);
+
+                ex = (Exception) msgCtor.Invoke(new object[] {"myMessage"});
+                Assert.AreEqual("myMessage", ex.Message);
+
+                // Serialization.
+                var stream = new MemoryStream();
+                var formatter = new BinaryFormatter();
+
+                formatter.Serialize(stream, ex);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                ex = (Exception) formatter.Deserialize(stream);
+                Assert.AreEqual("myMessage", ex.Message);
+
+                // Message+cause ctor.
+                var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
+                Assert.IsNotNull(msgCauseCtor);
+
+                ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
+                Assert.AreEqual("myMessage", ex.Message);
+                Assert.IsNotNull(ex.InnerException);
+                Assert.AreEqual("innerEx", ex.InnerException.Message);
+            }
         }
 
         /// <summary>
@@ -159,17 +250,17 @@ namespace Apache.Ignite.Core.Tests
             stream.Seek(0, SeekOrigin.Begin);
 
             var ex0 = (Exception) formatter.Deserialize(stream);
-                
+
             var updateEx = ((CachePartialUpdateException) ex);
 
             try
             {
                 Assert.AreEqual(updateEx.GetFailedKeys<object>(),
-                    ((CachePartialUpdateException)ex0).GetFailedKeys<object>());
+                    ((CachePartialUpdateException) ex0).GetFailedKeys<object>());
             }
             catch (Exception e)
             {
-                if (typeof (IgniteException) != e.GetType())
+                if (typeof(IgniteException) != e.GetType())
                     throw;
             }
 
@@ -210,13 +301,46 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that invalid spring URL results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidSpringUrl()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = "z:\\invalid.xml"
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("Spring XML configuration path is invalid: z:\\invalid.xml"));
+        }
+
+        /// <summary>
+        /// Tests that invalid configuration parameter results in a meaningful exception.
+        /// </summary>
+        [Test]
+        public void TestInvalidConfig()
+        {
+            var disco = TestUtils.GetStaticDiscovery();
+            disco.SocketTimeout = TimeSpan.FromSeconds(-1);  // set invalid timeout
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DiscoverySpi = disco
+            };
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
+            Assert.IsTrue(ex.ToString().Contains("SPI parameter failed condition check: sockTimeout > 0"));
+        }
+
+        /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
         private static void TestPartialUpdateException<TK>(bool async, Func<int, IIgnite, TK> keyFunc)
         {
             using (var grid = StartGrid())
             {
-                var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
+                var cache = grid.GetOrCreateCache<TK, int>("partitioned_atomic").WithNoRetries();
 
                 if (typeof (TK) == typeof (IBinaryObject))
                     cache = cache.WithKeepBinary<TK, int>();
@@ -229,6 +353,8 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
+                            // ReSharper disable once AccessToDisposedClosure
+                            // ReSharper disable once AccessToModifiedClosure
                             var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)
@@ -290,12 +416,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return Ignition.Start(new IgniteConfiguration
+            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\native-client-test-cache.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
@@ -332,7 +455,8 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is BinarizableEntry && ((BinarizableEntry)obj)._val == _val;
+                var entry = obj as BinarizableEntry;
+                return entry != null && entry._val == _val;
             }
         }
 
@@ -363,7 +487,8 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is SerializableEntry && ((SerializableEntry)obj)._val == _val;
+                var entry = obj as SerializableEntry;
+                return entry != null && entry._val == _val;
             }
         }
     }

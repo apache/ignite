@@ -19,8 +19,7 @@ package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.visor.visor._
-
-import org.apache.ignite.internal.visor.cache.VisorCacheStopTask
+import org.apache.ignite.internal.visor.cache.{VisorCacheStopTask, VisorCacheStopTaskArg}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 /**
@@ -76,7 +75,7 @@ class VisorCacheStopCommand {
      *
      * @param argLst Command arguments.
      */
-    def scan(argLst: ArgList, node: Option[ClusterNode]) {
+    def stop(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {
@@ -102,10 +101,12 @@ class VisorCacheStopCommand {
                 return
         }
 
-        ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
+        val dflt = if (batchMode) "y" else "n"
+
+        ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [$dflt]: ", dflt) match {
             case "y" | "Y" =>
                 try {
-                    executeRandom(grp, classOf[VisorCacheStopTask], cacheName)
+                    executeRandom(grp, classOf[VisorCacheStopTask], new VisorCacheStopTaskArg(cacheName))
 
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }

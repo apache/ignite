@@ -29,11 +29,13 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_jni_la_LIBADD = \
     -L$(JAVA_HOME)/jre/lib/amd64/server \

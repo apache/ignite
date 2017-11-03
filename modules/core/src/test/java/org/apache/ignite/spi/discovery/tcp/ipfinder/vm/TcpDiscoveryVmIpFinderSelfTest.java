@@ -19,8 +19,16 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
 import java.util.Arrays;
 import java.util.Collections;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+
+import static org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectsAbstractSelfTest.IP_FINDER;
 
 /**
  * GridTcpDiscoveryVmIpFinder test.
@@ -189,5 +197,75 @@ public class TcpDiscoveryVmIpFinderSelfTest
 
         assertEquals("Registered addresses: " + finder.getRegisteredAddresses().toString(),
             10, finder.getRegisteredAddresses().size());
+    }
+
+    /**
+     *
+     */
+    public void testUnregistration() throws Exception {
+        Ignition.start(config("server1", false, false));
+
+        int srvSize = IP_FINDER.getRegisteredAddresses().size();
+
+        Ignition.start(config("server2", false, false));
+        Ignition.start(config("client1", true, false));
+
+        assertEquals(2 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+
+        Ignition.start(config("client2", true, false));
+        Ignition.start(config("client3", true, false));
+
+        assertEquals(2 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+
+        Ignition.start(config("client4", true, true));
+
+        assertEquals(3 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+
+        Ignition.stop("client1", true);
+        Ignition.stop("client2", true);
+        Ignition.stop("client3", true);
+
+        assertEquals(3 * srvSize, IP_FINDER.getRegisteredAddresses().size());
+
+        Ignition.stop("client4", true);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return 2 == G.allGrids().size();
+            }
+        }, 10000);
+
+        Ignition.stop("server1", true);
+        Ignition.stop("server2", true);
+
+        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return G.allGrids().isEmpty();
+            }
+        }, 10000);
+
+        assertTrue(res);
+
+        assertTrue(3 * srvSize >= IP_FINDER.getRegisteredAddresses().size());
+    }
+
+    /**
+     * @param name Name.
+     * @param client Client.
+     */
+    private static IgniteConfiguration config(String name, boolean client, boolean forceServerMode) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(name);
+        cfg.setClientMode(client);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setForceServerMode(forceServerMode);
+        disco.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(disco);
+
+        return cfg;
     }
 }

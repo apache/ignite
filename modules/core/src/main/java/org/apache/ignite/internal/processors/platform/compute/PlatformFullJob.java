@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +66,7 @@ public class PlatformFullJob extends PlatformAbstractJob {
     private transient byte state;
 
     /**
-     * {@link java.io.Externalizable} support.
+     * {@link Externalizable} support.
      */
     @SuppressWarnings("UnusedDeclaration")
     public PlatformFullJob() {
@@ -114,9 +116,16 @@ public class PlatformFullJob extends PlatformAbstractJob {
                 return runLocal(ctx, cancel);
             else {
                 try (PlatformMemory mem = ctx.memory().allocate()) {
-                    PlatformInputStream in = mem.input();
+                    PlatformOutputStream out = mem.output();
 
-                    ctx.gateway().computeJobExecute(ptr, cancel ? 1 : 0, mem.pointer());
+                    out.writeLong(ptr);
+                    out.writeBoolean(cancel);  // cancel
+
+                    out.synchronize();
+
+                    ctx.gateway().computeJobExecute(mem.pointer());
+
+                    PlatformInputStream in = mem.input();
 
                     in.synchronize();
 

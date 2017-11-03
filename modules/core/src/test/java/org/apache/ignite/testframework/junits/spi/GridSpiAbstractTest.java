@@ -39,6 +39,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
@@ -220,11 +221,13 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             discoSpi.setMetricsProvider(createMetricsProvider());
 
             discoSpi.setDataExchange(new DiscoverySpiDataExchange() {
-                @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                    return new HashMap<>();
+
+                @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                    return dataBag;
                 }
 
-                @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                @Override public void onExchange(DiscoveryDataBag dataBag) {
+                    // No-op.
                 }
             });
 
@@ -429,10 +432,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     protected void spiStart(IgniteSpi spi) throws Exception {
-        U.setWorkDirectory(null, U.getIgniteHome());
-
-        // Start SPI with unique grid name.
-        spi.spiStart(getTestGridName());
+        // Start SPI with unique Ignite instance name.
+        spi.spiStart(getTestIgniteInstanceName());
 
         info("SPI started [spi=" + spi.getClass() + ']');
     }
@@ -716,6 +717,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         /** {@inheritDoc} */
         @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
             return Collections.emptyMap();
         }
 

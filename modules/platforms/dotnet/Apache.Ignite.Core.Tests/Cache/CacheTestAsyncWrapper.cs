@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Wraps IGridCache implementation to simplify async mode testing.
@@ -198,13 +199,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             return GetResult(_cache.GetAllAsync(keys));
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             return _cache.GetAllAsync(keys);
         }
@@ -306,13 +307,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void PutAll(IDictionary<TK, TV> vals)
+        public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             WaitResult(_cache.PutAllAsync(vals));
         }
 
         /** <inheritDoc /> */
-        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        public Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             return _cache.PutAllAsync(vals);
         }
@@ -438,12 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
-        {
-            _cache.LocalPromote(keys);
-        }
-        
-        /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
             return _cache.Query(qry);
@@ -486,14 +481,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             return GetResult(_cache.InvokeAllAsync(keys, processor, arg));
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             return _cache.InvokeAllAsync(keys, processor, arg);
         }
@@ -523,6 +518,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public ICacheMetrics GetMetrics(IClusterGroup clusterGroup)
+        {
+            return _cache.GetMetrics(clusterGroup);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheMetrics GetLocalMetrics()
+        {
+            return _cache.GetLocalMetrics();
+        }
+
+        /** <inheritDoc /> */
         public Task Rebalance()
         {
             return _cache.Rebalance();
@@ -532,6 +539,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithNoRetries()
         {
             return _cache.WithNoRetries();
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithPartitionRecover()
+        {
+            return _cache.WithPartitionRecover();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetLostPartitions()
+        {
+            return _cache.GetLostPartitions();
         }
 
         /** <inheritDoc /> */
@@ -558,7 +577,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -573,7 +592,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
             catch (Exception ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
     }
