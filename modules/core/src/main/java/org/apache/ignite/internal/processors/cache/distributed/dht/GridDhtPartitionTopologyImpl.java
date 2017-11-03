@@ -328,11 +328,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      */
     private void initPartitions0(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
-        System.err.println(Thread.currentThread().getName() + " -INIT0 - " + grp.cacheOrGroupName());
-        if (grp.cacheOrGroupName().equals("temp") && Thread.currentThread().getName().endsWith("1%"))
-            System.err.println("");
-
-
         List<List<ClusterNode>> aff = grp.affinity().readyAssignments(affVer);
 
         if (grp.affinityNode()) {
@@ -359,10 +354,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                       // TODO  if (localNode(p, aff)) {
+                        if (grp.persistenceEnabled() || localNode(p, aff)) {
                             GridDhtLocalPartition locPart = createPartition(p);
-
-                            System.err.println(Thread.currentThread().getName() + " - part=" + p + ", grp=" + grp.cacheOrGroupName() + ", updateCnt=" + locPart.updateCounter()) ;
 
                             boolean owned = locPart.own();
 
@@ -373,7 +366,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 log.debug("Owned partition for oldest node: " + locPart);
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
-                        // TODO }
+                        }
                     }
                 }
                 else
