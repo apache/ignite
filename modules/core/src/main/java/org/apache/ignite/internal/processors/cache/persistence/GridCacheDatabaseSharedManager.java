@@ -893,11 +893,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean persistenceEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onCacheGroupsStopped(
         Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps
     ) {
@@ -1980,6 +1975,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Shutdown now. */
         private volatile boolean shutdownNow;
 
+        /** */
+        private long lastCpTs;
+
         /**
          * @param gridName Grid name.
          * @param name Thread name.
@@ -2368,6 +2366,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.wal().fsync(cpPtr);
 
                 long cpTs = System.currentTimeMillis();
+
+                // This can happen in an unlikely event of two checkpoints happening
+                // within a currentTimeMillis() granularity window.
+                if (cpTs == lastCpTs)
+                    cpTs++;
+
+                lastCpTs = cpTs;
 
                 CheckpointEntry cpEntry = writeCheckpointEntry(
                     tmpWriteBuf,

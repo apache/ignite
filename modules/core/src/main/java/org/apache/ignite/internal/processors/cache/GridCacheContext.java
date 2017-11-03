@@ -2038,9 +2038,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean result = affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
 
         // When persistence is enabled, only reading from partitions with OWNING state is allowed.
-        assert !result || !ctx.cache().context().database().persistenceEnabled() ||
+        assert !result || !group().persistenceEnabled() ||
             topology().partitionState(localNodeId(), part) == OWNING :
-            "result = " + result + ", persistenceEnabled = " + ctx.cache().context().database().persistenceEnabled() +
+            "result = " + result + ", persistenceEnabled = " + group().persistenceEnabled() +
                 ", partitionState = " + topology().partitionState(localNodeId(), part);
 
         return result;
