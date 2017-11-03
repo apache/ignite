@@ -115,7 +115,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -1333,21 +1332,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result or {@code null} if cannot parse/process this query.
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
-        SqlParser parser = new SqlParser(schemaName, qry.getSql());
+        // Parse.
+        SqlCommand cmd;
 
         try {
-            SqlCommand cmd = parser.nextCommand();
+            SqlParser parser = new SqlParser(schemaName, qry.getSql());
 
-            // Only CREATE INDEX for now.
-            if (!(cmd instanceof SqlCreateIndexCommand))
+            cmd = parser.nextCommand();
+
+            if (!(cmd instanceof SqlCreateIndexCommand) || parser.nextCommand() != null)
                 return null;
+        }
+        catch (Exception e) {
+            // Cannot parse, return.
+            return null;
+        }
 
-            // No support for multiple statements for now.
-            SqlCommand nextCmd = parser.nextCommand();
-
-            if (nextCmd != null)
-                return null;
-
+        // Execute.
+        try {
             List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
 
             FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
@@ -1355,9 +1357,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ress.add(res);
 
             return ress;
-        }
-        catch (SqlParseException e) {
-            return null;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
