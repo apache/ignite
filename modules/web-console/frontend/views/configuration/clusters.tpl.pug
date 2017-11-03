@@ -45,6 +45,10 @@ include /app/helpers/jade/mixins
                             include /app/modules/states/configuration/clusters/binary
                             include /app/modules/states/configuration/clusters/cache-key-cfg
                             include /app/modules/states/configuration/clusters/checkpoint
+
+                            //- Since ignite 2.3
+                            include /app/modules/states/configuration/clusters/client-connector
+
                             include /app/modules/states/configuration/clusters/collision
                             include /app/modules/states/configuration/clusters/communication
                             include /app/modules/states/configuration/clusters/connector
@@ -73,6 +77,8 @@ include /app/helpers/jade/mixins
 
                             //- Since ignite 2.1, deprecated in ignite 2.3
                             include /app/modules/states/configuration/clusters/persistence
+
+                            //- Deprecated in ignite 2.3
                             include /app/modules/states/configuration/clusters/sql-connector
 
                             include /app/modules/states/configuration/clusters/service

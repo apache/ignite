@@ -2319,11 +2319,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         mapQryExec.cancelLazyWorkers();
 
-        if (ctx != null && !ctx.cache().context().database().persistenceEnabled()) {
-            for (H2Schema schema : schemas.values())
-                schema.dropAll();
-        }
-
         for (Connection c : conns)
             U.close(c, log);
 
@@ -2381,7 +2376,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(String cacheName, boolean destroy) {
+    @Override public void unregisterCache(String cacheName, boolean rmvIdx) {
         String schemaName = schema(cacheName);
 
         H2Schema schema = schemas.get(schemaName);
@@ -2399,9 +2394,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (H2TableDescriptor tbl : schema.tables()) {
                 if (F.eq(tbl.cache().name(), cacheName)) {
                     try {
-                        boolean removeIdx = !ctx.cache().context().database().persistenceEnabled() || destroy;
-
-                        tbl.table().setRemoveIndexOnDestroy(removeIdx);
+                        tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
                         dropTable(tbl);
                     }
