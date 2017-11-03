@@ -30,13 +30,13 @@ public abstract class SplitInfo<D extends RegionInfo> {
     protected double infoGain;
 
     /** Index of the region to split. */
-    protected int regionIdx;
+    protected final int regionIdx;
 
     /** Data of left subregion. */
-    protected D leftData;
+    protected final D leftData;
 
     /** Data of right subregion. */
-    protected D rightData;
+    protected final D rightData;
 
     /**
      * Construct the split info.

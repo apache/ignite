@@ -46,16 +46,16 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
     private final ColumnDecisionTreeTrainerInput input;
 
     /** Labels. */
-    double[] labels;
+    private final double[] labels;
 
     /** Calculator used for finding splits of region of continuous features. */
-    private ContinuousSplitCalculator<D> continuousSplitCalculator;
+    private final ContinuousSplitCalculator<D> continuousSplitCalculator;
 
     /** Calculator used for finding splits of region of categorical feature. */
-    private IgniteFunction<DoubleStream, Double> categoricalSplitCalculator;
+    private final IgniteFunction<DoubleStream, Double> categoricalSplitCalculator;
 
     /** UUID of current training. */
-    private UUID trainingUUID;
+    private final UUID trainingUUID;
 
     /**
      * Construct context for training with {@link ColumnDecisionTreeTrainer}.

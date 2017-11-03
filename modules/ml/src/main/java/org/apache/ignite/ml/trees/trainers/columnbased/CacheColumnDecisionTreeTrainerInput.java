@@ -50,20 +50,20 @@ public abstract class CacheColumnDecisionTreeTrainerInput<K, V> implements Colum
     private final Map<Integer, Integer> catFeaturesInfo;
 
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
 
     /** Count of samples. */
     private final int samplesCnt;
 
     /** Function used for mapping cache values to stream of tuples. */
-    private IgniteFunction<Cache.Entry<K, V>, Stream<IgniteBiTuple<Integer, Double>>> valuesMapper;
+    private final IgniteFunction<Cache.Entry<K, V>, Stream<IgniteBiTuple<Integer, Double>>> valuesMapper;
 
     /**
      * Function which map value of entry with label key to DoubleStream.
      * Look at {@see CacheColumnDecisionTreeTrainerInput::labels} for understanding how {@see labelsKeys} and
      * {@see labelsMapper} interact.
      */
-    private IgniteFunction<V, DoubleStream> labelsMapper;
+    private final IgniteFunction<V, DoubleStream> labelsMapper;
 
     /**
      * Constructs input for {@see org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}.

@@ -35,7 +35,7 @@ import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
  */
 public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitCalculator.GiniData> {
     /** Mapping assigning index to each member value */
-    private Map<Double, Integer> mapping = new Double2IntArrayMap();
+    private final Map<Double, Integer> mapping = new Double2IntArrayMap();
 
     /**
      * Create Gini split calculator from labels.

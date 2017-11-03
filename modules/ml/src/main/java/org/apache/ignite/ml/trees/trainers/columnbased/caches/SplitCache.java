@@ -51,14 +51,14 @@ public class SplitCache {
      */
     public static class SplitKey {
         /** UUID of current training. */
-        private UUID trainingUUID;
+        private final UUID trainingUUID;
 
         /** Affinity key of input data. */
         @AffinityKeyMapped
-        private Object parentColKey;
+        private final Object parentColKey;
 
         /** Index of feature by which the split is made. */
-        private int featureIdx;
+        private final int featureIdx;
 
         /**
          * Construct SplitKey.

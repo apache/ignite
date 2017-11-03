@@ -26,7 +26,7 @@ import org.apache.ignite.ml.trees.nodes.DecisionTreeNode;
  */
 public class DecisionTreeModel implements Model<Vector, Double> {
     /** Root node of the decision tree. */
-    private DecisionTreeNode root;
+    private final DecisionTreeNode root;
 
     /**
      * Construct decision tree model.

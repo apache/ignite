@@ -26,7 +26,7 @@ public class Leaf implements DecisionTreeNode {
     /**
      * Value in subregion represented by this node.
      */
-    private double val;
+    private final double val;
 
     /**
      * Construct the leaf of decision tree.

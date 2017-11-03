@@ -107,20 +107,20 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     /**
      * Minimal information gain.
      */
-    private static double MIN_INFO_GAIN = 1E-10;
+    private static final double MIN_INFO_GAIN = 1E-10;
 
     /**
      * Maximal depth of the decision tree.
      */
-    private int maxDepth;
+    private final int maxDepth;
 
     /**
      * Size of block which is used for storing regions in cache.
      */
-    private static int BLOCK_SIZE = 1 << 4;
+    private static final int BLOCK_SIZE = 1 << 4;
 
     /** Ignite instance. */
-    private Ignite ignite;
+    private final Ignite ignite;
 
     /**
      * Construct {@link ColumnDecisionTreeTrainer}.
@@ -151,12 +151,12 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         /**
          * Index of feature by which split is done.
          */
-        private int featureIdx;
+        private final int featureIdx;
 
         /**
          * Split information.
          */
-        private SplitInfo info;
+        private final SplitInfo info;
 
         /**
          * @param featureIdx Index of feature by which split is done.
@@ -512,6 +512,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         );
     }
 
+    /** */
     private static Comparator<IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>>> comparator() {
         return Comparator.comparingDouble(bt -> bt != null && bt.get2() != null ? bt.get2().get2() : Double.NEGATIVE_INFINITY);
     }

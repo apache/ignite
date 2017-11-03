@@ -14,7 +14,7 @@ public class ContinuousSplitInfo<D extends RegionInfo> extends SplitInfo<D> {
      * Threshold used for split.
      * Samples with values less or equal than this go to left region, others go to the right region.
      */
-    private double threshold;
+    private final double threshold;
 
     /**
      * @param regionIdx Index of region being split.

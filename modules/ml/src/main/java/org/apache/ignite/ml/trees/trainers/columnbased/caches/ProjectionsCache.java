@@ -56,16 +56,16 @@ public class ProjectionsCache {
     public static class RegionKey {
         /** Column key of cache used as input for {@link ColumnDecisionTreeTrainer}. */
         @AffinityKeyMapped
-        private Object parentColKey;
+        private final Object parentColKey;
 
         /** Feature index. */
-        private int featureIdx;
+        private final int featureIdx;
 
         /** Region index. */
-        private int regBlockIdx;
+        private final int regBlockIdx;
 
         /** Training UUID. */
-        private UUID trainingUUID;
+        private final UUID trainingUUID;
 
         /**
          * Construct a RegionKey from feature index, index of block, key of column in input cache and UUID of training.
@@ -231,14 +231,16 @@ public class ProjectionsCache {
     }
 
     /**
-     * @param featureIdx
-     * @param maxDepth
-     * @param regsCnt
-     * @param blockSize
-     * @param affinity
-     * @param trainingUUID
-     * @param ignite
-     * @return
+     * Returns projections of regions on given feature filtered by maximal depth in the form of (region index -> region projection).
+     *
+     * @param featureIdx Feature index.
+     * @param maxDepth Maximal depth of the tree.
+     * @param regsCnt Count of regions.
+     * @param blockSize Size of regions blocks.
+     * @param affinity Affinity function.
+     * @param trainingUUID UUID of training.
+     * @param ignite Ignite instance.
+     * @return Projections of regions on given feature filtered by maximal depth in the form of (region index -> region projection).
      */
     public static Map<Integer, RegionProjection> projectionsOfFeature(int featureIdx, int maxDepth, int regsCnt,
         int blockSize, IgniteFunction<Integer, Object> affinity, UUID trainingUUID, Ignite ignite) {

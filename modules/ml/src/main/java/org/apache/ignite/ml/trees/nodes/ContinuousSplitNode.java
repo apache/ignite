@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class ContinuousSplitNode extends SplitNode {
     /** Threshold. Values which are less or equal then threshold are assigned to the left subregion. */
-    private double threshold;
+    private final double threshold;
 
     /**
      * Construct ContinuousSplitNode by threshold and feature index.

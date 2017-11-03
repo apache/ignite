@@ -30,7 +30,7 @@ public abstract class SplitNode implements DecisionTreeNode {
     protected DecisionTreeNode r;
 
     /** Feature index. */
-    protected int featureIdx;
+    protected final int featureIdx;
 
     /**
      * Constructs SplitNode with a given feature index.

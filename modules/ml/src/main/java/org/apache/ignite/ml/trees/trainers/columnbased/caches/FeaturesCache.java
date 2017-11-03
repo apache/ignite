@@ -49,10 +49,10 @@ public class FeaturesCache {
         private Object parentColKey;
 
         /** Index of feature. */
-        private int featureIdx;
+        private final int featureIdx;
 
         /** UUID of training. */
-        private UUID trainingUUID;
+        private final UUID trainingUUID;
 
         /**
          * Construct FeatureKey.
@@ -93,7 +93,7 @@ public class FeaturesCache {
     /**
      * Create new projections cache for ColumnDecisionTreeTrainer if needed.
      *
-     * @param ignite
+     * @param ignite Ignite instance.
      */
     public static IgniteCache<FeatureKey, double[]> getOrCreate(Ignite ignite) {
         CacheConfiguration<FeatureKey, double[]> cfg = new CacheConfiguration<>();

@@ -314,7 +314,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, catsInfo));
 
-        System.out.println("Took time(ms): " + (System.currentTimeMillis() - before));
+        System.out.println(">>> Took time(ms): " + (System.currentTimeMillis() - before));
 
         byRegion.keySet().stream().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
@@ -403,7 +403,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
                 sampleIdx++;
 
                 if (sampleIdx % 1000 == 0)
-                    System.out.println("Loaded " + sampleIdx + " vectors.");
+                    System.out.println(">>> Loaded " + sampleIdx + " vectors.");
             }
         }
     }
