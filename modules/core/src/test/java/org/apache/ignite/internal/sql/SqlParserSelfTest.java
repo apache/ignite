@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Test for parser.
@@ -29,6 +35,44 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateIndex() throws Exception {
-        System.out.println(new SqlParser(null, "CREATE TABLE t (a VARCHAR, b TINYINT, PRIMARY KEY (a))").nextCommand());
+        SqlCreateIndexCommand cmd =
+            (SqlCreateIndexCommand)new SqlParser(null, "CREATE INDEX idx ON tbl(a)").nextCommand();
+
+        validate(cmd, null, "tbl", "idx", "a", false);
+    }
+
+    /**
+     * Validate create index command.
+     *
+     * @param cmd Command.
+     * @param expSchemaName Expected schema name.
+     * @param expTblName Expected table name.
+     * @param expIdxName Expected index name.
+     * @param expColDefs Expected column definitions.
+     */
+    private static void validate(SqlCreateIndexCommand cmd, String expSchemaName, String expTblName, String expIdxName,
+        Object... expColDefs) {
+        assertEquals(expSchemaName, cmd.schemaName());
+        assertEquals(expTblName, cmd.tableName());
+        assertEquals(expIdxName, cmd.indexName());
+
+        if (F.isEmpty(expColDefs) || expColDefs.length % 2 == 1)
+            throw new IllegalArgumentException("Column definitions must be even.");
+
+        Collection<SqlIndexColumn> cols = cmd.columns();
+
+        assertEquals(expColDefs.length / 2, cols.size());
+
+        Iterator<SqlIndexColumn> colIter = cols.iterator();
+
+        for (int i = 0; i < expColDefs.length;) {
+            SqlIndexColumn col = colIter.next();
+
+            String expColName = (String)expColDefs[i++];
+            Boolean expDesc = (Boolean) expColDefs[i++];
+
+            assertEquals(expColName, col.name());
+            assertEquals(expDesc, (Boolean)col.descending());
+        }
     }
 }
