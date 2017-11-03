@@ -57,27 +57,28 @@ import org.apache.ignite.ml.util.MnistUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Example of usage of decision trees algorithm for MNIST dataset.
- *
+ * <p>
+ * Example of usage of decision trees algorithm for MNIST dataset
+ * (it can be found here: http://yann.lecun.com/exdb/mnist/). </p>
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.
- *
+ * with {@code examples/config/example-ignite.xml} configuration.</p>
+ * <p>
  * This example should with program arguments, for example
  * -ts_i /path/to/train-images-idx3-ubyte
  * -ts_l /path/to/train-labels-idx1-ubyte
  * -tss_i /path/to/t10k-images-idx3-ubyte
- * -tss_l /path/to/t10k-images-idx1-ubyte
- * -cfg examples/config/example-ignite.xml
- *
+ * -tss_l /path/to/t10k-labels-idx1-ubyte
+ * -cfg examples/config/example-ignite.xml.</p>
+ * <p>
  * -ts_i specifies path to training set images of MNIST;
  * -ts_l specifies path to training set labels of MNIST;
  * -tss_i specifies path to test set images of MNIST;
  * -tss_l specifies path to test set labels of MNIST;
- * -cfg specifies path to a config path.
+ * -cfg specifies path to a config path.</p>
  */
 public class MNISTExample {
     /** Name of parameter specifying path to training set images. */
@@ -120,8 +121,8 @@ public class MNISTExample {
             testLabelsPath = line.getOptionValue(MNIST_TEST_LABELS_PATH);
             igniteCfgPath = line.getOptionValue(CONFIG);
 
-            if (line.hasOption("cfg")) {
-                igniteCfgPath = line.getOptionValue("cfg");
+            if (line.hasOption(CONFIG)) {
+                igniteCfgPath = line.getOptionValue(CONFIG);
                 System.out.println("Starting with config " + igniteCfgPath);
             }
         }
