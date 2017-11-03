@@ -111,6 +111,18 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
             Assert.AreEqual("fooGroup", cacheCfg.GroupName);
+            
+            Assert.AreEqual("bar", cacheCfg.KeyConfiguration.Single().AffinityKeyFieldName);
+            Assert.AreEqual("foo", cacheCfg.KeyConfiguration.Single().TypeName);
+
+            Assert.IsTrue(cacheCfg.OnheapCacheEnabled);
+            Assert.AreEqual(8, cacheCfg.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(9, cacheCfg.RebalanceOrder);
+            Assert.AreEqual(10, cacheCfg.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(11, cacheCfg.MaxQueryIteratorsCount);
+            Assert.AreEqual(12, cacheCfg.QueryDetailMetricsSize);
+            Assert.AreEqual(13, cacheCfg.QueryParallelism);
+            Assert.AreEqual("mySchema", cacheCfg.SqlSchema);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -275,7 +287,6 @@ namespace Apache.Ignite.Core.Tests
             var ds = cfg.DataStorageConfiguration;
             Assert.IsFalse(ds.AlwaysWriteFullPages);
             Assert.AreEqual(TimeSpan.FromSeconds(1), ds.CheckpointFrequency);
-            Assert.AreEqual(2, ds.CheckpointPageBufferSize);
             Assert.AreEqual(3, ds.CheckpointThreads);
             Assert.AreEqual(4, ds.ConcurrencyLevel);
             Assert.AreEqual(TimeSpan.FromSeconds(5), ds.LockWaitTime);
@@ -309,6 +320,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(5, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap", dr.SwapPath);
             Assert.IsTrue(dr.MetricsEnabled);
+            Assert.AreEqual(7, dr.CheckpointPageBufferSize);
 
             dr = ds.DefaultDataRegionConfiguration;
             Assert.AreEqual(2, dr.EmptyPagesPoolSize);
@@ -722,7 +734,23 @@ namespace Apache.Ignite.Core.Tests
                         MemoryPolicyName = "somePolicy",
                         PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
                         GroupName = "abc",
-                        SqlIndexMaxInlineSize = 24
+                        SqlIndexMaxInlineSize = 24,
+                        KeyConfiguration = new[]
+                        {
+                            new CacheKeyConfiguration
+                            {
+                                AffinityKeyFieldName = "abc",
+                                TypeName = "def"
+                            }, 
+                        },
+                        OnheapCacheEnabled = true,
+                        StoreConcurrentLoadAllThreshold = 7,
+                        RebalanceOrder = 3,
+                        RebalanceBatchesPrefetchCount = 4,
+                        MaxQueryIteratorsCount = 512,
+                        QueryDetailMetricsSize = 100,
+                        QueryParallelism = 16,
+                        SqlSchema = "foo"
                     }
                 },
                 ClientMode = true,
@@ -899,7 +927,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     AlwaysWriteFullPages = true,
                     CheckpointFrequency = TimeSpan.FromSeconds(25),
-                    CheckpointPageBufferSize = 28 * 1024 * 1024,
                     CheckpointThreads = 2,
                     LockWaitTime = TimeSpan.FromSeconds(5),
                     StoragePath = Path.GetTempPath(),
@@ -934,7 +961,8 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = Path.GetTempPath()
+                        SwapPath = Path.GetTempPath(),
+                        CheckpointPageBufferSize = 7
                     },
                     DataRegionConfigurations = new[]
                     {

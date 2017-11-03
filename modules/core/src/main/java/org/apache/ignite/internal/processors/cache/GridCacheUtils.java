@@ -1686,6 +1686,21 @@ public class GridCacheUtils {
         if (dsCfg == null)
             return false;
 
+        // Special handling for system cache is needed.
+        if (isSystemCache(ccfg.getName())) {
+            if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
+                return true;
+
+            if (dsCfg.getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                    if (drConf.isPersistenceEnabled())
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         String regName = ccfg.getDataRegionName();
 
         if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))
@@ -1701,14 +1716,22 @@ public class GridCacheUtils {
         return false;
     }
 
+
     /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
      */
     public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
-        if (cfg.getDataStorageConfiguration() == null)
+        return isPersistenceEnabled(cfg.getDataStorageConfiguration());
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
+     */
+    public static boolean isPersistenceEnabled(DataStorageConfiguration cfg) {
+        if (cfg == null)
             return false;
 
-        DataRegionConfiguration dfltReg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
 
         if (dfltReg == null)
             return false;
@@ -1716,7 +1739,7 @@ public class GridCacheUtils {
         if (dfltReg.isPersistenceEnabled())
             return true;
 
-        DataRegionConfiguration[] regCfgs = cfg.getDataStorageConfiguration().getDataRegionConfigurations();
+        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
 
         if (regCfgs == null)
             return false;

@@ -928,23 +928,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }
 
-    /**
-     * @param lower Lower bound inclusive or {@code null} if unbounded.
-     * @param upper Upper bound inclusive or {@code null} if unbounded.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @Override public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         return find(lower, upper, null);
     }
 
-    /**
-     * @param lower Lower bound inclusive or {@code null} if unbounded.
-     * @param upper Upper bound inclusive or {@code null} if unbounded.
-     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
@@ -4545,13 +4534,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (rows == EMPTY)
                 rows = (T[])new Object[cnt];
 
+            int foundCnt = 0;
+
             for (int i = 0; i < cnt; i++) {
                 T r = getRow(io, pageAddr, startIdx + i, x);
 
-                rows = GridArrays.set(rows, i, r);
+                if (r != null)
+                    rows = GridArrays.set(rows, foundCnt++, r);
             }
 
-            GridArrays.clearTail(rows, cnt);
+            if (foundCnt == 0) {
+                rows = (T[])EMPTY;
+
+                return false;
+            }
+
+            GridArrays.clearTail(rows, foundCnt);
 
             return true;
         }

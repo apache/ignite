@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -776,6 +777,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(
+        final long pageId,
         final long pageAddr,
         T row,
         final int rowSize,
@@ -794,7 +796,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
 
         int itemId = addItem(pageAddr, fullEntrySize, directCnt, indirectCnt, dataOff, pageSize);
 
-        setLink(row, pageAddr, itemId);
+        setLinkByPageId(row, pageAddr, itemId);
     }
 
     /**
@@ -1013,8 +1015,19 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
      * @param pageAddr Page address.
      * @param itemId Item ID.
      */
-    private void setLink(Storable row, long pageAddr, int itemId) {
-        row.link(PageIdUtils.link(getPageId(pageAddr), itemId));
+    private void setLink(T row, long pageAddr, int itemId) {
+        long pageId = getPageId(pageAddr);
+
+        setLinkByPageId(row, pageId, itemId);
+    }
+
+    /**
+     * @param row Row to set link to.
+     * @param pageId Page ID.
+     * @param itemId Item ID.
+     */
+    private void setLinkByPageId(T row, long pageId, int itemId) {
+        row.link(PageIdUtils.link(pageId, itemId));
     }
 
     /**

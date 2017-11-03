@@ -215,6 +215,11 @@ namespace ignite
                 return 0;
             }
 
+            SqlResult::Type TableMetadataQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
+
             SqlResult::Type TableMetadataQuery::MakeRequestGetTablesMeta()
             {
                 QueryGetTablesMetaRequest req(catalog, schema, table, tableType);

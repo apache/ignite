@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 else
                 {
                     Assert.AreEqual(string.Format("BinaryEnum [typeId={0}, enumValue={1}]",
-                        BinaryUtils.GetStringHashCode(typeof(T).FullName), binRes.EnumValue), binRes.ToString());
+                        BinaryUtils.GetStringHashCodeLowerCase(typeof(T).FullName), binRes.EnumValue), binRes.ToString());
                 }
             }
             else
