@@ -43,6 +43,7 @@ public class BiIndex implements Externalizable {
 
     /**
      * Construct BiIndex from row and column.
+     *
      * @param row Row.
      * @param col Column.
      */
@@ -53,6 +54,7 @@ public class BiIndex implements Externalizable {
 
     /**
      * Returns row.
+     *
      * @return Row.
      */
     public int row() {
@@ -61,6 +63,7 @@ public class BiIndex implements Externalizable {
 
     /**
      * Returns column.
+     *
      * @return Column.
      */
     public int col() {

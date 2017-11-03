@@ -97,7 +97,8 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
     }
 
     /** {@inheritDoc} */
-    @Override public SplitInfo<VarianceData> splitRegion(Integer[] s, double[] values, double[] labels, int regionIdx, VarianceData d) {
+    @Override public SplitInfo<VarianceData> splitRegion(Integer[] s, double[] values, double[] labels, int regionIdx,
+        VarianceData d) {
         int size = d.getSize();
 
         double lm2 = 0.0;
@@ -158,7 +159,8 @@ public class VarianceSplitCalculator implements ContinuousSplitCalculator<Varian
      * Add point to the left interval and remove it from the right interval and calculate necessary statistics on
      * intervals with new bounds.
      */
-    private void moveLeft(double x, double lMean, int lSize, double lm2, double rMean, int rSize, double rm2, double[] data) {
+    private void moveLeft(double x, double lMean, int lSize, double lm2, double rMean, int rSize, double rm2,
+        double[] data) {
         // We add point to the left interval.
         double lDelta = x - lMean;
         double lMeanNew = lMean + lDelta / lSize;

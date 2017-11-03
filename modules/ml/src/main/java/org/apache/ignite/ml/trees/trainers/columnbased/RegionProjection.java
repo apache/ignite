@@ -25,6 +25,7 @@ import org.apache.ignite.ml.trees.RegionInfo;
 
 /**
  * Projection of region on given feature.
+ *
  * @param <D> Data of region.
  */
 public class RegionProjection<D extends RegionInfo> implements Externalizable {
@@ -57,6 +58,7 @@ public class RegionProjection<D extends RegionInfo> implements Externalizable {
 
     /**
      * Get samples indexes.
+     *
      * @return Samples indexes.
      */
     public Integer[] sampleIndexes() {
@@ -65,6 +67,7 @@ public class RegionProjection<D extends RegionInfo> implements Externalizable {
 
     /**
      * Get region data.
+     *
      * @return Region data.
      */
     public D data() {
@@ -73,6 +76,7 @@ public class RegionProjection<D extends RegionInfo> implements Externalizable {
 
     /**
      * Get region depth.
+     *
      * @return Region depth.
      */
     public int depth() {

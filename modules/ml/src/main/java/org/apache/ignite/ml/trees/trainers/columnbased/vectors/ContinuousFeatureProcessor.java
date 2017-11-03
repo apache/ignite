@@ -69,7 +69,8 @@ public class ContinuousFeatureProcessor<D extends ContinuousRegionInfo> implemen
     }
 
     /** {@inheritDoc} */
-    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<D> reg, double[] values, ContinuousSplitInfo<D> s) {
+    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<D> reg, double[] values,
+        ContinuousSplitInfo<D> s) {
         SparseBitSet res = new SparseBitSet();
 
         for (int i = 0; i < s.leftData().getSize(); i++)

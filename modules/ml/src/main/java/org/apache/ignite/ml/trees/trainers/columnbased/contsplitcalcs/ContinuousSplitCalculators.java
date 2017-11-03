@@ -18,8 +18,8 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
 
 /** Continuous Split Calculators. */

@@ -36,6 +36,7 @@ public interface ColumnDecisionTreeTrainerInput {
 
     /**
      * Labels.
+     *
      * @param ignite Ignite instance.
      */
     double[] labels(Ignite ignite);

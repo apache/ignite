@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 public class MatrixColumnDecisionTreeTrainerInput extends CacheColumnDecisionTreeTrainerInput<RowColMatrixKey, Map<Integer, Double>> {
     /**
      * @param m Sparse SparseDistributedMatrix should be in {@see org.apache.ignite.ml.math.StorageConstants#COLUMN_STORAGE_MODE}
-     *      containing samples in rows last position in row being label of this sample.
+     * containing samples in rows last position in row being label of this sample.
      * @param catFeaturesInfo Information about which features are categorical in form of feature index -> number of
      * categories.
      */
@@ -56,7 +56,8 @@ public class MatrixColumnDecisionTreeTrainerInput extends CacheColumnDecisionTre
     }
 
     /** Values mapper. See {@link CacheColumnDecisionTreeTrainerInput#valuesMapper} */
-    @NotNull private static IgniteFunction<Cache.Entry<RowColMatrixKey, Map<Integer, Double>>, Stream<IgniteBiTuple<Integer, Double>>> valuesMapper(
+    @NotNull
+    private static IgniteFunction<Cache.Entry<RowColMatrixKey, Map<Integer, Double>>, Stream<IgniteBiTuple<Integer, Double>>> valuesMapper(
         SparseDistributedMatrix m) {
         return ent -> {
             Map<Integer, Double> map = ent.getValue() != null ? ent.getValue() : new HashMap<>();

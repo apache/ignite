@@ -37,6 +37,7 @@ import org.apache.ignite.ml.util.Utils;
 
 /**
  * Utility class for generating data which has binary tree split structure.
+ *
  * @param <V>
  */
 public class SplitDataGenerator<V extends Vector> {
@@ -62,8 +63,10 @@ public class SplitDataGenerator<V extends Vector> {
 
     /**
      * Create SplitDataGenerator.
+     *
      * @param featCnt Features count.
-     * @param catFeaturesInfo Information about categorical features in form of map (feature index -> categories count).
+     * @param catFeaturesInfo Information about categorical features in form of map (feature index -> categories
+     * count).
      * @param supplier Supplier of vectors.
      * @param rnd Random numbers generator.
      */
@@ -109,6 +112,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         /**
          * Construct CatCoordInfo.
+         *
          * @param bs Bitset.
          */
         public CatCoordInfo(BitSet bs) {
@@ -177,6 +181,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         /**
          * Construct region by information about restrictions on coordinates (features) values.
+         *
          * @param catCoords Restrictions on categorical coordinates.
          * @param contCoords Restrictions on continuous coordinates
          * @param twoPow Region should contain {@code 1/2^twoPow * totalPoints} points.
@@ -208,6 +213,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         /**
          * Generate continuous coordinate for this region.
+         *
          * @param coordIdx Coordinate index.
          * @param boundsData Data with bounds
          * @param rnd Random numbers generator.
@@ -232,6 +238,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         /**
          * Generate categorical coordinate value for this region.
+         *
          * @param coordIdx Coordinate index.
          * @param rnd Random numbers generator.
          * @return Categorical coordinate value.
@@ -256,10 +263,12 @@ public class SplitDataGenerator<V extends Vector> {
 
         /**
          * Generate points for this region.
+         *
          * @param ptsCnt Count of points to generate.
          * @param val Label for all points in this region.
          * @param boundsData Data about bounds of continuous coordinates.
-         * @param catCont Data about which categories can be in this region in the form (coordinate index -> list of categories indexes).
+         * @param catCont Data about which categories can be in this region in the form (coordinate index -> list of
+         * categories indexes).
          * @param s Vectors supplier.
          * @param rnd Random numbers generator.
          * @param <V> Type of vectors.
@@ -283,6 +292,7 @@ public class SplitDataGenerator<V extends Vector> {
 
     /**
      * Split region by continuous coordinate.using given threshold.
+     *
      * @param regIdx Region index.
      * @param coordIdx Coordinate index.
      * @param threshold Threshold.
@@ -316,6 +326,7 @@ public class SplitDataGenerator<V extends Vector> {
 
     /**
      * Split region by categorical coordinate.
+     *
      * @param regIdx Region index.
      * @param coordIdx Coordinate index.
      * @param cats Categories allowed for the left sub region.
@@ -360,6 +371,7 @@ public class SplitDataGenerator<V extends Vector> {
 
     /**
      * Count of regions.
+     *
      * @return Count of regions.
      */
     public int regsCount() {
@@ -368,6 +380,7 @@ public class SplitDataGenerator<V extends Vector> {
 
     /**
      * Get features count.
+     *
      * @return Features count.
      */
     public int featuresCnt() {

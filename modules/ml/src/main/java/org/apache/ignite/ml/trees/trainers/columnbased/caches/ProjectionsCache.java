@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.caches;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.Set;
@@ -39,14 +40,13 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.ml.trees.trainers.columnbased.RegionProjection;
 
-import java.util.List;
-
 /**
  * Cache used for storing data of region projections on features.
  */
 public class ProjectionsCache {
     /**
-     * Name of cache which is used for storing data of region projections on features of {@link ColumnDecisionTreeTrainer}.
+     * Name of cache which is used for storing data of region projections on features of {@link
+     * ColumnDecisionTreeTrainer}.
      */
     public static final String COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME = "COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME";
 
@@ -69,6 +69,7 @@ public class ProjectionsCache {
 
         /**
          * Construct a RegionKey from feature index, index of block, key of column in input cache and UUID of training.
+         *
          * @param featureIdx Feature index.
          * @param regBlockIdx Index of block.
          * @param parentColKey Key of column in input cache.
@@ -83,6 +84,7 @@ public class ProjectionsCache {
 
         /**
          * Feature index.
+         *
          * @return Feature index.
          */
         public int featureIdx() {
@@ -91,6 +93,7 @@ public class ProjectionsCache {
 
         /**
          * Region block index.
+         *
          * @return Region block index.
          */
         public int regionBlockIndex() {
@@ -99,6 +102,7 @@ public class ProjectionsCache {
 
         /**
          * UUID of training.
+         *
          * @return UUID of training.
          */
         public UUID trainingUUID() {
@@ -142,6 +146,7 @@ public class ProjectionsCache {
 
     /**
      * Affinity service for region projections cache.
+     *
      * @return Affinity service for region projections cache.
      */
     public static Affinity<RegionKey> affinity() {
@@ -150,6 +155,7 @@ public class ProjectionsCache {
 
     /**
      * Get or create region projections cache.
+     *
      * @param ignite Ignite instance.
      * @return Region projections cache.
      */
@@ -182,6 +188,7 @@ public class ProjectionsCache {
 
     /**
      * Get region projections in the form of map (regionIndex -> regionProjections).
+     *
      * @param featureIdx Feature index.
      * @param maxDepth Max depth of decision tree.
      * @param regionIndexes Indexes of regions for which we want get projections.
@@ -224,7 +231,6 @@ public class ProjectionsCache {
     }
 
     /**
-     *
      * @param featureIdx
      * @param maxDepth
      * @param regsCnt
@@ -234,12 +240,14 @@ public class ProjectionsCache {
      * @param ignite
      * @return
      */
-    public static Map<Integer, RegionProjection> projectionsOfFeature(int featureIdx, int maxDepth, int regsCnt, int blockSize, IgniteFunction<Integer, Object> affinity, UUID trainingUUID, Ignite ignite) {
+    public static Map<Integer, RegionProjection> projectionsOfFeature(int featureIdx, int maxDepth, int regsCnt,
+        int blockSize, IgniteFunction<Integer, Object> affinity, UUID trainingUUID, Ignite ignite) {
         return projectionsOfRegions(featureIdx, maxDepth, IntStream.range(0, regsCnt), blockSize, affinity, trainingUUID, ignite);
     }
 
     /**
      * Construct key for projections cache.
+     *
      * @param featureIdx Feature index.
      * @param regBlockIdx Region block index.
      * @param parentColKey Column key of cache used as input for {@link ColumnDecisionTreeTrainer}.
@@ -252,13 +260,15 @@ public class ProjectionsCache {
 
     /**
      * Clear data from projections cache related to given training.
+     *
      * @param featuresCnt Features count.
      * @param regs Regions count.
      * @param aff Affinity function.
      * @param uuid UUID of training.
      * @param ignite Ignite instance.
      */
-    public static void clear(int featuresCnt, int regs, IgniteBiFunction<Integer, Ignite, Object> aff, UUID uuid, Ignite ignite) {
+    public static void clear(int featuresCnt, int regs, IgniteBiFunction<Integer, Ignite, Object> aff, UUID uuid,
+        Ignite ignite) {
         Set<RegionKey> toRmv = IntStream.range(0, featuresCnt).boxed().
             flatMap(fIdx -> IntStream.range(0, regs).boxed().map(reg -> new IgniteBiTuple<>(fIdx, reg))).
             map(t -> key(t.get1(), t.get2(), aff.apply(t.get1(), ignite), uuid)).

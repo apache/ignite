@@ -17,15 +17,11 @@
 
 package org.apache.ignite.ml.trees;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Arrays;
-import java.util.PrimitiveIterator;
-import java.util.stream.DoubleStream;
 
 /**
  * Base class for decision trees test.
@@ -64,6 +60,7 @@ public class BaseDecisionTreeTest extends GridCommonAbstractTest {
 
     /**
      * Convert double array to  {@link LabeledVectorDouble}
+     *
      * @param arr Array for conversion.
      * @return LabeledVectorDouble.
      */

@@ -22,21 +22,26 @@ import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 
 /**
  * This class is used for calculation of best split by continuous feature.
+ *
  * @param <C> Class in which information about region will be stored.
  */
 public interface ContinuousSplitCalculator<C extends ContinuousRegionInfo> {
     /**
      * Calculate region info 'from scratch'.
+     *
      * @param s Stream of labels in this region.
-     * @param l Index of sample projection on this feature in array sorted by this projection value and intervals bitsets.
-     *      ({@see org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousFeatureProcessor}).
+     * @param l Index of sample projection on this feature in array sorted by this projection value and intervals
+     * bitsets. ({@see org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousFeatureProcessor}).
      * @return Region info.
      */
     C calculateRegionInfo(DoubleStream s, int l);
 
     /**
      * Calculate split info of best split of region given information about this region.
-     * @param s Stream of labels in this region.
+     *
+     * @param sampleIndexes Indexes of samples of this region.
+     * @param values All values of this feature.
+     * @param labels All labels of this feature.
      * @param regionIdx Index of region being split.
      * @param data Information about region being split which can be used for computations.
      * @return Information about best split of region with index given by regionIdx.

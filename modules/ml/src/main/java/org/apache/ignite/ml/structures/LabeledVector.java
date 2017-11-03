@@ -21,6 +21,7 @@ import org.apache.ignite.ml.math.Vector;
 
 /**
  * Class for vector with label.
+ *
  * @param <V> Some class extending {@link Vector}.
  * @param <T> Type of label.
  */
@@ -33,6 +34,7 @@ public class LabeledVector<V extends Vector, T> {
 
     /**
      * Construct labeled vector.
+     *
      * @param vector Vector.
      * @param label Label.
      */
@@ -43,6 +45,7 @@ public class LabeledVector<V extends Vector, T> {
 
     /**
      * Get the vector.
+     *
      * @return Vector.
      */
     public V vector() {
@@ -51,6 +54,7 @@ public class LabeledVector<V extends Vector, T> {
 
     /**
      * Get the label.
+     *
      * @return Label.
      */
     public T label() {

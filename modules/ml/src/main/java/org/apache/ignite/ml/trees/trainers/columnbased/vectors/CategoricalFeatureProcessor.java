@@ -96,7 +96,8 @@ public class CategoricalFeatureProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public SplitInfo findBestSplit(RegionProjection<CategoricalRegionInfo> regionProjection, double[] values, double[] labels, int regIdx) {
+    @Override public SplitInfo findBestSplit(RegionProjection<CategoricalRegionInfo> regionProjection, double[] values,
+        double[] labels, int regIdx) {
         Map<Integer, Integer> mapping = mapping(regionProjection.data().cats());
 
         return powerSet(regionProjection.data().cats().length()).
@@ -106,7 +107,8 @@ public class CategoricalFeatureProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public RegionProjection<CategoricalRegionInfo> createInitialRegion(Integer[] sampleIndexes, double[] values, double[] labels) {
+    @Override public RegionProjection<CategoricalRegionInfo> createInitialRegion(Integer[] sampleIndexes,
+        double[] values, double[] labels) {
         BitSet set = new BitSet();
         set.set(0, catsCnt);
 
@@ -116,7 +118,8 @@ public class CategoricalFeatureProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<CategoricalRegionInfo> regionProjection, double[] values,
+    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<CategoricalRegionInfo> regionProjection,
+        double[] values,
         CategoricalSplitInfo<CategoricalRegionInfo> s) {
         SparseBitSet res = new SparseBitSet();
         Arrays.stream(regionProjection.sampleIndexes()).forEach(smpl -> res.set(smpl, s.bitSet().get((int)values[smpl])));
@@ -131,7 +134,8 @@ public class CategoricalFeatureProcessor
 
     /** {@inheritDoc} */
     @Override public IgniteBiTuple<RegionProjection, RegionProjection> performSplitGeneric(
-        SparseBitSet bs, double[] values, RegionProjection<CategoricalRegionInfo> reg, RegionInfo leftData, RegionInfo rightData) {
+        SparseBitSet bs, double[] values, RegionProjection<CategoricalRegionInfo> reg, RegionInfo leftData,
+        RegionInfo rightData) {
         int depth = reg.depth();
 
         int lSize = bs.cardinality();

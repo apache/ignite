@@ -104,6 +104,7 @@ public class MNISTExample {
 
     /**
      * Launches example.
+     *
      * @param args Program arguments.
      */
     public static void main(String[] args) {
@@ -199,6 +200,7 @@ public class MNISTExample {
 
     /**
      * Creates cache where data for training is stored.
+     *
      * @param ignite Ignite instance.
      * @return cache where data for training is stored.
      */
@@ -229,12 +231,14 @@ public class MNISTExample {
 
     /**
      * Loads vectors into cache.
+     *
      * @param cacheName Name of cache.
      * @param vectorsIterator Iterator over vectors to load.
      * @param vectorSize Size of vector.
      * @param ignite Ignite instance.
      */
-    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> vectorsIterator, int vectorSize, Ignite ignite) {
+    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> vectorsIterator,
+        int vectorSize, Ignite ignite) {
         try (IgniteDataStreamer<BiIndex, Double> streamer =
                  ignite.dataStreamer(cacheName)) {
             int sampleIdx = 0;

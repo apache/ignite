@@ -38,6 +38,7 @@ import static org.apache.ignite.ml.trees.trainers.columnbased.caches.FeaturesCac
 
 /**
  * Context of training with {@link ColumnDecisionTreeTrainer}.
+ *
  * @param <D> Class for storing of information used in calculation of impurity of continuous feature region.
  */
 public class TrainingContext<D extends ContinuousRegionInfo> {
@@ -58,6 +59,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Construct context for training with {@link ColumnDecisionTreeTrainer}.
+     *
      * @param input Input for training.
      * @param continuousSplitCalculator Calculator used for calculations of splits of continuous features regions.
      * @param categoricalSplitCalculator Calculator used for calculations of splits of categorical features regions.
@@ -78,6 +80,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Get processor used for calculating splits of categorical features.
+     *
      * @param catsCnt Count of categories.
      * @return Processor used for calculating splits of categorical features.
      */
@@ -87,6 +90,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Get processor used for calculating splits of continuous features.
+     *
      * @return Processor used for calculating splits of continuous features.
      */
     public ContinuousFeatureProcessor<D> continuousFeatureProcessor() {
@@ -95,6 +99,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Get labels.
+     *
      * @return Labels.
      */
     public double[] labels() {
@@ -103,6 +108,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Get values of feature with given index.
+     *
      * @param featIdx Feature index.
      * @param ignite Ignite instance.
      * @return Values of feature with given index.
@@ -114,6 +120,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Perform best split on the given region projection.
+     *
      * @param input Input of {@link ColumnDecisionTreeTrainer} performing split.
      * @param bitSet Bit set specifying split.
      * @param targetFeatIdx Index of feature for performing split.
@@ -125,20 +132,21 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
      * @return Perform best split on the given region projection.
      */
     public IgniteBiTuple<RegionProjection, RegionProjection> performSplit(ColumnDecisionTreeTrainerInput input,
-        SparseBitSet bitSet, int targetFeatIdx, int bestFeatIdx, RegionProjection targetRegionPrj, RegionInfo leftData, RegionInfo rightData, Ignite ignite) {
+        SparseBitSet bitSet, int targetFeatIdx, int bestFeatIdx, RegionProjection targetRegionPrj, RegionInfo leftData,
+        RegionInfo rightData, Ignite ignite) {
 
         Map<Integer, Integer> catFeaturesInfo = input.catFeaturesInfo();
 
         if (!catFeaturesInfo.containsKey(targetFeatIdx) && !catFeaturesInfo.containsKey(bestFeatIdx))
             return continuousFeatureProcessor().performSplit(bitSet, targetRegionPrj, (D)leftData, (D)rightData);
-        else
-            if (catFeaturesInfo.containsKey(targetFeatIdx))
-                return categoricalFeatureProcessor(catFeaturesInfo.get(targetFeatIdx)).performSplitGeneric(bitSet, values(targetFeatIdx, ignite), targetRegionPrj, leftData, rightData);
-            return continuousFeatureProcessor().performSplitGeneric(bitSet, labels, targetRegionPrj, leftData, rightData);
+        else if (catFeaturesInfo.containsKey(targetFeatIdx))
+            return categoricalFeatureProcessor(catFeaturesInfo.get(targetFeatIdx)).performSplitGeneric(bitSet, values(targetFeatIdx, ignite), targetRegionPrj, leftData, rightData);
+        return continuousFeatureProcessor().performSplitGeneric(bitSet, labels, targetRegionPrj, leftData, rightData);
     }
 
     /**
      * Processor used for calculating splits for feature with the given index.
+     *
      * @param featureIdx Index of feature to process.
      * @return Processor used for calculating splits for feature with the given index.
      */
@@ -148,6 +156,7 @@ public class TrainingContext<D extends ContinuousRegionInfo> {
 
     /**
      * Shortcut for affinity key.
+     *
      * @param idx Feature index.
      * @return Affinity key.
      */

@@ -6,18 +6,20 @@ import org.apache.ignite.ml.trees.nodes.SplitNode;
 
 /**
  * Information about split of continuous region.
+ *
  * @param <D> Class encapsulating information about the region.
  */
 public class ContinuousSplitInfo<D extends RegionInfo> extends SplitInfo<D> {
-    /** Threshold used for split.
+    /**
+     * Threshold used for split.
      * Samples with values less or equal than this go to left region, others go to the right region.
      */
     private double threshold;
 
     /**
      * @param regionIdx Index of region being split.
-     * @param threshold Threshold used for split.
-     *      Samples with values less or equal than this go to left region, others go to the right region.
+     * @param threshold Threshold used for split. Samples with values less or equal than this go to left region, others
+     * go to the right region.
      * @param leftData Information about left subregion.
      * @param rightData Information about right subregion.
      */

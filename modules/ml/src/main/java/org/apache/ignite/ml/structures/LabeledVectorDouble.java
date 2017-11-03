@@ -21,11 +21,13 @@ import org.apache.ignite.ml.math.Vector;
 
 /**
  * Labeled vector specialized to double label.
+ *
  * @param <V> Type of vector.
  */
 public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Double> {
     /**
      * Construct LabeledVectorDouble.
+     *
      * @param vector Vector.
      * @param label Label.
      */
@@ -35,6 +37,7 @@ public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Doub
 
     /**
      * Get label as double.
+     *
      * @return label as double.
      */
     public double doubleLabel() {

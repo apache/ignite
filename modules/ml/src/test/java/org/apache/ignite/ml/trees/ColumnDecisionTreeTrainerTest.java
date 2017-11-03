@@ -34,9 +34,9 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
-import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
-import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
+import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
 import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
 import org.junit.Test;
@@ -156,7 +156,10 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
 
     /** */
     private <D extends ContinuousRegionInfo> void testByGen(int totalPts, HashMap<Integer, Integer> catsInfo,
-        SplitDataGenerator<DenseLocalOnHeapVector> gen, IgniteFunction<ColumnDecisionTreeTrainerInput, ? extends ContinuousSplitCalculator<D>> calc, IgniteFunction<ColumnDecisionTreeTrainerInput, IgniteFunction<DoubleStream, Double>> catImpCalc, IgniteFunction<DoubleStream, Double> regCalc, Random rnd) {
+        SplitDataGenerator<DenseLocalOnHeapVector> gen,
+        IgniteFunction<ColumnDecisionTreeTrainerInput, ? extends ContinuousSplitCalculator<D>> calc,
+        IgniteFunction<ColumnDecisionTreeTrainerInput, IgniteFunction<DoubleStream, Double>> catImpCalc,
+        IgniteFunction<DoubleStream, Double> regCalc, Random rnd) {
 
         List<IgniteBiTuple<Integer, DenseLocalOnHeapVector>> lst = gen.
             points(totalPts, (i, rn) -> i).

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.ml.trees.trainers.columnbased.caches;
 
 import java.util.UUID;
@@ -29,7 +28,6 @@ import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.ml.trees.trainers.columnbased.TrainingContext;
 
-
 /**
  * Class for operations related to cache containing training context for {@link ColumnDecisionTreeTrainer}.
  */
@@ -41,6 +39,7 @@ public class ContextCache {
 
     /**
      * Get or create cache for training context.
+     *
      * @param ignite Ignite instance.
      * @param <D> Class storing information about continuous regions.
      * @return Cache for training context.

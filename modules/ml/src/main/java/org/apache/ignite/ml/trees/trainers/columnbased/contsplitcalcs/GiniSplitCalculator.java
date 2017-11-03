@@ -39,6 +39,7 @@ public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitC
 
     /**
      * Create Gini split calculator from labels.
+     *
      * @param labels Labels.
      */
     public GiniSplitCalculator(double[] labels) {
@@ -133,7 +134,8 @@ public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitC
                     break;
                 }
             }
-        } while (i < s.length - 1);
+        }
+        while (i < s.length - 1);
 
         if (lSize == size || lSize == 0)
             return null;
@@ -178,11 +180,12 @@ public class GiniSplitCalculator implements ContinuousSplitCalculator<GiniSplitC
         /** Sum of squares of counts of each label. */
         private double c2;
 
-        /** Counts of each label. On i-th position there is count of label which is mapped to index i.*/
+        /** Counts of each label. On i-th position there is count of label which is mapped to index i. */
         private int[] m;
 
         /**
          * Create Gini data.
+         *
          * @param impurity Impurity (i.e. Gini impurity).
          * @param size Count of samples.
          * @param m Counts of each label.

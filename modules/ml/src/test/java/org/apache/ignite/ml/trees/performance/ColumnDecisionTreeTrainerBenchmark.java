@@ -20,7 +20,19 @@ package org.apache.ignite.ml.trees.performance;
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
@@ -36,7 +48,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.estimators.Estimators;
-import org.apache.ignite.ml.math.*;
+import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -50,8 +63,8 @@ import org.apache.ignite.ml.trees.SplitDataGenerator;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
 import org.apache.ignite.ml.trees.trainers.columnbased.BiIndex;
 import org.apache.ignite.ml.trees.trainers.columnbased.BiIndexedCacheColumnDecisionTreeTrainerInput;
-import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.caches.ContextCache;
 import org.apache.ignite.ml.trees.trainers.columnbased.caches.FeaturesCache;
 import org.apache.ignite.ml.trees.trainers.columnbased.caches.ProjectionsCache;
@@ -68,19 +81,14 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-
 /**
  * Various benchmarks for hand runs.
  */
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
-    private static String PROP_TRAINING_IMAGES="mnist.training.images";
-    private static String PROP_TRAINING_LABELS="mnist.training.labels";
-    private static String PROP_TEST_IMAGES="mnist.test.images";
-    private static String PROP_TEST_LABELS="mnist.test.labels";
-
+    private static String PROP_TRAINING_IMAGES = "mnist.training.images";
+    private static String PROP_TRAINING_LABELS = "mnist.training.labels";
+    private static String PROP_TEST_IMAGES = "mnist.test.images";
+    private static String PROP_TEST_LABELS = "mnist.test.labels";
 
     /** Function to approximate. */
     private static Function<Vector, Double> f1 = v -> v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
@@ -90,7 +98,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         return 6000000;
     }
 
-    /** {@inheritDoc}  */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
         IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName, rsrcs);
@@ -119,16 +127,17 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         Random rnd = new Random(12349L);
 
         SplitDataGenerator<DenseLocalOnHeapVector> gen = new SplitDataGenerator<>(
-                featCnt, catsInfo, () -> new DenseLocalOnHeapVector(featCnt + 1), rnd).
-                split(0, 1, new int[] {0, 2}).
-                split(1, 0, -10.0).
-                split(0, 0, 0.0);
+            featCnt, catsInfo, () -> new DenseLocalOnHeapVector(featCnt + 1), rnd).
+            split(0, 1, new int[] {0, 2}).
+            split(1, 0, -10.0).
+            split(0, 0, 0.0);
 
         testByGenStreamerLoad(ptsPerReg, catsInfo, gen, rnd);
     }
 
     /**
      * Run decision tree classifier on MNIST using bi-indexed cache as a storage for dataset.
+     *
      * @throws IOException
      */
     @Test
@@ -168,6 +177,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
     /**
      * Run decision tree classifier on MNIST using sparse distributed matrix as a storage for dataset.
+     *
      * @throws IOException
      */
     @Test
@@ -185,7 +195,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
+        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage)m.getStorage();
 
         loadVectorsIntoSparseDistributedMatrixCache(sto.cache().getName(), sto.getUUID(), trainingMnistStream.iterator(), featCnt + 1);
 
@@ -227,7 +237,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
+        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage)m.getStorage();
 
         loadVectorsIntoSparseDistributedMatrixCache(sto.cache().getName(), sto.getUUID(), Arrays.stream(trainVectors).iterator(), featCnt + 1);
 
@@ -260,11 +270,11 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
     /** */
     private void testByGenStreamerLoad(int ptsPerReg, HashMap<Integer, Integer> catsInfo,
-                           SplitDataGenerator<DenseLocalOnHeapVector> gen, Random rnd) {
+        SplitDataGenerator<DenseLocalOnHeapVector> gen, Random rnd) {
 
         List<IgniteBiTuple<Integer, DenseLocalOnHeapVector>> lst = gen.
-                points(ptsPerReg, (i, rn) -> i).
-                collect(Collectors.toList());
+            points(ptsPerReg, (i, rn) -> i).
+            collect(Collectors.toList());
 
         int featCnt = gen.featuresCnt();
 
@@ -278,11 +288,11 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         Map<Integer, List<LabeledVectorDouble>> byRegion = new HashMap<>();
 
-        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage) m.getStorage();
+        SparseDistributedMatrixStorage sto = (SparseDistributedMatrixStorage)m.getStorage();
         long before = System.currentTimeMillis();
         System.out.println(">>> Batch loading started...");
         loadVectorsIntoSparseDistributedMatrixCache(sto.cache().getName(), sto.getUUID(), gen.
-                points(ptsPerReg, (i, rn) -> i).map(IgniteBiTuple::get2).iterator(), featCnt + 1);
+            points(ptsPerReg, (i, rn) -> i).map(IgniteBiTuple::get2).iterator(), featCnt + 1);
         System.out.println(">>> Batch loading took " + (System.currentTimeMillis() - before) + " ms.");
 
         for (IgniteBiTuple<Integer, DenseLocalOnHeapVector> bt : lst) {
@@ -291,7 +301,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         }
 
         ColumnDecisionTreeTrainer<VarianceSplitCalculator.VarianceData> trainer =
-                new ColumnDecisionTreeTrainer<>(2, ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, regCalc, ignite);
+            new ColumnDecisionTreeTrainer<>(2, ContinuousSplitCalculators.VARIANCE, RegionCalculators.VARIANCE, regCalc, ignite);
 
         before = System.currentTimeMillis();
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, catsInfo));
@@ -308,14 +318,16 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
     /**
      * Load vectors into sparse distributed matrix.
+     *
      * @param cacheName Name of cache where matrix is stored.
      * @param uuid UUID of matrix.
      * @param iter Iterator over vectors.
      * @param vectorSize size of vectors.
      */
-    private void loadVectorsIntoSparseDistributedMatrixCache(String cacheName, UUID uuid, Iterator<? extends org.apache.ignite.ml.math.Vector> iter, int vectorSize) {
+    private void loadVectorsIntoSparseDistributedMatrixCache(String cacheName, UUID uuid,
+        Iterator<? extends org.apache.ignite.ml.math.Vector> iter, int vectorSize) {
         try (IgniteDataStreamer<SparseMatrixKey, Map<Integer, Double>> streamer =
-                     Ignition.localIgnite().dataStreamer(cacheName)) {
+                 Ignition.localIgnite().dataStreamer(cacheName)) {
             int sampleIdx = 0;
             streamer.allowOverwrite(true);
 
@@ -361,11 +373,13 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
     /**
      * Load vectors into bi-indexed cache.
+     *
      * @param cacheName Name of cache.
      * @param iter Iterator over vectors.
      * @param vectorSize size of vectors.
      */
-    private void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends org.apache.ignite.ml.math.Vector> iter, int vectorSize) {
+    private void loadVectorsIntoBiIndexedCache(String cacheName,
+        Iterator<? extends org.apache.ignite.ml.math.Vector> iter, int vectorSize) {
         try (IgniteDataStreamer<BiIndex, Double> streamer =
                  Ignition.localIgnite().dataStreamer(cacheName)) {
             int sampleIdx = 0;
@@ -388,6 +402,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
     /**
      * Create bi-indexed cache for tests.
+     *
      * @return Bi-indexed cache.
      */
     private IgniteCache<BiIndex, Double> createBiIndexedCache() {
@@ -416,7 +431,8 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     }
 
     /** */
-    private Vector[] vecsFromRanges(Map<Integer, double[]> ranges, int featCnt, double[] defRng, Random rnd, int ptsCnt, Function<Vector, Double> f) {
+    private Vector[] vecsFromRanges(Map<Integer, double[]> ranges, int featCnt, double[] defRng, Random rnd, int ptsCnt,
+        Function<Vector, Double> f) {
         int vs = featCnt + 1;
         DenseLocalOnHeapVector[] res = new DenseLocalOnHeapVector[ptsCnt];
         for (int pt = 0; pt < ptsCnt; pt++) {

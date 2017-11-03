@@ -17,8 +17,14 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased.caches;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,10 +36,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import javax.cache.Cache;
-import java.util.*;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 
@@ -60,9 +62,10 @@ public class SplitCache {
 
         /**
          * Construct SplitKey.
+         *
          * @param trainingUUID UUID of the training.
          * @param parentColKey Affinity key used to ensure that cache entry for given feature will be on the same node
-         *                     as column with that feature in input.
+         * as column with that feature in input.
          * @param featureIdx Feature index.
          */
         public SplitKey(UUID trainingUUID, Object parentColKey, int featureIdx) {
@@ -78,6 +81,7 @@ public class SplitCache {
 
         /**
          * Get feature index.
+         *
          * @return Feature index.
          */
         public int featureIdx() {
@@ -86,10 +90,12 @@ public class SplitCache {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
-            SplitKey splitKey = (SplitKey) o;
+            SplitKey splitKey = (SplitKey)o;
 
             if (featureIdx != splitKey.featureIdx)
                 return false;
@@ -107,9 +113,10 @@ public class SplitCache {
 
     /**
      * Construct the key for splits cache.
+     *
      * @param featureIdx Feature index.
-     * @param parentColKey Affinity key used to ensure that cache entry for given feature will be on the same node
-     *                     as column with that feature in input.
+     * @param parentColKey Affinity key used to ensure that cache entry for given feature will be on the same node as
+     * column with that feature in input.
      * @param uuid UUID of current training.
      * @return Key for splits cache.
      */
@@ -119,6 +126,7 @@ public class SplitCache {
 
     /**
      * Get or create splits cache.
+     *
      * @param ignite Ignite instance.
      * @return Splits cache.
      */
@@ -151,6 +159,7 @@ public class SplitCache {
 
     /**
      * Affinity function used in splits cache.
+     *
      * @return Affinity function used in splits cache.
      */
     public static Affinity<SplitKey> affinity() {
@@ -159,12 +168,14 @@ public class SplitCache {
 
     /**
      * Returns local entries for keys corresponding to {@code featureIndexes}.
+     *
      * @param featureIndexes Index of features.
      * @param affinity Affinity function.
      * @param trainingUUID UUID of training.
      * @return local entries for keys corresponding to {@code featureIndexes}.
      */
-    public static Iterable<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>> localEntries(Set<Integer> featureIndexes,
+    public static Iterable<Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>>> localEntries(
+        Set<Integer> featureIndexes,
         IgniteBiFunction<Integer, Ignite, Object> affinity,
         UUID trainingUUID) {
         Ignite ignite = Ignition.localIgnite();
@@ -180,12 +191,14 @@ public class SplitCache {
 
     /**
      * Clears data related to current training from splits cache related to given training.
+     *
      * @param featuresCnt Count of features.
      * @param affinity Affinity function.
      * @param uuid UUID of the given training.
      * @param ignite Ignite instance.
      */
-    public static void clear(int featuresCnt, IgniteBiFunction<Integer, Ignite, Object> affinity, UUID uuid, Ignite ignite) {
+    public static void clear(int featuresCnt, IgniteBiFunction<Integer, Ignite, Object> affinity, UUID uuid,
+        Ignite ignite) {
         Set<SplitKey> toRmv = IntStream.range(0, featuresCnt).boxed().map(fIdx -> new SplitKey(uuid, affinity.apply(fIdx, ignite), fIdx)).collect(Collectors.toSet());
 
         getOrCreate(ignite).removeAll(toRmv);

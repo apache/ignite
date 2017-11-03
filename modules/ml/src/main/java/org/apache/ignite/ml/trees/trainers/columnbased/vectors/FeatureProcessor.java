@@ -38,6 +38,7 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
 
     /**
      * Creates initial region from samples.
+     *
      * @param samples samples.
      * @return region.
      */
@@ -61,7 +62,8 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
      * @param rightData Data of the right subregion.
      * @return This feature vector.
      */
-    IgniteBiTuple<RegionProjection, RegionProjection> performSplit(SparseBitSet bs, RegionProjection<D> reg, D leftData, D rightData);
+    IgniteBiTuple<RegionProjection, RegionProjection> performSplit(SparseBitSet bs, RegionProjection<D> reg, D leftData,
+        D rightData);
 
     /**
      * Splits given region using bitset which maps data point to left or right subregion. This method is used iff the
@@ -73,6 +75,7 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
      * @param rightData Data of the right subregion.
      * @return This feature vector.
      */
-    IgniteBiTuple<RegionProjection, RegionProjection> performSplitGeneric(SparseBitSet bs, double[] values, RegionProjection<D> reg, RegionInfo leftData,
+    IgniteBiTuple<RegionProjection, RegionProjection> performSplitGeneric(SparseBitSet bs, double[] values,
+        RegionProjection<D> reg, RegionInfo leftData,
         RegionInfo rightData);
 }

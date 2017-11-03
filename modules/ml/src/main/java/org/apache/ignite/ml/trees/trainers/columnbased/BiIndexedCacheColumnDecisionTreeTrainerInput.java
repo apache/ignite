@@ -31,12 +31,15 @@ import org.apache.ignite.lang.IgniteBiTuple;
 public class BiIndexedCacheColumnDecisionTreeTrainerInput extends CacheColumnDecisionTreeTrainerInput<BiIndex, Double> {
     /**
      * Construct an input for {@link ColumnDecisionTreeTrainer}.
+     *
      * @param cache Bi-indexed cache.
-     * @param catFeaturesInfo Information about categorical feature in the form (feature index -> number of categories).
+     * @param catFeaturesInfo Information about categorical feature in the form (feature index -> number of
+     * categories).
      * @param samplesCnt Count of samples.
      * @param featuresCnt Count of features.
      */
-    public BiIndexedCacheColumnDecisionTreeTrainerInput(IgniteCache<BiIndex, Double> cache, Map<Integer, Integer> catFeaturesInfo, int samplesCnt, int featuresCnt) {
+    public BiIndexedCacheColumnDecisionTreeTrainerInput(IgniteCache<BiIndex, Double> cache,
+        Map<Integer, Integer> catFeaturesInfo, int samplesCnt, int featuresCnt) {
         super(cache,
             () -> IntStream.range(0, samplesCnt).mapToObj(s -> new BiIndex(s, featuresCnt)),
             e -> Stream.of(new IgniteBiTuple<>(e.getKey().row(), e.getValue())),

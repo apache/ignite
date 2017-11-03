@@ -56,6 +56,7 @@ public class FeaturesCache {
 
         /**
          * Construct FeatureKey.
+         *
          * @param featureIdx Feature index.
          * @param trainingUUID UUID of training.
          * @param parentColKey Column key of cache used as input.
@@ -91,6 +92,7 @@ public class FeaturesCache {
 
     /**
      * Create new projections cache for ColumnDecisionTreeTrainer if needed.
+     *
      * @param ignite
      */
     public static IgniteCache<FeatureKey, double[]> getOrCreate(Ignite ignite) {
@@ -122,6 +124,7 @@ public class FeaturesCache {
 
     /**
      * Construct FeatureKey from index, uuid and affinity key.
+     *
      * @param idx Feature index.
      * @param uuid UUID of training.
      * @param aff Affinity key.
@@ -133,12 +136,14 @@ public class FeaturesCache {
 
     /**
      * Clear all data from features cache related to given training.
+     *
      * @param featuresCnt Count of features.
      * @param affinity Affinity function.
      * @param uuid Training uuid.
      * @param ignite Ignite instance.
      */
-    public static void clear(int featuresCnt, IgniteBiFunction<Integer, Ignite, Object> affinity, UUID uuid, Ignite ignite) {
+    public static void clear(int featuresCnt, IgniteBiFunction<Integer, Ignite, Object> affinity, UUID uuid,
+        Ignite ignite) {
         Set<FeatureKey> toRmv = IntStream.range(0, featuresCnt).boxed().map(fIdx -> getFeatureCacheKey(fIdx, uuid, affinity.apply(fIdx, ignite))).collect(Collectors.toSet());
 
         getOrCreate(ignite).removeAll(toRmv);

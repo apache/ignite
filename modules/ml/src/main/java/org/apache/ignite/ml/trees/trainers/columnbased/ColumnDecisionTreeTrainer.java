@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -45,14 +44,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.models.DecisionTreeModel;
@@ -125,9 +123,12 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
     /**
      * Construct {@link ColumnDecisionTreeTrainer}.
+     *
      * @param maxDepth Maximal depth of the decision tree.
-     * @param continuousCalculatorProvider Provider of calculator of splits for region projection on continuous features.
-     * @param categoricalCalculatorProvider Provider of calculator of splits for region projection on categorical features.
+     * @param continuousCalculatorProvider Provider of calculator of splits for region projection on continuous
+     * features.
+     * @param categoricalCalculatorProvider Provider of calculator of splits for region projection on categorical
+     * features.
      * @param regCalc Function used to assign a value to a region.
      */
     public ColumnDecisionTreeTrainer(int maxDepth,
@@ -267,6 +268,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
     /**
      * Get samples array.
+     *
      * @param values Stream of tuples in the form of (index, value).
      * @param size size of stream.
      * @return Samples array.
@@ -485,11 +487,14 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     }
 
     /**
-     * Find the best split in the form (feature index, (index of region with the best split, impurity of region with the best split)).
+     * Find the best split in the form (feature index, (index of region with the best split, impurity of region with the
+     * best split)).
+     *
      * @param featuresCnt Count of features.
      * @param affinity Affinity function.
      * @param trainingUUID UUID of training.
-     * @return Best split in the form (feature index, (index of region with the best split, impurity of region with the best split)).
+     * @return Best split in the form (feature index, (index of region with the best split, impurity of region with the
+     * best split)).
      */
     private IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>> findBestSplitIndexForFeatures(int featuresCnt,
         IgniteBiFunction<Integer, Ignite, Object> affinity,
@@ -512,6 +517,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
     /**
      * Update split cache.
+     *
      * @param lastSplitRegionIdx Index of region which had last best split.
      * @param regsCnt Count of regions.
      * @param featuresCnt Count of features.
@@ -532,7 +538,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 // Fully recalculate best.
                 if (bestRegIdx == lastSplitRegionIdx)
                     toCompare = ProjectionsCache.projectionsOfFeature(fIdx, maxDepth, regsCnt, BLOCK_SIZE, affinity.apply(ign), trainingUUID, ign);
-                // Just compare previous best and two regions which are produced by split.
+                    // Just compare previous best and two regions which are produced by split.
                 else
                     toCompare = ProjectionsCache.projectionsOfRegions(fIdx, maxDepth,
                         IntStream.of(bestRegIdx, lastSplitRegionIdx, regsCnt - 1), BLOCK_SIZE, affinity.apply(ign), trainingUUID, ign);
