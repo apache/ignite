@@ -96,6 +96,9 @@ public class MNISTExample {
     /** Name of parameter specifying path of Ignite config. */
     private static final String CONFIG = "cfg";
 
+    /** Default config path. */
+    private static final String DEFAULT_CONFIG = "examples/config/example-ignite.xml";
+
     /**
      * Launches example.
      * @param args Program arguments.
@@ -119,12 +122,7 @@ public class MNISTExample {
             trainingLabelsPath = line.getOptionValue(MNIST_TRAINING_LABELS_PATH);
             testImagesPath = line.getOptionValue(MNIST_TEST_IMAGES_PATH);
             testLabelsPath = line.getOptionValue(MNIST_TEST_LABELS_PATH);
-            igniteCfgPath = line.getOptionValue(CONFIG);
-
-            if (line.hasOption(CONFIG)) {
-                igniteCfgPath = line.getOptionValue(CONFIG);
-                System.out.println("Starting with config " + igniteCfgPath);
-            }
+            igniteCfgPath = line.getOptionValue(CONFIG, DEFAULT_CONFIG);
         }
         catch (ParseException e) {
             e.printStackTrace();
@@ -184,8 +182,8 @@ public class MNISTExample {
             .isRequired(true).create();
 
         Option configOpt = OptionBuilder.withArgName(CONFIG).withLongOpt(CONFIG).hasArg()
-            .withDescription("Path to the client config.")
-            .isRequired(true).create();
+            .withDescription("Path to the config.")
+            .isRequired(false).create();
 
         options.addOption(trsImagesPathOpt);
         options.addOption(trsLabelsPathOpt);
