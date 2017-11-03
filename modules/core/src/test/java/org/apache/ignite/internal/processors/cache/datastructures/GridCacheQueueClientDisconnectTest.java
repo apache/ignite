@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class GridCacheQueueClientDisconnect extends GridCommonAbstractTest {
+public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_QUEUE_NAME = "ignite-queue-client-reconnect-test";
 
