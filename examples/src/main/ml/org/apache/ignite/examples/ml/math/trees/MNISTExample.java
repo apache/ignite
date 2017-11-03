@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
@@ -57,6 +58,26 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Example of usage of decision trees algorithm for MNIST dataset.
+ *
+ * <p>
+ * Remote nodes should always be started with special configuration file which
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * <p>
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
+ * with {@code examples/config/example-ignite.xml} configuration.
+ *
+ * This example should with program arguments, for example
+ * -ts_i /path/to/train-images-idx3-ubyte
+ * -ts_l /path/to/train-labels-idx1-ubyte
+ * -tss_i /path/to/t10k-images-idx3-ubyte
+ * -tss_l /path/to/t10k-images-idx1-ubyte
+ * -cfg examples/config/example-ignite.xml
+ *
+ * -ts_i specifies path to training set images of MNIST;
+ * -ts_l specifies path to training set labels of MNIST;
+ * -tss_i specifies path to test set images of MNIST;
+ * -tss_l specifies path to test set labels of MNIST;
+ * -cfg specifies path to a config path.
  */
 public class MNISTExample {
     /** Name of parameter specifying path to training set images. */

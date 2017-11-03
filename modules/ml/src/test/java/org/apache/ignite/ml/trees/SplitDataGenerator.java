@@ -171,6 +171,10 @@ public class SplitDataGenerator<V extends Vector> {
          * (coordinate index -> restriction)
          */
         private Map<Integer, ContCoordInfo> contCoords;
+
+        /**
+         * Region should contain {@code 1/2^twoPow * totalPoints} points.
+         */
         private int twoPow;
 
         public Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords, int twoPow) {
@@ -198,6 +202,14 @@ public class SplitDataGenerator<V extends Vector> {
                 ']';
         }
 
+        //TODO:
+        /**
+         * Generate continuous coordinate for this region.
+         * @param coordIdx Coordinate index.
+         * @param boundsData Data with bounds
+         * @param rnd
+         * @return
+         */
         public double generateContCoord(int coordIdx, Map<Integer, IgniteBiTuple<Double, Double>> boundsData,
             Random rnd) {
             ContCoordInfo cci = contCoords.get(coordIdx);
