@@ -238,14 +238,13 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public boolean lock(Session ses, boolean exclusive, boolean force) {
-        Boolean putRes = sessions.putIfAbsent(ses, exclusive);
+        // In accordance with base method semantics, we'll return true if we were already exclusively locked.
+        Boolean res = sessions.get(ses);
 
-        // In accordance with base method semantics, we'll return true if we were already exclusively locked
-        if (putRes != null)
-            return putRes;
+        if (res != null)
+            return res;
 
-        ses.addLock(this);
-
+        // Acquire the lock.
         lock(exclusive);
 
         if (destroyed) {
@@ -253,6 +252,11 @@ public class GridH2Table extends TableBase {
 
             throw new IllegalStateException("Table " + identifierString() + " already destroyed.");
         }
+
+        // Mutate state.
+        sessions.put(ses, exclusive);
+
+        ses.addLock(this);
 
         return false;
     }
