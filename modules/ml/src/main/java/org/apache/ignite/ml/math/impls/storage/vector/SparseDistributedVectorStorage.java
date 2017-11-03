@@ -17,13 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.storage.vector;
 
-import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteUuid;
@@ -37,7 +34,6 @@ import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -110,31 +106,42 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     }
 
     /**
-     *
+     * Gets cache
+     * @return cache
      */
     public IgniteCache<RowColMatrixKey, Double> cache() {
         return cache;
     }
 
+    /**
+     * Gets access mode
+     * @return code of access mode
+     */
     public int accessMode() {
         return acsMode;
     }
 
-    @Override
-    public double get(int i) {
+    /**
+     * Gets vector element by element index
+     * @param i Vector element index.
+     * @return vector element
+     */
+    @Override public double get(int i) {
         // Remote get from the primary node (where given row or column is stored locally).
         return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).call(() -> {
             IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
-            Double result = cache.get(getCacheKey(i));
-            if(result == null){
-                return 0.0;
-            }
-            return result;
+            Double res = cache.get(getCacheKey(i));
+            if(res == null) return 0.0;
+            return res;
         });
     }
 
-    @Override
-    public void set(int i, double v) {
+    /**
+     * Sets vector element by index
+     * @param i Vector element index.
+     * @param v Value to set at given index.
+     */
+    @Override public void set(int i, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
         ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getCacheKey(i))).run(() -> {
             IgniteCache<RowColMatrixKey, Double> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
@@ -229,7 +236,11 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
             && uuid.equals(that.uuid) && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 
-
+    /**
+     * Builds cache key for vector element
+     * @param idx Index
+     * @return RowColMatrixKey
+     */
     public RowColMatrixKey getCacheKey(int idx) {
         return new SparseMatrixKey(idx, uuid, null);
     }
@@ -254,9 +265,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     @Override
     public double[] data() {
         double[] result = new double[this.size];
-        for (int i = 0; i < this.size; i++) {
-            result[i] = this.get(i);
-        }
+        for (int i = 0; i < this.size; i++) result[i] = this.get(i);
         return result;
     }
 

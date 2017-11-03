@@ -132,9 +132,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
                     augI.setX(i, j, 1d);
                 else
                     augI.setX(i, j, 0d);
-        MatrixUtil.toString("augI", augI, augI.columnSize(), augI.rowSize());
-        Matrix times = q.times(augI);
-        MatrixUtil.toString("qtimes", times, times.columnSize(), times.rowSize());
+
         // Compute and return Hat matrix
         // No DME advertised - args valid if we get here
         return q.times(augI).times(q.transpose());

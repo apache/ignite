@@ -34,6 +34,7 @@ import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -70,18 +71,23 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     }
 
+    /**
+     * @param data Data to fill the matrix
+     */
     public SparseDistributedMatrix(double[][] data) {
         assert data.length > 0;
         setStorage(new SparseDistributedMatrixStorage(data.length, getMaxAmountOfColumns(data),  StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE));
 
-        for (int i = 0; i < data.length; i++) {
-            for (int j = 0; j < data[i].length; j++) {
+        for (int i = 0; i < data.length; i++)
+            for (int j = 0; j < data[i].length; j++)
                 storage().set(i,j,data[i][j]);
-            }
-        }
     }
 
 
+    /**
+     * @param rows Amount of rows in the matrix.
+     * @param cols Amount of columns in the matrix.
+     */
     public SparseDistributedMatrix(int rows, int cols) {
         this(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
     }
@@ -222,15 +228,14 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        if(storage()==null){
-            return new SparseDistributedMatrix(rows, cols);
-        } else return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
+        if(storage()==null) return new SparseDistributedMatrix(rows, cols);
+        else return new SparseDistributedMatrix(rows, cols, storage().storageMode(), storage().accessMode());
 
     }
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        throw new UnsupportedOperationException();
+        return new SparseDistributedVector(crd, StorageConstants.RANDOM_ACCESS_MODE);
     }
 
     /** */

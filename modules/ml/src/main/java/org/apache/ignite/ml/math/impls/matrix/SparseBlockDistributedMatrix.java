@@ -65,15 +65,16 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         setStorage(new BlockMatrixStorage(rows, cols));
     }
 
+    /**
+     * @param data Data to fill the matrix
+     */
     public SparseBlockDistributedMatrix(double[][] data) {
         assert data.length > 0;
         setStorage(new BlockMatrixStorage(data.length, getMaxAmountOfColumns(data)));
 
-        for (int i = 0; i < data.length; i++) {
-            for (int j = 0; j < data[i].length; j++) {
+        for (int i = 0; i < data.length; i++)
+            for (int j = 0; j < data[i].length; j++)
                 storage().set(i,j,data[i][j]);
-            }
-        }
     }
 
     /**
@@ -199,9 +200,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             locKeys.forEach(key -> {
                 int idx = key.index();
                 Vector Aik = matrixA.getRow(idx);
-                MatrixUtil.toString("Aik", Aik, Aik.size());
                 vectorC.set(idx, Aik.times(vectorB).sum());
-                MatrixUtil.toString("vectorC", vectorC, vectorC.size());
             });
 
         });
@@ -209,7 +208,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return vectorC;
     }
 
-
+    /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
 
@@ -220,6 +219,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Vector getRow(int row) {
         checkRowIndex(row);
 
