@@ -1619,17 +1619,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
          * @param row Row.
          * @return If this row was accepted.
          */
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "SimplifiableIfStatement"})
         protected boolean accept(GridH2Row row) {
             if (row.expireTime() != 0 && row.expireTime() <= time)
                 return false;
 
-            if (fltr == null)
-                return true;
-
-            Object key = row.getValue(KEY_COL).getObject();
-
-            return fltr.apply(key);
+            return fltr == null || fltr.applyPartition(row.partition());
         }
 
         /** {@inheritDoc} */
