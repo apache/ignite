@@ -251,7 +251,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
     private static Properties loadMNISTProperties() throws IOException {
         Properties res = new Properties();
 
-        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("trees/columntrees.manualrun.properties");
+        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
 
         res.load(is);
 
