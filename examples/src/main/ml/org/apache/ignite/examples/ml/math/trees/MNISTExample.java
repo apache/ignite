@@ -67,6 +67,9 @@ import org.jetbrains.annotations.NotNull;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.</p>
  * <p>
+ * It is recommended to start at least one node prior to launching this example if you intend
+ * to run it with default memory settings.</p>
+ * <p>
  * This example should with program arguments, for example
  * -ts_i /path/to/train-images-idx3-ubyte
  * -ts_l /path/to/train-labels-idx1-ubyte
@@ -132,7 +135,7 @@ public class MNISTExample {
         try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-            int ptsCnt = 40000;
+            int ptsCnt = 60000;
             int featCnt = 28 * 28;
 
             Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(trainingImagesPath, trainingLabelsPath, new Random(123L), ptsCnt);

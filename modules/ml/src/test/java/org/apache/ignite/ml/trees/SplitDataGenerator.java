@@ -16,11 +16,6 @@
  */
 package org.apache.ignite.ml.trees;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -38,6 +33,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * Utility class for generating data which has binary tree split structure.
@@ -106,7 +102,9 @@ public class SplitDataGenerator<V extends Vector> {
      * Categorical coordinate info.
      */
     private static class CatCoordInfo implements Serializable {
-        /** */
+        /**
+         * Defines categories which are included in this region
+         */
         private BitSet bs;
 
         /**
@@ -177,6 +175,12 @@ public class SplitDataGenerator<V extends Vector> {
          */
         private int twoPow;
 
+        /**
+         * Construct region by information about restrictions on coordinates (features) values.
+         * @param catCoords Restrictions on categorical coordinates.
+         * @param contCoords Restrictions on continuous coordinates
+         * @param twoPow Region should contain {@code 1/2^twoPow * totalPoints} points.
+         */
         public Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords, int twoPow) {
             this.catCoords = catCoords;
             this.contCoords = contCoords;
@@ -202,13 +206,12 @@ public class SplitDataGenerator<V extends Vector> {
                 ']';
         }
 
-        //TODO:
         /**
          * Generate continuous coordinate for this region.
          * @param coordIdx Coordinate index.
          * @param boundsData Data with bounds
-         * @param rnd
-         * @return
+         * @param rnd Random numbers generator.
+         * @return Categorical coordinate value.
          */
         public double generateContCoord(int coordIdx, Map<Integer, IgniteBiTuple<Double, Double>> boundsData,
             Random rnd) {
@@ -227,6 +230,12 @@ public class SplitDataGenerator<V extends Vector> {
             return left + rnd.nextDouble() * size;
         }
 
+        /**
+         * Generate categorical coordinate value for this region.
+         * @param coordIdx Coordinate index.
+         * @param rnd Random numbers generator.
+         * @return Categorical coordinate value.
+         */
         public double generateCatCoord(int coordIdx, Random rnd) {
             // Pick random bit.
             BitSet bs = catCoords.get(coordIdx).bs;
@@ -245,6 +254,17 @@ public class SplitDataGenerator<V extends Vector> {
             return bnp;
         }
 
+        /**
+         * Generate points for this region.
+         * @param ptsCnt Count of points to generate.
+         * @param val Label for all points in this region.
+         * @param boundsData Data about bounds of continuous coordinates.
+         * @param catCont Data about which categories can be in this region in the form (coordinate index -> list of categories indexes).
+         * @param s Vectors supplier.
+         * @param rnd Random numbers generator.
+         * @param <V> Type of vectors.
+         * @return Stream of generated points for this region.
+         */
         public <V extends Vector> Stream<V> generatePoints(int ptsCnt, double val,
             Map<Integer, IgniteBiTuple<Double, Double>> boundsData, Map<Boolean, List<Integer>> catCont,
             Supplier<V> s,
@@ -261,6 +281,13 @@ public class SplitDataGenerator<V extends Vector> {
         }
     }
 
+    /**
+     * Split region by continuous coordinate.using given threshold.
+     * @param regIdx Region index.
+     * @param coordIdx Coordinate index.
+     * @param threshold Threshold.
+     * @return {@code this}.
+     */
     public SplitDataGenerator<V> split(int regIdx, int coordIdx, double threshold) {
         Region regToSplit = regs.get(regIdx);
         ContCoordInfo cci = regToSplit.contCoords.get(coordIdx);
@@ -273,7 +300,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         regToSplit.incTwoPow();
 
-        Region newReg = copy(regToSplit);
+        Region newReg = Utils.copy(regToSplit);
         newReg.contCoords.get(coordIdx).left = threshold;
 
         regs.add(regIdx + 1, newReg);
@@ -288,11 +315,11 @@ public class SplitDataGenerator<V extends Vector> {
     }
 
     /**
-     * Split region by coordinate.
+     * Split region by categorical coordinate.
      * @param regIdx Region index.
      * @param coordIdx Coordinate index.
-     * @param cats
-     * @return
+     * @param cats Categories allowed for the left sub region.
+     * @return {@code this}.
      */
     public SplitDataGenerator<V> split(int regIdx, int coordIdx, int[] cats) {
         BitSet subset = new BitSet();
@@ -310,7 +337,7 @@ public class SplitDataGenerator<V extends Vector> {
         set.and(subset);
 
         regToSplit.incTwoPow();
-        Region newReg = copy(regToSplit);
+        Region newReg = Utils.copy(regToSplit);
         newReg.catCoords.put(coordIdx, new CatCoordInfo(ssc));
 
         regs.add(regIdx + 1, newReg);
@@ -337,24 +364,6 @@ public class SplitDataGenerator<V extends Vector> {
      */
     public int regsCount() {
         return regs.size();
-    }
-
-    public static <T> T copy(T orig) {
-        Object obj = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(baos);
-            out.writeObject(orig);
-            out.flush();
-            out.close();
-            ObjectInputStream in = new ObjectInputStream(
-                new ByteArrayInputStream(baos.toByteArray()));
-            obj = in.readObject();
-        }
-        catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return (T)obj;
     }
 
     /**
