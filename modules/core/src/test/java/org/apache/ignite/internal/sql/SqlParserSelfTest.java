@@ -38,7 +38,7 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         SqlCreateIndexCommand cmd =
             (SqlCreateIndexCommand)new SqlParser(null, "CREATE INDEX idx ON tbl(a)").nextCommand();
 
-        validate(cmd, null, "tbl", "idx", "a", false);
+        validate(cmd, null, "TBL", "IDX", "A", false);
     }
 
     /**
