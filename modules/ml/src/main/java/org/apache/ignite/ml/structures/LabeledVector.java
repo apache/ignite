@@ -27,20 +27,20 @@ import org.apache.ignite.ml.math.Vector;
  */
 public class LabeledVector<V extends Vector, T> {
     /** Vector. */
-    private V vector;
+    private final V vector;
 
     /** Label. */
-    private T label;
+    private final T lb;
 
     /**
      * Construct labeled vector.
      *
      * @param vector Vector.
-     * @param label Label.
+     * @param lb Label.
      */
-    public LabeledVector(V vector, T label) {
+    public LabeledVector(V vector, T lb) {
         this.vector = vector;
-        this.label = label;
+        this.lb = lb;
     }
 
     /**
@@ -58,6 +58,6 @@ public class LabeledVector<V extends Vector, T> {
      * @return Label.
      */
     public T label() {
-        return label;
+        return lb;
     }
 }

@@ -60,8 +60,8 @@ public abstract class CacheColumnDecisionTreeTrainerInput<K, V> implements Colum
 
     /**
      * Function which map value of entry with label key to DoubleStream.
-     * Look at {@see CacheColumnDecisionTreeTrainerInput::labels} for understanding how {@see labelsKeys} and
-     * {@see labelsMapper} interact.
+     * Look at {@code CacheColumnDecisionTreeTrainerInput::labels} for understanding how {@code labelsKeys} and
+     * {@code labelsMapper} interact.
      */
     private final IgniteFunction<V, DoubleStream> labelsMapper;
 

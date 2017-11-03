@@ -221,6 +221,9 @@ public class ProjectionsCache {
                 curBlockIdx = blockIdx;
             }
 
+            if (block == null)
+                throw new IllegalStateException("Unexpected null block at index " + i);
+
             RegionProjection reg = block.get(i % blockSize);
 
             if (reg.depth() <= maxDepth)
