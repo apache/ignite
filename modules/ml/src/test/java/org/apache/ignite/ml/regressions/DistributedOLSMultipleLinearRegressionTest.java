@@ -55,15 +55,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     /** Grid instance. */
     private Ignite ignite;
 
-    public DistributedOLSMultipleLinearRegressionTest(){ //TODO: should be moved to the separate test
+    public DistributedOLSMultipleLinearRegressionTest(){
 
         super(false);
 
 
     }
-
-
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -100,23 +97,12 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     }
 
     /** */
-    protected DistributedOLSMultipleLinearRegression createRegression() {
-        DistributedOLSMultipleLinearRegression regression = new DistributedOLSMultipleLinearRegression();
+    protected OLSMultipleLinearRegression createRegression() {
+        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(new SparseDistributedVector(y), new SparseBlockDistributedMatrix(x));
         return regression;
     }
-
-    /** */
-    protected int getNumberOfRegressors() {
-        return x[0].length + 1;
-    }
-
-    /** */
-    protected int getSampleSize() {
-        return y.length;
-    }
-
-
+    
     /** */
     @Test
     public void testPerfectFit() {
@@ -145,7 +131,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         Assert.assertEquals(0.0,
             TestUtils.maximumAbsoluteRowSum(errors.minus(refVar)),
             5.0e-16 * TestUtils.maximumAbsoluteRowSum(refVar));
-        Assert.assertEquals(1, ((DistributedOLSMultipleLinearRegression)regression).calculateRSquared(), 1E-12);
+        Assert.assertEquals(1, ((OLSMultipleLinearRegression)regression).calculateRSquared(), 1E-12);
     }
 
     /**
@@ -187,7 +173,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         final int nvars = 6;
 
         // Estimate the model
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from NIST
@@ -330,7 +316,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         final int nvars = 4;
 
         // Estimate the model
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from R
@@ -384,7 +370,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         // checkVarianceConsistency(model);
 
         // Estimate the model with no intercept
-        mdl = new DistributedOLSMultipleLinearRegression();
+        mdl = new OLSMultipleLinearRegression();
         mdl.setNoIntercept(true);
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
@@ -458,7 +444,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         int nvars = 2;
 
         // Estimate the model
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         Matrix hat = mdl.calculateHat();
@@ -505,7 +491,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     public void testYVariance() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         // assumes: y = new double[]{11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         mdl.newSampleData(new SparseDistributedVector(y), new SparseBlockDistributedMatrix(x));
         TestUtils.assertEquals(mdl.calculateYVariance(), 3.5, 0);
     }
@@ -523,20 +509,20 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             {25, 35, 45},
             {27, 37, 47}
         };
-        DistributedOLSMultipleLinearRegression regression = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
         regression.newSampleData(new SparseDistributedVector(y), new SparseBlockDistributedMatrix(x));
         Matrix combinedX = regression.getX().copy();
         Vector combinedY = regression.getY().copy();
         regression.newXSampleData(new SparseBlockDistributedMatrix(x));
         regression.newYSampleData(new SparseDistributedVector(y));
         for (int i = 0; i < combinedX.rowSize(); i++) {
-            for (int j = 0; j < combinedX.columnSize(); j++) {
+            for (int j = 0; j < combinedX.columnSize(); j++)
                 Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
-            }
+
         }
-        for (int i = 0; i < combinedY.size(); i++) {
+        for (int i = 0; i < combinedY.size(); i++)
             Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
-        }
+
 
 
         // No intercept
@@ -548,13 +534,13 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         regression.newYSampleData(new SparseDistributedVector(y));
 
         for (int i = 0; i < combinedX.rowSize(); i++) {
-            for (int j = 0; j < combinedX.columnSize(); j++) {
+            for (int j = 0; j < combinedX.columnSize(); j++)
                 Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
-            }
+
         }
-        for (int i = 0; i < combinedY.size(); i++) {
+        for (int i = 0; i < combinedY.size(); i++)
             Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
-        }
+
     }
 
     /** */
@@ -617,7 +603,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             2000719, 18,
             2613660, 19,
             3368421, 20};
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
         final int nvars = 5;
         final int nobs = 21;
@@ -685,7 +671,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             41.26528, 18,
             51.16209, 19,
             63.00000, 20};
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
         final int nvars = 5;
         final int nobs = 21;
@@ -754,7 +740,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             2611612, 19,
             3369180, 20};
 
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         final int nvars = 5;
         final int nobs = 21;
         double[] tmp = new double[(nvars + 1) * nobs];
@@ -824,7 +810,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             2408860, 19,
             3444321, 20};
 
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
         final int nvars = 5;
         final int nobs = 21;
         double[] tmp = new double[(nvars + 1) * nobs];
@@ -869,7 +855,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
      */
     public void testSingularCalculateBeta() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression(1e-15);
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression(1e-15);
         mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseBlockDistributedMatrix());
 
         try {
@@ -886,7 +872,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     /** */
     public void testNoDataNPECalculateBeta() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
         try {
             mdl.calculateBeta();
@@ -902,7 +888,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     /** */
     public void testNoDataNPECalculateHat() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
         try {
             mdl.calculateHat();
@@ -917,7 +903,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
 
     public void testNoDataNPESSTO() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
         try {
             mdl.calculateTotalSumOfSquares();
@@ -934,7 +920,7 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
     /** */
     public void testMathIllegalArgumentException() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        DistributedOLSMultipleLinearRegression mdl = new DistributedOLSMultipleLinearRegression();
+        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
 
 
         try {
@@ -945,6 +931,5 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
             return;
         }
         fail("MathIllegalArgumentException");
-
     }
 }
