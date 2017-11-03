@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trees.performance;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -75,10 +76,11 @@ import java.util.stream.DoubleStream;
  * Various benchmarks for hand runs.
  */
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
-    private static final String MNIST_TRAINING_IMAGES = "/home/enny/Downloads/train-images-idx3-ubyte";
-    private static final String MNIST_TRAINING_LABELS = "/home/enny/Downloads/train-labels-idx1-ubyte";
-    private static final String MNIST_TEST_IMAGES = "/home/enny/Downloads/t10k-images-idx3-ubyte";
-    private static final String MNIST_TEST_LABELS = "/home/enny/Downloads/t10k-labels-idx1-ubyte";
+    private static String PROP_TRAINING_IMAGES="mnist.training.images";
+    private static String PROP_TRAINING_LABELS="mnist.training.labels";
+    private static String PROP_TEST_IMAGES="mnist.test.images";
+    private static String PROP_TEST_LABELS="mnist.test.labels";
+
 
     /** Function to approximate. */
     private static Function<Vector, Double> f1 = v -> v.get(0) * v.get(0) + 2 * Math.sin(v.get(1)) + v.get(2);
@@ -137,8 +139,10 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         int ptsCnt = 40_000;
         int featCnt = 28 * 28;
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(MNIST_TRAINING_IMAGES, MNIST_TRAINING_LABELS, new Random(123L), ptsCnt);
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(MNIST_TEST_IMAGES, MNIST_TEST_LABELS, new Random(123L), 10_000);
+        Properties props = loadMNISTProperties();
+
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), ptsCnt);
+        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
 
         IgniteCache<BiIndex, Double> cache = createBiIndexedCache();
 
@@ -155,8 +159,6 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
         Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
         System.out.println(">>> Errs percentage: " + accuracy);
-
-        trainer.destroy();
 
         Assert.assertEquals(0, SplitCache.getOrCreate(ignite).size());
         Assert.assertEquals(0, FeaturesCache.getOrCreate(ignite).size());
@@ -176,8 +178,10 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         int ptsCnt = 30_000;
         int featCnt = 28 * 28;
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(MNIST_TRAINING_IMAGES, MNIST_TRAINING_LABELS, new Random(123L), ptsCnt);
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(MNIST_TEST_IMAGES, MNIST_TEST_LABELS, new Random(123L), 10_000);
+        Properties props = loadMNISTProperties();
+
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), ptsCnt);
+        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
 
         SparseDistributedMatrix m = new SparseDistributedMatrix(ptsCnt, featCnt + 1, StorageConstants.COLUMN_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
@@ -196,8 +200,6 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
         Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
         System.out.println(">>> Errs percentage: " + accuracy);
-
-        trainer.destroy();
 
         Assert.assertEquals(0, SplitCache.getOrCreate(ignite).size());
         Assert.assertEquals(0, FeaturesCache.getOrCreate(ignite).size());
@@ -244,8 +246,16 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
         IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.MSE();
         Double accuracy = mse.apply(mdl, Arrays.stream(testVectors).map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
         System.out.println(">>> MSE: " + accuracy);
+    }
 
-        trainer.destroy();
+    private static Properties loadMNISTProperties() throws IOException {
+        Properties res = new Properties();
+
+        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("trees/columntrees.manualrun.properties");
+
+        res.load(is);
+
+        return res;
     }
 
     /** */
@@ -294,8 +304,6 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
             System.out.println("Prediction: " + mdl.predict(sp.vector()) + "label: " + sp.doubleLabel());
             assert mdl.predict(sp.vector()) == sp.doubleLabel();
         });
-
-        trainer.destroy();
     }
 
     /**

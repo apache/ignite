@@ -189,7 +189,5 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
             System.out.println("Act: " + sp.label() + " " + " pred: " + mdl.predict(sp.vector()));
             assert mdl.predict(sp.vector()) == sp.doubleLabel();
         });
-
-        trainer.destroy();
     }
 }

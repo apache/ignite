@@ -78,7 +78,7 @@ import static org.apache.ignite.ml.trees.trainers.columnbased.caches.SplitCache.
  * Ideas from https://github.com/fabuzaid21/yggdrasil are used here.
  */
 public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implements
-    Trainer<DecisionTreeModel, ColumnDecisionTreeTrainerInput>, Destroyable {
+    Trainer<DecisionTreeModel, ColumnDecisionTreeTrainerInput> {
     /**
      * Function used to assign a value to a region.
      */
@@ -551,12 +551,5 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             },
             () -> IntStream.range(0, featuresCnt).mapToObj(fIdx -> SplitCache.key(fIdx, affinity.apply(ignite).apply(fIdx), trainingUUID)).collect(Collectors.toSet())
         );
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public void destroy() {
-        projectionsCache.destroy();
     }
 }
