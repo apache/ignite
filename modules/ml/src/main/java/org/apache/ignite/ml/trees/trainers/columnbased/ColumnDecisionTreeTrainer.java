@@ -42,6 +42,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.Vector;
@@ -335,7 +336,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 regsCnt++;
 
-                System.out.println("Globally best: " + best.info + " idx time: " + findBestRegIdx + ", calculate best: " + findBestSplit + " fi: " + best.featureIdx + ", regs: " + regsCnt);
+                X.println(">>> Globally best: " + best.info + " idx time: " + findBestRegIdx + ", calculate best: " + findBestSplit + " fi: " + best.featureIdx + ", regs: " + regsCnt);
                 // Request bitset for split region.
                 int ind = best.info.regionIndex();
 
@@ -367,8 +368,8 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
 
                 if (d > curDepth) {
                     curDepth = d;
-                    System.out.println("Depth: " + curDepth);
-                    System.out.println("Cache size: " + projectionsCache.size(CachePeekMode.PRIMARY));
+                    X.println(">>> Depth: " + curDepth);
+                    X.println(">>> Cache size: " + projectionsCache.size(CachePeekMode.PRIMARY));
                 }
 
                 before = System.currentTimeMillis();
@@ -421,16 +422,16 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                     },
                     bestRegsKeys);
 
-                System.out.println("Update of projs cache took " + (System.currentTimeMillis() - before));
+                X.println(">>> Update of projs cache took " + (System.currentTimeMillis() - before));
 
                 before = System.currentTimeMillis();
 
                 updateSplitCache(ind, rc, featuresCnt, ig -> i -> input.affinityKey(i, ig), uuid);
 
-                System.out.println("Update of split cache took " + (System.currentTimeMillis() - before));
+                X.println(">>> Update of split cache took " + (System.currentTimeMillis() - before));
             }
             else {
-                System.out.println("Best feature index: " + bestFeatureIdx + ", best infoGain " + bestInfoGain);
+                X.println(">>> Best feature index: " + bestFeatureIdx + ", best infoGain " + bestInfoGain);
                 break;
             }
         }

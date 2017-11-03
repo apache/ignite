@@ -85,9 +85,16 @@ import org.junit.Test;
  * Various benchmarks for hand runs.
  */
 public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
+    /** Name of the property specifying path to training set images. */
     private static String PROP_TRAINING_IMAGES = "mnist.training.images";
+
+    /** Name of property specifying path to training set labels. */
     private static String PROP_TRAINING_LABELS = "mnist.training.labels";
+
+    /** Name of property specifying path to test set images. */
     private static String PROP_TEST_IMAGES = "mnist.test.images";
+
+    /** Name of property specifying path to test set labels. */
     private static String PROP_TEST_LABELS = "mnist.test.labels";
 
     /** Function to approximate. */
@@ -221,6 +228,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
      * Test decision tree regression.
      */
     @Test
+    @Ignore
     public void testF1() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int ptsCnt = 10000;
