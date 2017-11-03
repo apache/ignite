@@ -130,7 +130,6 @@ public class DdlStatementsProcessor {
                     if (prop == null)
                         throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, col.name());
 
-                    // TODO: Is negation OK?
                     flds.put(prop.name(), !col.descending());
                 }
 
