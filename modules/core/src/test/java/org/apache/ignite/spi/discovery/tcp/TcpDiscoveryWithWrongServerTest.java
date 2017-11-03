@@ -41,6 +41,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Client-based discovery SPI test with non-Ignite servers.
  */
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
+    /** */
+    public static final String DEFAULT_CACHE_NAME = "myCache";
+
     /** Non-Ignite Server port #1. */
     private final static int SERVER_PORT = 47500;
 
