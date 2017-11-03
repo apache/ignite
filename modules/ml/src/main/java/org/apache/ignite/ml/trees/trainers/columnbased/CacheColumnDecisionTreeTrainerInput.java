@@ -69,7 +69,7 @@ public abstract class CacheColumnDecisionTreeTrainerInput<K, V> implements Colum
      * Constructs input for {@see org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}.
      *
      * @param c Cache.
-     * @param valuesMapper Function for mapping cache entry to stream used by {@see
+     * @param valuesMapper Function for mapping cache entry to stream used by {@link
      * org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}.
      * @param labelsMapper Function used for mapping cache value to labels array.
      * @param keyMapper Function used for mapping feature index to the cache key.

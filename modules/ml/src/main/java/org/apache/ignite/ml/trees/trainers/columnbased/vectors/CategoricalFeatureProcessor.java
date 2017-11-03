@@ -96,12 +96,12 @@ public class CategoricalFeatureProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public SplitInfo findBestSplit(RegionProjection<CategoricalRegionInfo> regionProjection, double[] values,
+    @Override public SplitInfo findBestSplit(RegionProjection<CategoricalRegionInfo> regionPrj, double[] values,
         double[] labels, int regIdx) {
-        Map<Integer, Integer> mapping = mapping(regionProjection.data().cats());
+        Map<Integer, Integer> mapping = mapping(regionPrj.data().cats());
 
-        return powerSet(regionProjection.data().cats().length()).
-            map(s -> split(s, regIdx, mapping, regionProjection.sampleIndexes(), values, labels, regionProjection.data().impurity())).
+        return powerSet(regionPrj.data().cats().length()).
+            map(s -> split(s, regIdx, mapping, regionPrj.sampleIndexes(), values, labels, regionPrj.data().impurity())).
             max(Comparator.comparingDouble(SplitInfo::infoGain)).
             orElse(null);
     }
@@ -118,11 +118,11 @@ public class CategoricalFeatureProcessor
     }
 
     /** {@inheritDoc} */
-    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<CategoricalRegionInfo> regionProjection,
+    @Override public SparseBitSet calculateOwnershipBitSet(RegionProjection<CategoricalRegionInfo> regionPrj,
         double[] values,
         CategoricalSplitInfo<CategoricalRegionInfo> s) {
         SparseBitSet res = new SparseBitSet();
-        Arrays.stream(regionProjection.sampleIndexes()).forEach(smpl -> res.set(smpl, s.bitSet().get((int)values[smpl])));
+        Arrays.stream(regionPrj.sampleIndexes()).forEach(smpl -> res.set(smpl, s.bitSet().get((int)values[smpl])));
         return res;
     }
 
@@ -167,7 +167,7 @@ public class CategoricalFeatureProcessor
         /**
          * @param bitCnt Size of set, subsets of which we iterate over.
          */
-        public PSI(int bitCnt) {
+        PSI(int bitCnt) {
             this.size = 1 << (bitCnt - 1);
         }
 

@@ -97,12 +97,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     /**
      * Cache used for storing data for training.
      */
-    private IgniteCache<RegionKey, List<RegionProjection>> projectionsCache;
-
-    /**
-     * Cache used for storing labels for training.
-     */
-    private IgniteCache<UUID, TrainingContext<D>> contextCache;
+    private IgniteCache<RegionKey, List<RegionProjection>> prjsCache;
 
     /**
      * Minimal information gain.
@@ -214,16 +209,16 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
      * {@inheritDoc}
      */
     @Override public DecisionTreeModel train(ColumnDecisionTreeTrainerInput i) {
-        projectionsCache = ProjectionsCache.getOrCreate(ignite);
-        contextCache = ContextCache.getOrCreate(ignite);
+        prjsCache = ProjectionsCache.getOrCreate(ignite);
+        IgniteCache<UUID, TrainingContext<D>> ctxtCache = ContextCache.getOrCreate(ignite);
         SplitCache.getOrCreate(ignite);
 
         UUID trainingUUID = UUID.randomUUID();
 
         TrainingContext<D> ct = new TrainingContext<>(i, continuousCalculatorProvider.apply(i), categoricalCalculatorProvider.apply(i), trainingUUID, ignite);
-        contextCache.put(trainingUUID, ct);
+        ctxtCache.put(trainingUUID, ct);
 
-        CacheUtils.bcast(projectionsCache.getName(), ignite, () -> {
+        CacheUtils.bcast(prjsCache.getName(), ignite, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<RegionKey, List<RegionProjection>> projCache = ProjectionsCache.getOrCreate(ignite);
             IgniteCache<FeatureKey, double[]> featuresCache = FeaturesCache.getOrCreate(ignite);
@@ -369,7 +364,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 if (d > curDepth) {
                     curDepth = d;
                     X.println(">>> Depth: " + curDepth);
-                    X.println(">>> Cache size: " + projectionsCache.size(CachePeekMode.PRIMARY));
+                    X.println(">>> Cache size: " + prjsCache.size(CachePeekMode.PRIMARY));
                 }
 
                 before = System.currentTimeMillis();
@@ -381,7 +376,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 int rc = regsCnt;
 
                 // Perform split.
-                CacheUtils.update(projectionsCache.getName(), ignite,
+                CacheUtils.update(prjsCache.getName(), ignite,
                     (Ignite ign, Cache.Entry<RegionKey, List<RegionProjection>> e) -> {
                         RegionKey k = e.getKey();
 
@@ -446,7 +441,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 map(k -> (Cache.Entry<RegionKey, List<RegionProjection>>)new CacheEntryImpl<>(k, projsCache.localPeek(k))).iterator();
         };
 
-        Map<Integer, Double> vals = CacheUtils.reduce(projectionsCache.getName(), ignite,
+        Map<Integer, Double> vals = CacheUtils.reduce(prjsCache.getName(), ignite,
             (TrainingContext ctx, Cache.Entry<RegionKey, List<RegionProjection>> e, Map<Integer, Double> m) -> {
                 int regBlockIdx = e.getKey().regionBlockIndex();
 

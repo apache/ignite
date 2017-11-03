@@ -41,6 +41,6 @@ public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Doub
      * @return label as double.
      */
     public double doubleLabel() {
-        return label().doubleValue();
+        return label();
     }
 }

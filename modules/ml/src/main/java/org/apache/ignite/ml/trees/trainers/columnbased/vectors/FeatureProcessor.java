@@ -34,7 +34,7 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
      *
      * @return best split by this feature among all splits of all regions.
      */
-    SplitInfo findBestSplit(RegionProjection<D> regionProjection, double[] values, double[] labels, int regIdx);
+    SplitInfo findBestSplit(RegionProjection<D> regionPrj, double[] values, double[] labels, int regIdx);
 
     /**
      * Creates initial region from samples.
@@ -50,7 +50,7 @@ public interface FeatureProcessor<D extends RegionInfo, S extends SplitInfo<D>> 
      * @param s data used for calculating the split.
      * @return Bitset mapping each data point to left (corresponding bit is set) or right subregion.
      */
-    SparseBitSet calculateOwnershipBitSet(RegionProjection<D> regionProjection, double[] values, S s);
+    SparseBitSet calculateOwnershipBitSet(RegionProjection<D> regionPrj, double[] values, S s);
 
     /**
      * Splits given region using bitset which maps data point to left or right subregion.
