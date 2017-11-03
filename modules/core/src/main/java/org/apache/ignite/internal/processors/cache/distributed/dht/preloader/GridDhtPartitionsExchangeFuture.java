@@ -881,7 +881,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.affinity().onBaselineTopologyChanged(this, crd);
 
-                if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode())
+                if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
                     cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology());
             }
             catch (Exception e) {
