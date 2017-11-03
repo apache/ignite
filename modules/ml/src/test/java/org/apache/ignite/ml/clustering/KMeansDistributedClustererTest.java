@@ -130,8 +130,8 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         Vector[] mc = new Vector[centersCnt];
         Arrays.fill(mc, VectorUtils.zeroes(2));
 
-        int centIndex = 0;
-        int totalCount = 0;
+        int centIdx = 0;
+        int totalCnt = 0;
 
         List<Vector> massCenters = new ArrayList<>();
 
@@ -140,12 +140,12 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
                 DenseLocalOnHeapVector pnt = (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(2).assign(centers.get(count));
                 // pertrubate point on random value.
                 pnt.map(val -> val + rnd.nextDouble() * squareSideLen / 100);
-                mc[centIndex] = mc[centIndex].plus(pnt);
-                points.assignRow(permutation.get(totalCount), pnt);
-                totalCount++;
+                mc[centIdx] = mc[centIdx].plus(pnt);
+                points.assignRow(permutation.get(totalCnt), pnt);
+                totalCnt++;
             }
-            massCenters.add(mc[centIndex].times(1 / (double)count));
-            centIndex++;
+            massCenters.add(mc[centIdx].times(1 / (double)count));
+            centIdx++;
         }
 
         EuclideanDistance dist = new EuclideanDistance();
@@ -169,6 +169,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         /** */
         List<Vector> orderedNodes;
 
+        /** */
         public OrderedNodesComparator(Vector[] orderedNodes, DistanceMeasure measure) {
             this.orderedNodes = Arrays.asList(orderedNodes);
             this.measure = measure;

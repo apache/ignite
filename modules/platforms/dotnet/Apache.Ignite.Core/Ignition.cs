@@ -28,11 +28,13 @@ namespace Apache.Ignite.Core
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Log;
@@ -211,6 +213,8 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
+
             lock (SyncRoot)
             {
                 // 0. Init logger
@@ -239,7 +243,7 @@ namespace Apache.Ignite.Core
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
-                IUnmanagedTarget interopProc = null;
+                PlatformJniTarget interopProc = null;
 
                 try
                 {
@@ -249,11 +253,13 @@ namespace Apache.Ignite.Core
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
-                    interopProc = node.InteropProcessor;
+                    interopProc = (PlatformJniTarget)node.InteropProcessor;
 
                     var javaLogger = log as JavaLogger;
                     if (javaLogger != null)
-                        javaLogger.SetProcessor(interopProc);
+                    {
+                        javaLogger.SetIgnite(node);
+                    }
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -277,7 +283,7 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Context, gridName, true);
+                        UU.IgnitionStop(interopProc.Target.Context, gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
@@ -291,10 +297,14 @@ namespace Apache.Ignite.Core
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }
@@ -444,6 +454,8 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "PlatformJniTarget is passed further")]
         internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
         {
             try
@@ -460,7 +472,8 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
-                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name,
+                    new PlatformJniTarget(interopProc, _startup.Marshaller), _startup.Marshaller,
                     _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)
@@ -720,6 +733,21 @@ namespace Apache.Ignite.Core
             }
 
             GC.Collect();
+        }
+
+        /// <summary>
+        /// Connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <param name="clientConfiguration">The client configuration.</param>
+        /// <returns>Ignite instance.</returns>
+        public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
+        {
+            IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
+            IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
+
+            return new IgniteClient(clientConfiguration);
         }
 
         /// <summary>

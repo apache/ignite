@@ -17,6 +17,7 @@
         "className": "Integer"
       }
     ],
+    "keyFieldName": "id",
     "valueFields": [
       {
         "databaseFieldName": "NAME",
@@ -60,6 +61,7 @@
         "className": "String"
       }
     ],
+    "keyFieldName": "id",
     "valueFields": [
       {
         "databaseFieldName": "COUNTRY_ID",
@@ -156,6 +158,7 @@
         "className": "Double"
       }
     ],
+    "keyFieldName": "id",
     "valueFields": [
       {
         "databaseFieldName": "DEPARTMENT_ID",
@@ -241,6 +244,7 @@
         "className": "Integer"
       }
     ],
+    "keyFieldName": "id",
     "valueFields": [
       {
         "databaseFieldName": "NAME",
@@ -284,6 +288,7 @@
         "className": "String"
       }
     ],
+    "keyFieldName": "id",
     "valueFields": [
       {
         "databaseFieldName": "PARKING_ID",

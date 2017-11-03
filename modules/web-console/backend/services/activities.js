@@ -50,16 +50,8 @@ module.exports.factory = (_, mongo) => {
 
             const date = Date.UTC(now.getFullYear(), now.getMonth(), 1);
 
-            return mongo.Activities.findOne({owner, action, date}).exec()
-                .then((activity) => {
-                    if (activity) {
-                        activity.amount++;
-
-                        return activity.save();
-                    }
-
-                    return mongo.Activities.create({owner, action, group, date});
-                });
+            return mongo.Activities.findOneAndUpdate({owner, action, date},
+                {$set: {owner, group, action, date}, $inc: {amount: 1}}, {new: true, upsert: true}).exec();
         }
 
         static total({startDate, endDate}) {

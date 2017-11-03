@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
@@ -62,6 +64,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_G
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXECUTE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 
 /**
@@ -356,41 +360,29 @@ public class GridJettyRestHandler extends AbstractHandler {
 
             U.error(log, "Failed to process HTTP request [action=" + act + ", req=" + req + ']', e);
 
-            cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
-
             if (e instanceof Error)
                 throw (Error)e;
-        }
 
-        String json;
+            cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
+        }
 
         try {
-            json = jsonMapper.writeValueAsString(cmdRes);
-        }
-        catch (JsonProcessingException e1) {
-            U.error(log, "Failed to convert response to JSON: " + cmdRes, e1);
-
-            GridRestResponse resFailed = new GridRestResponse(STATUS_FAILED, e1.getMessage());
+            ServletOutputStream os = res.getOutputStream();
 
             try {
-                json = jsonMapper.writeValueAsString(resFailed);
+                jsonMapper.writeValue(os, cmdRes);
             }
-            catch (JsonProcessingException e2) {
-                json = "{\"successStatus\": \"1\", \"error:\" \"" + e2.getMessage() + "\"}}";
+            catch (JsonProcessingException e) {
+                U.error(log, "Failed to convert response to JSON: " + cmdRes, e);
+
+                jsonMapper.writeValue(os, F.asMap("successStatus", STATUS_FAILED, "error", e.getMessage()));
             }
-        }
-
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Parsed command response into JSON object: " + json);
-
-            res.getWriter().write(json);
 
             if (log.isDebugEnabled())
                 log.debug("Processed HTTP request [action=" + act + ", jsonRes=" + cmdRes + ", req=" + req + ']');
         }
         catch (IOException e) {
-            U.error(log, "Failed to send HTTP response: " + json, e);
+            U.error(log, "Failed to send HTTP response: " + cmdRes, e);
         }
     }
 
@@ -547,6 +539,21 @@ public class GridJettyRestHandler extends AbstractHandler {
             case NAME:
             case VERSION: {
                 restReq = new GridRestRequest();
+
+                break;
+            }
+
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_CURRENT_STATE: {
+                GridRestChangeStateRequest restReq0 = new GridRestChangeStateRequest();
+
+                if (cmd == CLUSTER_CURRENT_STATE)
+                    restReq0.reqCurrentState();
+                else
+                    restReq0.active(cmd == CLUSTER_ACTIVE);
+
+                restReq = restReq0;
 
                 break;
             }

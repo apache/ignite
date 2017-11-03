@@ -75,7 +75,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param keys Entry keys.
      * @param msg Initial message.
      */
-    public void  txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
+    public void txKeyInfo(UUID nodeId, int cacheId, Collection<KeyCacheObject> keys, String msg) {
         closure(nodeId).add(msg, new TxEntriesInfoClosure(cacheId, keys));
     }
 
@@ -146,7 +146,8 @@ public class IgniteDiagnosticPrepareContext {
             @Override public void apply(IgniteInternalFuture<String> fut) {
                 synchronized (IgniteDiagnosticPrepareContext.class) {
                     try {
-                        log.info(fut.get());
+                        if (log.isInfoEnabled())
+                            log.info(fut.get());
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to dump diagnostic info: " + e, e);

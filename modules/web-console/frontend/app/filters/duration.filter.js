@@ -36,6 +36,6 @@ export default [() => {
         const s = Math.floor((t - d * cd - h * ch - m * cm) / cs);
         const ms = Math.round(t % 1000);
 
-        return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < cm ? ms + 'ms' : '');
+        return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t === 0 || (t < cm && ms !== 0) ? ms + 'ms' : '');
     };
 }];

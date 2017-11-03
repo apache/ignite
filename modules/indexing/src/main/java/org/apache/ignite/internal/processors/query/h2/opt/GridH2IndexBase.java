@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -35,7 +28,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -43,17 +35,18 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -70,13 +63,29 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.buildCollocationModel;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
@@ -91,15 +100,6 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 public abstract class GridH2IndexBase extends BaseIndex {
     /** */
     private static final Object EXPLICIT_NULL = new Object();
-
-    /** */
-    private static final AtomicLong idxIdGen = new AtomicLong();
-
-    /** */
-    protected final long idxId = idxIdGen.incrementAndGet();
-
-    /** */
-    private final ThreadLocal<Object> snapshot = new ThreadLocal<>();
 
     /** */
     private Object msgTopic;
@@ -168,8 +168,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * Attempts to destroys index and release all the resources.
      * We use this method instead of {@link #close(Session)} because that method
      * is used by H2 internally.
+     *
+     * @param rmv Flag remove.
      */
-    public void destroy() {
+    public void destroy(boolean rmv) {
         if (msgLsnr != null)
             kernalContext().io().removeMessageListener(msgTopic, msgLsnr);
     }
@@ -198,16 +200,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row put(GridH2Row row);
 
     /**
-     * Puts row.
-     *
-     * @param row Row.
-     * @return {@code True} if replaced existing row.
-     */
-    public boolean putx(GridH2Row row) {
-        return put(row) != null;
-    }
-
-    /**
      * Remove row from index.
      *
      * @param row Row.
@@ -222,40 +214,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     public void removex(SearchRow row) {
         remove(row);
-    }
-
-    /**
-     * Finds a single row by the given row.
-     *
-     * @param row Search row.
-     * @return Search result.
-     */
-    public abstract GridH2Row findOne(GridH2Row row);
-
-    /**
-     * Takes or sets existing snapshot to be used in current thread.
-     *
-     * @param s Optional existing snapshot to use.
-     * @param qctx Query context.
-     * @return Snapshot.
-     */
-    public final Object takeSnapshot(@Nullable Object s, GridH2QueryContext qctx) {
-        assert snapshot.get() == null;
-
-        if (s == null)
-            s = doTakeSnapshot();
-
-        if (s != null) {
-            if (s instanceof GridReservable && !((GridReservable)s).reserve())
-                return null;
-
-            snapshot.set(s);
-
-            if (qctx != null)
-                qctx.putSnapshot(idxId, s);
-        }
-
-        return s;
     }
 
     /**
@@ -300,38 +258,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /** {@inheritDoc} */
     @Override public GridH2Table getTable() {
         return (GridH2Table)super.getTable();
-    }
-
-    /**
-     * Takes and returns actual snapshot or {@code null} if snapshots are not supported.
-     *
-     * @return Snapshot or {@code null}.
-     */
-    @Nullable protected abstract IgniteTree doTakeSnapshot();
-
-    /**
-     * @return Thread local snapshot.
-     */
-    @SuppressWarnings("unchecked")
-    protected <T> T threadLocalSnapshot() {
-        return (T)snapshot.get();
-    }
-
-    /**
-     * Releases snapshot for current thread.
-     */
-    public void releaseSnapshot() {
-        Object s = snapshot.get();
-
-        assert s != null;
-
-        snapshot.remove();
-
-        if (s instanceof GridReservable)
-            ((GridReservable)s).release();
-
-        if (s instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable)s);
     }
 
     /**
@@ -498,11 +424,9 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
                 if (msg.bounds() != null) {
                     // This is the first request containing all the search rows.
-                    IgniteTree snapshotTree = qctx.getSnapshot(idxId);
-
                     assert !msg.bounds().isEmpty() : "empty bounds";
 
-                    src = new RangeSource(msg.bounds(), msg.segment(), snapshotTree, qctx.filter());
+                    src = new RangeSource(msg.bounds(), msg.segment(), qctx.filter());
                 }
                 else {
                     // This is request to fetch next portion of data.
@@ -619,7 +543,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         if (isLocalQry) {
             if (partMap != null && !partMap.containsKey(cctx.localNodeId()))
-                return Collections.<SegmentKey>emptyList(); // Prevent remote index call for local queries.
+                return Collections.emptyList(); // Prevent remote index call for local queries.
 
             nodes = Collections.singletonList(cctx.localNode());
         }
@@ -891,26 +815,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected int segmentForRow(SearchRow row) {
         assert row != null;
 
+        if (segmentsCount() == 1 || ctx == null)
+            return 0;
+
         CacheObject key;
 
-        if (ctx != null) {
-            final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(KEY_COL);
 
-            assert keyColValue != null;
+        assert keyColValue != null;
 
-            final Object o = keyColValue.getObject();
+        final Object o = keyColValue.getObject();
 
-            if (o instanceof CacheObject)
-                key = (CacheObject)o;
-            else
-                key = ctx.toCacheKeyObject(o);
+        if (o instanceof CacheObject)
+            key = (CacheObject)o;
+        else
+            key = ctx.toCacheKeyObject(o);
 
-            return segmentForPartition(ctx.affinity().partition(key));
-        }
-
-        assert segmentsCount() == 1;
-
-        return 0;
+        return segmentForPartition(ctx.affinity().partition(key));
     }
 
     /**
@@ -1543,9 +1464,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
         int curRangeId = -1;
 
         /** */
-        final IgniteTree tree;
-
-        /** */
         private final int segment;
 
         /** */
@@ -1556,18 +1474,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         /**
          * @param bounds Bounds.
-         * @param tree Snapshot.
          * @param filter Filter.
          */
         RangeSource(
             Iterable<GridH2RowRangeBounds> bounds,
             int segment,
-            IgniteTree tree,
             IndexingQueryFilter filter
         ) {
             this.segment = segment;
             this.filter = filter;
-            this.tree = tree;
             boundsIter = bounds.iterator();
         }
 
@@ -1623,7 +1538,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 SearchRow first = toSearchRow(bounds.first());
                 SearchRow last = toSearchRow(bounds.last());
 
-                IgniteTree t = tree != null ? tree : treeForRead(segment);
+                IgniteTree t = treeForRead(segment);
 
                 iter = new CursorIteratorWrapper(doFind0(t, first, true, last, filter));
 
@@ -1670,14 +1585,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected static class FilteringCursor implements GridCursor<GridH2Row> {
         /** */
         private final GridCursor<GridH2Row> cursor;
+
         /** */
-        private final IgniteBiPredicate<Object, Object> fltr;
+        private final IndexingQueryCacheFilter fltr;
 
         /** */
         private final long time;
-
-        /** Is value required for filtering predicate? */
-        private final boolean isValRequired;
 
         /** */
         private GridH2Row next;
@@ -1691,19 +1604,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
             String cacheName) {
             this.cursor = cursor;
-
             this.time = time;
-
-            if (qryFilter != null) {
-                this.fltr = qryFilter.forCache(cacheName);
-
-                this.isValRequired = qryFilter.isValueRequired();
-            }
-            else {
-                this.fltr = null;
-
-                this.isValRequired = false;
-            }
+            this.fltr = qryFilter != null ? qryFilter.forCache(cacheName) : null;
         }
 
         /**
@@ -1719,12 +1621,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 return true;
 
             Object key = row.getValue(KEY_COL).getObject();
-            Object val = isValRequired ? row.getValue(VAL_COL).getObject() : null;
 
-            assert key != null;
-            assert !isValRequired || val != null;
-
-            return fltr.apply(key, val);
+            return fltr.apply(key);
         }
 
         /** {@inheritDoc} */

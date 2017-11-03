@@ -24,10 +24,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
@@ -42,12 +41,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import java.nio.file.OpenOption;
+
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
 public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
-
     /** */
     private static final String TEST_CACHE = "testCache";
 
@@ -78,23 +82,15 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration()
-                .setName("dfltMemPlc")
-                .setInitialSize(2 * 1024L * 1024L * 1024L);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
+            .setFileIOFactory(new FailingFileIOFactory())
+            .setWalMode(WALMode.BACKGROUND)
+            // Setting WAL Segment size to high values forces flushing by timeout.
+            .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-                .setMemoryPolicies(memPlcCfg)
-                .setDefaultMemoryPolicyName(memPlcCfg.getName());
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
-                .setFileIOFactory(new FailingFileIOFactory())
-                .setWalMode(WALMode.BACKGROUND)
-                // Setting WAL Segment size to high values forces flushing by timeout.
-                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
-
-        cfg.setPersistentStoreConfiguration(storeCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -159,7 +155,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
@@ -168,22 +164,22 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     private static class FailingFileIOFactory implements FileIOFactory {
         private static final long serialVersionUID = 0L;
 
+        /** */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
-        @Override
-        public FileIO create(File file) throws IOException {
-            return create(file, "rw");
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return create(file, CREATE, READ, WRITE);
         }
 
-        @Override
-        public FileIO create(File file, String mode) throws IOException {
-            FileIO delegate = delegateFactory.create(file, mode);
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override
-                public int write(ByteBuffer sourceBuffer) throws IOException {
+                @Override public int write(ByteBuffer sourceBuffer) throws IOException {
                     if (--writeAttempts == 0)
                         throw new RuntimeException("Test exception. Unable to write to file.");
 

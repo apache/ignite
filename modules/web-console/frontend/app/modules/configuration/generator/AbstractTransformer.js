@@ -134,8 +134,13 @@ export default class AbstractTransformer {
     }
 
     // Generate memory configuration group.
-    static clusterMemory(memoryConfiguration) {
-        return this.toSection(this.generator.clusterMemory(memoryConfiguration));
+    static clusterMemory(memoryConfiguration, available) {
+        return this.toSection(this.generator.clusterMemory(memoryConfiguration, available));
+    }
+
+    // Generate memory configuration group.
+    static clusterDataStorageConfiguration(dataStorageCfg, available) {
+        return this.toSection(this.generator.clusterDataStorageConfiguration(dataStorageCfg, available));
     }
 
     // Generate marshaller group.
@@ -294,7 +299,7 @@ export default class AbstractTransformer {
     }
 
     // Generate caches configs.
-    static clusterCheckpoint(cluster, available, caches) {
+    static clusterCheckpoint(cluster, caches) {
         return this.toSection(this.generator.clusterCheckpoint(cluster, caches));
     }
 

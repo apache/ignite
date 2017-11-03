@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -419,6 +420,33 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 assertEquals(idx, (int)map.get(idx).field("val"));
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSingletonList() throws Exception {
+        IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
+
+        c.put(0, Collections.singletonList(new TestObject(123)));
+
+        Collection<TestObject> cFromCache = c.get(0);
+
+        assertEquals(1, cFromCache.size());
+        assertEquals(123, cFromCache.iterator().next().val);
+
+        IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
+
+        Collection<?> cBinary = kpc.get(0);
+
+        assertEquals(1, cBinary.size());
+
+        Object bObj = cBinary.iterator().next();
+
+        assertTrue(bObj instanceof BinaryObject);
+        assertEquals(Collections.singletonList(null).getClass(), cBinary.getClass());
+
+        assertEquals(Integer.valueOf(123), ((BinaryObject) bObj).field("val"));
     }
 
     /**

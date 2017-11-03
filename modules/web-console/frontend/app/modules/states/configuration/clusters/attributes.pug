@@ -48,10 +48,10 @@ include /app/helpers/jade/mixins
                                             a.labelFormField(ng-click='tableStartEdit(backupItem, attributesTbl, $index)') {{item.name}} = {{item.value}}
                                             +btn-remove('tableRemove(backupItem, attributesTbl, $index)', '"Remove attribute"')
                                         td.col-sm-12(ng-show='tableEditing(attributesTbl, $index)')
-                                            +table-pair-edit('attributesTbl', 'cur', 'Attribute name', 'Attribute value', false, false, '{{::attributesTbl.focusId + $index}}', '$index', '=')
+                                            +table-pair-edit('attributesTbl', 'cur', 'Attribute name', 'Attribute value', false, '{{::attributesTbl.focusId + $index}}', '$index', '=')
                                 tfoot(ng-show='tableNewItemActive(attributesTbl)')
                                     tr
                                         td.col-sm-12
-                                            +table-pair-edit('attributesTbl', 'new', 'Attribute name', 'Attribute value', false, false, '{{::attributesTbl.focusId + $index}}', '-1', '=')
+                                            +table-pair-edit('attributesTbl', 'new', 'Attribute name', 'Attribute value', false, '{{::attributesTbl.focusId + $index}}', '-1', '=')
             .col-sm-6
                 +preview-xml-java(model, 'clusterUserAttributes')

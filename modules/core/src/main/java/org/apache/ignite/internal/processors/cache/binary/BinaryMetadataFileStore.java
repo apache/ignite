@@ -24,7 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class handles saving/restoring binary metadata to/from disk.
@@ -33,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * which may lead to segmentation of nodes from cluster.
  */
 class BinaryMetadataFileStore {
-    /** */
+    /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
 
     /** */
@@ -49,23 +51,33 @@ class BinaryMetadataFileStore {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
+     * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta and consistentId
      */
-    BinaryMetadataFileStore(ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache, GridKernalContext ctx, IgniteLogger log) throws IgniteCheckedException {
+    BinaryMetadataFileStore(
+        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
+        final GridKernalContext ctx,
+        final IgniteLogger log,
+        @Nullable final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
+
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
         this.log = log;
 
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
-        String consId = U.maskForFileName(ctx.discovery().consistentId().toString());
+        if (binaryMetadataFileStoreDir != null)
+            workDir = binaryMetadataFileStoreDir;
+        else {
+            final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
 
-        workDir = new File(U.resolveWorkDirectory(
-            ctx.config().getWorkDirectory(),
-            "binary_meta",
-            false
-        ),
-            consId);
+            workDir = new File(U.resolveWorkDirectory(
+                ctx.config().getWorkDirectory(),
+                "binary_meta",
+                false
+            ),
+                subFolder);
+        }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
     }
@@ -74,7 +86,7 @@ class BinaryMetadataFileStore {
      * @param binMeta Binary metadata to be written to disk.
      */
     void saveMetadata(BinaryMetadata binMeta) {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         try {
@@ -96,7 +108,7 @@ class BinaryMetadataFileStore {
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
      */
     void restoreMetadata() {
-        if (!ctx.config().isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
         for (File file : workDir.listFiles()) {

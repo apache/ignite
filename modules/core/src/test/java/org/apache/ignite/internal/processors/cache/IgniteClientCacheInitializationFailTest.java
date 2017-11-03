@@ -43,12 +43,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -192,7 +193,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * @param client Client.
      */
-    @SuppressWarnings("ThrowableNotThrown")
+    @SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
     private void checkFailedCache(final Ignite client, final String cacheName) {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -235,17 +236,17 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, SqlQuery qry,
-            boolean keepBinary, int mainCacheId) throws IgniteCheckedException {
+        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName,
+            SqlQuery qry, boolean keepBinary, int mainCacheId) throws IgniteCheckedException {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public FieldsQueryCursor<List<?>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-            boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId) throws IgniteCheckedException {
+        @Override public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName,
+            SqlFieldsQuery qry, boolean keepBinary, GridQueryCancel cancel,
+            @Nullable Integer mainCacheId, boolean failOnMultipleStmts) throws IgniteCheckedException {
             return null;
         }
-
 
         /** {@inheritDoc} */
         @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,
@@ -254,8 +255,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, SqlQuery qry,
-            IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
+        @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
+            SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
             return null;
         }
 
@@ -266,8 +267,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName, String qry,
-            String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
+        @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName,
+            String cacheName, String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
             return null;
         }
 
@@ -284,6 +285,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
+                                               boolean ifTblExists, boolean ifColNotExists)
+            throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
             GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
             if (FAILED_CACHES.contains(cctx.name()) && cctx.kernalContext().clientNode())
@@ -291,7 +299,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(String spaceName) throws IgniteCheckedException {
+        @Override public void unregisterCache(String spaceName, boolean destroy) throws IgniteCheckedException {
             // No-op
         }
 
@@ -302,15 +310,13 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void store(String cacheName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-            CacheObject val, GridCacheVersion ver, long expirationTime, long link) throws IgniteCheckedException {
-            // No-op
+        @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-            CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
-            // No-op
+        @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

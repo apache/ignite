@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.ml.math.impls.matrix;
 
-import org.apache.ignite.ml.math.MatrixKeyMapper;
+import org.apache.ignite.ml.math.distributed.MatrixKeyMapper;
 
 /** */
 public class MatrixKeyMapperForTests implements MatrixKeyMapper<Integer> {

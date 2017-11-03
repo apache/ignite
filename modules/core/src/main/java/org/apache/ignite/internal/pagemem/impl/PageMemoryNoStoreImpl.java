@@ -27,14 +27,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -125,11 +125,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Direct memory allocator. */
     private final DirectMemoryProvider directMemoryProvider;
 
-    /** Name of MemoryPolicy this PageMemory is associated with. */
-    private final MemoryPolicyConfiguration memoryPolicyCfg;
+    /** Name of DataRegion this PageMemory is associated with. */
+    private final DataRegionConfiguration dataRegionCfg;
 
     /** Object to collect memory usage metrics. */
-    private final MemoryMetricsImpl memMetrics;
+    private final DataRegionMetricsImpl memMetrics;
 
     /** */
     private AtomicLong freePageListHead = new AtomicLong(INVALID_REL_PTR);
@@ -163,7 +163,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param directMemoryProvider Memory allocator to use.
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
-     * @param memPlcCfg Memory Policy configuration.
+     * @param dataRegionCfg Data region configuration.
      * @param memMetrics Memory Metrics.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
@@ -172,8 +172,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         DirectMemoryProvider directMemoryProvider,
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
-        MemoryPolicyConfiguration memPlcCfg,
-        MemoryMetricsImpl memMetrics,
+        DataRegionConfiguration dataRegionCfg,
+        DataRegionMetricsImpl memMetrics,
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
@@ -183,21 +183,21 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
-        memoryPolicyCfg = memPlcCfg;
+        this.dataRegionCfg = dataRegionCfg;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
         assert sysPageSize % 8 == 0 : sysPageSize;
 
-        totalPages = (int)(memPlcCfg.getMaxSize() / sysPageSize);
+        totalPages = (int)(dataRegionCfg.getMaxSize() / sysPageSize);
 
         rwLock = new OffheapReadWriteLock(lockConcLvl);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        long startSize = memoryPolicyCfg.getInitialSize();
-        long maxSize = memoryPolicyCfg.getMaxSize();
+        long startSize = dataRegionCfg.getInitialSize();
+        long maxSize = dataRegionCfg.getMaxSize();
 
         long[] chunks = new long[SEG_CNT];
 
@@ -290,9 +290,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         if (relPtr == INVALID_REL_PTR)
             throw new IgniteOutOfMemoryException("Not enough memory allocated " +
-                "(consider increasing memory policy size or enabling evictions) " +
-                "[policyName=" + memoryPolicyCfg.getName() +
-                ", size=" + U.readableSize(memoryPolicyCfg.getMaxSize(), true) + "]"
+                "[policyName=" + dataRegionCfg.getName() +
+                ", size=" + U.readableSize(dataRegionCfg.getMaxSize(), true) + "]" + U.nl() +
+                "Consider increasing memory policy size, enabling evictions, adding more nodes to the cluster, " +
+                "reducing number of backups or reducing model size."
+
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
@@ -615,7 +617,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             if (oldRef != null) {
                 if (log.isInfoEnabled())
-                    log.info("Allocated next memory segment [plcName=" + memoryPolicyCfg.getName() +
+                    log.info("Allocated next memory segment [plcName=" + dataRegionCfg.getName() +
                         ", chunkSize=" + U.readableSize(region.size(), true) + ']');
             }
 

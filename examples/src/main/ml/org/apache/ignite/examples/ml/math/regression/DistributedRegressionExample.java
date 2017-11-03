@@ -30,7 +30,7 @@ import org.apache.ignite.thread.IgniteThread;
 /**
  * Run linear regression over distributed matrix.
  *
- * TODO: Currently works only in local mode.
+ * TODO: IGNITE-6222, Currently works only in local mode.
  *
  * @see OLSMultipleLinearRegression
  */

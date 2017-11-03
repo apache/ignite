@@ -22,6 +22,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.impls.matrix.FunctionMatrix;
 
 /**
@@ -121,5 +122,10 @@ public abstract class AbstractReadOnlyVector extends AbstractVector {
         double denominator = normLen * Math.log(power);
 
         return new FunctionVector(size(), (idx) -> Math.log1p(get(idx)) / denominator);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compute(int idx, IgniteIntDoubleToDoubleBiFunction f) {
+        throw new UnsupportedOperationException();
     }
 }

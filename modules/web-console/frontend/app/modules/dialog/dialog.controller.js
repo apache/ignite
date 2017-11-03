@@ -33,8 +33,4 @@ export default ['$rootScope', '$scope', 'IgniteDialog', function($root, $scope, 
     $scope.$watch(() => ctrl.content, () => {
         $scope.content = ctrl.content;
     });
-
-    $root.$on('$stateChangeStart', () => {
-        dialog.hide();
-    });
 }];

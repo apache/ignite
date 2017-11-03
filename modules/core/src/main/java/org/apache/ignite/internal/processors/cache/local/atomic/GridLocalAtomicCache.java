@@ -340,7 +340,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final boolean deserializeBinary,
         boolean recovery,
         final boolean skipVals,
-        boolean canRemap,
         final boolean needVer
     ) {
         A.notNull(keys, "keys");
@@ -543,7 +542,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             /*force primary*/false,
             expiry,
             skipVals,
-            /*can remap*/true,
             needVer).get();
     }
 
@@ -832,7 +830,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+        ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
 
         if (writeThrough && keys.size() > 1) {
             return updateWithBatch(op,
@@ -866,8 +864,11 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            if (op == UPDATE)
+            if (op == UPDATE) {
                 val = ctx.toCacheObject(val);
+
+                ctx.validateKeyAndValue(cacheKey, (CacheObject)val);
+            }
             else if (op == TRANSFORM)
                 ctx.kernalContext().resource().inject(val, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, ctx.name());
 
@@ -1055,6 +1056,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         Object updatedVal = null;
                         CacheInvokeResult invokeRes = null;
 
+                        boolean validation = false;
+
                         try {
                             Object computed = entryProcessor.process(invokeEntry, invokeArgs);
 
@@ -1064,11 +1067,23 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                             if (computed != null)
                                 invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
+
+                            if (invokeEntry.modified()) {
+                                validation = true;
+
+                                ctx.validateKeyAndValue(entry.key(), updated);
+                            }
                         }
                         catch (Exception e) {
                             invokeRes = CacheInvokeResult.fromError(e);
 
                             updated = old;
+
+                            if (validation) {
+                                invokeResMap.put((K)entry.key().value(ctx.cacheObjectContext(), false), invokeRes);
+
+                                continue;
+                            }
                         }
 
                         if (invokeRes != null)
@@ -1158,8 +1173,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 null,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /**update-metrics*/true,
-                                /**event*/true,
+                                /*update-metrics*/true,
+                                /*event*/true,
                                 subjId,
                                 null,
                                 taskName,
@@ -1174,6 +1189,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
                             cacheVal = ctx.toCacheObject(ctx.unwrapTemporary(interceptorVal));
                         }
+
+                        ctx.validateKeyAndValue(entry.key(), cacheVal);
 
                         if (putMap == null) {
                             putMap = new LinkedHashMap<>(size, 1.0f);
@@ -1191,8 +1208,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 null,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /**update-metrics*/true,
-                                /**event*/true,
+                                /*update-metrics*/true,
+                                /*event*/true,
                                 subjId,
                                 null,
                                 taskName,

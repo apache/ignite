@@ -425,6 +425,57 @@ namespace ignite
         {
             typedef T2 type;
         };
+
+        /**
+         * Utility class to bind class instance with member function.
+         */
+        template<typename R, typename T>
+        class BoundInstance
+        {
+        public:
+            typedef R FunctionReturnType;
+            typedef T ClassType;
+            typedef FunctionReturnType(ClassType::* MemberFunctionType)();
+
+            /**
+             * Constructor.
+             *
+             * @param instance Class instance.
+             * @param mfunc Member function.
+             */
+            BoundInstance(ClassType* instance, MemberFunctionType mfunc) : 
+                instance(instance),
+                mfunc(mfunc)
+            {
+                // No-op.
+            }
+
+            /**
+             * Invoke operator.
+             *
+             * @return Result of the invokation of the member function on the bound instance.
+             */
+            FunctionReturnType operator()()
+            {
+                return (instance->*mfunc)();
+            }
+                
+        private:
+            /** Instance reference. */
+            ClassType* instance;
+
+            /** Member function pointer. */
+            MemberFunctionType mfunc;
+        };
+
+        /**
+         * Utility function for binding.
+         */
+        template<typename R, typename T>
+        BoundInstance<R, T> Bind(T* instance, R(T::* mfunc)())
+        {
+            return BoundInstance<R, T>(instance, mfunc);
+        }
     }
 }
 

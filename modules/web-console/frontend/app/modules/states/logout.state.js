@@ -17,18 +17,16 @@
 
 import angular from 'angular';
 
-angular
-.module('ignite-console.states.logout', [
+angular.module('ignite-console.states.logout', [
     'ui.router'
 ])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
+.config(['$stateProvider', function($stateProvider) {
     // set up the states
-    $stateProvider
-    .state('logout', {
+    $stateProvider.state('logout', {
         url: '/logout',
-        onEnter: AclRoute.checkAccess('logout'),
+        permission: 'logout',
         controller: ['Auth', (Auth) => Auth.logout()],
-        metaTags: {
+        tfMetaTags: {
             title: 'Logout'
         }
     });

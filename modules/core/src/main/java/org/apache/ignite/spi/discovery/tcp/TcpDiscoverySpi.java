@@ -433,6 +433,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         return impl.getNode(nodeId);
     }
 
+    /**
+     * @param id Id.
+     */
+    public ClusterNode getNode0(UUID id) {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).getNode0(id);
+
+        return getNode(id);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
         return impl.pingNode(nodeId);
@@ -956,10 +966,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             initAddresses();
 
-            Serializable cfgId = ignite.configuration().getConsistentId();
+            final Serializable cfgId = ignite.configuration().getConsistentId();
 
             if (cfgId == null) {
-                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
                 Collections.sort(sortedAddrs);
 
@@ -1468,6 +1478,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
+     * @param node Target node.
+     * @param sock Socket.
+     * @param out Stream to write to.
+     * @param msg Message.
+     * @param timeout Timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(
+        ClusterNode node,
+        Socket sock,
+        OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
+        long timeout) throws IOException, IgniteCheckedException {
+        writeToSocket(sock, out, msg, timeout);
+    }
+
+    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
@@ -1585,7 +1613,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
+                    "long GC pauses on remote node) [curTimeout=" + timeout +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
             throw e;
         }
@@ -1626,8 +1655,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         catch (SocketTimeoutException e) {
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
-                "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
+                "configuration property). Will retry to send message with increased timeout " +
+                "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
+                ", rmtPort=" + sock.getPort() + ']');
 
             stats.onAckTimeout();
 
@@ -2164,9 +2194,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                    "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                    "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :
-                    "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout + ']'));
+                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                        "failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                    ", sockTimeout=" + sockTimeout + ']');
 
                 stats.onSocketTimeout();
             }

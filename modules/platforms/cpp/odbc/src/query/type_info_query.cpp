@@ -122,6 +122,7 @@ namespace ignite
                 Query(diag, QueryType::TYPE_INFO),
                 columnsMeta(),
                 executed(false),
+                fetched(false),
                 types(),
                 cursor(types.end())
             {
@@ -155,7 +156,7 @@ namespace ignite
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX",     IGNITE_TYPE_INT));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "INTERVAL_PRECISION", IGNITE_TYPE_SHORT));
 
-                assert(IsSqlTypeSupported(sqlType));
+                assert(IsSqlTypeSupported(sqlType) || sqlType == SQL_ALL_TYPES);
 
                 if (sqlType == SQL_ALL_TYPES)
                 {
@@ -185,6 +186,7 @@ namespace ignite
                 cursor = types.begin();
 
                 executed = true;
+                fetched = false;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -203,6 +205,11 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!fetched)
+                    fetched = true;
+                else
+                    ++cursor;
+
                 if (cursor == types.end())
                     return SqlResult::AI_NO_DATA;
 
@@ -210,8 +217,6 @@ namespace ignite
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     GetColumn(it->first, it->second);
-
-                ++cursor;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -228,7 +233,12 @@ namespace ignite
                 }
 
                 if (cursor == types.end())
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 int8_t currentType = *cursor;
 

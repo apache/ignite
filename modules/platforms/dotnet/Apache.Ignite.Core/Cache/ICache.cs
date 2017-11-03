@@ -251,32 +251,33 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Cache value with the specified key.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV this[TK key] { get; set; }
 
         /// <summary>
-        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
+        /// Retrieves value mapped to the specified key from cache.
         ///
         /// If the value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
         /// will be loaded from persistent store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// If key is not present in cache, KeyNotFoundException will be thrown.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         TV Get(TK key);
 
         /// <summary>
-        /// Retrieves value mapped to the specified key from cache. Throws an exception if t
+        /// Retrieves value mapped to the specified key from cache.
         ///
         /// If the value is not present in cache, then it will be looked up from swap storage. If
         /// it's not present in swap, or if swap is disable, and if read-through is allowed, value
         /// will be loaded from persistent store.
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
-        /// If key is not present in cache, KeyNotFoundException will be thrown.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <returns>Value.</returns>
+        /// <exception cref="KeyNotFoundException">If the key is not present in the cache.</exception>
         Task<TV> GetAsync(TK key);
 
         /// <summary>

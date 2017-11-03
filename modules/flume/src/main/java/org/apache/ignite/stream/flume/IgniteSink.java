@@ -178,7 +178,12 @@ public class IgniteSink extends AbstractSink implements Configurable {
         catch (Exception e) {
             log.error("Failed to process events", e);
 
-            transaction.rollback();
+            try {
+                transaction.rollback();
+            }
+            catch (Throwable e1) {
+                e.addSuppressed(e1);
+            }
 
             throw new EventDeliveryException(e);
         }

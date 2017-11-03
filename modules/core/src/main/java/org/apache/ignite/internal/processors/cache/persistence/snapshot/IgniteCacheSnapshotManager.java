@@ -39,6 +39,9 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
 
+    /** Temp files completeness marker. */
+    public static final String TEMP_FILES_COMPLETENESS_MARKER = "finished.tmp";
+
     /**
      * Try to start local snapshot operation if it's required by discovery event.
      *

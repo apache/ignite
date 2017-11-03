@@ -39,6 +39,11 @@ public class SchemaNodeLeaveExchangeWorkerTask implements CachePartitionExchange
         this.node = node;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return true;
+    }
+
     /**
      * @return Node.
      */

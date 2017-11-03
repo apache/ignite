@@ -27,3 +27,9 @@ How to run console in development mode:
   If needed run "npm install --no-optional" (if dependencies changed) and start webpack in development mode "npm run dev".
 
 4. In browser open: http://localhost:9000
+
+How to migrate model:
+
+1. Model will be upgraded on first start.
+2. To downgrade model execute in terminal following command: "./node_modules/.bin/migrate down <migration-name> -d <dbConnectionUri>".
+   Example: "./node_modules/.bin/migrate down add_index -d mongodb://localhost/console".

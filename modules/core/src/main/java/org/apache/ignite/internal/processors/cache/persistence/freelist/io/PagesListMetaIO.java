@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 
+import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  *
@@ -151,7 +154,7 @@ public class PagesListMetaIO extends PageIO {
         int off = offset(0);
 
         for (int i = 0; i < cnt; i++) {
-            Integer bucket = (int)PageUtils.getShort(pageAddr, off);
+            int bucket = (int)PageUtils.getShort(pageAddr, off);
             assert bucket >= 0 && bucket <= Short.MAX_VALUE : bucket;
 
             long tailId = PageUtils.getLong(pageAddr, off + 2);
@@ -182,5 +185,23 @@ public class PagesListMetaIO extends PageIO {
      */
     private int offset(int idx) {
         return ITEMS_OFF + ITEM_SIZE * idx;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        int cnt = getCount(addr);
+
+        sb.a("PagesListMeta [\n\tnextMetaPageId=").appendHex(getNextMetaPageId(addr))
+            .a(",\n\tcount=").a(cnt)
+            .a(",\n\tbucketData={");
+
+        Map<Integer, GridLongList> bucketsData = new HashMap<>(cnt);
+
+        getBucketsData(addr, bucketsData);
+
+        for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet())
+            sb.a("\n\t\tbucket=").a(e.getKey()).a(", list=").a(e.getValue());
+
+        sb.a("\n\t}\n]");
     }
 }

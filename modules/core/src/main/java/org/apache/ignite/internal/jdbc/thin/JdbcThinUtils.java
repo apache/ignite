@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -46,7 +46,7 @@ public class JdbcThinUtils {
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
 
     /** Prefix for property names. */
-    public static final String PROP_PREFIX = "ignite.jdbc";
+    public static final String PROP_PREFIX = "ignite.jdbc.";
 
     /** Port number property name. */
     public static final String PROP_PORT = PROP_PREFIX + "port";
@@ -54,17 +54,20 @@ public class JdbcThinUtils {
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
-    /** Parameter: distributed joins flag. */
+    /** Parameter: distributed joins flag (SQL hint). */
     public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
-    /** Parameter: enforce join order flag. */
+    /** Parameter: enforce join order flag (SQL hint). */
     public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
 
-    /** Parameter: collocated flag. */
+    /** Parameter: collocated flag (SQL hint). */
     public static final String PARAM_COLLOCATED = "collocated";
 
-    /** Parameter: replicated only flag. */
+    /** Parameter: lazy query execution flag (SQL hint). */
     public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
+
+    /** Parameter: replicated only flag (SQL hint). */
+    public static final String PARAM_LAZY = "lazy";
 
     /** Parameter: socket send buffer. */
     public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
@@ -78,6 +81,9 @@ public class JdbcThinUtils {
     /** Parameter: Automatically close server cursor. */
     public static final String PARAM_AUTO_CLOSE_SERVER_CURSOR = "autoCloseServerCursor";
 
+    /** Parameter: execute update query in distributed mode on ignite server nodes. */
+    public static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
+
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
 
@@ -86,6 +92,9 @@ public class JdbcThinUtils {
 
     /** Collocated property name. */
     public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
+
+    /** Lazy property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Replicated only property name. */
     public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
@@ -102,8 +111,11 @@ public class JdbcThinUtils {
     /** Automatically close server cursor. */
     public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
 
+    /** Executes update queries on ignite server nodes in distributed mode. */
+    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
+
     /** Default port. */
-    public static final int DFLT_PORT = SqlConnectorConfiguration.DFLT_PORT;
+    public static final int DFLT_PORT = ClientConnectorConfiguration.DFLT_PORT;
 
     /**
      * Trim prefix from property.

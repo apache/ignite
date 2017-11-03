@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.record;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Header record.
@@ -46,5 +47,10 @@ public class HeaderRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.HEADER_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HeaderRecord.class, this, "super", super.toString());
     }
 }

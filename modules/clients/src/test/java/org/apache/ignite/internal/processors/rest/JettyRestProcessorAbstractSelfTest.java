@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -38,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -76,8 +76,8 @@ import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
@@ -87,8 +87,8 @@ import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.debug.VisorThreadDumpTask;
-import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
+import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
@@ -101,8 +101,8 @@ import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTaskArg;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
-import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
+import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
@@ -121,16 +121,16 @@ import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
 import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCleanupTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryDetailMetricsCollectorTaskArg;
-import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTask;
-import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTaskArg;
-import org.apache.ignite.internal.visor.query.VisorQueryTaskArg;
-import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTask;
+import org.apache.ignite.internal.visor.query.VisorQueryResetMetricsTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryTask;
+import org.apache.ignite.internal.visor.query.VisorQueryTaskArg;
 import org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTask;
 import org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTaskArg;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -710,6 +710,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testDeactivateActivate() throws Exception {
+        assertClusterState(true);
+
+        changeClusterState(false);
+        changeClusterState(true);
+
+        initCache();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPut() throws Exception {
         String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_PUT.key(),
             "key", "putKey", "val", "putVal"));
@@ -1040,11 +1052,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(Collection<GridCacheSqlMetadata> metas, String ret) throws Exception {
-        JsonNode arr = jsonResponse(ret);
-
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas, JsonNode arr) throws Exception {
         assertTrue(arr.isArray());
-        assertEquals(metas.size(), arr.size());
 
         for (JsonNode item : arr) {
             JsonNode cacheNameNode = item.get("cacheName");
@@ -1127,17 +1136,32 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+        assertEquals(5, metas.size());
+
+        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(metas, ret);
+        JsonNode arrResponse = jsonResponse(ret);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+        assertEquals(5, arrResponse.size());
 
-        info("Cache metadata with cacheName parameter: " + ret);
+        testMetadata(metas, arrResponse);
 
-        testMetadata(metas, ret);
+        Collection<GridCacheSqlMetadata> dfltCacheMeta = cache.context().queries().sqlMetadata();
+
+        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        arrResponse = jsonResponse(ret);
+
+        assertEquals(1, arrResponse.size());
+
+        testMetadata(dfltCacheMeta, arrResponse);
+
+        assertResponseContainsError(content(
+            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
     }
 
     /**
@@ -1153,17 +1177,29 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        String ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key()));
+        String ret = content(F.asMap("cacheName", "", "cmd", GridRestCommand.CACHE_METADATA.key()));
 
         info("Cache metadata: " + ret);
 
-        testMetadata(metas, ret);
+        JsonNode arrResponse = jsonResponse(ret);
 
-        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME, "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+        assertEquals(6, arrResponse.size());
+
+        testMetadata(metas, arrResponse);
+
+        ret = content(F.asMap("cacheName", DEFAULT_CACHE_NAME,
+            "cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
 
         info("Cache metadata with cacheName parameter: " + ret);
 
-        testMetadata(metas, ret);
+        arrResponse = jsonResponse(ret);
+
+        assertEquals(1, arrResponse.size());
+
+        testMetadata(metas, arrResponse);
+
+        assertResponseContainsError(content(
+            F.asMap("cacheName", "nonExistingCacheName", "cmd", GridRestCommand.CACHE_METADATA.key())));
     }
 
     /**
@@ -2350,5 +2386,39 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         cfg.setFileSystemConfiguration(igfs);
 
         return cfg;
+    }
+
+    /**
+     * Test if current cluster state equals expected.
+     *
+     * @param exp Expected state.
+     * @throws Exception If failed.
+     */
+    private void assertClusterState(boolean exp) throws Exception {
+        String ret = content(F.asMap("cmd", GridRestCommand.CLUSTER_CURRENT_STATE.key()));
+
+        info("Cluster state: " + ret);
+        JsonNode res = jsonResponse(ret);
+
+        assertEquals(exp, res.asBoolean());
+        assertEquals(exp, grid(0).active());
+    }
+
+    /**
+     * Change cluster state and test new state.
+     *
+     * @param state Desired state.
+     * @throws Exception If failed.
+     */
+    private void changeClusterState(boolean state) throws Exception {
+        String cmd = (state ? GridRestCommand.CLUSTER_ACTIVE : GridRestCommand.CLUSTER_INACTIVE).key();
+
+        String ret = content(F.asMap("cmd", cmd));
+
+        JsonNode res = jsonResponse(ret);
+
+        assertTrue(res.isNull());
+
+        assertClusterState(state);
     }
 }

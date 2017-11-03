@@ -92,7 +92,7 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
             }
 
             if (j == 0)
-                // TODO: Process this case more carefully
+                // TODO: IGNITE-5825, Process this case more carefully
                 centers[i] = localCopyOf(points.viewRow(0));
             else
                 centers[i] = localCopyOf(points.viewRow(j - 1));

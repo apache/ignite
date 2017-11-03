@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            var ctx = GetStreamingContext(writer);
+            var ctx = GetStreamingContext();
             _serializableTypeDesc.OnSerializing(obj, ctx);
 
             var serializable = (ISerializable) obj;
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
             object res;
-            var ctx = GetStreamingContext(reader);
+            var ctx = GetStreamingContext();
 
             var type = typeOverride ?? desc.Type;
 
@@ -304,9 +304,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
             }
-            
-            if (serInfo.ObjectType != serializable.GetType())
+
+            if (serInfo.ObjectType != serializable.GetType() &&
+                typeof(ISerializable).IsAssignableFrom(serInfo.ObjectType))
             {
+                // serInfo.ObjectType should be ISerializable. There is a known case for generic collections:
+                // serializable is EnumEqualityComparer : ISerializable 
+                // and serInfo.ObjectType is ObjectEqualityComparer (does not implement ISerializable interface).
+                // Please read a possible explanation here:
+                // http://dotnetstudio.blogspot.ru/2012/06/net-35-to-net-40-enum.html
+
                 return serInfo.ObjectType;
             }
 
@@ -583,17 +590,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the streaming context.
         /// </summary>
-        private static StreamingContext GetStreamingContext(IBinaryReader reader)
+        private static StreamingContext GetStreamingContext()
         {
-            return new StreamingContext(StreamingContextStates.All, reader);
-        }
-
-        /// <summary>
-        /// Gets the streaming context.
-        /// </summary>
-        private static StreamingContext GetStreamingContext(IBinaryWriter writer)
-        {
-            return new StreamingContext(StreamingContextStates.All, writer);
+            // Additional parameter must be null, because some ISerializable implementations expect weird things there.
+            // For example, System.Data.DataTable calls Convert.ToBoolean on that value.
+            return new StreamingContext(StreamingContextStates.All, null);
         }
 
         /// <summary>

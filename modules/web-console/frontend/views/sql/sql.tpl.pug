@@ -114,12 +114,19 @@ mixin query-settings
                     indexes are not selected in optimal order.' data-trigger='hover')
                     input(type='checkbox' ng-model='paragraph.enforceJoinOrder')
                     span Enforce join order
+            .row(ng-if='lazyQueryAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='By default Ignite attempts to fetch the whole query result set to memory and send it to the client.<br/>\
+                    For small and medium result sets this provides optimal performance and minimize duration of internal database locks, thus increasing concurrency.<br/>\
+                    If result set is too big to fit in available memory this could lead to excessive GC pauses and even OutOfMemoryError.<br/>\
+                    Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory consumption at the cost of moderate performance hit.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.lazy')
+                    span Lazy result set
 
 mixin query-actions
-    button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)') Execute
-    button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph, true)') Execute on selected node
+    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph)') Execute
+    button.btn.btn-primary(ng-disabled='!queryAvailable(paragraph)' ng-click='execute(paragraph, true)') Execute on selected node
 
-    a.btn.btn-default(ng-disabled='!actionAvailable(paragraph, true)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
+    a.btn.btn-default(ng-disabled='!queryAvailable(paragraph)' ng-click='explain(paragraph)' data-placement='bottom' bs-tooltip='' data-title='{{queryTooltip(paragraph, "explain query")}}') Explain
 
 mixin table-result-heading-query
     .total.row
@@ -135,7 +142,7 @@ mixin table-result-heading-query
         .col-xs-4
             .pull-right
                 -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
+                +btn-group('paragraph.loading', options, '{{ queryTooltip(paragraph, "export query results") }}')
 
 mixin table-result-heading-scan
     .total.row
@@ -151,7 +158,7 @@ mixin table-result-heading-scan
         .col-xs-4
             .pull-right
                 -var options = [{ text: "Export", click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }]
-                +btn-group('paragraph.loading', options, '{{ actionTooltip(paragraph, "export", false) }}')
+                +btn-group('paragraph.loading', options, '{{ scanTooltip(paragraph) }}')
 
 mixin table-result-body
     .grid(ui-grid='paragraph.gridOptions' ui-grid-resize-columns ui-grid-exporter)
@@ -189,9 +196,9 @@ mixin paragraph-scan
                 button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
 
         .col-sm-12.sql-controls
-            button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph)')
+            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph)')
                 | Scan
-            button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='scan(paragraph, true)')
+            button.btn.btn-primary(ng-disabled='!scanAvailable(paragraph)' ng-click='scan(paragraph, true)')
                 | Scan on selected node
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
@@ -233,6 +240,16 @@ mixin paragraph-query
                                 td(style='width: 100%')
                                     input.labelField(id='cache_{{ [paragraph.id, $index].join("_") }}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
                                     label(for='cache_{{ [paragraph.id, $index].join("_") }} ' ng-bind-html='cache.label')
+                    .settings-row
+                        .row(ng-if='ddlAvailable(paragraph)')
+                            label.tipLabel.use-cache(bs-tooltip data-placement='bottom'
+                                data-title=
+                                    'Use selected cache as default schema name.<br/>\
+                                    This will allow to execute query on specified cache without specify schema name.<br/>\
+                                    <b>NOTE:</b> In future version of Ignite this feature will be removed.'
+                                data-trigger='hover')
+                                input(type='checkbox' ng-model='paragraph.useAsDefaultSchema')
+                                span Use selected cache as default schema name
                 .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                     label Wrong caches filter
                 .empty-caches(ng-show='caches.length == 0')

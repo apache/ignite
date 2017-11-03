@@ -94,7 +94,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
         @Override protected Collection<VisorCacheMetrics> run(final VisorCacheMetricsCollectorTaskArg arg) {
             assert arg != null;
 
-            Boolean showSysCaches = arg.isShowSystemCaches();
+            boolean showSysCaches = arg.isShowSystemCaches();
 
             Collection<String> cacheNames = arg.getCacheNames();
 

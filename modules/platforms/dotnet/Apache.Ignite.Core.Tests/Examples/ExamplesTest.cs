@@ -20,9 +20,15 @@ namespace Apache.Ignite.Core.Tests.Examples
     extern alias ExamplesDll;
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
+    using Apache.Ignite.Examples.Compute;
+    using Apache.Ignite.Examples.Datagrid;
+    using Apache.Ignite.Examples.Messaging;
+    using Apache.Ignite.Examples.Misc;
+    using Apache.Ignite.Examples.ThinClient;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,21 +41,23 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Example[] AllExamples = Example.GetExamples().ToArray();
 
         /** */
-        private static readonly string[] LocalOnlyExamples =
+        private static readonly Type[] LocalOnlyExamples =
         {
-            "LifecycleExample", "ClientReconnectExample", "MultiTieredCacheExample"
+            typeof(LifecycleExample), typeof(ClientReconnectExample), typeof(MultiTieredCacheExample)
         };
 
         /** */
-        private static readonly string[] RemoteOnlyExamples =
+        private static readonly Type[] RemoteOnlyExamples =
         {
-            "PeerAssemblyLoadingExample", "MessagingExample", "NearCacheExample"
+            typeof(PeerAssemblyLoadingExample), typeof(MessagingExample), typeof(NearCacheExample),
+            typeof(ThinClientPutGetExample), typeof(ThinClientQueryExample)
         };
 
         /** */
-        private static readonly string[] NoDllExamples =
+        private static readonly Type[] NoDllExamples =
         {
-            "BinaryModeExample", "NearCacheExample", "PeerAssemblyLoadingExample"
+            typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
+            typeof(ThinClientPutGetExample)
         };
 
         /** Config file path. */
@@ -70,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             StopRemoteNodes();
 
-            if (LocalOnlyExamples.Contains(example.Name))
+            if (LocalOnlyExamples.Contains(example.ExampleType))
             {
                 Assert.IsFalse(example.NeedsTestDll, "Local-only example should not mention test dll.");
                 Assert.IsNull(example.ConfigPath, "Local-only example should not mention app.config path.");
@@ -109,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             Assert.IsTrue(PathUtil.ExamplesAppConfigPath.EndsWith(example.ConfigPath,
                 StringComparison.OrdinalIgnoreCase), "All examples should use the same app.config.");
 
-            Assert.IsTrue(example.NeedsTestDll || NoDllExamples.Contains(example.Name),
+            Assert.IsTrue(example.NeedsTestDll || NoDllExamples.Contains(example.ExampleType),
                 "Examples that allow standalone nodes should mention test dll.");
 
             StartRemoteNodes();
@@ -133,8 +141,18 @@ namespace Apache.Ignite.Core.Tests.Examples
             // Stop it after topology check so we don't interfere with example.
             Ignition.ClientMode = false;
 
-            using (var ignite = Ignition.StartFromApplicationConfiguration(
-                "igniteConfiguration", _configPath))
+            var fileMap = new ExeConfigurationFileMap { ExeConfigFilename = _configPath };
+            var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+            var section = (IgniteConfigurationSection) config.GetSection("igniteConfiguration");
+
+            // Disable client connector so that temporary node does not occupy the port.
+            var cfg = new IgniteConfiguration(section.IgniteConfiguration)
+            {
+                ClientConnectorConfigurationEnabled = false,
+                CacheConfiguration = null
+            };
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 var args = new List<string>
                 {
@@ -219,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return AllExamples.Where(x => !RemoteOnlyExamples.Contains(x.Name)); }
+            get { return AllExamples.Where(x => !RemoteOnlyExamples.Contains(x.ExampleType)); }
         }
 
         /// <summary>
@@ -231,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             get
             {
-                return AllExamples.Where(x => !LocalOnlyExamples.Contains(x.Name));
+                return AllExamples.Where(x => !LocalOnlyExamples.Contains(x.ExampleType));
             }
         }
     }

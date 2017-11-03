@@ -5,6 +5,7 @@
   <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
   <Namespace>Apache.Ignite.Core.Compute</Namespace>
+  <Namespace>Apache.Ignite.Core.Deployment</Namespace>
 </Query>
 
 /*

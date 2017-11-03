@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -224,7 +224,7 @@ public class ExchangeActions {
         assert desc != null;
 
         if (map == null)
-            map = new HashMap<>();
+            map = new LinkedHashMap<>();
 
         CacheActionData old = map.put(req.cacheName(), new CacheActionData(req, desc));
 

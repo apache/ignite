@@ -227,7 +227,7 @@ public class QRDecomposition implements Destroyable {
      * @throws SingularMatrixException if the matrix is singular and {@code raise} is {@code true}.
      */
     private static boolean checkSingular(Matrix r, double min, boolean raise) {
-        // TODO: Not a very fast approach for distributed matrices. would be nice if we could independently check
+        // TODO: IGNITE-5828, Not a very fast approach for distributed matrices. would be nice if we could independently check
         // parts on different nodes for singularity and do fold with 'or'.
 
         final int len = r.columnSize();

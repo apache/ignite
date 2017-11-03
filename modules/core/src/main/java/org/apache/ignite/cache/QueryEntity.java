@@ -18,7 +18,9 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,10 +29,20 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import javax.cache.CacheException;
+import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
+import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -71,6 +83,9 @@ public class QueryEntity implements Serializable {
     /** Table name. */
     private String tableName;
 
+    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+    private Set<String> _notNullFields;
+
     /**
      * Creates an empty query entity.
      */
@@ -97,6 +112,8 @@ public class QueryEntity implements Serializable {
         idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;
 
         tableName = other.tableName;
+
+        _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
     }
 
     /**
@@ -108,6 +125,16 @@ public class QueryEntity implements Serializable {
     public QueryEntity(String keyType, String valType) {
         this.keyType = keyType;
         this.valType = valType;
+    }
+
+    /**
+     * Creates a query entity with the given key and value types.
+     *
+     * @param keyCls Key type.
+     * @param valCls Value type.
+     */
+    public QueryEntity(Class<?> keyCls, Class<?> valCls) {
+        this(convert(processKeyAndValueClasses(keyCls,valCls)));
     }
 
     /**
@@ -333,6 +360,27 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets names of fields that must be checked for null.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    @Nullable public Set<String> getNotNullFields() {
+        return _notNullFields;
+    }
+
+    /**
+     * Sets names of fields that must checked for null.
+     *
+     * @param notNullFields Set of names of fields that must have non-null values.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
+        this._notNullFields = notNullFields;
+
+        return this;
+    }
+
+    /**
      * Utility method for building query entities programmatically.
      * @param fullName Full name of the field.
      * @param type Type of the field.
@@ -351,6 +399,220 @@ public class QueryEntity implements Serializable {
         return this;
     }
 
+    /**
+     * @param desc Type descriptor.
+     * @return Type metadata.
+     */
+    private static QueryEntity convert(QueryEntityTypeDescriptor desc) {
+        QueryEntity entity = new QueryEntity();
+
+        // Key and val types.
+        entity.setKeyType(desc.keyClass().getName());
+        entity.setValueType(desc.valueClass().getName());
+
+        for (QueryEntityClassProperty prop : desc.properties().values())
+            entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+
+        entity.setKeyFields(desc.keyProperties());
+
+        QueryIndex txtIdx = null;
+
+        Collection<QueryIndex> idxs = new ArrayList<>();
+
+        for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
+            GridQueryIndexDescriptor idx = idxEntry.getValue();
+
+            if (idx.type() == QueryIndexType.FULLTEXT) {
+                assert txtIdx == null;
+
+                txtIdx = new QueryIndex();
+
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+
+                txtIdx.setFieldNames(idx.fields(), true);
+                txtIdx.setName(idxEntry.getKey());
+            }
+            else {
+                QueryIndex sortedIdx = new QueryIndex();
+
+                sortedIdx.setIndexType(idx.type());
+
+                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
+
+                for (String f : idx.fields())
+                    fields.put(f, !idx.descending(f));
+
+                sortedIdx.setFields(fields);
+
+                sortedIdx.setName(idxEntry.getKey());
+                sortedIdx.setInlineSize(idx.inlineSize());
+
+                idxs.add(sortedIdx);
+            }
+        }
+
+        if (desc.valueTextIndex()) {
+            if (txtIdx == null) {
+                txtIdx = new QueryIndex();
+
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
+            }
+            else
+                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
+        }
+
+        if (txtIdx != null)
+            idxs.add(txtIdx);
+
+        if (!F.isEmpty(idxs))
+            entity.setIndexes(idxs);
+
+        return entity;
+    }
+
+    /**
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @return Type descriptor.
+     */
+    private static QueryEntityTypeDescriptor processKeyAndValueClasses(
+        Class<?> keyCls,
+        Class<?> valCls
+    ) {
+        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor();
+
+        d.keyClass(keyCls);
+        d.valueClass(valCls);
+
+        processAnnotationsInClass(true, d.keyClass(), d, null);
+        processAnnotationsInClass(false, d.valueClass(), d, null);
+
+        return d;
+    }
+
+    /**
+     * Process annotations for class.
+     *
+     * @param key If given class relates to key.
+     * @param cls Class.
+     * @param type Type descriptor.
+     * @param parent Parent in case of embeddable.
+     */
+    private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
+        @Nullable QueryEntityClassProperty parent) {
+        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
+            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
+
+                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
+
+                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
+            }
+
+            return;
+        }
+
+        if (parent != null && parent.knowsClass(cls))
+            throw new CacheException("Recursive reference found in type: " + cls.getName());
+
+        if (parent == null) { // Check class annotation at top level only.
+            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
+
+            if (txtAnnCls != null)
+                type.valueTextIndex(true);
+
+            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
+
+            if (grpIdx != null)
+                type.addIndex(grpIdx.name(), QueryIndexType.SORTED, grpIdx.inlineSize());
+
+            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
+
+            if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
+                for (QueryGroupIndex idx : grpIdxList.value())
+                    type.addIndex(idx.name(), QueryIndexType.SORTED, idx.inlineSize());
+            }
+        }
+
+        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+            for (Field field : c.getDeclaredFields()) {
+                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
+
+                if (sqlAnn != null || txtAnn != null) {
+                    QueryEntityClassProperty prop = new QueryEntityClassProperty(field);
+
+                    prop.parent(parent);
+
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
+                    type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processes annotation at field or method.
+     *
+     * @param key If given class relates to key.
+     * @param sqlAnn SQL annotation, can be {@code null}.
+     * @param txtAnn H2 text annotation, can be {@code null}.
+     * @param cls Entity class.
+     * @param curCls Current entity class.
+     * @param fldCls Class of field or return type for method.
+     * @param prop Current property.
+     * @param desc Class description.
+     */
+    private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
+        Class<?> cls, Class<?> curCls, Class<?> fldCls, QueryEntityClassProperty prop, QueryEntityTypeDescriptor desc) {
+        if (sqlAnn != null) {
+            processAnnotationsInClass(key, fldCls, desc, prop);
+
+            if (!sqlAnn.name().isEmpty())
+                prop.alias(sqlAnn.name());
+
+            if (sqlAnn.index()) {
+                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
+
+                if (cls != curCls)
+                    idxName = cls.getSimpleName() + "_" + idxName;
+
+                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
+
+                desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
+            }
+
+            if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
+                && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
+                throw new CacheException("Inline size cannot be set on a field with group index [" +
+                    "type=" + cls.getName() + ", property=" + prop.fullName() + ']');
+            }
+
+            if (!F.isEmpty(sqlAnn.groups())) {
+                for (String group : sqlAnn.groups())
+                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
+            }
+
+            if (!F.isEmpty(sqlAnn.orderedGroups())) {
+                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
+                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), idx.descending());
+            }
+        }
+
+        if (txtAnn != null)
+            desc.addFieldToTextIndex(prop.fullName());
+    }
+
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -358,6 +620,7 @@ public class QueryEntity implements Serializable {
 
         if (o == null || getClass() != o.getClass())
             return false;
+
         QueryEntity entity = (QueryEntity)o;
 
         return F.eq(keyType, entity.keyType) &&
@@ -368,12 +631,14 @@ public class QueryEntity implements Serializable {
             F.eq(keyFields, entity.keyFields) &&
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
-            F.eq(tableName, entity.tableName);
+            F.eq(tableName, entity.tableName) &&
+            F.eq(_notNullFields, entity._notNullFields);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs, tableName);
+        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
+            tableName, _notNullFields);
     }
 
     /** {@inheritDoc} */

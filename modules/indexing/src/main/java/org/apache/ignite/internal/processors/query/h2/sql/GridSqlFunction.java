@@ -36,7 +36,7 @@ public class GridSqlFunction extends GridSqlElement {
     /** */
     private static final Map<String, GridSqlFunctionType> TYPE_MAP = new HashMap<>();
 
-    /**
+    /*
      *
      */
     static {
