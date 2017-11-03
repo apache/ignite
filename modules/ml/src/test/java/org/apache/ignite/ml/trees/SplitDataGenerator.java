@@ -78,7 +78,7 @@ public class SplitDataGenerator<V extends Vector> {
         this.supplier = supplier;
         this.featCnt = featCnt;
 
-        // Divide indexes into indexes of categorical coordinates and indexes of continous coordinates.
+        // Divide indexes into indexes of categorical coordinates and indexes of continuous coordinates.
         di = IntStream.range(0, featCnt).
             boxed().
             collect(Collectors.partitioningBy(catFeaturesInfo::containsKey));
@@ -103,15 +103,21 @@ public class SplitDataGenerator<V extends Vector> {
     }
 
     /**
-     * Categorical coordinate info
+     * Categorical coordinate info.
      */
     private static class CatCoordInfo implements Serializable {
+        /** */
         private BitSet bs;
 
+        /**
+         * Construct CatCoordInfo.
+         * @param bs Bitset.
+         */
         public CatCoordInfo(BitSet bs) {
             this.bs = bs;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "CatCoordInfo [" +
                 "bs=" + bs +
@@ -120,17 +126,28 @@ public class SplitDataGenerator<V extends Vector> {
     }
 
     /**
-     *
+     * Continuous coordinate info.
      */
     private static class ContCoordInfo implements Serializable {
+        /**
+         * Left (min) bound of region.
+         */
         private double left;
+
+        /**
+         * Right (max) bound of region.
+         */
         private double right;
 
+        /**
+         * Construct ContCoordInfo.
+         */
         public ContCoordInfo() {
             left = Double.NEGATIVE_INFINITY;
             right = Double.POSITIVE_INFINITY;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "ContCoordInfo [" +
                 "left=" + left +
@@ -139,8 +156,20 @@ public class SplitDataGenerator<V extends Vector> {
         }
     }
 
+    /**
+     * Class representing information about region.
+     */
     private static class Region implements Serializable {
+        /**
+         * Information about categorical coordinates restrictions of this region in form of
+         * (coordinate index -> restriction)
+         */
         private Map<Integer, CatCoordInfo> catCoords;
+
+        /**
+         * Information about continuous coordinates restrictions of this region in form of
+         * (coordinate index -> restriction)
+         */
         private Map<Integer, ContCoordInfo> contCoords;
         private int twoPow;
 
@@ -150,14 +179,17 @@ public class SplitDataGenerator<V extends Vector> {
             this.twoPow = twoPow;
         }
 
+        /** */
         public int divideBy() {
             return 1 << twoPow;
         }
 
+        /** */
         public void incTwoPow() {
             twoPow++;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Region [" +
                 "catCoords=" + catCoords +

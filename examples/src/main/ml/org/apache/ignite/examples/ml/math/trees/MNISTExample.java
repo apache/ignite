@@ -133,8 +133,6 @@ public class MNISTExample {
             IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
             Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
             System.out.println(">>> Errs percentage: " + accuracy);
-
-            trainer.destroy();
         }
         catch (IOException e) {
             e.printStackTrace();
