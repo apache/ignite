@@ -225,9 +225,9 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** {@inheritDoc} */
     @Override public Set<BlockMatrixKey> getAllKeys() {
-        int maxRowIndex = rows - 1;
-        int maxColIndex = cols - 1;
-        IgnitePair<Long> maxBlockId = getBlockId(maxRowIndex, maxColIndex);
+        int maxRowIdx = rows - 1;
+        int maxColIdx = cols - 1;
+        IgnitePair<Long> maxBlockId = getBlockId(maxRowIdx, maxColIdx);
 
         Set<BlockMatrixKey> keyset = new HashSet<>();
 
