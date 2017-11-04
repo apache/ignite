@@ -315,11 +315,12 @@ public class SqlParserUtils {
      * @param expTokens Expected tokens (if any).
      * @return Exception.
      */
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     private static SqlParseException errorUnexpectedToken0(SqlLexer lex, String... expTokens) {
         String token = lex.token();
 
         StringBuilder msg = new StringBuilder(
-            token == null ? "Unexpected end of command" : "Unexpected token: " + token);
+            token == null ? "Unexpected end of command" : "Unexpected token: \"" + token + "\"");
 
         if (!F.isEmpty(expTokens)) {
             msg.append(" (expected: ");
@@ -332,7 +333,7 @@ public class SqlParserUtils {
                 else
                     msg.append(", ");
 
-                msg.append(expToken);
+                msg.append("\"" + expToken + "\"");
             }
 
             msg.append(")");

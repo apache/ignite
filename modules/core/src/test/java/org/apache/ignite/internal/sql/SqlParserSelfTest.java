@@ -78,8 +78,11 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC, c)", null, "TBL", "IDX", "A", false, "B", true, "C", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c DESC)", null, "TBL", "IDX", "A", false, "B", false, "C", true);
 
-        parseError(null, "CREATE INDEX idx ON tbl()");
-        parseError(null, "CREATE INDEX idx ON tbl(a, a)");
+        // Negative cases.
+        parseError(null, "CREATE INDEX idx ON tbl()", "Unexpected token");
+        parseError(null, "CREATE INDEX idx ON tbl(a, a)", "Column already defined: A");
+        parseError(null, "CREATE INDEX idx ON tbl(a, b, a)", "Column already defined: A");
+        parseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
     }
 
     /**
@@ -87,15 +90,16 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
      *
      * @param schema Schema.
      * @param sql SQL.
+     * @param msg Expected error message.
      */
-    private static void parseError(final String schema, final String sql) {
+    private static void parseError(final String schema, final String sql, String msg) {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 new SqlParser(schema, sql).nextCommand();
 
                 return null;
             }
-        }, SqlParseException.class, null);
+        }, SqlParseException.class, msg);
     }
 
     /**
