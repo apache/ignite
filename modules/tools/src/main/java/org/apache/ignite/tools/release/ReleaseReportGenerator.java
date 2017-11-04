@@ -220,7 +220,7 @@ public class ReleaseReportGenerator {
         Object fieldList = srv.get("fields");
 
         if (fieldList != null)
-            jiraFields = fieldList.toString().replace("[", "").replace("]", "").split(",");
+            jiraFields = fieldList.toString().replace("[", "").replace("]", "").replace(" ", "").replace("\"", "").split(",");
 
         List<JSONObject> issues = searchIssues((String)srv.get("apiurl"),
             (String)srv.get("username"),
@@ -494,8 +494,14 @@ public class ReleaseReportGenerator {
         for (int i = 0; i < fArray.length; i++) {
             if (i != fArray.length - 1)
                 jsonObject = (JSONObject)jsonObject.get(fArray[i]);
-            else
-                retval = (String)jsonObject.get(fArray[i]);
+            else {
+                try {
+                    retval = (String) jsonObject.get(fArray[i]);
+                }
+                catch (Exception e) {
+                    int ifd = 0;
+                }
+            }
         }
 
         if (regex == null)
