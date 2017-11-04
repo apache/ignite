@@ -79,7 +79,7 @@ public class SqlParser {
      *
      * @return Command or {@code null} if end of script is reached.
      */
-    public SqlCommand nextCommand0() {
+    private SqlCommand nextCommand0() {
         while (true) {
             if (!lex.shift())
                 return null;

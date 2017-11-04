@@ -20,15 +20,17 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.Callable;
 
 /**
  * Test for parser.
  */
-@SuppressWarnings("UnusedReturnValue")
+@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
 public class SqlParserSelfTest extends GridCommonAbstractTest {
     /**
      * Tests for CREATE INDEX command.
@@ -36,7 +38,64 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateIndex() throws Exception {
-        parseAndValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", "A", false);
+        // Base.
+        parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC)", null, "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)", null, "TBL", "IDX", "A", true);
+
+        // Case (in)sensitivity.
+        parseValidate(null, "CREATE INDEX IDX ON TBL(COL)", null, "TBL", "IDX", "COL", false);
+        parseValidate(null, "CREATE INDEX iDx ON tBl(cOl)", null, "TBL", "IDX", "COL", false);
+
+        parseValidate(null, "CREATE INDEX \"idx\" ON tbl(col)", null, "TBL", "idx", "COL", false);
+        parseValidate(null, "CREATE INDEX \"iDx\" ON tbl(col)", null, "TBL", "iDx", "COL", false);
+
+        parseValidate(null, "CREATE INDEX idx ON \"tbl\"(col)", null, "tbl", "IDX", "COL", false);
+        parseValidate(null, "CREATE INDEX idx ON \"tBl\"(col)", null, "tBl", "IDX", "COL", false);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"col\")", null, "TBL", "IDX", "col", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\")", null, "TBL", "IDX", "cOl", false);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" ASC)", null, "TBL", "IDX", "cOl", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" DESC)", null, "TBL", "IDX", "cOl", true);
+
+        // Columns.
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b)", null, "TBL", "IDX", "A", false, "B", false);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b)", null, "TBL", "IDX", "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b ASC)", null, "TBL", "IDX", "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b ASC)", null, "TBL", "IDX", "A", false, "B", false);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b)", null, "TBL", "IDX", "A", true, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC)", null, "TBL", "IDX", "A", false, "B", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b DESC)", null, "TBL", "IDX", "A", true, "B", true);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b DESC)", null, "TBL", "IDX", "A", false, "B", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b ASC)", null, "TBL", "IDX", "A", true, "B", false);
+
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c)", null, "TBL", "IDX", "A", false, "B", false, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b, c)", null, "TBL", "IDX", "A", true, "B", false, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC, c)", null, "TBL", "IDX", "A", false, "B", true, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c DESC)", null, "TBL", "IDX", "A", false, "B", false, "C", true);
+
+        parseError(null, "CREATE INDEX idx ON tbl()");
+        parseError(null, "CREATE INDEX idx ON tbl(a, a)");
+    }
+
+    /**
+     * Make sure that parse error occurs.
+     *
+     * @param schema Schema.
+     * @param sql SQL.
+     */
+    private static void parseError(final String schema, final String sql) {
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                new SqlParser(schema, sql).nextCommand();
+
+                return null;
+            }
+        }, SqlParseException.class, null);
     }
 
     /**
@@ -50,7 +109,7 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
      * @param expColDefs Expected column definitions.
      * @return Command.
      */
-    private static SqlCreateIndexCommand parseAndValidate(String schema, String sql, String expSchemaName,
+    private static SqlCreateIndexCommand parseValidate(String schema, String sql, String expSchemaName,
         String expTblName, String expIdxName, Object... expColDefs) {
         SqlCreateIndexCommand cmd = (SqlCreateIndexCommand)new SqlParser(schema, sql).nextCommand();
 
