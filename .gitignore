@@ -89,3 +89,5 @@ packages
 /modules/platforms/cpp/odbc-test/ignite-odbc-tests
 /modules/platforms/cpp/stamp-h1
 
+#Exclude from .gitignore
+!/modules/tools/src/main/java/org/apache/ignite/tools/release/
