@@ -83,6 +83,12 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         parseError(null, "CREATE INDEX idx ON tbl(a, a)", "Column already defined: A");
         parseError(null, "CREATE INDEX idx ON tbl(a, b, a)", "Column already defined: A");
         parseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
+
+        // TODO: Schema
+
+        // TODO: NOT EXISTS
+
+        // TODO: UNIQUE, SPATIAL, HASH, PRIMARY KEY
     }
 
     /**
