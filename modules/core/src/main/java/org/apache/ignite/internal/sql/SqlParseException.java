@@ -42,11 +42,30 @@ public class SqlParseException extends IgniteException {
      * @param msg Message.
      */
     public SqlParseException(String sql, int pos, int code, String msg) {
-        super(msg);
+        super(prepareMessage(sql, pos, msg));
 
         this.sql = sql;
         this.pos = pos;
         this.code = code;
+    }
+
+    /**
+     * Prepare message.
+     *
+     * @param sql Original SQL.
+     * @param pos Position.
+     * @param msg Message.
+     * @return Prepared message.
+     */
+    private static String prepareMessage(String sql, int pos, String msg) {
+        String sql0;
+
+        if (pos == sql.length())
+            sql0 = sql + "[*]";
+        else
+            sql0 = sql.substring(0, pos) + "[*]" + sql.substring(pos);
+
+        return "Failed to parse SQL statement \"" + sql0 + "\": " + msg;
     }
 
     /**
