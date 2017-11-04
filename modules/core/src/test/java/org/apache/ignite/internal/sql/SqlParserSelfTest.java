@@ -28,6 +28,7 @@ import java.util.Iterator;
 /**
  * Test for parser.
  */
+@SuppressWarnings("UnusedReturnValue")
 public class SqlParserSelfTest extends GridCommonAbstractTest {
     /**
      * Tests for CREATE INDEX command.
@@ -35,10 +36,27 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateIndex() throws Exception {
-        SqlCreateIndexCommand cmd =
-            (SqlCreateIndexCommand)new SqlParser(null, "CREATE INDEX idx ON tbl(a)").nextCommand();
+        parseAndValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", "A", false);
+    }
 
-        validate(cmd, null, "TBL", "IDX", "A", false);
+    /**
+     * Parse and validate SQL script.
+     *
+     * @param schema Schema.
+     * @param sql SQL.
+     * @param expSchemaName Expected schema name.
+     * @param expTblName Expected table name.
+     * @param expIdxName Expected index name.
+     * @param expColDefs Expected column definitions.
+     * @return Command.
+     */
+    private static SqlCreateIndexCommand parseAndValidate(String schema, String sql, String expSchemaName,
+        String expTblName, String expIdxName, Object... expColDefs) {
+        SqlCreateIndexCommand cmd = (SqlCreateIndexCommand)new SqlParser(schema, sql).nextCommand();
+
+        validate(cmd, expSchemaName, expTblName, expIdxName, expColDefs);
+
+        return cmd;
     }
 
     /**
