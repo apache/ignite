@@ -1811,16 +1811,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALPointer pnt,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
-        StringBuilder sb
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
         cctx.kernalContext().query().skipFieldLookup(true);
-
-        if (sb != null)
-            sb.append("\n")
-                .append("ConstId:")
-                .append(cctx.localNode().consistentId())
-                .append("\n");
 
         try (WALIterator it = cctx.wal().replay(pnt)) {
             while (it.hasNextX()) {
@@ -1828,16 +1821,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 WALRecord rec = next.get2();
 
-                if (!recPredicate.apply(next)){
-                    if (sb != null)
-                        sb.append("Last record ")
-                            .append(next.get1())
-                            .append(" rec ")
-                            .append(rec)
-                            .append("\n");
-
+                if (!recPredicate.apply(next))
                     break;
-                }
 
                 FileWALPointer p = (FileWALPointer)next.get1();
 
@@ -1853,27 +1838,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                 assert cacheCtx != null;
 
-                                if (sb != null) {
-                                    GridCacheVersion ver = dataEntry.nearXidVersion();
-
-                                    String entry = "null";
-
-                                    if (dataEntry.value() != null)
-                                        entry = dataEntry.value()
-                                            .value(cacheCtx.cacheObjectContext(), true).toString();
-
-                                    if (ver != null) {
-                                        sb.append(entry)
-                                            .append(" topVer=").append(ver.topologyVersion())
-                                            .append(", order=").append(ver.order())
-                                            .append(", nodeOrder=").append(ver.nodeOrder())
-                                            .append(" idx=").append(p != null ? p.index() : "N/A")
-                                            .append(" offset=").append(p != null ? p.fileOffset() : "N/A")
-                                            .append(" len=").append(p != null ? p.length() : "N/A")
-                                            .append("\n");
-                                    }
-                                }
-
                                 applyUpdate(cacheCtx, dataEntry);
                             }
                         }
@@ -1881,20 +1845,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
                     case TX_RECORD:
                         TxRecord txRec = (TxRecord)rec;
-
-                        if (sb != null) {
-                            GridCacheVersion ver = txRec.nearXidVersion();
-
-                            sb.append(txRec.state())
-                                .append(" ").append(txRec.timestamp())
-                                .append(" topVer=").append(ver.topologyVersion())
-                                .append(", order=").append(ver.order())
-                                .append(", nodeOrder=").append(ver.nodeOrder())
-                                .append(" idx=").append(p.index())
-                                .append(" offset=").append(p.fileOffset())
-                                .append(" len=").append(p.length())
-                                .append("\n");
-                        }
 
                         break;
 
@@ -1907,9 +1857,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             cctx.kernalContext().query().skipFieldLookup(false);
-
-            if (sb != null)
-                log.debug(sb.toString());
         }
     }
 
