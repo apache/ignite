@@ -2127,6 +2127,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             int p = e.getKey();
             long maxCntr = e.getValue().cnt;
 
+            if (top.groupId() == CU.cacheId("temp"))
+                System.err.println("ASSIGN " + p + ", maxCntr = " + maxCntr + ", nodes=" + e.getValue().nodes);
+
             entryLeft--;
 
             if (entryLeft != 0 && maxCntr == 0)
@@ -2316,6 +2319,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (((DiscoveryCustomEvent)firstDiscoEvt).customMessage() instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
+                        assignPartitionsStates(); //TODO calculate caches which need assign partition state
+
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
                         if (!F.isEmpty(caches))

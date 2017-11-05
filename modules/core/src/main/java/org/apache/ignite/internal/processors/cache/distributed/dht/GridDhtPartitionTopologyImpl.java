@@ -354,7 +354,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff)) {
+                        if (grp.persistenceEnabled() || localNode(p, aff)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
                             boolean owned = locPart.own();
