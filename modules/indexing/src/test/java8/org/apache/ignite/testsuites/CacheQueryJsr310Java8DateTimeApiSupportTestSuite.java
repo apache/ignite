@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest;
 
 /**
- * Interface for exportable models({@link Model}).
- *
- * @see Exporter
+ * Test suite for JSR-310 Java 8 Date and Time API queries.
  */
-public interface Exportable<D> {
+public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite extends TestSuite {
     /**
-     * Save model by the given path.
-     *
-     * @param exporter Exporter.
-     * @param path Path to saved model.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public <P> void saveModel(Exporter<D, P> exporter, P path);
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("JSR-310 Java 8 Date and Time API Cache Queries Test Suite");
+
+        suite.addTestSuite(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class);
+
+        return suite;
+    }
 }

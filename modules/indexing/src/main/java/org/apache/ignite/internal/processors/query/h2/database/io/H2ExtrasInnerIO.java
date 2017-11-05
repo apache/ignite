@@ -33,7 +33,7 @@ import org.h2.result.SearchRow;
 /**
  * Inner page for H2 row references.
  */
-public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
+public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
     /** Payload size. */
     private final int payloadSize;
 
@@ -129,12 +129,8 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
         PageUtils.putLong(dstPageAddr, dstOff + payloadSize, link);
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param idx Index.
-     * @return Link to row.
-     */
-    private long getLink(long pageAddr, int idx) {
+    /** {@inheritDoc} */
+    @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
 }

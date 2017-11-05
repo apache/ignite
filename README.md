@@ -2,9 +2,7 @@
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a>
 
-[![Join the chat at https://gitter.im/apacheignite/ignite](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/apacheignite/ignite?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests_IgniteBasic&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests_IgniteBasic)/statusIcon" /></a>
+<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_RunAll&branch_Ignite20Tests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_RunAll)/statusIcon.svg"/></a>
 
 
 ## Getting Started
