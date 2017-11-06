@@ -272,7 +272,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
-                req.partition() == -1 ? null : req.partition(),
+                req.partitionId() == -1 ? null : req.partitionId(),
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
