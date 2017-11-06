@@ -2102,7 +2102,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (spi.failureDetectionTimeoutEnabled())
             connCheckThreshold = spi.failureDetectionTimeout();
         else
-            connCheckThreshold = Math.min(spi.getSocketTimeout(), spi.metricsUpdateFreq);
+            connCheckThreshold = spi.getSocketTimeout();
 
         for (int i = 3; i > 0; i--) {
             connCheckFreq = connCheckThreshold / i;
@@ -2640,7 +2640,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private boolean failureThresholdReached;
 
         /** */
-        private long lastRingMsgTime;
+        private long lastMessageUpdateTime;
 
         /**
          */
@@ -2730,7 +2730,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean ensured = spi.ensured(msg);
 
             if (!locNode.id().equals(msg.senderNodeId()) && ensured)
-                lastRingMsgTime = U.currentTimeMillis();
+                lastMessageUpdateTime = U.currentTimeMillis();
 
             if (locNode.internalOrder() == 0) {
                 boolean proc = false;
@@ -3101,7 +3101,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     + e.getMessage() + ']', e);
 
                                 if (timeoutHelper.checkOvertime(connCheckFreq)) {
-                                    U.warn(log, "Local node was frozen. Will reconnect to the next node");
+                                    if (++reconCnt == spi.getReconnectCount()) {
+                                        U.warn(log, "Too many reconnection attempts. Local node will be failed.");
+
+                                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                                        return;
+                                    }
+                                    U.warn(log, "Local node was frozen. Will reconnect to the next node.");
 
                                     timeoutHelper = null;
 
@@ -3292,7 +3299,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 e);
 
                             if (timeoutHelper.checkOvertime(connCheckFreq)) {
-                                U.warn(log, "Local node was frozen. Will reconnect to the next node");
+                                if (++reconCnt == spi.getReconnectCount()) {
+                                    U.warn(log, "Too many reconnection attempts. Local node will be failed.");
+
+                                    notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                                    return;
+                                }
+                                U.warn(log, "Local node was frozen. Will reconnect to the next node.");
 
                                 timeoutHelper = null;
 
@@ -4962,20 +4976,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                 spi.stats.onNodeFailed();
             }
 
-            if (sendMessageToRemotes(msg)) {
+            if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
-
-                synchronized (mux) {
-                    recentFailedNodeIds.add(failedNodeId);
-
-                    mux.notifyAll();
-                }
-            }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
+            }
+
+            synchronized (mux) {
+                recentFailedNodeIds.add(failedNodeId);
+
+                mux.notifyAll();
             }
 
             checkPendingCustomMessages();
@@ -5023,14 +5036,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sendMessageAcrossRing(msg);
                     }
                     else {
-                        synchronized (mux) {
-                            if (recentFailedNodeIds.contains(msg.creatorNodeId())) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Status check message discarded (creator node was recently failed).");
-
-                                return;
-                            }
-                        }
                         // Sender is not in topology, it should reconnect.
                         msg.status(STATUS_RECON);
 
@@ -5618,19 +5623,17 @@ class ServerImpl extends TcpDiscoveryImpl {
          * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
          */
         private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSent < locNode.lastUpdateTime())
-                lastTimeStatusMsgSent = locNode.lastUpdateTime();
+            if (lastMessageUpdateTime < locNode.lastUpdateTime())
+                lastMessageUpdateTime = locNode.lastUpdateTime();
 
-            long updateTime = Math.max(lastTimeStatusMsgSent, lastRingMsgTime);
+            long elapsed = U.currentTimeMillis() - lastMessageUpdateTime;
 
-            long elapsed = (updateTime + metricsCheckFreq) - U.currentTimeMillis();
-
-            if (elapsed > 0)
+            if (elapsed < metricsCheckFreq)
                 return;
 
             msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(locNode, null));
 
-            lastTimeStatusMsgSent = U.currentTimeMillis();
+            lastMessageUpdateTime = U.currentTimeMillis();
         }
 
         /**
