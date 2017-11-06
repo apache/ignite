@@ -473,6 +473,7 @@
     <Compile Include="Services\IServices.cs" />
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
+    <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="SwapSpace\File\FileSwapSpaceSpi.cs" />
     <Compile Include="SwapSpace\ISwapSpaceSpi.cs" />

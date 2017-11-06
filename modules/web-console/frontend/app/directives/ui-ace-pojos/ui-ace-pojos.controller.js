@@ -30,7 +30,7 @@ export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaT
     const updatePojos = () => {
         delete ctrl.pojos;
 
-        if (!ctrl.cluster || !ctrl.cluster.caches)
+        if (_.isNil(ctrl.cluster) || _.isEmpty(ctrl.cluster.caches))
             return;
 
         ctrl.pojos = generator.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
@@ -46,7 +46,7 @@ export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaT
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.pojos, (pojo) => {
-            if (pojo.keyType && JavaTypes.nonBuiltInClass(pojo.keyType))
+            if (_.nonNil(pojo.keyClass))
                 classes.push(pojo.keyType);
 
             classes.push(pojo.valueType);
@@ -55,17 +55,17 @@ export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaT
 
     // Update pojos class.
     const updateClass = (value) => {
-        if (!value || !ctrl.pojos.length)
+        if (_.isEmpty(value))
             return;
 
-        const keyType = ctrl.pojos[0].keyType;
+        const pojo = value[0];
 
-        ctrl.class = ctrl.class || (JavaTypes.nonBuiltInClass(keyType) ? keyType : null) || ctrl.pojos[0].valueType;
+        ctrl.class = ctrl.class || (pojo.keyClass ? pojo.keyType : pojo.valueType);
     };
 
     // Update pojos data.
     const updatePojosData = (value) => {
-        if (!value)
+        if (_.isNil(value))
             return;
 
         _.forEach(ctrl.pojos, (pojo) => {

@@ -29,34 +29,34 @@ r = redis.StrictRedis(host='localhost', port=11211, db=0)
 r.set('k1', 1)
 
 # check.
-print 'Value for "k1": %s' % r.get('k1')
+print('Value for "k1": %s' % r.get('k1'))
 
 # change entry's value.
 r.set('k1', 'new_val')
 
 # check.
-print 'Value for "k1": %s' % r.get('k1')
+print('Value for "k1": %s' % r.get('k1'))
 
 # set another entry.
 r.set('k2', 2)
 
 # check.
-print 'Value for "k2": %s' % r.get('k2')
+print('Value for "k2": %s' % r.get('k2'))
 
 # get both values.
-print 'Values for "k1" and "k2": %s' % r.mget('k1', 'k2')
+print('Values for "k1" and "k2": %s' % r.mget('k1', 'k2'))
 
 # delete one entry.
 r.delete('k1')
 
 # check one entry left.
-print 'Values for "k1" and "k2": %s' % r.mget('k1', 'k2')
+print('Values for "k1" and "k2": %s' % r.mget('k1', 'k2'))
 
 # check db size
-print 'Db size: %d' % r.dbsize()
+print('Db size: %d' % r.dbsize())
 
 # increment.
-print 'Value for incremented "inc_k" : %s' % r.incr('inc_k')
+print('Value for incremented "inc_k" : %s' % r.incr('inc_k'))
 
 # increment again.
-print 'Value for incremented "inc_k" : %s' % r.incr('inc_k')
+print('Value for incremented "inc_k" : %s' % r.incr('inc_k'))

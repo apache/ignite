@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounter;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopWritableSerialization;
+import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawComparatorEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,6 +82,11 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
         @SuppressWarnings("unchecked")
         @Override public Comparator<Object> sortComparator() {
             return ComparableComparator.getInstance();
+        }
+
+        /** {@inheritDoc} */
+        @Override public PartiallyOffheapRawComparatorEx<Object> partialRawSortComparator() {
+            return null;
         }
 
         /** {@inheritDoc} */

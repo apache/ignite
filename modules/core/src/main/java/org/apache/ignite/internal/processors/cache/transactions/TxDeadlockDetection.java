@@ -401,7 +401,7 @@ public class TxDeadlockDetection {
         private UUID primary(IgniteTxKey txKey) {
             GridCacheContext ctx = cctx.cacheContext(txKey.cacheId());
 
-            ClusterNode node = ctx.affinity().primary(txKey.key(), topVer);
+            ClusterNode node = ctx.affinity().primaryByKey(txKey.key(), topVer);
 
             assert node != null : topVer;
 

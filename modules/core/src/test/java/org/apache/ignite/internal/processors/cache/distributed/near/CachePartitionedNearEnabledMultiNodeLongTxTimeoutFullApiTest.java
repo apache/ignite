@@ -34,7 +34,7 @@ public class CachePartitionedNearEnabledMultiNodeLongTxTimeoutFullApiTest extend
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionConfiguration().setDefaultTxTimeout(Long.MAX_VALUE);
+        cfg.getTransactionConfiguration().setDefaultTxTimeout(5 * 60_000);
 
         return cfg;
     }
