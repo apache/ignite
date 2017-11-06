@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.Collection;
-import java.util.Queue;
+import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.MpscQueue;
@@ -167,12 +167,14 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
      * Schedules session write operation.
      * @param reqs Write requests.
      */
-    public void add(Queue<SessionWriteRequest> reqs) {
-        assert !reqs.isEmpty();
+    public void add(Iterable<SessionWriteRequest> reqs) {
+        Iterator<SessionWriteRequest> it = reqs.iterator();
 
-        SessionWriteRequest req;
+        SessionWriteRequest req = null;
 
-        while ((req = reqs.poll()) != null) {
+        while (it.hasNext()) {
+            req = it.next();
+
             if (req.system())
                 system.offer(req);
             else

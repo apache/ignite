@@ -31,7 +31,6 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -591,7 +590,7 @@ public class GridNioServer<T> {
         GridNioRecoveryDescriptor recoveryDesc = ses.outRecoveryDescriptor();
 
         if (recoveryDesc != null && !recoveryDesc.messagesRequests().isEmpty()) {
-            Deque<SessionWriteRequest> futs = recoveryDesc.messagesRequests();
+            Collection<SessionWriteRequest> futs = recoveryDesc.messagesRequests();
 
             if (log.isDebugEnabled())
                 log.debug("Resend messages [rmtNode=" + recoveryDesc.node().id() + ", msgCnt=" + futs.size() + ']');
