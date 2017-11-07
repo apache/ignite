@@ -59,12 +59,16 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(type.FullName);
 
             // Start and stop domains.
-            for (var i = 0; i < 20; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var domain = CreateDomain(i);
 
                 var runner = (DomainRunner) domain.CreateInstanceAndUnwrap(type.Assembly.FullName, type.FullName);
                 runner.RunTest();
+
+                // Verify node start.
+                var expectedNodeCount = Math.Min(i + 3, 7);
+                Assert.AreEqual(expectedNodeCount, ignite.GetCluster().GetNodes().Count);
 
                 if (i > 3)
                 {
@@ -72,10 +76,17 @@ namespace Apache.Ignite.Core.Tests
                     _domains[i - 3] = null;
 
                     AppDomain.Unload(oldDomain);
+
+                    // Verify node exit.
+                    TestUtils.WaitForCondition(
+                        () => ignite.GetCluster().GetNodes().Count == expectedNodeCount - 1, 5000);
                 }
             }
 
-            // TODO: Verify topology, verify console output.
+            UnloadDomains();
+
+            // Verify node exit: only two nodes from current domain should be there.
+            TestUtils.WaitForCondition(() => ignite.GetCluster().GetNodes().Count == 2, 5000);
         }
 
         /// <summary>
@@ -97,13 +108,10 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tears down the test.
+        /// Unloads the domains.
         /// </summary>
-        [TearDown]
-        public void TearDown()
+        private void UnloadDomains()
         {
-            Ignition.StopAll(true);
-
             foreach (var appDomain in _domains)
             {
                 if (appDomain != null)
@@ -113,6 +121,17 @@ namespace Apache.Ignite.Core.Tests
             }
 
             _domains.Clear();
+        }
+
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            UnloadDomains();
         }
 
         /// <summary>
