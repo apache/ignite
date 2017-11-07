@@ -1737,6 +1737,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (prevValDesc != desc) {
                     if (prevValDesc != null)
                         idx.remove(cctx, prevValDesc, prevRow);
+
                     prevRow = null; // Row has already been removed from another table indexes
                 }
             }

@@ -45,7 +45,6 @@ import org.h2.index.IndexType;
 import org.h2.index.SpatialIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
-import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.schema.SchemaObject;
 import org.h2.table.Column;
@@ -403,43 +402,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * Updates table for given key. If value is null then row with given key will be removed from table,
-     * otherwise value and expiration time will be updated or new row will be added.
-     *
-     * @param row Row to be updated.
-     * @param prevRow Previous row.
-     * @param rmv If {@code true} then remove, else update row.
-     * @return {@code true} If operation succeeded.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean rmv)
-        throws IgniteCheckedException {
-        assert desc != null;
-
-        GridH2Row h2Row = desc.createRow(row);
-
-        GridH2Row prevH2Row = null;
-
-        if (prevRow != null)
-            prevH2Row = desc.createRow(prevRow);
-
-        if (rmv)
-            return doUpdate(h2Row, prevH2Row, true);
-        else {
-            GridH2KeyValueRowOnheap h2Row0 = (GridH2KeyValueRowOnheap)h2Row;
-
-            h2Row0.prepareValuesCache();
-
-            try {
-                return doUpdate(h2Row0, prevH2Row, false);
-            }
-            finally {
-                h2Row0.clearValuesCache();
-            }
-        }
-    }
-
-    /**
      * Gets index by index.
      *
      * @param idx Index in list.
@@ -459,82 +421,96 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * For testing only.
+     * Updates table for given key. If value is null then row with given key will be removed from table,
+     * otherwise value and expiration time will be updated or new row will be added.
      *
      * @param row Row to be updated.
-     * @param prevRow Previous row value.
-     * @param del If given row should be deleted from table.
-     * @return {@code True} if operation succeeded.
+     * @param prevRow Previous row.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean doUpdate(final GridH2Row row, final GridH2Row prevRow, boolean del)
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow)
         throws IgniteCheckedException {
-        // Here we assume that each key can't be updated concurrently and case when different indexes
-        // getting updated from different threads with different rows with the same key is impossible.
+        assert desc != null;
+
+        GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)desc.createRow(row);
+        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) : null;
+
+        row0.prepareValuesCache();
+
+        if (prevRow0 != null)
+            prevRow0.prepareValuesCache();
+
+        try {
+            lock(false);
+
+            try {
+                ensureNotDestroyed();
+
+                boolean replaced = pk().putx(row0);
+
+                assert (replaced && prevRow != null) || (!replaced && prevRow == null) : "Replaced: " + replaced;
+
+                if (!replaced)
+                    size.increment();
+
+                for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
+                    Index idx = idxs.get(i);
+
+                    if (idx instanceof GridH2IndexBase)
+                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                }
+
+                if (!tmpIdxs.isEmpty()) {
+                    for (GridH2IndexBase idx : tmpIdxs.values())
+                        addToIndex(idx, row0, prevRow0);
+                }
+            }
+            finally {
+                unlock(false);
+            }
+        }
+        finally {
+            row0.clearValuesCache();
+
+            if (prevRow0 != null)
+                prevRow0.clearValuesCache();
+        }
+    }
+
+    /**
+     * Remove row.
+     *
+     * @param row Row.
+     * @return {@code True} if was removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean remove(CacheDataRow row) throws IgniteCheckedException {
+        GridH2Row row0 = desc.createRow(row);
+
         lock(false);
 
         try {
             ensureNotDestroyed();
 
-            GridH2IndexBase pk = pk();
+            boolean rmv = pk().removex(row0);
 
-            if (!del) {
-                assert rowFactory == null || row.link() != 0 : row;
-
-                boolean oldReplaced = pk.putx(row); // Put to PK.
-
-                if (!oldReplaced)
-                    size.increment();
-
-                int len = idxs.size();
-
-                int i = pkIndexPos;
-
-                // Put row if absent to all indexes sequentially.
-                // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
-                while (++i < len) {
+            if (rmv) {
+                for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row, prevRow, false);
+                        ((GridH2IndexBase)idx).removex(row0);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row, prevRow, true);
+                        idx.removex(row0);
                 }
-            }
-            else {
-                //  index(1) is PK, get full row from there (search row here contains only key but no other columns).
-                boolean oldReplaced = pk.removex(row);
 
-                if (oldReplaced) {
-                    // Remove row from all indexes.
-                    // Start from 3 because 0 - Scan (don't need to update), 1 - PK hash (already updated), 2 - PK (already updated).
-                    for (int i = pkIndexPos + 1, len = idxs.size(); i < len; i++) {
-                        Index idx = idxs.get(i);
-
-                        if (idx instanceof GridH2IndexBase) {
-                            boolean res = ((GridH2IndexBase)idx).removex(row);
-
-                            assert res : "Row has been removed from PK index, but hasn't been removed from " +
-                                "index #" + i + " " + index(i).getName() + ", result=" + res;
-                        }
-                    }
-
-                    if (!tmpIdxs.isEmpty()) {
-                        for (GridH2IndexBase idx : tmpIdxs.values())
-                            idx.removex(row);
-                    }
-
-                    size.decrement();
-                }
-                else
-                    return false;
+                size.decrement();
             }
 
-            return true;
+            return rmv;
         }
         finally {
             unlock(false);
@@ -546,35 +522,14 @@ public class GridH2Table extends TableBase {
      *
      * @param idx Index to add row to.
      * @param row Row to add to index.
-     * @param old Previous row state, if any.
-     * @param tmp {@code True} if this is proposed index which may be not consistent yet.
+     * @param prevRow Previous row state, if any.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row old, boolean tmp) {
-        assert !idx.getIndexType().isUnique() : "Unique indexes are not supported: " + idx;
-
+    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
         boolean replaced = idx.putx(row);
 
-        boolean pkReplaced = old != null;
-
-        if (replaced) { // Row was replaced in index.
-            if (!tmp && pkReplaced != replaced)
-                throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                    "not supported [idx=" + idx + ", old=" + old + ", replaced=" + replaced + ']');
-        }
-        else if (old != null) // Row was not replaced, need to remove manually.
-            idx.removex(old);
-    }
-
-    /**
-     * Check row equality.
-     *
-     * @param pk Primary key index.
-     * @param r1 First row.
-     * @param r2 Second row.
-     * @return {@code true} if rows are the same.
-     */
-    private static boolean eq(Index pk, SearchRow r1, SearchRow r2) {
-        return r1 == r2 || (r1 != null && r2 != null && pk.compareRows(r1, r2) == 0);
+        // Row was not replaced, need to remove manually.
+        if (!replaced && prevRow != null)
+            idx.removex(prevRow);
     }
 
     /**
