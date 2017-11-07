@@ -91,7 +91,7 @@ public class SplitDataGenerator<V extends Vector> {
             catCoords.put(i, new CatCoordInfo(bs));
         });
 
-        // Continous coordinates info.
+        // Continuous coordinates info.
         Map<Integer, ContCoordInfo> contCoords = new HashMap<>();
         di.get(false).forEach(i -> {
             contCoords.put(i, new ContCoordInfo());
@@ -116,7 +116,7 @@ public class SplitDataGenerator<V extends Vector> {
          *
          * @param bs Bitset.
          */
-        public CatCoordInfo(BitSet bs) {
+        CatCoordInfo(BitSet bs) {
             this.bs = bs;
         }
 
@@ -145,7 +145,7 @@ public class SplitDataGenerator<V extends Vector> {
         /**
          * Construct ContCoordInfo.
          */
-        public ContCoordInfo() {
+        ContCoordInfo() {
             left = Double.NEGATIVE_INFINITY;
             right = Double.POSITIVE_INFINITY;
         }
@@ -187,19 +187,19 @@ public class SplitDataGenerator<V extends Vector> {
          * @param contCoords Restrictions on continuous coordinates
          * @param twoPow Region should contain {@code 1/2^twoPow * totalPoints} points.
          */
-        public Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords, int twoPow) {
+        Region(Map<Integer, CatCoordInfo> catCoords, Map<Integer, ContCoordInfo> contCoords, int twoPow) {
             this.catCoords = catCoords;
             this.contCoords = contCoords;
             this.twoPow = twoPow;
         }
 
         /** */
-        public int divideBy() {
+        int divideBy() {
             return 1 << twoPow;
         }
 
         /** */
-        public void incTwoPow() {
+        void incTwoPow() {
             twoPow++;
         }
 
@@ -220,7 +220,7 @@ public class SplitDataGenerator<V extends Vector> {
          * @param rnd Random numbers generator.
          * @return Categorical coordinate value.
          */
-        public double generateContCoord(int coordIdx, Map<Integer, IgniteBiTuple<Double, Double>> boundsData,
+        double generateContCoord(int coordIdx, Map<Integer, IgniteBiTuple<Double, Double>> boundsData,
             Random rnd) {
             ContCoordInfo cci = contCoords.get(coordIdx);
             double left = cci.left;
@@ -244,7 +244,7 @@ public class SplitDataGenerator<V extends Vector> {
          * @param rnd Random numbers generator.
          * @return Categorical coordinate value.
          */
-        public double generateCatCoord(int coordIdx, Random rnd) {
+        double generateCatCoord(int coordIdx, Random rnd) {
             // Pick random bit.
             BitSet bs = catCoords.get(coordIdx).bs;
             int j = rnd.nextInt(bs.length());
@@ -275,7 +275,7 @@ public class SplitDataGenerator<V extends Vector> {
          * @param <V> Type of vectors.
          * @return Stream of generated points for this region.
          */
-        public <V extends Vector> Stream<V> generatePoints(int ptsCnt, double val,
+        <V extends Vector> Stream<V> generatePoints(int ptsCnt, double val,
             Map<Integer, IgniteBiTuple<Double, Double>> boundsData, Map<Boolean, List<Integer>> catCont,
             Supplier<V> s,
             Random rnd) {
