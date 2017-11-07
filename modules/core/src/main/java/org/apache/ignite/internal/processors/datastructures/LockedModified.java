@@ -22,8 +22,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 
-/** Simple tuple for result. */
+/** Simple tuple for result. IgnitePair with Boolean too heavy. */
 class LockedModified implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203497119206054926L;

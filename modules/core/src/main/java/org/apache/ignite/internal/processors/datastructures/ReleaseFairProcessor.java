@@ -28,14 +28,14 @@ import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>, NodeThread>,
+public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
     Externalizable {
 
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
-    NodeThread owner;
+    LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -45,22 +45,22 @@ public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey
     }
 
     /** */
-    public ReleaseFairProcessor(NodeThread owner) {
+    public ReleaseFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public NodeThread process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> entry,
+    @Nullable @Override public LockOwner process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
 
         if (entry.exists()) {
-            GridCacheLockState2Base<NodeThread> state = entry.getValue();
+            GridCacheLockState2Base<LockOwner> state = entry.getValue();
 
-            NodeThread nextOwner = state.unlock(owner);
+            LockOwner nextOwner = state.unlock(owner);
 
             // Always update value in right using.
             entry.setValue(state);
@@ -81,6 +81,6 @@ public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
-        owner = new NodeThread(nodeId, in.readLong());
+        owner = new LockOwner(nodeId, in.readLong());
     }
 }

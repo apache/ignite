@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** */
-public final class NodeThread implements Externalizable {
+/** Simple tuple for lock owner. */
+public final class LockOwner implements Externalizable {
     /** */
     private static final long serialVersionUID = -5203487119206054926L;
 
@@ -37,12 +37,12 @@ public final class NodeThread implements Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public NodeThread() {
+    public LockOwner() {
         // No-op.
     }
 
     /** */
-    public NodeThread(UUID nodeId, long threadId) {
+    public LockOwner(UUID nodeId, long threadId) {
         assert nodeId != null;
 
         this.nodeId = nodeId;
@@ -56,7 +56,7 @@ public final class NodeThread implements Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        NodeThread thread = (NodeThread)o;
+        LockOwner thread = (LockOwner)o;
 
         if (threadId != thread.threadId)
             return false;

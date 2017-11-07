@@ -17,11 +17,170 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCondition;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.lang.IgniteInClosure;
 
-/**
- * Grid cache reentrant lock ({@code 'Ex'} stands for external).
- */
-public interface GridCacheLockEx2 extends IgniteLock, GridCacheRemovable {
+/** New version of grid cache reentrant lock super class. */
+public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
+    /** {@inheritDoc} */
+    @Override public boolean onRemoved() {
+        return false;
+    }
 
+    /** {@inheritDoc} */
+    @Override public void needCheckNotRemoved() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Condition newCondition() {
+        throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCondition getOrCreateCondition(String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getHoldCount() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isHeldByCurrentThread() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasWaiters(IgniteCondition condition) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getWaitQueueLength(IgniteCondition condition) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public boolean isFailoverSafe() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBroken() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        return false;
+    }
+
+    /**
+     * Remove all information about one node.
+     * @param id node id.
+     */
+    abstract void removeNode(UUID id);
+
+    /**
+     * Return release message processer.
+     * @return release message processer.
+     */
+    public abstract IgniteInClosure<GridCacheIdMessage> getReleaser();
+
+    /** */
+    protected static class Latch {
+        /** */
+        private final ReentrantLock lock = new ReentrantLock();
+
+        /** */
+        private final Condition condition = lock.newCondition();
+
+        /** */
+        private int count = 0;
+
+        /** */
+        private IgniteException exception;
+
+        /** */
+        public void release() {
+            lock.lock();
+            try {
+                count++;
+
+                condition.signal();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** */
+        public void fail(IgniteException exception) {
+            lock.lock();
+            try {
+                count++;
+                this.exception = exception;
+
+                condition.signal();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** */
+        public void await() throws InterruptedException, IgniteException {
+            lock.lock();
+            try {
+                if (count-- <= 0) {
+                    condition.await();
+                }
+                if (exception != null) {
+                    throw exception;
+                }
+            }
+            finally {
+                exception = null;
+                lock.unlock();
+            }
+        }
+
+        /** */
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException, IgniteException {
+            lock.lock();
+            try {
+                boolean flag = true;
+                if (count-- <= 0) {
+                    flag = condition.await(timeout, unit);
+                }
+
+                if (flag && exception!=null)
+                    throw exception;
+
+                return flag;
+            }
+            finally {
+                exception = null;
+                lock.unlock();
+            }
+        }
+    }
 }

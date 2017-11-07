@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
+/** */
 public class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
     /** */
     private static final long serialVersionUID = 6727594514511280291L;
@@ -49,9 +50,7 @@ public class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID removeAll(UUID id) {
-        removeNode();
-
+    @Override public UUID removeNode(UUID id) {
         if (nodesSet.remove(id)) {
             final boolean lockReleased = nodes.getFirst().equals(id);
 
@@ -62,11 +61,6 @@ public class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Object clone(){
-        return new GridCacheLockState2Unfair(this);
     }
 
     /** {@inheritDoc} */

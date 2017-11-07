@@ -23,12 +23,13 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-public class LockIfFreeFairProcessor extends ReentrantProcessor<NodeThread> {
+/** */
+public class LockIfFreeFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
 
     /** */
-    NodeThread owner;
+    LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -38,14 +39,14 @@ public class LockIfFreeFairProcessor extends ReentrantProcessor<NodeThread> {
     }
 
     /** */
-    public LockIfFreeFairProcessor(NodeThread owner) {
+    public LockIfFreeFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<NodeThread> state) {
+    @Override protected LockedModified tryLock(GridCacheLockState2Base<LockOwner> state) {
         return state.lockIfFree(owner);
     }
 
@@ -59,6 +60,6 @@ public class LockIfFreeFairProcessor extends ReentrantProcessor<NodeThread> {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
-        owner = new NodeThread(nodeId, in.readLong());
+        owner = new LockOwner(nodeId, in.readLong());
     }
 }

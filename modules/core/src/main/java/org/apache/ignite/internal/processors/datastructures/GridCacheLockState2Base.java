@@ -26,7 +26,8 @@ import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
-public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue implements Cloneable {
+/** */
+public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
     /** */
     protected long gridStartTime;
 
@@ -37,8 +38,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** For fast contains. */
     public HashSet<T> nodesSet;
 
-    /** */
-    public int darc;
 
     /**
      * Constructor.
@@ -48,7 +47,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     public GridCacheLockState2Base(long gridStartTime) {
         nodes = new ArrayDeque<>();
         nodesSet = new HashSet<>();
-        darc = 0;
 
         this.gridStartTime = gridStartTime;
     }
@@ -58,7 +56,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         nodes = new ArrayDeque<>(state.nodes);
         nodesSet = new HashSet<>(state.nodesSet);
         gridStartTime = state.gridStartTime;
-        darc = state.darc;
     }
 
     /**
@@ -92,23 +89,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** {@inheritDoc} */
     @Override public long gridStartTime() {
         return gridStartTime;
-    }
-
-    /** */
-    public void addNode() {
-        darc++;
-    }
-
-    /** */
-    public void removeNode() {
-        darc--;
-    }
-
-    /** */
-    public boolean canRemove() {
-        assert darc >= 0;
-
-        return darc == 0;
     }
 
     /** Will take lock if it is free. */
@@ -220,7 +200,8 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         return nodes.getFirst();
     }
 
-    public abstract T removeAll(UUID id);
+    /** */
+    public abstract T removeNode(UUID id);
 
     /** */
     public abstract void writeItem(ObjectOutput out, T item) throws IOException;
@@ -228,8 +209,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(gridStartTime);
-
-        out.writeInt(darc);
 
         out.writeBoolean(nodes != null);
 
@@ -248,8 +227,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         gridStartTime = in.readLong();
-
-        darc = in.readInt();
 
         if (in.readBoolean()) {
             int size = in.readInt();

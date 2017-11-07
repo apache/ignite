@@ -7,12 +7,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** EntryProcessor for lock acquire operation for fair mode. */
-public class AcquireFairProcessor extends ReentrantProcessor<NodeThread> {
+public class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = 8526685073215814916L;
 
     /** */
-    NodeThread owner;
+    LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -22,14 +22,14 @@ public class AcquireFairProcessor extends ReentrantProcessor<NodeThread> {
     }
 
     /** */
-    public AcquireFairProcessor(NodeThread owner) {
+    public AcquireFairProcessor(LockOwner owner) {
         assert owner != null;
 
         this.owner = owner;
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<NodeThread> state) {
+    @Override protected LockedModified tryLock(GridCacheLockState2Base<LockOwner> state) {
         return state.lockOrAdd(owner);
     }
 
@@ -43,6 +43,6 @@ public class AcquireFairProcessor extends ReentrantProcessor<NodeThread> {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         UUID nodeId = new UUID(in.readLong(), in.readLong());
-        owner = new NodeThread(nodeId, in.readLong());
+        owner = new LockOwner(nodeId, in.readLong());
     }
 }

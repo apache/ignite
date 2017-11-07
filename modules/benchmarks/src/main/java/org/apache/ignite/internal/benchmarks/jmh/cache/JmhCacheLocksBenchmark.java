@@ -203,14 +203,14 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
 
         final Options opt = new OptionsBuilder()
             .threads(threads)
-            .include(simpleClsName+".igniteLock2")
-            //.output(output + ".jmh.log")
+            .include(simpleClsName)
+            .output(output + ".jmh.log")
             .timeUnit(TimeUnit.MICROSECONDS)
             .mode(Mode.AverageTime)
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                //"-XX:+UnlockCommercialFeatures",
+                "-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),

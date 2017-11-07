@@ -31,15 +31,16 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 
-public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
+/** Reentrant lock fair implementation based on IgniteCache.invoke. */
+public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
 
     /** Reentrant lock name. */
     private final String name;
@@ -48,7 +49,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
     private final GridCacheInternalKey key;
 
     /** Cache context. */
-    private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> ctx;
+    private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> ctx;
 
     /** Internal synchronization object. */
     private final GlobalFairSync sync;
@@ -56,7 +57,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
     /** */
     public GridCacheLockImpl2Fair(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> lockView) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> lockView) {
 
         assert name != null;
         assert key != null;
@@ -73,8 +74,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // if (ctx.kernalContext().dataStructures().removeReentrantLock(key))
-            //removeAll(ctx.localNodeId());
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -156,7 +156,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
     /** {@inheritDoc} */
     @Override public boolean isLocked() throws IgniteException {
         try {
-            ArrayDeque<NodeThread> nodes = sync.forceGet().nodes;
+            if (sync.hasLocked.get())
+                return true;
+
+            ArrayDeque<LockOwner> nodes = sync.forceGet().nodes;
 
             return !(nodes == null || nodes.isEmpty());
         }
@@ -171,10 +174,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
     }
 
     /** {@inheritDoc} */
-    @Override void removeAll(UUID id) {
+    @Override void removeNode(UUID id) {
         sync.remove(id);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteInClosure<GridCacheIdMessage> getReleaser() {
         return sync.getReleaser();
     }
@@ -191,7 +195,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         long threadId;
 
         /** */
-        //int name;
+        String name;
 
         /** */
         public ReleasedThreadMessage() {
@@ -201,7 +205,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         /** */
         public ReleasedThreadMessage(int id, long threadId, String name) {
             this.threadId = threadId;
-            //this.name = name.hashCode();
+            this.name = name;
 
             cacheId(id);
         }
@@ -223,7 +227,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return 4;//(byte)(super.fieldsCount()+1);
+            return (byte)(super.fieldsCount()+2);
         }
 
         /** {@inheritDoc} */
@@ -246,11 +250,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
                         return false;
 
                     writer.incrementState();
-                /*case 4:
-                    if (!writer.writeInt("name", name))
+                case 4:
+                    if (!writer.writeString("name", name))
                         return false;
 
-                    writer.incrementState();*/
+                    writer.incrementState();
             }
 
             return true;
@@ -274,24 +278,28 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
                         return false;
 
                     reader.incrementState();
-                /*case 4:
-                    name = reader.readInt("name");
+                case 4:
+                    name = reader.readString("name");
 
                     if (!reader.isLastRead())
                         return false;
 
                     reader.incrementState();
-                    */
             }
 
             return reader.afterMessageRead(GridCacheIdMessage.class);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReleasedThreadMessage.class, this);
         }
     }
 
     /**
      * Sync class for acquire/release global lock in grid. It avoids problems with thread local synchronization.
      */
-    private static class GlobalFairSync {
+    private static final class GlobalFairSync {
         /** */
         private final ThreadLocal<AcquireFairProcessor> acquireProcessor = new ThreadLocal<>();
 
@@ -308,10 +316,10 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         private final GridCacheInternalKey key;
 
         /** */
-        private final ConcurrentHashMap<Long, UpdateListener> listeners = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Long, Latch> listeners = new ConcurrentHashMap<>();
 
         /** Reentrant lock projection. */
-        private final IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> lockView;
+        private final IgniteInternalCache<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> lockView;
 
         /** Logger. */
         private final IgniteLogger log;
@@ -320,16 +328,13 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         private final UUID nodeId;
 
         /** */
-        private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> ctx;
+        private final GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> ctx;
 
         /** */
-        private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>> releaseListener;
+        private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<LockOwner>>> releaseListener;
 
         /** */
-        private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<RemoveProcessor.Tuple<NodeThread>>>> removeListener;
-
-        /** */
-        ThreadLocal<Boolean> hasLocked = new ThreadLocal<Boolean>() {
+        private final ThreadLocal<Boolean> hasLocked = new ThreadLocal<Boolean>() {
             /** {@inheritDoc} */
             @Override protected Boolean initialValue() {
                 return false;
@@ -337,12 +342,12 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         };
 
         /** */
-        //private final IgniteInClosure<GridCacheIdMessage> releaser;
+        private final IgniteInClosure<GridCacheIdMessage> releaser;
 
         /** */
-        GlobalFairSync(UUID nodeId, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
-            GridCacheLockState2Base<NodeThread>> lockView,
-            GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<NodeThread>> ctx,
+        private GlobalFairSync(UUID nodeId, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
+            GridCacheLockState2Base<LockOwner>> lockView,
+            GridCacheContext<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> ctx,
             final IgniteLogger log) {
 
             assert nodeId != null;
@@ -357,14 +362,14 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
             this.nodeId = nodeId;
             this.ctx = ctx;
 
-            releaseListener = new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<NodeThread>>>() {
-                @Override public void apply(IgniteInternalFuture<EntryProcessorResult<NodeThread>> future) {
+            releaseListener = new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<LockOwner>>>() {
+                @Override public void apply(IgniteInternalFuture<EntryProcessorResult<LockOwner>> future) {
                     try {
-                        EntryProcessorResult<NodeThread> result = future.get();
+                        EntryProcessorResult<LockOwner> result = future.get();
 
                         // invokeAsync return null if EntryProcessor return null too.
                         if (result != null) {
-                            NodeThread nextOwner = result.get();
+                            LockOwner nextOwner = result.get();
 
                             if (nextOwner != null) {
                                 if (nodeId.equals(nextOwner.nodeId)) {
@@ -387,72 +392,36 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
                 }
             };
 
-            removeListener = new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<RemoveProcessor.Tuple<NodeThread>>>>() {
-                @Override public void apply(
-                    IgniteInternalFuture<EntryProcessorResult<RemoveProcessor.Tuple<NodeThread>>> future) {
-                    try {
-                        EntryProcessorResult<RemoveProcessor.Tuple<NodeThread>> result = future.get();
-
-                        // invokeAsync return null if EntryProcessor return null too.
-                        if (result != null) {
-                            NodeThread nextOwner = result.get().owner;
-
-                            if (nextOwner != null) {
-                                if (nodeId.equals(nextOwner.nodeId)) {
-                                    // The same node.
-                                    listeners.get(nextOwner.threadId).release();
-                                }
-                                else {
-                                    ctx.io().send(nextOwner.nodeId,
-                                        new ReleasedThreadMessage(ctx.cacheId(), nextOwner.threadId, key.name()),
-                                        P2P_POOL);
-                                }
-                            }
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        // If release invoke has failed, it means primary node has failed too.
-                        if (log.isDebugEnabled())
-                            log.debug("Invoke has failed: " + e);
-                    }
-                }
-            };
-
-            ctx.io().addCacheHandler(ctx.cacheId(), GridCacheLockImpl2Fair.ReleasedThreadMessage.class,
-                new IgniteBiInClosure<UUID, GridCacheLockImpl2Fair.ReleasedThreadMessage>() {
-                    @Override public void apply(UUID uuid, GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
-                        listeners.get(message.threadId).release();
-                    }
-                });
-            /*releaser = new IgniteInClosure<GridCacheIdMessage>() {
+            releaser = new IgniteInClosure<GridCacheIdMessage>() {
                 @Override public void apply(GridCacheIdMessage message0) {
                     assert message0 instanceof ReleasedThreadMessage;
 
                     ReleasedThreadMessage message = (ReleasedThreadMessage)message0;
 
-                    assert key.name().hashCode() == message.name;
+                    assert key.name().equals(message.name);
 
-                    // This line is the reason why we use a ConcurrentHashMap, not a ThreadLocal.
+                    // This line is the reason why we use a ConcurrentHashMap, but not a ThreadLocal.
                     listeners.get(message.threadId).release();
                 }
-            };*/
+            };
         }
 
+        /** */
         private IgniteInClosure<GridCacheIdMessage> getReleaser() {
-            return null; //releaser;
+            return releaser;
         }
 
         /** */
-        private NodeThread getOwner() {
-            return new NodeThread(nodeId, Thread.currentThread().getId());
+        private LockOwner getOwner() {
+            return new LockOwner(nodeId, Thread.currentThread().getId());
         }
 
         /** */
-        private UpdateListener getListener() {
-            UpdateListener listener = listeners.get(Thread.currentThread().getId());
+        private Latch getListener() {
+            Latch listener = listeners.get(Thread.currentThread().getId());
 
             if (listener == null) {
-                listener = new UpdateListener();
+                listener = new Latch();
 
                 listeners.put(Thread.currentThread().getId(), listener);
             }
@@ -461,8 +430,8 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private UpdateListener tryAcquireOrAdd() {
-            final UpdateListener listener = getListener();
+        private Latch tryAcquireOrAdd() {
+            final Latch listener = getListener();
 
             AcquireFairProcessor processor = acquireProcessor.get();
 
@@ -491,7 +460,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private final boolean tryAcquire() throws IgniteCheckedException {
+        private boolean tryAcquire() throws IgniteCheckedException {
             if (hasLocked.get())
                 return true;
 
@@ -514,7 +483,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private final boolean acquireOrRemove() {
+        private boolean acquireOrRemove() {
             try {
                 getListener();
 
@@ -534,7 +503,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private final boolean waitForUpdate() {
+        private boolean waitForUpdate() {
             try {
                 return waitForUpdate(30, TimeUnit.SECONDS);
             }
@@ -548,12 +517,12 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
          * @param unit
          * @return true if await finished well, false if InterruptedException has been thrown or timeout.
          */
-        private final boolean waitForUpdate(long timeout, TimeUnit unit) throws InterruptedException {
+        private boolean waitForUpdate(long timeout, TimeUnit unit) throws InterruptedException {
             return getListener().await(timeout, unit);
         }
 
         /** */
-        private final void acquire() {
+        private void acquire() {
             if (hasLocked.get())
                 return;
 
@@ -568,7 +537,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private final boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
+        private boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
             if (hasLocked.get())
                 return true;
 
@@ -597,7 +566,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        private final void acquireInterruptibly() throws InterruptedException {
+        private void acquireInterruptibly() throws InterruptedException {
             if (hasLocked.get())
                 return;
 
@@ -618,12 +587,12 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        GridCacheLockState2Base<NodeThread> forceGet() throws IgniteCheckedException {
+        private GridCacheLockState2Base<LockOwner> forceGet() throws IgniteCheckedException {
             return lockView.get(key);
         }
 
-        /** {@inheritDoc} */
-        private final void release() {
+        /** */
+        private void release() {
             if (!hasLocked.get())
                 return;
 
@@ -641,8 +610,8 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2Default {
         }
 
         /** */
-        final void remove(UUID id) {
-            lockView.invokeAsync(key, new RemoveProcessor<>(id)).listen(removeListener);
+        private void remove(UUID id) {
+            lockView.invokeAsync(key, new RemoveProcessor<>(id)).listen(releaseListener);
         }
     }
 }
