@@ -41,25 +41,26 @@ import org.apache.ignite.ml.util.Utils;
  * @param <V>
  */
 public class SplitDataGenerator<V extends Vector> {
+    /** */
     private static final double DELTA = 100.0;
 
     /** Map of the form of (is categorical -> list of region indexes). */
     private final Map<Boolean, List<Integer>> di;
 
     /** List of regions. */
-    private List<Region> regs;
+    private final List<Region> regs;
 
     /** Data of bounds of regions. */
-    private Map<Integer, IgniteBiTuple<Double, Double>> boundsData;
+    private final Map<Integer, IgniteBiTuple<Double, Double>> boundsData;
 
     /** Random numbers generator. */
-    private Random rnd;
+    private final Random rnd;
 
     /** Supplier of vectors. */
-    private Supplier<V> supplier;
+    private final Supplier<V> supplier;
 
     /** Features count. */
-    private int featCnt;
+    private final int featCnt;
 
     /**
      * Create SplitDataGenerator.
@@ -84,7 +85,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         // Categorical coordinates info.
         Map<Integer, CatCoordInfo> catCoords = new HashMap<>();
-        di.get(true).stream().forEach(i -> {
+        di.get(true).forEach(i -> {
             BitSet bs = new BitSet();
             bs.set(0, catFeaturesInfo.get(i));
             catCoords.put(i, new CatCoordInfo(bs));
@@ -92,7 +93,7 @@ public class SplitDataGenerator<V extends Vector> {
 
         // Continous coordinates info.
         Map<Integer, ContCoordInfo> contCoords = new HashMap<>();
-        di.get(false).stream().forEach(i -> {
+        di.get(false).forEach(i -> {
             contCoords.put(i, new ContCoordInfo());
             boundsData.put(i, new IgniteBiTuple<>(-1.0, 1.0));
         });
@@ -108,7 +109,7 @@ public class SplitDataGenerator<V extends Vector> {
         /**
          * Defines categories which are included in this region
          */
-        private BitSet bs;
+        private final BitSet bs;
 
         /**
          * Construct CatCoordInfo.
@@ -166,13 +167,13 @@ public class SplitDataGenerator<V extends Vector> {
          * Information about categorical coordinates restrictions of this region in form of
          * (coordinate index -> restriction)
          */
-        private Map<Integer, CatCoordInfo> catCoords;
+        private final Map<Integer, CatCoordInfo> catCoords;
 
         /**
          * Information about continuous coordinates restrictions of this region in form of
          * (coordinate index -> restriction)
          */
-        private Map<Integer, ContCoordInfo> contCoords;
+        private final Map<Integer, ContCoordInfo> contCoords;
 
         /**
          * Region should contain {@code 1/2^twoPow * totalPoints} points.
@@ -362,7 +363,7 @@ public class SplitDataGenerator<V extends Vector> {
      * @param ptsCnt Points count.
      */
     public Stream<IgniteBiTuple<Integer, V>> points(int ptsCnt, BiFunction<Double, Random, Double> f) {
-        regs.stream().forEach(System.out::println);
+        regs.forEach(System.out::println);
 
         return IntStream.range(0, regs.size()).
             boxed().

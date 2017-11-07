@@ -64,7 +64,7 @@ public class BaseDecisionTreeTest extends GridCommonAbstractTest {
      * @param arr Array for conversion.
      * @return LabeledVectorDouble.
      */
-    public static LabeledVectorDouble<DenseLocalOnHeapVector> asLabeledVector(double arr[]) {
+    protected static LabeledVectorDouble<DenseLocalOnHeapVector> asLabeledVector(double arr[]) {
         return new LabeledVectorDouble<>(new DenseLocalOnHeapVector(Arrays.copyOf(arr, arr.length - 1)), arr[arr.length - 1]);
     }
 }

@@ -39,14 +39,12 @@ import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer
 import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
 import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
-import org.junit.Test;
 
 /** Tests behaviour of ColumnDecisionTreeTrainer. */
 public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
     /**
      * Test {@link ColumnDecisionTreeTrainerTest} for mixed (continuous and categorical) data with Gini impurity.
      */
-    @Test
     public void testCacheMixedGini() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int totalPts = 1 << 10;
@@ -68,7 +66,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
     /**
      * Test {@link ColumnDecisionTreeTrainerTest} for mixed (continuous and categorical) data with Variance impurity.
      */
-    @Test
     public void testCacheMixed() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int totalPts = 1 << 10;
@@ -90,7 +87,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
     /**
      * Test {@link ColumnDecisionTreeTrainerTest} for continuous data with Variance impurity.
      */
-    @Test
     public void testCacheCont() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int totalPts = 1 << 10;
@@ -113,7 +109,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
     /**
      * Test {@link ColumnDecisionTreeTrainerTest} for continuous data with Gini impurity.
      */
-    @Test
     public void testCacheContGini() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int totalPts = 1 << 10;
@@ -136,7 +131,6 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
     /**
      * Test {@link ColumnDecisionTreeTrainerTest} for categorical data with Variance impurity.
      */
-    @Test
     public void testCacheCat() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int totalPts = 1 << 10;
@@ -186,7 +180,7 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
 
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, catsInfo));
 
-        byRegion.keySet().stream().forEach(k -> {
+        byRegion.keySet().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
             Tracer.showAscii(sp.vector());
             System.out.println("Act: " + sp.label() + " " + " pred: " + mdl.predict(sp.vector()));
