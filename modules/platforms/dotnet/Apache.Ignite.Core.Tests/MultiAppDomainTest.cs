@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     /// Tests Ignite behavior in multi-AppDomain scenario.
     /// Such a scenario occurs within IIS, for example, or within application plugins.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class MultiAppDomainTest
     {
         /** */
