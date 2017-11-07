@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -41,7 +42,14 @@ namespace Apache.Ignite.Core.Tests
         public void TestIisBehavior()
         {
             var ignite = Ignition.Start(GetConfig());
-            ignite.CreateCache<int, int>(CacheName).Put(1, 1);
+            
+            var cache = ignite.CreateCache<int, int>(new CacheConfiguration
+            {
+                Name =  CacheName,
+                CacheMode = CacheMode.Replicated  // Use Replicated to avoid data loss due to node stop.
+            });
+
+            cache[1] = 1;
 
             // Check same domain.
             new DomainRunner().RunTest();
@@ -52,8 +60,7 @@ namespace Apache.Ignite.Core.Tests
             // Start and stop domains.
             for (var i = 0; i < 20; i++)
             {
-                var domain = AppDomain.CreateDomain("TestIisBehavior-" + i);
-                _domains.Add(domain);
+                var domain = CreateDomain(i);
 
                 var runner = (DomainRunner) domain.CreateInstanceAndUnwrap(type.Assembly.FullName, type.FullName);
                 runner.RunTest();
@@ -68,6 +75,24 @@ namespace Apache.Ignite.Core.Tests
             }
 
             // TODO: Verify topology, verify console output.
+        }
+
+        /// <summary>
+        /// Creates the domain.
+        /// </summary>
+        private AppDomain CreateDomain(int i)
+        {
+            var domain = AppDomain.CreateDomain("TestIisBehavior-" + i, null, new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile,
+                ApplicationName = AppDomain.CurrentDomain.SetupInformation.ApplicationName,
+                LoaderOptimization = LoaderOptimization.MultiDomainHost
+            });
+
+            _domains.Add(domain);
+
+            return domain;
         }
 
         /// <summary>
