@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.testsuites;
 
-import java.io.Serializable;
-import java.util.function.BiFunction;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest;
 
-/** Basic interface for all models. */
-@FunctionalInterface
-public interface Model<T, V> extends Serializable {
-    /** Predict a result for value. */
-    public V predict(T val);
-
+/**
+ * Test suite for JSR-310 Java 8 Date and Time API queries.
+ */
+public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite extends TestSuite {
     /**
-     * Combines this model with other model via specified combiner
-     *
-     * @param other Other model.
-     * @param combiner Combiner.
-     * @return Combination of models.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("JSR-310 Java 8 Date and Time API Cache Queries Test Suite");
+
+        suite.addTestSuite(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class);
+
+        return suite;
     }
 }

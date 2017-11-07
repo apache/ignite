@@ -454,7 +454,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         List<StoredCacheData> storedCfgs = null;
 
-        if (activate && sharedCtx.database().persistenceEnabled()) {
+        if (activate && CU.isPersistenceEnabled(ctx.config())) {
             try {
                 Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
 
