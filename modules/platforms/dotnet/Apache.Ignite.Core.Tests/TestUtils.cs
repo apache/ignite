@@ -64,8 +64,8 @@ namespace Apache.Ignite.Core.Tests
             : new List<string>
             {
                 "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms512m",
-                "-Xmx512m",
+                "-Xms64m",
+                "-Xmx99m",
                 "-ea",
                 "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
                 "-DIGNITE_QUIET=true"
