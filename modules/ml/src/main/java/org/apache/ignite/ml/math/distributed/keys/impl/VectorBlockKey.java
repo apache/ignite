@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
@@ -33,37 +33,37 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * Key implementation for {@link BlockEntry} using for {@link SparseBlockDistributedMatrix}.
+ * Key implementation for {@link VectorBlockEntry} using for {@link SparseBlockDistributedVector}.
  */
-public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.keys.BlockVectorKey, Externalizable, Binarylizable {
+public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.keys.VectorBlockKey, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
     /** Block row ID */
     private long blockId;
-    /** Matrix ID */
-    private IgniteUuid matrixUuid;
+    /** Vector ID */
+    private IgniteUuid vectorUuid;
     /** Block affinity key. */
     private IgniteUuid affinityKey;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public BlockVectorKey() {
+    public VectorBlockKey() {
         // No-op.
     }
 
     /**
-     * Construct matrix block key.
+     * Construct vector block key.
      *
-     * @param matrixUuid Matrix uuid.
+     * @param vectorUuid Vector uuid.
      * @param affinityKey Affinity key.
      */
-    public BlockVectorKey(long blockId, IgniteUuid matrixUuid, @Nullable IgniteUuid affinityKey) {
+    public VectorBlockKey(long blockId, IgniteUuid vectorUuid, @Nullable IgniteUuid affinityKey) {
         assert blockId >= 0;
-        assert matrixUuid != null;
+        assert vectorUuid != null;
 
         this.blockId = blockId;
-        this.matrixUuid = matrixUuid;
+        this.vectorUuid = vectorUuid;
         this.affinityKey = affinityKey;
     }
 
@@ -75,7 +75,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
 
     /** {@inheritDoc} */
     @Override public IgniteUuid dataStructureId() {
-        return matrixUuid;
+        return vectorUuid;
     }
 
     /** {@inheritDoc} */
@@ -85,7 +85,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, matrixUuid);
+        U.writeGridUuid(out, vectorUuid);
         U.writeGridUuid(out, affinityKey);
         out.writeLong(blockId);
 
@@ -93,7 +93,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        matrixUuid = U.readGridUuid(in);
+        vectorUuid = U.readGridUuid(in);
         affinityKey = U.readGridUuid(in);
         blockId = in.readLong();
 
@@ -103,7 +103,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        BinaryUtils.writeIgniteUuid(out, matrixUuid);
+        BinaryUtils.writeIgniteUuid(out, vectorUuid);
         BinaryUtils.writeIgniteUuid(out, affinityKey);
         out.writeLong(blockId);
     }
@@ -112,7 +112,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        matrixUuid = BinaryUtils.readIgniteUuid(in);
+        vectorUuid = BinaryUtils.readIgniteUuid(in);
         affinityKey = BinaryUtils.readIgniteUuid(in);
         blockId = in.readLong();
     }
@@ -122,7 +122,7 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
         int res = 37;
 
         res += res * 37 + blockId;
-        res += res * 37 + matrixUuid.hashCode();
+        res += res * 37 + vectorUuid.hashCode();
 
         return res;
     }
@@ -135,15 +135,15 @@ public class BlockVectorKey implements org.apache.ignite.ml.math.distributed.key
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        BlockVectorKey that = (BlockVectorKey)obj;
+        VectorBlockKey that = (VectorBlockKey)obj;
 
-        return blockId == that.blockId  && matrixUuid.equals(that.matrixUuid)
+        return blockId == that.blockId  && vectorUuid.equals(that.vectorUuid)
             && F.eq(affinityKey, that.affinityKey);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BlockVectorKey.class, this);
+        return S.toString(VectorBlockKey.class, this);
     }
 
 

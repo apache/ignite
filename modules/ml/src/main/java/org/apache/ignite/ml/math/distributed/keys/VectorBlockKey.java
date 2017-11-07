@@ -18,14 +18,14 @@
 package org.apache.ignite.ml.math.distributed.keys;
 
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 
 /**
  * Cache key for blocks in {@link SparseBlockDistributedVector}.
  *
  * TODO: check if using {@link IgnitePair} will be better for block id.
  */
-public interface BlockVectorKey extends DataStructureCacheKey {
+public interface VectorBlockKey extends DataStructureCacheKey {
     /**
      * @return block id.
      */
