@@ -226,7 +226,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     /** Test cache behaviour for matrix with homogeneous blocks */
     public void testCacheBehaviourWithHomogeneousBlocks(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE * 3;
         cacheBehaviorLogic(size);
     }
 
@@ -294,7 +294,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
      * Simple test for two square matrices with size which is proportional to MAX_BLOCK_SIZE constant
      */
     public void testSquareMatrixTimesWithHomogeneousBlocks(){
-        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE * 3;
 
         squareMatrixTimesLogic(size);
     }

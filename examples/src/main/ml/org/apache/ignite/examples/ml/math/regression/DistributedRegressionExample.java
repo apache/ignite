@@ -24,7 +24,6 @@ import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.regressions.DistributedOLSMultipleLinearRegression;
 import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -103,8 +102,8 @@ public class DistributedRegressionExample {
                     6.699999809, 109, 388, 8.899999619, 94
                 };
 
-                final int amountOfObservations = 53;
-                final int amountOfAttributes = 4;
+                final int nobs = 53;
+                final int nvars = 4;
 
                 System.out.println(">>> Create new SparseDistributedMatrix inside IgniteThread.");
                 // Create SparseDistributedMatrix, new cache will be created automagically.
@@ -112,8 +111,8 @@ public class DistributedRegressionExample {
                     StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
                 System.out.println(">>> Create new linear regression object");
-                DistributedOLSMultipleLinearRegression regression = new DistributedOLSMultipleLinearRegression();
-                regression.newSampleData(data, amountOfObservations, amountOfAttributes, distributedMatrix);
+                OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
+                regression.newSampleData(data, nobs, nvars, distributedMatrix);
                 System.out.println();
 
                 System.out.println(">>> Estimates the regression parameters b:");
@@ -130,12 +129,12 @@ public class DistributedRegressionExample {
 
                 System.out.println(">>> Estimates the standard error of the regression:");
                 System.out.println(regression.estimateRegressionStandardError());
-/*
+
                 System.out.println(">>> R-Squared statistic:");
                 System.out.println(regression.calculateRSquared());
 
                 System.out.println(">>> Adjusted R-squared statistic:");
-                System.out.println(regression.calculateAdjustedRSquared());*/
+                System.out.println(regression.calculateAdjustedRSquared());
 
                 System.out.println(">>> Returns the variance of the regressand, ie Var(y):");
                 System.out.println(regression.estimateErrorVariance());
