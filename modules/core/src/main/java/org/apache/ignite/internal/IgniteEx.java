@@ -174,13 +174,4 @@ public interface IgniteEx extends Ignite {
      * @param rebalanceEnabled rebalance enabled flag.
      */
     public void rebalanceEnabled(boolean rebalanceEnabled);
-
-    /**
-     * Sets baseline topology using given set of nodes.
-     *
-     * Cluster must be activated before changing baseline topology.
-     *
-     * @param nodes Baseline topology nodes.
-     */
-    public void setBaselineTopology(@Nullable Collection<ClusterNode> nodes);
 }

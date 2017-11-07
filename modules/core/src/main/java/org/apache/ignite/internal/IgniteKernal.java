@@ -81,6 +81,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -3515,7 +3516,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            context().state().changeGlobalState(active, cluster().forServers().nodes(), false).get();
+            context().state().changeGlobalState(active, baselineNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3525,25 +3526,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<ClusterNode> nodes) {
-        guard();
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        Collection<ClusterNode> srvNodes = cluster().forServers().nodes();
 
-        try {
-            if (!context().state().clusterState().active())
-                throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+        ArrayList baselineNodes = new ArrayList(srvNodes.size());
 
-            if (nodes != null && !nodes.containsAll(context().discovery().aliveServerNodes()))
-                throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+        for (ClusterNode clN : srvNodes)
+            baselineNodes.add(clN);
 
-            context().state().changeGlobalState(true, nodes, true).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
+        return baselineNodes;
     }
 
     /** {@inheritDoc} */

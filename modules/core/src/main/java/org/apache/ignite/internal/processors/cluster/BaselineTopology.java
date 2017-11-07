@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
@@ -207,13 +208,13 @@ public class BaselineTopology implements Serializable {
      * @param id ID of BaselineTopology to build.
      * @return Baseline topology consisting of given nodes.
      */
-    @Nullable public static BaselineTopology build(Collection<ClusterNode> nodes, int id) {
+    @Nullable public static BaselineTopology build(Collection<BaselineNode> nodes, int id) {
         if (nodes == null)
             return null;
 
         Map<Object, Map<String, Object>> nodeMap = new HashMap<>();
 
-        for (ClusterNode node : nodes)
+        for (BaselineNode node : nodes)
             nodeMap.put(node.consistentId(), node.attributes());
 
         return new BaselineTopology(nodeMap, id);
@@ -234,7 +235,7 @@ public class BaselineTopology implements Serializable {
     /**
      * @param nodes Nodes.
      */
-    boolean updateHistory(Collection<ClusterNode> nodes) {
+    boolean updateHistory(Collection<BaselineNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
         if (activationHash != newTopHash) {
@@ -251,10 +252,10 @@ public class BaselineTopology implements Serializable {
     /**
      * @param nodes Nodes.
      */
-    private long calculateTopologyHash(Collection<ClusterNode> nodes) {
+    private long calculateTopologyHash(Collection<BaselineNode> nodes) {
         long res = 0;
 
-        for (ClusterNode node : nodes)
+        for (BaselineNode node : nodes)
             res += (long) node.consistentId().hashCode();
 
         return res;

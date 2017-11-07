@@ -16,7 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -24,6 +26,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -132,7 +136,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         boolean expectedExceptionIsThrown = false;
 
         try {
-            ((IgniteEx) nodeC).setBaselineTopology(Arrays.asList(nodeA.cluster().localNode(), nodeB.cluster().localNode()));
+            nodeC.cluster().setBaselineTopology(Arrays.asList((BaselineNode) nodeA.cluster().localNode(),
+                nodeB.cluster().localNode()));
         } catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith("Removing online nodes"));
 
@@ -157,7 +162,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         Ignite nodeA = startGridWithConsistentId("A");
         startGridWithConsistentId("B").active(true);
 
-        ((IgniteEx)nodeA).setBaselineTopology(nodeA.cluster().forServers().nodes());
+        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
 
         stopAllGrids(false);
 
@@ -350,7 +355,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         stopGrid("B", false);
 
-        ((IgniteEx)nodeA).setBaselineTopology(nodeA.cluster().forServers().nodes());
+        nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
 
         verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeC});
 
@@ -396,7 +401,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         IgniteEx nodeD = (IgniteEx) startGridWithConsistentId("D");
 
-        nodeD.setBaselineTopology(nodeA.cluster().forServers().nodes());
+        nodeD.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
 
         verifyBaselineTopologyOnNodes(verifier, new Ignite[]{nodeA, nodeB, nodeC, nodeD});
     }
@@ -417,7 +422,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         nodeA.active(true);
 
-        ((IgniteEx)nodeA).setBaselineTopology(null);
+        nodeA.cluster().setBaselineTopology(null);
 
         verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeB, nodeC});
     }
@@ -533,6 +538,16 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
             this.id = id;
             this.strId = strId;
         }
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes(Collection<ClusterNode> clNodes) {
+        Collection<BaselineNode> res = new ArrayList<>(clNodes.size());
+
+        for (ClusterNode clN : clNodes)
+            res.add(clN);
+
+        return res;
     }
 
 }
