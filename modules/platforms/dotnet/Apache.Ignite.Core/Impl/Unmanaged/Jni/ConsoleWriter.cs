@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// <summary>
     /// Console writer.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-        Justification = "Only instance methods can be called across AppDomain boundaries.")]
     internal sealed class ConsoleWriter : MarshalByRefObject
     {
         /// <summary>
         /// Writes the specified message to console.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+            Justification = "Only instance methods can be called across AppDomain boundaries.")]
         public void Write(string message, bool isError)
         {
             var target = isError ? Console.Error : Console.Out;

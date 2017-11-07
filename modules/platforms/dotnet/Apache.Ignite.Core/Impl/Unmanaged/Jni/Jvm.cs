@@ -295,13 +295,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-            Justification = "Only instance methods can be called across AppDomain boundaries.")]
         private class CallbackAccessor : MarshalByRefObject
         {
             /// <summary>
             /// Gets the callbacks.
             /// </summary>
+            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+                Justification = "Only instance methods can be called across AppDomain boundaries.")]
             public Callbacks GetCallbacks()
             {
                 return GetOrCreate(null)._callbacks;
@@ -311,13 +311,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Resolves Apache.Ignite.Core assembly in the default AppDomain when needed.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
-            Justification = "Only instance methods can be called across AppDomain boundaries.")]
         private class AssemblyResolver : MarshalByRefObject
         {
             /// <summary>
             /// Tracks the AssemblyResolve event.
             /// </summary>
+            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+                Justification = "Only instance methods can be called across AppDomain boundaries.")]
             public void TrackResolve(string name, string path)
             {
                 AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>

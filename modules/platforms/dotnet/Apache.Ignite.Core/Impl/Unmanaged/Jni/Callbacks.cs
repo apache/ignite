@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading;
@@ -168,6 +169,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// <see cref="ILogger.Log"/> callback.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void LoggerLog(IntPtr envPtr, IntPtr clazz, long igniteId, int level, IntPtr message, IntPtr category,
             IntPtr errorInfo, long memPtr)
         {
@@ -191,6 +193,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// <see cref="ILogger.IsEnabled"/> callback.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private bool LoggerIsLevelEnabled(IntPtr env, IntPtr clazz, long igniteId, int level)
         {
             try
@@ -209,6 +212,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// 3 longs + object -> long.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private long InLongLongLongObjectOutLong(IntPtr env, IntPtr clazz, long igniteId,
             int op, long arg1, long arg2, long arg3, IntPtr arg)
         {
@@ -228,6 +232,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// long -> long.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private long InLongOutLong(IntPtr env, IntPtr clazz, long igniteId,
             int op, long arg)
         {
@@ -252,6 +257,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// For example, unit test runners won't show Java console output, and so on.
         /// To fix this we delegate console output from Java to .NET APIs.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ConsoleWrite(IntPtr envPtr, IntPtr clazz, IntPtr message, bool isError)
         {
             try
