@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -281,6 +282,31 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+
     }
 
     /** {@inheritDoc} */
