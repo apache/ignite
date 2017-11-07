@@ -295,7 +295,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Provides access to <see cref="Callbacks"/> instance in the default AppDomain.
         /// </summary>
-        /// <seealso cref="System.MarshalByRefObject" />
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+            Justification = "Only instance methods can be called across AppDomain boundaries.")]
         private class CallbackAccessor : MarshalByRefObject
         {
             /// <summary>
@@ -310,6 +311,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Resolves Apache.Ignite.Core assembly in the default AppDomain when needed.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+            Justification = "Only instance methods can be called across AppDomain boundaries.")]
         private class AssemblyResolver : MarshalByRefObject
         {
             /// <summary>

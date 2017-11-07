@@ -19,9 +19,13 @@ using System;
 
 namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Console writer.
     /// </summary>
+    [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic",
+        Justification = "Only instance methods can be called across AppDomain boundaries.")]
     internal sealed class ConsoleWriter : MarshalByRefObject
     {
         /// <summary>
