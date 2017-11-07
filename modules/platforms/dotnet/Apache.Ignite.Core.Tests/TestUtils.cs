@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
@@ -345,7 +346,18 @@ namespace Apache.Ignite.Core.Tests
                 Localhost = "127.0.0.1",
                 JvmOptions = TestJavaOptions(jvmDebug),
                 JvmClasspath = CreateTestClasspath(),
-                IgniteInstanceName = name
+                IgniteInstanceName = name,
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                        InitialSize = 128 * 1024 * 1024,
+                        MaxSize = Environment.Is64BitProcess
+                            ? DataRegionConfiguration.DefaultMaxSize
+                            : 256 * 1024 * 1024
+                    }
+                }
             };
         }
 
