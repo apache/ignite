@@ -178,7 +178,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            return new H2Cursor(tree.find(lower, upper), p);
+            return new H2Cursor(tree.find(lower, upper, p));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -337,19 +337,27 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCursor<GridH2Row> doFind0(
+    @Override protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
         try {
-            GridCursor<GridH2Row> range = t.find(first, last);
+            IndexingQueryCacheFilter p = null;
+
+            if (filter != null) {
+                String cacheName = getTable().cacheName();
+
+                p = filter.forCache(cacheName);
+            }
+
+            GridCursor<GridH2Row> range = t.find(first, last, p);
 
             if (range == null)
-                return EMPTY_CURSOR;
+                range = EMPTY_CURSOR;
 
-            return filter(range, filter);
+            return new H2Cursor(range);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

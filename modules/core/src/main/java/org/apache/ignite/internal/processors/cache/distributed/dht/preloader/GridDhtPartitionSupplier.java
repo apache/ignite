@@ -304,12 +304,12 @@ class GridDhtPartitionSupplier {
                                 d.isHistorical(part) ? d.partitionCounter(part) : null);
 
                             if (!iter.historical()) {
-                                assert !grp.shared().database().persistenceEnabled() || !d.isHistorical(part);
+                                assert !grp.persistenceEnabled() || !d.isHistorical(part);
 
                                 s.clean(part);
                             }
                             else
-                                assert grp.shared().database().persistenceEnabled() && d.isHistorical(part);
+                                assert grp.persistenceEnabled() && d.isHistorical(part);
                         }
                         else
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
