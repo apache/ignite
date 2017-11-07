@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+using System;
+
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
-    using System.Runtime.InteropServices;
-
     /// <summary>
-    /// Unmanaged callback handler function pointers.
+    /// Console writer.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal unsafe struct UnmanagedCallbackHandlers
+    internal sealed class ConsoleWriter : MarshalByRefObject
     {
-        internal void* target;
-
-        internal void* error;
-
-        internal void* loggerLog;
-        internal void* loggerIsLevelEnabled;
-
-        internal void* inLongOutLong;
-        internal void* inLongLongObjectOutLong;
+        /// <summary>
+        /// Writes the specified message to console.
+        /// </summary>
+        public void Write(string message, bool isError)
+        {
+            var target = isError ? Console.Error : Console.Out;
+            target.Write(message);
+        }
     }
 }

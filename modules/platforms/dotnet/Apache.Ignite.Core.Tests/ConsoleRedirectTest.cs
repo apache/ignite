@@ -145,8 +145,11 @@ namespace Apache.Ignite.Core.Tests
                     LoaderOptimization = LoaderOptimization.MultiDomainHost
                 });
 
+                var type = typeof(IgniteRunner);
+                Assert.IsNotNull(type.FullName);
+
                 var runner = (IIgniteRunner)childDomain.CreateInstanceAndUnwrap(
-                    typeof(IgniteRunner).Assembly.FullName, typeof(IgniteRunner).FullName);
+                    type.Assembly.FullName, type.FullName);
 
                 runner.Run();
             }

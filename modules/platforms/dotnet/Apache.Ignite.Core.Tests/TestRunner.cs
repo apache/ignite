@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -45,7 +46,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
+            TestOne(typeof(IgniteStartStopTest), "TestStartStopLeak");
 
             //TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();

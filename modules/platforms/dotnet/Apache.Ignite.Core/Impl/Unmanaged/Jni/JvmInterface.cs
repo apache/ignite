@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,39 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System;
+    using System.Runtime.InteropServices;
+
     /// <summary>
-    /// Unmanaged context.
-    /// Wrapper around native ctx pointer to track finalization.
+    /// JavaVM interface.
     /// </summary>
-    internal unsafe class UnmanagedContext
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct JvmInterface
     {
-        /** Context */
-        private readonly void* _nativeCtx;
+        // ReSharper disable MemberCanBePrivate.Global
+        public IntPtr reserved0;
+        public IntPtr reserved1;
+        public IntPtr reserved2;
 
-        /// <summary>
-        /// Constructor.
-        /// </summary>
-        public UnmanagedContext(void* ctx)
-        {
-            _nativeCtx = ctx;
-        }
-
-        /// <summary>
-        /// Gets the native context pointer.
-        /// </summary>
-        public void* NativeContext
-        {
-            get { return _nativeCtx; }
-        }
-
-        /// <summary>
-        /// Destructor.
-        /// </summary>
-        ~UnmanagedContext()
-        {
-            UnmanagedUtils.DeleteContext(_nativeCtx); // Release CPP object.
-        }
+        public IntPtr DestroyJavaVM;
+        public IntPtr AttachCurrentThread;
+        public IntPtr DetachCurrentThread;
+        public IntPtr GetEnv;
+        public IntPtr AttachCurrentThreadAsDaemon;
     }
 }
