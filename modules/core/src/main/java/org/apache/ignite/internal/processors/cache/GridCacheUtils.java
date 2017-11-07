@@ -1686,6 +1686,21 @@ public class GridCacheUtils {
         if (dsCfg == null)
             return false;
 
+        // Special handling for system cache is needed.
+        if (isSystemCache(ccfg.getName())) {
+            if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
+                return true;
+
+            if (dsCfg.getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                    if (drConf.isPersistenceEnabled())
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         String regName = ccfg.getDataRegionName();
 
         if (regName == null || regName.equals(dsCfg.getDefaultDataRegionConfiguration().getName()))

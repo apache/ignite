@@ -217,12 +217,23 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
     }
 
-    /** */
+    /** Test cache behaviour for matrix with different blocks */
     public void testCacheBehaviour(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        cacheBehaviorLogic(rows);
+    }
 
-        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(rows, cols);
-        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(rows, cols);
+    /** Test cache behaviour for matrix with homogeneous blocks */
+    public void testCacheBehaviourWithHomogeneousBlocks(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+        cacheBehaviorLogic(size);
+    }
+
+    /** */
+    private void cacheBehaviorLogic(int size) {
+        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
+        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
 
         initMtx(cacheMatrix1);
         initMtx(cacheMatrix2);
@@ -274,9 +285,23 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
      * Simple test for two square matrices.
      */
     public void testSquareMatrixTimes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = rows;
 
-        int size = 100;
+        squareMatrixTimesLogic(size);
+    }
+
+    /**
+     * Simple test for two square matrices with size which is proportional to MAX_BLOCK_SIZE constant
+     */
+    public void testSquareMatrixTimesWithHomogeneousBlocks(){
+        int size = BlockEntry.MAX_BLOCK_SIZE * 3;
+
+        squareMatrixTimesLogic(size);
+    }
+
+    /** Build two square matrices, multiply them and check main diagonal elements */
+    private void squareMatrixTimesLogic(int size) {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
