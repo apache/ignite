@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly Callbacks _callbacks;
 
         /** Static instamce */
-        private static Jvm _instance;
+        private static volatile Jvm _instance;
 
         /** Sync. */
         private static readonly object SyncRoot = new object();
@@ -128,15 +128,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public static Jvm Get()
         {
-            lock (SyncRoot)
-            {
-                if (_instance == null)
-                {
-                    throw new IgniteException("JVM has not been created.");
-                }
+            var res = _instance;
 
-                return _instance;
+            if (res == null)
+            {
+                throw new IgniteException("JVM has not been created.");
             }
+
+            return res;
         }
 
         /// <summary>
