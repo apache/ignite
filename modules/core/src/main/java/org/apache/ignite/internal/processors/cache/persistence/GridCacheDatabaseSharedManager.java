@@ -1811,9 +1811,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         WALPointer pnt,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
+        RecoveryDebug rd
     ) throws IgniteCheckedException {
         cctx.kernalContext().query().skipFieldLookup(true);
+
+        if (rd != null)
+            rd.append("-------Apply updates------\n");
 
         try (WALIterator it = cctx.wal().replay(pnt)) {
             while (it.hasNextX()) {
@@ -1839,6 +1843,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 assert cacheCtx != null;
 
                                 applyUpdate(cacheCtx, dataEntry);
+
+                                if (rd != null)
+                                    rd.append(dataRec, true);
                             }
                         }
 
