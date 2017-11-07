@@ -157,7 +157,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
          * @param featureIdx Index of feature by which split is done.
          * @param info Split information.
          */
-        public IndexAndSplitInfo(int featureIdx, SplitInfo info) {
+        IndexAndSplitInfo(int featureIdx, SplitInfo info) {
             this.featureIdx = featureIdx;
             this.info = info;
         }
@@ -179,7 +179,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         private int depth;
 
         /** */
-        public TreeTip(Consumer<DecisionTreeNode> leafSetter, int depth) {
+        TreeTip(Consumer<DecisionTreeNode> leafSetter, int depth) {
             this.leafSetter = leafSetter;
             this.depth = depth;
         }
@@ -200,7 +200,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         }
 
         /** */
-        public void setSplit(DecisionTreeNode s) {
+        void setSplit(DecisionTreeNode s) {
             this.s = s;
         }
     }

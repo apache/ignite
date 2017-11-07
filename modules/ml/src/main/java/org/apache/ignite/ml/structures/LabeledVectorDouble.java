@@ -29,10 +29,10 @@ public class LabeledVectorDouble<V extends Vector> extends LabeledVector<V, Doub
      * Construct LabeledVectorDouble.
      *
      * @param vector Vector.
-     * @param label Label.
+     * @param lb Label.
      */
-    public LabeledVectorDouble(V vector, Double label) {
-        super(vector, label);
+    public LabeledVectorDouble(V vector, Double lb) {
+        super(vector, lb);
     }
 
     /**

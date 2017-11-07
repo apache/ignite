@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.trees;
 
-import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSplitCalculator;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -28,7 +27,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     ColumnDecisionTreeTrainerTest.class,
     GiniSplitCalculatorTest.class,
-    VarianceSplitCalculator.class
+    VarianceSplitCalculatorTest.class
 })
 public class DecisionTreesTestSuite {
 }
