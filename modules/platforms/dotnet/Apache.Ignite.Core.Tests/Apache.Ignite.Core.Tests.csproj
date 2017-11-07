@@ -164,6 +164,7 @@
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
+    <Compile Include="MultiAppDomainTest.cs" />
     <Compile Include="Plugin\Cache\CacheJavaPluginConfiguration.cs" />
     <Compile Include="Plugin\Cache\CacheJavaPluginTest.cs" />
     <Compile Include="Plugin\PluginTest.cs" />
