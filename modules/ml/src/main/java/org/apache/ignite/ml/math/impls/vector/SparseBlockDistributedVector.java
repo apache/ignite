@@ -48,41 +48,32 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
     }
 
     /**
-     * @param size Vector size.
-     * @param acsMode Vector elements access mode..
+     * @param size Vector size
      */
-    public SparseBlockDistributedVector(int size, int acsMode) {
+    public SparseBlockDistributedVector(int size) {
 
         assert size > 0;
-        assertAccessMode(acsMode);
-
-
         setStorage(new BlockVectorStorage(size));
     }
 
-    public SparseBlockDistributedVector(int size) {
-        this(size, StorageConstants.RANDOM_ACCESS_MODE);
-    }
 
     /**
      *
-     * @param data
+     * @param data Data to fill storage
      */
     public SparseBlockDistributedVector(double[] data) {
-        setStorage(new SparseDistributedVectorStorage(data.length, StorageConstants.RANDOM_ACCESS_MODE));
+        setStorage(new BlockVectorStorage(data.length));
         for (int i = 0; i < data.length; i++) {
-            double value = data[i];
-            if(value != 0.0){
-                storage().set(i, value);
-            }
+            double val = data[i];
+            if(val != 0.0) storage().set(i, val);
         }
     }
 
 
 
     /** */
-    public SparseDistributedVectorStorage storage() {
-        return (SparseDistributedVectorStorage)getStorage();
+    public BlockVectorStorage storage() {
+        return (BlockVectorStorage)getStorage();
     }
 
     /**
@@ -94,13 +85,11 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
         return mapOverValues(v -> v / d);
     }
 
-    @Override
-    public Vector like(int size) {
-        return new SparseBlockDistributedVector(size, storage().accessMode());
+    @Override public Vector like(int size) {
+        return new SparseBlockDistributedVector(size);
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return new SparseBlockDistributedMatrix(rows, cols);
     }
 
@@ -145,6 +134,6 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
 
     /** */
     public IgniteUuid getUUID() {
-        return ((SparseDistributedVectorStorage)getStorage()).getUUID();
+        return ((BlockVectorStorage)getStorage()).getUUID();
     }
 }

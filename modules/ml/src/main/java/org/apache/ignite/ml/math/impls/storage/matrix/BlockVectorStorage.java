@@ -31,10 +31,9 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
-import org.apache.ignite.ml.math.distributed.keys.impl.BlockVectorKey;
-import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
-import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
+import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -45,12 +44,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import static org.apache.ignite.ml.math.impls.matrix.BlockEntry.MAX_BLOCK_SIZE;
+import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
 
 /**
  * Storage for {@link SparseBlockDistributedVector}.
  */
-public class BlockVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<BlockVectorKey> {
+public class BlockVectorStorage extends CacheUtils implements VectorStorage, StorageConstants, DistributedStorage<VectorBlockKey> {
     /** Cache name used for all instances of {@link BlockVectorStorage}. */
     private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
     /** */
@@ -64,8 +63,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
     /** Actual distributed storage. */
     private IgniteCache<
-            BlockVectorKey /* Matrix block number with uuid. */,
-        BlockEntry /* Block of matrix, local sparse matrix. */
+            VectorBlockKey /* Matrix block number with uuid. */,
+            VectorBlockEntry /* Block of matrix, local sparse matrix. */
         > cache = null;
 
     /**
@@ -94,7 +93,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     /**
      *
      */
-    public IgniteCache<BlockVectorKey, BlockEntry> cache() {
+    public IgniteCache<VectorBlockKey, VectorBlockEntry> cache() {
         return cache;
     }
 
@@ -183,17 +182,17 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      *
      * NB: NOT cell indices.
      */
-    public BlockVectorKey getCacheKey(long blockId) {
-        return new BlockVectorKey(blockId, uuid, getAffinityKey(blockId));
+    public VectorBlockKey getCacheKey(long blockId) {
+        return new VectorBlockKey(blockId, uuid, getAffinityKey(blockId));
     }
 
 
     /** {@inheritDoc} */
-    @Override public Set<BlockVectorKey> getAllKeys() {
+    @Override public Set<VectorBlockKey> getAllKeys() {
         int maxIndex = size - 1;
         long maxBlockId = getBlockId(maxIndex);
 
-        Set<BlockVectorKey> keyset = new HashSet<>();
+        Set<VectorBlockKey> keyset = new HashSet<>();
 
         for(int i = 0; i <= maxBlockId; i++)
             keyset.add(getCacheKey(i));
@@ -213,8 +212,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      * @param blockId block id.
      * @return The list of block entries.
      */
-    public List<BlockEntry> getColForBlock(IgnitePair<Long> blockId) {
-        List<BlockEntry> res = new LinkedList<>();
+    public List<VectorBlockEntry> getColForBlock(long blockId) {
+        List<VectorBlockEntry> res = new LinkedList<>();
 
         for (int i = 0; i < blocks; i++)
             res.add(getEntryById(i));
@@ -250,10 +249,10 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     /**
      *
      */
-    private BlockEntry getEntryById(long blockId) {
-        BlockVectorKey key = getCacheKey(blockId);
+    private VectorBlockEntry getEntryById(long blockId) {
+        VectorBlockKey key = getCacheKey(blockId);
 
-        BlockEntry entry = cache.localPeek(key, CachePeekMode.PRIMARY);
+        VectorBlockEntry entry = cache.localPeek(key, CachePeekMode.PRIMARY);
         entry = entry != null ? entry : cache.get(key);
 
         if (entry == null)
@@ -263,8 +262,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     }
 
     @NotNull
-    private BlockEntry getEmptyBlockEntry(long blockId) {
-        BlockEntry entry;
+    private VectorBlockEntry getEmptyBlockEntry(long blockId) {
+        VectorBlockEntry entry;
         int colMod = size % maxBlockEdge;
 
         int colSize;
@@ -274,7 +273,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         else
             colSize = blockId != (blocks - 1) ? maxBlockEdge : colMod;
 
-        entry = new BlockEntry(colSize);
+        entry = new VectorBlockEntry(colSize);
         return entry;
     }
 
@@ -297,14 +296,14 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         long blockId = getBlockId(idx);
         // Remote set on the primary node (where given row or column is stored locally).
         ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, blockId)).run(() -> {
-            IgniteCache<BlockVectorKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+            IgniteCache<VectorBlockKey, VectorBlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
-            BlockVectorKey key = getCacheKey(blockId);
+            VectorBlockKey key = getCacheKey(blockId);
 
             // Local get.
-            BlockEntry block = getEntryById(blockId);
+            VectorBlockEntry block = getEntryById(blockId);
 
-            block.set(idx % block.rowSize(), v);
+            block.set(idx % block.size(), v);
 
             // Local put.
             cache.put(key, block);
@@ -324,26 +323,26 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      */
     private double matrixGet(int idx) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getBlockId(idx, b))).call(() -> {
-            IgniteCache<BlockVectorKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
+        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, getBlockId(idx))).call(() -> {
+            IgniteCache<VectorBlockKey, VectorBlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
-            BlockVectorKey key = getCacheKey(getBlockId(idx));
+            VectorBlockKey key = getCacheKey(getBlockId(idx));
 
             // Local get.
-            BlockEntry block = cache.localPeek(key, CachePeekMode.PRIMARY);
+            VectorBlockEntry block = cache.localPeek(key, CachePeekMode.PRIMARY);
 
             if (block == null)
                 block = cache.get(key);
 
-            return block == null ? 0.0 : block.get(idx % block.rowSize());
+            return block == null ? 0.0 : block.get(idx % block.size());
         });
     }
 
     /**
      * Create new ML cache if needed.
      */
-    private IgniteCache<BlockVectorKey, BlockEntry> newCache() {
-        CacheConfiguration<BlockVectorKey, BlockEntry> cfg = new CacheConfiguration<>();
+    private IgniteCache<VectorBlockKey, VectorBlockEntry> newCache() {
+        CacheConfiguration<VectorBlockKey, VectorBlockEntry> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -364,5 +363,15 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
         cfg.setName(CACHE_NAME);
 
         return Ignition.localIgnite().getOrCreateCache(cfg);
+    }
+
+    /**
+     * Avoid this method for large vectors
+     * @return data presented as array
+     */
+    @Override public double[] data() {
+        double[] res = new double[this.size];
+        for (int i = 0; i < this.size; i++) res[i] = this.get(i);
+        return res;
     }
 }

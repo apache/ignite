@@ -43,6 +43,8 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorView;
+import org.apache.ignite.ml.math.util.MatrixUtil;
+
 /**
  * This class provides a helper implementation of the {@link Matrix}
  * interface to minimize the effort required to implement it.
@@ -281,7 +283,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param row Row index.
      */
-    protected void checkRowIndex(int row) {
+    void checkRowIndex(int row) {
         if (row < 0 || row >= rowSize())
             throw new RowIndexException(row);
     }
@@ -291,7 +293,7 @@ public abstract class AbstractMatrix implements Matrix {
      *
      * @param col Column index.
      */
-    protected void checkColumnIndex(int col) {
+    void checkColumnIndex(int col) {
         if (col < 0 || col >= columnSize())
             throw new ColumnIndexException(col);
     }
@@ -302,7 +304,7 @@ public abstract class AbstractMatrix implements Matrix {
      * @param row Row index.
      * @param col Column index.
      */
-    protected void checkIndex(int row, int col) {
+    private void checkIndex(int row, int col) {
         checkRowIndex(row);
         checkColumnIndex(col);
     }
@@ -738,8 +740,9 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
-
-        Vector res = new DenseLocalOnHeapVector(rowSize());
+        Vector res;
+        if(isDistributed()) res = MatrixUtil.likeVector(this, rowSize());
+        else res = new DenseLocalOnHeapVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i,col));
@@ -978,9 +981,8 @@ public abstract class AbstractMatrix implements Matrix {
     protected int getMaxAmountOfColumns(double[][] data) {
         int maxAmountOfColumns = 0;
 
-        for (int i = 0; i < data.length; i++) {
+        for (int i = 0; i < data.length; i++)
             maxAmountOfColumns = Math.max(maxAmountOfColumns, data[i].length);
-        }
 
         return maxAmountOfColumns;
     }

@@ -82,9 +82,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
         setStorage(new SparseDistributedVectorStorage(data.length, StorageConstants.RANDOM_ACCESS_MODE));
         for (int i = 0; i < data.length; i++) {
             double value = data[i];
-            if(value != 0.0){
-                storage().set(i, value);
-            }
+            if(value != 0.0) storage().set(i, value);
         }
     }
 
@@ -111,7 +109,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return new SparseBlockDistributedMatrix(rows, cols);
+        return new SparseDistributedMatrix(rows, cols);
     }
 
     /**

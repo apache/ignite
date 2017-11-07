@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.VectorStorage;
@@ -30,6 +31,7 @@ import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.DistributedStorage;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.SparseMatrixKey;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 
 import java.io.IOException;
 import java.io.ObjectInput;

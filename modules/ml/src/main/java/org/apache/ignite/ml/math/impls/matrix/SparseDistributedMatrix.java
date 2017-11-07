@@ -20,7 +20,6 @@ package org.apache.ignite.ml.math.impls.matrix;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,9 +30,9 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
+import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
@@ -162,17 +161,17 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
                 int idx = key.index();
                 
                 if (isRowMode){
-                    Vector Aik = matrixA.getCol(idx);
+                    Vector Aik = matrixA.getRow(idx);
 
-                    for (int i = 0; i < columnSize(); i++) {
-                        Vector Bkj = matrixB.getRow(i);
+                    for (int i = 0; i < matrixB.columnSize(); i++) {
+                        Vector Bkj = matrixB.getCol(i);
                         matrixC.set(idx, i, Aik.times(Bkj).sum());
                     }
                 } else {
-                    Vector Bkj = matrixB.getRow(idx);
+                    Vector Bkj = matrixB.getCol(idx);
 
-                    for (int i = 0; i < rowSize(); i++) {
-                        Vector Aik = matrixA.getCol(i);
+                    for (int i = 0; i < matrixA.rowSize(); i++) {
+                        Vector Aik = matrixA.getRow(i);
                         matrixC.set(idx, i, Aik.times(Bkj).sum());
                     }
                 }
@@ -180,6 +179,49 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         });
 
         return matrixC;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Vector times(Vector vec) {
+        if (vec == null)
+            throw new IllegalArgumentException("The vector should be not null.");
+
+        if (columnSize() != vec.size())
+            throw new CardinalityException(columnSize(), vec.size());
+
+        SparseDistributedMatrix matrixA = this;
+        SparseDistributedVector vectorB = (SparseDistributedVector) vec;
+
+        String cacheName = storage().cacheName();
+        int rows = this.rowSize();
+
+        SparseDistributedVector vectorC = (SparseDistributedVector) likeVector(rows);
+
+        CacheUtils.bcast(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            Affinity<RowColMatrixKey> affinity = ignite.affinity(cacheName);
+
+            ClusterNode locNode = ignite.cluster().localNode();
+
+            SparseDistributedVectorStorage storageC = vectorC.storage();
+
+            Map<ClusterNode, Collection<RowColMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storageC.getAllKeys());
+            Collection<RowColMatrixKey> locKeys = keysCToNodes.get(locNode);
+
+            if (locKeys == null)
+                return;
+
+            // compute Cij locally on each node
+            // TODO: IGNITE:5114, exec in parallel
+            locKeys.forEach(key -> {
+                int idx = key.index();
+                Vector Aik = matrixA.getRow(idx);
+                vectorC.set(idx, Aik.times(vectorB).sum());
+            });
+        });
+
+        return vectorC;
     }
 
     /** {@inheritDoc} */
