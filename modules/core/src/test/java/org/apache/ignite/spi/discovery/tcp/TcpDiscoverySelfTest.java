@@ -2264,12 +2264,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                         }
 
                         log.info("Stop sleep on message send: " + msg);
-
-                        if (node.equals(errNext)) {
-                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
-
-                            throw new SocketTimeoutException();
-                        }
                     }
                 }
             }
@@ -2605,7 +2599,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException("Failing ring message worker explicitly");
                 else {
                     try {
-                        Thread.sleep(5_000);
+                        Thread.sleep(timeout);
                     }
                     catch (InterruptedException ignored) {
                         // No-op.

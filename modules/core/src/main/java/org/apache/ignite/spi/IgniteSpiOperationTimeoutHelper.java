@@ -33,6 +33,12 @@ public class IgniteSpiOperationTimeoutHelper {
     private long lastOperStartTs;
 
     /** */
+    private long lastOperFinishTs;
+
+    /** */
+    private boolean overtime;
+
+    /** */
     private long timeout;
 
     /** */
@@ -65,16 +71,20 @@ public class IgniteSpiOperationTimeoutHelper {
      * this {@code IgniteSpiOperationTimeoutController}.
      */
     public long nextTimeoutChunk(long dfltTimeout) throws IgniteSpiOperationTimeoutException {
-        if (!failureDetectionTimeoutEnabled)
+        if (!failureDetectionTimeoutEnabled) {
+            lastOperFinishTs = U.currentTimeMillis() + dfltTimeout;
+
             return dfltTimeout;
+        }
+
+        long curTs = U.currentTimeMillis();
 
         if (lastOperStartTs == 0) {
             timeout = failureDetectionTimeout;
-            lastOperStartTs = U.currentTimeMillis();
+
+            lastOperStartTs = curTs;
         }
         else {
-            long curTs = U.currentTimeMillis();
-
             timeout = timeout - (curTs - lastOperStartTs);
 
             lastOperStartTs = curTs;
@@ -84,8 +94,24 @@ public class IgniteSpiOperationTimeoutHelper {
                     "'failureDetectionTimeout' configuration property [failureDetectionTimeout="
                     + failureDetectionTimeout + ']');
         }
+        lastOperFinishTs = curTs + timeout;
 
         return timeout;
+    }
+
+    /**
+     * Returns difference between current time and expected last operation finish time.
+     *
+     * @param threshold threshold for a time difference
+     * @return Time difference if it was above threshold.
+     */
+    public boolean checkOvertime(long threshold) {
+        long overtime = U.currentTimeMillis() - lastOperFinishTs;
+
+        if (overtime > threshold)
+            this.overtime = true;
+
+        return this.overtime;
     }
 
     /**
