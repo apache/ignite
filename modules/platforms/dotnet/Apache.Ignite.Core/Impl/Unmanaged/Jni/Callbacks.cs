@@ -256,7 +256,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             try
             {
-                // TODO: Why do we need many writers? Can we just use one in default domain?
                 if (message != IntPtr.Zero)
                 {
                     // Each domain registers it's own writer.
