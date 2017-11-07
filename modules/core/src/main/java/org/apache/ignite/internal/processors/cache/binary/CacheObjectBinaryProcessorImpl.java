@@ -464,9 +464,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
-        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+        try {
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+            metadataFileStore.mergeAndWriteMetadata(mergedMeta);
+
+            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+        }
+        catch (BinaryObjectException e) {
+            throw new BinaryObjectException("New binary metadata is incompatible with binary metadata" +
+                " persisted locally." +
+                " Consider cleaning up persisted metadata from <workDir>/binary_meta directory.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -924,7 +933,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 metadataLocCache.put(e.getKey(), localHolder);
 
                 if (!ctx.clientNode())
-                    metadataFileStore.saveMetadata(holder.metadata());
+                    metadataFileStore.writeMetadata(holder.metadata());
             }
         }
     }
