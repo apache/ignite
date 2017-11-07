@@ -16,12 +16,16 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -118,10 +122,73 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     }
 
     /**
-     *
+     * Verifies that online nodes cannot be removed from BaselineTopology (this may change in future).
      */
     public void testOnlineNodesCannotBeRemovedFromBaselineTopology() throws Exception {
-        //TODO implement test
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+
+        boolean expectedExceptionIsThrown = false;
+
+        try {
+            ((IgniteEx) nodeC).setBaselineTopology(Arrays.asList(nodeA.cluster().localNode(), nodeB.cluster().localNode()));
+        } catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Removing online nodes"));
+
+            expectedExceptionIsThrown = true;
+        }
+
+        assertTrue(expectedExceptionIsThrown);
+    }
+
+    /**
+     *
+     */
+    public void testNodeFailsToJoinWithIncompatiblePreviousBaselineTopology() throws Exception {
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+
+        stopAllGrids(false);
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        startGridWithConsistentId("B").active(true);
+
+        ((IgniteEx)nodeA).setBaselineTopology(nodeA.cluster().forServers().nodes());
+
+        stopAllGrids(false);
+
+        startGridWithConsistentId("C").active(true);
+
+        stopGrid("C", false);
+
+        startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+
+        boolean expectedExceptionThrown = false;
+
+        try {
+            startGridWithConsistentId("C");
+        }
+        catch (IgniteCheckedException e) {
+            expectedExceptionThrown = true;
+
+            if (e.getCause() != null && e.getCause().getCause() != null) {
+                Throwable rootCause = e.getCause().getCause();
+
+                if (!(rootCause instanceof IgniteSpiException) || !rootCause.getMessage().contains("not compatible"))
+                    Assert.fail("Unexpected ignite exception was thrown: " + e);
+            }
+            else
+                throw e;
+        }
+
+        assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
     }
 
     /**
@@ -395,11 +462,19 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         //note: no call for activation after grid restart
         startGrids(3);
 
-        srv = grid(0);
+        final Ignite ig = grid(0);
 
-        awaitActivation(srv);
+        boolean clusterActive = GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ig.active();
+                }
+            },
+            10_000);
 
-        checkDataInCache(srv);
+        assertTrue(clusterActive);
+
+        checkDataInCache((IgniteEx) ig);
     }
 
     /**
@@ -435,19 +510,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         for (int i = 0; i < ENTRIES_COUNT; i++)
             cache.put(i, new TestValue(i, "str" + i));
-    }
-
-    /** */
-    private void awaitActivation(Ignite srv) throws Exception {
-        //TODO busy spinning for now, need to introduce an API to await for automatic activation
-        int awaitCntr = 0;
-
-        while (!srv.active()) {
-            if (awaitCntr++ > 12)
-                throw new Exception("Grid auto activation didn't happen in one minute");
-
-            Thread.sleep(5_000);
-        }
     }
 
     /** */

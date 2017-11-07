@@ -82,10 +82,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** */
-    private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
+    private volatile DiscoveryDataClusterState globalState;
 
     /** */
-    private volatile DiscoveryDataClusterState globalState;
+    private final BaselineTopologyHistory bltHist = new BaselineTopologyHistory();
 
     /** Local action future. */
     private final AtomicReference<GridChangeGlobalStateFuture> stateChangeFut = new AtomicReference<>();
@@ -160,6 +160,9 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         BaselineTopology blt = (BaselineTopology) metastorage.read(METASTORE_CURR_BLT_KEY);
 
+        if (blt != null)
+            bltHist.restoreHistory(metastorage, blt.id());
+
         onStateRestored(blt);
     }
 
@@ -176,8 +179,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private void saveBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
-        if (prevBltHistItem != null)
-            metastorage.write(METASTORE_BLT_HIST_PREFIX + prevBltHistItem.id(), prevBltHistItem);
+        bltHist.addHistoryItem(metastorage, prevBltHistItem);
 
         if (blt != null)
             metastorage.write(METASTORE_CURR_BLT_KEY, blt);
@@ -465,9 +467,10 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         if (state != null) {
             DiscoveryDataClusterState curState = globalState;
 
-            if (curState != null && curState.baselineTopology() != null && state.baselineTopology() != null &&
-                !BaselineTopology.equals(curState.baselineTopology(), state.baselineTopology()))
-                throw new IgniteException("Baseline topology mismatch: " + curState.baselineTopology() + " " + state.baselineTopology());
+            //TODO this exception has to be eliminated as joining node makes compatibility checks earlier in join process
+//            if (curState != null && curState.baselineTopology() != null && state.baselineTopology() != null &&
+//                !BaselineTopology.equals(curState.baselineTopology(), state.baselineTopology()))
+//                throw new IgniteException("Baseline topology mismatch: " + curState.baselineTopology() + " " + state.baselineTopology());
 
             globalState = state;
         }
@@ -592,16 +595,27 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (globalState == null || globalState.baselineTopology() == null || discoData.joiningNodeData() == null)
+        if (globalState == null
+            || globalState.baselineTopology() == null
+            || discoData.joiningNodeData() == null
+            || ((DiscoveryDataClusterState) discoData.joiningNodeData()).baselineTopology() == null)
             return null;
 
         BaselineTopology joiningNodeBlt = ((DiscoveryDataClusterState) discoData.joiningNodeData()).baselineTopology();
         BaselineTopology clusterBlt = globalState.baselineTopology();
 
-        if (!clusterBlt.isCompatibleWith(joiningNodeBlt)) {
-            String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster.";
+        String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster.";
 
+        if (joiningNodeBlt.id() > clusterBlt.id())
             return new IgniteNodeValidationResult(node.id(), msg, msg);
+
+        if (joiningNodeBlt.id() == clusterBlt.id()) {
+            if (!clusterBlt.isCompatibleWith(joiningNodeBlt))
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+        }
+        else if (joiningNodeBlt.id() < clusterBlt.id()) {
+            if (!bltHist.isCompatibleWith(joiningNodeBlt))
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
         }
 
         return null;

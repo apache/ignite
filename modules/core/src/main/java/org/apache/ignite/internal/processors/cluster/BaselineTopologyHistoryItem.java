@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -60,7 +61,7 @@ public class BaselineTopologyHistoryItem implements Serializable {
         fullActivationHistory.addAll(blt.activationHistory());
         fullActivationHistory.add(blt.activationHash());
 
-        return new BaselineTopologyHistoryItem(blt.id(), blt.consistentIds(), fullActivationHistory);
+        return new BaselineTopologyHistoryItem(blt.id(), U.arrayList(blt.consistentIds()), fullActivationHistory);
     }
 
     /**
@@ -68,5 +69,12 @@ public class BaselineTopologyHistoryItem implements Serializable {
      */
     public int id() {
         return id;
+    }
+
+    /**
+     *
+     */
+    public List<Long> activationHistory() {
+        return activationHistory;
     }
 }
