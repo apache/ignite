@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     /// JVM holder. Should exist once per domain.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal sealed unsafe class Jvm : MarshalByRefObject
+    internal sealed unsafe class Jvm
     {
         /** */
         // ReSharper disable once InconsistentNaming
