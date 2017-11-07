@@ -251,10 +251,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(e, _jvm);
-
-                return 0;
+                throw;
             }
         }
 
@@ -279,10 +276,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(e, _jvm);
-
-                return 0;
+                throw;
             }
         }
 
@@ -1219,8 +1213,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(e, _jvm);
+                throw;
             }
         }
 
@@ -1237,10 +1230,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             catch (Exception e)
             {
                 _log.Error(e, "Failure in Java callback");
-
-                UU.ThrowToJava(e, _jvm);
-
-                return default(T);
+                throw;
             }
         }
 

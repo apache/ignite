@@ -171,14 +171,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private void LoggerLog(IntPtr envPtr, IntPtr clazz, long igniteId, int level, IntPtr message, IntPtr category,
             IntPtr errorInfo, long memPtr)
         {
-            var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
-            var env = _jvm.AttachCurrentThread();
+            try
+            {
+                var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
+                var env = _jvm.AttachCurrentThread();
 
-            var message0 = env.JStringToString(message);
-            var category0 = env.JStringToString(category);
-            var errorInfo0 = env.JStringToString(errorInfo);
+                var message0 = env.JStringToString(message);
+                var category0 = env.JStringToString(category);
+                var errorInfo0 = env.JStringToString(errorInfo);
 
-            cbs.LoggerLog(level, message0, category0, errorInfo0, memPtr);
+                cbs.LoggerLog(level, message0, category0, errorInfo0, memPtr);
+            }
+            catch (Exception e)
+            {
+                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+            }
         }
 
         /// <summary>
@@ -186,9 +193,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private bool LoggerIsLevelEnabled(IntPtr env, IntPtr clazz, long igniteId, int level)
         {
-            var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
+            try
+            {
+                var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
 
-            return cbs.LoggerIsLevelEnabled(level);
+                return cbs.LoggerIsLevelEnabled(level);
+            }
+            catch (Exception e)
+            {
+                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                return false;
+            }
         }
 
         /// <summary>
@@ -197,9 +212,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private long InLongLongLongObjectOutLong(IntPtr env, IntPtr clazz, long igniteId,
             int op, long arg1, long arg2, long arg3, IntPtr arg)
         {
-            var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
+            try
+            {
+                var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
 
-            return cbs.InLongLongLongObjectOutLong(op, arg1, arg2, arg3, arg);
+                return cbs.InLongLongLongObjectOutLong(op, arg1, arg2, arg3, arg);
+            }
+            catch (Exception e)
+            {
+                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                return 0;
+            }
         }
 
         /// <summary>
@@ -208,9 +231,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private long InLongOutLong(IntPtr env, IntPtr clazz, long igniteId,
             int op, long arg)
         {
-            var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
+            try
+            {
+                var cbs = _callbackRegistry.Get<UnmanagedCallbacks>(igniteId, true);
 
-            return cbs.InLongOutLong(op, arg);
+                return cbs.InLongOutLong(op, arg);
+            }
+            catch (Exception e)
+            {
+                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+
+                return 0;
+            }
         }
 
         /// <summary>
@@ -222,18 +254,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private void ConsoleWrite(IntPtr envPtr, IntPtr clazz, IntPtr message, bool isError)
         {
-            if (message != IntPtr.Zero)
+            try
             {
-                // Each domain registers it's own writer.
-                var writer = _consoleWriters.Select(x => x.Value).FirstOrDefault();
+                // TODO: Why do we need many writers? Can we just use one in default domain?
+                if (message != IntPtr.Zero)
+                {
+                    // Each domain registers it's own writer.
+                    var writer = _consoleWriters.Select(x => x.Value).FirstOrDefault();
 
-                if (writer != null)
-                {                    
-                    var env = _jvm.AttachCurrentThread();
-                    var msg = env.JStringToString(message);
+                    if (writer != null)
+                    {
+                        var env = _jvm.AttachCurrentThread();
+                        var msg = env.JStringToString(message);
 
-                    writer.Write(msg, isError);
+                        writer.Write(msg, isError);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
             }
         }
     }
