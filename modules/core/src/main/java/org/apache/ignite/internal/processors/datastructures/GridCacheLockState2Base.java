@@ -38,7 +38,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
     /** For fast contains. */
     public HashSet<T> nodesSet;
 
-
     /**
      * Constructor.
      *

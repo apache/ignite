@@ -151,7 +151,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
             final int k = countForThread.getAndIncrement() % MAX_NODES;
 
             igniteLock = nodes[k]
-                .reentrantLock(lockKey+"2", fair, true);
+                .reentrantLock(lockKey + "2", fair, true);
         }
 
         @TearDown(Level.Trial)
@@ -177,7 +177,7 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         nodes[0] = node;
 
         for (int i = 1; i < MAX_NODES; i++)
-            nodes[i] = Ignition.start(configuration("node"+(i+147)));
+            nodes[i] = Ignition.start(configuration("node" + (i + 147)));
 
         cache.putIfAbsent(lockKey, "foo");
     }

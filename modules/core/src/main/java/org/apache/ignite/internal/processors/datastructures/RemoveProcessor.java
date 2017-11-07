@@ -28,8 +28,8 @@ import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>,
-    RemoveProcessor.Tuple<T>>, Externalizable {
+public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, T>,
+    Externalizable {
 
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
@@ -52,7 +52,7 @@ public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Tuple<T> process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<T>> entry,
+    @Nullable @Override public T process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<T>> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;
@@ -60,17 +60,15 @@ public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, 
         if (entry.exists()) {
             GridCacheLockState2Base<T> state = entry.getValue();
 
-            T nextOwner = state.removeAll(nodeId);
+            T nextOwner = state.removeNode(nodeId);
 
             // Always update value in right using.
             entry.setValue(state);
 
-            return new Tuple<>(nextOwner, state.darc <= 0);
-        }/* else {
-            System.out.println("!!!~ куда-то съебалась запись");
-        }*/
+            return nextOwner;
+        }
 
-        return new Tuple<>(null, true);
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -82,24 +80,5 @@ public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = new UUID(in.readLong(), in.readLong());
-    }
-
-    /** */
-    public static class Tuple<T> {
-        /** */
-        boolean canRemove;
-
-        /** */
-        T owner;
-
-        /** *
-         *
-         * @param owner
-         * @param canRemove
-         */
-        public Tuple(@Nullable T owner, boolean canRemove){
-            this.owner = owner;
-            this.canRemove = canRemove;
-        }
     }
 }

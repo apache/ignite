@@ -146,7 +146,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return (byte)(super.fieldsCount()+1);
+            return (byte)(super.fieldsCount() + 1);
         }
 
         /** {@inheritDoc} */

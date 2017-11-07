@@ -621,14 +621,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         if (isHandlersAdded.compareAndSet(false, true)) {
                             cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Fair.ReleasedThreadMessage.class,
                                 new IgniteBiInClosure<UUID, GridCacheLockImpl2Fair.ReleasedThreadMessage>() {
-                                    @Override public void apply(UUID uuid, GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
+                                    @Override
+                                    public void apply(UUID uuid, GridCacheLockImpl2Fair.ReleasedThreadMessage message) {
                                         releasers.get(message.name).apply(message);
                                     }
                                 });
 
                             cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Unfair.ReleasedMessage.class,
                                 new IgniteBiInClosure<UUID, GridCacheLockImpl2Unfair.ReleasedMessage>() {
-                                    @Override public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
+                                    @Override
+                                    public void apply(UUID uuid, GridCacheLockImpl2Unfair.ReleasedMessage message) {
                                         releasers.get(message.name).apply(message);
                                     }
                                 });
@@ -1265,35 +1267,36 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     public IgniteLock reentrantLock(final String name, final boolean fair,
         final boolean create) throws IgniteCheckedException {
+        return getAtomic(
+            new AtomicAccessor<GridCacheLockEx2>() {
+                @Override public T2<GridCacheLockEx2, AtomicDataStructureValue> get(GridCacheInternalKey key,
+                    AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+                    // Check that reentrant lock hasn't been created in other thread yet.
+                    GridCacheLockEx2 reentrantLock = cast(dsMap.get(key), GridCacheLockEx2.class);
 
-        return getAtomic(new AtomicAccessor<GridCacheLockEx2>() {
-            @Override public T2<GridCacheLockEx2, AtomicDataStructureValue> get(GridCacheInternalKey key,
-                AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
-                // Check that reentrant lock hasn't been created in other thread yet.
-                GridCacheLockEx2 reentrantLock = cast(dsMap.get(key), GridCacheLockEx2.class);
+                    if (reentrantLock != null) {
+                        assert val != null;
 
-                if (reentrantLock != null) {
-                    assert val != null;
+                        return new T2<>(reentrantLock, null);
+                    }
 
-                    return new T2<>(reentrantLock, null);
-                }
+                    if (val == null && !create)
+                        return new T2<>(null, null);
 
-                if (val == null && !create)
-                    return new T2<>(null, null);
-
-                AtomicDataStructureValue retVal = val == null ?
+                    AtomicDataStructureValue retVal = val == null ?
                         (fair ?
                             new GridCacheLockState2Fair(ctx.discovery().gridStartTime()) :
                             new GridCacheLockState2Unfair(ctx.discovery().gridStartTime())
                         ) : null;
 
-                GridCacheLockEx2 reentrantLock0 = fair ?
-                    new GridCacheLockImpl2Fair(name, key, cache) :
-                    new GridCacheLockImpl2Unfair(name, key, cache);
+                    GridCacheLockEx2 reentrantLock0 = fair ?
+                        new GridCacheLockImpl2Fair(name, key, cache) :
+                        new GridCacheLockImpl2Unfair(name, key, cache);
 
-                return new T2<>(reentrantLock0, retVal);
-            }
-        }, null, name, REENTRANT_LOCK2, create,
+                    return new T2<>(reentrantLock0, retVal);
+                }
+            },
+            null, name, REENTRANT_LOCK2, create,
             fair ? GridCacheLockImpl2Fair.class : GridCacheLockImpl2Unfair.class);
     }
 

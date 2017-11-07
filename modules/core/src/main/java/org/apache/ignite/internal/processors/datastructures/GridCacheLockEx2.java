@@ -95,12 +95,14 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
 
     /**
      * Remove all information about one node.
+     *
      * @param id node id.
      */
     abstract void removeNode(UUID id);
 
     /**
      * Return release message processer.
+     *
      * @return release message processer.
      */
     public abstract IgniteInClosure<GridCacheIdMessage> getReleaser();
@@ -172,7 +174,7 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
                     flag = condition.await(timeout, unit);
                 }
 
-                if (flag && exception!=null)
+                if (flag && exception != null)
                     throw exception;
 
                 return flag;

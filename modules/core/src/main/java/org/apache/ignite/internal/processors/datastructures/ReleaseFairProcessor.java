@@ -52,7 +52,8 @@ public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public LockOwner process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> entry,
+    @Nullable @Override public LockOwner process(
+        MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> entry,
         Object... objects) throws EntryProcessorException {
 
         assert entry != null;

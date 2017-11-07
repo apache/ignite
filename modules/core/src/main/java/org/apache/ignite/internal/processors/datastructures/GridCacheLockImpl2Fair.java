@@ -227,7 +227,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
-            return (byte)(super.fieldsCount()+2);
+            return (byte)(super.fieldsCount() + 2);
         }
 
         /** {@inheritDoc} */
@@ -553,7 +553,8 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
                         hasLocked.set(true);
 
                         return true;
-                    } else
+                    }
+                    else
                         throw e;
                 }
 

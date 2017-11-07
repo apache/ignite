@@ -49,5 +49,5 @@ public abstract class ReentrantProcessor<T>
     }
 
     /** */
-    protected abstract  LockedModified tryLock(GridCacheLockState2Base<T> state);
+    protected abstract LockedModified tryLock(GridCacheLockState2Base<T> state);
 }
