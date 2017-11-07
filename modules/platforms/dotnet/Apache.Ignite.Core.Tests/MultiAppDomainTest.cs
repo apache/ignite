@@ -36,6 +36,17 @@ namespace Apache.Ignite.Core.Tests
         private readonly List<AppDomain> _domains = new List<AppDomain>();
 
         /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+
+            UnloadDomains();
+        }
+
+        /// <summary>
         /// Tests the IIS behavior:
         /// when application is restarted, new AppDomain is started while old one is still running.
         /// </summary>
@@ -69,6 +80,9 @@ namespace Apache.Ignite.Core.Tests
                 // Verify node start.
                 var expectedNodeCount = Math.Min(i + 3, 7);
                 Assert.AreEqual(expectedNodeCount, ignite.GetCluster().GetNodes().Count);
+
+                // Current AppDomain does not see other instances.
+                Assert.AreEqual(2, Ignition.GetAll().Count);
 
                 if (i > 3)
                 {
@@ -121,17 +135,6 @@ namespace Apache.Ignite.Core.Tests
             }
 
             _domains.Clear();
-        }
-
-        /// <summary>
-        /// Tears down the test.
-        /// </summary>
-        [TearDown]
-        public void TearDown()
-        {
-            Ignition.StopAll(true);
-
-            UnloadDomains();
         }
 
         /// <summary>
