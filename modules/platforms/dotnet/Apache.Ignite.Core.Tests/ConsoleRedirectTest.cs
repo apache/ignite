@@ -81,6 +81,15 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the exception in console writer.
+        /// </summary>
+        [Test]
+        public void TestExceptionInWriter()
+        {
+            // TODO: Redirect and throw.
+        }
+
+        /// <summary>
         /// Tests startup error in Java.
         /// </summary>
         [Test]
