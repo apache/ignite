@@ -26,7 +26,6 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -449,7 +448,6 @@ public class DistributedOLSMultipleLinearRegressionTest extends GridCommonAbstra
         mdl.newSampleData(design, nobs, nvars, new SparseDistributedMatrix());
 
         Matrix hat = mdl.calculateHat();
-        MatrixUtil.toString("hat", hat, hat.columnSize(), hat.rowSize());
 
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {

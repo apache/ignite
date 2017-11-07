@@ -19,12 +19,7 @@ package org.apache.ignite.ml.regressions;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.InsufficientDataException;
-import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
-import org.apache.ignite.ml.math.exceptions.NullArgumentException;
+import org.apache.ignite.ml.math.exceptions.*;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
@@ -123,7 +118,7 @@ public abstract class AbstractMultipleLinearRegression implements MultipleLinear
                 x[i][j] = data[pointer++];
         }
         xMatrix = MatrixUtil.like(like, nobs, cols).assign(x);
-        yVector = MatrixUtil.likeVector(like, y.length).assign(y); // TODO: fix the problem for distributed vector
+        yVector = MatrixUtil.likeVector(like, y.length).assign(y);
     }
 
     /**

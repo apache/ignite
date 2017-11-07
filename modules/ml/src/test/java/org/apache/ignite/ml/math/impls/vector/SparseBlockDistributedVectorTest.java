@@ -19,9 +19,7 @@ package org.apache.ignite.ml.math.impls.vector;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -159,10 +157,10 @@ public class SparseBlockDistributedVectorTest extends GridCommonAbstractTest {
 
         sparseBlockDistributedVector = new SparseBlockDistributedVector(size);
 
-        Vector copy = sparseBlockDistributedVector.copy();
-        assertNotNull(copy);
+        Vector cp = sparseBlockDistributedVector.copy();
+        assertNotNull(cp);
         for (int i = 0; i < size; i++)
-            assertEquals(UNEXPECTED_VAL, copy.get(i), sparseBlockDistributedVector.get(i), PRECISION);
+            assertEquals(UNEXPECTED_VAL, cp.get(i), sparseBlockDistributedVector.get(i), PRECISION);
     }
 
     /** */

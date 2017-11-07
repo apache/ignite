@@ -24,7 +24,6 @@ import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.junit.Assert;
@@ -418,7 +417,6 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
 
         Matrix hat = mdl.calculateHat();
-        MatrixUtil.toString("hat", hat, hat.columnSize(), hat.rowSize());
 
 
         // Reference data is upper half of symmetric hat matrix

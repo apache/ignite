@@ -448,7 +448,6 @@ public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonA
         mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         Matrix hat = mdl.calculateHat();
-        MatrixUtil.toString("hat", hat, hat.columnSize(), hat.rowSize());
 
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {

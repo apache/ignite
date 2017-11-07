@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.impls.vector;
 
 
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 
 
@@ -27,7 +26,7 @@ import org.apache.ignite.ml.math.Vector;
  */
 public final class VectorBlockEntry extends SparseLocalVector {
     /** Max block size. */
-    public static final int MAX_BLOCK_SIZE = 4;
+    public static final int MAX_BLOCK_SIZE = 32;
 
     /** */
     public VectorBlockEntry() {

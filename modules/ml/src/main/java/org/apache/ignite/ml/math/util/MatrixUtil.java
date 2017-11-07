@@ -17,21 +17,14 @@
 
 package org.apache.ignite.ml.math.util;
 
-import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.matrix.*;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+
+import java.util.List;
 
 /**
  * Utility class for various matrix operations.
@@ -231,35 +224,5 @@ public class MatrixUtil {
                 res[isRowMode? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
-    }
-
-    /**
-     * For matrices with size less than 100
-     */
-    public static void toString(String name, Matrix mtx, int cols, int rows){
-        System.out.println(">>>> Print out matrix " + name + " with size = (" + mtx.rowSize() + "," + mtx.columnSize() + ") " + mtx.guid().toString());
-        assert cols <= 100;
-        assert rows <= 100;
-        for (int i = 0; i < rows; i++) {
-            StringBuffer s = new StringBuffer("[");
-            for(int j = 0; j < cols; j++){
-                s.append(" " + mtx.get(i,j));
-            }
-            System.out.println(s + "]");
-        }
-    }
-
-    /**
-     * For vectors with size less than 100
-     */
-    public static void toString(String name, Vector v, int size){
-        System.out.println(">>>> Print out vector " + name + " with size =" + v.size() + " id = " +  v.guid().toString());
-        assert size < 100;
-        StringBuffer s = new StringBuffer("[");
-        for (int i = 0; i < size; i++) {
-            s.append(" " + v.get(i));
-        }
-        System.out.println(s + "]");
-
     }
 }
