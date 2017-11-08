@@ -762,7 +762,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
-            entry.lockedBy(xidVersion());
+            !entry.hasLockCandidate(xidVersion()) || entry.lockedBy(xidVersion());
     }
 
     /** {@inheritDoc} */
