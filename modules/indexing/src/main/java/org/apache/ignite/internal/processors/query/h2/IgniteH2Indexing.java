@@ -1332,6 +1332,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result or {@code null} if cannot parse/process this query.
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
+        // Heuristic check for fast return.
+        if (!qry.getSql().toUpperCase().contains("INDEX"))
+            return null;
+
         // Parse.
         SqlCommand cmd;
 
@@ -1340,11 +1344,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             cmd = parser.nextCommand();
 
-            if (!(cmd instanceof SqlCreateIndexCommand) || parser.nextCommand() != null)
+            // No support for multiple commands for now.
+            if (parser.nextCommand() != null)
+                return null;
+
+            // Only CREATE INDEX is supported for now.
+            if (!(cmd instanceof SqlCreateIndexCommand))
                 return null;
         }
         catch (Exception e) {
             // Cannot parse, return.
+            if (log.isDebugEnabled())
+                log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
+
             return null;
         }
 
