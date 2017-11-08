@@ -129,6 +129,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param taskClsName Task class name.
      * @param sesId Task session ID.
      * @param top Topology.
+     * @param topPred Topology predicate.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
      * @param siblings Collection of siblings.
