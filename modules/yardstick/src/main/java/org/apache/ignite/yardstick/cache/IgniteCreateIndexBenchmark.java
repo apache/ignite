@@ -128,6 +128,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
                                 cntr.increment();
                             }
+
                             streamer.addData(batch);
                         }
 
