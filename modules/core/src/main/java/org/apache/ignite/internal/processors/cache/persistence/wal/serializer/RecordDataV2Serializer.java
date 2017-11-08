@@ -22,8 +22,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.BaselineTopologyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
@@ -36,6 +38,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     /** V1 data serializer delegate. */
     private final RecordDataV1Serializer delegateSerializer;
 
+    /** Serializer of {@link TxRecord} records. */
+    private TxRecordSerializer txRecordSerializer;
+
+    /** Serializer of {@link BaselineTopologyRecord} records. */
+    private final BaselineTopologyRecordSerializer bltRecSerializer;
+
     /**
      * Create an instance of V2 data serializer.
      *
@@ -43,19 +51,27 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
      */
     public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer) {
         this.delegateSerializer = delegateSerializer;
+        this.txRecordSerializer = new TxRecordSerializer();
+        this.bltRecSerializer = new BaselineTopologyRecordSerializer(delegateSerializer.cctx());
     }
 
     /** {@inheritDoc} */
-    @Override public int size(WALRecord record) throws IgniteCheckedException {
-        if (record instanceof HeaderRecord)
+    @Override public int size(WALRecord rec) throws IgniteCheckedException {
+        if (rec instanceof HeaderRecord)
             throw new UnsupportedOperationException("Getting size of header records is forbidden since version 2 of serializer");
 
-        switch (record.type()) {
+        switch (rec.type()) {
             case DATA_RECORD:
-                return delegateSerializer.size(record) + 8/*timestamp*/;
+                return delegateSerializer.size(rec) + 8/*timestamp*/;
+
+            case TX_RECORD:
+                return txRecordSerializer.size((TxRecord)rec);
+
+            case BASELINE_TOP_RECORD:
+                return bltRecSerializer.size((BaselineTopologyRecord)rec);
 
             default:
-                return delegateSerializer.size(record);
+                return delegateSerializer.size(rec);
         }
     }
 
@@ -76,19 +92,25 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 return new DataRecord(entries, timeStamp);
 
+            case TX_RECORD:
+                return txRecordSerializer.read(in);
+
+            case BASELINE_TOP_RECORD:
+                return bltRecSerializer.read(in);
+
             default:
                 return delegateSerializer.readRecord(type, in);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        if (record instanceof HeaderRecord)
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        if (rec instanceof HeaderRecord)
             throw new UnsupportedOperationException("Writing header records is forbidden since version 2 of serializer");
 
-        switch (record.type()) {
+        switch (rec.type()) {
             case DATA_RECORD:
-                DataRecord dataRec = (DataRecord)record;
+                DataRecord dataRec = (DataRecord)rec;
 
                 buf.putInt(dataRec.writeEntries().size());
                 buf.putLong(dataRec.timestamp());
@@ -98,8 +120,16 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 break;
 
+            case TX_RECORD:
+                txRecordSerializer.write((TxRecord)rec, buf);
+
+                break;
+
+            case BASELINE_TOP_RECORD:
+                bltRecSerializer.write((BaselineTopologyRecord)rec, buf);
+
             default:
-                delegateSerializer.writeRecord(record, buf);
+                delegateSerializer.writeRecord(rec, buf);
         }
     }
 }

@@ -22,11 +22,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
@@ -43,11 +45,24 @@ public class BaselineTopology implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Consistent ID comparator. */
+    private static final Comparator<Object> CONSISTENT_ID_COMPARATOR = new Comparator<Object>() {
+        @Override public int compare(Object o1, Object o2) {
+            return o1.toString().compareTo(o2.toString());
+        }
+    };
+
     /** */
     private final int id;
 
     /** Key - node consistent ID, value - node attribute map. */
     private final Map<Object, Map<String, Object>> nodeMap;
+
+    /** Compact ID to consistent ID mapping. */
+    private final Map<Short, Object> compactIdMapping;
+
+    /** Consistent ID to compact ID mapping. */
+    private final Map<Object, Short> consistentIdMapping;
 
     /** */
     private long activationHash;
@@ -60,11 +75,25 @@ public class BaselineTopology implements Serializable {
      */
     private BaselineTopology(Map<Object, Map<String, Object>> nodeMap, int id) {
         this.id = id;
-
         this.nodeMap = nodeMap;
+        this.compactIdMapping = new HashMap<>();
+        this.consistentIdMapping = new HashMap<>();
 
-        for (Object o : nodeMap.keySet())
-            activationHash += (long) o.hashCode();
+        Set<Object> consistentIds = new TreeSet<>(CONSISTENT_ID_COMPARATOR);
+
+        for (Object o : nodeMap.keySet()) {
+            activationHash += (long)o.hashCode();
+
+            consistentIds.add(o);
+        }
+
+        short compactId = 0;
+
+        for (Object consistentId : consistentIds) {
+            compactIdMapping.put(compactId, consistentId);
+
+            consistentIdMapping.put(consistentId, compactId++);
+        }
 
         activationHist = new ArrayList<>();
 
@@ -83,6 +112,20 @@ public class BaselineTopology implements Serializable {
      */
     public Set<Object> consistentIds() {
         return nodeMap.keySet();
+    }
+
+    /**
+     * @return Compact IDs mapping.
+     */
+    public Map<Short, Object> compactIdMapping() {
+        return compactIdMapping;
+    }
+
+    /**
+     * @return Consistent IDs mapping.
+     */
+    public Map<Object, Short> consistentIdMapping() {
+        return consistentIdMapping;
     }
 
     /**
@@ -190,9 +233,9 @@ public class BaselineTopology implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        BaselineTopology topology = (BaselineTopology)o;
+        BaselineTopology top = (BaselineTopology)o;
 
-        return nodeMap != null ? nodeMap.keySet().equals(topology.nodeMap.keySet()) : topology.nodeMap == null;
+        return nodeMap != null ? nodeMap.keySet().equals(top.nodeMap.keySet()) : top.nodeMap == null;
     }
 
     /** {@inheritDoc} */

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1108,15 +1109,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
                     assert txNodes != null || state == ROLLED_BACK;
 
-                    Map<Object, Collection<Object>> participatingNodes = consistentIdMapper
-                        .mapToConsistentIds(topVer, txNodes);
+                    BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
+
+                    Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
+                        .mapToCompactIds(topVer, txNodes, baselineTop);
 
                     TxRecord txRecord = new TxRecord(
                             state,
                             nearXidVersion(),
                             writeVersion(),
-                            participatingNodes,
-                            remote() ? nodeId() : null
+                            participatingNodes
                     );
 
                     try {

@@ -169,7 +169,10 @@ public abstract class WALRecord {
         SNAPSHOT,
 
         /** Metastore data record. */
-        METASTORE_DATA_RECORD;
+        METASTORE_DATA_RECORD,
+
+        /** Baseline topology record. */
+        BASELINE_TOP_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

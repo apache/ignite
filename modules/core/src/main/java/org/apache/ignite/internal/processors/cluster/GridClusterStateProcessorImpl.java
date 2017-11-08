@@ -41,6 +41,9 @@ import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.BaselineTopologyRecord;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
@@ -751,8 +754,6 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             @Override public void run() {
                 boolean client = ctx.clientNode();
 
-                Exception e = null;
-
                 try {
                     ctx.service().onUtilityCacheStarted();
 
@@ -798,8 +799,19 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
+    @Override public void onBaselineTopologyChanged(
+        BaselineTopology blt,
+        BaselineTopologyHistoryItem prevBltHistItem
+    ) throws IgniteCheckedException {
         saveBaselineTopology(blt, prevBltHistItem);
+
+        BaselineTopologyRecord bltRecord = new BaselineTopologyRecord(blt.id(), blt.compactIdMapping());
+
+        IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
+
+        WALPointer ptr = wal.log(bltRecord);
+
+        wal.fsync(ptr);
     }
 
     /**
