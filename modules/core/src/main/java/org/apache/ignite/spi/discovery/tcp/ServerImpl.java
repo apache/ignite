@@ -2085,10 +2085,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (!failedNodes.containsKey(failedNode)) {
                                 failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
 
-                                if (msg instanceof TcpDiscoveryHandshakeResponse)
-                                    msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
-                                        failedNode.id(), failedNode.internalOrder()));
-
                                 added = true;
                             }
                         }
@@ -3012,7 +3008,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 processMessageFailedNodes(res);
 
-                                if (res.failedNodes() != null) {
+                                if (res.failedNodes().contains(locNodeId)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from failed node: " + res);
 
@@ -3114,7 +3110,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                         return;
                                     }
-                                    U.warn(log, "Local node was frozen. Will reconnect to the next node.");
+                                    U.warn(log, "Local node was frozen. Will reconnect to the same node.");
 
                                     timeoutHelper = null;
 
@@ -4815,6 +4811,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 U.closeQuiet(sock);
             }
 
+            synchronized (mux) {
+                recentFailedNodeIds.add(leavingNodeId);
+
+                mux.notifyAll();
+            }
+
             checkPendingCustomMessages();
         }
 
@@ -5807,7 +5809,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (currentTimeMillis - nextNodeTime > connCheckThreshold) {
                     U.warn(log, "Local node was frozen for a long time and will be failed");
 
-                    notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+                    msgWorker.addMessage(new TcpDiscoveryStatusCheckMessage(spi.locNode, null));
 
                     lastNextNodeTime = 0;
 
