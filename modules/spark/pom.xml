@@ -137,13 +137,6 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-unsafe_2.11</artifactId>
-            <version>${spark.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
             <artifactId>spark-launcher_2.11</artifactId>
             <version>${spark.version}</version>
             <scope>test</scope>
@@ -157,7 +150,7 @@
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-unsafe_2.10</artifactId>
+            <artifactId>spark-unsafe_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
 

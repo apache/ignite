@@ -117,7 +117,7 @@
 
         <dependency>
             <groupId>org.json4s</groupId>
-            <artifactId>json4s-core_2.11</artifactId>
+            <artifactId>json4s-core_2.10</artifactId>
             <version>3.5.0</version>
         </dependency>
 
