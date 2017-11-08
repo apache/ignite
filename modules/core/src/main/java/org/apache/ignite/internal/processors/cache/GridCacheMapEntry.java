@@ -2547,7 +2547,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.group().persistenceEnabled() &&
                 cctx.shared().wal().enabled(cctx.groupId());
 
-            if (cctx.shared().database().persistenceEnabled()) {
+            if (cctx.group().persistenceEnabled()) {
                 unswap(false);
 
                 if (!isNew()) {

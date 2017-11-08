@@ -667,13 +667,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
     }
 
-    /**
-     *
-     */
-    public boolean persistenceEnabled() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean checkpointLockIsHeldByThread() {
         return true;
