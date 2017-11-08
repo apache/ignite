@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.yardstick.cache.model;
 
 import java.io.Serializable;
