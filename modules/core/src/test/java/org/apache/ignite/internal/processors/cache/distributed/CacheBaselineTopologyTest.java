@@ -25,10 +25,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -130,7 +130,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert initialMapping.size() == 2 : initialMapping;
 
-        ignite.activeEx(true, nodes.keySet());
+        ignite.setBaselineTopology(nodes.keySet());
 
         awaitPartitionMapExchange();
 
@@ -265,7 +265,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert initialMapping.size() == 2 : initialMapping;
 
-        ignite.activeEx(true, nodes.keySet());
+        ignite.setBaselineTopology(nodes.keySet());
 
         Set<String> stoppedNodeNames = new HashSet<>();
 
@@ -286,7 +286,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt2 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.activeEx(true, blt2);
+        ignite.setBaselineTopology(blt2);
 
         awaitPartitionMapExchange();
 
@@ -307,7 +307,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt3 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.activeEx(true, blt3);
+        ignite.setBaselineTopology(blt3);
 
         awaitPartitionMapExchange();
 
@@ -328,7 +328,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert ignite.affinity(CACHE_NAME).primaryPartitions(newIgnite.cluster().localNode()).length == 0;
 
-        ignite.activeEx(true, null);
+        ignite.setBaselineTopology(null);
 
         awaitPartitionMapExchange();
 
@@ -345,7 +345,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ig = grid(0);
 
-        ig.activeEx(true, ig.cluster().nodes());
+        ig.setBaselineTopology(ig.cluster().nodes());
 
         IgniteCache<Integer, Integer> cache =
             ig.createCache(
@@ -427,12 +427,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ig = grid(0);
 
-        ig.activeEx(true, ig.cluster().nodes());
+        ig.active(true);
+
+        ig.setBaselineTopology(ig.cluster().nodes());
 
         IgniteCache<Integer, Integer> cache =
             ig.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setBackups(1)
                     .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)

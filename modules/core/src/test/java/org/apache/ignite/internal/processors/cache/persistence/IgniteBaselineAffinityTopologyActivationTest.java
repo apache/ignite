@@ -28,6 +28,10 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -128,21 +132,204 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
      * Test verifies that node with out-of-data but still compatible Baseline Topology is allowed to join the cluster.
      */
     public void testNodeWithOldBltIsAllowedToJoinCluster() throws Exception {
-        startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-        startGridWithConsistentId("C").active(true);
+        final long expectedHash1 = (long)"A".hashCode() + "B".hashCode() + "C".hashCode();
+
+        BaselineTopologyVerifier verifier1 = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNotNull(blt);
+
+                assertEquals(3, blt.consistentIds().size());
+
+                long activationHash = U.field(blt, "activationHash");
+
+                assertEquals(expectedHash1, activationHash);
+            }
+        };
+
+        final long expectedHash2 = (long)"A".hashCode() + "B".hashCode();
+
+        BaselineTopologyVerifier verifier2 = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNotNull(blt);
+
+                assertEquals(3, blt.consistentIds().size());
+
+                long activationHash = U.field(blt, "activationHash");
+
+                assertEquals(expectedHash2, activationHash);
+            }
+        };
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+        verifyBaselineTopologyOnNodes(verifier1, new Ignite[] {nodeA, nodeB, nodeC});
 
         stopAllGrids(false);
 
-        startGridWithConsistentId("A");
-        startGridWithConsistentId("B").active(true);
+        nodeA = startGridWithConsistentId("A");
+        nodeB = startGridWithConsistentId("B");
+
+        nodeB.active(true);
+
+        verifyBaselineTopologyOnNodes(verifier2, new Ignite[] {nodeA, nodeB});
 
         stopAllGrids(false);
 
-        startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
+        nodeA = startGridWithConsistentId("A");
+        nodeB = startGridWithConsistentId("B");
+        nodeC = startGridWithConsistentId("C");
 
-        startGridWithConsistentId("C");
+        verifyBaselineTopologyOnNodes(verifier2, new Ignite[] {nodeA, nodeB, nodeC});
+    }
+
+    /**
+     * Verifies that when new node outside of baseline topology joins active cluster with BLT already set
+     * it receives BLT from the cluster and stores it locally.
+     */
+    public void testNewNodeJoinsToActiveCluster() throws Exception {
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+
+        BaselineTopologyVerifier verifier1 = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNotNull(blt);
+
+                assertEquals(3, blt.consistentIds().size());
+            }
+        };
+
+        verifyBaselineTopologyOnNodes(verifier1, new Ignite[] {nodeA, nodeB, nodeC});
+
+        Ignite nodeD = startGridWithConsistentId("D");
+
+        verifyBaselineTopologyOnNodes(verifier1, new Ignite[] {nodeD});
+
+        stopAllGrids(false);
+
+        nodeD = startGridWithConsistentId("D");
+
+        assertFalse(nodeD.active());
+
+        verifyBaselineTopologyOnNodes(verifier1, new Ignite[] {nodeD});
+    }
+
+    /**
+     *
+     */
+    public void testRemoveNodeFromBaselineTopology() throws Exception {
+        final long expectedActivationHash = (long)"A".hashCode() + "C".hashCode();
+
+        BaselineTopologyVerifier verifier = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNotNull(blt);
+
+                assertEquals(2, blt.consistentIds().size());
+
+                long activationHash = U.field(blt, "activationHash");
+
+                assertEquals(expectedActivationHash, activationHash);
+            }
+        };
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+
+        stopGrid("B", false);
+
+        ((IgniteEx)nodeA).setBaselineTopology(nodeA.cluster().forServers().nodes());
+
+        verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeC});
+
+        stopAllGrids(false);
+
+        nodeA = startGridWithConsistentId("A");
+        nodeC = startGridWithConsistentId("C");
+
+        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return grid("A").active();
+            }
+        }, 10_000);
+
+        assertTrue(activated);
+
+        verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeC});
+    }
+
+    /**
+     *
+     */
+    public void testAddNodeToBaselineTopology() throws Exception {
+        final long expectedActivationHash = (long)"A".hashCode() + "B".hashCode() + "C".hashCode() + "D".hashCode();
+
+        BaselineTopologyVerifier verifier = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNotNull(blt);
+
+                assertEquals(4, blt.consistentIds().size());
+
+                long activationHash = U.field(blt, "activationHash");
+
+                assertEquals(expectedActivationHash, activationHash);
+            }
+        };
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeC.active(true);
+
+        IgniteEx nodeD = (IgniteEx) startGridWithConsistentId("D");
+
+        nodeD.setBaselineTopology(nodeA.cluster().forServers().nodes());
+
+        verifyBaselineTopologyOnNodes(verifier, new Ignite[]{nodeA, nodeB, nodeC, nodeD});
+    }
+
+    /**
+     * Verifies that baseline topology is removed successfully through baseline changing API.
+     */
+    public void testRemoveBaselineTopology() throws Exception {
+        BaselineTopologyVerifier verifier = new BaselineTopologyVerifier() {
+            @Override public void verify(BaselineTopology blt) {
+                assertNull(blt);
+            }
+        };
+
+        Ignite nodeA = startGridWithConsistentId("A");
+        Ignite nodeB = startGridWithConsistentId("B");
+        Ignite nodeC = startGridWithConsistentId("C");
+
+        nodeA.active(true);
+
+        ((IgniteEx)nodeA).setBaselineTopology(null);
+
+        verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeB, nodeC});
+    }
+
+    /** */
+    private interface BaselineTopologyVerifier {
+        /** */
+        public void verify(BaselineTopology blt);
+    }
+
+    /** */
+    private void verifyBaselineTopologyOnNodes(BaselineTopologyVerifier bltVerifier, Ignite[] igs) {
+        for (Ignite ig : igs) {
+            BaselineTopology blt = getBaselineTopology(ig);
+
+            bltVerifier.verify(blt);
+        }
     }
 
     /** */
@@ -152,9 +339,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         return startGrid(consId);
     }
 
-    /**
-     *
-     */
+    /** */
     public void testAutoActivationSimple() throws Exception {
         startGrids(3);
 
@@ -175,6 +360,20 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         awaitActivation(srv);
 
         checkDataInCache(srv);
+    }
+
+    /**
+     * Retrieves baseline topology from ignite node instance.
+     *
+     * @param ig Ig.
+     */
+    private BaselineTopology getBaselineTopology(Ignite ig) {
+        return ((DiscoveryDataClusterState) U.field(
+            (Object) U.field(
+                (Object) U.field(ig, "ctx"),
+                "stateProc"),
+            "globalState"))
+            .baselineTopology();
     }
 
     /** */

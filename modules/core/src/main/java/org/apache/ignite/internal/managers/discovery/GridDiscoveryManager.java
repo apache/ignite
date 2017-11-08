@@ -704,7 +704,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (verChanged) {
                     Snapshot snapshot = topSnap.get();
 
-                    if (customMsg == null) {
+                    if (customMsg == null || customMsg instanceof ChangeGlobalStateMessage) {
                         discoCache = createDiscoCache(nextTopVer,
                             ctx.state().clusterState(),
                             locNode,

@@ -46,10 +46,10 @@ public class BaselineTopology implements Serializable {
     private final Map<Object, Map<String, Object>> nodeMap;
 
     /** */
-    private long topologyHash;
+    private long activationHash;
 
     /** */
-    private final List<Long> baselineHistory;
+    private final List<Long> activationHist;
 
     /**
      * @param nodeMap Map of node consistent ID to it's attributes.
@@ -58,11 +58,11 @@ public class BaselineTopology implements Serializable {
         this.nodeMap = nodeMap;
 
         for (Object o : nodeMap.keySet())
-            topologyHash += (long) o.hashCode();
+            activationHash += (long) o.hashCode();
 
-        baselineHistory = new ArrayList<>();
+        activationHist = new ArrayList<>();
 
-        baselineHistory.add(topologyHash);
+        activationHist.add(activationHash);
     }
 
     /**
@@ -197,11 +197,11 @@ public class BaselineTopology implements Serializable {
      * @return {@code True} if current BaselineTopology is compatible (the same or a newer one) with passed in Blt.
      */
     boolean isCompatibleWith(BaselineTopology blt) {
-        return blt == null || (topologyHash == blt.topologyHash) || baselineHistory.contains(blt.topologyHash);
+        return blt == null || (activationHash == blt.activationHash) || activationHist.contains(blt.activationHash);
     }
 
     boolean isSuccessorOf(BaselineTopology blt) {
-        return blt == null || (baselineHistory.contains(blt.topologyHash) && topologyHash != blt.topologyHash);
+        return blt == null || (activationHist.contains(blt.activationHash) && activationHash != blt.activationHash);
     }
 
     /**
@@ -210,10 +210,10 @@ public class BaselineTopology implements Serializable {
     boolean updateHistory(Collection<ClusterNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
-        if (topologyHash != newTopHash) {
-            topologyHash = newTopHash;
+        if (activationHash != newTopHash) {
+            activationHash = newTopHash;
 
-            baselineHistory.add(newTopHash);
+            activationHist.add(newTopHash);
 
             return true;
         }
