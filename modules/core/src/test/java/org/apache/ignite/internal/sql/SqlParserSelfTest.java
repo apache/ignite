@@ -84,11 +84,44 @@ public class SqlParserSelfTest extends GridCommonAbstractTest {
         parseError(null, "CREATE INDEX idx ON tbl(a, b, a)", "Column already defined: A");
         parseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
 
-        // TODO: Schema
+        // Tests with schema.
+        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON \"schema\".tbl(a)", "schema", "TBL", "IDX", "A", false);
+        parseValidate(null, "CREATE INDEX idx ON \"sChema\".tbl(a)", "sChema", "TBL", "IDX", "A", false);
 
-        // TODO: NOT EXISTS
+        parseValidate("SCHEMA", "CREATE INDEX idx ON tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        parseValidate("schema", "CREATE INDEX idx ON tbl(a)", "schema", "TBL", "IDX", "A", false);
+        parseValidate("sChema", "CREATE INDEX idx ON tbl(a)", "sChema", "TBL", "IDX", "A", false);
 
-        // TODO: UNIQUE, SPATIAL, HASH, PRIMARY KEY
+        // NOT EXISTS
+        SqlCreateIndexCommand cmd;
+
+        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        assertFalse(cmd.ifNotExists());
+
+        cmd = parseValidate(null, "CREATE INDEX IF NOT EXISTS idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        assertTrue(cmd.ifNotExists());
+
+        parseError(null, "CREATE INDEX IF idx ON tbl(a)", "Unexpected token: \"IDX\"");
+        parseError(null, "CREATE INDEX IF NOT idx ON tbl(a)", "Unexpected token: \"IDX\"");
+        parseError(null, "CREATE INDEX IF EXISTS idx ON tbl(a)", "Unexpected token: \"EXISTS\"");
+        parseError(null, "CREATE INDEX NOT EXISTS idx ON tbl(a)", "Unexpected token: \"NOT\"");
+
+        // SPATIAL
+        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        assertFalse(cmd.spatial());
+
+        cmd = parseValidate(null, "CREATE SPATIAL INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
+        assertTrue(cmd.spatial());
+
+        // UNIQUE
+        parseError(null, "CREATE UNIQUE INDEX idx ON tbl(a)", "Unsupported keyword: \"UNIQUE\"");
+
+        // HASH
+        parseError(null, "CREATE HASH INDEX idx ON tbl(a)", "Unsupported keyword: \"HASH\"");
+
+        // PRIMARY KEY
+        parseError(null, "CREATE PRIMARY KEY INDEX idx ON tbl(a)", "Unsupported keyword: \"PRIMARY\"");
     }
 
     /**
