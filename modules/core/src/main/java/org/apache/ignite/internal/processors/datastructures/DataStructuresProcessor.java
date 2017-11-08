@@ -634,9 +634,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     boolean isInterrupted = Thread.interrupted();
 
                     try {
-                        boolean wasInterrupted = true;
-
-                        while(wasInterrupted) {
+                        while(true) {
                             try {
                                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                                     AtomicDataStructureValue val = cache.get(key);
@@ -655,21 +653,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                                         tx.commit();
 
-                                        wasInterrupted = false;
-
                                         if (afterRmv != null)
                                             afterRmv.applyx(null);
                                     }
                                 }
-                            } catch (IgniteCheckedException e) {
-                                if (X.hasCause(e, InterruptedException.class)) {
-                                    Thread.interrupted();
 
-                                    wasInterrupted = true;
-                                } else
+                                break;
+                            } catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, InterruptedException.class))
+                                    Thread.interrupted();
+                                else
                                     throw e;
                             }
-
                         }
                     } finally {
                         cache.context().gate().leave();
