@@ -671,7 +671,7 @@ public class CacheGroupContext {
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     void stopCache(GridCacheContext cctx, boolean destroy) {
         if (top != null)
