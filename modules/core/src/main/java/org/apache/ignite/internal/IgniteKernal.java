@@ -304,6 +304,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Configuration. */
     private IgniteConfiguration cfg;
 
+    /** Various information on output. */
+    OutputVariousInformation variousInformation;
+
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
@@ -794,6 +797,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             getClass().getName() + (igniteInstanceName != null ? '%' + igniteInstanceName : ""));
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
+
+        variousInformation = new OutputVariousInformation(log, cfg);
 
         // Ack various information.
         ackAsciiLogo();
