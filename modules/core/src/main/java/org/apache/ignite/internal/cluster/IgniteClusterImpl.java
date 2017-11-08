@@ -307,8 +307,13 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             if (!ctx.state().clusterState().active())
                 throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
 
-            if (baselineTop != null && !baselineTop.containsAll(ctx.discovery().aliveServerNodes()))
-                throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+            if (baselineTop != null) {
+                if (baselineTop.isEmpty())
+                    throw new IgniteException("BaselineTopology must contain at least one node.");
+
+                if (!baselineTop.containsAll(ctx.discovery().aliveServerNodes()))
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
+            }
 
             ctx.state().changeGlobalState(true, baselineTop, true).get();
         }
