@@ -502,6 +502,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             newBlt.updateHistory(baselineNodes);
         }
+        else if (activate && baselineNodes == null && globalState.baselineTopology() == null)
+            blt = BaselineTopology.build(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE));
         else
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
 
