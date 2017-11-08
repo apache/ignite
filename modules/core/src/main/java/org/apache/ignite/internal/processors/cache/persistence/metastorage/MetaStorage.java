@@ -200,6 +200,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
         MetastorageDataRow row = tree.findOne(new MetastorageDataRow(key, null));
 
+        if (row == null)
+            return null;
+
         return row.value();
     }
 
