@@ -36,9 +36,11 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
     private static final String CACHE_NAME = "Person8NotIndexed";
 
     /** Cache entries quantity. */
+    // TODO: Remove local variable.
     private int quantity;
 
     /** Number of threads for benchmark. */
+    // TODO: Remove local variable.
     private int threads;
 
     /** Cache configuration */
@@ -46,6 +48,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
+        // TODO: Remove atomics
         IgniteAtomicLong started = ignite().atomicLong("started", 0, true);
 
         long startedVal = started.getAndIncrement();
@@ -54,6 +57,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
             BenchmarkUtils.println("IgniteCreateIndexBenchmark started creating indexes over the cache [size=" +
                 cache().size() + ']');
 
+            // TODO: Index on a single column.
             SqlFieldsQuery qry = new SqlFieldsQuery("CREATE INDEX idx_person8 ON " + CACHE_NAME +
                 " (val2, val3, val4, val5, val6, val7, val8)");
 
@@ -64,9 +68,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
             final long stop = System.currentTimeMillis();
 
             BenchmarkUtils.println("IgniteCreateIndexBenchmark =========================================");
-
-            BenchmarkUtils.println("IgniteCreateIndexBenchmark created index in " + (stop - start) + "ms");
-
+            BenchmarkUtils.println("IgniteCreateIndexBenchmark created index in " + (stop - start) + " ms");
             BenchmarkUtils.println("IgniteCreateIndexBenchmark =========================================");
         }
 
@@ -80,6 +82,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        // TODO: Throw exception if more than 1 thread.
         super.setUp(cfg);
 
         quantity = args.preloadAmount();
@@ -88,6 +91,8 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
             throw new IllegalArgumentException("Invalid number of entries: " + quantity);
 
         BenchmarkUtils.println("Preload entries [quantity=" + quantity + ']');
+
+        // TODO: Threads == CPU count
 
         threads = cfg.threads();
 
@@ -100,6 +105,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
         BenchmarkUtils.println("Cluster nodes: " + ignite().cluster().nodes());
 
+        // TODO: Not needed
         IgniteCompute compute = ignite().compute();
 
         // Run cache preloading on the several nodes if any
@@ -108,6 +114,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
                 try (IgniteDataStreamer<Integer, Person8NotIndexed> streamer = ignite().dataStreamer(CACHE_NAME)) {
                     ExecutorService executor = Executors.newFixedThreadPool(threads);
 
+                    // TODO: Not needed
                     final IgniteAtomicSequence seq = ignite().atomicSequence(CACHE_NAME, 0, true);
 
                     List<Future<Void>> futs = new ArrayList<>();
@@ -124,6 +131,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
                                 while (val < quantity) {
                                     Person8NotIndexed person = createFromValue(val);
 
+                                    // TODO: Use manual batching (map of 1000 elements)
                                     streamer.addData(val, person);
 
                                     cntr.increment();
@@ -163,6 +171,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
      *
      * @return benchmark configuration
      */
+    // TODO: getConfiguration
     private CacheConfiguration<Integer, Object> getCfg() {
         QueryEntity entity = new QueryEntity();
 
@@ -186,8 +195,7 @@ public class IgniteCreateIndexBenchmark extends IgniteCacheAbstractBenchmark<Int
 
         personCacheCfg = new CacheConfiguration<>(CACHE_NAME);
 
-        personCacheCfg.setSqlSchema("PUBLIC")
-        .setQueryEntities(Arrays.asList(entity));
+        personCacheCfg.setSqlSchema("PUBLIC").setQueryEntities(Arrays.asList(entity));
 
         return personCacheCfg;
     }
