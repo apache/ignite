@@ -64,7 +64,7 @@ public class ZKClusterNode implements Watcher {
     }
 
     @Override public void process(WatchedEvent event) {
-        log("Process event: " + event.getType() + " " + event.getPath());
+        log("Process event [type=" + event.getType() + ", state=" + event.getState() + ", path=" + event.getPath() + ']');
 
         if (event.getType() == Event.EventType.NodeChildrenChanged && event.getPath().equals(CLUSTER_PATH)) {
             zk.getChildren(CLUSTER_PATH, true, nodesUpdateCallback, null);
