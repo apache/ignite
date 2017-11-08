@@ -202,6 +202,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        GridH2Row old = put(row);
+
+        return old != null;
+    }
+
     /**
      * @param row Row.
      * @param rowId Row id.
@@ -249,6 +256,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        GridH2Row old = remove(row);
+
+        return old != null;
     }
 
     /** {@inheritDoc} */
