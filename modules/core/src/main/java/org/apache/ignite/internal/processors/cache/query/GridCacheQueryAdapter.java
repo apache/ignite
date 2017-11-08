@@ -569,9 +569,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                return cctx.affinityNode() ?
-                    Collections.singletonList(cctx.localNode()) :
-                    Collections.singletonList(F.rand(nodes(cctx, null, null)));
+                if (cctx.affinityNode())
+                    return Collections.singletonList(cctx.localNode());
+
+                Collection<ClusterNode> affNodes = nodes(cctx, null, null);
+
+                return affNodes.isEmpty() ? affNodes : Collections.singletonList(F.rand(affNodes));
 
             case PARTITIONED:
                 return nodes(cctx, prj, part);
