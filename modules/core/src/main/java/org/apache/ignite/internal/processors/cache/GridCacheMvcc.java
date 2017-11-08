@@ -355,9 +355,6 @@ public final class GridCacheMvcc {
 
                             it.add(cand);
 
-                            if (it.hasNext())
-                                throw new RuntimeException("[txs]Added candidate after reposition.");
-
                             return true;
                         }
                     }
