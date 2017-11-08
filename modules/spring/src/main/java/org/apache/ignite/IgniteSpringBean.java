@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -429,6 +430,20 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
         checkIgnite();
 
         g.destroyCaches(cacheNames);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableWal(Collection<String> cacheNames) throws CacheException {
+        checkIgnite();
+
+        g.enableWal(cacheNames);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(Collection<String> cacheNames) throws CacheException {
+        checkIgnite();
+
+        g.disableWal(cacheNames);
     }
 
     /** {@inheritDoc} */

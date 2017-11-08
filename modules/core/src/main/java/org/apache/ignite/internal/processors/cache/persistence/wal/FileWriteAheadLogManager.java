@@ -28,8 +28,10 @@ import java.nio.file.Files;
 import java.sql.Time;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,8 +62,8 @@ import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -73,6 +75,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -205,6 +209,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Environment failure. */
     private volatile Throwable envFailed;
+
+    /** Disabled grps. */
+    private volatile GridIntList disabledGrps = new GridIntList();
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
@@ -700,6 +707,39 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         return archiver0 != null && archiver0.reserved(fPtr.index());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void changeMode(int grpId, boolean disabled) {
+        Set<Integer> grps = new HashSet<>();
+
+        GridIntIterator it = disabledGrps.iterator();
+
+        while (it.hasNext())
+            grps.add(it.next());
+
+        if (disabled) {
+            boolean res = grps.add(grpId);
+
+            assert res; // TODO guaranties
+        }
+        else {
+            boolean res = grps.remove(grpId);
+
+            assert res; // TODO guaranties
+        }
+
+        GridIntList res = new GridIntList(grps.size());
+
+        for (Integer grp : grps)
+            res.add(grp);
+
+        disabledGrps = res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enabled(int grpId) {
+        return !disabledGrps.contains(grpId);
     }
 
     /**

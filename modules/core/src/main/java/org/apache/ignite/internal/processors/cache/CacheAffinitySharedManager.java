@@ -684,6 +684,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Future.
+     * @param crd Coordinator.
+     */
+    public void onWalModeChangeRequest(GridDhtPartitionsExchangeFuture fut, boolean crd) {
+        final ExchangeDiscoveryEvents evts = fut.context().events();
+
+        // Affinity did not change for existing caches.
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
+                aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
+            }
+        });
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.

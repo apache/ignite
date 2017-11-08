@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -296,6 +297,16 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void destroyCaches(Collection<String> cacheNames) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableWal(Collection<String> cacheNames) throws CacheException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(Collection<String> cacheNames) throws CacheException {
         // No-op.
     }
 

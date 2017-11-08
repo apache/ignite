@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeFinishedMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -180,6 +181,11 @@ public class GridIoMessageFactory implements MessageFactory {
         switch (type) {
             // -54 is reserved for SQL.
             // -46 ... -51 - snapshot messages.
+            case -62:
+                msg = new WalModeDynamicChangeFinishedMessage();
+
+                break;
+
             case -61:
                 msg = new IgniteDiagnosticMessage();
 

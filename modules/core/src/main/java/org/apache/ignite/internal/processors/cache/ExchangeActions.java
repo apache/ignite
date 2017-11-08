@@ -52,6 +52,9 @@ public class ExchangeActions {
     /** */
     private StateChangeRequest stateChangeReq;
 
+    /** */
+    private WalModeDynamicChangeRequest walModeDynamicChangeReq;
+
     /**
      * @param grpId Group ID.
      * @return Always {@code true}, fails with assert error if inconsistent.
@@ -83,7 +86,8 @@ public class ExchangeActions {
             F.isEmpty(cachesToStop) &&
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
-            F.isEmpty(cachesToResetLostParts);
+            F.isEmpty(cachesToResetLostParts) &&
+            walModeDynamicChangeReq == null;
     }
 
     /**
@@ -101,12 +105,20 @@ public class ExchangeActions {
     }
 
     /**
+     * @return WAL mode change request.
+     */
+    public WalModeDynamicChangeRequest walModeChangeRequest() {
+        return walModeDynamicChangeReq;
+    }
+
+    /**
      * @param ctx Context.
      */
     public void completeRequestFutures(GridCacheSharedContext ctx) {
         completeRequestFutures(cachesToStart, ctx);
         completeRequestFutures(cachesToStop, ctx);
         completeRequestFutures(cachesToResetLostParts, ctx);
+        completeWalModeChangeFuture(ctx);
     }
 
     /**
@@ -135,6 +147,14 @@ public class ExchangeActions {
     }
 
     /**
+     * @param ctx Context.
+     */
+    private void completeWalModeChangeFuture(GridCacheSharedContext ctx) {
+        if (walModeDynamicChangeReq != null && walModeDynamicChangeReq.disableWal())
+            ctx.cache().completeDisablingWalFuture(walModeDynamicChangeReq);
+    }
+
+    /**
      * @return {@code True} if have cache stop requests.
      */
     public boolean hasStop() {
@@ -146,7 +166,7 @@ public class ExchangeActions {
      */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
-        
+
         if (cachesToResetLostParts != null)
             caches = new HashSet<>(cachesToResetLostParts.keySet());
 
@@ -276,6 +296,13 @@ public class ExchangeActions {
     }
 
     /**
+     * @param req Request.
+     */
+    void changeWalMode(WalModeDynamicChangeRequest req) {
+        this.walModeDynamicChangeReq = req;
+    }
+
+    /**
      * @return Cache groups to start.
      */
     public List<CacheGroupActionData> cacheGroupsToStart() {
@@ -341,6 +368,7 @@ public class ExchangeActions {
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts) &&
+            walModeDynamicChangeReq == null &&
             stateChangeReq == null;
     }
 
@@ -442,6 +470,7 @@ public class ExchangeActions {
             ", startGrps=" + startGrps +
             ", stopGrps=" + stopGrps +
             ", resetParts=" + (cachesToResetLostParts != null ? cachesToResetLostParts.keySet() : null) +
-            ", stateChangeRequest=" + stateChangeReq + ']';
+            ", stateChangeRequest=" + stateChangeReq +
+            ", walModeDynamicChangeReq=" + walModeDynamicChangeReq + ']';
     }
 }

@@ -87,9 +87,9 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -201,6 +201,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
+
+    /** Wal mode change futures. */
+    private ConcurrentMap<UUID, WalModeChangeFuture> walModeChangeFuts = new ConcurrentHashMap<>();
 
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
@@ -2204,6 +2207,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
+     /**
+     * @param req Request.
+     */
+    void completeDisablingWalFuture(WalModeDynamicChangeRequest req) {
+        if (ctx.localNodeId().equals(req.initiatingNodeId())) {
+            WalModeChangeFuture fut = walModeChangeFuts.get(req.uid());
+
+            if (fut != null)
+                fut.onDone(null, null);
+        }
+    }
+
+    /**
+     * @param node Node.
+     * @param req Request.
+     */
+    void completeEnablingWalFuture(ClusterNode node, WalModeDynamicChangeFinishedMessage req) {
+        WalModeChangeFuture fut = walModeChangeFuts.get(req.uid());
+
+        if (fut != null)
+            fut.onDone(node, req.error());
+    }
+
     /**
      * @param reqId Request ID.
      * @param err Error if any.
@@ -2755,6 +2781,44 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return compoundFut;
     }
 
+
+    /**
+     * @param cacheNames Cache names.
+     * @param disable Disable.
+     */
+    public IgniteInternalFuture<?> changeWalMode(Collection<String> cacheNames, boolean disable) {
+        UUID uid = UUID.randomUUID();
+
+        WalModeDynamicChangeRequest req = new WalModeDynamicChangeRequest(uid, disable, cacheNames, ctx);
+
+        List<ClusterNode> nodes =
+            disable ?
+                null :
+                new LinkedList<>(ctx.cache().context().discovery().serverNodes(AffinityTopologyVersion.NONE));
+
+        WalModeChangeFuture fut = new WalModeChangeFuture(uid, nodes);
+
+        WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
+
+        assert old == null : old;
+
+        Exception err;
+
+        try {
+            ctx.discovery().sendCustomEvent(req);
+
+            err = checkNodeState();
+        }
+        catch (IgniteCheckedException e) {
+            err = e;
+        }
+
+        if (err != null)
+            fut.onDone(err);
+
+        return fut;
+    }
+
     /**
      * @param cacheName Cache name to close.
      * @return Future that will be completed when cache is closed.
@@ -2977,6 +3041,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+        if (msg instanceof WalModeDynamicChangeRequest)
+            return true;
 
         if (msg instanceof ClientCacheChangeDiscoveryMessage)
             cachesInfo.onClientCacheChange((ClientCacheChangeDiscoveryMessage)msg, node);
@@ -3917,6 +3984,58 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private class WalModeChangeFuture extends GridFutureAdapter<ClusterNode> {
+        /** */
+        private UUID uid;
+
+        /** Nodes. */
+        private List<ClusterNode> nodes;
+
+        /**
+         * @param uid Uid.
+         * @param nodes Nodes.
+         */
+        public WalModeChangeFuture(UUID uid, List<ClusterNode> nodes) {
+            this.uid = uid;
+            this.nodes = nodes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable ClusterNode node, @Nullable Throwable err) {
+            if (node == null) {
+                assert this.nodes == null;
+
+                walModeChangeFuts.remove(uid);
+
+                return super.onDone(null, err);
+            }
+            else {
+                synchronized (this) {
+                    boolean res = nodes.remove(node);
+
+                    assert res : node;
+
+                    if (nodes.isEmpty() || err != null) {
+                        walModeChangeFuts.remove(uid);
+
+                        return super.onDone(null, err);
+                    }
+                    else
+                        return false;
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(WalModeChangeFuture.class, this);
+        }
     }
 
     /**

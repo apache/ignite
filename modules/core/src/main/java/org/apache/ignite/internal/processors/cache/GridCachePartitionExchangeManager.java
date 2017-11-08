@@ -342,6 +342,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
+        cctx.io().addCacheHandler(0, WalModeDynamicChangeFinishedMessage.class,
+            new MessageHandler<WalModeDynamicChangeFinishedMessage>() {
+                @Override protected void onMessage(ClusterNode node, WalModeDynamicChangeFinishedMessage msg) {
+                    cctx.cache().completeEnablingWalFuture(node, msg);
+                }
+            });
+
         if (!cctx.kernalContext().clientNode()) {
             for (int cnt = 0; cnt < cctx.gridConfig().getRebalanceThreadPoolSize(); cnt++) {
                 final int idx = cnt;
@@ -443,6 +450,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
                 }
+            }
+            else if (customMsg instanceof WalModeDynamicChangeRequest) {
+                WalModeDynamicChangeRequest req = (WalModeDynamicChangeRequest)customMsg;
+
+                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                exchFut = exchangeFuture(exchId, evt, cache, req.exchangeActions(), null);
             }
             else if (customMsg instanceof CacheAffinityChangeMessage) {
                 CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customMsg;

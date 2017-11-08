@@ -82,6 +82,16 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void changeMode(int grpId, boolean disabled) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enabled(int grpId) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
         // No-op.
     }

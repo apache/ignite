@@ -374,6 +374,22 @@ public interface Ignite extends AutoCloseable {
     public void destroyCaches(Collection<String> cacheNames) throws CacheException;
 
     /**
+     * Enables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     * @throws CacheException If error occurs.
+     */
+    public void enableWal(Collection<String> cacheNames) throws CacheException;
+
+    /**
+     * Disables Write Ahead Log for specified caches.
+     *
+     * @param cacheNames Collection of cache names.
+     * @throws CacheException If error occurs.
+     */
+    public void disableWal(Collection<String> cacheNames) throws CacheException;
+
+    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *

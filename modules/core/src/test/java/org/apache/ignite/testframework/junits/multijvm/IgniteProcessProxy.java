@@ -621,6 +621,16 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void enableWal(Collection<String> cacheNames) throws CacheException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableWal(Collection<String> cacheNames) throws CacheException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
         return new IgniteCacheProcessProxy<>(name, this);
     }

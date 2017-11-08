@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.benchmarks.jmh.load;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
@@ -58,28 +59,40 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
     public void loadIndexed() throws Exception {
         IgniteCache c = node.getOrCreateCache(cacheCfg(true));
 
-        load(c);
+        load(c, false);
     }
 
     /**
      */
     @Benchmark
-    public void load() throws Exception {
+    public void loadAsIs() throws Exception {
         IgniteCache c = node.getOrCreateCache(cacheCfg(false));
 
-        load(c);
+        load(c, false);
+    }
+
+    /**
+     */
+    @Benchmark
+    public void loadDisabledWal() throws Exception {
+        IgniteCache c = node.getOrCreateCache(cacheCfg(false));
+
+        load(c, true);
     }
 
     /**
      * @param c Closure.
      */
-    private void load(IgniteCache c) {
+    private void load(IgniteCache c, boolean disableWal) {
         if (c.size() != 0)
             throw new RuntimeException("Cache is not empty!");
 
         System.out.println("Loading ... " + new Date().toString());
 
         IgniteDataStreamer<Integer, HeavyValue> dataLdr = node.dataStreamer(c.getName());
+
+        if (disableWal)
+            node.disableWal(Collections.singleton(c.getName()));
 
         for (int i = 0; i < SIZE; i++) {
             if (i % 100_000 == 0)
@@ -91,6 +104,9 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
         dataLdr.close();
 
         dataLdr.future().get();
+
+        if(disableWal)
+            node.enableWal(Collections.singleton(c.getName()));
 
         if (c.size() != SIZE)
             throw new RuntimeException("Loading failed.");
@@ -105,10 +121,10 @@ public class JmhWALModesBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        run("load", 1, false, WALMode.DEFAULT);
-        run("load", 1, false, WALMode.LOG_ONLY);
-        run("load", 1, false, WALMode.BACKGROUND);
-        run("load", 1, false, WALMode.NONE);
+        run("loadDisabledWal", 1, false, WALMode.DEFAULT);
+        run("loadDisabledWal", 1, false, WALMode.NONE);
+        run("loadAsIs", 1, false, WALMode.DEFAULT);
+        run("loadAsIs", 1, false, WALMode.NONE);
     }
 
     /**
