@@ -56,7 +56,10 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.startup.servlet.ServletContextListenerStartup;
 import org.apache.ignite.transactions.Transaction;
+import com.google.common.base.CharMatcher;
+import com.google.common.collect.Iterables;
 
+import static com.google.common.base.Splitter.on;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -294,30 +297,43 @@ public class WebSessionFilter implements Filter {
 
         String srvInfo = ctx.getServerInfo();
 
-        // Special case for WebLogic, which appends timestamps to session
-        // IDs upon session creation (the created session ID looks like:
-        // pdpTSTcCcG6CVM8BTZWzxjTB1lh3w7zFbYVvwBb4bJGjrBx3TMPl!-508312620!1385045122601).
-        if (srvInfo != null && srvInfo.contains("WebLogic")) {
-            sesIdTransformer = new C1<String, String>() {
-                @Override public String apply(String s) {
-                    // Find first exclamation mark.
-                    int idx = s.indexOf('!');
+        if (srvInfo != null) {
+            // Special case for WebLogic, which appends timestamps to session
+            // IDs upon session creation (the created session ID looks like:
+            // pdpTSTcCcG6CVM8BTZWzxjTB1lh3w7zFbYVvwBb4bJGjrBx3TMPl!-508312620!1385045122601).
+            if  (srvInfo.contains("WebLogic")) {
+                sesIdTransformer = new C1<String, String>() {
+                    @Override
+                    public String apply(String s) {
+                        // Find first exclamation mark.
+                        int idx = s.indexOf('!');
 
-                    // Return original string if not found.
-                    if (idx < 0 || idx == s.length() - 1)
-                        return s;
+                        // Return original string if not found.
+                        if (idx < 0 || idx == s.length() - 1)
+                            return s;
 
-                    // Find second exclamation mark.
-                    idx = s.indexOf('!', idx + 1);
+                        // Find second exclamation mark.
+                        idx = s.indexOf('!', idx + 1);
 
-                    // Return original string if not found.
-                    if (idx < 0)
-                        return s;
+                        // Return original string if not found.
+                        if (idx < 0)
+                            return s;
 
-                    // Return the session ID without timestamp.
-                    return s.substring(0, idx);
-                }
-            };
+                        // Return the session ID without timestamp.
+                        return s.substring(0, idx);
+                    }
+                };
+            } else if ( srvInfo.contains("WebSphere Liberty")) {
+                // Special case for Websphere Liberty, which prepends leading zeros and appends a cloneId
+                // The created session id (for cookies) look like: <leadingZeros><id>:<cloneId>
+                // 00003XeX_c5NHR5fJLYufFzt5ka:a3e94cfd-b391-4d9b-b9e7-6ddfcbf8c334
+                sesIdTransformer = (sesId -> {
+                    // Trim leading zeros
+                    String trimmedSessionId = CharMatcher.is('0').trimLeadingFrom(sesId);
+                    // Extract id before :...
+                    return Iterables.get(on(':').split(trimmedSessionId), 0);
+                });
+            }
         }
 
         if (log.isInfoEnabled())
