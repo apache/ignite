@@ -195,7 +195,11 @@ public final class Functions {
         };
     }
 
-    public static <A, B, C> IgniteUncurriedBiFunction<A, B, C> uncurry(IgniteBiFunction<A, B, C> f) {
+    public static <A, B, C> IgniteCurriedBiFunction<A, B, C> curry(IgniteBiFunction<A, B, C> f) {
         return a -> b -> f.apply(a, b);
+    }
+
+    public static <A, B> IgniteFunction<A, IgniteSupplier<B>> curry(IgniteFunction<A, B> f) {
+        return a -> () -> f.apply(a);
     }
 }

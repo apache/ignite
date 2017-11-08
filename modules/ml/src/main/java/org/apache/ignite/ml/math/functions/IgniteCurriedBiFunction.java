@@ -25,5 +25,5 @@ import java.util.function.BiFunction;
  *
  * @see BiFunction
  */
-public interface IgniteUncurriedBiFunction<A, B, T> extends IgniteFunction<A, IgniteFunction<B, T>>, Serializable {
+public interface IgniteCurriedBiFunction<A, B, T> extends IgniteFunction<A, IgniteFunction<B, T>>, Serializable {
 }

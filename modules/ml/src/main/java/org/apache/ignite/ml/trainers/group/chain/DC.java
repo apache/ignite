@@ -17,7 +17,16 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
-@FunctionalInterface
-public interface BaseWorkersChain<I, C, O> {
-    O process(I input, C context);
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
+
+public class DC {
+    public static
+    <L, V, K, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L> & HasTrainingUUID> DistributedTrainerWorkersChain<L, K, V, I, C, I> create() {
+        return (input, context) -> input;
+    }
+
+    public static
+    <L, V, K, I, C extends HasCacheContext<GroupTrainerCacheKey<K>, V> & HasLocalContext<L> & HasTrainingUUID> DistributedTrainerWorkersChain<L, K, V, I, C, I> fromLocal() {
+        return (input, context) -> input;
+    }
 }

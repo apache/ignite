@@ -17,7 +17,23 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
-@FunctionalInterface
-public interface BaseWorkersChain<I, C, O> {
-    O process(I input, C context);
+import java.util.Map;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
+
+public class EntryAndContext<K, V, C> {
+    private Map.Entry<GroupTrainerCacheKey<K>, V> entry;
+    private C context;
+
+    public EntryAndContext(Map.Entry<GroupTrainerCacheKey<K>, V> entry, C context) {
+        this.entry = entry;
+        this.context = context;
+    }
+
+    public Map.Entry<GroupTrainerCacheKey<K>, V> entry() {
+        return entry;
+    }
+
+    public C context() {
+        return context;
+    }
 }

@@ -21,34 +21,37 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
-import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteUncurriedBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
 import org.apache.ignite.ml.trainers.Trainer;
+import org.apache.ignite.ml.trainers.group.chain.CacheContext;
+import org.apache.ignite.ml.trainers.group.chain.DC;
+import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
+import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
 
-public abstract class GroupTrainer<I, O, R, LC, RC, M extends Model, T> implements Trainer<M, T> {
-    IgniteUncurriedBiFunction<Integer, T, O> init;
-    IgniteUncurriedBiFunction<Integer, I, O> worker;
+public abstract class GroupTrainer<LC, K, V, I, O, R, M extends Model, T> implements Trainer<M, T> {
+    IgniteCurriedBiFunction<Integer, T, O> init;
+    IgniteCurriedBiFunction<Integer, I, O> worker;
     IgniteFunction<I, IgniteBiTuple<LC, R>> handler;
     IgnitePredicate<Collection<O>> stopper;
     IgniteFunction<Integer, R> result;
     IgniteFunction<Collection<R>, M> modelProducer;
-    IgniteCache<GroupTrainerCacheKey, RC> cache;
+    IgniteCache<GroupTrainerCacheKey<K>, V> cache;
     int nodeLocalEntitiesCount;
     Ignite ignite;
 
-    public GroupTrainer(IgniteUncurriedBiFunction<Integer, T, O> init, IgniteUncurriedBiFunction<Integer, I, O> worker,
+    public GroupTrainer(
+        IgniteCurriedBiFunction<Integer, T, O> init,
+        IgniteCurriedBiFunction<Integer, I, O> worker,
         IgniteFunction<I, IgniteBiTuple<LC, R>> handler,
         IgnitePredicate<Collection<O>> stopper,
         IgniteFunction<Integer, R> result,
         IgniteFunction<Collection<R>, M> modelProducer,
-        IgniteCache<GroupTrainerCacheKey, RC> cache,
+        IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         int nodeLocEntitiesCnt,
         Ignite ignite) {
         this.init = init;
@@ -64,13 +67,23 @@ public abstract class GroupTrainer<I, O, R, LC, RC, M extends Model, T> implemen
 
     @Override public M train(T data) {
         UUID trainingUUID = UUID.randomUUID();
+        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(initLocalContext(data), trainingUUID, new CacheContext<>(cache), ignite);
+        DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> chain = (i, c) -> i;
+
+        chain.
+            thenDistributed().
+            thenDistributed().process()
 
         initGlobalContext(data, trainingUUID);
 
         return null;
     }
 
-    protected abstract void initGlobalContext(T data, UUID trainingUUID);
+    protected abstract LC initLocalContext(T data);
+
+    protected abstract I initGlobalContext(T data, UUID trainingUUID);
+
+    protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoop();
 
     private <A, B> B execute(ComputeTask<A, B> task, A arg) {
         return ignite.compute(ignite.cluster().forCacheNodes(cache.getName())).execute(task, arg);
