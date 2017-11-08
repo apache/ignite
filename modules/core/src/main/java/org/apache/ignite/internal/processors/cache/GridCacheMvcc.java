@@ -864,8 +864,13 @@ public final class GridCacheMvcc {
 
                 if (c == cand) {
                     if (mvAfter != null)
-                        for (GridCacheMvccCandidate mv : mvAfter)
+                        for (GridCacheMvccCandidate mv : mvAfter) {
+                            if (mvAfter.size() > 1)
+                                throw new RuntimeException("[txs]Adding after exception ");
+
                             it.add(mv);
+
+                        }
 
                     break;
                 }
@@ -894,12 +899,12 @@ public final class GridCacheMvcc {
                     if (rmtVer.isLess(mappedVer)) {
                         if (!pending.contains(rmtVer) &&
                             !mappedVer.equals(rmt.ownerVersion()))
-                            rmt.setOwner();
+                            throw new RuntimeException("[txs]Adding after exception in remotes ");
                     }
                     else {
                         // Remote version is greater, so need to check if it was committed or rolled back.
                         if (committedVers.contains(rmtVer) || rolledBackVers.contains(rmtVer))
-                            rmt.setOwner();
+                            throw new RuntimeException("[txs]Adding after exception in remotes2 ");
                     }
                 }
             }
