@@ -189,7 +189,7 @@ public class TxRecordSerializer {
      * @return Marshalled byte array.
      * @throws IgniteCheckedException In case of fail.
      */
-    private byte[] marshalConsistentId(Object consistentId) throws IgniteCheckedException {
+    public byte[] marshalConsistentId(Object consistentId) throws IgniteCheckedException {
         return cctx.marshaller().marshal(consistentId);
     }
 
@@ -201,7 +201,7 @@ public class TxRecordSerializer {
      * @throws IOException In case of fail.
      * @throws IgniteCheckedException In case of fail.
      */
-    private Object readConsistentId(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    public Object readConsistentId(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         int len = in.readInt();
         in.ensure(len);
 
@@ -218,7 +218,7 @@ public class TxRecordSerializer {
      * @param buf Byte buffer.
      * @throws IgniteCheckedException In case of fail.
      */
-    private void writeConsistentId(Object consistentId, ByteBuffer buf) throws IgniteCheckedException {
+    public void writeConsistentId(Object consistentId, ByteBuffer buf) throws IgniteCheckedException {
         byte[] content = marshalConsistentId(consistentId);
 
         buf.putInt(content.length);

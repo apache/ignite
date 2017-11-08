@@ -34,7 +34,7 @@ public class RecoveryDebug {
 
     @Nullable private FileChannel fc;
 
-    public RecoveryDebug(String constId) {
+    public RecoveryDebug(Object constId) {
         try {
             String workDir = U.defaultWorkDirectory();
 

@@ -125,6 +125,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         this.pageSize = cctx.database().pageSize();
     }
 
+    public TxRecordSerializer getTxRecordSerializer() {
+        return txRecordSerializer;
+    }
+
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {

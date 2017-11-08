@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
@@ -38,6 +39,8 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
     /** V1 data serializer delegate. */
     private final RecordDataV1Serializer delegateSerializer;
 
+    /** Serializer of {@link TxRecord} records. */
+    private final TxRecordSerializer txRecordSerializer;
     /**
      * Create an instance of V2 data serializer.
      *
@@ -45,6 +48,7 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
      */
     public RecordDataV2Serializer(RecordDataV1Serializer delegateSerializer) {
         this.delegateSerializer = delegateSerializer;
+        txRecordSerializer = delegateSerializer.getTxRecordSerializer();
     }
 
     /** {@inheritDoc} */
@@ -60,7 +64,11 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 8 + 1;
 
             case EXCHANGE:
-                return 4 + 8 + 2 + ((ExchangeRecord)record).getConstId().getBytes().length;
+                Object constId = ((ExchangeRecord)record).getConstId();
+
+                int len = txRecordSerializer.marshalConsistentId(constId).length;
+
+                return 4 + 8 + 4 + len;
 
             default:
                 return delegateSerializer.size(record);
@@ -93,13 +101,10 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case EXCHANGE:
                 int idx = in.readInt();
                 long ts = in.readLong();
-                short size = in.readShort();
 
-                byte[] arr = new byte[size];
+                Object constId = txRecordSerializer.readConsistentId(in);
 
-                in.readFully(arr);
-
-                return new ExchangeRecord(new String(arr), ExchangeRecord.Type.values()[idx], ts);
+                return new ExchangeRecord(constId, ExchangeRecord.Type.values()[idx], ts);
 
             default:
                 return delegateSerializer.readRecord(type, in);
@@ -134,12 +139,10 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case EXCHANGE:
                 ExchangeRecord rec = (ExchangeRecord)record;
 
-                byte[] bytes = rec.getConstId().getBytes();
-
                 buf.putInt(rec.getType().ordinal());
                 buf.putLong(rec.timestamp());
-                buf.putShort((short)bytes.length);
-                buf.put(bytes);
+
+                txRecordSerializer.writeConsistentId(rec.getConstId(), buf);
 
                 break;
 
