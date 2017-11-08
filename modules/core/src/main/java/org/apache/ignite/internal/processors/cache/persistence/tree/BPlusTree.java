@@ -1015,6 +1015,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** {@inheritDoc} */
     @Override public T findFirst() throws IgniteCheckedException {
+        return findFirst(null);
+    }
+
+    /**
+     * Returns a value mapped to the lowest key, or {@code null} if tree is empty or no entry matches the passed filter.
+     * @param c Filter closure.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T findFirst(TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
@@ -1028,27 +1038,46 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 releasePage(metaPageId, metaPage);
             }
 
-            long page = acquirePage(firstPageId);
+            long nextId = firstPageId;
 
-            try {
-                long pageAddr = readLock(firstPageId, page);
+            for (;;) {
+                final long pageId = nextId;
+
+                long page = acquirePage(pageId);
 
                 try {
-                    BPlusIO<L> io = io(pageAddr);
+                    long pageAddr = readLock(pageId, page);
 
-                    int cnt = io.getCount(pageAddr);
+                    try {
+                        BPlusIO<L> io = io(pageAddr);
 
-                    if (cnt == 0)
-                        return null;
+                        int cnt = io.getCount(pageAddr);
 
-                    return getRow(io, pageAddr, 0);
+                        if (cnt == 0)
+                            return null;
+
+                        if(c != null) {
+                            for (int i = 0; i < cnt; i++) {
+                                if (c.apply(this, io, pageAddr, i))
+                                    return getRow(io, pageAddr, i);
+                            }
+
+                            nextId = io.getForward(pageAddr);
+
+                            if (nextId == 0)
+                                return null;
+                        }
+                        else
+                            return getRow(io, pageAddr, 0);
+
+                    }
+                    finally {
+                        readUnlock(pageId, page, pageAddr);
+                    }
                 }
                 finally {
-                    readUnlock(firstPageId, page, pageAddr);
+                    releasePage(pageId, page);
                 }
-            }
-            finally {
-                releasePage(firstPageId, page);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1068,13 +1097,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public T findLast() throws IgniteCheckedException {
+        return findLast(null);
+    }
+
+    /**
+     * Returns a value mapped to the greatest key, or {@code null} if tree is empty or no entry matches the passed filter.
+     * @param c Filter closure.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T findLast(final TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
-            GetOne g = new GetOne(null, null, true);
-            doFind(g);
+            if (c == null) {
+                GetOne g = new GetOne(null, null, true);
+                doFind(g);
 
-            return (T)g.row;
+                return (T)g.row;
+            } else
+                return new GetLast(c).find();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
@@ -2579,6 +2621,111 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             cursor.init(pageAddr, io, idx);
 
             return true;
+        }
+    }
+
+    /**
+     * Get the last item in the tree which matches the passed filter.
+     */
+    private final class GetLast extends Get {
+        private final TreeRowClosure<L, T> c;
+        private boolean retry = true;
+        private long lastPageId;
+        private T row0;
+
+        /**
+         * @param c Filter closure.
+         */
+        public GetLast(TreeRowClosure<L, T> c) {
+            super(null, true);
+
+            assert c != null;
+
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+            if (lvl != 0)
+                return false;
+
+            for (int i = idx; i >= 0; i--) {
+                if (c.apply(BPlusTree.this, io, pageAddr, i)) {
+                    retry = false;
+                    row0 = getRow(io, pageAddr, i);
+
+                    return true;
+                }
+            }
+
+            if(pageId == rootId)
+                retry = false; // We are at the root page, there are no other leafs.
+
+            if (retry) {
+                findLast = false;
+
+                // Restart from an item before the first item in the leaf (last item on the previous leaf).
+                row0 = getRow(io, pageAddr, 0);
+                shift = -1;
+
+                lastPageId = pageId; // Track leafs to detect a loop over the first leaf in the tree.
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean notFound(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+            if (lvl != 0)
+                return false;
+
+            if(io.getCount(pageAddr) == 0) {
+                // it's an empty tree
+                retry = false;
+
+                return true;
+            }
+
+            if (idx == 0 && lastPageId == pageId) {
+                // not found
+                retry = false;
+                row0 = null;
+
+                return true;
+            }
+            else {
+                for (int i = idx; i >= 0; i--) {
+                    if (c.apply(BPlusTree.this, io, pageAddr, i)) {
+                        retry = false;
+                        row0 = getRow(io, pageAddr, i);
+
+                        break;
+                    }
+                }
+            }
+
+            if (retry) {
+                // Restart from an item before the first item in the leaf (last item on the previous leaf).
+                row0 = getRow(io, pageAddr, 0);
+
+                lastPageId = pageId; // Track leafs to detect a loop over the first leaf in the tree.
+            }
+
+            return true;
+        }
+
+        /**
+         * @return Last item in the tree.
+         * @throws IgniteCheckedException If failure.
+         */
+        public T find() throws IgniteCheckedException {
+            while (retry) {
+                row = row0;
+
+                doFind(this);
+            }
+
+            return row0;
         }
     }
 

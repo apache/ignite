@@ -321,6 +321,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
+            BPlusTree.TreeRowClosure<GridH2SearchRow, GridH2Row> c = null;
+
             if (cctx.mvccEnabled()) {
                 GridH2QueryContext qctx = GridH2QueryContext.get();
 
@@ -329,10 +331,11 @@ public class H2TreeIndex extends GridH2IndexBase {
                 H2TreeMvccFilterClosure mvccFilter = qctx.mvccFilter();
 
                 assert mvccFilter != null;
-                // TODO IGNITE-3478 (support filter for first/last)
+
+                c = mvccFilter;
             }
 
-            GridH2Row row = b ? tree.findFirst(): tree.findLast();
+            GridH2Row row = b ? tree.findFirst(c): tree.findLast(c);
 
             return new SingleRowCursor(row);
         }
