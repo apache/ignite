@@ -20,18 +20,15 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
 
 /**
- * Test for parser.
+ * Tests for SQL parser: CREATE INDEX.
  */
 @SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
-public class SqlParserCreateIndexSelfTest extends GridCommonAbstractTest {
+public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for CREATE INDEX command.
      *
@@ -79,10 +76,10 @@ public class SqlParserCreateIndexSelfTest extends GridCommonAbstractTest {
         parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c DESC)", null, "TBL", "IDX", "A", false, "B", false, "C", true);
 
         // Negative cases.
-        parseError(null, "CREATE INDEX idx ON tbl()", "Unexpected token");
-        parseError(null, "CREATE INDEX idx ON tbl(a, a)", "Column already defined: A");
-        parseError(null, "CREATE INDEX idx ON tbl(a, b, a)", "Column already defined: A");
-        parseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
+        assertParseError(null, "CREATE INDEX idx ON tbl()", "Unexpected token");
+        assertParseError(null, "CREATE INDEX idx ON tbl(a, a)", "Column already defined: A");
+        assertParseError(null, "CREATE INDEX idx ON tbl(a, b, a)", "Column already defined: A");
+        assertParseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
 
         // Tests with schema.
         parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
@@ -102,10 +99,10 @@ public class SqlParserCreateIndexSelfTest extends GridCommonAbstractTest {
         cmd = parseValidate(null, "CREATE INDEX IF NOT EXISTS idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
         assertTrue(cmd.ifNotExists());
 
-        parseError(null, "CREATE INDEX IF idx ON tbl(a)", "Unexpected token: \"IDX\"");
-        parseError(null, "CREATE INDEX IF NOT idx ON tbl(a)", "Unexpected token: \"IDX\"");
-        parseError(null, "CREATE INDEX IF EXISTS idx ON tbl(a)", "Unexpected token: \"EXISTS\"");
-        parseError(null, "CREATE INDEX NOT EXISTS idx ON tbl(a)", "Unexpected token: \"NOT\"");
+        assertParseError(null, "CREATE INDEX IF idx ON tbl(a)", "Unexpected token: \"IDX\"");
+        assertParseError(null, "CREATE INDEX IF NOT idx ON tbl(a)", "Unexpected token: \"IDX\"");
+        assertParseError(null, "CREATE INDEX IF EXISTS idx ON tbl(a)", "Unexpected token: \"EXISTS\"");
+        assertParseError(null, "CREATE INDEX NOT EXISTS idx ON tbl(a)", "Unexpected token: \"NOT\"");
 
         // SPATIAL
         cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", "A", false);
@@ -115,30 +112,13 @@ public class SqlParserCreateIndexSelfTest extends GridCommonAbstractTest {
         assertTrue(cmd.spatial());
 
         // UNIQUE
-        parseError(null, "CREATE UNIQUE INDEX idx ON tbl(a)", "Unsupported keyword: \"UNIQUE\"");
+        assertParseError(null, "CREATE UNIQUE INDEX idx ON tbl(a)", "Unsupported keyword: \"UNIQUE\"");
 
         // HASH
-        parseError(null, "CREATE HASH INDEX idx ON tbl(a)", "Unsupported keyword: \"HASH\"");
+        assertParseError(null, "CREATE HASH INDEX idx ON tbl(a)", "Unsupported keyword: \"HASH\"");
 
         // PRIMARY KEY
-        parseError(null, "CREATE PRIMARY KEY INDEX idx ON tbl(a)", "Unsupported keyword: \"PRIMARY\"");
-    }
-
-    /**
-     * Make sure that parse error occurs.
-     *
-     * @param schema Schema.
-     * @param sql SQL.
-     * @param msg Expected error message.
-     */
-    private static void parseError(final String schema, final String sql, String msg) {
-        GridTestUtils.assertThrows(null, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                new SqlParser(schema, sql).nextCommand();
-
-                return null;
-            }
-        }, SqlParseException.class, msg);
+        assertParseError(null, "CREATE PRIMARY KEY INDEX idx ON tbl(a)", "Unsupported keyword: \"PRIMARY\"");
     }
 
     /**
