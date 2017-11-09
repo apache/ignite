@@ -1954,7 +1954,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partStates Partition states.
      * @throws IgniteCheckedException If failed to restore.
      */
-    private void restorePartitionState(
+    public void restorePartitionState(
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
