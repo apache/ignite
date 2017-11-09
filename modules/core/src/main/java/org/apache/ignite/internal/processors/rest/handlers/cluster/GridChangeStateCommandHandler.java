@@ -69,7 +69,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
                 res.setResponse(currentState);
             }
             else
-                ctx.state().changeGlobalState(req.active()).get();
+                ctx.grid().active(req.active());
 
             fut.onDone(res);
         }
