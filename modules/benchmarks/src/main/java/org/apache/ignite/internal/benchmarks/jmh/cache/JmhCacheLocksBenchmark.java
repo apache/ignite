@@ -17,41 +17,15 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
-import java.util.UUID;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
-import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteFuture;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -62,12 +36,9 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * IgniteCache.lock() vs Ignite.reentrantLock().
@@ -86,13 +57,13 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     private static final boolean fair = true;
 
     /** Number of nodes. */
-    final static int MAX_NODES = 10;
+    static final int MAX_NODES = 10;
 
     /** */
-    final static Ignite[] nodes = new Ignite[MAX_NODES];
+    static final Ignite[] nodes = new Ignite[MAX_NODES];
 
     /** The counter for getting a node. */
-    final static AtomicInteger countForThread = new AtomicInteger(0);
+    static final AtomicInteger countForThread = new AtomicInteger(0);
 
     /** IgniteCache.lock() with a fixed lock key. */
     @State(Scope.Thread)
