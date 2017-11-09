@@ -1668,7 +1668,6 @@ public class PlatformConfigurationUtils {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
-                .setCheckpointPageBufferSize(in.readLong())
                 .setCheckpointThreads(in.readInt())
                 .setLockWaitTime((int) in.readLong())
                 .setWalHistorySize(in.readInt())
@@ -1763,7 +1762,6 @@ public class PlatformConfigurationUtils {
 
             w.writeString(cfg.getStoragePath());
             w.writeLong(cfg.getCheckpointFrequency());
-            w.writeLong(cfg.getCheckpointPageBufferSize());
             w.writeInt(cfg.getCheckpointThreads());
             w.writeLong(cfg.getLockWaitTime());
             w.writeInt(cfg.getWalHistorySize());
@@ -1828,6 +1826,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(cfg.isMetricsEnabled());
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
+        w.writeLong(cfg.getCheckpointPageBufferSize());
     }
 
     /**
@@ -1849,7 +1848,8 @@ public class PlatformConfigurationUtils {
                 .setEmptyPagesPoolSize(r.readInt())
                 .setMetricsEnabled(r.readBoolean())
                 .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong());
+                .setMetricsRateTimeInterval(r.readLong())
+                .setCheckpointPageBufferSize(r.readLong());
     }
 
     /**
