@@ -31,7 +31,7 @@ import java.util.concurrent.Callable;
  * Test for parser.
  */
 @SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
-public class SqlParserSelfTest extends GridCommonAbstractTest {
+public class SqlParserCreateIndexSelfTest extends GridCommonAbstractTest {
     /**
      * Tests for CREATE INDEX command.
      *

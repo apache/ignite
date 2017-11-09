@@ -154,7 +154,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryDistributedJoinsTest;
 import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
 import org.apache.ignite.internal.processors.sql.SqlConnectorConfigurationValidationSelfTest;
-import org.apache.ignite.internal.sql.SqlParserSelfTest;
+import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
@@ -169,7 +169,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
 
-        suite.addTestSuite(SqlParserSelfTest.class);
+        suite.addTestSuite(SqlParserCreateIndexSelfTest.class);
 
         suite.addTestSuite(SqlConnectorConfigurationValidationSelfTest.class);
         suite.addTestSuite(ClientConnectorConfigurationValidationSelfTest.class);
