@@ -55,7 +55,7 @@ public class ZKDisconnectTest {
 
                     blockConnect.await();
 
-                    System.out.println("TestClientCnxnSocketNIO finish bloc");
+                    System.out.println("TestClientCnxnSocketNIO finish block");
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -81,7 +81,7 @@ public class ZKDisconnectTest {
 
     public static void main(String[] args) {
         try {
-            TestingCluster zkCluster = new TestingCluster(3);
+            TestingCluster zkCluster = new TestingCluster(1);
             zkCluster.start();
 
             Thread.sleep(1000);
@@ -113,6 +113,9 @@ public class ZKDisconnectTest {
             System.out.println("Node started");
 
             node3.stop();
+
+            ZKClusterNode node4 = new ZKClusterNode("n4");
+            node4.join(zkCluster.getConnectString());
 
             System.out.println("Node stopped");
 

@@ -66,8 +66,8 @@ public class ZKClusterNode implements Watcher {
     @Override public void process(WatchedEvent event) {
         log("Process event [type=" + event.getType() + ", state=" + event.getState() + ", path=" + event.getPath() + ']');
 
-        if (event.getType() == Event.EventType.NodeChildrenChanged && event.getPath().equals(CLUSTER_PATH)) {
-            zk.getChildren(CLUSTER_PATH, true, nodesUpdateCallback, null);
+        if (event.getType() == Event.EventType.NodeChildrenChanged) {
+            zk.getChildren(event.getPath(), true, nodesUpdateCallback, null);
         }
     }
 
@@ -76,9 +76,7 @@ public class ZKClusterNode implements Watcher {
      */
     class NodesUpdateCallback implements AsyncCallback.Children2Callback {
         @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-            log("Nodes changed: " + children);
-
-            curNodes = children;
+            log("Nodes changed [rc=" + rc + ", path=" + path + ", nodes=" + children + ", ver=" + (stat != null ? stat.getCversion() : null) + ']');
         }
     }
 
@@ -97,7 +95,6 @@ public class ZKClusterNode implements Watcher {
         }
 
         zk.getChildren(CLUSTER_PATH, true, nodesUpdateCallback, null);
-
 
         zk.create(CLUSTER_PATH + "/node-", new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL,
             new AsyncCallback.StringCallback() {
