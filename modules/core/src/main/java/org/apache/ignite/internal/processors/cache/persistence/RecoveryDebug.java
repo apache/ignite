@@ -26,7 +26,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class RecoveryDebug {
 
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy-HH:mm:ss");
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yyyy-HH-mm-ss");
 
     static {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
