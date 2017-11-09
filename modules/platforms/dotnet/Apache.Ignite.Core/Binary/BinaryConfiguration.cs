@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -58,10 +59,24 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            CopyLocalProperties(cfg);
+        }
+
+        /// <summary>
+        /// Copies the local properties.
+        /// </summary>
+        internal void CopyLocalProperties(BinaryConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
             IdMapper = cfg.IdMapper;
             NameMapper = cfg.NameMapper;
             KeepDeserialized = cfg.KeepDeserialized;
-            Serializer = cfg.Serializer;
+
+            if (cfg.Serializer != null)
+            {
+                Serializer = cfg.Serializer;
+            }
 
             TypeConfigurations = cfg.TypeConfigurations == null
                 ? null
@@ -69,7 +84,10 @@ namespace Apache.Ignite.Core.Binary
 
             Types = cfg.Types == null ? null : cfg.Types.ToList();
 
-            CompactFooter = cfg.CompactFooter;
+            if (cfg.CompactFooterInternal != null)
+            {
+                CompactFooter = cfg.CompactFooterInternal.Value;
+            }
         }
 
         /// <summary>
@@ -140,30 +158,6 @@ namespace Apache.Ignite.Core.Binary
         internal bool? CompactFooterInternal
         {
             get { return _compactFooter; }
-        }
-
-        /// <summary>
-        /// Merges other config into this.
-        /// </summary>
-        internal void MergeTypes(BinaryConfiguration localConfig)
-        {
-            if (TypeConfigurations == null)
-            {
-                TypeConfigurations = localConfig.TypeConfigurations;
-            }
-            else if (localConfig.TypeConfigurations != null)
-            {
-                // Both configs are present.
-                // Local configuration is more complete and takes preference when it exists for a given type.
-                var localTypeNames = new HashSet<string>(localConfig.TypeConfigurations.Select(x => x.TypeName), 
-                    StringComparer.OrdinalIgnoreCase);
-
-                var configs = new List<BinaryTypeConfiguration>(localConfig.TypeConfigurations);
-
-                configs.AddRange(TypeConfigurations.Where(x=>!localTypeNames.Contains(x.TypeName)));
-
-                TypeConfigurations = configs;
-            }
         }
     }
 }

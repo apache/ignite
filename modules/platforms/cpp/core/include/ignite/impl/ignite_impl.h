@@ -18,9 +18,10 @@
 #ifndef _IGNITE_IMPL_IGNITE_IMPL
 #define _IGNITE_IMPL_IGNITE_IMPL
 
-#include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/common/lazy.h>
 
 #include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/cache_impl.h>
@@ -28,14 +29,9 @@
 #include <ignite/impl/cluster/cluster_group_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
 
-using namespace ignite::impl::interop;
-using namespace ignite::common::concurrent;
-using namespace ignite::impl::binary;
-using namespace ignite::binary;
-
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /*
         * PlatformProcessor op codes.
@@ -66,10 +62,9 @@ namespace ignite
              * Constructor used to create new instance.
              *
              * @param env Environment.
-             * @param javaRef Reference to java object.
              */
             IgniteImpl(SP_IgniteEnvironment env);
-            
+
             /**
              * Get name of the Ignite.
              *
@@ -162,7 +157,7 @@ namespace ignite
              */
             SP_TransactionsImpl GetTransactions()
             {
-                return txImpl;
+                return txImpl.Get();
             }
 
             /**
@@ -172,7 +167,7 @@ namespace ignite
              */
             cluster::SP_ClusterGroupImpl GetProjection()
             {
-                return prjImpl;
+                return prjImpl.Get();
             }
 
             /**
@@ -182,29 +177,50 @@ namespace ignite
              */
             SP_ComputeImpl GetCompute();
 
+            /**
+             * Check if the Ignite grid is active.
+             *
+             * @return True if grid is active and false otherwise.
+             */
+            bool IsActive()
+            {
+                return prjImpl.Get().Get()->IsActive();
+            }
+
+            /**
+             * Change Ignite grid state to active or inactive.
+             *
+             * @param active If true start activation process. If false start
+             *    deactivation process.
+             */
+            void SetActive(bool active)
+            {
+                prjImpl.Get().Get()->SetActive(active);
+            }
+
         private:
             /**
              * Get transactions internal call.
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+            transactions::TransactionsImpl* InternalGetTransactions();
 
             /**
              * Get current projection internal call.
              *
              * @return ClusterGroupImpl instance.
              */
-            cluster::SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
+            cluster::ClusterGroupImpl* InternalGetProjection();
 
             /** Environment. */
             SP_IgniteEnvironment env;
 
             /** Transactions implementaion. */
-            SP_TransactionsImpl txImpl;
+            common::Lazy<transactions::TransactionsImpl> txImpl;
 
             /** Projection implementation. */
-            cluster::SP_ClusterGroupImpl prjImpl;
+            common::Lazy<cluster::ClusterGroupImpl> prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
 
@@ -215,30 +231,7 @@ namespace ignite
             * @param err Error.
             * @param op Operation code.
             */
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
-            {
-                SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
-                InteropMemory* mem0 = mem.Get();
-                InteropOutputStream out(mem0);
-                BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
-                BinaryRawWriter rawWriter(&writer);
-
-                rawWriter.WriteString(name);
-
-                out.Synchronize();
-
-                jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
-
-                if (!cacheJavaRef)
-                {
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
-
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op);
         };
     }
 }

@@ -95,6 +95,8 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public String toString() {
         return S.toString(PagesListInitNewPageRecord.class, this,
             "prevPageId", U.hexLong(prevPageId),
-            "addDataPageId", U.hexLong(addDataPageId));
+            "addDataPageId", U.hexLong(addDataPageId),
+            "super", super.toString()
+        );
     }
 }

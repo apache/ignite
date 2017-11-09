@@ -20,16 +20,16 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem.memoryConfiguration'
 -var memoryPolicies = model + '.memoryPolicies'
 
-.panel.panel-default(ng-show='$ctrl.available("2.0.0")' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available(["2.0.0", "2.3.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Memory configuration
         ignite-form-field-tooltip.tipLabel
             | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/page-memory" target="_blank") More info]
+            | #[a(href="https://apacheignite.readme.io/docs/durable-memory" target="_blank") More info]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`$ctrl.available("2.0.0") && ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available(["2.0.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
                     +number-min-max('Page size:', model + '.pageSize', '"MemoryConfigurationPageSize"',

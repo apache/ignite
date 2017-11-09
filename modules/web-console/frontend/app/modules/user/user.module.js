@@ -20,7 +20,6 @@ import aclData from './permissions';
 
 import Auth from './Auth.service';
 import User from './User.service';
-import AclRouteProvider from './AclRoute.provider';
 
 angular.module('ignite-console.user', [
     'mm.acl',
@@ -34,10 +33,10 @@ angular.module('ignite-console.user', [
             if (response.status === 401) {
                 $injector.get('User').clean();
 
-                const $state = $injector.get('$state');
+                const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if ($state.current.name !== 'signin')
-                    $state.go('signin');
+                if (!_.includes(['', 'signin'], stateName))
+                    $injector.get('$state').go('signin');
             }
 
             return $q.reject(response);
@@ -49,7 +48,6 @@ angular.module('ignite-console.user', [
 }])
 .service(...Auth)
 .service(...User)
-.provider('AclRoute', AclRouteProvider)
 .run(['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData', ($root, $transitions, AclService, User, Activities) => {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
@@ -71,31 +69,25 @@ angular.module('ignite-console.user', [
         AclService.attachRole(role);
     });
 
-    $transitions.onBefore({}, (t) => {
-        const $state = t.router.stateService;
-        const {name, permission} = t.to();
+    $transitions.onBefore({}, (trans) => {
+        const $state = trans.router.stateService;
+        const {name, permission} = trans.to();
 
-        return User.read()
-            .catch(() => {
-                User.clean();
+        if (_.isEmpty(permission))
+            return;
 
-                if (name !== 'signin')
-                    return $state.target('signin');
-
-                return true;
-            })
+        return trans.injector().get('User').read()
             .then(() => {
-                if (_.isEmpty(permission))
-                    return true;
-
                 if (AclService.can(permission)) {
-                    Activities.post({action: $state.href(name, t.params('to'))});
+                    Activities.post({action: $state.href(name, trans.params('to'))});
 
-                    return true;
+                    return;
                 }
 
-                return $state.target(t.to().failState || '403');
+                return $state.target(trans.to().failState || '403');
+            })
+            .catch(() => {
+                return $state.target(trans.to().failState || '403');
             });
-
     });
 }]);

@@ -64,6 +64,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -782,12 +783,7 @@ public class BinaryContext {
 
         final int typeId = mapper.typeId(clsName);
 
-        try {
-            registered = marshCtx.registerClassName(JAVA_ID, typeId, cls.getName());
-        }
-        catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to register class.", e);
-        }
+        registered = registerUserClassName(typeId, cls.getName());
 
         BinarySerializer serializer = serializerForClass(cls);
 
@@ -825,12 +821,7 @@ public class BinaryContext {
     private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
         boolean registered;
 
-        try {
-            registered = marshCtx.registerClassName(JAVA_ID, desc.typeId(), desc.describedClass().getName());
-        }
-        catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to register class.", e);
-        }
+        registered = registerUserClassName(desc.typeId(), desc.describedClass().getName());
 
         if (registered) {
             BinarySerializer serializer = desc.initialSerializer();
@@ -1185,6 +1176,43 @@ public class BinaryContext {
     }
 
     /**
+     * Register "type ID to class name" mapping on all nodes to allow for mapping requests resolution form client.
+     * Other {@link BinaryContext}'s "register" methods and method
+     * {@link BinaryContext#descriptorForClass(Class, boolean)} already call this functionality so use this method
+     * only when registering class names whose {@link Class} is unknown.
+     *
+     * @param typeId Type ID.
+     * @param clsName Class Name.
+     * @return {@code True} if the mapping was registered successfully.
+     */
+    public boolean registerUserClassName(int typeId, String clsName) {
+        IgniteCheckedException e = null;
+
+        boolean res = false;
+
+        try {
+            res = marshCtx.registerClassName(JAVA_ID, typeId, clsName);
+        }
+        catch (DuplicateTypeIdException dupEx) {
+            // Ignore if trying to register mapped type name of the already registered class name and vise versa
+            BinaryInternalMapper mapper = userTypeMapper(typeId);
+
+            String oldName = dupEx.getRegisteredClassName();
+
+            if (!(mapper.typeName(oldName).equals(clsName) || mapper.typeName(clsName).equals(oldName)))
+                e = dupEx;
+        }
+        catch (IgniteCheckedException igniteEx) {
+            e = igniteEx;
+        }
+
+        if (e != null)
+            throw new BinaryObjectException("Failed to register class.", e);
+
+        return res;
+    }
+
+    /**
      * Throw exception on class duplication.
      *
      * @param clsName Class name.
@@ -1348,6 +1376,20 @@ public class BinaryContext {
      */
     public void unregisterBinarySchemas() {
         schemas = null;
+    }
+
+    /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
     }
 
     /**

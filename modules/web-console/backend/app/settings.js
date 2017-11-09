@@ -54,6 +54,7 @@ module.exports.factory = function(nconf, fs) {
             dists: 'agent_dists'
         },
         server: {
+            host: nconf.get('server:host') || '127.0.0.1',
             port: _normalizePort(nconf.get('server:port') || 3000),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
@@ -64,7 +65,7 @@ module.exports.factory = function(nconf, fs) {
             }
         },
         mail,
-        mongoUrl: nconf.get('mongodb:url') || 'mongodb://localhost/console',
+        mongoUrl: nconf.get('mongodb:url') || 'mongodb://127.0.0.1/console',
         cookieTTL: 3600000 * 24 * 30,
         sessionSecret: nconf.get('server:sessionSecret') || 'keyboard cat',
         tokenLength: 20

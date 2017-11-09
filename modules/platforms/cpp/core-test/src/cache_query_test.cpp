@@ -47,7 +47,7 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Person class for query tests.
  */
-class IGNITE_IMPORT_EXPORT QueryPerson
+class QueryPerson
 {
 public:
     /**
@@ -203,7 +203,7 @@ private:
 /**
  * Relation class for query tests.
  */
-class IGNITE_IMPORT_EXPORT QueryRelation
+class QueryRelation
 {
 public:
     /**
@@ -257,6 +257,40 @@ private:
     int32_t someVal;
 };
 
+/**
+ * Byte array test type.
+ */
+struct ByteArrayType
+{
+    /**
+     * Test constructor.
+     *
+     * @param val Init value.
+     */
+    ByteArrayType(int32_t val) :
+        intVal(val),
+        arrayVal(val + 1, val + 1)
+    {
+        // No-op.
+    }
+
+    /**
+     * Default constructor.
+     */
+    ByteArrayType() :
+        intVal(0),
+        arrayVal()
+    {
+        // No-op.
+    }
+
+    /** Int field. */
+    int32_t intVal;
+
+    /** Array field. */
+    std::vector<int8_t> arrayVal;
+};
+
 namespace ignite
 {
     namespace binary
@@ -300,7 +334,7 @@ namespace ignite
             IGNITE_BINARY_IS_NULL_FALSE(QueryRelation)
             IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(QueryRelation)
 
-            static void Write(BinaryWriter& writer, QueryRelation obj)
+            static void Write(BinaryWriter& writer, const QueryRelation& obj)
             {
                 writer.WriteInt32("personId", obj.GetPersonId());
                 writer.WriteInt32("someVal", obj.GetHobbyId());
@@ -312,6 +346,32 @@ namespace ignite
                 int32_t someVal = reader.ReadInt32("someVal");
 
                 dst = QueryRelation(personId, someVal);
+            }
+        IGNITE_BINARY_TYPE_END
+
+        /**
+         * Binary type definition for ByteArrayType.
+         */
+        IGNITE_BINARY_TYPE_START(ByteArrayType)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(ByteArrayType)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(ByteArrayType)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(ByteArrayType)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ByteArrayType)
+
+            static void Write(BinaryWriter& writer, const ByteArrayType& obj)
+            {
+                writer.WriteInt32("intVal", obj.intVal);
+                writer.WriteInt8Array("arrayVal", &obj.arrayVal[0], static_cast<int32_t>(obj.arrayVal.size()));
+            }
+
+            static void Read(BinaryReader& reader, ByteArrayType& dst)
+            {
+                dst.intVal = reader.ReadInt32("intVal");
+                int32_t arrayValSize = reader.ReadInt8Array("arrayVal", 0, 0);
+
+                dst.arrayVal.resize(static_cast<size_t>(arrayValSize));
+                reader.ReadInt8Array("arrayVal", &dst.arrayVal[0], arrayValSize);
             }
         IGNITE_BINARY_TYPE_END
     }
@@ -1950,6 +2010,155 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySetSchema)
     int32_t key = row.GetNext<int32_t>();
 
     BOOST_CHECK(key == 662);
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for byte arrays.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryByteArraySelect)
+{
+    Cache<int32_t, ByteArrayType> byteArrayCache = grid.GetCache<int32_t, ByteArrayType>("ByteArrayCache");
+
+    int32_t entryCnt = 100; // Number of entries.
+
+    for (int32_t i = 0; i < entryCnt; i++)
+        byteArrayCache.Put(i, ByteArrayType(i));
+
+    SqlFieldsQuery qry("select intVal, arrayVal, intVal + 1 from ByteArrayType where _key=42");
+
+    QueryFieldsCursor cursor = byteArrayCache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t intVal1 = row.GetNext<int32_t>();
+
+    BOOST_CHECK_EQUAL(intVal1, 42);
+
+    BOOST_REQUIRE(row.HasNext());
+
+    std::vector<int8_t> arrayVal;
+    int32_t arrayValSize = row.GetNextInt8Array(0, 0);
+
+    arrayVal.resize(static_cast<size_t>(arrayValSize));
+    row.GetNextInt8Array(&arrayVal[0], arrayValSize);
+
+    BOOST_CHECK_EQUAL(arrayValSize, 43);
+
+    for (int32_t i = 0; i < arrayValSize; ++i)
+        BOOST_CHECK_EQUAL(arrayVal[i], 43);
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t intVal2 = row.GetNext<int32_t>();
+
+    BOOST_CHECK_EQUAL(intVal2, 43);
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for byte arrays.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryByteArrayInsert)
+{
+    Cache<int32_t, ByteArrayType> byteArrayCache = grid.GetCache<int32_t, ByteArrayType>("ByteArrayCache");
+
+    SqlFieldsQuery qry("insert into ByteArrayType(_key, intVal, arrayVal) values (?, ?, ?)");
+
+    int32_t entryCnt = 100; // Number of entries.
+
+    for (int32_t i = 0; i < entryCnt; i++)
+    {
+        int32_t key = i;
+        int32_t intVal = i;
+        std::vector<int8_t> arrayVal(i + 1, i + 1);
+
+        qry.AddArgument(key);
+        qry.AddArgument(intVal);
+        qry.AddInt8ArrayArgument(&arrayVal[0], i + 1);
+
+        byteArrayCache.Query(qry);
+
+        qry.ClearArguments();
+    }
+
+    ByteArrayType val = byteArrayCache.Get(42);
+
+    BOOST_CHECK_EQUAL(val.intVal, 42);
+    BOOST_CHECK_EQUAL(val.arrayVal.size(), 43);
+
+    for (int32_t i = 0; i < 43; ++i)
+        BOOST_CHECK_EQUAL(val.arrayVal[i], 43);
+}
+
+/**
+ * Test query for byte arrays.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryByteArrayInsertSelect)
+{
+    Cache<int32_t, ByteArrayType> byteArrayCache = grid.GetCache<int32_t, ByteArrayType>("ByteArrayCache");
+
+    SqlFieldsQuery qry("insert into ByteArrayType(_key, intVal, arrayVal) values (?, ?, ?)");
+
+    int32_t entryCnt = 100; // Number of entries.
+
+    for (int32_t i = 0; i < entryCnt; i++)
+    {
+        int32_t key = i;
+        int32_t intVal = i;
+        std::vector<int8_t> arrayVal(i + 1, i + 1);
+
+        qry.AddArgument(key);
+        qry.AddArgument(intVal);
+        qry.AddInt8ArrayArgument(&arrayVal[0], i + 1);
+
+        byteArrayCache.Query(qry);
+
+        qry.ClearArguments();
+    }
+
+    qry = SqlFieldsQuery("select intVal, arrayVal, intVal + 1 from ByteArrayType where _key=42");
+
+    QueryFieldsCursor cursor = byteArrayCache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t intVal1 = row.GetNext<int32_t>();
+
+    BOOST_CHECK_EQUAL(intVal1, 42);
+
+    BOOST_REQUIRE(row.HasNext());
+
+    std::vector<int8_t> arrayVal;
+    int32_t arrayValSize = row.GetNextInt8Array(0, 0);
+
+    arrayVal.resize(static_cast<size_t>(arrayValSize));
+    row.GetNextInt8Array(&arrayVal[0], arrayValSize);
+
+    BOOST_CHECK_EQUAL(arrayValSize, 43);
+
+    for (int32_t i = 0; i < arrayValSize; ++i)
+        BOOST_CHECK_EQUAL(arrayVal[i], 43);
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int32_t intVal2 = row.GetNext<int32_t>();
+
+    BOOST_CHECK_EQUAL(intVal2, 43);
 
     BOOST_REQUIRE(!row.HasNext());
 

@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : PlatformTarget, IIgnite, ICluster
+    internal class Ignite : PlatformTargetAdapter, ICluster, IIgniteInternal, IIgnite
     {
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.
@@ -92,7 +93,7 @@ namespace Apache.Ignite.Core.Impl
         private readonly string _name;
 
         /** Unmanaged node. */
-        private readonly IUnmanagedTarget _proc;
+        private readonly IPlatformTargetInternal _proc;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -138,8 +139,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="marsh">Marshaller.</param>
         /// <param name="lifecycleHandlers">Lifecycle beans.</param>
         /// <param name="cbs">Callbacks.</param>
-        public Ignite(IgniteConfiguration cfg, string name, IUnmanagedTarget proc, Marshaller marsh,
-            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc, marsh)
+        public Ignite(IgniteConfiguration cfg, string name, IPlatformTargetInternal proc, Marshaller marsh,
+            IList<LifecycleHandlerHolder> lifecycleHandlers, UnmanagedCallbacks cbs) : base(proc)
         {
             Debug.Assert(cfg != null);
             Debug.Assert(proc != null);
@@ -156,17 +157,17 @@ namespace Apache.Ignite.Core.Impl
 
             marsh.Ignite = this;
 
-            _prj = new ClusterGroupImpl(DoOutOpObject((int) Op.GetClusterGroup), this, null);
+            _prj = new ClusterGroupImpl(Target.OutObjectInternal((int) Op.GetClusterGroup), null);
 
             _binary = new Binary.Binary(marsh);
 
-            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor), marsh);
+            _binaryProc = new BinaryProcessor(DoOutOpObject((int) Op.GetBinaryProcessor));
 
             cbs.Initialize(this);
 
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
-                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), marsh, GetLocalNode().Id));
+                () => new TransactionsImpl(DoOutOpObject((int) Op.GetTransactions), GetLocalNode().Id));
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
@@ -210,7 +211,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-
         public ICluster GetCluster()
         {
             return this;
@@ -380,7 +380,14 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="cancel">Cancel flag.</param>
         internal unsafe void Stop(bool cancel)
         {
-            UU.IgnitionStop(_proc.Context, Name, cancel);
+            var jniTarget = _proc as PlatformJniTarget;
+
+            if (jniTarget == null)
+            {
+                throw new IgniteException("Ignition.Stop is not supported in thin client.");
+            }
+
+            UU.IgnitionStop(jniTarget.Target.Context, Name, cancel);
 
             _cbs.Cleanup();
         }
@@ -507,9 +514,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// New instance of cache wrapping specified native cache.
         /// </returns>
-        public ICache<TK, TV> GetCache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
+        public static ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */
@@ -561,7 +568,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the data streamer.
         /// </summary>
-        internal IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             var streamerTarget = DoOutOpObject((int) Op.GetDataStreamer, w =>
             {
@@ -570,6 +577,14 @@ namespace Apache.Ignite.Core.Impl
             });
 
             return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
+        }
+
+        /// <summary>
+        /// Gets the public Ignite interface.
+        /// </summary>
+        public IIgnite GetIgnite()
+        {
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -585,7 +600,7 @@ namespace Apache.Ignite.Core.Impl
 
             var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
             
-            return new CacheAffinityImpl(aff, _marsh, false, this);
+            return new CacheAffinityImpl(aff, false);
         }
 
         /** <inheritdoc /> */
@@ -627,7 +642,7 @@ namespace Apache.Ignite.Core.Impl
             if (nativeLong == null)
                 return null;
 
-            return new AtomicLong(nativeLong, Marshaller, name);
+            return new AtomicLong(nativeLong, name);
         }
 
         /** <inheritdoc /> */
@@ -645,7 +660,7 @@ namespace Apache.Ignite.Core.Impl
             if (nativeSeq == null)
                 return null;
 
-            return new AtomicSequence(nativeSeq, Marshaller, name);
+            return new AtomicSequence(nativeSeq, name);
         }
 
         /** <inheritdoc /> */
@@ -660,7 +675,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteBoolean(create);
             });
 
-            return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
+            return refTarget == null ? null : new AtomicReference<T>(refTarget, name);
         }
 
         /** <inheritdoc /> */
@@ -685,7 +700,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<string> GetCacheNames()
         {
-            return OutStream((int) Op.GetCacheNames, r =>
+            return Target.OutStream((int) Op.GetCacheNames, r =>
             {
                 var res = new string[r.ReadInt()];
 
@@ -737,6 +752,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return _prj.GetMemoryMetrics();
@@ -749,6 +765,7 @@ namespace Apache.Ignite.Core.Impl
 
             return _prj.GetMemoryMetrics(memoryPolicyName);
         }
+#pragma warning restore 618
 
         /** <inheritdoc /> */
         public void SetActive(bool isActive)
@@ -763,9 +780,29 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return _prj.GetPersistentStoreMetrics();
+        }
+#pragma warning restore 618
+
+        /** <inheritdoc /> */
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return _prj.GetDataRegionMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return _prj.GetDataRegionMetrics(memoryPolicyName);
+        }
+
+        /** <inheritdoc /> */
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return _prj.GetDataStorageMetrics();
         }
 
         /// <summary>
@@ -789,7 +826,7 @@ namespace Apache.Ignite.Core.Impl
         /// Gets internal projection.
         /// </summary>
         /// <returns>Projection.</returns>
-        internal ClusterGroupImpl ClusterGroup
+        public ClusterGroupImpl ClusterGroup
         {
             get { return _prj; }
         }
@@ -797,7 +834,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        internal BinaryProcessor BinaryProcessor
+        public IBinaryProcessor BinaryProcessor
         {
             get { return _binaryProc; }
         }
@@ -805,7 +842,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Configuration.
         /// </summary>
-        internal IgniteConfiguration Configuration
+        public IgniteConfiguration Configuration
         {
             get { return _cfg; }
         }
@@ -848,7 +885,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the interop processor.
         /// </summary>
-        internal IUnmanagedTarget InteropProcessor
+        internal IPlatformTargetInternal InteropProcessor
         {
             get { return _proc; }
         }
@@ -881,7 +918,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the plugin processor.
         /// </summary>
-        internal PluginProcessor PluginProcessor
+        public PluginProcessor PluginProcessor
         {
             get { return _pluginProcessor; }
         }
@@ -891,7 +928,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void ProcessorReleaseStart()
         {
-            InLongOutLong((int) Op.ReleaseStart, 0);
+            Target.InLongOutLong((int) Op.ReleaseStart, 0);
         }
 
         /// <summary>
@@ -899,7 +936,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal bool LoggerIsLevelEnabled(LogLevel logLevel)
         {
-            return InLongOutLong((int) Op.LoggerIsLevelEnabled, (long) logLevel) == True;
+            return Target.InLongOutLong((int) Op.LoggerIsLevelEnabled, (long) logLevel) == True;
         }
 
         /// <summary>
@@ -907,7 +944,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void LoggerLog(LogLevel level, string msg, string category, string err)
         {
-            InStreamOutLong((int) Op.LoggerLog, w =>
+            Target.InStreamOutLong((int) Op.LoggerLog, w =>
             {
                 w.WriteInt((int) level);
                 w.WriteString(msg);
@@ -921,7 +958,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal IPlatformTarget GetExtension(int id)
         {
-            return InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
+            return ((IPlatformTarget) Target).InStreamOutObject((int) Op.GetExtension, w => w.WriteInt(id));
         }
     }
 }

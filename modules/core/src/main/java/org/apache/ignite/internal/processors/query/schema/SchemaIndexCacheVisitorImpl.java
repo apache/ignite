@@ -17,22 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -110,14 +109,20 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
 
         try {
-            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor();
+            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(cctx.cacheId(),
+                null,
+                null,
+                CacheDataRowAdapter.RowData.KEY_ONLY);
 
             while (cursor.next()) {
                 CacheDataRow row = cursor.get();
 
                 KeyCacheObject key = row.key();
 
-                processKey(key, row.link(), clo);
+                processKey(key, clo);
+
+                if (part.state() == RENTING)
+                    break;
             }
         }
         finally {
@@ -129,11 +134,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Process single key.
      *
      * @param key Key.
-     * @param link Link.
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processKey(KeyCacheObject key, long link, FilteringVisitorClosure clo) throws IgniteCheckedException {
+    private void processKey(KeyCacheObject key, FilteringVisitorClosure clo) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
@@ -141,12 +145,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(clo, link);
+                    entry.updateIndex(clo);
                 }
                 finally {
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
                 }
 
+                break;
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
                 break;
             }
             catch (GridCacheEntryRemovedException ignored) {
@@ -183,15 +190,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
          *
          * @param target Target.
          */
-        public FilteringVisitorClosure(SchemaIndexCacheVisitorClosure target) {
+        FilteringVisitorClosure(SchemaIndexCacheVisitorClosure target) {
             this.target = target;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
-            long expiration, long link) throws IgniteCheckedException {
-            if (qryProc.belongsToTable(cctx, cacheName, tblName, key, val))
-                target.apply(key, part, val, ver, expiration, link);
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            if (qryProc.belongsToTable(cctx, cacheName, tblName, row.key(), row.value()))
+                target.apply(row);
         }
     }
 }

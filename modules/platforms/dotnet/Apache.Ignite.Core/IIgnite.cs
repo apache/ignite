@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
@@ -39,9 +40,9 @@ namespace Apache.Ignite.Core
 
     /// <summary>
     /// Main entry point for all Ignite APIs.
-    /// You can obtain an instance of <c>IGrid</c> through <see cref="Ignition.GetIgnite()"/>,
+    /// You can obtain an instance of <see cref="IIgnite"/> through <see cref="Ignition.GetIgnite()"/>,
     /// or for named grids you can use <see cref="Ignition.GetIgnite(string)"/>. Note that you
-    /// can have multiple instances of <c>IGrid</c> running in the same process by giving
+    /// can have multiple instances of <see cref="IIgnite"/> running in the same process by giving
     /// each instance a different name.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
@@ -336,7 +337,10 @@ namespace Apache.Ignite.Core
         /// Gets a collection of memory metrics, one for each <see cref="MemoryConfiguration.MemoryPolicies"/>.
         /// <para />
         /// Memory metrics should be enabled with <see cref="MemoryPolicyConfiguration.MetricsEnabled"/>.
+        /// <para />
+        /// Obsolete, use <see cref="GetDataRegionMetrics()"/>.
         /// </summary>
+        [Obsolete("Use GetDataRegionMetrics.")]
         ICollection<IMemoryMetrics> GetMemoryMetrics();
 
         /// <summary>
@@ -344,8 +348,11 @@ namespace Apache.Ignite.Core
         /// <para />
         /// To get metrics for the default memory region,
         /// use <see cref="MemoryConfiguration.DefaultMemoryPolicyName"/>.
+        /// <para />
+        /// Obsolete, use <see cref="GetDataRegionMetrics(string)"/>.
         /// </summary>
         /// <param name="memoryPolicyName">Name of the memory policy.</param>
+        [Obsolete("Use GetDataRegionMetrics.")]
         IMemoryMetrics GetMemoryMetrics(string memoryPolicyName);
 
         /// <summary>
@@ -367,6 +374,32 @@ namespace Apache.Ignite.Core
         /// To enable metrics set <see cref="PersistentStoreConfiguration.MetricsEnabled"/> property
         /// in <see cref="IgniteConfiguration.PersistentStoreConfiguration"/>.
         /// </summary>
+        [Obsolete("Use GetDataStorageMetrics.")]
         IPersistentStoreMetrics GetPersistentStoreMetrics();
+
+        /// <summary>
+        /// Gets a collection of memory metrics, one for each 
+        /// <see cref="DataStorageConfiguration.DataRegionConfigurations"/>.
+        /// <para />
+        /// Metrics should be enabled with <see cref="DataStorageConfiguration.MetricsEnabled"/>.
+        /// </summary>
+        ICollection<IDataRegionMetrics> GetDataRegionMetrics();
+
+        /// <summary>
+        /// Gets the memory metrics for the specified data region.
+        /// <para />
+        /// To get metrics for the default memory region,
+        /// use <see cref="DataStorageConfiguration.DefaultDataRegionName"/>.
+        /// </summary>
+        /// <param name="dataRegionName">Name of the data region.</param>
+        IDataRegionMetrics GetDataRegionMetrics(string dataRegionName);
+
+        /// <summary>
+        /// Gets the persistent store metrics.
+        /// <para />
+        /// To enable metrics set <see cref="DataStorageConfiguration.MetricsEnabled"/> property
+        /// in <see cref="IgniteConfiguration.DataStorageConfiguration"/>.
+        /// </summary>
+        IDataStorageMetrics GetDataStorageMetrics();
     }
 }

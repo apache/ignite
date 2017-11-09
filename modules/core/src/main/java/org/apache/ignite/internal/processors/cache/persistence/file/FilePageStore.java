@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
@@ -45,7 +48,7 @@ public class FilePageStore implements PageStore {
     private static final long SIGNATURE = 0xF19AC4FE60C530B8L;
 
     /** File version. */
-    private static final int VERSION = 1;
+    public static final int VERSION = 1;
 
     /** Allocated field offset. */
     public static final int HEADER_SIZE = 8/*SIGNATURE*/ + 4/*VERSION*/ + 1/*type*/ + 4/*page size*/;
@@ -57,7 +60,7 @@ public class FilePageStore implements PageStore {
     private final byte type;
 
     /** Database configuration. */
-    private final MemoryConfiguration dbCfg;
+    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -89,7 +92,7 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, MemoryConfiguration cfg) {
+    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
         this.type = type;
 
         cfgFile = file;
@@ -103,20 +106,36 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        return cfgFile.exists() && cfgFile.length() > HEADER_SIZE;
+        return cfgFile.exists() && cfgFile.length() > headerSize();
     }
 
     /**
+     * Size of page store header.
+     */
+    public int headerSize() {
+        return HEADER_SIZE;
+    }
+
+    /**
+     * Page store version.
+     */
+    public int version() {
+        return VERSION;
+    }
+
+    /**
+     * Creates header for current version file store. Doesn't init the store.
+     *
      * @param type Type.
      * @param pageSize Page size.
      * @return Byte buffer instance.
      */
-    public static ByteBuffer header(byte type, int pageSize) {
-        ByteBuffer hdr = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+    public ByteBuffer header(byte type, int pageSize) {
+        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
         hdr.putLong(SIGNATURE);
 
-        hdr.putInt(VERSION);
+        hdr.putInt(version());
 
         hdr.put(type);
 
@@ -142,7 +161,7 @@ public class FilePageStore implements PageStore {
         }
 
         //there is 'super' page in every file
-        return HEADER_SIZE + dbCfg.getPageSize();
+        return headerSize() + dbCfg.getPageSize();
     }
 
     /**
@@ -150,7 +169,7 @@ public class FilePageStore implements PageStore {
      */
     private long checkFile() throws IgniteCheckedException {
         try {
-            ByteBuffer hdr = ByteBuffer.allocate(HEADER_SIZE).order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
             while (hdr.remaining() > 0)
                 fileIO.read(hdr);
@@ -166,9 +185,9 @@ public class FilePageStore implements PageStore {
 
             int ver = hdr.getInt();
 
-            if (VERSION != ver)
+            if (version() != ver)
                 throw new IgniteCheckedException("Failed to verify store file (invalid file version)" +
-                    " [expectedVersion=" + VERSION +
+                    " [expectedVersion=" + version() +
                     ", fileVersion=" + ver + "]");
 
             byte type = hdr.get();
@@ -187,10 +206,10 @@ public class FilePageStore implements PageStore {
 
             long fileSize = cfgFile.length();
 
-            if (fileSize == HEADER_SIZE) // Every file has a special meta page.
-                fileSize = pageSize + HEADER_SIZE;
+            if (fileSize == headerSize()) // Every file has a special meta page.
+                fileSize = pageSize + headerSize();
 
-            if ((fileSize - HEADER_SIZE) % pageSize != 0)
+            if ((fileSize - headerSize()) % pageSize != 0)
                 throw new IgniteCheckedException("Failed to verify store file (invalid file size)" +
                     " [fileSize=" + U.hexLong(fileSize) +
                     ", pageSize=" + U.hexLong(pageSize) + ']');
@@ -346,9 +365,9 @@ public class FilePageStore implements PageStore {
         init();
 
         try {
-            assert buf.remaining() == HEADER_SIZE;
+            assert buf.remaining() == headerSize();
 
-            int len = HEADER_SIZE;
+            int len = headerSize();
 
             long off = 0;
 
@@ -384,7 +403,7 @@ public class FilePageStore implements PageStore {
                     IgniteCheckedException err = null;
 
                     try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, "rw");
+                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
                         if (cfgFile.length() == 0)
                             allocated.set(initFile());
@@ -425,7 +444,7 @@ public class FilePageStore implements PageStore {
 
             long off = pageOffset(pageId);
 
-            assert (off >= 0 && off + pageSize <= allocated.get() + HEADER_SIZE) || recover :
+            assert (off >= 0 && off + pageSize <= allocated.get() + headerSize()) || recover :
                 "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
             assert pageBuf.capacity() == pageSize;
@@ -463,7 +482,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public long pageOffset(long pageId) {
-        return (long) PageIdUtils.pageIndex(pageId) * pageSize + HEADER_SIZE;
+        return (long) PageIdUtils.pageIndex(pageId) * pageSize + headerSize();
     }
 
     /** {@inheritDoc} */
@@ -494,7 +513,7 @@ public class FilePageStore implements PageStore {
 
         long off = allocPage();
 
-        return off / pageSize;
+        return (off - headerSize()) / pageSize;
     }
 
     /**
@@ -519,6 +538,6 @@ public class FilePageStore implements PageStore {
         if (!inited)
             return 0;
 
-        return (int)(allocated.get() / pageSize);
+        return (int)((allocated.get() - headerSize()) / pageSize);
     }
 }

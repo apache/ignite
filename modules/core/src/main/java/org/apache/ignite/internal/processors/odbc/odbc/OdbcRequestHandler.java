@@ -22,42 +22,46 @@ import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequestHandler;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.MORE_RESULTS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_EXEC_BATCH;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_FETCH;
 
 /**
  * SQL query handler.
  */
-public class OdbcRequestHandler implements SqlListenerRequestHandler {
+public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
-
-    /** Batch query ID sequence. */
-    private static final AtomicLong BATCH_QRY_ID_GEN = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -72,7 +76,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private final int maxCursors;
 
     /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, OdbcQueryResults> qryResults = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -86,6 +90,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     /** Collocated flag. */
     private final boolean collocated;
 
+    /** Lazy flag. */
+    private final boolean lazy;
+
+    /** Update on server flag. */
+    private final boolean skipReducerOnUpdate;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -95,10 +105,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
+     * @param lazy Lazy flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-                              boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-                              boolean collocated) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
+        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -106,18 +118,20 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         this.enforceJoinOrder = enforceJoinOrder;
         this.replicatedOnly = replicatedOnly;
         this.collocated = collocated;
+        this.lazy = lazy;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
 
         log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handle(SqlListenerRequest req0) {
+    @Override public ClientListenerResponse handle(ClientListenerRequest req0) {
         assert req0 != null;
 
         OdbcRequest req = (OdbcRequest)req0;
 
         if (!busyLock.enterBusy())
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+            return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to handle ODBC request because node is stopping: " + req);
 
         try {
@@ -142,9 +156,12 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
                 case META_PARAMS:
                     return getParamsMeta((OdbcQueryGetParamsMetaRequest)req);
+
+                case MORE_RESULTS:
+                    return moreResults((OdbcQueryMoreResultsRequest)req);
             }
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
+            return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
             busyLock.leaveBusy();
@@ -152,8 +169,54 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerResponse handleException(Exception e) {
-        return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+        return exceptionToResult(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+        writer.writeBoolean(true);
+    }
+
+    /**
+     * Called whenever client is disconnected due to correct connection close
+     * or due to {@code IOException} during network operations.
+     */
+    public void onDisconnect() {
+        if (busyLock.enterBusy())
+        {
+            try
+            {
+                for (OdbcQueryResults res : qryResults.values())
+                    res.closeAll();
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }
+    }
+
+    /**
+     * Make query considering handler configuration.
+     * @param schema Schema.
+     * @param sql SQL request.
+     * @param args Arguments.
+     * @return Query instance.
+     */
+    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args) {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        qry.setArgs(args);
+
+        qry.setDistributedJoins(distributedJoins);
+        qry.setEnforceJoinOrder(enforceJoinOrder);
+        qry.setReplicatedOnly(replicatedOnly);
+        qry.setCollocated(collocated);
+        qry.setLazy(lazy);
+        qry.setSchema(schema);
+        qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
+
+        return qry;
     }
 
     /**
@@ -162,13 +225,14 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    private SqlListenerResponse executeQuery(OdbcQueryExecuteRequest req) {
-        int cursorCnt = qryCursors.size();
+    private ClientListenerResponse executeQuery(OdbcQueryExecuteRequest req) {
+        int cursorCnt = qryResults.size();
 
         if (maxCursors > 0 && cursorCnt >= maxCursors)
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, "Too many opened cursors (either close other " +
-                "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
-                "[maximum=" + maxCursors + ", current=" + cursorCnt + ']');
+            return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Too many open cursors (either close " +
+                "other open cursors or increase the limit through " +
+                "ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + cursorCnt + ']');
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 
@@ -179,32 +243,28 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
-            qry.setArgs(req.arguments());
+            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFieldsNoCache(qry, true, false);
 
-            qry.setDistributedJoins(distributedJoins);
-            qry.setEnforceJoinOrder(enforceJoinOrder);
-            qry.setReplicatedOnly(replicatedOnly);
-            qry.setCollocated(collocated);
-            qry.setSchema(req.schema());
+            OdbcQueryResults results = new OdbcQueryResults(cursors);
 
-            QueryCursor qryCur = ctx.query().querySqlFieldsNoCache(qry, true);
+            if (!results.hasUnfetchedRows())
+                results.closeAll();
+            else
+                qryResults.put(qryId, results);
 
-            qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
-
-            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
-
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, results.currentResultSet().fieldsMeta(),
+                results.rowsAffected());
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCursors.remove(qryId);
+            qryResults.remove(qryId);
 
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
         }
     }
 
@@ -214,8 +274,8 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    private SqlListenerResponse executeBatchQuery(OdbcQueryExecuteBatchRequest req) {
-        long rowsAffected = 0;
+    private ClientListenerResponse executeBatchQuery(OdbcQueryExecuteBatchRequest req) {
+        List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
         int currentSet = 0;
 
         try {
@@ -225,11 +285,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
-
-            qry.setDistributedJoins(distributedJoins);
-            qry.setEnforceJoinOrder(enforceJoinOrder);
-            qry.setSchema(req.schema());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
 
             Object[][] paramSet = req.arguments();
 
@@ -246,10 +302,10 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
                 throw new IgniteException("Batching of parameters only supported for DML statements. [query=" +
                         req.sqlQuery() + ']');
 
-            rowsAffected += getRowsAffected(qryCur);
+            rowsAffected.add(OdbcUtils.rowsAffected(qryCur));
 
             for (currentSet = 1; currentSet < paramSet.length; ++currentSet)
-                rowsAffected += executeQuery(qry, paramSet[currentSet]);
+                rowsAffected.add(executeQuery(qry, paramSet[currentSet]));
 
             OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected);
 
@@ -258,10 +314,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to execute SQL query [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
-                    e.getMessage());
-
-            return new OdbcResponse(res);
+            return exceptionToBatchResult(e, rowsAffected, currentSet);
         }
     }
 
@@ -276,29 +329,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
 
         QueryCursor<List<?>> cur = ctx.query().querySqlFieldsNoCache(qry, true);
 
-        return getRowsAffected(cur);
-    }
-
-    /**
-     * Get affected rows for DML statement.
-     * @param qryCur Cursor.
-     * @return Number of table rows affected.
-     */
-    private static long getRowsAffected(QueryCursor<List<?>> qryCur) {
-        Iterator<List<?>> iter = qryCur.iterator();
-
-        if (iter.hasNext()) {
-            List<?> res = iter.next();
-
-            if (res.size() > 0) {
-                Long affected = (Long) res.get(0);
-
-                if (affected != null)
-                    return affected;
-            }
-        }
-
-        return 0;
+        return OdbcUtils.rowsAffected(cur);
     }
 
     /**
@@ -307,28 +338,28 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    private SqlListenerResponse closeQuery(OdbcQueryCloseRequest req) {
+    private ClientListenerResponse closeQuery(OdbcQueryCloseRequest req) {
         long queryId = req.queryId();
 
         try {
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(queryId);
+            OdbcQueryResults results = qryResults.get(queryId);
 
-            if (tuple == null)
-                return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
+            if (results == null)
+                return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to find query with ID: " + queryId);
 
-            CloseCursor(tuple, queryId);
+            CloseCursor(results, queryId);
 
             OdbcQueryCloseResult res = new OdbcQueryCloseResult(queryId);
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCursors.remove(queryId);
+            qryResults.remove(queryId);
 
             U.error(log, "Failed to close SQL query [reqId=" + req.requestId() + ", req=" + queryId + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
         }
     }
 
@@ -338,37 +369,24 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Execute query request.
      * @return Response.
      */
-    private SqlListenerResponse fetchQuery(OdbcQueryFetchRequest req) {
+    private ClientListenerResponse fetchQuery(OdbcQueryFetchRequest req) {
         try {
             long queryId = req.queryId();
-            IgniteBiTuple<QueryCursor, Iterator> tuple = qryCursors.get(queryId);
+            OdbcQueryResults results = qryResults.get(queryId);
 
-            if (tuple == null)
-                return new OdbcResponse(SqlListenerResponse.STATUS_FAILED,
+            if (results == null)
+                return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
                     "Failed to find query with ID: " + queryId);
 
-            Iterator iter = tuple.get2();
+            OdbcResultSet set = results.currentResultSet();
 
-            if (iter == null) {
-                QueryCursor cur = tuple.get1();
+            List<Object> items = set.fetch(req.pageSize());
 
-                assert(cur != null);
-
-                iter = cur.iterator();
-
-                tuple.put(cur, iter);
-            }
-
-            List<Object> items = new ArrayList<>();
-
-            for (int i = 0; i < req.pageSize() && iter.hasNext(); ++i)
-                items.add(iter.next());
-
-            boolean lastPage = !iter.hasNext();
+            boolean lastPage = !set.hasUnfetchedRows();
 
             // Automatically closing cursor if no more data is available.
-            if (lastPage)
-                CloseCursor(tuple, queryId);
+            if (!results.hasUnfetchedRows())
+                CloseCursor(results, queryId);
 
             OdbcQueryFetchResult res = new OdbcQueryFetchResult(queryId, items, lastPage);
 
@@ -377,7 +395,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
         }
     }
 
@@ -387,7 +405,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
-    private SqlListenerResponse getColumnsMeta(OdbcQueryGetColumnsMetaRequest req) {
+    private ClientListenerResponse getColumnsMeta(OdbcQueryGetColumnsMetaRequest req) {
         try {
             List<OdbcColumnMeta> meta = new ArrayList<>();
 
@@ -442,7 +460,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
         }
     }
 
@@ -452,7 +470,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Get tables metadata request.
      * @return Response.
      */
-    private SqlListenerResponse getTablesMeta(OdbcQueryGetTablesMetaRequest req) {
+    private ClientListenerResponse getTablesMeta(OdbcQueryGetTablesMetaRequest req) {
         try {
             List<OdbcTableMeta> meta = new ArrayList<>();
 
@@ -490,7 +508,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
         }
     }
 
@@ -500,7 +518,7 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
      * @param req Get params metadata request.
      * @return Response.
      */
-    private SqlListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
+    private ClientListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
             PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(req.schema(), req.query());
 
@@ -521,23 +539,60 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
-            return new OdbcResponse(SqlListenerResponse.STATUS_FAILED, e.toString());
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * {@link OdbcQueryMoreResultsRequest} command handler.
+     *
+     * @param req Execute query request.
+     * @return Response.
+     */
+    private ClientListenerResponse moreResults(OdbcQueryMoreResultsRequest req) {
+        try {
+            long queryId = req.queryId();
+            OdbcQueryResults results = qryResults.get(queryId);
+
+            if (results == null)
+                return new OdbcResponse(ClientListenerResponse.STATUS_FAILED,
+                    "Failed to find query with ID: " + queryId);
+
+            results.nextResultSet();
+
+            OdbcResultSet set = results.currentResultSet();
+
+            List<Object> items = set.fetch(req.pageSize());
+
+            boolean lastPage = !set.hasUnfetchedRows();
+
+            // Automatically closing cursor if no more data is available.
+            if (!results.hasUnfetchedRows())
+                CloseCursor(results, queryId);
+
+            OdbcQueryMoreResultsResult res = new OdbcQueryMoreResultsResult(queryId, items, lastPage);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get more SQL query results [reqId=" +
+                req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
         }
     }
 
     /**
      * Close cursor.
-     * @param tuple Query map element.
+     * @param results Query map element.
      * @param queryId Query ID.
      */
-    private void CloseCursor(IgniteBiTuple<QueryCursor, Iterator> tuple, long queryId) {
-        QueryCursor cur = tuple.get1();
+    private void CloseCursor(OdbcQueryResults results, long queryId) {
+        assert(results != null);
 
-        assert(cur != null);
+        results.closeAll();
 
-        cur.close();
-
-        qryCursors.remove(queryId);
+        qryResults.remove(queryId);
     }
 
     /**
@@ -600,27 +655,6 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     }
 
     /**
-     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link OdbcColumnMeta}.
-     *
-     * @param meta Internal query field metadata.
-     * @return Odbc query field metadata.
-     */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
-        List<OdbcColumnMeta> res = new ArrayList<>();
-
-        if (meta != null) {
-            for (Object info : meta) {
-                assert info instanceof GridQueryFieldMetadata;
-
-                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
-            }
-        }
-
-        return res;
-    }
-
-    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -630,5 +664,30 @@ public class OdbcRequestHandler implements SqlListenerRequestHandler {
     private static boolean matches(String str, String ptrn) {
         return str != null && (F.isEmpty(ptrn) ||
             str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+    }
+
+    /**
+     * Create {@link OdbcResponse} bearing appropriate Ignite specific result code if possible
+     *     from given {@link Exception}.
+     *
+     * @param e Exception to convert.
+     * @return resulting {@link OdbcResponse}.
+     */
+    private OdbcResponse exceptionToBatchResult(Exception e, Collection<Long> rowsAffected, long currentSet) {
+        OdbcQueryExecuteBatchResult res = new OdbcQueryExecuteBatchResult(rowsAffected, currentSet,
+            OdbcUtils.tryRetrieveSqlErrorCode(e), OdbcUtils.tryRetrieveH2ErrorMessage(e));
+
+        return new OdbcResponse(res);
+    }
+
+    /**
+     * Create {@link OdbcResponse} bearing appropriate Ignite specific result code if possible
+     *     from given {@link Exception}.
+     *
+     * @param e Exception to convert.
+     * @return resulting {@link OdbcResponse}.
+     */
+    private OdbcResponse exceptionToResult(Exception e) {
+        return new OdbcResponse(OdbcUtils.tryRetrieveSqlErrorCode(e), OdbcUtils.tryRetrieveH2ErrorMessage(e));
     }
 }

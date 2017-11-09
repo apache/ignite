@@ -20,12 +20,10 @@ package org.apache.ignite.ml.math.impls.storage.matrix;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,11 +31,14 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.impls.CacheUtils;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
 
@@ -46,9 +47,9 @@ import static org.apache.ignite.ml.math.impls.matrix.BlockEntry.MAX_BLOCK_SIZE;
 /**
  * Storage for {@link SparseBlockDistributedMatrix}.
  */
-public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
+public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<BlockMatrixKey> {
     /** Cache name used for all instances of {@link BlockMatrixStorage}. */
-    public static final String ML_BLOCK_CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
+    private static final String CACHE_NAME = "ML_BLOCK_SPARSE_MATRICES_CONTAINER";
     /** */
     private int blocksInCol;
     /** */
@@ -86,10 +87,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         this.rows = rows;
         this.cols = cols;
 
-        //cols % maxBlockEdge > 0 ? 1 : 0
-
-        this.blocksInRow = cols % maxBlockEdge == 0 ? cols / maxBlockEdge : cols / maxBlockEdge + 1;
-        this.blocksInCol = rows % maxBlockEdge == 0 ? rows / maxBlockEdge : rows / maxBlockEdge + 1;
+        this.blocksInRow = rows % maxBlockEdge == 0 ? rows / maxBlockEdge : rows / maxBlockEdge + 1;
+        this.blocksInCol = cols % maxBlockEdge == 0 ? cols / maxBlockEdge : cols / maxBlockEdge + 1;
 
         cache = newCache();
 
@@ -121,6 +120,30 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return UNKNOWN_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return RANDOM_ACCESS_MODE;
+    }
+
+    /**
+     * @return Blocks in column.
+     */
+    public int blocksInCol() {
+        return blocksInCol;
+    }
+
+    /**
+     * @return Blocks in row.
+     */
+    public int blocksInRow() {
+        return blocksInRow;
     }
 
     /** {@inheritDoc} */
@@ -170,37 +193,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
 
     /** Delete all data from cache. */
     @Override public void destroy() {
-        long maxBlockId = getBlockId(cols, rows);
-
-        Set<BlockMatrixKey> keyset = LongStream.rangeClosed(0, maxBlockId).mapToObj(this::getCacheKey).collect(Collectors.toSet());
-
-        cache.clearAll(keyset);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + cols;
-        res = res * 37 + rows;
-        res = res * 37 + uuid.hashCode();
-        res = res * 37 + cache.hashCode();
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-
-        BlockMatrixStorage that = (BlockMatrixStorage)obj;
-
-        return rows == that.rows && cols == that.cols && uuid.equals(that.uuid)
-            && (cache != null ? cache.equals(that.cache) : that.cache == null);
+        cache.clearAll(getAllKeys());
     }
 
     /**
@@ -213,115 +206,147 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
     }
 
     /**
-     * Build the cache key for the given block id
+     * Build the cache key for the given blocks id.
+     *
+     * NB: NOT cell indices.
      */
-    public BlockMatrixKey getCacheKey(long blockId) {
-        return new BlockMatrixKey(blockId, uuid, getAffinityKey(blockId));
+    public BlockMatrixKey getCacheKey(long blockIdRow, long blockIdCol) {
+        return new BlockMatrixKey(blockIdRow, blockIdCol, uuid, getAffinityKey(blockIdRow, blockIdCol));
+    }
+
+    /**
+     * Build the cache key for the given blocks id.
+     *
+     * NB: NOT cell indices.
+     */
+    public BlockMatrixKey getCacheKey(IgnitePair<Long> blockId) {
+        return new BlockMatrixKey(blockId.get1(), blockId.get2(), uuid, getAffinityKey(blockId.get1(), blockId.get2()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<BlockMatrixKey> getAllKeys() {
+        int maxRowIdx = rows - 1;
+        int maxColIdx = cols - 1;
+        IgnitePair<Long> maxBlockId = getBlockId(maxRowIdx, maxColIdx);
+
+        Set<BlockMatrixKey> keyset = new HashSet<>();
+
+        for(int i = 0; i <= maxBlockId.get1(); i++)
+            for(int j = 0; j <= maxBlockId.get2(); j++)
+                keyset.add(getCacheKey(i,j));
+
+        return keyset;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return CACHE_NAME;
     }
 
     /**
      * Get rows for current block.
      *
      * @param blockId block id.
-     * @param storageC result storage.
      * @return The list of block entries.
      */
-    public List<BlockEntry> getRowForBlock(long blockId, BlockMatrixStorage storageC) {
-        long blockRow = blockId / storageC.blocksInCol;
-        long blockCol = blockId % storageC.blocksInRow;
+    public List<BlockEntry> getRowForBlock(IgnitePair<Long> blockId) {
+        List<BlockEntry> res = new LinkedList<>();
 
-        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) : blockCol);
+        for (int i = 0; i < blocksInCol; i++)
+            res.add(getEntryById(new IgnitePair<>(blockId.get1(), (long) i)));
 
-        return getRowForBlock(locBlock);
+
+        return res;
     }
 
     /**
      * Get cols for current block.
      *
      * @param blockId block id.
-     * @param storageC result storage.
      * @return The list of block entries.
      */
-    public List<BlockEntry> getColForBlock(long blockId, BlockMatrixStorage storageC) {
-        long blockRow = blockId / storageC.blocksInCol;
-        long blockCol = blockId % storageC.blocksInRow;
-
-        long locBlock = this.blocksInRow * (blockRow) + (blockCol >= this.blocksInRow ? (blocksInRow - 1) : blockCol);
-
-        return getColForBlock(locBlock);
-    }
-
-    /**
-     * Build a keyset for this matrix storage.
-     */
-    public Collection<BlockMatrixKey> getAllKeys() {
-        long maxBlockId = numberOfBlocks();
-        Collection<BlockMatrixKey> keys = new LinkedList<>();
-
-        for (long id = 0; id < maxBlockId; id++)
-            keys.add(getCacheKey(id));
-
-        return keys;
-    }
-
-    /** */
-    private List<BlockEntry> getRowForBlock(long blockId) {
+    public List<BlockEntry> getColForBlock(IgnitePair<Long> blockId) {
         List<BlockEntry> res = new LinkedList<>();
 
-        boolean isFirstRow = blockId < blocksInRow;
-
-        long startBlock = isFirstRow ? 0 : blockId - blockId % blocksInRow;
-        long endBlock = startBlock + blocksInRow - 1;
-
-        for (long i = startBlock; i <= endBlock; i++)
-            res.add(getEntryById(i));
+        for (int i = 0; i < blocksInRow; i++)
+            res.add(getEntryById(new IgnitePair<>((long) i, blockId.get2())));
 
         return res;
     }
 
-    /** */
-    private List<BlockEntry> getColForBlock(long blockId) {
-        List<BlockEntry> res = new LinkedList<>();
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = blocksInCol;
 
-        long startBlock = blockId % blocksInRow;
-        long endBlock = startBlock + blocksInRow * (blocksInCol - 1);
-
-        for (long i = startBlock; i <= endBlock; i += blocksInRow)
-            res.add(getEntryById(i));
+        res = 31 * res + blocksInRow;
+        res = 31 * res + rows;
+        res = 31 * res + cols;
+        res = 31 * res + uuid.hashCode();
+        res = 31 * res + maxBlockEdge;
+        res = 31 * res + cache.getName().hashCode();
 
         return res;
     }
 
-    /**
-     *
-     */
-    private BlockEntry getEntryById(long blockId) {
-        BlockMatrixKey key = getCacheKey(blockId);
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        BlockEntry entry = cache.localPeek(key);
+        BlockMatrixStorage that = (BlockMatrixStorage)o;
+
+        return blocksInCol == that.blocksInCol && blocksInRow == that.blocksInRow && rows == that.rows
+            && cols == that.cols && maxBlockEdge == that.maxBlockEdge && uuid.equals(that.uuid)
+            && cache.getName().equals(that.cache.getName());
+
+    }
+
+    /**
+     * Returns cached or new BlockEntry by given blockId
+     * @param blockId blockId
+     * @return BlockEntry
+     */
+    private BlockEntry getEntryById(IgnitePair<Long> blockId) {
+        BlockMatrixKey key = getCacheKey(blockId.get1(), blockId.get2());
+
+        BlockEntry entry = cache.localPeek(key, CachePeekMode.PRIMARY);
         entry = entry != null ? entry : cache.get(key);
 
-        if (entry == null) {
-            long colId = blockId == 0 ? 0 : blockId + 1;
-
-            boolean isLastRow = (blockId) >= blocksInRow * (blocksInCol - 1);
-            boolean isLastCol = (colId) % blocksInRow == 0;
-
-            entry = new BlockEntry(isLastRow && rows % maxBlockEdge != 0 ? rows % maxBlockEdge : maxBlockEdge, isLastCol && cols % maxBlockEdge != 0 ? cols % maxBlockEdge : maxBlockEdge);
-        }
+        if (entry == null)
+            entry = getEmptyBlockEntry(blockId);
 
         return entry;
     }
 
     /**
-     *
+     * Builds empty BlockEntry with sizes based on blockId and BlockMatrixStorage fields' values
+     * @param blockId blockId
+     * @return Empty BlockEntry
      */
-    private long numberOfBlocks() {
-        int rows = rowSize();
-        int cols = columnSize();
+    private BlockEntry getEmptyBlockEntry(IgnitePair<Long> blockId) {
+        BlockEntry entry;
+        int rowMod = rows % maxBlockEdge;
+        int colMod = cols % maxBlockEdge;
 
-        return ((rows / maxBlockEdge) + (((rows % maxBlockEdge) > 0) ? 1 : 0))
-            * ((cols / maxBlockEdge) + (((cols % maxBlockEdge) > 0) ? 1 : 0));
+        int rowSize;
+
+        if(rowMod == 0)
+            rowSize = maxBlockEdge;
+        else
+            rowSize = blockId.get1() != (blocksInRow - 1) ? maxBlockEdge : rowMod;
+
+
+        int colSize;
+
+        if(colMod == 0)
+            colSize = maxBlockEdge;
+        else
+            colSize = blockId.get2() != (blocksInCol - 1) ? maxBlockEdge : colMod;
+
+        entry = new BlockEntry(rowSize, colSize);
+        return entry;
     }
 
     /**
@@ -329,7 +354,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      *
      * Get affinity key for the given id.
      */
-    private IgniteUuid getAffinityKey(long id) {
+    private IgniteUuid getAffinityKey(long blockIdRow, long blockIdCol) {
         return null;
     }
 
@@ -341,21 +366,15 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      * @param v New value to set.
      */
     private void matrixSet(int a, int b, double v) {
-        long id = getBlockId(a, b);
+        IgnitePair<Long> blockId = getBlockId(a, b);
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(ML_BLOCK_CACHE_NAME, id)).run(() -> {
-            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(ML_BLOCK_CACHE_NAME);
+        ignite().compute(groupForKey(CACHE_NAME, blockId)).run(() -> {
+            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
-            BlockMatrixKey key = getCacheKey(getBlockId(a, b));
+            BlockMatrixKey key = getCacheKey(blockId.get1(), blockId.get2());
 
             // Local get.
-            BlockEntry block = cache.localPeek(key, CachePeekMode.PRIMARY);
-
-            if (block == null)
-                block = cache.get(key); //Remote entry get.
-
-            if (block == null)
-                block = initBlockFor(a, b);
+            BlockEntry block = getEntryById(blockId);
 
             block.set(a % block.rowSize(), b % block.columnSize(), v);
 
@@ -364,22 +383,14 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         });
     }
 
-    /** */
-    private long getBlockId(int x, int y) {
-        return (y / maxBlockEdge) * blockShift(cols) + (x / maxBlockEdge);
-    }
-
-    /** */
-    private BlockEntry initBlockFor(int x, int y) {
-        int blockRows = rows - x >= maxBlockEdge ? maxBlockEdge : rows - x;
-        int blockCols = cols - y >= maxBlockEdge ? maxBlockEdge : cols - y;
-
-        return new BlockEntry(blockRows, blockCols);
-    }
-
-    /** */
-    private int blockShift(int i) {
-        return (i) / maxBlockEdge + ((i) % maxBlockEdge > 0 ? 1 : 0);
+    /**
+     * Calculates blockId for given cell's coordinates
+     * @param x x1 attribute in (x1,x2) coordinates
+     * @param y x2 attribute in (x1, x2) coordinates
+     * @return blockId as an IgnitePair
+     */
+    private IgnitePair<Long> getBlockId(int x, int y) {
+        return new IgnitePair<>((long)x / maxBlockEdge, (long)y / maxBlockEdge);
     }
 
     /**
@@ -391,8 +402,8 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(ML_BLOCK_CACHE_NAME, getBlockId(a, b))).call(() -> {
-            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(ML_BLOCK_CACHE_NAME);
+        return ignite().compute(groupForKey(CACHE_NAME, getBlockId(a, b))).call(() -> {
+            IgniteCache<BlockMatrixKey, BlockEntry> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             BlockMatrixKey key = getCacheKey(getBlockId(a, b));
 
@@ -428,7 +439,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Random cache name.
-        cfg.setName(ML_BLOCK_CACHE_NAME);
+        cfg.setName(CACHE_NAME);
 
         return Ignition.localIgnite().getOrCreateCache(cfg);
     }

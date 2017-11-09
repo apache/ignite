@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
     using JNI = IgniteJniNativeMethods;
 
@@ -57,6 +58,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
             JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            // Clean directories in background to avoid extra work on start.
+            Task.Factory.StartNew(IgniteUtils.TryCleanTempDirectories);
         }
 
         /// <summary>
@@ -173,6 +177,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void TargetInStreamAsync(IUnmanagedTarget target, int opType, long memPtr)
         {
             JNI.TargetInStreamAsync(target.Context, target.Target, opType, memPtr);
+        }
+
+        internal static IUnmanagedTarget TargetInStreamOutObjectAsync(IUnmanagedTarget target, int opType, long memPtr)
+        {
+            void* res = JNI.TargetInStreamOutObjectAsync(target.Context, target.Target, opType, memPtr);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion

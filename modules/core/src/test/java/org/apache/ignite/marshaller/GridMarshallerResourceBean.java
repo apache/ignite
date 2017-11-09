@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
 import javax.management.MBeanServer;
 import org.apache.ignite.GridTestJobContext;
 import org.apache.ignite.GridTestTaskSession;
@@ -74,7 +74,7 @@ class GridMarshallerResourceBean implements Serializable {
         marshaller = new JdkMarshaller();
         mbeanSrv = ManagementFactory.getPlatformMBeanServer();
         ses = new GridTestTaskSession();
-        execSvc = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
+        execSvc = Executors.newSingleThreadExecutor();
         appCtx = new GenericApplicationContext();
         jobCtx = new GridTestJobContext();
         balancer = new LoadBalancer();
@@ -98,6 +98,7 @@ class GridMarshallerResourceBean implements Serializable {
     private static class LoadBalancer extends GridLoadBalancerAdapter {
         /** */
         public LoadBalancer() {
+            // No-op.
         }
 
         /** {@inheritDoc} */

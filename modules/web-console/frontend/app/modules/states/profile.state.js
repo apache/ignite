@@ -23,7 +23,7 @@ angular
 .module('ignite-console.states.profile', [
     'ui.router'
 ])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider) {
+.config(['$stateProvider', function($stateProvider) {
     // set up the states
     $stateProvider.state('base.settings.profile', {
         url: '/profile',

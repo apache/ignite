@@ -17,7 +17,11 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -76,5 +80,40 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
             return assign(0);
         else
             return super.times(x);
+    }
+
+    /** Indexes of non-default elements. */
+    public IntSet indexes() {
+        return storage().indexes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Spliterator<Double> nonZeroSpliterator() {
+        return new Spliterator<Double>() {
+            /** {@inheritDoc} */
+            @Override public boolean tryAdvance(Consumer<? super Double> act) {
+                Set<Integer> indexes = storage().indexes();
+
+                for (Integer index : indexes)
+                    act.accept(storageGet(index));
+
+                return true;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Spliterator<Double> trySplit() {
+                return null; // No Splitting.
+            }
+
+            /** {@inheritDoc} */
+            @Override public long estimateSize() {
+                return storage().indexes().size();
+            }
+
+            /** {@inheritDoc} */
+            @Override public int characteristics() {
+                return ORDERED | SIZED;
+            }
+        };
     }
 }

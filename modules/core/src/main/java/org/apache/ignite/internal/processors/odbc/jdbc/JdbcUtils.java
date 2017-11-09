@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -29,7 +30,7 @@ import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
  */
 public class JdbcUtils {
     /**
-     * @param writer Binari writer.
+     * @param writer Binary writer.
      * @param items Query results items.
      */
     public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items) {
@@ -68,6 +69,40 @@ public class JdbcUtils {
 
             return items;
         } else
+            return Collections.emptyList();
+    }
+
+    /**
+     * @param writer Binary writer.
+     * @param lst List to write.
+     */
+    public static void writeStringCollection(BinaryWriterExImpl writer, Collection<String> lst) {
+        if (lst == null)
+            writer.writeInt(0);
+        else {
+            writer.writeInt(lst.size());
+
+            for (String s : lst)
+                writer.writeString(s);
+        }
+    }
+
+    /**
+     * @param reader Binary reader.
+     * @return List of string.
+     */
+    public static List<String> readStringList(BinaryReaderExImpl reader) {
+        int size = reader.readInt();
+
+        if (size > 0) {
+            List<String> lst = new ArrayList<>(size);
+
+            for (int i = 0; i < size; ++i)
+                lst.add(reader.readString());
+
+            return lst;
+        }
+        else
             return Collections.emptyList();
     }
 }

@@ -567,15 +567,17 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                             }
                             catch (Exception e) {
                                 if (interruptAll) {
-                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                        " aborting transaction.");
+                                    if (log.isInfoEnabled())
+                                        log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                            " aborting transaction.");
 
                                     // Return immediately, exception will be thrown later.
                                     return true;
                                 }
                                 else {
                                     if (Thread.currentThread().isInterrupted()) {
-                                        log.info("Thread is interrupted while attempting to acquire lock.");
+                                        if (log.isInfoEnabled())
+                                            log.info("Thread is interrupted while attempting to acquire lock.");
 
                                         // Delegate the decision to throw InterruptedException to the AQS.
                                         sync.release(0);
@@ -803,8 +805,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                             }
                             catch (Exception e) {
                                 if (interruptAll) {
-                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
-                                        " aborting transaction.");
+                                    if (log.isInfoEnabled())
+                                        log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                            " aborting transaction.");
 
                                     return true;
                                 }

@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -55,6 +56,10 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /** */
     private volatile int moving;
 
+    /** */
+    private static final AtomicIntegerFieldUpdater<GridDhtPartitionMap> MOVING_FIELD_UPDATER =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtPartitionMap.class, "moving");
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -82,6 +87,16 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         this.top = top;
 
         map = new GridPartitionStateMap(m, onlyActive);
+
+        int moving0 = 0;
+
+        for (GridDhtPartitionState state : map.values()) {
+            if (state == MOVING)
+                moving0++;
+        }
+
+        if (moving0 > 0)
+            MOVING_FIELD_UPDATER.set(this, moving0);
     }
 
     /**
@@ -121,11 +136,12 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     public void put(Integer part, GridDhtPartitionState state) {
         GridDhtPartitionState old = map.put(part, state);
 
-        if (old == MOVING)
-            moving--;
+        if (old == MOVING && state != MOVING)
+            MOVING_FIELD_UPDATER.decrementAndGet(this);
+        else if (old != MOVING && state == MOVING)
+            MOVING_FIELD_UPDATER.incrementAndGet(this);
 
-        if (state == MOVING)
-            moving++;
+        assert moving >= 0 : moving;
     }
 
     /**
@@ -254,7 +270,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
             i++;
         }
 
-        assert i == size;
+        assert i == size : "Invalid size [size1=" + size + ", size2=" + i + ']';
 
         if (top != null) {
             out.writeLong(topologyVersion().topologyVersion());
@@ -277,8 +293,8 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         map = new GridPartitionStateMap();
 
         for (int i = 0; i < size; i++) {
-            int ordinal = in.readByte();
-            int part = in.readShort();
+            int ordinal = in.readUnsignedByte();
+            int part = in.readUnsignedShort();
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }

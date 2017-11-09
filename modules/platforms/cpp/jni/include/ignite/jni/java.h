@@ -173,9 +173,6 @@ namespace ignite
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
 
-                jclass c_PlatformProcessor;
-                jmethodID m_PlatformProcessor_releaseStart;
-
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inLongOutLong;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -183,6 +180,7 @@ namespace ignite
                 jmethodID m_PlatformTarget_outStream;
                 jmethodID m_PlatformTarget_outObject;
                 jmethodID m_PlatformTarget_inStreamAsync;
+                jmethodID m_PlatformTarget_inStreamOutObjectAsync;
                 jmethodID m_PlatformTarget_inStreamOutStream;
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
 
@@ -325,6 +323,7 @@ namespace ignite
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInStreamOutObjectAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);

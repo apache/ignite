@@ -774,7 +774,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException {
+    @Override public final void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last,
+        boolean storeSessionEnded) throws IgniteCheckedException {
         assert store != null;
 
         sessionInit0(tx);
@@ -785,7 +786,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            if (!sesHolder.get().ended(store))
+            if (!sesHolder.get().ended(store) && !storeSessionEnded)
                 store.sessionEnd(commit);
         }
         catch (Throwable e) {
@@ -854,7 +855,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder.set(ses);
 
         try {
-            if (sesLsnrs != null && !ses.started(this)) {
+            if (!ses.started(store) && sesLsnrs != null) {
                 for (CacheStoreSessionListener lsnr : sesLsnrs)
                     lsnr.onSessionStart(locSes);
             }
@@ -875,9 +876,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                assert !sesHolder.get().ended(store);
-
-                store.sessionEnd(!threwEx);
+                if (!sesHolder.get().ended(store))
+                    store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {
@@ -919,11 +919,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attach;
 
         /** */
-        private final Set<CacheStoreManager> started =
-            new GridSetWrapper<>(new IdentityHashMap<CacheStoreManager, Object>());
-
-        /** */
-        private final Set<CacheStore> ended = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> started =
+            new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         /**
          * @param tx Current transaction.
@@ -986,8 +983,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @return If session is started.
          */
-        private boolean started(CacheStoreManager mgr) {
-            return !started.add(mgr);
+        private boolean started(CacheStore store) {
+            return !started.add(store);
         }
 
         /**
@@ -995,7 +992,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          * @return Whether session already ended on this store instance.
          */
         private boolean ended(CacheStore store) {
-            return !ended.add(store);
+            return !started.remove(store);
         }
 
         /** {@inheritDoc} */
@@ -1363,6 +1360,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Override public void suspend() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout() {
             return tx.timeout();
         }
@@ -1404,6 +1406,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 

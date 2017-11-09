@@ -81,6 +81,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 AppendTestClasses(ggHome + "\\examples", cpStr);
                 AppendTestClasses(ggHome + "\\modules", cpStr);
+                AppendTestClasses(ggHome + "\\modules\\extdata\\platform", cpStr);
             }
 
             string ggLibs = ggHome + "\\libs";

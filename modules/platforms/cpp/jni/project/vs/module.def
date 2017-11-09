@@ -12,6 +12,7 @@ IgniteTargetInStreamOutStream @20
 IgniteTargetInObjectStreamOutObjectStream @21
 IgniteTargetInLongOutLong @24
 IgniteTargetInStreamAsync @25
+IgniteTargetInStreamOutObjectAsync @26
 IgniteAcquire @80
 IgniteRelease @81
 IgniteThrowToJava @82 

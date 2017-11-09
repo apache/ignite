@@ -37,16 +37,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Messaging;
     using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Ignite projection implementation.
     /// </summary>
-    internal class ClusterGroupImpl : PlatformTarget, IClusterGroup
+    internal class ClusterGroupImpl : PlatformTargetAdapter, IClusterGroup
     {
         /** Attribute: platform. */
         private const string AttrPlatform = "org.apache.ignite.platform";
@@ -147,8 +145,17 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpGetServices = 34;
 
+        /** */
+        private const int OpDataRegionMetrics = 35;
+
+        /** */
+        private const int OpDataRegionMetricsByName = 36;
+
+        /** */
+        private const int OpDataStorageMetrics = 37;
+
         /** Initial Ignite instance. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
         
         /** Predicate. */
         private readonly Func<IClusterNode, bool> _pred;
@@ -175,13 +182,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="ignite">Grid.</param>
         /// <param name="pred">Predicate.</param>
         [SuppressMessage("Microsoft.Performance", "CA1805:DoNotInitializeUnnecessarily")]
-        public ClusterGroupImpl(IUnmanagedTarget target, Ignite ignite, Func<IClusterNode, bool> pred)
-            : base(target, ignite.Marshaller)
+        public ClusterGroupImpl(IPlatformTargetInternal target, Func<IClusterNode, bool> pred)
+            : base(target)
         {
-            _ignite = ignite;
+            _ignite = target.Marshaller.Ignite;
             _pred = pred;
 
             _comp = new Lazy<ICompute>(() => CreateCompute());
@@ -193,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
-            get { return _ignite; }
+            get { return _ignite.GetIgnite(); }
         }
 
         /** <inheritDoc /> */
@@ -207,7 +213,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private ICompute CreateCompute()
         {
-            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), Marshaller, this, false));
+            return new Compute(new ComputeImpl(DoOutOpObject(OpGetCompute), this, false));
         }
 
         /** <inheritDoc /> */
@@ -252,10 +258,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(items != null);
 
-            IUnmanagedTarget prj = DoOutOpObject(OpForNodeIds, writer =>
-            {
-                WriteEnumerable(writer, items, func);
-            });
+            var prj = DoOutOpObject(OpForNodeIds, writer => writer.WriteEnumerable(items, func));
             
             return GetClusterGroup(prj);
         }
@@ -265,7 +268,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             var newPred = _pred == null ? p : node => _pred(node) && p(node);
 
-            return new ClusterGroupImpl(Target, _ignite, newPred);
+            return new ClusterGroupImpl(Target, newPred);
         }
 
         /** <inheritDoc /> */
@@ -278,7 +281,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 writer.WriteString(name);
                 writer.WriteString(val);
             };
-            IUnmanagedTarget prj = DoOutOpObject(OpForAttribute, action);
+            var prj = DoOutOpObject(OpForAttribute, action);
 
             return GetClusterGroup(prj);
         }
@@ -293,7 +296,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </returns>
         private IClusterGroup ForCacheNodes(string name, int op)
         {
-            IUnmanagedTarget prj = DoOutOpObject(op, writer =>
+            var prj = DoOutOpObject(op, writer =>
             {
                 writer.WriteString(name);
             });
@@ -336,7 +339,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(node, "node");
 
-            IUnmanagedTarget prj = DoOutOpObject(OpForHost, writer =>
+            var prj = DoOutOpObject(OpForHost, writer =>
             {
                 writer.WriteGuid(node.Id);
             });    
@@ -404,15 +407,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
                 });
             }
-            return DoOutInOp(OpMetricsFiltered, writer =>
-            {
-                WriteEnumerable(writer, GetNodes().Select(node => node.Id));
-            }, stream =>
-            {
-                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+            return DoOutInOp(OpMetricsFiltered,
+                writer => writer.WriteEnumerable(GetNodes().Select(node => node.Id)),
+                stream =>
+                {
+                    IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
 
-                return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
-            });
+                    return reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
+                });
         }
 
         /** <inheritDoc /> */
@@ -426,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IMessaging CreateMessaging()
         {
-            return new Messaging(DoOutOpObject(OpGetMessaging), Marshaller, this);
+            return new Messaging(DoOutOpObject(OpGetMessaging), this);
         }
 
         /** <inheritDoc /> */
@@ -440,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IEvents CreateEvents()
         {
-            return new Events(DoOutOpObject(OpGetEvents), Marshaller, this);
+            return new Events(DoOutOpObject(OpGetEvents), this);
         }
 
         /** <inheritDoc /> */
@@ -454,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// </summary>
         private IServices CreateServices()
         {
-            return new Services(DoOutOpObject(OpGetServices), Marshaller, this, false, false);
+            return new Services(DoOutOpObject(OpGetServices), this, false, false);
         }
 
         /// <summary>
@@ -604,6 +606,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the memory metrics.
         /// </summary>
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return DoInOp(OpMemoryMetrics, stream =>
@@ -631,6 +634,47 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
                 stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
         }
+#pragma warning restore 618
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return DoInOp(OpDataRegionMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                var cnt = reader.ReadInt();
+
+                var res = new List<IDataRegionMetrics>(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                {
+                    res.Add(new DataRegionMetrics(reader));
+                }
+
+                return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return DoOutInOp(OpDataRegionMetricsByName, w => w.WriteString(memoryPolicyName),
+                stream => stream.ReadBool() ? new DataRegionMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
+        }
+
+        /// <summary>
+        /// Gets the data storage metrics.
+        /// </summary>
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return DoInOp(OpDataStorageMetrics, stream =>
+                new DataStorageMetrics(Marshaller.StartUnmarshal(stream, false)));
+        }
 
         /// <summary>
         /// Changes Ignite grid state to active or inactive.
@@ -654,20 +698,22 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the persistent store metrics.
         /// </summary>
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return DoInOp(OpGetPersistentStoreMetrics, stream =>
                 new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
+#pragma warning restore 618
 
         /// <summary>
         /// Creates new Cluster Group from given native projection.
         /// </summary>
         /// <param name="prj">Native projection.</param>
         /// <returns>New cluster group.</returns>
-        private IClusterGroup GetClusterGroup(IUnmanagedTarget prj)
+        private IClusterGroup GetClusterGroup(IPlatformTargetInternal prj)
         {
-            return new ClusterGroupImpl(prj, _ignite, _pred);
+            return new ClusterGroupImpl(prj, _pred);
         }
 
         /// <summary>
@@ -678,29 +724,30 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             long oldTopVer = Interlocked.Read(ref _topVer);
 
-            List<IClusterNode> newNodes = null;
-
-            DoOutInOp(OpNodes, writer =>
+            var res = Target.InStreamOutStream(OpNodes, writer =>
             {
                 writer.WriteLong(oldTopVer);
-            }, input =>
+            }, reader =>
             {
-                BinaryReader reader = Marshaller.StartUnmarshal(input);
-
                 if (reader.ReadBoolean())
                 {
                     // Topology has been updated.
                     long newTopVer = reader.ReadLong();
+                    var newNodes = IgniteUtils.ReadNodes((BinaryReader) reader, _pred);
 
-                    newNodes = IgniteUtils.ReadNodes(reader, _pred);
-
-                    UpdateTopology(newTopVer, newNodes);
+                    return Tuple.Create(newTopVer, newNodes);
                 }
+
+                return null;
             });
 
-            if (newNodes != null)
-                return newNodes;
-            
+            if (res != null)
+            {
+                UpdateTopology(res.Item1, res.Item2);
+
+                return res.Item2;
+            }
+
             // No topology changes.
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 

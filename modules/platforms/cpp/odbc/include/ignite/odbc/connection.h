@@ -162,6 +162,25 @@ namespace ignite
              */
             void TransactionRollback();
 
+            /**
+             * Get connection attribute.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             */
+            void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
+
+            /**
+             * Set connection attribute.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             */
+            void SetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
@@ -190,6 +209,11 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalRelease();
+
+            /**
+             * Close connection.
+             */
+            void Close();
 
             /**
              * Get info of any type.
@@ -227,6 +251,29 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalTransactionRollback();
+
+            /**
+             * Get connection attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             * @return Operation result.
+             */
+            SqlResult::Type InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
+
+            /**
+             * Set connection attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             * @return Operation result.
+             */
+            SqlResult::Type InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
 
             /**
              * Receive specified number of bytes.
@@ -269,6 +316,9 @@ namespace ignite
 
             /** Configuration. */
             config::Configuration config;
+
+            /** Connection info. */
+            config::ConnectionInfo info;
         };
     }
 }

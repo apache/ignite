@@ -73,9 +73,13 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -983,7 +987,9 @@ public abstract class IgniteUtils {
      * @return Nearest power of 2.
      */
     public static int ceilPow2(int v) {
-        return Integer.highestOneBit(v - 1) << 1;
+        int i = v - 1;
+
+        return Integer.highestOneBit(i) << 1 - (i >>> 30 ^ v >> 31);
     }
 
     /**
@@ -3428,7 +3434,6 @@ public abstract class IgniteUtils {
 
         return e;
     }
-
     /**
      * Deletes file or directory with all sub-directories and files.
      *
@@ -3437,40 +3442,49 @@ public abstract class IgniteUtils {
      *      {@code false} otherwise
      */
     public static boolean delete(@Nullable File file) {
-        if (file == null)
-            return false;
+        return file != null && delete(file.toPath());
+    }
 
-        boolean res = true;
+    /**
+     * Deletes file or directory with all sub-directories and files.
+     *
+     * @param path File or directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted,
+     *      {@code false} otherwise
+     */
+    public static boolean delete(Path path) {
+        if (Files.isDirectory(path)) {
+            try {
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    for (Path innerPath : stream) {
+                        boolean res = delete(innerPath);
 
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-
-            if (files != null && files.length > 0) {
-                for (File file1 : files) {
-                    if (file1.isDirectory())
-                        res &= delete(file1);
-                    else if (file1.getName().endsWith("jar")) {
-                        try {
-                            // Why do we do this?
-                            new JarFile(file1, false).close();
-                        }
-                        catch (IOException ignore) {
-                            // Ignore it here...
-                        }
-
-                        res &= file1.delete();
+                        if (!res)
+                            return false;
                     }
-                    else
-                        res &= file1.delete();
                 }
+            } catch (IOException e) {
+                return false;
             }
-
-            res &= file.delete();
         }
-        else
-            res = file.delete();
 
-        return res;
+        if (path.endsWith("jar")) {
+            try {
+                // Why do we do this?
+                new JarFile(path.toString(), false).close();
+            }
+            catch (IOException ignore) {
+                // Ignore it here...
+            }
+        }
+
+        try {
+            Files.delete(path);
+
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**
@@ -7392,6 +7406,15 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Awaits for condition ignoring interrupts.
+     *
+     * @param cond Condition to await for.
+     */
+    public static void awaitQuiet(Condition cond) {
+        cond.awaitUninterruptibly();
+    }
+
+    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.
@@ -9392,24 +9415,43 @@ public abstract class IgniteUtils {
      * @param cls The class to search,
      * @param name Name of the method.
      * @param paramTypes Method parameters.
-     * @return Method or {@code null}
+     * @return Method or {@code null}.
      */
     @Nullable public static Method findNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
         while (cls != null) {
-            try {
-                Method mtd = cls.getDeclaredMethod(name, paramTypes);
+            Method mtd = getNonPublicMethod(cls, name, paramTypes);
 
-                if (mtd.getReturnType() != void.class) {
-                    mtd.setAccessible(true);
-
-                    return mtd;
-                }
-            }
-            catch (NoSuchMethodException ignored) {
-                // No-op.
-            }
+            if (mtd != null)
+                return mtd;
 
             cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets a method from the class.
+     *
+     * Method.getMethod() does not return non-public method.
+     *
+     * @param cls Target class.
+     * @param name Name of the method.
+     * @param paramTypes Method parameters.
+     * @return Method or {@code null}.
+     */
+    @Nullable public static Method getNonPublicMethod(Class<?> cls, String name, Class<?>... paramTypes) {
+        try {
+            Method mtd = cls.getDeclaredMethod(name, paramTypes);
+
+            if (mtd.getReturnType() != void.class) {
+                mtd.setAccessible(true);
+
+                return mtd;
+            }
+        }
+        catch (NoSuchMethodException ignored) {
+            // No-op.
         }
 
         return null;
@@ -9987,6 +10029,108 @@ public abstract class IgniteUtils {
         catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Return count of regular file in the directory (including in sub-directories)
+     *
+     * @param dir path to directory
+     * @return count of regular file
+     * @throws IOException sometimes
+     */
+    public static int fileCount(Path dir) throws IOException {
+        int cnt = 0;
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+            for (Path d : ds) {
+                if (Files.isDirectory(d))
+                    cnt += fileCount(d);
+
+                else if (Files.isRegularFile(d))
+                    cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Will calculate the size of a directory.
+     *
+     * If there is concurrent activity in the directory, than returned value may be wrong.
+     */
+    public static long dirSize(Path path) throws IgniteCheckedException {
+        final AtomicLong s = new AtomicLong(0);
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    s.addAndGet(attrs.size());
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped - " + file, exc);
+
+                    // Skip directory or file
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during size calculation of directory - " + dir, exc);
+
+                    // Ignoring
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return s.get();
+    }
+
+    /**
+     * @param path Path.
+     * @param name Name.
+     */
+    public static Path searchFileRecursively(Path path, @NotNull final String name) throws IgniteCheckedException {
+        final AtomicReference<Path> res = new AtomicReference<>();
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (name.equals(file.getFileName().toString())) {
+                        res.set(file);
+
+                        return FileVisitResult.TERMINATE;
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped during recursive search - " + file, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during recursive search - " + dir, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return res.get();
     }
 
     /**

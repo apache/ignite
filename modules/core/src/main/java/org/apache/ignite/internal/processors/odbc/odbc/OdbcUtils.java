@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.Iterator;
+import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /**
  * Various ODBC utility methods.
@@ -138,5 +144,72 @@ public class OdbcUtils {
             default:
                 throw new IgniteException("Invalid ODBC data type '" + odbcDataType + "'");
         }
+    }
+
+    /**
+     * Tries to retrieve SQL error code of the exception. If the exception is not {@link IgniteSQLException} returns
+     * {@link IgniteQueryErrorCode#UNKNOWN}.
+     *
+     * @param err Error to retrieve code from.
+     * @return Error code.
+     */
+    public static int tryRetrieveSqlErrorCode(Throwable err) {
+        int errorCode = IgniteQueryErrorCode.UNKNOWN;
+
+        if (err instanceof IgniteSQLException)
+            errorCode = ((IgniteSQLException) err).statusCode();
+
+        return errorCode;
+    }
+
+    /**
+     * Tries to retrieve H2 engine error message from exception. If the exception is not of type
+     * "org.h2.jdbc.JdbcSQLException" returns original error message.
+     *
+     * @param err Exception.
+     * @return Error message.
+     */
+    public static String tryRetrieveH2ErrorMessage(Throwable err) {
+        String msg = err.getMessage();
+
+        Throwable e = err.getCause();
+        while (e != null) {
+            if (e.getClass().getCanonicalName().equals("org.h2.jdbc.JdbcSQLException")) {
+                msg = e.getMessage();
+
+                break;
+            }
+
+            e = e.getCause();
+        }
+
+        return msg;
+    }
+
+    /**
+     * Get affected rows for statement.
+     * @param qryCur Cursor.
+     * @return Number of table rows affected, if the query is DML, and -1 otherwise.
+     */
+    public static long rowsAffected(QueryCursor<List<?>> qryCur) {
+        QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;
+
+        if (qryCur0.isQuery())
+            return -1;
+
+        Iterator<List<?>> iter = qryCur0.iterator();
+
+        if (iter.hasNext()) {
+            List<?> res = iter.next();
+
+            if (res.size() > 0) {
+                Long affected = (Long) res.get(0);
+
+                if (affected != null)
+                    return affected;
+            }
+        }
+
+        return 0;
     }
 }

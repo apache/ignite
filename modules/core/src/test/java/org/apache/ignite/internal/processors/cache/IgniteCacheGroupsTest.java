@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -78,8 +78,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -2871,13 +2872,25 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!stop.get()) {
-                        String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
-                        int cacheIdx = rnd.nextInt(CACHES);
+                        try {
+                            String grp = rnd.nextBoolean() ? GROUP1 : GROUP2;
+                            int cacheIdx = rnd.nextInt(CACHES);
 
-                        IgniteCache cache = node.cache(grp + "-" + cacheIdx);
+                            IgniteCache cache = node.cache(grp + "-" + cacheIdx);
 
-                        for (int i = 0; i < 10; i++)
-                            cacheOperation(rnd, cache);
+                            for (int i = 0; i < 10; i++)
+                                cacheOperation(rnd, cache);
+                        }
+                        catch (Exception e) {
+                            if (X.hasCause(e, CacheStoppedException.class)) {
+                                // Cache operation can be blocked on
+                                // awaiting new topology version and cancelled with CacheStoppedException cause.
+
+                                continue;
+                            }
+
+                            throw e;
+                        }
                     }
                 }
                 catch (Exception e) {
@@ -2892,10 +2905,10 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture cacheFut = GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
-                try {
-                    int cntr = 0;
+                int cntr = 0;
 
-                    while (!stop.get()) {
+                while (!stop.get()) {
+                    try {
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                         String grp;
@@ -2927,13 +2940,20 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                         node.destroyCache(cache.getName());
                     }
-                }
-                catch (Exception e) {
-                    err.set(true);
+                    catch (Exception e) {
+                        if (X.hasCause(e, CacheStoppedException.class)) {
+                            // Cache operation can be blocked on
+                            // awaiting new topology version and cancelled with CacheStoppedException cause.
 
-                    log.error("Unexpected error(2): " + e, e);
+                            continue;
+                        }
 
-                    stop.set(true);
+                        err.set(true);
+
+                        log.error("Unexpected error(2): " + e, e);
+
+                        stop.set(true);
+                    }
                 }
             }
         }, "cache-destroy-thread");
@@ -3706,7 +3726,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         final AtomicReferenceArray<IgniteCache> caches = new AtomicReferenceArray<>(CACHES);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < CACHES; i++) {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
             caches.set(i,
@@ -3799,28 +3819,41 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture opFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                     @Override public void run() {
-                        try {
-                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                            while (!stop.get()) {
+                        while (!stop.get()) {
+                            try {
                                 int idx = rnd.nextInt(CACHES);
 
                                 IgniteCache cache = caches.get(idx);
 
                                 if (cache != null && caches.compareAndSet(idx, cache, null)) {
-                                    for (int i = 0; i < 10; i++)
-                                        cacheOperation(rnd, cache);
+                                    try {
+                                        for (int i = 0; i < 10; i++)
+                                            cacheOperation(rnd, cache);
+                                    }
+                                    catch (Exception e) {
+                                        if (X.hasCause(e, CacheStoppedException.class)) {
+                                            // Cache operation can be blocked on
+                                            // awaiting new topology version and cancelled with CacheStoppedException cause.
 
-                                    caches.set(idx, cache);
+                                            continue;
+                                        }
+
+                                        throw e;
+                                    }
+                                    finally {
+                                        caches.set(idx, cache);
+                                    }
                                 }
                             }
-                        }
-                        catch (Exception e) {
-                            err.set(e);
+                            catch (Exception e) {
+                                err.set(e);
 
-                            log.error("Unexpected error: " + e, e);
+                                log.error("Unexpected error: " + e, e);
 
-                            stop.set(true);
+                                stop.set(true);
+                            }
                         }
                     }
                 }, 8, "op-thread");

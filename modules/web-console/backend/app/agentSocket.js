@@ -131,9 +131,9 @@ module.exports.factory = function(_) {
          */
         emitEvent(event, ...args) {
             return new Promise((resolve, reject) =>
-                this._emit(event, args, (error, res) => {
-                    if (error)
-                        return reject(error);
+                this._emit(event, args, (resErr, res) => {
+                    if (resErr)
+                        return reject(resErr);
 
                     resolve(res);
                 })

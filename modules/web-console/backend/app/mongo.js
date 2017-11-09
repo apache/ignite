@@ -124,6 +124,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             javaFieldName: String,
             javaFieldType: String
         }],
+        queryKeyFields: [String],
         fields: [{name: String, className: String}],
         aliases: [{field: String, alias: String}],
         indexes: [{
@@ -332,6 +333,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
         evictionFilter: String,
         memoryPolicyName: String,
+        dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
         topologyValidator: String
     });
@@ -852,6 +854,17 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 className: String
             }
         }],
+        clientConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
+        },
         loadBalancingSpi: [{
             kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
             RoundRobin: {
@@ -959,6 +972,63 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             name: String,
             size: Number
         }],
+        dataStorageConfiguration: {
+            systemRegionInitialSize: Number,
+            systemRegionMaxSize: Number,
+            pageSize: Number,
+            concurrencyLevel: Number,
+            defaultDataRegionConfiguration: {
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapPath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                metricsSubIntervalCount: Number,
+                metricsRateTimeInterval: Number,
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
+            },
+            dataRegionConfigurations: [{
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapPath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                metricsSubIntervalCount: Number,
+                metricsRateTimeInterval: Number,
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
+            }],
+            storagePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointFrequency: Number,
+            checkpointPageBufferSize: Number,
+            checkpointThreads: Number,
+            checkpointWriteOrder: {type: String, enum: ['RANDOM', 'SEQUENTIAL']},
+            walPath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelayNanos: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            walThreadLocalBufferSize: Number,
+            metricsSubIntervalCount: Number,
+            metricsRateTimeInterval: Number,
+            fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
+            walAutoArchiveAfterInactivity: Number,
+            writeThrottlingEnabled: Boolean
+        },
         memoryConfiguration: {
             systemCacheInitialSize: Number,
             systemCacheMaxSize: Number,
@@ -1035,12 +1105,16 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
+            useAsDefaultSchema: Boolean,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
             },
-            qryType: String
+            qryType: String,
+            nonCollocatedJoins: {type: Boolean, default: false},
+            enforceJoinOrder: {type: Boolean, default: false},
+            lazy: {type: Boolean, default: false}
         }]
     });
 
@@ -1055,7 +1129,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         date: Date,
         group: String,
         action: String,
-        amount: { type: Number, default: 1 }
+        amount: { type: Number, default: 0 }
     });
 
     ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });

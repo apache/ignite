@@ -28,8 +28,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThrea
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheClientQueryReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeFailTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest2;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentAtomicReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.index.DynamicColumnsConcurrentTransactionalReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedAtomicConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexPartitionedTransactionalConcurrentSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexReplicatedAtomicConcurrentSelfTest;
@@ -57,6 +63,15 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(DynamicIndexPartitionedTransactionalConcurrentSelfTest.class);
         suite.addTestSuite(DynamicIndexReplicatedAtomicConcurrentSelfTest.class);
         suite.addTestSuite(DynamicIndexReplicatedTransactionalConcurrentSelfTest.class);
+
+        suite.addTestSuite(DynamicColumnsConcurrentAtomicPartitionedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentAtomicReplicatedSelfTest.class);
+        suite.addTestSuite(DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class);
+
+        // Distributed joins.
+        suite.addTestSuite(IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class);
 
         // Other tests.
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);

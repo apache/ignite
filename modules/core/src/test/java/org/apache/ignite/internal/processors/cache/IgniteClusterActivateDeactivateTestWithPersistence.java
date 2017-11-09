@@ -23,6 +23,9 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -73,7 +76,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      * @throws Exception If failed.
      */
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
-        activateCachesRestore(5, false);
+        activateCachesRestore(5, true);
     }
 
     /**
@@ -120,8 +123,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
         }
 
-        for (CacheConfiguration ccfg : cacheConfigurations1())
-            checkCacheData(cacheData, ccfg.getName());
+        DataStorageConfiguration dsCfg = srv.configuration().getDataStorageConfiguration();
+
+        checkCachesData(cacheData, dsCfg);
 
         checkCaches(srvs, CACHES);
 
@@ -152,8 +156,24 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
         }
 
-        for (CacheConfiguration ccfg : cacheConfigurations1())
-            checkCacheData(cacheData, ccfg.getName());
+        checkCachesData(cacheData, dsCfg);
+    }
+
+    /**
+     * Checks that persistent caches are present with actual data and volatile caches are missing.
+     *
+     * @param cacheData Cache data.
+     * @param dsCfg DataStorageConfiguration.
+     */
+    private void checkCachesData(Map<Integer, Integer> cacheData, DataStorageConfiguration dsCfg) {
+        for (CacheConfiguration ccfg : cacheConfigurations1()) {
+            if (CU.isPersistentCache(ccfg, dsCfg))
+                checkCacheData(cacheData, ccfg.getName());
+            else {
+                for (Ignite node : G.allGrids())
+                    assertTrue(node.cache(ccfg.getName()) == null || node.cache(ccfg.getName()).size() == 0);
+            }
+        }
     }
 
     /**

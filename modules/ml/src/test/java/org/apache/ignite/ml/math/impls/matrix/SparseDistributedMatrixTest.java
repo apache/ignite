@@ -23,16 +23,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
@@ -235,12 +234,12 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         Collection<String> cacheNames = ignite.cacheNames();
 
-        assert cacheNames.contains(SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        assert cacheNames.contains(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
-        IgniteCache<IgniteBiTuple<Integer, IgniteUuid>, Map<Integer, Double>> cache = ignite.getOrCreateCache(SparseDistributedMatrixStorage.ML_CACHE_NAME);
+        IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = ignite.getOrCreateCache(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
-        Set<IgniteBiTuple<Integer, IgniteUuid>> keySet1 = buildKeySet(cacheMatrix1);
-        Set<IgniteBiTuple<Integer, IgniteUuid>> keySet2 = buildKeySet(cacheMatrix2);
+        Set<RowColMatrixKey> keySet1 = ((SparseDistributedMatrixStorage)cacheMatrix1.getStorage()).getAllKeys();
+        Set<RowColMatrixKey> keySet2 = ((SparseDistributedMatrixStorage)cacheMatrix2.getStorage()).getAllKeys();
 
         assert cache.containsKeys(keySet1) ||
             keySet1.stream().allMatch(k -> cache.invoke(k, (entry, arguments) -> entry.getKey().equals(k) && entry.getValue().size() == 100));
@@ -289,18 +288,20 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     public void testMatrixTimes(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        SparseDistributedMatrix cacheMatrix1 = new SparseDistributedMatrix(MATRIX_SIZE, MATRIX_SIZE, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-        SparseDistributedMatrix cacheMatrix2 = new SparseDistributedMatrix(MATRIX_SIZE, MATRIX_SIZE, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+        int size = MATRIX_SIZE;
 
-        for (int i = 0; i < MATRIX_SIZE; i++) {
+        SparseDistributedMatrix cacheMatrix1 = new SparseDistributedMatrix(size, size, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseDistributedMatrix cacheMatrix2 = new SparseDistributedMatrix(size, size, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        for (int i = 0; i < size; i++) {
             cacheMatrix1.setX(i, i, i);
             cacheMatrix2.setX(i, i, i);
         }
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
-        for(int i = 0; i < MATRIX_SIZE; i++)
-            for(int j = 0; j < MATRIX_SIZE; j++)
+        for(int i = 0; i < size; i++)
+            for(int j = 0; j < size; j++)
                 if (i == j)
                     assertEquals(UNEXPECTED_VAL, i * i, res.get(i, j), PRECISION);
                 else
@@ -312,20 +313,5 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, 1.0);
-    }
-
-    /** Build key set for SparseDistributedMatrix. */
-    private Set<IgniteBiTuple<Integer, IgniteUuid>> buildKeySet(SparseDistributedMatrix m) {
-        Set<IgniteBiTuple<Integer, IgniteUuid>> set = new HashSet<>();
-
-        SparseDistributedMatrixStorage storage = (SparseDistributedMatrixStorage)m.getStorage();
-
-        IgniteUuid uuid = storage.getUUID();
-        int size = storage.storageMode() == StorageConstants.ROW_STORAGE_MODE ? storage.rowSize() : storage.columnSize();
-
-        for (int i = 0; i < size; i++)
-            set.add(new IgniteBiTuple<>(i, uuid));
-
-        return set;
     }
 }

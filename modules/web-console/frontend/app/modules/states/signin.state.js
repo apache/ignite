@@ -17,6 +17,7 @@
 
 import angular from 'angular';
 import templateUrl from 'views/signin.tpl.pug';
+import controller from 'app/controllers/auth.controller';
 
 angular
 .module('ignite-console.states.login', [
@@ -44,6 +45,9 @@ angular
                     }
                 })
                 .catch(() => true);
-        }
+        },
+        controller,
+        controllerAs: '$ctrl',
+        unsaved: true
     });
 }]);

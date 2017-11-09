@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.impls.matrix;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.impls.storage.matrix.DenseOffHeapMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVector;
 
@@ -79,6 +80,34 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
         for (int i = 0; i < n; i++)
             for (int j = 0; j < n; j++)
                 res.setX(i, j, i == j ? 1.0 : 0.0);
+
+        return res;
+    }
+
+    /**
+     * TODO: IGNITE-5535, WIP, currently it`s tmp naive impl.
+     */
+    @Override public Matrix times(Matrix mtx) {
+        int cols = columnSize();
+
+        if (cols != mtx.rowSize())
+            throw new CardinalityException(cols, mtx.rowSize());
+
+        int rows = rowSize();
+
+        int mtxCols = mtx.columnSize();
+
+        Matrix res = like(rows, mtxCols);
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < mtxCols; y++) {
+                double sum = 0.0;
+
+                for (int k = 0; k < cols; k++)
+                    sum += getX(x, k) * mtx.getX(k, y);
+
+                res.setX(x, y, sum);
+            }
 
         return res;
     }

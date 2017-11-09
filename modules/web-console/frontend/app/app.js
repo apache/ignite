@@ -108,7 +108,6 @@ import id8 from './filters/id8.filter';
 
 // Controllers
 import profile from 'Controllers/profile-controller';
-import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
 
 // Components
@@ -125,8 +124,13 @@ import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
 import gridColumnSelector from './components/grid-column-selector';
+import gridItemSelected from './components/grid-item-selected';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
+import uiGridHovering from './components/ui-grid-hovering';
+import listEditable from './components/list-editable';
+
+import igniteServices from './services';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -187,16 +191,20 @@ angular.module('ignite-console', [
     webConsoleHeader.name,
     webConsoleFooter.name,
     igniteIcon.name,
+    igniteServices.name,
     versionPicker.name,
     userNotifications.name,
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
     gridColumnSelector.name,
+    gridItemSelected.name,
     bsSelectMenu.name,
+    uiGridHovering.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
+    listEditable.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -247,7 +255,6 @@ angular.module('ignite-console', [
 .service('Clusters', Clusters)
 .service('Caches', Caches)
 // Controllers.
-.controller(...auth)
 .controller(...resetPassword)
 .controller(...profile)
 // Filters.
@@ -287,13 +294,10 @@ angular.module('ignite-console', [
     $root.$on('user', () => agentMgr.connect());
 }])
 .run(['$transitions', ($transitions) => {
-    $transitions.onStart({ }, () => {
-        _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
-    });
-
     $transitions.onSuccess({ }, (trans) => {
         try {
-            const {name, params, unsaved} = trans.$to();
+            const {name, unsaved} = trans.$to();
+            const params = trans.params();
 
             if (unsaved)
                 localStorage.removeItem('lastStateChangeSuccess');

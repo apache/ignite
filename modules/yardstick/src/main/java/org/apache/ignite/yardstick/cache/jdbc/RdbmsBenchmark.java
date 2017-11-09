@@ -48,7 +48,7 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        isIgnite = conn.get().getMetaData().getDatabaseProductName().equals("Ignite Cache");
+        isIgnite = conn.get().getMetaData().getDatabaseProductName().equals("Apache Ignite");
 
         if (isIgnite)
             clearCaches();
@@ -124,7 +124,7 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
             case "H2":
                 return conn.prepareStatement("merge into " + tblName + " (id, val) values(?, ?)");
 
-            case "Ignite Cache":
+            case "Apache Ignite":
                 return conn.prepareStatement("merge into " + '"' + tblName + '"' + '.' + tblName + " (_key, val) values(?, ?)");
 
             case "MySQL":
@@ -156,7 +156,7 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
                 // No-op.
                 break;
 
-            case "Ignite Cache":
+            case "Apache Ignite":
                 // No-op.
                 break;
 

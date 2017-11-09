@@ -74,6 +74,10 @@ extern "C" {
         ctx->TargetInStreamAsync(static_cast<jobject>(obj), opType, memPtr);
     }
 
+    void* IGNITE_CALL IgniteTargetInStreamOutObjectAsync(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+        return ctx->TargetInStreamOutObjectAsync(static_cast<jobject>(obj), opType, memPtr);
+    }
+
     void* IGNITE_CALL IgniteAcquire(gcj::JniContext* ctx, void* obj) {
         return ctx->Acquire(static_cast<jobject>(obj));
     }

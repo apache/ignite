@@ -16,10 +16,6 @@
 
 .wch-demo-toggle(ng-controller='demoController')
     button.btn-ignite.btn-ignite--success(
-        ng-if='IgniteDemoMode'
-        ng-click='closeDemo()'
-    ) Close Demo
-    button.btn-ignite.btn-ignite--success(
         ng-if='!IgniteDemoMode'
         ng-click='startDemo()'
     ) Start Demo

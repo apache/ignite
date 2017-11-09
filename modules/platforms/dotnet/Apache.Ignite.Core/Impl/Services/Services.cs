@@ -25,15 +25,14 @@ namespace Apache.Ignite.Core.Impl.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Services;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal sealed class Services : PlatformTarget, IServices
+    internal sealed class Services : PlatformTargetAdapter, IServices
     {
         /** */
         private const int OpDeploy = 1;
@@ -87,13 +86,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Initializes a new instance of the <see cref="Services" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
         /// <param name="keepBinary">Invoker binary flag.</param>
         /// <param name="srvKeepBinary">Server binary flag.</param>
-        public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
+        public Services(IPlatformTargetInternal target, IClusterGroup clusterGroup, 
             bool keepBinary, bool srvKeepBinary)
-            : base(target, marsh)
+            : base(target)
         {
             Debug.Assert(clusterGroup  != null);
 
@@ -108,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_keepBinary)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepBinary);
+            return new Services(Target, _clusterGroup, true, _srvKeepBinary);
         }
 
         /** <inheritDoc /> */
@@ -117,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_srvKeepBinary)
                 return this;
 
-            return new Services(DoOutOpObject(OpWithServerKeepBinary), Marshaller, _clusterGroup, _keepBinary, true);
+            return new Services(DoOutOpObject(OpWithServerKeepBinary), _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */
@@ -204,13 +202,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
-            DoOutOp(OpDeployMultiple, w =>
+            DoOutInOp(OpDeployMultiple, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -225,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -233,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
+            DoOutInOp(OpDeploy, w => WriteServiceConfiguration(configuration, w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -241,7 +239,8 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
+            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w), 
+                _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -372,12 +371,13 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args, 
+        private object InvokeProxyMethod(IPlatformTargetInternal proxy, MethodBase method, object[] args, 
             Platform platform)
         {
             return DoOutInOp(OpInvokeMethod,
                 writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
-                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), 
+                proxy);
         }
 
         /// <summary>
@@ -399,6 +399,23 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(configuration.NodeFilter);
             else
                 w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(BinaryReader r)
+        {
+            return r != null ? ReadDeploymentResult(r.Stream) : null;
+        }
+
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(IBinaryStream s)
+        {
+            ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
+            return null;
         }
     }
 }
