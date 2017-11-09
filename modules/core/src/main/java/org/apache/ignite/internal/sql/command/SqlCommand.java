@@ -15,41 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.compute;
+package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.internal.sql.SqlLexer;
 
 /**
+ * Generic SQL command.
  */
-public class ExternalCallable implements IgniteCallable {
-    /** */
-    @IgniteInstanceResource
-    Ignite ignite;
-
-    /** */
-    private int param;
+public interface SqlCommand {
+    /**
+     * Parse command.
+     *
+     * @param lex Lexer.
+     * @return This instance.
+     */
+    public SqlCommand parse(SqlLexer lex);
 
     /**
+     * @return Schema name.
      */
-    public ExternalCallable() {
-        // No-op.
-    }
+    public String schemaName();
 
     /**
-     * @param param Param.
+     * @param schemaName Schema name.
      */
-    public ExternalCallable(int param) {
-        this.param = param;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object call() {
-        System.err.println("!!!!! I am job " + param + " on " + ignite.name());
-
-        return  42;
-    }
+    public void schemaName(String schemaName);
 }
-
-

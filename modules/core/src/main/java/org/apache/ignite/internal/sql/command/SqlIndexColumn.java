@@ -15,41 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.compute;
+package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
+ * Index column definition.
  */
-public class ExternalCallable implements IgniteCallable {
-    /** */
-    @IgniteInstanceResource
-    Ignite ignite;
+public class SqlIndexColumn {
+    /** Column name. */
+    private final String name;
 
-    /** */
-    private int param;
+    /** Descending flag. */
+    private final boolean desc;
 
     /**
+     * Constructor.
+     *
+     * @param name Column name.
+     * @param desc Descending flag.
      */
-    public ExternalCallable() {
-        // No-op.
+    public SqlIndexColumn(String name, boolean desc) {
+        this.name = name;
+        this.desc = desc;
     }
 
     /**
-     * @param param Param.
+     * @return Column name.
      */
-    public ExternalCallable(int param) {
-        this.param = param;
+    public String name() {
+        return name;
+    }
+
+    /**
+     * @return Descending flag.
+     */
+    public boolean descending() {
+        return desc;
     }
 
     /** {@inheritDoc} */
-    @Override public Object call() {
-        System.err.println("!!!!! I am job " + param + " on " + ignite.name());
-
-        return  42;
+    @Override public String toString() {
+        return S.toString(SqlIndexColumn.class, this);
     }
 }
-
-

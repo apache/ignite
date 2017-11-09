@@ -15,41 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.compute;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.resources.IgniteInstanceResource;
+package org.apache.ignite.internal.sql;
 
 /**
+ * SQL parser token interface.
  */
-public class ExternalCallable implements IgniteCallable {
-    /** */
-    @IgniteInstanceResource
-    Ignite ignite;
-
-    /** */
-    private int param;
+public interface SqlLexerToken {
+    /**
+     * @return Original SQL.
+     */
+    public String sql();
 
     /**
+     * @return Current token.
      */
-    public ExternalCallable() {
-        // No-op.
-    }
+    public String token();
 
     /**
-     * @param param Param.
+     * @return First character of the current token.
      */
-    public ExternalCallable(int param) {
-        this.param = param;
-    }
+    public char tokenFirstChar();
 
-    /** {@inheritDoc} */
-    @Override public Object call() {
-        System.err.println("!!!!! I am job " + param + " on " + ignite.name());
+    /**
+     * @return Current token start position.
+     */
+    public int tokenPosition();
 
-        return  42;
-    }
+    /**
+     * @return Token type.
+     */
+    public SqlLexerTokenType tokenType();
 }
-
-
