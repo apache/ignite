@@ -196,8 +196,6 @@ namespace ignite
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive probes period");
                 }
-
-                return true;
             }
         }
     }
