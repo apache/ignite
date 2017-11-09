@@ -184,13 +184,14 @@ public class IgnitionEx {
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
     /*
-     * Checks runtime version to be 1.7.x or 1.8.x.
+     * Checks runtime version to be 1.7.x or 1.8.x or 9.x.x.
      * This will load pretty much first so we must do these checks here.
      */
     static {
-        // Check 1.8 just in case for forward compatibility.
+        // Check 1.8 and 9 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
-            !U.jdkVersion().contains("1.8")) {
+            !U.jdkVersion().contains("1.8") &&
+            !U.jdkVersion().startsWith("9")) {
             throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
         }
