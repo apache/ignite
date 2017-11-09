@@ -19,8 +19,9 @@
 #define _WINSOCKAPI_
 
 #include <windows.h>
-#include <winsock2.h>
+#include <ws2def.h>
 #include <ws2tcpip.h>
+#include <mstcpip.h>
 
 #include <cstring>
 
@@ -95,9 +96,16 @@ namespace ignite
                     if (socketHandle == INVALID_SOCKET)
                         return false;
 
+                    if (!SetOptions(socketHandle))
+                    {
+                        Close();
+
+                        return false;
+                    }
+
                     // Connect to server.
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
-                    if (res == SOCKET_ERROR)
+                    if (SOCKET_ERROR == res)
                     {
                         Close();
 
@@ -130,6 +138,84 @@ namespace ignite
             {
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
+
+            bool SocketClient::SetOptions(const intptr_t socketHandle)
+            {
+                bool trueOpt = true;
+                int bufSizeOpt = IGNITE_SOCKET_SIZE;
+
+                int res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE, (char *) &trueOpt, sizeof(trueOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_KEEPALIVE");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_SNDBUF");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_RCVBUF");
+                }
+                
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY, (char *) &trueOpt, sizeof(trueOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_NODELAY");
+                }
+
+#ifdef defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)	// This option is available starting with Windows 10, version 1709.
+                DWORD idleOpt = IGNITE_TCP_KEEPIDLE;
+                DWORD idleRetryOpt = IGNITE_TCP_KEEPINTVL;
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, (char *) &idleOpt, sizeof(idleOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_KEEPIDLE");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL, (char *) &idleRetryOpt, sizeof(idleRetryOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_KEEPINTVL");
+                }
+#else // use old hardcore WSAIoctl
+
+                // WinSock structure for KeepAlive timing settings
+                struct tcp_keepalive settings;
+                settings.onoff = 1;
+                settings.keepalivetime = IGNITE_TCP_KEEPIDLE * 1000;
+                settings.keepaliveinterval = IGNITE_TCP_KEEPINTVL * 1000;
+
+                // pointers for WinSock call
+                DWORD bytesReturned;
+                WSAOVERLAPPED overlapped;
+                overlapped.hEvent = NULL;
+
+                // Set KeepAlive settings
+                res = WSAIoctl(
+                    socketHandle,
+                    SIO_KEEPALIVE_VALS,
+                    &settings,
+                    sizeof(struct tcp_keepalive),
+                    NULL,
+                    0,
+                    &bytesReturned,
+                    &overlapped,
+                    NULL
+                );
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("WSAIoctl failed for tcp_keepalive");
+                }
+#endif
+                return true;
+            }
+
         }
     }
 }

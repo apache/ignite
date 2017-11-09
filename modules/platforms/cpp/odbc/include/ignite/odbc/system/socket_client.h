@@ -22,6 +22,10 @@
 
 #include "ignite/common/common.h"
 
+#define IGNITE_SOCKET_SIZE      0x10000
+#define IGNITE_TCP_KEEPIDLE     60
+#define IGNITE_TCP_KEEPINTVL    1
+
 namespace ignite
 {
     namespace odbc
@@ -81,6 +85,13 @@ namespace ignite
                 int Receive(int8_t* buffer, size_t size);
 
             private:
+                /**
+                 * Sets socket options.
+                 *
+                 * @return True on success.
+                 */
+                bool SetOptions(const intptr_t socketHandle);
+
                 intptr_t socketHandle;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)

@@ -17,7 +17,7 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 #include <unistd.h>
 
@@ -82,9 +82,16 @@ namespace ignite
                     if (socketHandle == SOCKET_ERROR)
                         return false;
 
+                    if (!SetOptions(socketHandle))
+                    {
+                        Close();
+
+                        return false;
+                    }
+
                     // Connect to server.
                     res = connect(socketHandle, it->ai_addr, (int)it->ai_addrlen);
-                    if (res == SOCKET_ERROR) 
+                    if (SOCKET_ERROR == res) 
                     {
                         Close();
 
@@ -116,6 +123,52 @@ namespace ignite
             int SocketClient::Receive(int8_t* buffer, size_t size)
             {
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
+            }
+
+            bool SocketClient::SetOptions(const intptr_t socketHandle)
+            {
+                int trueOpt = 1;
+                int bufSizeOpt = IGNITE_SOCKET_SIZE;
+                int idleOpt = IGNITE_TCP_KEEPIDLE;
+                int idleRetryOpt = IGNITE_TCP_KEEPINTVL;
+
+                int res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE, (char *) &trueOpt, sizeof(trueOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_KEEPALIVE");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_SNDBUF");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for SO_RCVBUF");
+                }
+                
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY, (char *) &trueOpt, sizeof(trueOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_NODELAY");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, (char *) &idleOpt, sizeof(idleOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_KEEPIDLE");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL, (char *) &idleRetryOpt, sizeof(idleRetryOpt));
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("setsockopt failed for TCP_KEEPINTVL");
+                }
+
+                return true;
             }
         }
     }
