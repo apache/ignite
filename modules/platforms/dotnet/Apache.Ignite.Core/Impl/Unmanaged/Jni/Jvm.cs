@@ -306,6 +306,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 return GetOrCreate(null)._callbacks;
             }
+
+            /** <inheritdoc /> */
+            public override object InitializeLifetimeService()
+            {
+                // By default, LifetimeService causes a cross-AppDomain reference to expire in 5 minutes.
+                // Return null for the eternal reference.
+                return null;
+            }
         }
 
         /// <summary>
