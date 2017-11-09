@@ -78,6 +78,10 @@ export default class IgniteConfigurationGenerator {
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
         this.clusterCheckpoint(cluster, cluster.caches, cfg);
+
+        if (available('2.3.0'))
+            this.clusterClientConnector(cluster, available, cfg);
+
         this.clusterCollision(cluster.collision, cfg);
         this.clusterCommunication(cluster, cfg);
         this.clusterConnector(cluster.connector, cfg);
@@ -106,7 +110,9 @@ export default class IgniteConfigurationGenerator {
         if (available(['2.1.0', '2.3.0']))
             this.clusterPersistence(cluster.persistenceStoreConfiguration, available, cfg);
 
-        this.clusterQuery(cluster, available, cfg);
+        if (available(['2.1.0', '2.3.0']))
+            this.clusterQuery(cluster, available, cfg);
+
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, cfg);
 
@@ -756,6 +762,33 @@ export default class IgniteConfigurationGenerator {
         }), (checkpointBean) => _.nonNil(checkpointBean));
 
         cfg.arrayProperty('checkpointSpi', 'checkpointSpi', cfgs, 'org.apache.ignite.spi.checkpoint.CheckpointSpi');
+
+        return cfg;
+    }
+
+    // Generate cluster query group.
+    static clusterClientConnector(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (!available('2.3.0'))
+            return cfg;
+
+        cfg.intProperty('longQueryWarningTimeout');
+
+        if (_.get(cluster, 'clientConnectorConfiguration.enabled') !== true)
+            return cfg;
+
+        const bean = new Bean('org.apache.ignite.configuration.ClientConnectorConfiguration', 'cliConnCfg',
+            cluster.clientConnectorConfiguration, clusterDflts.clientConnectorConfiguration);
+
+        bean.stringProperty('host')
+            .intProperty('port')
+            .intProperty('portRange')
+            .intProperty('socketSendBufferSize')
+            .intProperty('socketReceiveBufferSize')
+            .intProperty('maxOpenCursorsPerConnection')
+            .intProperty('threadPoolSize')
+            .boolProperty('tcpNoDelay');
+
+        cfg.beanProperty('clientConnectorConfiguration', bean);
 
         return cfg;
     }
