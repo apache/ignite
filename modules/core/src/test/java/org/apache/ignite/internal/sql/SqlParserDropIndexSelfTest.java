@@ -51,7 +51,7 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
 
         parseValidate(null, "DROP INDEX \"schema\".\"idx\"", "schema", "idx");
 
-        assertParseError(null, "DROP INDEX .idx", "Unexpected");
+        assertParseError(null, "DROP INDEX .idx", "Unexpected token: \".\"");
 
         // IF EXISTS
         SqlDropIndexCommand cmd;
