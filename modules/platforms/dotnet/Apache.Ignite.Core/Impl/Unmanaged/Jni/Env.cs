@@ -213,7 +213,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             var res = _findClass(_envPtr, name);
 
-            ExceptionCheck();
+            if (res == IntPtr.Zero)
+            {
+                throw new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
+                                          "variable?): " + name);
+            }
 
             return NewGlobalRef(res);
         }
@@ -231,7 +235,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             var res = _getStaticMethodId(_envPtr, clazz.Target, name, signature);
 
-            ExceptionCheck();
+            if (res == IntPtr.Zero)
+            {
+                throw new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
+                                          "variable?): " + name + " " + signature);
+            }
 
             return res;
         }
@@ -240,7 +248,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             var res = _getMethodId(_envPtr, clazz.Target, name, signature);
 
-            ExceptionCheck();
+            if (res == IntPtr.Zero)
+            {
+                throw new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
+                                          "variable?): " + name + " " + signature);
+            }
 
             return res;
         }
