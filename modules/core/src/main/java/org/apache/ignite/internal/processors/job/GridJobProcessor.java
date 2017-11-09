@@ -1047,7 +1047,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPred();
 
                         if(topologyPred == null && req.getTopologyPredBytes() != null)
-                            topologyPred = U.unmarshal(marsh, req.getTopologyPredBytes(), U.resolveClassLoader(ctx.config()));
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredBytes(),
+                                U.resolveClassLoader(dep.classLoader(),ctx.config()));
 
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
