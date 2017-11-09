@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Parse exception.
  */
 public class SqlParseException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** SQL command. */
     private final String sql;
 

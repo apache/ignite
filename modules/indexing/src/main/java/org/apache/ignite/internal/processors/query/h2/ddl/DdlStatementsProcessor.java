@@ -478,6 +478,8 @@ public class DdlStatementsProcessor {
                 }
             }
 
+            assert valCol != null;
+
             valTypeName = DataType.getTypeClassName(valCol.column().getType());
 
             res.setValueFieldName(valCol.columnName());

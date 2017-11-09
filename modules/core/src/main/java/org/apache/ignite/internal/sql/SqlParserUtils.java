@@ -165,7 +165,7 @@ public class SqlParserUtils {
 
                 if ((c >= 'A' && c <= 'Z') || c == '_') {
                     if (SqlKeyword.isKeyword(token.token()))
-                        throw error(token, "Identifier is expected, but keyword is found: " + token.token());
+                        throw errorUnexpectedToken(token, "[identifier]");
 
                     return true;
                 }
@@ -243,11 +243,11 @@ public class SqlParserUtils {
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param lex Lexer.
+     * @param token Token.
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexer lex) {
-        return errorUnexpectedToken0(lex);
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken token) {
+        return errorUnexpectedToken0(token);
     }
 
     /**
@@ -258,7 +258,7 @@ public class SqlParserUtils {
      */
     public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String keyword) {
         if (matchesKeyword(token, keyword))
-            throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION, "Unsupported keyword: " + token.token());
+            throw errorUnsupported(token);
     }
 
     /**
@@ -276,6 +276,17 @@ public class SqlParserUtils {
     }
 
     /**
+     * Error on unsupported keyword.
+     *
+     * @param token Token.
+     * @return Error.
+     */
+    public static SqlParseException errorUnsupported(SqlLexerToken token) {
+        throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            "Unsupported keyword: \"" + token.token() + "\"");
+    }
+
+    /**
      * Create generic parse exception due to unexpected token.
      *
      * @param lex Lexer.
@@ -289,14 +300,15 @@ public class SqlParserUtils {
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param lex Lexer.
+     * @param token Token.
      * @param firstExpToken First expected token.
      * @param expTokens Additional expected tokens (if any).
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexer lex, String firstExpToken, String... expTokens) {
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken token, String firstExpToken,
+        String... expTokens) {
         if (F.isEmpty(expTokens))
-            return errorUnexpectedToken0(lex, firstExpToken);
+            return errorUnexpectedToken0(token, firstExpToken);
         else {
             String[] expTokens0 = new String[expTokens.length + 1];
 
@@ -304,23 +316,23 @@ public class SqlParserUtils {
 
             System.arraycopy(expTokens, 0, expTokens0, 1, expTokens.length);
 
-            throw errorUnexpectedToken0(lex, expTokens0);
+            throw errorUnexpectedToken0(token, expTokens0);
         }
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param lex Lexer.
+     * @param token Token.
      * @param expTokens Expected tokens (if any).
      * @return Exception.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private static SqlParseException errorUnexpectedToken0(SqlLexer lex, String... expTokens) {
-        String token = lex.token();
+    private static SqlParseException errorUnexpectedToken0(SqlLexerToken token, String... expTokens) {
+        String token0 = token.token();
 
         StringBuilder msg = new StringBuilder(
-            token == null ? "Unexpected end of command" : "Unexpected token: \"" + token + "\"");
+            token0 == null ? "Unexpected end of command" : "Unexpected token: \"" + token0 + "\"");
 
         if (!F.isEmpty(expTokens)) {
             msg.append(" (expected: ");
@@ -339,7 +351,7 @@ public class SqlParserUtils {
             msg.append(")");
         }
 
-        throw error(lex, msg.toString());
+        throw error(token, msg.toString());
     }
 
     /**
