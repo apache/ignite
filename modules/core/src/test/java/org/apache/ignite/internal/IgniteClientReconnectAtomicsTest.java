@@ -784,9 +784,6 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         testReentrantLockReconnect(true);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     private void testReentrantLockReconnect(final boolean fair) throws Exception {
         Ignite client = grid(serverCount());
 
@@ -833,59 +830,5 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertFalse(clientLock.isLocked());
 
         assertEquals(0, srvLock.getHoldCount());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReentrantLockReconnect2() throws Exception {
-        testReentrantLockReconnect2(false);
-
-        testReentrantLockReconnect2(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void testReentrantLockReconnect2(final boolean fair) throws Exception {
-        Ignite client = grid(serverCount());
-
-        assertTrue(client.cluster().localNode().isClient());
-
-        Ignite srv = clientRouter(client);
-
-        IgniteLock clientLock = client.reentrantLock("lock1", fair, true);
-
-        assertFalse(clientLock.isLocked());
-
-        final IgniteLock srvLock = srv.reentrantLock("lock1", fair, true);
-
-        assertFalse(srvLock.isLocked());
-
-        reconnectClientNode(client, srv, new Runnable() {
-            @Override public void run() {
-                srvLock.lock();
-            }
-        });
-
-        assertFalse(srvLock == clientLock);
-
-        assertTrue(srvLock.isLocked());
-        assertTrue(clientLock.isLocked());
-
-        srvLock.lock();
-
-        assertTrue(srvLock.isLocked());
-        assertTrue(clientLock.isLocked());
-
-        srvLock.unlock();
-
-        assertFalse(srvLock.isLocked());
-        assertFalse(clientLock.isLocked());
-
-        srvLock.unlock();
-
-        assertFalse(srvLock.isLocked());
-        assertFalse(clientLock.isLocked());
     }
 }
