@@ -108,6 +108,18 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
+     *
+     */
+    public List<BaselineNode> currentBaseline() {
+        List<BaselineNode> res = new ArrayList<>();
+
+        for (Map.Entry<Object, Map<String, Object>> consIdAttrsEntry : nodeMap.entrySet())
+            res.add(new DetachedClusterNode(consIdAttrsEntry.getKey(), consIdAttrsEntry.getValue()));
+
+        return res;
+    }
+
+    /**
      * @param aliveNodes Sorted list of currently alive nodes.
      * @param nodeFilter Node filter.
      * @return Sorted list of baseline topology nodes.
