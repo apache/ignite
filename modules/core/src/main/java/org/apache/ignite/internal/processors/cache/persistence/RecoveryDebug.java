@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.TimeZone;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -32,9 +33,17 @@ public class RecoveryDebug {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
+    @Nullable private final IgniteLogger log;
+
     @Nullable private FileChannel fc;
 
     public RecoveryDebug(Object constId) {
+        this(constId, null);
+    }
+
+    public RecoveryDebug(Object constId, @Nullable IgniteLogger log) {
+        this.log = log;
+
         try {
             String workDir = U.defaultWorkDirectory();
 
@@ -51,6 +60,8 @@ public class RecoveryDebug {
             fc = FileChannel.open(Paths.get(f.getPath()), EnumSet.of(CREATE, READ, WRITE));
         }
         catch (IgniteCheckedException | IOException e) {
+            U.error(log, "Fail create recovery debug file.", e);
+
             fc = null;
         }
     }
