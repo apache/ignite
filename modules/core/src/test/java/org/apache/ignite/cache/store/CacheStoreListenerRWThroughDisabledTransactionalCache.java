@@ -41,6 +41,9 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         return TRANSACTIONAL;
     }
 
+    /**
+     * Tests {@link IgniteCache#get(Object)} with disabled read-through and write-through modes.
+     */
     public void testTransactionalLookup() {
         testTransactionalLookup(OPTIMISTIC, READ_COMMITTED);
         testTransactionalLookup(OPTIMISTIC, REPEATABLE_READ);
@@ -51,6 +54,10 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         testTransactionalLookup(PESSIMISTIC, SERIALIZABLE);
     }
 
+    /**
+     * @param concurrency Transaction concurrency level.
+     * @param isolation Transaction isolation level.
+     */
     private void testTransactionalLookup(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -64,6 +71,9 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         }
     }
 
+    /**
+     * Tests {@link IgniteCache#put(Object, Object)} with disabled read-through and write-through modes.
+     */
     public void testTransactionalUpdate() {
         testTransactionalUpdate(OPTIMISTIC, READ_COMMITTED);
         testTransactionalUpdate(OPTIMISTIC, REPEATABLE_READ);
@@ -74,6 +84,10 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         testTransactionalUpdate(PESSIMISTIC, SERIALIZABLE);
     }
 
+    /**
+     * @param concurrency Transaction concurrency level.
+     * @param isolation Transaction isolation level.
+     */
     private void testTransactionalUpdate(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -87,6 +101,9 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         }
     }
 
+    /**
+     * Tests {@link IgniteCache#remove(Object)} with disabled read-through and write-through modes.
+     */
     public void testTransactionalRemove() {
         testTransactionalRemove(OPTIMISTIC, READ_COMMITTED);
         testTransactionalRemove(OPTIMISTIC, REPEATABLE_READ);
@@ -97,6 +114,10 @@ public class CacheStoreListenerRWThroughDisabledTransactionalCache extends Cache
         testTransactionalRemove(PESSIMISTIC, SERIALIZABLE);
     }
 
+    /**
+     * @param concurrency Transaction concurrency level.
+     * @param isolation Transaction isolation level.
+     */
     private void testTransactionalRemove(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 

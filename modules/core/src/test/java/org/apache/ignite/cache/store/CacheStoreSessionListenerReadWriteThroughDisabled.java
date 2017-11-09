@@ -59,7 +59,7 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
 
-        cacheCfg.setCacheStoreSessionListenerFactories(new CacheStroreSessionFactory());
+        cacheCfg.setCacheStoreSessionListenerFactories(new CacheStoreSessionFactory());
 
         cacheCfg.setReadThrough(false);
         cacheCfg.setWriteThrough(false);
@@ -74,6 +74,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         return null;
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#get(Object)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testLookup() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -83,6 +90,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
             cache.get(r.nextInt());
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#getAll(Set)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testBatchLookup() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -96,6 +110,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         cache.getAll(values);
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#put(Object, Object)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testUpdate() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -105,6 +126,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
             cache.put(r.nextInt(), "test-value");
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#putAll(Map)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testBatchUpdate() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -118,6 +146,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         cache.putAll(values);
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#remove(Object)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testRemove() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -132,6 +167,13 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         }
     }
 
+    /**
+     * Tests that there are no calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)} and
+     * {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#removeAll(Set)} performed.
+     *
+     * @throws Exception If failed.
+     */
     public void testBatchRemove() throws Exception {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -150,7 +192,10 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         cache.removeAll(values);
     }
 
-    public static class CacheStroreSessionFactory implements Factory<TestCacheStoreSessionListener> {
+    /**
+     * Cache store session factory.
+     */
+    public static class CacheStoreSessionFactory implements Factory<TestCacheStoreSessionListener> {
         /** {@inheritDoc} */
         @Override public TestCacheStoreSessionListener create() {
             TestCacheStoreSessionListener lsnr = new TestCacheStoreSessionListener();
@@ -159,6 +204,9 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
         }
     }
 
+    /**
+     * Test cache store session listener.
+     */
     public static class TestCacheStoreSessionListener extends CacheJdbcStoreSessionListener {
         /** {@inheritDoc} */
         @Override public void onSessionStart(CacheStoreSession ses) {
@@ -180,48 +228,62 @@ public abstract class CacheStoreSessionListenerReadWriteThroughDisabled extends 
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public void write(Cache.Entry entry) throws CacheWriterException {
             fail("EmptyCacheStore.write(Cache.Entry) should not be called.");
         }
 
+        /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             fail("EmptyCacheStore.delete(Object) should not be called.");
         }
     }
 
+    /**
+     * Data source stub which should not be called.
+     */
     public static class DataSourceStub implements DataSource, Serializable {
+        /** {@inheritDoc} */
         @Override public Connection getConnection() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public Connection getConnection(String username, String password) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> iface) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public PrintWriter getLogWriter() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public void setLogWriter(PrintWriter out) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public void setLoginTimeout(int seconds) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public int getLoginTimeout() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
             throw new UnsupportedOperationException();
         }

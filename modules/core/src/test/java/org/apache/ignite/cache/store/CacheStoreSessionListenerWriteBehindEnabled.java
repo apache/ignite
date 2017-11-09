@@ -72,7 +72,7 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
 
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(EmptyCacheStore.class));
 
-        cacheCfg.setCacheStoreSessionListenerFactories(new CacheStroreSessionFactory());
+        cacheCfg.setCacheStoreSessionListenerFactories(new CacheStoreSessionFactory());
 
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
@@ -95,6 +95,10 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         entryCnt.set(0);
     }
 
+    /**
+     * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#get(Object)} performed.
+     */
     public void testLookup() {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -104,6 +108,10 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         checkSessionCounters(CNT);
     }
 
+    /**
+     * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#put(Object, Object)} performed.
+     */
     public void testUpdate() {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -113,6 +121,10 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         checkSessionCounters(1);
     }
 
+    /**
+     * Tests that there are no redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+     * while {@link IgniteCache#remove(Object)} performed.
+     */
     public void testRemove() {
         IgniteCache cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -123,6 +135,9 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         checkSessionCounters(1);
     }
 
+    /**
+     * @param startedSessions Number of expected sessions.
+     */
     private void checkSessionCounters(int startedSessions) {
         try {
             // Wait for GridCacheWriteBehindStore
@@ -139,6 +154,11 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         }
     }
 
+    /**
+     * @param operations List of {@link OperationType}.
+     * @param op Operation.
+     * @param expected Expected number of operations for the given {@code op}.
+     */
     private void checkOpCount(List<OperationType> operations, OperationType op, int expected) {
         int n = 0;
 
@@ -150,13 +170,25 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         assertEquals("Operation=" + op.name(), expected, n);
     }
 
+    /**
+     * Operation type.
+     */
     public enum OperationType {
+        /**
+         * Cache store session started.
+         */
         SESSION_START,
 
+        /**
+         * Cache store session ended.
+         */
         SESSION_END,
     }
 
-    public static class CacheStroreSessionFactory implements Factory<TestCacheStoreSessionListener> {
+    /**
+     * Cache store session factory.
+     */
+    public static class CacheStoreSessionFactory implements Factory<TestCacheStoreSessionListener> {
         /** {@inheritDoc} */
         @Override public TestCacheStoreSessionListener create() {
             TestCacheStoreSessionListener lsnr = new TestCacheStoreSessionListener();
@@ -165,7 +197,11 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         }
     }
 
+    /**
+     * Test cache store session listener.
+     */
     public static class TestCacheStoreSessionListener extends CacheJdbcStoreSessionListener {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -180,7 +216,14 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         }
     }
 
+    /**
+     * Test cache store.
+     *
+     * {@link EmptyCacheStore#writeAll(Collection)} and {@link EmptyCacheStore#deleteAll(Collection)} should be called
+     * by {@link GridCacheWriteBehindStore}.
+     */
     public static class EmptyCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -209,39 +252,51 @@ public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstra
         }
     }
 
+    /**
+     * Data source stub which should not be called.
+     */
     public static class DataSourceStub implements DataSource, Serializable {
+        /** {@inheritDoc} */
         @Override public Connection getConnection() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public Connection getConnection(String username, String password) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> iface) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public PrintWriter getLogWriter() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public void setLogWriter(PrintWriter out) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public void setLoginTimeout(int seconds) throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public int getLoginTimeout() throws SQLException {
             throw new UnsupportedOperationException();
         }
 
+        /** {@inheritDoc} */
         @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
             throw new UnsupportedOperationException();
         }
