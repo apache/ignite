@@ -64,7 +64,6 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError(null, "DROP INDEX IF idx", "Unexpected token: \"IDX\"");
 
-        // TODO: Wrong message
         assertParseError(null, "DROP INDEX EXISTS idx", "Unexpected token: \"EXISTS\"");
     }
 
