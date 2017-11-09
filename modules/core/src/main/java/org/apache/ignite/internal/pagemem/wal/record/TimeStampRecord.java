@@ -57,6 +57,7 @@ public abstract class TimeStampRecord extends WALRecord {
     public long timestamp() {
         return timestamp;
     }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TimeStampRecord.class, this);
