@@ -736,7 +736,7 @@ public class BinaryUtils {
      * @param arr Array to check.
      * @return {@code true} if this array is of a known type.
      */
-    public static boolean knownArray(Object arr) {
+    public static boolean knownArray(@Nullable Object arr) {
         if (arr == null)
             return false;
 
