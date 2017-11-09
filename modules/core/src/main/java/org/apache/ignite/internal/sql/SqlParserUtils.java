@@ -163,14 +163,7 @@ public class SqlParserUtils {
             case DEFAULT:
                 char c = token.tokenFirstChar();
 
-                if ((c >= 'A' && c <= 'Z') || c == '_') {
-                    if (SqlKeyword.isKeyword(token.token()))
-                        throw errorUnexpectedToken(token, "[identifier]");
-
-                    return true;
-                }
-
-                throw error(token, "Illegal identifier name: " + token.token());
+                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(token.token());
 
             case QUOTED:
                 return true;

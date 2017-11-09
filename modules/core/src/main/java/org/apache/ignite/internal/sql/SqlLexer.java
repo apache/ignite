@@ -176,6 +176,10 @@ public class SqlLexer implements SqlLexerToken {
             }
         }
 
+        token = null;
+        tokenPos = pos;
+        tokenTyp = SqlLexerTokenType.EOF;
+
         return false;
     }
 
@@ -191,6 +195,8 @@ public class SqlLexer implements SqlLexerToken {
 
     /** {@inheritDoc} */
     public char tokenFirstChar() {
+        assert tokenTyp != SqlLexerTokenType.EOF;
+
         return token.charAt(0);
     }
 
