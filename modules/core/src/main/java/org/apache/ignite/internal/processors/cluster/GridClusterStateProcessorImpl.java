@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -472,7 +474,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
-        Collection<ClusterNode> baselineNodes,
+        Collection<BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology) {
         BaselineTopology blt;
 
@@ -485,11 +487,22 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             blt.updateHistory(baselineNodes);
         }
         else if (activate && baselineNodes == null && globalState.baselineTopology() == null)
-            blt = BaselineTopology.build(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE));
+            blt = BaselineTopology.build(baselineNodes());
         else
             blt = BaselineTopology.build(baselineNodes);
 
         return changeGlobalState0(activate, blt);
+    }
+
+    private Collection<BaselineNode> baselineNodes() {
+        List<ClusterNode> clusterNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        ArrayList<BaselineNode> baselineNodes = new ArrayList<>(clusterNodes.size());
+
+        for (ClusterNode clNode : clusterNodes)
+            baselineNodes.add(clNode);
+
+        return baselineNodes;
     }
 
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,

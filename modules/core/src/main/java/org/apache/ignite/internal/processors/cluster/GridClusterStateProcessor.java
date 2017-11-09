@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -86,7 +87,7 @@ public interface GridClusterStateProcessor extends GridProcessor {
      * @param activate New cluster state.
      * @return State change future.
      */
-    IgniteInternalFuture<?> changeGlobalState(boolean activate, Collection<ClusterNode> baselineNodes
+    IgniteInternalFuture<?> changeGlobalState(boolean activate, Collection<BaselineNode> baselineNodes
         , boolean forceChangeBaselineTopology);
 
     /**

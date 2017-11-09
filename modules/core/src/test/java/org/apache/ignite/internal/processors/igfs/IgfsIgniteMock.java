@@ -623,11 +623,6 @@ public class IgfsIgniteMock implements IgniteEx {
         return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
-    /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<ClusterNode> nodes) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
     /**
      * Throw {@link UnsupportedOperationException}.
      */
