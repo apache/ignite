@@ -181,7 +181,7 @@ public class BaselineTopology implements Serializable {
      * @param nodes Nodes.
      * @return Baseline topology consisting of given nodes.
      */
-    @Nullable public static BaselineTopology build(Collection<BaselineNode> nodes) {
+    @Nullable public static BaselineTopology build(Collection<? extends BaselineNode> nodes) {
         if (nodes == null)
             return null;
 
@@ -208,7 +208,7 @@ public class BaselineTopology implements Serializable {
     /**
      * @param nodes Nodes.
      */
-    boolean updateHistory(Collection<BaselineNode> nodes) {
+    boolean updateHistory(Collection<? extends BaselineNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
         if (activationHash != newTopHash) {
@@ -225,7 +225,7 @@ public class BaselineTopology implements Serializable {
     /**
      * @param nodes Nodes.
      */
-    private long calculateTopologyHash(Collection<BaselineNode> nodes) {
+    private long calculateTopologyHash(Collection<? extends BaselineNode> nodes) {
         long res = 0;
 
         for (BaselineNode node : nodes)

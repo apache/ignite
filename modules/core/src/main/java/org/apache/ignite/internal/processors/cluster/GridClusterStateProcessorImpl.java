@@ -474,7 +474,7 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(final boolean activate,
-        Collection<BaselineNode> baselineNodes,
+        Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology) {
         BaselineTopology blt;
 

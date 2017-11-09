@@ -300,7 +300,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void setBaselineTopology(Collection<BaselineNode> baselineTop) {
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
         guard();
 
         try {

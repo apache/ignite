@@ -87,7 +87,7 @@ public interface GridClusterStateProcessor extends GridProcessor {
      * @param activate New cluster state.
      * @return State change future.
      */
-    IgniteInternalFuture<?> changeGlobalState(boolean activate, Collection<BaselineNode> baselineNodes
+    IgniteInternalFuture<?> changeGlobalState(boolean activate, Collection<? extends BaselineNode> baselineNodes
         , boolean forceChangeBaselineTopology);
 
     /**
