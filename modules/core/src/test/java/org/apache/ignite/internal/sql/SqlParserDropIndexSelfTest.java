@@ -38,7 +38,6 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate(null, "DROP INDEX \"IDX\"", null, "IDX");
         parseValidate(null, "DROP INDEX \"iDx\"", null, "iDx");
 
-        // TODO: wrong message!
         assertParseError(null, "DROP INDEX", "Unexpected");
 
         // Schema.
@@ -64,6 +63,8 @@ public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
         assertTrue(cmd.ifExists());
 
         assertParseError(null, "DROP INDEX IF idx", "Unexpected token: \"IDX\"");
+
+        // TODO: Wrong message
         assertParseError(null, "DROP INDEX EXISTS idx", "Unexpected token: \"EXISTS\"");
     }
 
