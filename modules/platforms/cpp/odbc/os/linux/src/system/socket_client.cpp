@@ -48,11 +48,14 @@ namespace ignite
                 Close();
             }
 
-            bool SocketClient::Connect(const char* hostname, uint16_t port)
+            bool SocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
             {
                 LOG_MSG("Host: " << hostname << ", port: " << port);
 
                 addrinfo hints;
+
+                LOG_MSG("Host: " << hostname << " port: " << port);
+
                 memset(&hints, 0, sizeof(hints));
                 hints.ai_family = AF_UNSPEC;
                 hints.ai_socktype = SOCK_STREAM;
@@ -66,32 +69,37 @@ namespace ignite
                 int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
 
                 if (res != 0)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not resolve host address.");
+
                     return false;
+                }
 
                 // Attempt to connect to an address until one succeeds
-                for (addrinfo *it = result; it != NULL; it = it->ai_next) 
+                for (addrinfo *it = result; it != NULL; it = it->ai_next)
                 {
-                    LOG_MSG("Addr: " << it->ai_addr->sa_data[2] << "."
-                                     << it->ai_addr->sa_data[3] << "."
-                                     << it->ai_addr->sa_data[4] << "."
-                                     << it->ai_addr->sa_data[5]);
+                    LOG_MSG("Addr: " << (it->ai_addr->sa_data[2] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[3] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[4] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[5] & 0xFF));
 
                     // Create a SOCKET for connecting to server
                     socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
                     if (socketHandle == SOCKET_ERROR)
-                        return false;
-
-                    if (!SetOptions(socketHandle))
                     {
-                        Close();
+                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new socket.");
 
                         return false;
                     }
 
+                    diag.GetDiagnosticRecords().Reset();
+
+                    TrySetOptions(diag);
+
                     // Connect to server.
-                    res = connect(socketHandle, it->ai_addr, (int)it->ai_addrlen);
-                    if (SOCKET_ERROR == res) 
+                    res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
+                    if (SOCKET_ERROR == res)
                     {
                         Close();
 
@@ -125,47 +133,68 @@ namespace ignite
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
 
-            bool SocketClient::SetOptions(const intptr_t socketHandle)
+            void SocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
             {
                 int trueOpt = 1;
-                int bufSizeOpt = IGNITE_SOCKET_SIZE;
-                int idleOpt = IGNITE_TCP_KEEPIDLE;
-                int idleRetryOpt = IGNITE_TCP_KEEPINTVL;
+                int bufSizeOpt = BUFFER_SIZE;
+                int idleOpt = KEEP_ALIVE_IDLE_TIME;
+                int idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
 
-                int res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE, (char *) &trueOpt, sizeof(trueOpt));
+                int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
+                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
                 if (SOCKET_ERROR == res)
                 {
-                    LOG_MSG("setsockopt failed for SO_KEEPALIVE");
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP socket send buffer size");
                 }
 
-                res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF,
+                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
                 if (SOCKET_ERROR == res)
                 {
-                    LOG_MSG("setsockopt failed for SO_SNDBUF");
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP socket receive buffer size");
                 }
 
-                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF, (char *) &bufSizeOpt, sizeof(bufSizeOpt));
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
                 if (SOCKET_ERROR == res)
                 {
-                    LOG_MSG("setsockopt failed for SO_RCVBUF");
-                }
-                
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY, (char *) &trueOpt, sizeof(trueOpt));
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("setsockopt failed for TCP_NODELAY");
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP no-delay mode");
                 }
 
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE, (char *) &idleOpt, sizeof(idleOpt));
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
                 if (SOCKET_ERROR == res)
                 {
-                    LOG_MSG("setsockopt failed for TCP_KEEPIDLE");
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive mode");
+
+                    // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
+                    return;
                 }
 
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL, (char *) &idleRetryOpt, sizeof(idleRetryOpt));
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE,
+                    reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+
                 if (SOCKET_ERROR == res)
                 {
-                    LOG_MSG("setsockopt failed for TCP_KEEPINTVL");
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive idle timeout");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
+                    reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive probes period");
                 }
 
                 return true;
