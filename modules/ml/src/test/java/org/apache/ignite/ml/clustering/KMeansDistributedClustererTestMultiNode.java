@@ -44,13 +44,16 @@ import org.junit.Test;
 
 import static org.apache.ignite.ml.clustering.KMeansUtil.checkIsInEpsilonNeighbourhood;
 
-/** */
-public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
-    /**
-     * Number of nodes in grid. We should use 1 in this test because otherwise algorithm will be unstable
-     * (We cannot guarantee the order in which results are returned from each node).
-     */
-    private static final int NODE_COUNT = 1;
+/**
+ * This test is made to make sure that K-Means distributed clustering does not crush on distributed environment.
+ * In {@link KMeansDistributedClustererTestMultiNode} we check logic of clustering (checks for clusters structures).
+ * In this class we just check that clusterer does not crush. There are two separate tests because we cannot
+ * guarantee order in which nodes return results of intermediate computations and therefore algorithm can return
+ * different results.
+ */
+public class KMeansDistributedClustererTestMultiNode extends GridCommonAbstractTest {
+    /** Number of nodes in grid. */
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     private Ignite ignite;
@@ -58,7 +61,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public KMeansDistributedClustererTest() {
+    public KMeansDistributedClustererTestMultiNode() {
         super(false);
     }
 
@@ -96,10 +99,7 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         points.setRow(0, v1);
         points.setRow(1, v2);
 
-        KMeansModel mdl = clusterer.cluster(points, 1);
-
-        Assert.assertEquals(1, mdl.centers().length);
-        Assert.assertEquals(2, mdl.centers()[0].size());
+        clusterer.cluster(points, 1);
     }
 
     /** */
@@ -119,79 +119,28 @@ public class KMeansDistributedClustererTest extends GridCommonAbstractTest {
         centers.put(3000, new DenseLocalOnHeapVector(new double[] {0.0, squareSideLen}));
         centers.put(6000, new DenseLocalOnHeapVector(new double[] {squareSideLen, squareSideLen}));
 
-        int centersCnt = centers.size();
-
         SparseDistributedMatrix points = new SparseDistributedMatrix(ptsCnt, 2, StorageConstants.ROW_STORAGE_MODE,
-            StorageConstants.RANDOM_ACCESS_MODE);
+        StorageConstants.RANDOM_ACCESS_MODE);
 
         List<Integer> permutation = IntStream.range(0, ptsCnt).boxed().collect(Collectors.toList());
         Collections.shuffle(permutation, rnd);
 
-        Vector[] mc = new Vector[centersCnt];
-        Arrays.fill(mc, VectorUtils.zeroes(2));
-
-        int centIdx = 0;
         int totalCnt = 0;
-
-        List<Vector> massCenters = new ArrayList<>();
 
         for (Integer count : centers.keySet()) {
             for (int i = 0; i < count; i++) {
                 DenseLocalOnHeapVector pnt = (DenseLocalOnHeapVector)new DenseLocalOnHeapVector(2).assign(centers.get(count));
-                // pertrubate point on random value.
+                // Perturbate point on random value.
                 pnt.map(val -> val + rnd.nextDouble() * squareSideLen / 100);
-                mc[centIdx] = mc[centIdx].plus(pnt);
                 points.assignRow(permutation.get(totalCnt), pnt);
                 totalCnt++;
             }
-            massCenters.add(mc[centIdx].times(1 / (double)count));
-            centIdx++;
         }
 
         EuclideanDistance dist = new EuclideanDistance();
-        OrderedNodesComparator comp = new OrderedNodesComparator(centers.values().toArray(new Vector[] {}), dist);
 
-        massCenters.sort(comp);
         KMeansDistributedClusterer clusterer = new KMeansDistributedClusterer(dist, 3, 100, 1L);
 
-        KMeansModel mdl = clusterer.cluster(points, 4);
-        Vector[] resCenters = mdl.centers();
-        Arrays.sort(resCenters, comp);
-
-        checkIsInEpsilonNeighbourhood(resCenters, massCenters.toArray(new Vector[] {}), 30.0);
-    }
-
-    /** */
-    private static class OrderedNodesComparator implements Comparator<Vector> {
-        /** */
-        private final DistanceMeasure measure;
-
-        /** */
-        List<Vector> orderedNodes;
-
-        /** */
-        public OrderedNodesComparator(Vector[] orderedNodes, DistanceMeasure measure) {
-            this.orderedNodes = Arrays.asList(orderedNodes);
-            this.measure = measure;
-        }
-
-        /** */
-        private int findClosestNodeIndex(Vector v) {
-            return Functions.argmin(orderedNodes, v1 -> measure.compute(v1, v)).get1();
-        }
-
-        /** */
-        @Override public int compare(Vector v1, Vector v2) {
-            int ind1 = findClosestNodeIndex(v1);
-            int ind2 = findClosestNodeIndex(v2);
-
-            int signum = (int)Math.signum(ind1 - ind2);
-
-            if (signum != 0)
-                return signum;
-
-            return (int)Math.signum(orderedNodes.get(ind1).minus(v1).kNorm(2) -
-                orderedNodes.get(ind2).minus(v2).kNorm(2));
-        }
+        clusterer.cluster(points, 4);
     }
 }
