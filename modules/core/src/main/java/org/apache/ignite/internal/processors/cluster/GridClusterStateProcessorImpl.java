@@ -503,11 +503,23 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             newBlt.updateHistory(baselineNodes);
         }
         else if (activate && baselineNodes == null && globalState.baselineTopology() == null)
-            blt = BaselineTopology.build(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE));
+            newBlt = BaselineTopology.build(baselineNodes(), newBltId);
         else
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
 
         return changeGlobalState0(activate, newBlt);
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
+
+        for (ClusterNode clNode : clNodes)
+            bltNodes.add(clNode);
+
+        return bltNodes;
     }
 
     /** */
