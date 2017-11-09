@@ -2002,16 +2002,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                 io.setPartitionState(pageAddr, (byte)stateId);
 
-                                //todo need refactoring.
                                 changed = updateState(part, stateId);
 
-                                grp.offheap().onPartitionCounterUpdated(i, fromWal.get2());
-                                grp.offheap().onPartitionInitialCounterUpdated(i, fromWal.get2());
+                                if (stateId == GridDhtPartitionState.MOVING.ordinal() ||
+                                    stateId == GridDhtPartitionState.OWNING.ordinal()) {
 
-                                part.updateCounter(fromWal.get2());
-                                part.initialUpdateCounter(fromWal.get2());
+                                    if (part.initialUpdateCounter() < fromWal.get2() ||
+                                        stateId == GridDhtPartitionState.MOVING.ordinal()) {
+                                        part.initialUpdateCounter(fromWal.get2());
 
-                                changed = true;
+                                        changed = true;
+                                    }
+                                }
                             }
                             else
                                 changed = updateState(part, (int)io.getPartitionState(pageAddr));
