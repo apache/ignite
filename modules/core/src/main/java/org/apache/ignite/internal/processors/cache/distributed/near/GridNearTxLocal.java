@@ -1177,7 +1177,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 old = entry.innerGet(
                                     null,
                                     this,
-                                    /*read through*/true,
+                                    /*read through*/false,
                                     /*metrics*/retval,
                                     /*events*/retval,
                                     CU.subjectId(this, cctx),
