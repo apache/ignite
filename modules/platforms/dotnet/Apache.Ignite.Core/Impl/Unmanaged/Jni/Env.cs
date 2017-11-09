@@ -362,10 +362,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             _deleteGlobalRef(_envPtr, gref);
         }
 
-        public void ThrowToJava(string message)
+        public void ThrowToJava(Exception e)
         {
-            Debug.Assert(message != null);
-            var msgChars = IgniteUtils.StringToUtf8Unmanaged(message);
+            Debug.Assert(e != null);
+            var msgChars = IgniteUtils.StringToUtf8Unmanaged(e.Message);
 
             try
             {

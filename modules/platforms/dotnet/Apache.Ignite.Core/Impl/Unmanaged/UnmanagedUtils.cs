@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
-    using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Unmanaged.Jni;
 
     /// <summary>
@@ -198,14 +196,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             jvm.AttachCurrentThread().CallStaticVoidMethod(methodId.PlatformUtils, methodId.PlatformUtilsReallocate,
                 args);
-        }
-
-        internal static void ThrowToJava(Exception e, Jvm jvm)
-        {
-            Debug.Assert(e != null);
-            Debug.Assert(jvm != null);
-
-            jvm.AttachCurrentThread().ThrowToJava(e.Message);
         }
 
         #endregion

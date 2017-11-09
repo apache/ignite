@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                _jvm.AttachCurrentThread().ThrowToJava(e);
             }
         }
 
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                _jvm.AttachCurrentThread().ThrowToJava(e);
                 return false;
             }
         }
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                _jvm.AttachCurrentThread().ThrowToJava(e);
                 return 0;
             }
         }
@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                _jvm.AttachCurrentThread().ThrowToJava(e);
 
                 return 0;
             }
@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
             catch (Exception e)
             {
-                _jvm.AttachCurrentThread().ThrowToJava(e.ToString());
+                _jvm.AttachCurrentThread().ThrowToJava(e);
             }
         }
     }
