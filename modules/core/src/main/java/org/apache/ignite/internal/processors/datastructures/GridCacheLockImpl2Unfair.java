@@ -457,7 +457,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             try {
                 return listener.await(timeout, unit);
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 return false;
             }
         }
@@ -531,13 +531,13 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private final GlobalUnfairSync globalSync;
 
         /** */
-        private final static long MAX_TIME = 50_000_000L;
+        private static final long MAX_TIME = 50_000_000L;
 
         /** */
         private volatile long nextFinish;
 
         /** */
-        private ThreadLocal<Boolean> hasLocked = new ThreadLocal<Boolean>() {
+        private final ThreadLocal<Boolean> hasLocked = new ThreadLocal<Boolean>() {
             /** {@inheritDoc} */
             @Override protected Boolean initialValue() {
                 return false;

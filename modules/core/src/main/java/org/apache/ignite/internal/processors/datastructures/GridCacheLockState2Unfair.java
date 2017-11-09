@@ -24,7 +24,7 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** */
-public class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
+public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUID> {
     /** */
     private static final long serialVersionUID = 6727594514511280291L;
 

@@ -1,0 +1,2235 @@
+# JMH 1.13 (released 450 days ago, please consider updating!)
+# VM version: JDK 1.8.0_131, VM 25.131-b11
+# VM invoker: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+# VM options: -Xms1g -Xmx1g -Dignite.jmh.cache.atomicityMode=TRANSACTIONAL -Dignite.jmh.cache.writeSynchronizationMode=FULL_SYNC -Dignite.jmh.cache.dataNodes=4 -Dignite.jmh.cache.clientMode=false
+# Warmup: 40 iterations, 1 s each
+# Measurement: 20 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 10 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheLocksBenchmark.cacheLock
+
+# Run progress: 0,00% complete, ETA 00:03:00
+# Fork: 1 of 1
+# Warmup Iteration   1: 
+--------------------
+IGNITE BENCHMARK INFO: 
+	client mode:                false
+	data nodes:                 4
+	backups:                    0
+	atomicity mode:             TRANSACTIONAL
+	write synchronization mode: FULL_SYNC
+--------------------
+
+[14:42:15]    __________  ________________ 
+[14:42:15]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:15]  _/ // (7 7    // /  / / / _/   
+[14:42:15] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:15] 
+[14:42:15] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:15] 2017 Copyright(C) Apache Software Foundation
+[14:42:15] 
+[14:42:15] Ignite documentation: http://ignite.apache.org
+[14:42:15] 
+[14:42:15] Quiet mode.
+[14:42:15]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:15]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:15] 
+[14:42:15] OS: Linux 4.4.0-97-generic amd64
+[14:42:15] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:15] Configured plugins:
+[14:42:15]   ^-- None
+[14:42:15] 
+[14:42:16] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:16] Security status [authentication=off, tls/ssl=off]
+[14:42:17] Performance suggestions for grid 'node0' (fix if possible)
+[14:42:17] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:17]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:17]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:17]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:17]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:17]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:17] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:17] 
+[14:42:17] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:17] 
+[14:42:17] Ignite node started OK (id=8e1b3cc0, instance name=node0)
+[14:42:17] Topology snapshot [ver=1, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:42:17]    __________  ________________ 
+[14:42:17]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:17]  _/ // (7 7    // /  / / / _/   
+[14:42:17] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:17] 
+[14:42:17] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:17] 2017 Copyright(C) Apache Software Foundation
+[14:42:17] 
+[14:42:17] Ignite documentation: http://ignite.apache.org
+[14:42:17] 
+[14:42:17] Quiet mode.
+[14:42:17]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:17]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:17] 
+[14:42:17] OS: Linux 4.4.0-97-generic amd64
+[14:42:17] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:17] Configured plugins:
+[14:42:17]   ^-- None
+[14:42:17] 
+[14:42:17] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:17] Security status [authentication=off, tls/ssl=off]
+[14:42:18] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18] Performance suggestions for grid 'node1' (fix if possible)
+[14:42:18] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:18]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:18]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:18]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:18]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:18]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:18] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:18] 
+[14:42:18] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:18] 
+[14:42:18] Ignite node started OK (id=3821e13f, instance name=node1)
+[14:42:18] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18]    __________  ________________ 
+[14:42:18]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:18]  _/ // (7 7    // /  / / / _/   
+[14:42:18] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:18] 
+[14:42:18] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:18] 2017 Copyright(C) Apache Software Foundation
+[14:42:18] 
+[14:42:18] Ignite documentation: http://ignite.apache.org
+[14:42:18] 
+[14:42:18] Quiet mode.
+[14:42:18]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:18]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:18] 
+[14:42:18] OS: Linux 4.4.0-97-generic amd64
+[14:42:18] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:18] Configured plugins:
+[14:42:18]   ^-- None
+[14:42:18] 
+[14:42:18] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:18] Security status [authentication=off, tls/ssl=off]
+[14:42:18] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18] Performance suggestions for grid 'node2' (fix if possible)
+[14:42:18] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:18]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:18]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:18]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:18]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:18]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:18] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:18] 
+[14:42:18] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:18] 
+[14:42:18] Ignite node started OK (id=f83cae72, instance name=node2)
+[14:42:18] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18]    __________  ________________ 
+[14:42:18]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:18]  _/ // (7 7    // /  / / / _/   
+[14:42:18] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:18] 
+[14:42:18] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:18] 2017 Copyright(C) Apache Software Foundation
+[14:42:18] 
+[14:42:18] Ignite documentation: http://ignite.apache.org
+[14:42:18] 
+[14:42:18] Quiet mode.
+[14:42:18]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:18]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:18] 
+[14:42:18] OS: Linux 4.4.0-97-generic amd64
+[14:42:18] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:18] Configured plugins:
+[14:42:18]   ^-- None
+[14:42:18] 
+[14:42:18] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:18] Security status [authentication=off, tls/ssl=off]
+[14:42:18] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:42:18] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Performance suggestions for grid 'node3' (fix if possible)
+[14:42:19] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:19]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:19]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:19]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:19]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:19]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:19] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:19] 
+[14:42:19] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:19] 
+[14:42:19] Ignite node started OK (id=af94de92, instance name=node3)
+[14:42:19] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19]    __________  ________________ 
+[14:42:19]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:19]  _/ // (7 7    // /  / / / _/   
+[14:42:19] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:19] 
+[14:42:19] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:19] 2017 Copyright(C) Apache Software Foundation
+[14:42:19] 
+[14:42:19] Ignite documentation: http://ignite.apache.org
+[14:42:19] 
+[14:42:19] Quiet mode.
+[14:42:19]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:19]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:19] 
+[14:42:19] OS: Linux 4.4.0-97-generic amd64
+[14:42:19] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:19] Configured plugins:
+[14:42:19]   ^-- None
+[14:42:19] 
+[14:42:19] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:19] Security status [authentication=off, tls/ssl=off]
+[14:42:19] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Performance suggestions for grid 'node148' (fix if possible)
+[14:42:19] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:19]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:19]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:19]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:19]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:19]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:19] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:19] 
+[14:42:19] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:19] 
+[14:42:19] Ignite node started OK (id=57a10d83, instance name=node148)
+[14:42:19] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19]    __________  ________________ 
+[14:42:19]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:19]  _/ // (7 7    // /  / / / _/   
+[14:42:19] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:19] 
+[14:42:19] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:19] 2017 Copyright(C) Apache Software Foundation
+[14:42:19] 
+[14:42:19] Ignite documentation: http://ignite.apache.org
+[14:42:19] 
+[14:42:19] Quiet mode.
+[14:42:19]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:19]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:19] 
+[14:42:19] OS: Linux 4.4.0-97-generic amd64
+[14:42:19] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:19] Configured plugins:
+[14:42:19]   ^-- None
+[14:42:19] 
+[14:42:19] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:19] Security status [authentication=off, tls/ssl=off]
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:19] Performance suggestions for grid 'node149' (fix if possible)
+[14:42:19] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:19]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:19]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:19]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:19]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:19]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:19] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:19] 
+[14:42:19] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:19] 
+[14:42:19] Ignite node started OK (id=bc437e85, instance name=node149)
+[14:42:19] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19]    __________  ________________ 
+[14:42:19]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:19]  _/ // (7 7    // /  / / / _/   
+[14:42:19] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:19] 
+[14:42:19] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:19] 2017 Copyright(C) Apache Software Foundation
+[14:42:19] 
+[14:42:19] Ignite documentation: http://ignite.apache.org
+[14:42:19] 
+[14:42:19] Quiet mode.
+[14:42:19]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:19]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:19] 
+[14:42:19] OS: Linux 4.4.0-97-generic amd64
+[14:42:19] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:19] Configured plugins:
+[14:42:19]   ^-- None
+[14:42:19] 
+[14:42:19] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:19] Security status [authentication=off, tls/ssl=off]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:19] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:20] Performance suggestions for grid 'node150' (fix if possible)
+[14:42:20] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:20]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:20]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:20]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:20]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:20]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:20] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:20] 
+[14:42:20] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:20] 
+[14:42:20] Ignite node started OK (id=ea024400, instance name=node150)
+[14:42:20] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20]    __________  ________________ 
+[14:42:20]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:20]  _/ // (7 7    // /  / / / _/   
+[14:42:20] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:20] 
+[14:42:20] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:20] 2017 Copyright(C) Apache Software Foundation
+[14:42:20] 
+[14:42:20] Ignite documentation: http://ignite.apache.org
+[14:42:20] 
+[14:42:20] Quiet mode.
+[14:42:20]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:20]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:20] 
+[14:42:20] OS: Linux 4.4.0-97-generic amd64
+[14:42:20] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:20] Configured plugins:
+[14:42:20]   ^-- None
+[14:42:20] 
+[14:42:20] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:20] Security status [authentication=off, tls/ssl=off]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:20] Performance suggestions for grid 'node151' (fix if possible)
+[14:42:20] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:20]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:20]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:20]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:20]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:20]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:20] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:20] 
+[14:42:20] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:20] 
+[14:42:20] Ignite node started OK (id=862afb94, instance name=node151)
+[14:42:20] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20]    __________  ________________ 
+[14:42:20]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:20]  _/ // (7 7    // /  / / / _/   
+[14:42:20] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:20] 
+[14:42:20] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:20] 2017 Copyright(C) Apache Software Foundation
+[14:42:20] 
+[14:42:20] Ignite documentation: http://ignite.apache.org
+[14:42:20] 
+[14:42:20] Quiet mode.
+[14:42:20]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:20]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:20] 
+[14:42:20] OS: Linux 4.4.0-97-generic amd64
+[14:42:20] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:20] Configured plugins:
+[14:42:20]   ^-- None
+[14:42:20] 
+[14:42:20] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:20] Security status [authentication=off, tls/ssl=off]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:20] Performance suggestions for grid 'node152' (fix if possible)
+[14:42:20] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:20]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:20]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:20]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:20]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:20]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:20] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:20] 
+[14:42:20] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:20] 
+[14:42:20] Ignite node started OK (id=1ca8bbfe, instance name=node152)
+[14:42:20] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:42:20]    __________  ________________ 
+[14:42:20]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:20]  _/ // (7 7    // /  / / / _/   
+[14:42:20] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:20] 
+[14:42:20] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:20] 2017 Copyright(C) Apache Software Foundation
+[14:42:20] 
+[14:42:20] Ignite documentation: http://ignite.apache.org
+[14:42:20] 
+[14:42:20] Quiet mode.
+[14:42:20]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:20]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:20] 
+[14:42:20] OS: Linux 4.4.0-97-generic amd64
+[14:42:20] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:20] Configured plugins:
+[14:42:20]   ^-- None
+[14:42:20] 
+[14:42:20] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:20] Security status [authentication=off, tls/ssl=off]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:21] Performance suggestions for grid 'node153' (fix if possible)
+[14:42:21] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:21]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:21]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:21]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:21]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:21]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:21] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:21] 
+[14:42:21] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:21] 
+[14:42:21] Ignite node started OK (id=c1de4bf8, instance name=node153)
+[14:42:21] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21]    __________  ________________ 
+[14:42:21]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:21]  _/ // (7 7    // /  / / / _/   
+[14:42:21] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:21] 
+[14:42:21] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:21] 2017 Copyright(C) Apache Software Foundation
+[14:42:21] 
+[14:42:21] Ignite documentation: http://ignite.apache.org
+[14:42:21] 
+[14:42:21] Quiet mode.
+[14:42:21]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:21]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:21] 
+[14:42:21] OS: Linux 4.4.0-97-generic amd64
+[14:42:21] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:21] Configured plugins:
+[14:42:21]   ^-- None
+[14:42:21] 
+[14:42:21] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:21] Security status [authentication=off, tls/ssl=off]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:21] Performance suggestions for grid 'node154' (fix if possible)
+[14:42:21] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:21]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:21]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:21]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:21]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:21]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:21] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:21] 
+[14:42:21] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:21] 
+[14:42:21] Ignite node started OK (id=a66b8fc0, instance name=node154)
+[14:42:21] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21]    __________  ________________ 
+[14:42:21]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:21]  _/ // (7 7    // /  / / / _/   
+[14:42:21] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:21] 
+[14:42:21] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:21] 2017 Copyright(C) Apache Software Foundation
+[14:42:21] 
+[14:42:21] Ignite documentation: http://ignite.apache.org
+[14:42:21] 
+[14:42:21] Quiet mode.
+[14:42:21]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:21]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:21] 
+[14:42:21] OS: Linux 4.4.0-97-generic amd64
+[14:42:21] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:21] Configured plugins:
+[14:42:21]   ^-- None
+[14:42:21] 
+[14:42:21] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:21] Security status [authentication=off, tls/ssl=off]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:21] Performance suggestions for grid 'node155' (fix if possible)
+[14:42:21] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:21]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:21]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:21]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:21]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:21]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:21] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:21] 
+[14:42:21] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:21] 
+[14:42:21] Ignite node started OK (id=c761e753, instance name=node155)
+[14:42:21] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:42:21]    __________  ________________ 
+[14:42:21]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:42:21]  _/ // (7 7    // /  / / / _/   
+[14:42:21] /___/\___/_/|_/___/ /_/ /___/  
+[14:42:21] 
+[14:42:21] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:42:21] 2017 Copyright(C) Apache Software Foundation
+[14:42:21] 
+[14:42:21] Ignite documentation: http://ignite.apache.org
+[14:42:21] 
+[14:42:21] Quiet mode.
+[14:42:21]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-8e1b3cc0.0.log'
+[14:42:21]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:42:21] 
+[14:42:21] OS: Linux 4.4.0-97-generic amd64
+[14:42:21] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:42:21] Configured plugins:
+[14:42:21]   ^-- None
+[14:42:21] 
+[14:42:21] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:42:21] Security status [authentication=off, tls/ssl=off]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:42:22] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:42:22] Performance suggestions for grid 'node156' (fix if possible)
+[14:42:22] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:42:22]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:42:22]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:42:22]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:42:22]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:42:22]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:42:22] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:42:22] 
+[14:42:22] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:42:22] 
+[14:42:22] Ignite node started OK (id=393a8d90, instance name=node156)
+[14:42:22] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+69852,026 ±(99.9%) 207256,654 us/op
+# Warmup Iteration   2: 10511,843 ±(99.9%) 1798,681 us/op
+# Warmup Iteration   3: 5022,007 ±(99.9%) 1200,969 us/op
+# Warmup Iteration   4: 4229,055 ±(99.9%) 1065,881 us/op
+# Warmup Iteration   5: 3388,852 ±(99.9%) 855,084 us/op
+# Warmup Iteration   6: 2993,202 ±(99.9%) 752,918 us/op
+# Warmup Iteration   7: 2886,386 ±(99.9%) 726,378 us/op
+# Warmup Iteration   8: 1695,053 ±(99.9%) 262,714 us/op
+# Warmup Iteration   9: 1372,066 ±(99.9%) 275,656 us/op
+# Warmup Iteration  10: 1269,112 ±(99.9%) 318,375 us/op
+# Warmup Iteration  11: 1369,484 ±(99.9%) 344,081 us/op
+# Warmup Iteration  12: 1308,682 ±(99.9%) 290,393 us/op
+# Warmup Iteration  13: 1224,939 ±(99.9%) 309,588 us/op
+# Warmup Iteration  14: 1144,655 ±(99.9%) 274,672 us/op
+# Warmup Iteration  15: 1222,083 ±(99.9%) 307,535 us/op
+# Warmup Iteration  16: 1144,163 ±(99.9%) 287,969 us/op
+# Warmup Iteration  17: 1341,195 ±(99.9%) 337,768 us/op
+# Warmup Iteration  18: 1164,291 ±(99.9%) 292,268 us/op
+# Warmup Iteration  19: 1225,082 ±(99.9%) 308,439 us/op
+# Warmup Iteration  20: 1134,615 ±(99.9%) 255,269 us/op
+# Warmup Iteration  21: 1155,605 ±(99.9%) 270,912 us/op
+# Warmup Iteration  22: 1129,551 ±(99.9%) 283,686 us/op
+# Warmup Iteration  23: 1184,467 ±(99.9%) 192,613 us/op
+# Warmup Iteration  24: 1161,532 ±(99.9%) 292,404 us/op
+# Warmup Iteration  25: 1161,099 ±(99.9%) 252,389 us/op
+# Warmup Iteration  26: 1140,078 ±(99.9%) 286,900 us/op
+# Warmup Iteration  27: 1284,536 ±(99.9%) 323,210 us/op
+# Warmup Iteration  28: 1153,998 ±(99.9%) 290,505 us/op
+# Warmup Iteration  29: 1167,512 ±(99.9%) 294,408 us/op
+# Warmup Iteration  30: 1176,615 ±(99.9%) 296,234 us/op
+# Warmup Iteration  31: 1167,698 ±(99.9%) 293,834 us/op
+# Warmup Iteration  32: 1145,135 ±(99.9%) 287,965 us/op
+# Warmup Iteration  33: 1186,126 ±(99.9%) 298,475 us/op
+# Warmup Iteration  34: 1146,410 ±(99.9%) 288,228 us/op
+# Warmup Iteration  35: 1207,872 ±(99.9%) 303,833 us/op
+# Warmup Iteration  36: 1155,375 ±(99.9%) 290,478 us/op
+# Warmup Iteration  37: 1201,733 ±(99.9%) 205,710 us/op
+# Warmup Iteration  38: 1146,112 ±(99.9%) 288,256 us/op
+# Warmup Iteration  39: 1176,655 ±(99.9%) 291,756 us/op
+# Warmup Iteration  40: 1146,097 ±(99.9%) 288,048 us/op
+Iteration   1: 1173,956 ±(99.9%) 210,915 us/op
+Iteration   2: 1145,399 ±(99.9%) 287,820 us/op
+Iteration   3: 1150,768 ±(99.9%) 289,512 us/op
+Iteration   4: 1145,159 ±(99.9%) 288,040 us/op
+Iteration   5: 1150,573 ±(99.9%) 289,566 us/op
+Iteration   6: 1133,387 ±(99.9%) 285,087 us/op
+Iteration   7: 1171,258 ±(99.9%) 294,777 us/op
+Iteration   8: 1130,440 ±(99.9%) 285,298 us/op
+Iteration   9: 1169,006 ±(99.9%) 293,711 us/op
+Iteration  10: 1149,348 ±(99.9%) 139,147 us/op
+Iteration  11: 1150,003 ±(99.9%) 289,151 us/op
+Iteration  12: 1187,203 ±(99.9%) 204,246 us/op
+Iteration  13: 1284,689 ±(99.9%) 268,845 us/op
+Iteration  14: 1131,434 ±(99.9%) 284,151 us/op
+Iteration  15: 1155,604 ±(99.9%) 287,496 us/op
+Iteration  16: 1162,522 ±(99.9%) 292,390 us/op
+Iteration  17: 1166,459 ±(99.9%) 292,576 us/op
+Iteration  18: 1137,316 ±(99.9%) 224,579 us/op
+Iteration  19: 1179,528 ±(99.9%) 296,207 us/op
+Iteration  20: [14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node0, uptime=00:01:05:326]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node1, uptime=00:01:05:150]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node151, uptime=00:01:03:241]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node150, uptime=00:01:03:704]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node155, uptime=00:01:01:915]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Ignite node stopped OK [name=node154, uptime=00:01:02:340]
+[14:43:23] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:23] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node153, uptime=00:01:02:732]
+[14:43:24] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node152, uptime=00:01:03:241]
+[14:43:24] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node148, uptime=00:01:04:722]
+[14:43:24] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node156, uptime=00:01:01:813]
+[14:43:24] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node149, uptime=00:01:04:524]
+[14:43:24] Topology snapshot [ver=25, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:43:24] Ignite node stopped OK [name=node2, uptime=00:01:05:623]
+[14:43:24] Ignite node stopped OK [name=node3, uptime=00:01:05:292]
+1130,089 ±(99.9%) 283,493 us/op
+
+
+Result "cacheLock":
+  1160,207 ±(99.9%) 29,391 us/op [Average]
+  (min, avg, max) = (1130,089, 1160,207, 1284,689), stdev = 33,846
+  CI (99.9%): [1130,816, 1189,598] (assumes normal distribution)
+
+
+# JMH 1.13 (released 450 days ago, please consider updating!)
+# VM version: JDK 1.8.0_131, VM 25.131-b11
+# VM invoker: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+# VM options: -Xms1g -Xmx1g -Dignite.jmh.cache.atomicityMode=TRANSACTIONAL -Dignite.jmh.cache.writeSynchronizationMode=FULL_SYNC -Dignite.jmh.cache.dataNodes=4 -Dignite.jmh.cache.clientMode=false
+# Warmup: 40 iterations, 1 s each
+# Measurement: 20 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 10 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheLocksBenchmark.igniteLock
+
+# Run progress: 33,33% complete, ETA 00:02:25
+# Fork: 1 of 1
+# Warmup Iteration   1: 
+--------------------
+IGNITE BENCHMARK INFO: 
+	client mode:                false
+	data nodes:                 4
+	backups:                    0
+	atomicity mode:             TRANSACTIONAL
+	write synchronization mode: FULL_SYNC
+--------------------
+
+[14:43:27]    __________  ________________ 
+[14:43:27]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:27]  _/ // (7 7    // /  / / / _/   
+[14:43:27] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:27] 
+[14:43:27] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:27] 2017 Copyright(C) Apache Software Foundation
+[14:43:27] 
+[14:43:27] Ignite documentation: http://ignite.apache.org
+[14:43:27] 
+[14:43:27] Quiet mode.
+[14:43:27]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:27]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:27] 
+[14:43:27] OS: Linux 4.4.0-97-generic amd64
+[14:43:27] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:27] Configured plugins:
+[14:43:27]   ^-- None
+[14:43:27] 
+[14:43:27] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:27] Security status [authentication=off, tls/ssl=off]
+[14:43:28] Performance suggestions for grid 'node0' (fix if possible)
+[14:43:28] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:28]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:28]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:28]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:28]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:28]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:28] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:28] 
+[14:43:28] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:28] 
+[14:43:28] Ignite node started OK (id=1177e307, instance name=node0)
+[14:43:28] Topology snapshot [ver=1, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:43:28]    __________  ________________ 
+[14:43:28]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:28]  _/ // (7 7    // /  / / / _/   
+[14:43:28] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:28] 
+[14:43:28] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:28] 2017 Copyright(C) Apache Software Foundation
+[14:43:28] 
+[14:43:28] Ignite documentation: http://ignite.apache.org
+[14:43:28] 
+[14:43:28] Quiet mode.
+[14:43:28]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:28]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:28] 
+[14:43:28] OS: Linux 4.4.0-97-generic amd64
+[14:43:28] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:28] Configured plugins:
+[14:43:28]   ^-- None
+[14:43:28] 
+[14:43:28] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:28] Security status [authentication=off, tls/ssl=off]
+[14:43:28] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:43:28] Performance suggestions for grid 'node1' (fix if possible)
+[14:43:28] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:28]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:28]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:28]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:28]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:28]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:28] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:28] 
+[14:43:28] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:28] 
+[14:43:28] Ignite node started OK (id=5099ca6c, instance name=node1)
+[14:43:28] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:43:28]    __________  ________________ 
+[14:43:28]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:28]  _/ // (7 7    // /  / / / _/   
+[14:43:28] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:28] 
+[14:43:28] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:28] 2017 Copyright(C) Apache Software Foundation
+[14:43:28] 
+[14:43:28] Ignite documentation: http://ignite.apache.org
+[14:43:28] 
+[14:43:28] Quiet mode.
+[14:43:28]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:28]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:28] 
+[14:43:28] OS: Linux 4.4.0-97-generic amd64
+[14:43:28] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:28] Configured plugins:
+[14:43:28]   ^-- None
+[14:43:28] 
+[14:43:28] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:28] Security status [authentication=off, tls/ssl=off]
+[14:43:28] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:28] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Performance suggestions for grid 'node2' (fix if possible)
+[14:43:29] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:29]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:29]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:29]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:29]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:29]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:29] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:29] 
+[14:43:29] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:29] 
+[14:43:29] Ignite node started OK (id=c4ff0ff4, instance name=node2)
+[14:43:29] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29]    __________  ________________ 
+[14:43:29]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:29]  _/ // (7 7    // /  / / / _/   
+[14:43:29] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:29] 
+[14:43:29] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:29] 2017 Copyright(C) Apache Software Foundation
+[14:43:29] 
+[14:43:29] Ignite documentation: http://ignite.apache.org
+[14:43:29] 
+[14:43:29] Quiet mode.
+[14:43:29]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:29]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:29] 
+[14:43:29] OS: Linux 4.4.0-97-generic amd64
+[14:43:29] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:29] Configured plugins:
+[14:43:29]   ^-- None
+[14:43:29] 
+[14:43:29] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:29] Security status [authentication=off, tls/ssl=off]
+[14:43:29] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Performance suggestions for grid 'node3' (fix if possible)
+[14:43:29] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:29]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:29]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:29]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:29]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:29]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:29] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:29] 
+[14:43:29] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:29] 
+[14:43:29] Ignite node started OK (id=2ec87d44, instance name=node3)
+[14:43:29] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29]    __________  ________________ 
+[14:43:29]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:29]  _/ // (7 7    // /  / / / _/   
+[14:43:29] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:29] 
+[14:43:29] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:29] 2017 Copyright(C) Apache Software Foundation
+[14:43:29] 
+[14:43:29] Ignite documentation: http://ignite.apache.org
+[14:43:29] 
+[14:43:29] Quiet mode.
+[14:43:29]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:29]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:29] 
+[14:43:29] OS: Linux 4.4.0-97-generic amd64
+[14:43:29] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:29] Configured plugins:
+[14:43:29]   ^-- None
+[14:43:29] 
+[14:43:29] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:29] Security status [authentication=off, tls/ssl=off]
+[14:43:29] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Performance suggestions for grid 'node148' (fix if possible)
+[14:43:29] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:29]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:29]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:29]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:29]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:29]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:29] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:29] 
+[14:43:29] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:29] 
+[14:43:29] Ignite node started OK (id=be437ebe, instance name=node148)
+[14:43:29] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29]    __________  ________________ 
+[14:43:29]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:29]  _/ // (7 7    // /  / / / _/   
+[14:43:29] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:29] 
+[14:43:29] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:29] 2017 Copyright(C) Apache Software Foundation
+[14:43:29] 
+[14:43:29] Ignite documentation: http://ignite.apache.org
+[14:43:29] 
+[14:43:29] Quiet mode.
+[14:43:29]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:29]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:29] 
+[14:43:29] OS: Linux 4.4.0-97-generic amd64
+[14:43:29] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:29] Configured plugins:
+[14:43:29]   ^-- None
+[14:43:29] 
+[14:43:29] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:29] Security status [authentication=off, tls/ssl=off]
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:29] Performance suggestions for grid 'node149' (fix if possible)
+[14:43:29] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:29]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:29]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:29]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:29]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:29]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:29] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:29] 
+[14:43:29] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:29] 
+[14:43:29] Ignite node started OK (id=aa70af3c, instance name=node149)
+[14:43:29] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:43:29]    __________  ________________ 
+[14:43:29]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:29]  _/ // (7 7    // /  / / / _/   
+[14:43:29] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:29] 
+[14:43:29] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:29] 2017 Copyright(C) Apache Software Foundation
+[14:43:29] 
+[14:43:29] Ignite documentation: http://ignite.apache.org
+[14:43:29] 
+[14:43:29] Quiet mode.
+[14:43:29]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:29]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:29] 
+[14:43:29] OS: Linux 4.4.0-97-generic amd64
+[14:43:29] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:29] Configured plugins:
+[14:43:29]   ^-- None
+[14:43:29] 
+[14:43:29] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:29] Security status [authentication=off, tls/ssl=off]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:30] Performance suggestions for grid 'node150' (fix if possible)
+[14:43:30] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:30]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:30]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:30]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:30]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:30]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:30] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:30] 
+[14:43:30] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:30] 
+[14:43:30] Ignite node started OK (id=98c61ff8, instance name=node150)
+[14:43:30] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30]    __________  ________________ 
+[14:43:30]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:30]  _/ // (7 7    // /  / / / _/   
+[14:43:30] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:30] 
+[14:43:30] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:30] 2017 Copyright(C) Apache Software Foundation
+[14:43:30] 
+[14:43:30] Ignite documentation: http://ignite.apache.org
+[14:43:30] 
+[14:43:30] Quiet mode.
+[14:43:30]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:30]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:30] 
+[14:43:30] OS: Linux 4.4.0-97-generic amd64
+[14:43:30] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:30] Configured plugins:
+[14:43:30]   ^-- None
+[14:43:30] 
+[14:43:30] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:30] Security status [authentication=off, tls/ssl=off]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:30] Performance suggestions for grid 'node151' (fix if possible)
+[14:43:30] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:30]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:30]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:30]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:30]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:30]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:30] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:30] 
+[14:43:30] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:30] 
+[14:43:30] Ignite node started OK (id=263d85ff, instance name=node151)
+[14:43:30] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30]    __________  ________________ 
+[14:43:30]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:30]  _/ // (7 7    // /  / / / _/   
+[14:43:30] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:30] 
+[14:43:30] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:30] 2017 Copyright(C) Apache Software Foundation
+[14:43:30] 
+[14:43:30] Ignite documentation: http://ignite.apache.org
+[14:43:30] 
+[14:43:30] Quiet mode.
+[14:43:30]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:30]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:30] 
+[14:43:30] OS: Linux 4.4.0-97-generic amd64
+[14:43:30] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:30] Configured plugins:
+[14:43:30]   ^-- None
+[14:43:30] 
+[14:43:30] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:30] Security status [authentication=off, tls/ssl=off]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:30] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:31] Performance suggestions for grid 'node152' (fix if possible)
+[14:43:31] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:31]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:31]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:31]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:31]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:31]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:31] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:31] 
+[14:43:31] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:31] 
+[14:43:31] Ignite node started OK (id=3b1ddf05, instance name=node152)
+[14:43:31] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31]    __________  ________________ 
+[14:43:31]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:31]  _/ // (7 7    // /  / / / _/   
+[14:43:31] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:31] 
+[14:43:31] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:31] 2017 Copyright(C) Apache Software Foundation
+[14:43:31] 
+[14:43:31] Ignite documentation: http://ignite.apache.org
+[14:43:31] 
+[14:43:31] Quiet mode.
+[14:43:31]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:31]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:31] 
+[14:43:31] OS: Linux 4.4.0-97-generic amd64
+[14:43:31] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:31] Configured plugins:
+[14:43:31]   ^-- None
+[14:43:31] 
+[14:43:31] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:31] Security status [authentication=off, tls/ssl=off]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:31] Performance suggestions for grid 'node153' (fix if possible)
+[14:43:31] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:31]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:31]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:31]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:31]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:31]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:31] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:31] 
+[14:43:31] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:31] 
+[14:43:31] Ignite node started OK (id=73d8c681, instance name=node153)
+[14:43:31] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31]    __________  ________________ 
+[14:43:31]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:31]  _/ // (7 7    // /  / / / _/   
+[14:43:31] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:31] 
+[14:43:31] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:31] 2017 Copyright(C) Apache Software Foundation
+[14:43:31] 
+[14:43:31] Ignite documentation: http://ignite.apache.org
+[14:43:31] 
+[14:43:31] Quiet mode.
+[14:43:31]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:31]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:31] 
+[14:43:31] OS: Linux 4.4.0-97-generic amd64
+[14:43:31] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:31] Configured plugins:
+[14:43:31]   ^-- None
+[14:43:31] 
+[14:43:31] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:31] Security status [authentication=off, tls/ssl=off]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:31] Performance suggestions for grid 'node154' (fix if possible)
+[14:43:31] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:31]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:31]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:31]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:31]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:31]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:31] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:31] 
+[14:43:31] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:31] 
+[14:43:31] Ignite node started OK (id=a7e49521, instance name=node154)
+[14:43:31] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:43:31]    __________  ________________ 
+[14:43:31]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:31]  _/ // (7 7    // /  / / / _/   
+[14:43:31] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:31] 
+[14:43:31] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:31] 2017 Copyright(C) Apache Software Foundation
+[14:43:31] 
+[14:43:31] Ignite documentation: http://ignite.apache.org
+[14:43:31] 
+[14:43:31] Quiet mode.
+[14:43:31]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:31]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:31] 
+[14:43:31] OS: Linux 4.4.0-97-generic amd64
+[14:43:31] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:31] Configured plugins:
+[14:43:31]   ^-- None
+[14:43:31] 
+[14:43:31] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:31] Security status [authentication=off, tls/ssl=off]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:32] Performance suggestions for grid 'node155' (fix if possible)
+[14:43:32] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:32]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:32]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:32]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:32]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:32]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:32] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:32] 
+[14:43:32] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:32] 
+[14:43:32] Ignite node started OK (id=059e12ac, instance name=node155)
+[14:43:32] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32]    __________  ________________ 
+[14:43:32]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:43:32]  _/ // (7 7    // /  / / / _/   
+[14:43:32] /___/\___/_/|_/___/ /_/ /___/  
+[14:43:32] 
+[14:43:32] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:43:32] 2017 Copyright(C) Apache Software Foundation
+[14:43:32] 
+[14:43:32] Ignite documentation: http://ignite.apache.org
+[14:43:32] 
+[14:43:32] Quiet mode.
+[14:43:32]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-1177e307.0.log'
+[14:43:32]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:43:32] 
+[14:43:32] OS: Linux 4.4.0-97-generic amd64
+[14:43:32] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:43:32] Configured plugins:
+[14:43:32]   ^-- None
+[14:43:32] 
+[14:43:32] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:43:32] Security status [authentication=off, tls/ssl=off]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:43:32] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:43:32] Performance suggestions for grid 'node156' (fix if possible)
+[14:43:32] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:43:32]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:43:32]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:43:32]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:43:32]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:43:32]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:43:32] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:43:32] 
+[14:43:32] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:43:32] 
+[14:43:32] Ignite node started OK (id=05505073, instance name=node156)
+[14:43:32] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+216444,687 ±(99.9%) 303078,185 us/op
+# Warmup Iteration   2: 158357,087 ±(99.9%) 114323,344 us/op
+# Warmup Iteration   3: 128129,640 ±(99.9%) 97977,437 us/op
+# Warmup Iteration   4: 110023,692 ±(99.9%) 76750,319 us/op
+# Warmup Iteration   5: 107313,294 ±(99.9%) 85213,477 us/op
+# Warmup Iteration   6: 98390,932 ±(99.9%) 73038,793 us/op
+# Warmup Iteration   7: 101166,197 ±(99.9%) 144653,235 us/op
+# Warmup Iteration   8: 71667,014 ±(99.9%) 48177,527 us/op
+# Warmup Iteration   9: 65135,834 ±(99.9%) 45091,659 us/op
+# Warmup Iteration  10: 60908,077 ±(99.9%) 55212,650 us/op
+# Warmup Iteration  11: 45564,904 ±(99.9%) 26725,662 us/op
+# Warmup Iteration  12: 64802,325 ±(99.9%) 45852,902 us/op
+# Warmup Iteration  13: 43248,870 ±(99.9%) 28752,585 us/op
+# Warmup Iteration  14: 44501,762 ±(99.9%) 39757,859 us/op
+# Warmup Iteration  15: 48813,506 ±(99.9%) 44766,415 us/op
+# Warmup Iteration  16: 45245,225 ±(99.9%) 32538,924 us/op
+# Warmup Iteration  17: 46691,599 ±(99.9%) 45902,264 us/op
+# Warmup Iteration  18: 42850,639 ±(99.9%) 38018,072 us/op
+# Warmup Iteration  19: 47171,822 ±(99.9%) 37951,392 us/op
+# Warmup Iteration  20: 48865,079 ±(99.9%) 54154,860 us/op
+# Warmup Iteration  21: 45279,188 ±(99.9%) 46971,525 us/op
+# Warmup Iteration  22: 40875,770 ±(99.9%) 40912,773 us/op
+# Warmup Iteration  23: 42329,187 ±(99.9%) 42275,478 us/op
+# Warmup Iteration  24: 36922,244 ±(99.9%) 30456,853 us/op
+# Warmup Iteration  25: 42794,735 ±(99.9%) 47274,491 us/op
+# Warmup Iteration  26: 38869,308 ±(99.9%) 34898,727 us/op
+# Warmup Iteration  27: 40914,090 ±(99.9%) 39499,883 us/op
+# Warmup Iteration  28: 36227,210 ±(99.9%) 31269,539 us/op
+# Warmup Iteration  29: 44616,395 ±(99.9%) 54648,946 us/op
+# Warmup Iteration  30: 38942,363 ±(99.9%) 38332,384 us/op
+# Warmup Iteration  31: 42995,604 ±(99.9%) 49069,005 us/op
+# Warmup Iteration  32: 40877,655 ±(99.9%) 44733,531 us/op
+# Warmup Iteration  33: 45962,314 ±(99.9%) 59632,981 us/op
+# Warmup Iteration  34: 42448,014 ±(99.9%) 45542,006 us/op
+# Warmup Iteration  35: 38655,603 ±(99.9%) 36842,159 us/op
+# Warmup Iteration  36: 38301,648 ±(99.9%) 37220,201 us/op
+# Warmup Iteration  37: 38265,644 ±(99.9%) 34989,987 us/op
+# Warmup Iteration  38: 42492,748 ±(99.9%) 52325,291 us/op
+# Warmup Iteration  39: 38028,187 ±(99.9%) 31782,543 us/op
+# Warmup Iteration  40: 40217,728 ±(99.9%) 40195,691 us/op
+Iteration   1: 37759,996 ±(99.9%) 37516,415 us/op
+Iteration   2: 38814,781 ±(99.9%) 34962,030 us/op
+Iteration   3: 37948,793 ±(99.9%) 38047,725 us/op
+Iteration   4: 43966,935 ±(99.9%) 46774,663 us/op
+Iteration   5: 35816,014 ±(99.9%) 30082,697 us/op
+Iteration   6: 47567,168 ±(99.9%) 64717,796 us/op
+Iteration   7: 36266,696 ±(99.9%) 31395,456 us/op
+Iteration   8: 43113,910 ±(99.9%) 53025,470 us/op
+Iteration   9: 37976,626 ±(99.9%) 34462,517 us/op
+Iteration  10: 40300,772 ±(99.9%) 37634,733 us/op
+Iteration  11: 38451,291 ±(99.9%) 36649,413 us/op
+Iteration  12: 37715,343 ±(99.9%) 35340,955 us/op
+Iteration  13: 37138,658 ±(99.9%) 32692,979 us/op
+Iteration  14: 36142,289 ±(99.9%) 27311,400 us/op
+Iteration  15: 36058,881 ±(99.9%) 36533,303 us/op
+Iteration  16: 39776,676 ±(99.9%) 32609,052 us/op
+Iteration  17: 37478,438 ±(99.9%) 36576,006 us/op
+Iteration  18: 53133,979 ±(99.9%) 83706,992 us/op
+Iteration  19: 46884,697 ±(99.9%) 50336,660 us/op
+Iteration  20: [14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Ignite node stopped OK [name=node0, uptime=00:01:17:192]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Ignite node stopped OK [name=node1, uptime=00:01:17:067]
+[14:44:45] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:45] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node151, uptime=00:01:15:447]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node150, uptime=00:01:16:053]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node155, uptime=00:01:14:207]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node154, uptime=00:01:14:699]
+[14:44:46] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node153, uptime=00:01:15:229]
+[14:44:46] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node152, uptime=00:01:15:788]
+[14:44:46] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node148, uptime=00:01:17:245]
+[14:44:46] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node156, uptime=00:01:14:279]
+[14:44:46] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:44:46] Ignite node stopped OK [name=node149, uptime=00:01:17:028]
+[14:44:47] Topology snapshot [ver=25, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:44:47] Ignite node stopped OK [name=node2, uptime=00:01:18:041]
+[14:44:47] Ignite node stopped OK [name=node3, uptime=00:01:17:739]
+41446,791 ±(99.9%) 52990,996 us/op
+
+
+Result "igniteLock":
+  40187,937 ±(99.9%) 3998,548 us/op [Average]
+  (min, avg, max) = (35816,014, 40187,937, 53133,979), stdev = 4604,734
+  CI (99.9%): [36189,389, 44186,484] (assumes normal distribution)
+
+
+# JMH 1.13 (released 450 days ago, please consider updating!)
+# VM version: JDK 1.8.0_131, VM 25.131-b11
+# VM invoker: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+# VM options: -Xms1g -Xmx1g -Dignite.jmh.cache.atomicityMode=TRANSACTIONAL -Dignite.jmh.cache.writeSynchronizationMode=FULL_SYNC -Dignite.jmh.cache.dataNodes=4 -Dignite.jmh.cache.clientMode=false
+# Warmup: 40 iterations, 1 s each
+# Measurement: 20 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 10 threads, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheLocksBenchmark.igniteLock2
+
+# Run progress: 66,67% complete, ETA 00:01:17
+# Fork: 1 of 1
+# Warmup Iteration   1: 
+--------------------
+IGNITE BENCHMARK INFO: 
+	client mode:                false
+	data nodes:                 4
+	backups:                    0
+	atomicity mode:             TRANSACTIONAL
+	write synchronization mode: FULL_SYNC
+--------------------
+
+[14:44:49]    __________  ________________ 
+[14:44:49]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:49]  _/ // (7 7    // /  / / / _/   
+[14:44:49] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:49] 
+[14:44:49] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:49] 2017 Copyright(C) Apache Software Foundation
+[14:44:49] 
+[14:44:49] Ignite documentation: http://ignite.apache.org
+[14:44:49] 
+[14:44:49] Quiet mode.
+[14:44:49]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:49]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:49] 
+[14:44:49] OS: Linux 4.4.0-97-generic amd64
+[14:44:49] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:49] Configured plugins:
+[14:44:49]   ^-- None
+[14:44:49] 
+[14:44:49] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:49] Security status [authentication=off, tls/ssl=off]
+[14:44:50] Performance suggestions for grid 'node0' (fix if possible)
+[14:44:50] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:50]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:50]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:50]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:50]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:50]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:50] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:50] 
+[14:44:50] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:50] 
+[14:44:50] Ignite node started OK (id=afa64f60, instance name=node0)
+[14:44:50] Topology snapshot [ver=1, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:44:50]    __________  ________________ 
+[14:44:50]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:50]  _/ // (7 7    // /  / / / _/   
+[14:44:50] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:50] 
+[14:44:50] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:50] 2017 Copyright(C) Apache Software Foundation
+[14:44:50] 
+[14:44:50] Ignite documentation: http://ignite.apache.org
+[14:44:50] 
+[14:44:50] Quiet mode.
+[14:44:50]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:50]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:50] 
+[14:44:50] OS: Linux 4.4.0-97-generic amd64
+[14:44:50] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:50] Configured plugins:
+[14:44:50]   ^-- None
+[14:44:50] 
+[14:44:50] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:50] Security status [authentication=off, tls/ssl=off]
+[14:44:50] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:44:50] Performance suggestions for grid 'node1' (fix if possible)
+[14:44:50] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:50]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:50]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:50]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:50]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:50]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:50] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:50] 
+[14:44:50] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:50] 
+[14:44:50] Ignite node started OK (id=41170aef, instance name=node1)
+[14:44:50] Topology snapshot [ver=2, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:44:50]    __________  ________________ 
+[14:44:50]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:50]  _/ // (7 7    // /  / / / _/   
+[14:44:50] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:50] 
+[14:44:50] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:50] 2017 Copyright(C) Apache Software Foundation
+[14:44:50] 
+[14:44:50] Ignite documentation: http://ignite.apache.org
+[14:44:50] 
+[14:44:50] Quiet mode.
+[14:44:50]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:50]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:50] 
+[14:44:50] OS: Linux 4.4.0-97-generic amd64
+[14:44:50] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:50] Configured plugins:
+[14:44:50]   ^-- None
+[14:44:50] 
+[14:44:50] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:50] Security status [authentication=off, tls/ssl=off]
+[14:44:51] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Performance suggestions for grid 'node2' (fix if possible)
+[14:44:51] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:51]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:51]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:51]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:51]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:51]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:51] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:51] 
+[14:44:51] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:51] 
+[14:44:51] Ignite node started OK (id=173847aa, instance name=node2)
+[14:44:51] Topology snapshot [ver=3, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51]    __________  ________________ 
+[14:44:51]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:51]  _/ // (7 7    // /  / / / _/   
+[14:44:51] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:51] 
+[14:44:51] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:51] 2017 Copyright(C) Apache Software Foundation
+[14:44:51] 
+[14:44:51] Ignite documentation: http://ignite.apache.org
+[14:44:51] 
+[14:44:51] Quiet mode.
+[14:44:51]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:51]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:51] 
+[14:44:51] OS: Linux 4.4.0-97-generic amd64
+[14:44:51] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:51] Configured plugins:
+[14:44:51]   ^-- None
+[14:44:51] 
+[14:44:51] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:51] Security status [authentication=off, tls/ssl=off]
+[14:44:51] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Performance suggestions for grid 'node3' (fix if possible)
+[14:44:51] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:51]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:51]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:51]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:51]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:51]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:51] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:51] 
+[14:44:51] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:51] 
+[14:44:51] Ignite node started OK (id=1f04629b, instance name=node3)
+[14:44:51] Topology snapshot [ver=4, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51]    __________  ________________ 
+[14:44:51]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:51]  _/ // (7 7    // /  / / / _/   
+[14:44:51] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:51] 
+[14:44:51] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:51] 2017 Copyright(C) Apache Software Foundation
+[14:44:51] 
+[14:44:51] Ignite documentation: http://ignite.apache.org
+[14:44:51] 
+[14:44:51] Quiet mode.
+[14:44:51]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:51]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:51] 
+[14:44:51] OS: Linux 4.4.0-97-generic amd64
+[14:44:51] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:51] Configured plugins:
+[14:44:51]   ^-- None
+[14:44:51] 
+[14:44:51] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:51] Security status [authentication=off, tls/ssl=off]
+[14:44:51] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Performance suggestions for grid 'node148' (fix if possible)
+[14:44:51] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:51]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:51]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:51]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:51]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:51]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:51] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:51] 
+[14:44:51] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:51] 
+[14:44:51] Ignite node started OK (id=73f030b4, instance name=node148)
+[14:44:51] Topology snapshot [ver=5, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51]    __________  ________________ 
+[14:44:51]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:51]  _/ // (7 7    // /  / / / _/   
+[14:44:51] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:51] 
+[14:44:51] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:51] 2017 Copyright(C) Apache Software Foundation
+[14:44:51] 
+[14:44:51] Ignite documentation: http://ignite.apache.org
+[14:44:51] 
+[14:44:51] Quiet mode.
+[14:44:51]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:51]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:51] 
+[14:44:51] OS: Linux 4.4.0-97-generic amd64
+[14:44:51] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:51] Configured plugins:
+[14:44:51]   ^-- None
+[14:44:51] 
+[14:44:51] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:51] Security status [authentication=off, tls/ssl=off]
+[14:44:51] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:51] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:52] Performance suggestions for grid 'node149' (fix if possible)
+[14:44:52] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:52]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:52]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:52]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:52]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:52]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:52] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:52] 
+[14:44:52] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:52] 
+[14:44:52] Ignite node started OK (id=20dc92c0, instance name=node149)
+[14:44:52] Topology snapshot [ver=6, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52]    __________  ________________ 
+[14:44:52]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:52]  _/ // (7 7    // /  / / / _/   
+[14:44:52] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:52] 
+[14:44:52] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:52] 2017 Copyright(C) Apache Software Foundation
+[14:44:52] 
+[14:44:52] Ignite documentation: http://ignite.apache.org
+[14:44:52] 
+[14:44:52] Quiet mode.
+[14:44:52]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:52]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:52] 
+[14:44:52] OS: Linux 4.4.0-97-generic amd64
+[14:44:52] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:52] Configured plugins:
+[14:44:52]   ^-- None
+[14:44:52] 
+[14:44:52] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:52] Security status [authentication=off, tls/ssl=off]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:52] Performance suggestions for grid 'node150' (fix if possible)
+[14:44:52] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:52]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:52]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:52]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:52]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:52]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:52] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:52] 
+[14:44:52] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:52] 
+[14:44:52] Ignite node started OK (id=462eccdd, instance name=node150)
+[14:44:52] Topology snapshot [ver=7, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52]    __________  ________________ 
+[14:44:52]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:52]  _/ // (7 7    // /  / / / _/   
+[14:44:52] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:52] 
+[14:44:52] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:52] 2017 Copyright(C) Apache Software Foundation
+[14:44:52] 
+[14:44:52] Ignite documentation: http://ignite.apache.org
+[14:44:52] 
+[14:44:52] Quiet mode.
+[14:44:52]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:52]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:52] 
+[14:44:52] OS: Linux 4.4.0-97-generic amd64
+[14:44:52] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:52] Configured plugins:
+[14:44:52]   ^-- None
+[14:44:52] 
+[14:44:52] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:52] Security status [authentication=off, tls/ssl=off]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:52] Performance suggestions for grid 'node151' (fix if possible)
+[14:44:52] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:52]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:52]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:52]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:52]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:52]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:52] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:52] 
+[14:44:52] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:52] 
+[14:44:52] Ignite node started OK (id=e5a586ec, instance name=node151)
+[14:44:52] Topology snapshot [ver=8, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:44:52]    __________  ________________ 
+[14:44:52]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:52]  _/ // (7 7    // /  / / / _/   
+[14:44:52] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:52] 
+[14:44:52] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:52] 2017 Copyright(C) Apache Software Foundation
+[14:44:52] 
+[14:44:52] Ignite documentation: http://ignite.apache.org
+[14:44:52] 
+[14:44:52] Quiet mode.
+[14:44:52]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:52]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:52] 
+[14:44:52] OS: Linux 4.4.0-97-generic amd64
+[14:44:52] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:52] Configured plugins:
+[14:44:52]   ^-- None
+[14:44:52] 
+[14:44:52] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:52] Security status [authentication=off, tls/ssl=off]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:53] Performance suggestions for grid 'node152' (fix if possible)
+[14:44:53] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:53]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:53]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:53]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:53]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:53]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:53] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:53] 
+[14:44:53] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:53] 
+[14:44:53] Ignite node started OK (id=1125876f, instance name=node152)
+[14:44:53] Topology snapshot [ver=9, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53]    __________  ________________ 
+[14:44:53]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:53]  _/ // (7 7    // /  / / / _/   
+[14:44:53] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:53] 
+[14:44:53] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:53] 2017 Copyright(C) Apache Software Foundation
+[14:44:53] 
+[14:44:53] Ignite documentation: http://ignite.apache.org
+[14:44:53] 
+[14:44:53] Quiet mode.
+[14:44:53]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:53]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:53] 
+[14:44:53] OS: Linux 4.4.0-97-generic amd64
+[14:44:53] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:53] Configured plugins:
+[14:44:53]   ^-- None
+[14:44:53] 
+[14:44:53] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:53] Security status [authentication=off, tls/ssl=off]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:53] Performance suggestions for grid 'node153' (fix if possible)
+[14:44:53] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:53]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:53]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:53]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:53]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:53]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:53] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:53] 
+[14:44:53] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:53] 
+[14:44:53] Ignite node started OK (id=4012428e, instance name=node153)
+[14:44:53] Topology snapshot [ver=10, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53]    __________  ________________ 
+[14:44:53]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:53]  _/ // (7 7    // /  / / / _/   
+[14:44:53] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:53] 
+[14:44:53] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:53] 2017 Copyright(C) Apache Software Foundation
+[14:44:53] 
+[14:44:53] Ignite documentation: http://ignite.apache.org
+[14:44:53] 
+[14:44:53] Quiet mode.
+[14:44:53]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:53]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:53] 
+[14:44:53] OS: Linux 4.4.0-97-generic amd64
+[14:44:53] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:53] Configured plugins:
+[14:44:53]   ^-- None
+[14:44:53] 
+[14:44:53] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:53] Security status [authentication=off, tls/ssl=off]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:53] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Performance suggestions for grid 'node154' (fix if possible)
+[14:44:54] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:54]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:54]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:54]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:54]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:54]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:54] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:54] 
+[14:44:54] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:54] 
+[14:44:54] Ignite node started OK (id=b23766b7, instance name=node154)
+[14:44:54] Topology snapshot [ver=11, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54]    __________  ________________ 
+[14:44:54]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:54]  _/ // (7 7    // /  / / / _/   
+[14:44:54] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:54] 
+[14:44:54] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:54] 2017 Copyright(C) Apache Software Foundation
+[14:44:54] 
+[14:44:54] Ignite documentation: http://ignite.apache.org
+[14:44:54] 
+[14:44:54] Quiet mode.
+[14:44:54]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:54]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:54] 
+[14:44:54] OS: Linux 4.4.0-97-generic amd64
+[14:44:54] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:54] Configured plugins:
+[14:44:54]   ^-- None
+[14:44:54] 
+[14:44:54] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:54] Security status [authentication=off, tls/ssl=off]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:54] Performance suggestions for grid 'node155' (fix if possible)
+[14:44:54] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:54]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:54]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:54]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:54]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:54]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:54] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:54] 
+[14:44:54] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:54] 
+[14:44:54] Ignite node started OK (id=4b03515f, instance name=node155)
+[14:44:54] Topology snapshot [ver=12, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54]    __________  ________________ 
+[14:44:54]   /  _/ ___/ |/ /  _/_  __/ __/ 
+[14:44:54]  _/ // (7 7    // /  / / / _/   
+[14:44:54] /___/\___/_/|_/___/ /_/ /___/  
+[14:44:54] 
+[14:44:54] ver. 2.1.0-SNAPSHOT#20171009-sha1:e3d8251b
+[14:44:54] 2017 Copyright(C) Apache Software Foundation
+[14:44:54] 
+[14:44:54] Ignite documentation: http://ignite.apache.org
+[14:44:54] 
+[14:44:54] Quiet mode.
+[14:44:54]   ^-- Logging to file '/home/sharpler/forks/ignite/work/log/ignite-afa64f60.0.log'
+[14:44:54]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:44:54] 
+[14:44:54] OS: Linux 4.4.0-97-generic amd64
+[14:44:54] VM information: OpenJDK Runtime Environment 1.8.0_131-8u131-b11-2ubuntu1.16.04.3-b11 Oracle Corporation OpenJDK 64-Bit Server VM 25.131-b11
+[14:44:54] Configured plugins:
+[14:44:54]   ^-- None
+[14:44:54] 
+[14:44:54] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:44:54] Security status [authentication=off, tls/ssl=off]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+[14:44:54] Attempting to start more nodes than physical RAM available on current host (this can cause significant slowdown)
+[14:44:54] Performance suggestions for grid 'node156' (fix if possible)
+[14:44:54] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:44:54]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:44:54]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:44:54]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:44:54]   ^-- Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)
+[14:44:54]   ^-- Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)
+[14:44:54] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[14:44:54] 
+[14:44:54] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:44:54] 
+[14:44:54] Ignite node started OK (id=95da6647, instance name=node156)
+[14:44:54] Topology snapshot [ver=13, servers=13, clients=0, CPUs=4, heap=1.0GB]
+!!!~ darc = 1
+!!!~ darc = 2
+!!!~ darc = 3
+!!!~ darc = 4
+!!!~ darc = 7
+!!!~ darc = 6
+!!!~ darc = 5
+!!!~ darc = 8
+!!!~ darc = 9
+!!!~ darc = 10
+18855,509 ±(99.9%) 782,624 us/op
+# Warmup Iteration   2: 13928,730 ±(99.9%) 118,960 us/op
+# Warmup Iteration   3: 9721,689 ±(99.9%) 32,471 us/op
+# Warmup Iteration   4: 7634,897 ±(99.9%) 28,072 us/op
+# Warmup Iteration   5: 5348,352 ±(99.9%) 16,654 us/op
+# Warmup Iteration   6: 4901,129 ±(99.9%) 8,244 us/op
+# Warmup Iteration   7: 2530,855 ±(99.9%) 2,405 us/op
+# Warmup Iteration   8: 2471,629 ±(99.9%) 5,863 us/op
+# Warmup Iteration   9: 2053,183 ±(99.9%) 1,258 us/op
+# Warmup Iteration  10: 2430,754 ±(99.9%) 1,358 us/op
+# Warmup Iteration  11: 2064,034 ±(99.9%) 0,932 us/op
+# Warmup Iteration  12: 2191,547 ±(99.9%) 3,792 us/op
+# Warmup Iteration  13: 2026,471 ±(99.9%) 0,240 us/op
+# Warmup Iteration  14: 2347,815 ±(99.9%) 2,757 us/op
+# Warmup Iteration  15: 2271,890 ±(99.9%) 1,290 us/op
+# Warmup Iteration  16: 2143,389 ±(99.9%) 0,693 us/op
+# Warmup Iteration  17: 2046,008 ±(99.9%) 0,847 us/op
+# Warmup Iteration  18: 2054,554 ±(99.9%) 0,426 us/op
+# Warmup Iteration  19: 1983,972 ±(99.9%) 18,216 us/op
+# Warmup Iteration  20: 2012,636 ±(99.9%) 3,158 us/op
+# Warmup Iteration  21: 1964,845 ±(99.9%) 2,936 us/op
+# Warmup Iteration  22: 2047,204 ±(99.9%) 0,730 us/op
+# Warmup Iteration  23: 1928,499 ±(99.9%) 0,581 us/op
+# Warmup Iteration  24: 1992,187 ±(99.9%) 0,467 us/op
+# Warmup Iteration  25: 1944,666 ±(99.9%) 1,159 us/op
+# Warmup Iteration  26: 1990,423 ±(99.9%) 0,323 us/op
+# Warmup Iteration  27: 2045,457 ±(99.9%) 0,516 us/op
+# Warmup Iteration  28: 1980,381 ±(99.9%) 0,502 us/op
+# Warmup Iteration  29: 1946,105 ±(99.9%) 0,706 us/op
+# Warmup Iteration  30: 2028,530 ±(99.9%) 0,419 us/op
+# Warmup Iteration  31: 1938,373 ±(99.9%) 1,258 us/op
+# Warmup Iteration  32: 1968,864 ±(99.9%) 3,161 us/op
+# Warmup Iteration  33: 1955,346 ±(99.9%) 0,185 us/op
+# Warmup Iteration  34: 2071,550 ±(99.9%) 5,216 us/op
+# Warmup Iteration  35: 1951,556 ±(99.9%) 0,606 us/op
+# Warmup Iteration  36: 2020,394 ±(99.9%) 0,805 us/op
+# Warmup Iteration  37: 1962,014 ±(99.9%) 0,491 us/op
+# Warmup Iteration  38: 1972,769 ±(99.9%) 1,096 us/op
+# Warmup Iteration  39: 1963,007 ±(99.9%) 2,634 us/op
+# Warmup Iteration  40: 1996,306 ±(99.9%) 0,481 us/op
+Iteration   1: 1939,814 ±(99.9%) 0,778 us/op
+Iteration   2: 1949,734 ±(99.9%) 0,227 us/op
+Iteration   3: 1940,554 ±(99.9%) 5,758 us/op
+Iteration   4: 2012,228 ±(99.9%) 0,730 us/op
+Iteration   5: 1956,282 ±(99.9%) 2,908 us/op
+Iteration   6: 1966,962 ±(99.9%) 0,519 us/op
+Iteration   7: 1962,120 ±(99.9%) 1,285 us/op
+Iteration   8: 1983,611 ±(99.9%) 3,139 us/op
+Iteration   9: 1955,939 ±(99.9%) 1,016 us/op
+Iteration  10: 1994,669 ±(99.9%) 0,240 us/op
+Iteration  11: 2093,510 ±(99.9%) 0,463 us/op
+Iteration  12: 2056,882 ±(99.9%) 6,349 us/op
+Iteration  13: 1952,382 ±(99.9%) 6,833 us/op
+Iteration  14: 2023,904 ±(99.9%) 11,132 us/op
+Iteration  15: 1952,819 ±(99.9%) 0,592 us/op
+Iteration  16: 2176,767 ±(99.9%) 14,388 us/op
+Iteration  17: 2025,594 ±(99.9%) 0,657 us/op
+Iteration  18: 1983,820 ±(99.9%) 0,781 us/op
+Iteration  19: 1963,694 ±(99.9%) 3,146 us/op
+Iteration  20: !!!~ закрываем на afa64f60-0fbe-48fe-bdba-b4ef580ec2fd
+!!!~ закрываем на 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ закрываем на e5a586ec-3045-489e-a0ea-2a35e8c6c469
+!!!~ закрываем на 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ закрываем на b23766b7-ef2b-466d-a6c6-6d5946095a8b
+!!!~ закрываем на 462eccdd-edd4-48f6-b14e-14396af00f79
+!!!~ закрываем на 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ закрываем на 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 4b03515f-f03c-46df-bc83-21f99dadacf2
+!!!~ не удаляем пока на 73f030b4-c918-4fdb-b5e0-0decf2a0667b при darc=9
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+[14:45:56] Topology snapshot [ver=14, servers=12, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода2 4b03515f-f03c-46df-bc83-21f99dadacf2
+!!!~ умерла нода2 b23766b7-ef2b-466d-a6c6-6d5946095a8b
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 462eccdd-edd4-48f6-b14e-14396af00f79
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 e5a586ec-3045-489e-a0ea-2a35e8c6c469
+[14:45:56] Ignite node stopped OK [name=node0, uptime=00:01:06:495]
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Ignite node stopped OK [name=node1, uptime=00:01:06:209]
+[14:45:57] Topology snapshot [ver=15, servers=11, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 462eccdd-edd4-48f6-b14e-14396af00f79
+!!!~ умерла нода2 b23766b7-ef2b-466d-a6c6-6d5946095a8b
+!!!~ умерла нода2 e5a586ec-3045-489e-a0ea-2a35e8c6c469
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+!!!~ умерла нода2 4b03515f-f03c-46df-bc83-21f99dadacf2
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=16, servers=10, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 462eccdd-edd4-48f6-b14e-14396af00f79
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+!!!~ умерла нода2 b23766b7-ef2b-466d-a6c6-6d5946095a8b
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 4b03515f-f03c-46df-bc83-21f99dadacf2
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+[14:45:57] Ignite node stopped OK [name=node151, uptime=00:01:04:586]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=17, servers=9, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:57] Ignite node stopped OK [name=node150, uptime=00:01:05:002]
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ умерла нода2 4b03515f-f03c-46df-bc83-21f99dadacf2
+!!!~ умерла нода2 b23766b7-ef2b-466d-a6c6-6d5946095a8b
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=18, servers=8, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:57] Ignite node stopped OK [name=node155, uptime=00:01:03:228]
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 b23766b7-ef2b-466d-a6c6-6d5946095a8b
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Ignite node stopped OK [name=node154, uptime=00:01:03:674]
+[14:45:57] Topology snapshot [ver=19, servers=7, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+!!!~ умерла нода2 4012428e-7c8c-4c02-8a2e-8eb0d0b01b7e
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+[14:45:57] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:57] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:57] Ignite node stopped OK [name=node153, uptime=00:01:04:161]
+[14:45:57] Topology snapshot [ver=20, servers=6, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 1125876f-9189-42a9-a4a4-bd1547e06a39
+[14:45:57] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+[14:45:57] Topology snapshot [ver=21, servers=5, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:58] Ignite node stopped OK [name=node152, uptime=00:01:04:693]
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+!!!~ умерла нода2 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+[14:45:58,048][SEVERE][disco-event-worker-#228%node148%][GridEventStorageManager] Unexpected exception in listener notification for event: DiscoveryEvent [evtNode=TcpDiscoveryNode [id=afa64f60-0fbe-48fe-bdba-b4ef580ec2fd, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47500], discPort=47500, order=1, intOrder=1, lastExchangeTime=1508154291594, loc=false, ver=2.1.0#20171009-sha1:e3d8251b, isClient=false], topVer=14, nodeId8=73f030b4, msg=Node left: TcpDiscoveryNode [id=afa64f60-0fbe-48fe-bdba-b4ef580ec2fd, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47500], discPort=47500, order=1, intOrder=1, lastExchangeTime=1508154291594, loc=false, ver=2.1.0#20171009-sha1:e3d8251b, isClient=false], type=NODE_LEFT, tstamp=1508154356714]
+java.lang.IllegalStateException: Failed to execute task due to grid shutdown: org.apache.ignite.internal.processors.closure.GridClosureProcessor$T7@35641765
+	at org.apache.ignite.internal.processors.task.GridTaskProcessor.execute(GridTaskProcessor.java:446)
+	at org.apache.ignite.internal.processors.closure.GridClosureProcessor.callAsync(GridClosureProcessor.java:673)
+	at org.apache.ignite.internal.processors.closure.GridClosureProcessor.callAsync(GridClosureProcessor.java:478)
+	at org.apache.ignite.internal.processors.closure.GridClosureProcessor.callAsync(GridClosureProcessor.java:464)
+	at org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor$PrimaryNodeFaile.apply(DataStructuresProcessor.java:1749)
+	at org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor$PrimaryNodeFaile.apply(DataStructuresProcessor.java:1724)
+	at org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager$UserListenerWrapper.onEvent(GridEventStorageManager.java:1463)
+	at org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager.notifyListeners(GridEventStorageManager.java:859)
+	at org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager.notifyListeners(GridEventStorageManager.java:844)
+	at org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager.record0(GridEventStorageManager.java:341)
+	at org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager.record(GridEventStorageManager.java:307)
+	at org.apache.ignite.internal.managers.discovery.GridDiscoveryManager$DiscoveryWorker.recordEvent(GridDiscoveryManager.java:2480)
+	at org.apache.ignite.internal.managers.discovery.GridDiscoveryManager$DiscoveryWorker.body0(GridDiscoveryManager.java:2686)
+	at org.apache.ignite.internal.managers.discovery.GridDiscoveryManager$DiscoveryWorker.body(GridDiscoveryManager.java:2509)
+	at org.apache.ignite.internal.util.worker.GridWorker.run(GridWorker.java:110)
+	at java.lang.Thread.run(Thread.java:748)
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ умерла нода 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+!!!~ закрываем на 73f030b4-c918-4fdb-b5e0-0decf2a0667b
+[14:45:58] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Ignite node stopped OK [name=node148, uptime=00:01:06:258]
+[14:45:58] Topology snapshot [ver=22, servers=4, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+!!!~ умерла нода2 95da6647-b4cf-45cf-9349-ff352c741123
+[14:45:58] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Topology snapshot [ver=23, servers=3, clients=0, CPUs=4, heap=1.0GB]
+!!!~ умерла нода2 20dc92c0-040a-4c58-9633-d7d9d39d1f3b
+[14:45:58] Ignite node stopped OK [name=node156, uptime=00:01:03:247]
+[14:45:58] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Topology snapshot [ver=24, servers=2, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Ignite node stopped OK [name=node149, uptime=00:01:06:063]
+[14:45:58] Topology snapshot [ver=25, servers=1, clients=0, CPUs=4, heap=1.0GB]
+[14:45:58] Ignite node stopped OK [name=node2, uptime=00:01:07:024]
+[14:45:58] Ignite node stopped OK [name=node3, uptime=00:01:06:776]
+1999,042 ±(99.9%) 4,086 us/op
+
+
+Result "igniteLock2":
+  1994,516 ±(99.9%) 51,347 us/op [Average]
+  (min, avg, max) = (1939,814, 1994,516, 2176,767), stdev = 59,131
+  CI (99.9%): [1943,169, 2045,864] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:03:46
+
+Benchmark                           Mode  Cnt      Score      Error  Units
+JmhCacheLocksBenchmark.cacheLock    avgt   20   1160,207 ±   29,391  us/op
+JmhCacheLocksBenchmark.igniteLock   avgt   20  40187,937 ± 3998,548  us/op
+JmhCacheLocksBenchmark.igniteLock2  avgt   20   1994,516 ±   51,347  us/op

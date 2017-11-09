@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 /** */
 public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
     /** */
-    protected long gridStartTime;
+    private long gridStartTime;
 
     /** Queue containing nodes that are waiting to acquire this lock, used to ensure fairness. */
     @GridToStringInclude
@@ -62,6 +62,15 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
      */
     public GridCacheLockState2Base() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = (int)(gridStartTime ^ (gridStartTime >>> 32));
+
+        result = 31 * result + (nodes != null ? nodes.hashCode() : 0);
+
+        return result;
     }
 
     /** {@inheritDoc} */

@@ -5,17 +5,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 
 /** EntryProcessor for lock acquire operation for unfair mode. */
-public class AcquireUnfairProcessor extends ReentrantProcessor<UUID> {
+public final class AcquireUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = 8526685073215814916L;
 
     /** */
-    UUID nodeId;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link Externalizable}.

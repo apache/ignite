@@ -28,13 +28,13 @@ import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
 /** EntryProcessor for lock release operation. */
-public class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
+public final class ReleaseUnfairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
     Externalizable {
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
-    UUID nodeId;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link Externalizable}.

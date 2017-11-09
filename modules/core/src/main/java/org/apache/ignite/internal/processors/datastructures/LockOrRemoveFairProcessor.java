@@ -24,12 +24,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** */
-public class LockOrRemoveFairProcessor extends ReentrantProcessor<LockOwner> {
+public final class LockOrRemoveFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
 
     /** */
-    LockOwner owner;
+    private LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.

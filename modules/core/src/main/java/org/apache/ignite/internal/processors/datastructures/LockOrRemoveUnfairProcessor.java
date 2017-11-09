@@ -24,12 +24,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** EntryProcessor for release lock by timeout, but acquire it if lock has released. */
-public class LockOrRemoveUnfairProcessor extends ReentrantProcessor<UUID> {
+public final class LockOrRemoveUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = 2968825754944751240L;
 
     /** */
-    UUID nodeId;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link Externalizable}.

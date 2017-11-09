@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.UUID;
 
 /** */
-public class GridCacheLockState2Fair extends GridCacheLockState2Base<LockOwner> {
+public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockOwner> {
     /** */
     private static final long serialVersionUID = 6727594514711280291L;
 

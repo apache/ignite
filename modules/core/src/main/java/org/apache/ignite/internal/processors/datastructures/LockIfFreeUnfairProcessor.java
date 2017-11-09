@@ -24,12 +24,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** EntryProcessor for lock acquire operation. */
-public class LockIfFreeUnfairProcessor extends ReentrantProcessor<UUID> {
+public final class LockIfFreeUnfairProcessor extends ReentrantProcessor<UUID> {
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
 
     /** */
-    UUID nodeId;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link Externalizable}.

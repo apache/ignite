@@ -68,12 +68,17 @@ import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.datastructures.AcquireFairProcessor;
 import org.apache.ignite.internal.processors.datastructures.AcquireUnfairProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.datastructures.LockIfFreeFairProcessor;
 import org.apache.ignite.internal.processors.datastructures.LockIfFreeUnfairProcessor;
+import org.apache.ignite.internal.processors.datastructures.LockOrRemoveFairProcessor;
 import org.apache.ignite.internal.processors.datastructures.LockOrRemoveUnfairProcessor;
+import org.apache.ignite.internal.processors.datastructures.ReleaseFairProcessor;
 import org.apache.ignite.internal.processors.datastructures.ReleaseUnfairProcessor;
+import org.apache.ignite.internal.processors.datastructures.RemoveProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
@@ -216,6 +221,12 @@ public class BinaryContext {
         sysClss.add(LockIfFreeUnfairProcessor.class.getName());
         sysClss.add(LockOrRemoveUnfairProcessor.class.getName());
 
+        sysClss.add(AcquireFairProcessor.class.getName());
+        sysClss.add(ReleaseFairProcessor.class.getName());
+        sysClss.add(LockIfFreeFairProcessor.class.getName());
+        sysClss.add(LockOrRemoveFairProcessor.class.getName());
+
+        sysClss.add(RemoveProcessor.class.getName());
 
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }

@@ -7,12 +7,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 
 /** EntryProcessor for lock acquire operation for fair mode. */
-public class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
+public final class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = 8526685073215814916L;
 
     /** */
-    LockOwner owner;
+    private LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.

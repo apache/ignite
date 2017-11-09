@@ -28,14 +28,14 @@ import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, T>,
+public final class RemoveProcessor<T> implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, T>,
     Externalizable {
 
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
-    UUID nodeId;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link java.io.Externalizable}.

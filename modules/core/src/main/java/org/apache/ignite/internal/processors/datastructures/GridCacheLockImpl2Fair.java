@@ -95,7 +95,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
-    @Override public void lockInterruptibly() throws IgniteInterruptedException, IgniteException {
+    @Override public void lockInterruptibly() throws IgniteException {
         ctx.kernalContext().gateway().readLock();
 
         try {
@@ -127,7 +127,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException, IgniteException {
+    @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteException {
         ctx.kernalContext().gateway().readLock();
 
         try {
@@ -430,7 +430,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         }
 
         /** */
-        private Latch tryAcquireOrAdd() {
+        private void tryAcquireOrAdd() {
             final Latch listener = getListener();
 
             AcquireFairProcessor processor = acquireProcessor.get();
@@ -456,7 +456,6 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
                 }
             });
 
-            return listener;
         }
 
         /** */
@@ -507,7 +506,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
             try {
                 return waitForUpdate(30, TimeUnit.SECONDS);
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 return false;
             }
         }

@@ -28,7 +28,7 @@ public abstract class ReentrantProcessor<T>
 
     /** {@inheritDoc} */
     @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<T>> entry,
-        Object... objects) throws EntryProcessorException {
+        Object... objects) {
 
         assert entry != null;
 

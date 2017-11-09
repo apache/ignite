@@ -28,14 +28,14 @@ import javax.cache.processor.MutableEntry;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
+public final class ReleaseFairProcessor implements EntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
     Externalizable {
 
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
     /** */
-    LockOwner owner;
+    private LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.

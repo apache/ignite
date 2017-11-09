@@ -148,8 +148,9 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
             }
         }
 
-        /** */
-        public void await() throws InterruptedException, IgniteException {
+        /**
+         * @throws IgniteException */
+        public void await() throws InterruptedException {
             lock.lock();
             try {
                 if (count-- <= 0) {
@@ -165,8 +166,9 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
             }
         }
 
-        /** */
-        public boolean await(long timeout, TimeUnit unit) throws InterruptedException, IgniteException {
+        /**
+         * @throws IgniteException */
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             lock.lock();
             try {
                 boolean flag = true;

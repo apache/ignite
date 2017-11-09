@@ -21,8 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 
 /** Simple tuple for result. IgnitePair with Boolean too heavy. */
 class LockedModified implements Externalizable {
