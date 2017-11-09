@@ -3008,7 +3008,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 processMessageFailedNodes(res);
 
-                                if (res.failedNodes().contains(locNodeId)) {
+                                if (F.contains(res.failedNodes(), locNodeId)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Handshake response from failed node: " + res);
 
