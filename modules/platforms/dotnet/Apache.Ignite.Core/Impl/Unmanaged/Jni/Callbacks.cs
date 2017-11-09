@@ -64,6 +64,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             RegisterNatives(env);
         }
 
+        /** <inheritdoc /> */
+        public override object InitializeLifetimeService()
+        {
+            // Ensure that cross-AppDomain reference lives forever.
+            return null;
+        }
+
         /// <summary>
         /// Registers callback handlers.
         /// </summary>
