@@ -517,7 +517,7 @@ public class GridDhtPartitionDemander {
 
         for (Integer part : parts) {
             try {
-                if (ctx.database().persistenceEnabled()) {
+                if (grp.persistenceEnabled()) {
                     if (partCntrs == null)
                         partCntrs = new HashMap<>(parts.size(), 1.0f);
 

@@ -194,7 +194,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             assert !cctx.mvccEnabled() || mvccFilter != null;
 
-            return new H2Cursor(tree.find((GridH2SearchRow)lower, (GridH2SearchRow)upper, mvccFilter, null), p);
+            return new H2Cursor(tree.find((GridH2SearchRow)lower, (GridH2SearchRow)upper, mvccFilter, p));
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -261,17 +261,17 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void removex(SearchRow row) {
-        assert row instanceof GridH2SearchRow : row;
-
+    @Override public boolean removex(SearchRow row) {
         try {
+            assert row instanceof GridH2SearchRow : row;
+
             InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             int seg = segmentForRow(row);
 
             H2Tree tree = treeForRead(seg);
 
-            tree.removex((GridH2SearchRow)row);
+            return tree.removex((GridH2SearchRow)row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -371,7 +371,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCursor<GridH2Row> doFind0(
+    @Override protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         @Nullable SearchRow last,
@@ -380,12 +380,20 @@ public class H2TreeIndex extends GridH2IndexBase {
         try {
             assert !cctx.mvccEnabled() || mvccFilter != null;
 
-            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, mvccFilter, null);
+            IndexingQueryCacheFilter p = null;
+
+            if (filter != null) {
+                String cacheName = getTable().cacheName();
+
+                p = filter.forCache(cacheName);
+            }
+
+            GridCursor<GridH2Row> range = ((BPlusTree)t).find(first, last, mvccFilter, p);
 
             if (range == null)
-                return EMPTY_CURSOR;
+                range = EMPTY_CURSOR;
 
-            return filter(range, filter);
+            return new H2Cursor(range);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

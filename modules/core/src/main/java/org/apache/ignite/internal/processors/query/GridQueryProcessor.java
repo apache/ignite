@@ -847,9 +847,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
+     * @param removeIdx If {@code true}, will remove index.
      */
-    public void onCacheStop(GridCacheContext cctx, boolean destroy) {
+    public void onCacheStop(GridCacheContext cctx, boolean removeIdx) {
         if (idx == null)
             return;
 
@@ -857,7 +857,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cctx.name(), destroy);
+            onCacheStop0(cctx.name(), removeIdx);
         }
         finally {
             busyLock.leaveBusy();
@@ -1382,7 +1382,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (ccfg == null) {
             if (QueryUtils.TEMPLATE_PARTITIONED.equalsIgnoreCase(templateName))
                 ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.PARTITIONED);
-            else if (QueryUtils.TEMPLATE_REPLICÄTED.equalsIgnoreCase(templateName))
+            else if (QueryUtils.TEMPLATE_REPLICATED.equalsIgnoreCase(templateName))
                 ccfg = new CacheConfiguration<>().setCacheMode(CacheMode.REPLICATED);
             else
                 throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, templateName);
@@ -1528,9 +1528,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Use with {@link #busyLock} where appropriate.
      *
      * @param cacheName Cache name.
-     * @param destroy Destroy flag.
+     * @param rmvIdx If {@code true}, will remove index.
      */
-    public void onCacheStop0(String cacheName, boolean destroy) {
+    public void onCacheStop0(String cacheName, boolean rmvIdx) {
         if (idx == null)
             return;
 
@@ -1568,7 +1568,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cacheName, destroy);
+                idx.unregisterCache(cacheName, rmvIdx);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);
@@ -1740,10 +1740,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     prevRow.value(),
                     false);
 
-                if (prevValDesc != null && prevValDesc != desc) {
-                    idx.remove(cctx, prevValDesc, prevRow);
+                if (prevValDesc != desc) {
+                    if (prevValDesc != null)
+                        idx.remove(cctx, prevValDesc, prevRow);
 
-                    prevRow = null;
+                    prevRow = null; // Row has already been removed from another table indexes
                 }
             }
 
@@ -1752,14 +1753,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cctx.mvccEnabled()) {
                 // Add new mvcc value.
-                idx.store(cctx, desc, newRow, null);
+                idx.store(cctx, desc, newRow, null, null);
 
                 // Set info about more recent version for previous record.
                 if (prevRow != null)
-                    idx.store(cctx, desc, prevRow, mvccVer);
+                    idx.store(cctx, desc, prevRow, null, mvccVer);
             }
             else
-                idx.store(cctx, desc, newRow, null);
+                idx.store(cctx, desc, newRow, prevRow, null);
         }
         finally {
             busyLock.leaveBusy();
@@ -2353,7 +2354,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (cctx.mvccEnabled()) {
                 if (newVer != null) {
                     // Set info about more recent version for previous record.
-                    idx.store(cctx, desc, val, newVer);
+                    idx.store(cctx, desc, val, null, newVer);
                 }
                 else
                     idx.remove(cctx, desc, val);
@@ -2587,7 +2588,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
         GridCacheSharedContext cctx = ctx.cache().context();
 
-        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode() &&
+        if (cctx.pageStore() != null && !cctx.kernalContext().clientNode() &&
             CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 

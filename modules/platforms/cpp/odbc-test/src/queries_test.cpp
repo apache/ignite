@@ -2379,5 +2379,22 @@ BOOST_AUTO_TEST_CASE(TestMultipleMixedStatementsNoFetch)
     }
 }
 
+BOOST_AUTO_TEST_CASE(TestCloseAfterEmptyUpdate)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR query[] = "update TestType set strField='test' where _key=42";
+
+    SQLRETURN ret = SQLExecDirect(stmt, &query[0], SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -218,7 +218,7 @@ public class GridCacheSharedContext<K, V> {
 
         locStoreCnt = new AtomicInteger();
 
-        if (dbMgr != null && dbMgr.persistenceEnabled())
+        if (dbMgr != null && CU.isPersistenceEnabled(kernalCtx.config()))
             dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
 
         msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
