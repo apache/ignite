@@ -46,7 +46,9 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryRestartRequiredException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -559,6 +561,13 @@ public class GridReduceQueryExecutor {
                 U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
+
+            final AffinityTopologyVersion lastVer = h2.lastTopologyVersion();
+
+            // If topology is changed and we are inside transaction, break query execution.
+            if (lastVer.compareTo(topVer) > 0 && ctx.cache().context().tm().userTx() != null)
+                throw new CacheException("Topology is changed while executing query inside transaction.",
+                    new QueryRestartRequiredException());
 
             List<Integer> cacheIds = qry.cacheIds();
 

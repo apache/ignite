@@ -17,61 +17,89 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryRestartRequiredException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test for distributed queries with node restarts.
  */
-public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest {
+public class IgniteCacheQueryNodeRestartSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 3;
+    private static final String PARTITIONED_QRY = "select co.id, count(*) cnt\n" +
+        "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
+        "where pe.id = pu.personId and pu.productId = pr.id and pr.companyId = co.id \n" +
+        "group by co.id order by cnt desc, co.id";
 
     /** */
-    private static final int KEY_CNT = 1000;
+    private static final String REPLICATED_QRY = "select pr.id, co.id\n" +
+        "from \"pr\".Product pr, \"co\".Company co\n" +
+        "where pr.companyId = co.id\n" +
+        "order by co.id, pr.id ";
+
+    /** */
+    private static final int GRID_CNT = 6;
+
+    /** */
+    private static final int PERS_CNT = 600;
+
+    /** */
+    private static final int PURCHASE_CNT = 6000;
+
+    /** */
+    private static final int COMPANY_CNT = 25;
+
+    /** */
+    private static final int PRODUCT_CNT = 100;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 3 * 60 * 1000;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
+
+        c.setDataStorageConfiguration(memCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -79,170 +107,367 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
+        int i = 0;
 
-        cc.setCacheMode(PARTITIONED);
-        cc.setBackups(1);
-        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setRebalanceMode(SYNC);
-        cc.setAffinity(new RendezvousAffinityFunction(false, 15));
-        cc.setIndexedTypes(
-            Integer.class, Integer.class
-        );
+        CacheConfiguration<?, ?>[] ccs = new CacheConfiguration[4];
 
-        c.setCacheConfiguration(cc);
+        for (String name : F.asList("pe", "pu")) {
+            CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
+
+            cc.setName(name);
+            cc.setCacheMode(PARTITIONED);
+            cc.setBackups(2);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
+            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setRebalanceMode(SYNC);
+            cc.setAffinity(new RendezvousAffinityFunction(false, 60));
+
+            if (name.equals("pe")) {
+                cc.setIndexedTypes(
+                    Integer.class, Person.class
+                );
+            }
+            else if (name.equals("pu")) {
+                cc.setIndexedTypes(
+                    AffinityKey.class, Purchase.class
+                );
+            }
+
+            ccs[i++] = cc;
+        }
+
+        for (String name : F.asList("co", "pr")) {
+            CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
+
+            cc.setName(name);
+            cc.setCacheMode(REPLICATED);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
+            cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setRebalanceMode(SYNC);
+            cc.setAffinity(new RendezvousAffinityFunction(false, 50));
+
+            if (name.equals("co")) {
+                cc.setIndexedTypes(
+                    Integer.class, Company.class
+                );
+            }
+            else if (name.equals("pr")) {
+                cc.setIndexedTypes(
+                    Integer.class, Product.class
+                );
+            }
+
+            ccs[i++] = cc;
+        }
+
+        c.setCacheConfiguration(ccs);
 
         return c;
     }
 
     /**
-     * JUnit.
      *
+     */
+    private void fillCaches() {
+        IgniteCache<Integer, Company> co = grid(0).cache("co");
+
+        for (int i = 0; i < COMPANY_CNT; i++)
+            co.put(i, new Company(i));
+
+        IgniteCache<Integer, Product> pr = grid(0).cache("pr");
+
+        Random rnd = new GridRandom();
+
+        for (int i = 0; i < PRODUCT_CNT; i++)
+            pr.put(i, new Product(i, rnd.nextInt(COMPANY_CNT)));
+
+        IgniteCache<Integer, Person> pe = grid(0).cache("pe");
+
+        for (int i = 0; i < PERS_CNT; i++)
+            pe.put(i, new Person(i));
+
+        IgniteCache<AffinityKey<Integer>, Purchase> pu = grid(0).cache("pu");
+
+        for (int i = 0; i < PURCHASE_CNT; i++) {
+            int persId = rnd.nextInt(PERS_CNT);
+            int prodId = rnd.nextInt(PRODUCT_CNT);
+
+            pu.put(new AffinityKey<>(i, persId), new Purchase(persId, prodId));
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testRestarts() throws Exception {
-        int duration = 60 * 1000;
-        int qryThreadNum = 10;
-        final long nodeLifeTime = 2 * 1000;
-        final int logFreq = 50;
+        int duration = 90 * 1000;
+        int qryThreadNum = 4;
+        int restartThreadsNum = 2; // 4 + 2 = 6 nodes
+        final int nodeLifeTime = 2 * 1000;
+        final int logFreq = 10;
 
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        startGridsMultiThreaded(GRID_CNT);
 
-        assert cache != null;
+        final AtomicIntegerArray locks = new AtomicIntegerArray(GRID_CNT);
 
-        for (int i = 0; i < KEY_CNT; i++)
-            cache.put(i, i);
+        fillCaches();
 
-        assertEquals(KEY_CNT, cache.size());
+        final List<List<?>> pRes = grid(0).cache("pu").query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll();
+
+        Thread.sleep(3000);
+
+        assertEquals(pRes, grid(0).cache("pu").query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
+
+        final List<List<?>> rRes = grid(0).cache("co").query(new SqlFieldsQuery(REPLICATED_QRY)).getAll();
+
+        assertFalse(pRes.isEmpty());
+        assertFalse(rRes.isEmpty());
 
         final AtomicInteger qryCnt = new AtomicInteger();
 
-        final AtomicBoolean done = new AtomicBoolean();
+        final AtomicBoolean qrysDone = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
-                while (!done.get()) {
-                    Collection<Cache.Entry<Integer, Integer>> res =
-                        cache.query(new SqlQuery<Integer, Integer>(Integer.class, "true")).getAll();
+                final GridRandom rnd = new GridRandom();
 
-                    Set<Integer> keys = new HashSet<>();
+                while (!qrysDone.get()) {
+                    int g;
 
-                    for (Cache.Entry<Integer,Integer> entry : res)
-                        keys.add(entry.getKey());
-
-                    if (KEY_CNT > keys.size()) {
-                        for (int i = 0; i < KEY_CNT; i++) {
-                            if (!keys.contains(i))
-                                assertEquals(Integer.valueOf(i), cache.get(i));
-                        }
-
-                        fail("res size: " + res.size());
+                    do {
+                        g = rnd.nextInt(locks.length());
                     }
+                    while (!locks.compareAndSet(g, 0, 1));
 
-                    assertEquals(KEY_CNT, keys.size());
+                    try {
+                        final IgniteEx grid = grid(g);
 
-                    int c = qryCnt.incrementAndGet();
+                        if (rnd.nextBoolean()) { // Partitioned query.
+                            final IgniteCache<?,?> cache = grid.cache("pu");
 
-                    if (c % logFreq == 0)
-                        info("Executed queries: " + c);
+                            final SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
+
+                            boolean smallPageSize = rnd.nextBoolean();
+
+                            if (smallPageSize)
+                                qry.setPageSize(3);
+
+                            final IgniteCache<Integer, Company> co = grid.cache("co");
+
+                            try {
+                                runQuery(grid, new Runnable() {
+                                    @Override public void run() {
+                                        Company c = co.get(rnd.nextInt(COMPANY_CNT));
+
+                                        assertEquals(pRes, cache.query(qry).getAll());
+                                    }
+                                });
+                            } catch (CacheException e) {
+                                // Interruptions are expected here.
+                                if (e.getCause() instanceof IgniteInterruptedCheckedException ||
+                                    e.getCause() instanceof InterruptedException ||
+                                    e.getCause() instanceof ClusterTopologyException ||
+                                    e.getCause() instanceof TransactionTimeoutException ||
+                                    e.getCause() instanceof QueryRestartRequiredException)
+                                    continue;
+
+                                if (e.getCause() instanceof QueryCancelledException)
+                                    fail("Retry is expected");
+
+                                if (!smallPageSize)
+                                    U.error(grid.log(), "On large page size must retry.", e);
+
+                                assertTrue("On large page size must retry.", smallPageSize);
+
+                                boolean failedOnRemoteFetch = false;
+                                boolean failedOnInterruption = false;
+
+                                for (Throwable th = e; th != null; th = th.getCause()) {
+                                    if (th instanceof InterruptedException) {
+                                        failedOnInterruption = true;
+
+                                        break;
+                                    }
+
+                                    if (!(th instanceof CacheException))
+                                        continue;
+
+                                    if (th.getMessage() != null &&
+                                        th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                        failedOnRemoteFetch = true;
+
+                                        break;
+                                    }
+                                }
+
+                                // Interruptions are expected here.
+                                if (failedOnInterruption)
+                                    continue;
+
+                                if (!failedOnRemoteFetch) {
+                                    U.error(grid.log(), "Must fail inside of GridResultPage.fetchNextPage or subclass.", e);
+
+                                    fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
+                                }
+                            }
+                        } else { // Replicated query.
+                            IgniteCache<?, ?> cache = grid.cache("co");
+
+                            assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
+                        }
+                    } finally {
+                        // Clearing lock in final handler to avoid endless loop if exception is thrown.
+                        locks.set(g, 0);
+
+                        int c = qryCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Executed queries: " + c);
+                    }
                 }
             }
         }, qryThreadNum, "query-thread");
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        CollectingEventListener lsnr = new CollectingEventListener();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
+        final AtomicBoolean restartsDone = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
-                while (!done.get()) {
-                    int idx = GRID_CNT;
+                GridRandom rnd = new GridRandom();
 
-                    startGrid(idx);
+                while (!restartsDone.get()) {
+                    int g;
 
-                    Thread.sleep(nodeLifeTime);
+                    do {
+                        g = rnd.nextInt(locks.length());
+                    }
+                    while (!locks.compareAndSet(g, 0, -1));
 
-                    stopGrid(idx);
+                    try {
+                        log.info("Stop node: " + g);
 
-                    int c = restartCnt.incrementAndGet();
+                        stopGrid(g);
 
-                    if (c % logFreq == 0)
-                        info("Node restarts: " + c);
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+
+                        log.info("Start node: " + g);
+
+                        startGrid(g);
+
+                        Thread.sleep(rnd.nextInt(nodeLifeTime));
+                    } finally {
+                        locks.set(g, 0);
+
+                        int c = restartCnt.incrementAndGet();
+
+                        if (c % logFreq == 0)
+                            info("Node restarts: " + c);
+                    }
                 }
 
                 return true;
             }
-        }, 1, "restart-thread");
+        }, restartThreadsNum, "restart-thread");
 
         Thread.sleep(duration);
 
         info("Stopping..");
 
-        done.set(true);
+        restartsDone.set(true);
 
-        fut2.get();
+        try {
+            fut2.get(10_000);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            U.dumpThreads(log);
+
+            fail("Stopping restarts timeout.");
+        }
 
         info("Restarts stopped.");
 
-        fut1.get();
+        qrysDone.set(true);
 
-        info("Queries stopped.");
-
-        info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
-
-        boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
-
-        assert success;
-    }
-
-    /** Listener that will wait for specified number of events received. */
-    private class CollectingEventListener implements IgnitePredicate<Event> {
-        /** Registered events count. */
-        private int evtCnt;
-
-        /** {@inheritDoc} */
-        @Override public synchronized boolean apply(Event evt) {
-            evtCnt++;
-
-            info("Processed event [evt=" + evt + ", evtCnt=" + evtCnt + ']');
-
-            notifyAll();
-
-            return true;
+        // Query thread can stuck in next page waiting loop because all nodes are left.
+        try {
+            fut1.get(5_000);
+        } catch (IgniteFutureTimeoutCheckedException ignored) {
+            fut1.cancel();
         }
 
-        /**
-         * Waits until total number of events processed is equal or greater then argument passed.
-         *
-         * @param cnt Number of events to wait.
-         * @param timeout Timeout to wait.
-         * @return {@code True} if successfully waited, {@code false} if timeout happened.
-         * @throws InterruptedException If thread is interrupted.
-         */
-        public synchronized boolean awaitEvents(int cnt, long timeout) throws InterruptedException {
-            long start = U.currentTimeMillis();
+        info("Queries stopped.");
+    }
 
-            long now = start;
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
 
-            while (start + timeout > now) {
-                if (evtCnt >= cnt)
-                    return true;
+    /**
+     * Run query closure.
+     *
+     * @param grid Grid.
+     * @param qryRunnable Query runnable.
+     */
+    protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
+        qryRunnable.run();
+    }
 
-                wait(start + timeout - now);
+    /**
+     *
+     */
+    private static class Person implements Serializable {
+        @QuerySqlField(index = true)
+        int id;
 
-                now = U.currentTimeMillis();
-            }
+        Person(int id) {
+            this.id = id;
+        }
+    }
 
-            return false;
+    /**
+     *
+     */
+    private static class Purchase implements Serializable {
+        @QuerySqlField(index = true)
+        int personId;
+
+        @QuerySqlField(index = true)
+        int productId;
+
+        Purchase(int personId, int productId) {
+            this.personId = personId;
+            this.productId = productId;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Company implements Serializable {
+        @QuerySqlField(index = true)
+        int id;
+
+        Company(int id) {
+            this.id = id;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Product implements Serializable {
+        @QuerySqlField(index = true)
+        int id;
+
+        @QuerySqlField(index = true)
+        int companyId;
+
+        Product(int id, int companyId) {
+            this.id = id;
+            this.companyId = companyId;
         }
     }
 }
