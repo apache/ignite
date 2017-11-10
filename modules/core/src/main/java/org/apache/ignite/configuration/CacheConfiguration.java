@@ -200,11 +200,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Cache expiration policy. */
+    /** Cache eviction policy. */
     @Deprecated
     private EvictionPolicy evictPlc;
 
-    /** Cache expiration policy factory. */
+    /** Cache eviction policy factory. */
     private Factory evictPlcFactory;
 
     /** */
@@ -570,7 +570,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache expiration policy.
+     * @param evictPlc Cache eviction policy.
      * @return {@code this} for chaining.
      *
      * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
@@ -586,7 +586,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets cache eviction policy factory. By default, returns {@code null}
      * which means that evictions are disabled for cache.
      *
-     * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     * @return Cache eviction policy factory or {@code null} if evictions should be disabled
+     * or if {@link #getEvictionPolicy()} should be used instead.
      */
     @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
         return evictPlcFactory;
@@ -596,7 +597,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache eviction policy factory.
      * Note: Eviction policy factory should be {@link Serializable}.
      *
-     * @param evictPlcFactory Cache expiration policy.
+     * @param evictPlcFactory Cache eviction policy factory.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setEvictionPolicyFactory(

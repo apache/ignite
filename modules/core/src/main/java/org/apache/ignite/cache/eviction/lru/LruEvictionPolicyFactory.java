@@ -21,6 +21,22 @@ import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 
 /**
  * Factory class for {@link LruEvictionPolicy}.
+ *
+ * Creates cache Eviction policy based on {@code Least Recently Used (LRU)} algorithm and supports batch eviction.
+ * <p>
+ * The eviction starts in the following cases:
+ * <ul>
+ *     <li>The cache size becomes {@code batchSize} elements greater than the maximum size.</li>
+ *     <li>
+ *         The size of cache entries in bytes becomes greater than the maximum memory size.
+ *         The size of cache entry calculates as sum of key size and value size.
+ *     </li>
+ * </ul>
+ * <b>Note:</b>Batch eviction is enabled only if maximum memory limit isn't set ({@code maxMemSize == 0}).
+ * {@code batchSize} elements will be evicted in this case. The default {@code batchSize} value is {@code 1}.
+
+ *  {@link LruEvictionPolicy} implementation is very efficient since it is lock-free and does not create any additional table-like
+ * data structures. The {@code LRU} ordering information is maintained by attaching ordering metadata to cache entries.
  */
 public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactory<LruEvictionPolicy<K, V>> {
     /** */
