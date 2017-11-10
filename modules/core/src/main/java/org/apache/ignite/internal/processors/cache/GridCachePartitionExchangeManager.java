@@ -536,12 +536,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         for (ClusterNode n : cctx.discovery().remoteNodes())
             cctx.versions().onReceived(n.id(), n.metrics().getLastDataVersion());
 
-        ClusterNode loc = cctx.localNode();
-
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
-
         DiscoveryLocalJoinData locJoin = cctx.discovery().localJoin();
 
         GridDhtPartitionsExchangeFuture fut = null;
