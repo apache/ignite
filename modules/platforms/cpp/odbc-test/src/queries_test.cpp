@@ -59,7 +59,7 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct QueriesTestSuiteFixture 
+struct QueriesTestSuiteFixture
 {
     /**
      * Establish connection to node.
@@ -1812,7 +1812,7 @@ void CheckObjectData(int8_t* data, int32_t len, T const& value)
     BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0, 0));
 
     T actual = obj.Deserialize<T>();
-    
+
     BOOST_CHECK_EQUAL(value, actual);
 }
 
@@ -1846,7 +1846,7 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     int8_t column6[ODBC_BUFFER_SIZE] = { 0 };
     //strField
     char column7[ODBC_BUFFER_SIZE] = { 0 };
-    
+
     SQLLEN column1Len = sizeof(column1);
     SQLLEN column2Len = sizeof(column2);
     SQLLEN column3Len = sizeof(column3);
@@ -1910,7 +1910,7 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     CheckObjectData(column4, static_cast<int32_t>(column4Len), obj);
 
     BOOST_CHECK_EQUAL(column5, obj.i32Field);
-    
+
     CheckObjectData(column6, static_cast<int32_t>(column6Len), obj.objField);
 
     BOOST_CHECK_EQUAL(column7, obj.strField);
@@ -2006,7 +2006,7 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
-    
+
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
@@ -2188,6 +2188,23 @@ BOOST_AUTO_TEST_CASE(TestAffectedRows)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(affected, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestCloseAfterEmptyUpdate)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR query[] = "update TestType set strField='test' where _key=42";
+
+    SQLRETURN ret = SQLExecDirect(stmt, &query[0], SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

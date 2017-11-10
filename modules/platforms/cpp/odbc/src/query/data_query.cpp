@@ -234,10 +234,14 @@ namespace ignite
                         <<  "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(resultMeta[i].GetDataType()));
                 }
 
-                if (rowsAffected > 0)
-                    cursor.reset();
-                else
+                if (rowsAffected < 0)
+                {
                     cursor.reset(new Cursor(rsp.GetQueryId()));
+
+                    rowsAffected = 0;
+                }
+                else
+                    cursor.reset();
 
                 return SqlResult::AI_SUCCESS;
             }
