@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -172,6 +173,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
         this.metastorage = metastorage;
 
         saveBaselineTopology(globalState.baselineTopology(), null);
+
+        bltHist.flushHistoryItems(metastorage);
     }
 
     /**
@@ -180,12 +183,16 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
     private void saveBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
-        bltHist.addHistoryItem(metastorage, prevBltHistItem);
+        if (blt != null) {
+            bltHist.writeHistoryItem(metastorage, prevBltHistItem);
 
-        if (blt != null)
             metastorage.write(METASTORE_CURR_BLT_KEY, blt);
-        else
+        }
+        else {
             metastorage.remove(METASTORE_CURR_BLT_KEY);
+
+            bltHist.removeHistory(metastorage);
+        }
     }
 
     /** {@inheritDoc} */
@@ -457,23 +464,40 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!dataBag.commonDataCollectedFor(STATE_PROC.ordinal()))
-            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+        if (!dataBag.commonDataCollectedFor(STATE_PROC.ordinal())) {
+            DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
+
+            BaselineTopologyHistory historyToSend = null;
+
+            if (joiningNodeData != null) {
+                DiscoveryDataClusterState joiningNodeState = (DiscoveryDataClusterState) joiningNodeData.joiningNodeData();
+
+                if (!bltHist.isEmpty()) {
+                    if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
+                        int lastId = joiningNodeState.baselineTopology().id();
+
+                        historyToSend = bltHist.tailFrom(lastId);
+                    }
+                    else
+                        historyToSend = bltHist;
+                }
+
+                dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        DiscoveryDataClusterState state = (DiscoveryDataClusterState)data.commonData();
+        BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
 
-        if (state != null) {
-            DiscoveryDataClusterState curState = globalState;
+        if (stateDiscoData != null) {
+            globalState = stateDiscoData.globalState;
 
-            //TODO this exception has to be eliminated as joining node makes compatibility checks earlier in join process
-//            if (curState != null && curState.baselineTopology() != null && state.baselineTopology() != null &&
-//                !BaselineTopology.equals(curState.baselineTopology(), state.baselineTopology()))
-//                throw new IgniteException("Baseline topology mismatch: " + curState.baselineTopology() + " " + state.baselineTopology());
-
-            globalState = state;
+            if (stateDiscoData.recentHistory != null) {
+                for (BaselineTopologyHistoryItem item : stateDiscoData.recentHistory.history())
+                    bltHist.bufferHistoryItemForStore(item);
+            }
         }
     }
 
@@ -610,16 +634,23 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-        if (globalState == null
-            || globalState.baselineTopology() == null
-            || discoData.joiningNodeData() == null
-            || ((DiscoveryDataClusterState) discoData.joiningNodeData()).baselineTopology() == null)
+        DiscoveryDataClusterState joiningNodeState = (DiscoveryDataClusterState) discoData.joiningNodeData();
+
+        if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
             return null;
 
-        BaselineTopology joiningNodeBlt = ((DiscoveryDataClusterState) discoData.joiningNodeData()).baselineTopology();
+        if (globalState == null || globalState.baselineTopology() == null) {
+            if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
+                String msg = "Node with set up BaselineTopology is not allowed to join cluster without one: " + node.consistentId();
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+        }
+
+        BaselineTopology joiningNodeBlt = joiningNodeState.baselineTopology();
         BaselineTopology clusterBlt = globalState.baselineTopology();
 
-        String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster.";
+        String msg = "BaselineTopology of joining node is not compatible with BaselineTopology in cluster: " + node.consistentId();
 
         if (joiningNodeBlt.id() > clusterBlt.id())
             return new IgniteNodeValidationResult(node.id(), msg, msg);
@@ -1121,6 +1152,24 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
             }
 
             return false;
+        }
+    }
+
+    /** */
+    private static class BaselineStateAndHistoryData implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final DiscoveryDataClusterState globalState;
+
+        /** */
+        private final BaselineTopologyHistory recentHistory;
+
+        /** */
+        BaselineStateAndHistoryData(DiscoveryDataClusterState globalState, BaselineTopologyHistory recentHistory) {
+            this.globalState = globalState;
+            this.recentHistory = recentHistory;
         }
     }
 }

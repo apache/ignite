@@ -16,8 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -25,9 +29,16 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 /**
  *
  */
-public class BaselineTopologyHistory {
+public class BaselineTopologyHistory implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
+
+    /** */
+    private final Queue<BaselineTopologyHistoryItem> bufferedForStore =
+        new ConcurrentLinkedQueue<>();
 
     /** */
     private final List<BaselineTopologyHistoryItem> hist = new ArrayList<>();
@@ -39,14 +50,27 @@ public class BaselineTopologyHistory {
 
             if (histItem != null)
                 hist.add(histItem);
-            else {
-                //TODO figure out how to recover from this
-            }
+            else
+                throw new IgniteCheckedException("Restoring of BaselineTopology history has failed, " +
+                    "expected history item with id not found: " + i
+                );
         }
     }
 
     /** */
-    void addHistoryItem(ReadWriteMetastorage metastorage, BaselineTopologyHistoryItem histItem)
+    BaselineTopologyHistory tailFrom(int id) {
+        BaselineTopologyHistory tail = new BaselineTopologyHistory();
+
+        for (BaselineTopologyHistoryItem item : hist) {
+            if (item.id() >= id)
+                tail.hist.add(item);
+        }
+
+        return tail;
+    }
+
+    /** */
+    void writeHistoryItem(ReadWriteMetastorage metastorage, BaselineTopologyHistoryItem histItem)
         throws IgniteCheckedException
     {
         if (histItem == null)
@@ -58,9 +82,46 @@ public class BaselineTopologyHistory {
     }
 
     /** */
+    void removeHistory(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        if (hist.isEmpty())
+            return;
+
+        for (BaselineTopologyHistoryItem histItem : hist)
+            metastorage.remove(METASTORE_BLT_HIST_PREFIX + histItem.id());
+
+        hist.clear();
+    }
+
+    /** */
     boolean isCompatibleWith(BaselineTopology blt) {
         BaselineTopologyHistoryItem histBlt = hist.get(blt.id());
 
-        return histBlt.activationHistory().contains(blt.activationHash());
+        return histBlt.branchingHistory().contains(blt.branchingPointHash());
+    }
+
+    /** */
+    boolean isEmpty() {
+        return hist.isEmpty();
+    }
+
+    /** */
+    void bufferHistoryItemForStore(BaselineTopologyHistoryItem histItem) {
+        hist.add(histItem);
+
+        bufferedForStore.add(histItem);
+    }
+
+    /** */
+    public List<BaselineTopologyHistoryItem> history() {
+        return Collections.unmodifiableList(hist);
+    }
+
+    /** */
+    void flushHistoryItems(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        while(!bufferedForStore.isEmpty()) {
+            BaselineTopologyHistoryItem item = bufferedForStore.remove();
+
+            metastorage.write(METASTORE_BLT_HIST_PREFIX + item.id(), item);
+        }
     }
 }

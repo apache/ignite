@@ -36,17 +36,17 @@ public class BaselineTopologyHistoryItem implements Serializable {
     private final Collection<Object> consIds;
 
     /** */
-    private final List<Long> activationHistory;
+    private final List<Long> branchingHistory;
 
     /**
      * @param id Id.
      * @param consIds Consistent IDs.
-     * @param activationHistory Activation history.
+     * @param branchingHistory Activation history.
      */
-    private BaselineTopologyHistoryItem(int id, Collection<Object> consIds, List<Long> activationHistory) {
+    private BaselineTopologyHistoryItem(int id, Collection<Object> consIds, List<Long> branchingHistory) {
         this.id = id;
         this.consIds = consIds;
-        this.activationHistory = activationHistory;
+        this.branchingHistory = branchingHistory;
     }
 
     /**
@@ -56,10 +56,9 @@ public class BaselineTopologyHistoryItem implements Serializable {
         if (blt == null)
             return null;
 
-        List<Long> fullActivationHistory = new ArrayList<>(blt.activationHistory().size() + 1);
+        List<Long> fullActivationHistory = new ArrayList<>(blt.branchingHistory().size());
 
-        fullActivationHistory.addAll(blt.activationHistory());
-        fullActivationHistory.add(blt.activationHash());
+        fullActivationHistory.addAll(blt.branchingHistory());
 
         return new BaselineTopologyHistoryItem(blt.id(), U.arrayList(blt.consistentIds()), fullActivationHistory);
     }
@@ -74,7 +73,7 @@ public class BaselineTopologyHistoryItem implements Serializable {
     /**
      *
      */
-    public List<Long> activationHistory() {
-        return activationHistory;
+    public List<Long> branchingHistory() {
+        return branchingHistory;
     }
 }

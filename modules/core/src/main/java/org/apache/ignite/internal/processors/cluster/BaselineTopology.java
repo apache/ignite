@@ -50,10 +50,10 @@ public class BaselineTopology implements Serializable {
     private final Map<Object, Map<String, Object>> nodeMap;
 
     /** */
-    private long activationHash;
+    private long branchingPointHash;
 
     /** */
-    private final List<Long> activationHist;
+    private final List<Long> branchingHist;
 
     /**
      * @param nodeMap Map of node consistent ID to it's attributes.
@@ -64,11 +64,11 @@ public class BaselineTopology implements Serializable {
         this.nodeMap = nodeMap;
 
         for (Object o : nodeMap.keySet())
-            activationHash += (long) o.hashCode();
+            branchingPointHash += (long) o.hashCode();
 
-        activationHist = new ArrayList<>();
+        branchingHist = new ArrayList<>();
 
-        activationHist.add(activationHash);
+        branchingHist.add(branchingPointHash);
     }
 
     /**
@@ -88,15 +88,15 @@ public class BaselineTopology implements Serializable {
     /**
      * @return Activation history.
      */
-    public List<Long> activationHistory() {
-        return activationHist;
+    public List<Long> branchingHistory() {
+        return branchingHist;
     }
 
     /**
      * @return Activation hash.
      */
-    public long activationHash() {
-        return activationHash;
+    public long branchingPointHash() {
+        return branchingPointHash;
     }
 
     /**
@@ -237,11 +237,11 @@ public class BaselineTopology implements Serializable {
      * @return {@code True} if current BaselineTopology is compatible (the same or a newer one) with passed in Blt.
      */
     boolean isCompatibleWith(BaselineTopology blt) {
-        return blt == null || (activationHash == blt.activationHash) || activationHist.contains(blt.activationHash);
+        return blt == null || (branchingPointHash == blt.branchingPointHash) || branchingHist.contains(blt.branchingPointHash);
     }
 
     boolean isSuccessorOf(BaselineTopology blt) {
-        return blt == null || (activationHist.contains(blt.activationHash) && activationHash != blt.activationHash);
+        return blt == null || (branchingHist.contains(blt.branchingPointHash) && branchingPointHash != blt.branchingPointHash);
     }
 
     /**
@@ -250,10 +250,10 @@ public class BaselineTopology implements Serializable {
     boolean updateHistory(Collection<BaselineNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
-        if (activationHash != newTopHash) {
-            activationHash = newTopHash;
+        if (branchingPointHash != newTopHash) {
+            branchingPointHash = newTopHash;
 
-            activationHist.add(newTopHash);
+            branchingHist.add(newTopHash);
 
             return true;
         }
