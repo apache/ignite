@@ -29,13 +29,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.*;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -48,11 +42,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
-import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
-import org.h2.index.IndexLookupBatch;
-import org.h2.index.ViewIndex;
+import org.h2.index.*;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -64,16 +54,7 @@ import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -87,9 +68,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2Collocati
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.*;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds.rangeBounds;
 import static org.h2.result.Row.MEMORY_CALCULATE;
 
@@ -199,6 +178,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row put(GridH2Row row);
 
     /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return {@code True} if existing row row has been replaced.
+     */
+    public abstract boolean putx(GridH2Row row);
+
+    /**
      * Remove row from index.
      *
      * @param row Row.
@@ -207,13 +194,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row remove(SearchRow row);
 
     /**
-     * Remove row from index, does not return removed row.
+     * Removes row from index.
      *
      * @param row Row.
+     * @return {@code True} if row has been removed.
      */
-    public void removex(SearchRow row) {
-        remove(row);
-    }
+    public abstract boolean removex(SearchRow row);
 
     /**
      * @param ses Session.

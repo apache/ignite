@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,12 +28,10 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.*;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Collection;
 
 /**
  * JDBC message parser.
@@ -362,7 +359,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param affectedRows Affected rows.
      */
     private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
-        if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0) {
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
             for (Long value : affectedRows)

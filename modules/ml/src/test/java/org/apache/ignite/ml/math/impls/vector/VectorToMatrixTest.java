@@ -17,11 +17,6 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiConsumer;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
@@ -31,10 +26,13 @@ import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+
+import static org.junit.Assert.*;
 
 /** Tests for methods of Vector that involve Matrix. */
 public class VectorToMatrixTest {
@@ -188,9 +186,6 @@ public class VectorToMatrixTest {
 
     /** */
     private void assertCross(Vector v1, Vector v2, String desc) {
-        if (true) // TODO: IGNITE-5777, wait BLAS integration.
-            return;
-
         assertNotNull(v1);
         assertNotNull(v2);
 

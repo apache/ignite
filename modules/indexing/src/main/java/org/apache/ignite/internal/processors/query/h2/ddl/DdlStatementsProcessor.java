@@ -17,49 +17,33 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryEntityEx;
-import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Prepared;
-import org.h2.command.ddl.AlterTableAlterColumn;
-import org.h2.command.ddl.CreateIndex;
-import org.h2.command.ddl.CreateTable;
-import org.h2.command.ddl.DropIndex;
-import org.h2.command.ddl.DropTable;
+import org.h2.command.ddl.*;
 import org.h2.table.Column;
 import org.h2.value.DataType;
+
+import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -87,6 +71,96 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Run DDL statement.
+     *
+     * @param sql Original SQL.
+     * @param cmd Command.
+     * @return Result.
+     * @throws IgniteCheckedException On error.
+     */
+    @SuppressWarnings("unchecked")
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException{
+        IgniteInternalFuture fut;
+
+        try {
+            if (cmd instanceof SqlCreateIndexCommand) {
+                SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
+
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (tbl == null)
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
+
+                assert tbl.rowDescriptor() != null;
+
+                QueryIndex newIdx = new QueryIndex();
+
+                newIdx.setName(cmd0.indexName());
+
+                newIdx.setIndexType(cmd0.spatial() ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
+                LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
+
+                // Let's replace H2's table and property names by those operated by GridQueryProcessor.
+                GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
+
+                for (SqlIndexColumn col : cmd0.columns()) {
+                    GridQueryProperty prop = typeDesc.property(col.name());
+
+                    if (prop == null)
+                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, col.name());
+
+                    flds.put(prop.name(), !col.descending());
+                }
+
+                newIdx.setFields(flds);
+
+                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd0.schemaName(), typeDesc.tableName(),
+                    newIdx, cmd0.ifNotExists());
+            }
+            else if (cmd instanceof SqlDropIndexCommand) {
+                SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
+
+                GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
+
+                if (tbl != null) {
+                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
+                        cmd0.ifExists());
+                }
+                else {
+                    if (cmd0.ifExists())
+                        fut = new GridFinishedFuture();
+                    else
+                        throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
+                            cmd0.indexName());
+                }
+            }
+            else
+                throw new IgniteSQLException("Unsupported DDL operation: " + sql,
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (fut != null)
+                fut.get();
+
+            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+                (Collections.singletonList(0L)), null, false);
+
+            resCur.fieldsMeta(UPDATE_RESULT_META);
+
+            return resCur;
+        }
+        catch (SchemaOperationException e) {
+            throw convert(e);
+        }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Execute DDL statement.
      *
      * @param sql SQL.
@@ -97,7 +171,6 @@ public class DdlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
         throws IgniteCheckedException {
-
         IgniteInternalFuture fut = null;
 
         try {
@@ -401,6 +474,8 @@ public class DdlStatementsProcessor {
                     break;
                 }
             }
+
+            assert valCol != null;
 
             valTypeName = DataType.getTypeClassName(valCol.column().getType());
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.distributed.keys;
 
-import org.apache.ignite.lang.IgniteUuid;
+import java.util.UUID;
 
 /**
  * Base matrix cache key.
@@ -26,10 +26,10 @@ public interface DataStructureCacheKey {
     /**
      * @return matrix id.
      */
-    public IgniteUuid dataStructureId();
+    public UUID matrixId();
 
     /**
      * @return affinity key.
      */
-    public IgniteUuid affinityKey();
+    public Object affinityKey();
 }

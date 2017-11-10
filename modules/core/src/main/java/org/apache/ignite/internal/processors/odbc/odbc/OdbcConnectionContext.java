@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
@@ -26,6 +24,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * ODBC Connection Context.
@@ -40,8 +41,11 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.3.0: added "skipReducerOnUpdate" flag. */
     public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
+    /** Version 2.3.2: added multiple statements support. */
+    public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_2;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -63,6 +67,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_3_0);
         SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }

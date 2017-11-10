@@ -17,15 +17,7 @@
 
 package org.apache.ignite.ml.clustering;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import javax.cache.Cache;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
@@ -40,6 +32,11 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.math.util.MatrixUtil;
+
+import javax.cache.Cache;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static org.apache.ignite.ml.math.distributed.CacheUtils.distributedFold;
 import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
@@ -94,7 +91,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         boolean converged = false;
         int iteration = 0;
         int dim = pointsCp.viewRow(0).size();
-        IgniteUuid uid = pointsCp.getUUID();
+        UUID uid = pointsCp.getUUID();
 
         // Execute iterations of Lloyd's algorithm until converged
         while (iteration < maxIterations && !converged) {
@@ -140,7 +137,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
         // to their squared distance from the centers. Note that only distances between points
         // and new centers are computed in each iteration.
         int step = 0;
-        IgniteUuid uid = points.getUUID();
+        UUID uid = points.getUUID();
 
         while (step < initSteps) {
             // We assume here that costs can fit into memory of one node.

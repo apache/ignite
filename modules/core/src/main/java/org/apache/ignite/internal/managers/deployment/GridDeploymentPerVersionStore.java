@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DeploymentEvent;
@@ -51,14 +40,13 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import java.io.InputStream;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
-import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
-import static org.apache.ignite.events.EventType.EVT_CLASS_UNDEPLOYED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
-import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and
@@ -544,8 +532,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         // New deployment was added while outside of synchronization.
                         // Need to recheck it again.
-                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d))
-                            retry = true;
+                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d)) {
+                            Map<UUID, IgniteUuid> parties = d.participants();
+
+                            if (parties == null || parties.get(meta.senderNodeId()) == null)
+                                retry = true;
+                        }
                     }
 
                     if (retry) {

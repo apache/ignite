@@ -17,13 +17,10 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
-import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -34,6 +31,10 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -281,7 +282,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return ((SparseDistributedMatrixStorage)getStorage()).getUUID();
     }
 }

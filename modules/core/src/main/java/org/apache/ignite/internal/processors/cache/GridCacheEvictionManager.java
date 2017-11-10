@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
@@ -31,6 +30,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 
@@ -60,7 +61,15 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration cfg = cctx.config();
 
-        plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
+        if (cctx.isNear()) {
+            plc = (cfg.getNearConfiguration().getNearEvictionPolicyFactory() != null) ?
+                (EvictionPolicy)cfg.getNearConfiguration().getNearEvictionPolicyFactory().create() :
+                cfg.getNearConfiguration().getNearEvictionPolicy();
+        }
+        else if (cfg.getEvictionPolicyFactory() != null)
+            plc = (EvictionPolicy)cfg.getEvictionPolicyFactory().create();
+        else
+            plc = cfg.getEvictionPolicy();
 
         plcEnabled = plc != null;
 
@@ -297,5 +306,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         X.println(">>> ");
         X.println(">>> Eviction manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
             ", cache=" + cctx.name() + ']');
+    }
+
+    /** For test purposes. */
+    public EvictionPolicy getEvictionPolicy() {
+        return plc;
     }
 }
