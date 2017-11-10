@@ -226,7 +226,7 @@ public class ProjectionsCache {
 
             RegionProjection reg = block.get(i % blockSize);
 
-            if (reg.depth() <= maxDepth)
+            if (reg.depth() < maxDepth)
                 regsForSearch.put(i, reg);
         }
 
