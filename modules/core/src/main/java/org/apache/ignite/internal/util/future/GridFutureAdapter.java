@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util.future;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -213,10 +215,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                 if (!done) {
                     if (lsnr == null)
                         lsnr = lsnr0;
-                    else if (lsnr instanceof ArrayListener)
-                        ((ArrayListener)lsnr).add(lsnr0);
+                    else if (lsnr instanceof GridFutureAdapter.LinkedListListener)
+                        ((LinkedListListener)lsnr).add(lsnr0);
                     else
-                        lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
+                        lsnr = (IgniteInClosure)new LinkedListListener<IgniteInternalFuture>(lsnr, lsnr0);
 
                     return;
                 }
@@ -436,38 +438,39 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /**
      *
      */
-    private static class ArrayListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
+    private static class LinkedListListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        private IgniteInClosure<? super IgniteInternalFuture<R>>[] arr;
+        private List<IgniteInClosure<? super IgniteInternalFuture<R>>> list;
 
         /**
          * @param lsnrs Listeners.
          */
-        private ArrayListener(IgniteInClosure... lsnrs) {
-            this.arr = lsnrs;
+        private LinkedListListener(IgniteInClosure... lsnrs) {
+            list = new LinkedList<>();
+            for (IgniteInClosure lsnr : lsnrs) {
+                list.add(lsnr);
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteInternalFuture<R> fut) {
-            for (int i = 0; i < arr.length; i++)
-                arr[i].apply(fut);
+            for (IgniteInClosure<? super IgniteInternalFuture<R>> closure : list)
+                closure.apply(fut);
         }
 
         /**
          * @param lsnr Listener.
          */
         void add(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
-            arr = Arrays.copyOf(arr, arr.length + 1);
-
-            arr[arr.length - 1] = lsnr;
+            list.add(lsnr);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ArrayListener.class, this, "arrSize", arr.length);
+            return S.toString(LinkedListListener.class, this, "listSize", list.size());
         }
     }
 
