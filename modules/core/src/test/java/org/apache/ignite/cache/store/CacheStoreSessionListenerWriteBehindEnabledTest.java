@@ -48,7 +48,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are executed from
  * {@link GridCacheWriteBehindStore} only.
  */
-public class CacheStoreSessionListenerWriteBehindEnabled extends GridCacheAbstractSelfTest {
+public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAbstractSelfTest {
     /** */
     protected final static int CNT = 100;
 
