@@ -27,6 +27,7 @@ import java.util.UUID;
 /**
  * Schema index create operation.
  */
+// TODO: Check compatibility (last step).
 public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;

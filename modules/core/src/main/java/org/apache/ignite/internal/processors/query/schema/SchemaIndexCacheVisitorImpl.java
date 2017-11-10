@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.schema;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -65,7 +66,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private int parallel;
 
     /** Parallel index creation workers interruption flag. */
-    private volatile boolean interrupted;
+    private volatile boolean failed;
 
     /**
      * Constructor.
@@ -78,6 +79,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
         String tblName, SchemaIndexOperationCancellationToken cancel, int parallel) {
+        // TODO: If "parallel" is default, then pick Runtime.cores() / 4.
+        // TODO: Min with processor count.
+
         this.qryProc = qryProc;
         this.cacheName = cacheName;
         this.tblName = tblName;
@@ -99,12 +103,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
 
-        if (!parts.isEmpty())
-            if (parallel == 1)
-                for (GridDhtLocalPartition part : parts)
-                    processPartition(part, filterClo);
-            else
-                processPartitionsConcurrently(parts, filterClo);
+        if (parts.isEmpty())
+            return;
+
+        if (parallel == 1) {
+            for (GridDhtLocalPartition part : parts)
+                processPartition(part, filterClo);
+        }
+        else
+            processPartitionsConcurrently(parts, filterClo);
     }
 
     /**
@@ -116,11 +123,11 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     private void processPartitionsConcurrently(final List<GridDhtLocalPartition> parts,
         final FilteringVisitorClosure filterClo) throws IgniteCheckedException {
-
         int parallel0 = Math.min(parallel, Runtime.getRuntime().availableProcessors());
 
         int[] ranges = U.getRanges(parts.size(), parallel0, 1);
 
+        // TODO: Use GridCompundFuture (do not forget init()!)
         List<GridFutureAdapter<Void>> futs = new ArrayList<>(parallel0);
 
         for (int i = 0; i < parallel0; i++) {
@@ -169,7 +176,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 null,
                 CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            while (cursor.next()) {
+            while (cursor.next() && !failed) {
                 CacheDataRow row = cursor.get();
 
                 KeyCacheObject key = row.key();
@@ -279,6 +286,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
          */
         private PartitionsIndexingWorker(GridFutureAdapter<Void> fut, List<GridDhtLocalPartition> parts,
             FilteringVisitorClosure filterClo) {
+            // TODO: Make sure name is unique (use schema/index name and runner counter).
             super(cctx.igniteInstanceName(), "parallel-idx-creation-worker",
                 cctx.logger(SchemaIndexCacheVisitorImpl.class.getName()));
             this.parts = parts;
@@ -287,24 +295,26 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         }
 
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            for (GridDhtLocalPartition part : parts)
-                if (!interrupted)
-                    try {
-                        processPartition(part, filterClo);
+            Throwable err = null;
 
-                        fut.onDone();
-                    }
-                    catch (IgniteCheckedException e) {
-                        fut.onDone(e);
+            try {
+                for (GridDhtLocalPartition part : parts) {
+                    if (failed)
+                        break;
 
-                        interrupted = true;
-                    }
-                else {
-                    // Another thread threw an exception which will be rethrown, so it's ok to call done() here.
-                    fut.onDone();
-
-                    break;
+                    processPartition(part, filterClo);
                 }
+            }
+            catch (Throwable e) {
+                err = e;
+
+                // TODO: print error in the log, use U.error().
+
+                failed = true;
+            }
+            finally {
+                fut.onDone(err);
+            }
         }
     }
 }

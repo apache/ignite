@@ -229,6 +229,7 @@ public class DdlStatementsProcessor {
 
                 newIdx.setFields(flds);
 
+                // TODO: Set default parallellism.
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd.ifNotExists());
             }
