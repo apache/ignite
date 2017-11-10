@@ -539,12 +539,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         void setValue(Number val) throws SQLException {
             if (range != null) {
                 if (val.doubleValue() < range[0].doubleValue()) {
-                    throw new SQLException("Property cannot be lower then " + range[0].toString() + " [name=" + name +
+                    throw new SQLException("Property cannot be lower than " + range[0].toString() + " [name=" + name +
                         ", value=" + val.toString() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
 
                 if (val.doubleValue() > range[1].doubleValue()) {
-                    throw new SQLException("Property cannot be upper then " + range[1].toString() + " [name=" + name +
+                    throw new SQLException("Property cannot be upper than " + range[1].toString() + " [name=" + name +
                         ", value=" + val.toString() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
             }
