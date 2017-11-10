@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -269,7 +270,9 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
                 filters = new GridNioFilter[] { codec, sslFilter };
             }
-            else
+            else if (true) {
+                filters = new GridNioFilter[] { codec,  new GridNioCompressFilter(log, false) };
+            } else
                 filters = new GridNioFilter[] { codec };
 
             srv = GridNioServer.<GridClientMessage>builder()

@@ -57,6 +57,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressor;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -216,6 +218,9 @@ public class GridNioServer<T> {
     private GridNioSslFilter sslFilter;
 
     /** */
+    private final boolean netCompress;
+
+    /** */
     @GridToStringExclude
     private GridNioMessageWriterFactory writerFactory;
 
@@ -315,6 +320,8 @@ public class GridNioServer<T> {
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
+        GridNioCompressFilter netCompressFilter = null;
+
         if (directMode) {
             for (GridNioFilter filter : filters) {
                 if (filter instanceof GridNioSslFilter) {
@@ -322,8 +329,16 @@ public class GridNioServer<T> {
 
                     assert sslFilter.directMode();
                 }
+
+                if (filter instanceof GridNioCompressFilter) {
+                    netCompressFilter = (GridNioCompressFilter)filter;
+
+                    assert netCompressFilter.directMode();
+                }
             }
         }
+
+        netCompress = netCompressFilter != null;
 
         if (port != -1) {
             // Once bind, we will not change the port in future.
@@ -1609,6 +1624,9 @@ public class GridNioServer<T> {
             }
 
             buf.flip();
+
+            if (netCompress)
+                buf = new GridNioCompressor().compress(buf);
 
             assert buf.hasRemaining();
 

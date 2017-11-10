@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -247,7 +248,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     sslFilter
                 };
             }
-            else
+            else if (ctx.config().isNetworkCompressingEnabled()){
+                filters = new GridNioFilter[] { codec, new GridNioCompressFilter(log, false) };
+            } else
                 filters = new GridNioFilter[] { codec };
 
             srv = GridNioServer.<GridClientMessage>builder()

@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -186,7 +187,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
 
                     filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
-                else
+                else if (true) {
+                    filters = new GridNioFilter[]{codecFilter, new GridNioCompressFilter(gridLog, false)};
+                } else
                     filters = new GridNioFilter[]{codecFilter};
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
