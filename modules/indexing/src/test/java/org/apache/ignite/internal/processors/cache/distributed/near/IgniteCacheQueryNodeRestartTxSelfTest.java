@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test for distributed queries with node restarts inside transactions.
@@ -28,8 +29,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest {
     /** {@inheritDoc} */
     @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
-        try(Transaction tx = grid.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
-            TransactionIsolation.REPEATABLE_READ)) {
+        try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             qryRunnable.run();
         }
     }
