@@ -17,6 +17,14 @@
 
 package org.apache.ignite.ml;
 
+import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+
+/**
+ * Interface for Trainers. Trainer is just a function which produces model from the data.
+ * See for example {@link ColumnDecisionTreeTrainer}.
+ * @param <M> Type of produced model.
+ * @param <T> Type of data needed for model producing.
+ */
 public interface Trainer<M extends Model, T> {
-    public M train(T data);
+    M train(T data);
 }

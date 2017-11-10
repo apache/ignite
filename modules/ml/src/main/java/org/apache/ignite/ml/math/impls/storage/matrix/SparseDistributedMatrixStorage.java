@@ -115,8 +115,8 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
-        // Otherwise we can get null from get after put.
-        cfg.setReadFromBackup(false);
+        // TODO: Possibly we should add a fix of https://issues.apache.org/jira/browse/IGNITE-6862 here commented below.
+        // cfg.setReadFromBackup(false);
 
         // Random cache name.
         cfg.setName(CACHE_NAME);
