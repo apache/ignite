@@ -643,7 +643,7 @@ public class CacheUtils {
      * @param run Runnable.
      */
     public static void bcast(String cacheName, IgniteRunnable run) {
-        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
+        bcast(cacheName, ignite(), run);
     }
 
     /**

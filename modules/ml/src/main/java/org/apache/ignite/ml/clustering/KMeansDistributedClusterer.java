@@ -192,12 +192,11 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
                 return list;
             },
-            key -> key.dataStructureId.equals(uid),
+            key -> key.dataStructureId().equals(uid),
             (list1, list2) -> {
                 list1.addAll(list2);
                 return list1;
-            },
-            new ArrayList<>()
+            }, ArrayList::new
         );
     }
 
@@ -216,7 +215,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
             (map1, map2) -> {
                 map1.putAll(map2);
                 return map1;
-            }, new ConcurrentHashMap<>());
+            }, ConcurrentHashMap::new);
     }
 
     /** */
@@ -246,7 +245,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
             key -> key.dataStructureId().equals(uid),
             (map1, map2) -> MapUtil.mergeMaps(map1, map2, (integer, integer2) -> integer2 + integer,
                 ConcurrentHashMap::new),
-            new ConcurrentHashMap<>());
+                ConcurrentHashMap::new);
     }
 
     /** */
@@ -275,7 +274,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
                 return counts;
             },
             key -> key.dataStructureId().equals(uid),
-            SumsAndCounts::merge, new SumsAndCounts()
+            SumsAndCounts::merge, SumsAndCounts::new
         );
     }
 
