@@ -44,7 +44,7 @@ public class BaselineTopologyHistory implements Serializable {
     private final List<BaselineTopologyHistoryItem> hist = new ArrayList<>();
 
     /** */
-    public void restoreHistory(ReadOnlyMetastorage metastorage, int lastId) throws IgniteCheckedException {
+    void restoreHistory(ReadOnlyMetastorage metastorage, int lastId) throws IgniteCheckedException {
         for (int i = 0; i < lastId; i++) {
             BaselineTopologyHistoryItem histItem = (BaselineTopologyHistoryItem) metastorage.read(METASTORE_BLT_HIST_PREFIX + i);
 
@@ -52,7 +52,7 @@ public class BaselineTopologyHistory implements Serializable {
                 hist.add(histItem);
             else
                 throw new IgniteCheckedException("Restoring of BaselineTopology history has failed, " +
-                    "expected history item with id not found: " + i
+                    "expected history item not found for id=" + i
                 );
         }
     }

@@ -240,10 +240,6 @@ public class BaselineTopology implements Serializable {
         return blt == null || (branchingPointHash == blt.branchingPointHash) || branchingHist.contains(blt.branchingPointHash);
     }
 
-    boolean isSuccessorOf(BaselineTopology blt) {
-        return blt == null || (branchingHist.contains(blt.branchingPointHash) && branchingPointHash != blt.branchingPointHash);
-    }
-
     /**
      * @param nodes Nodes.
      */
@@ -271,5 +267,10 @@ public class BaselineTopology implements Serializable {
             res += (long) node.consistentId().hashCode();
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "BaselineTopology[id=" + id + ", branchingHash=" + branchingPointHash + ", baselineNodes=" + nodeMap.keySet() + "]";
     }
 }
