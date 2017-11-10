@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,7 +52,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     /** Random or sequential access mode. */
     private int acsMode;
     /** Matrix uuid. */
-    private IgniteUuid uuid;
+    private UUID uuid;
 
     /** Actual distributed storage. */
     private IgniteCache<RowColMatrixKey, Double> cache = null;
@@ -77,7 +78,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
 
         cache = newCache();
 
-        uuid = IgniteUuid.randomUuid();
+        uuid = UUID.randomUUID();
     }
 
     /**
@@ -177,7 +178,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         acsMode = in.readInt();
-        uuid = (IgniteUuid)in.readObject();
+        uuid = (UUID)in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -260,7 +261,7 @@ public class SparseDistributedVectorStorage extends CacheUtils implements Vector
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 

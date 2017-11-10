@@ -31,6 +31,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.ml.math.KeyMapper;
+import org.apache.ignite.ml.math.distributed.keys.DataStructureCacheKey;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
@@ -352,11 +353,11 @@ public class CacheUtils {
      */
     private static <K> IgnitePredicate<K> sparseKeyFilter(UUID matrixUuid) {
         return key -> {
-            if (key instanceof MatrixCacheKey)
-                return ((MatrixCacheKey)key).matrixId().equals(matrixUuid);
+            if (key instanceof DataStructureCacheKey)
+                return ((DataStructureCacheKey)key).dataStructureId().equals(matrixUuid);
             else if (key instanceof IgniteBiTuple)
                 return ((IgniteBiTuple<Integer, UUID>)key).get2().equals(matrixUuid);
-            if (key instanceof MatrixBlockKey)
+            else if (key instanceof MatrixBlockKey)
                 return ((MatrixBlockKey)key).dataStructureId().equals(matrixUuid);
             else if (key instanceof RowColMatrixKey)
                 return ((RowColMatrixKey)key).dataStructureId().equals(matrixUuid);

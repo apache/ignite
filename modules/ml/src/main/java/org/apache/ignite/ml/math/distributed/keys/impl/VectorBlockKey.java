@@ -31,6 +31,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 
 /**
  * Key implementation for {@link VectorBlockEntry} using for {@link SparseBlockDistributedVector}.
@@ -41,9 +42,9 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
     /** Block row ID */
     private long blockId;
     /** Vector ID */
-    private IgniteUuid vectorUuid;
+    private UUID vectorUuid;
     /** Block affinity key. */
-    private IgniteUuid affinityKey;
+    private UUID affinityKey;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -58,7 +59,7 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
      * @param vectorUuid Vector uuid.
      * @param affinityKey Affinity key.
      */
-    public VectorBlockKey(long blockId, IgniteUuid vectorUuid, @Nullable IgniteUuid affinityKey) {
+    public VectorBlockKey(long blockId, UUID vectorUuid, @Nullable UUID affinityKey) {
         assert blockId >= 0;
         assert vectorUuid != null;
 
@@ -74,27 +75,27 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
 
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid dataStructureId() {
+    @Override public UUID dataStructureId() {
         return vectorUuid;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid affinityKey() {
+    @Override public UUID affinityKey() {
         return affinityKey;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, vectorUuid);
-        U.writeGridUuid(out, affinityKey);
+        out.writeObject(vectorUuid);
+        out.writeObject(affinityKey);
         out.writeLong(blockId);
 
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        vectorUuid = U.readGridUuid(in);
-        affinityKey = U.readGridUuid(in);
+        vectorUuid = (UUID)in.readObject();
+        affinityKey = (UUID)in.readObject();
         blockId = in.readLong();
 
     }
@@ -103,8 +104,8 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        BinaryUtils.writeIgniteUuid(out, vectorUuid);
-        BinaryUtils.writeIgniteUuid(out, affinityKey);
+        out.writeUuid(vectorUuid);
+        out.writeUuid(affinityKey);
         out.writeLong(blockId);
     }
 
@@ -112,8 +113,8 @@ public class VectorBlockKey implements org.apache.ignite.ml.math.distributed.key
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        vectorUuid = BinaryUtils.readIgniteUuid(in);
-        affinityKey = BinaryUtils.readIgniteUuid(in);
+        vectorUuid = in.readUuid();
+        affinityKey = in.readUuid();
         blockId = in.readLong();
     }
 

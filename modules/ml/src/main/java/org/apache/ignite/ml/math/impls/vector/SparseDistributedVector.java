@@ -37,6 +37,7 @@ import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorSto
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Sparse distributed vector implementation based on data grid.
@@ -152,7 +153,7 @@ public class SparseDistributedVector extends AbstractVector implements StorageCo
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return ((SparseDistributedVectorStorage)getStorage()).getUUID();
     }
 }

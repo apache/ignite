@@ -28,6 +28,8 @@ import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorage;
 
+import java.util.UUID;
+
 /**
  * Sparse distributed vector implementation based on data grid.
  * <p>
@@ -133,7 +135,7 @@ public class SparseBlockDistributedVector extends AbstractVector implements Stor
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return ((BlockVectorStorage)getStorage()).getUUID();
     }
 }

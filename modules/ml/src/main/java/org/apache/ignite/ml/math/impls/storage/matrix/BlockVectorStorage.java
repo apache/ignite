@@ -39,10 +39,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry.MAX_BLOCK_SIZE;
 
@@ -57,7 +54,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     /** Amount of columns in the vector. */
     private int size;
     /** Matrix uuid. */
-    private IgniteUuid uuid;
+    private UUID uuid;
     /** Block size about 8 KB of data. */
     private int maxBlockEdge = MAX_BLOCK_SIZE;
 
@@ -87,7 +84,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
 
         cache = newCache();
 
-        uuid = IgniteUuid.randomUuid();
+        uuid = UUID.randomUUID();
     }
 
     /**
@@ -126,7 +123,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(blocks);
-        U.writeGridUuid(out, uuid);
+        out.writeObject(uuid);
         out.writeUTF(cache.getName());
     }
 
@@ -134,7 +131,8 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         blocks = in.readInt();
-        uuid = U.readGridUuid(in);
+        uuid = (UUID)in.readObject();
+
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -173,7 +171,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      *
      * @return storage UUID.
      */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 
@@ -282,7 +280,7 @@ public class BlockVectorStorage extends CacheUtils implements VectorStorage, Sto
      *
      * Get affinity key for the given id.
      */
-    private IgniteUuid getAffinityKey(long blockId) {
+    private UUID getAffinityKey(long blockId) {
         return null;
     }
 

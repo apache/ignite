@@ -177,7 +177,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, IgniteUuid uid,
+    private List<Vector> getNewCenters(int k, ConcurrentHashMap<Integer, Double> costs, UUID uid,
         double sumCosts, String cacheName) {
         return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
@@ -220,7 +220,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private ConcurrentHashMap<Integer, Integer> weightCenters(IgniteUuid uid, List<Vector> distinctCenters, String cacheName) {
+    private ConcurrentHashMap<Integer, Integer> weightCenters(UUID uid, List<Vector> distinctCenters, String cacheName) {
         return distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
                 ConcurrentHashMap<Integer, Integer>,
@@ -255,7 +255,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
     }
 
     /** */
-    private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, IgniteUuid uid, String cacheName) {
+    private SumsAndCounts getSumsAndCounts(Vector[] centers, int dim, UUID uid, String cacheName) {
         return CacheUtils.distributedFold(cacheName,
             (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>, SumsAndCounts, SumsAndCounts>)(entry, counts) -> {
                 Map<Integer, Double> vec = entry.getValue();

@@ -66,7 +66,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID matrixId() {
+    @Override public UUID dataStructureId() {
         return matrixId;
     }
 
