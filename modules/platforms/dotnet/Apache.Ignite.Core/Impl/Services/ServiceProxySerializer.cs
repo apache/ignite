@@ -187,13 +187,13 @@ namespace Apache.Ignite.Core.Impl.Services
             }
 
             // read failed configurations
-            IList<ServiceConfiguration> failedCfgs;
+            ICollection<ServiceConfiguration> failedCfgs;
 
             try
             {
                 // switch to BinaryMode.Deserialize mode to avoid IService casting exception
                 reader = marsh.StartUnmarshal(stream, BinaryMode.Deserialize);
-                failedCfgs = reader.ReadPlatformNullableCollection(f => new ServiceConfiguration(f));
+                failedCfgs = reader.ReadCollectionRaw(f => new ServiceConfiguration(f));
             }
             catch (Exception e)
             {

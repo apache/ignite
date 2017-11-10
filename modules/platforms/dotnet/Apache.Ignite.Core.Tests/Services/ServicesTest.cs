@@ -516,8 +516,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(failedCfgs);
             Assert.AreEqual(2, failedCfgs.Count);
 
-            var firstFailedSvc = binarizable ? failedCfgs[0].Service as TestIgniteServiceBinarizable : failedCfgs[0].Service as TestIgniteServiceSerializable;
-            var secondFailedSvc = binarizable ? failedCfgs[1].Service as TestIgniteServiceBinarizable : failedCfgs[1].Service as TestIgniteServiceSerializable;
+            var firstFailedSvc = binarizable ? failedCfgs.ElementAt(0).Service as TestIgniteServiceBinarizable : 
+                failedCfgs.ElementAt(0).Service as TestIgniteServiceSerializable;
+            var secondFailedSvc = binarizable ? failedCfgs.ElementAt(1).Service as TestIgniteServiceBinarizable : 
+                failedCfgs.ElementAt(1).Service as TestIgniteServiceSerializable;
 
             Assert.IsNotNull(firstFailedSvc);
             Assert.IsNotNull(secondFailedSvc);

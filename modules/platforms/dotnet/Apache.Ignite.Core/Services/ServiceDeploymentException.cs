@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Services
         private readonly IBinaryObject _binaryCause;
 
         /** Configurations of services that failed to deploy */
-        private readonly IList<ServiceConfiguration> _failedCfgs;
+        private readonly ICollection<ServiceConfiguration> _failedCfgs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceDeploymentException"/> class.
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Services
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         /// <param name="failedCfgs">List of failed configurations</param>
-        public ServiceDeploymentException(string message, Exception cause, IList<ServiceConfiguration> failedCfgs) 
+        public ServiceDeploymentException(string message, Exception cause, ICollection<ServiceConfiguration> failedCfgs) 
             : base(message, cause)
         {
             _failedCfgs = failedCfgs;
@@ -87,8 +87,8 @@ namespace Apache.Ignite.Core.Services
         /// <param name="message">The message.</param>
         /// <param name="binaryCause">The binary cause.</param>
         /// <param name="failedCfgs">List of failed configurations</param>
-        public ServiceDeploymentException(string message, IBinaryObject binaryCause, 
-            IList<ServiceConfiguration> failedCfgs) : base(message)
+        public ServiceDeploymentException(string message, IBinaryObject binaryCause,
+            ICollection<ServiceConfiguration> failedCfgs) : base(message)
         {
             _binaryCause = binaryCause;
             _failedCfgs = failedCfgs;
@@ -103,8 +103,8 @@ namespace Apache.Ignite.Core.Services
             : base(info, ctx)
         {
             _binaryCause = (IBinaryObject)info.GetValue(KeyBinaryCause, typeof(IBinaryObject));
-            _failedCfgs = (IList<ServiceConfiguration>)info.GetValue(KeyFailedConfigurations, 
-                typeof(IList<ServiceConfiguration>));
+            _failedCfgs = (ICollection<ServiceConfiguration>)info.GetValue(KeyFailedConfigurations, 
+                typeof(ICollection<ServiceConfiguration>));
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Configurations of services that failed to deploy, could be null
         /// </summary>
-        public IList<ServiceConfiguration> FailedConfigurations
+        public ICollection<ServiceConfiguration> FailedConfigurations
         {
             get { return _failedCfgs; }
         }

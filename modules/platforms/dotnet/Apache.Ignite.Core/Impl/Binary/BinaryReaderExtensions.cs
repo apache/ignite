@@ -100,38 +100,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads the platform nullable collection produced by Java PlatformUtils.writeNullableCollection()
+        /// Reads the collection. The collection could be produced by Java PlatformUtils.writeCollection()
         /// from org.apache.ignite.internal.processors.platform.utils package
-        /// </summary>
-        /// <typeparam name="T">Type of list element.</typeparam>
-        /// <param name="reader">The reader.</param>
-        /// <param name="factoryMethod">factory method delegate for T instance creation</param>
-        /// <returns>Resulting generic list.</returns>
-        public static List<T> ReadPlatformNullableCollection<T>(this BinaryReader reader, 
-            Func<BinaryReader, T> factoryMethod)
-        {
-            Debug.Assert(reader != null);
-            Debug.Assert(factoryMethod != null);
-
-            var hasVal = reader.ReadBoolean();
-
-            if (!hasVal)
-            {
-                return null;
-            }
-
-            var count = reader.ReadInt();
-
-            var res = new List<T>(count);
-
-            for (var i = 0; i < count; i++)
-                res.Add(factoryMethod(reader));
-
-            return res;
-        }
-
-        /// <summary>
-        /// Reads the collection.
+        /// Note: return null if collection is empty
         /// </summary>
         public static ICollection<T> ReadCollectionRaw<T, TReader>(this TReader reader,
             Func<TReader, T> factory) where TReader : IBinaryRawReader
