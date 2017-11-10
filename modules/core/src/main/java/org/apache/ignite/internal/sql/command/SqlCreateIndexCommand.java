@@ -41,9 +41,8 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseKeyIntValue;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipComma;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
@@ -67,6 +66,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     private boolean spatial;
 
     /** Parallelism level. */
+    // TODO: Initialize to special value meaning "default".
     private int parallel;
 
     /** Columns. */
@@ -231,39 +231,22 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseIndexProperties(SqlLexer lex) {
-        boolean found = true;
+        SqlLexerToken token = lex.lookAhead();
 
-        // TODO: How to handle duplicated properties e.g. "CREATE INDEX ... PARALLEL 1, PARALLEL 3"?
-        while (found && lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
-            lex.shift();
-
-            switch (lex.token()) {
+        if (token.tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (token.token()) {
                 case PARALLEL:
-                    parseParallelProperty(lex);
+                    lex.shift();
+
+                    // TODO: New operation to parse without shift in order to validate and show error on correct position.
+                    parallel = parseInt(lex);
+
+                    if (parallel < 1)
+                        throw error(lex, "Illegal " + PARALLEL + " value: " + parallel);
 
                     break;
-
-                default: found = false;
             }
-
-            skipComma(lex);
         }
-    }
-
-    /**
-     * Parses parallelism level.
-     *
-     * @param lex Lexer.
-     */
-    private void parseParallelProperty(SqlLexer lex) {
-        Integer par = parseKeyIntValue(lex, PARALLEL);
-
-        if (par == null)
-            throw error(lex, "Missed parallelism level");
-        else if (par < 1)
-            throw error(lex, "Illegal parallelism level value: [parallel=" + par + ']');
-        else
-            parallel = par;
     }
 
     /**
@@ -271,6 +254,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
      *
      * @return default parallelism level
      */
+    // TODO: Remove.
     public static int getDefaultParallelismLevel() {
         return Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
     }

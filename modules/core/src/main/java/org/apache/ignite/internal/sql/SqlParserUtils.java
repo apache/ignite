@@ -71,20 +71,6 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parses integer value subsequent to given key word.
-     *
-     * @param lex Lexer.
-     * @param key Key word.
-     * @return {@code True} if statement is found.
-     */
-    public static Integer parseKeyIntValue(SqlLexer lex, String key) {
-        if (matchesKeyword(lex, key))
-            return parseInt(lex);
-
-        return null;
-    }
-
-    /**
      * Skip comma or right parenthesis.
      *
      * @param lex Lexer.
@@ -102,18 +88,6 @@ public class SqlParserUtils {
         }
 
         throw errorUnexpectedToken(lex, ",", ")");
-    }
-
-    /**
-     * Skips comma if any.
-     *
-     * @param lex Lexer.
-     * @return {@code True} if comma is found.
-     */
-    public static boolean skipComma(SqlLexer lex) {
-        SqlLexerToken tok = lex.lookAhead();
-
-        return tok.tokenType() == SqlLexerTokenType.COMMA && lex.shift();
     }
 
     /**
