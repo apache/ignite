@@ -44,6 +44,8 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -79,6 +81,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /** */
     private final static String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
+
+    /** Data region name. */
+    public static final String DATA_REGION_NAME = "my_data_region";
+
+    /** Bad data region name. */
+    public static final String DATA_REGION_NAME_BAD = "my_data_region_bad";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -779,7 +787,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setKeyType("CityKey");
                 e.setValueType("City");
 
-                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null,
+                queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null, null,
                     null, CacheAtomicityMode.ATOMIC, null, 10, false);
 
                 return null;
@@ -861,6 +869,33 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             assertEquals((int)personId2cityCode.get(id), code);
         }
     }
+
+    /**
+     * Test data region.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
+    public void testDataRegion() throws Exception {
+        // Empty region name.
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                execute("CREATE TABLE TEST_DATA_REGION (name varchar primary key, code int) WITH \"data_region=\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Parameter value cannot be empty: DATA_REGION");
+
+        // Valid region name.
+        execute("CREATE TABLE TEST_DATA_REGION (name varchar primary key, code int) WITH \"data_region=" +
+            DATA_REGION_NAME + "\"");
+
+        CacheConfiguration ccfg =
+            client().cache("SQL_PUBLIC_TEST_DATA_REGION").getConfiguration(CacheConfiguration.class);
+
+        assertEquals(DATA_REGION_NAME, ccfg.getDataRegionName());
+    }
+
 
     /**
      * Test various cases of affinity key column specification.
@@ -1461,7 +1496,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
+        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setName(DATA_REGION_NAME);
+
         cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(dataRegionCfg));
 
         return optimize(cfg);
     }

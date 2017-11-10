@@ -48,6 +48,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private float pageReplaceRate;
 
     /** */
+    private float pageReplaceAge;
+
+    /** */
     private long physicalMemoryPages;
 
     /**
@@ -62,6 +65,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pagesFillFactor = metrics.getPagesFillFactor();
         dirtyPages = metrics.getDirtyPages();
         pageReplaceRate = metrics.getPagesReplaceRate();
+        pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
     }
 
@@ -103,6 +107,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public float getPagesReplaceRate() {
         return pageReplaceRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getPagesReplaceAge() {
+        return pageReplaceAge;
     }
 
     /** {@inheritDoc} */

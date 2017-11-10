@@ -335,6 +335,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         },
         evictionFilter: String,
         memoryPolicyName: String,
+        dataRegionName: String,
         sqlIndexMaxInlineSize: Number,
         topologyValidator: String
     });
@@ -855,6 +856,17 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 className: String
             }
         }],
+        clientConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
+        },
         loadBalancingSpi: [{
             kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
             RoundRobin: {
@@ -978,7 +990,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 metricsEnabled: Boolean,
                 metricsSubIntervalCount: Number,
                 metricsRateTimeInterval: Number,
-                persistenceEnabled: Boolean
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
             },
             dataRegionConfigurations: [{
                 name: String,
@@ -991,7 +1004,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 metricsEnabled: Boolean,
                 metricsSubIntervalCount: Number,
                 metricsRateTimeInterval: Number,
-                persistenceEnabled: Boolean
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
             }],
             storagePath: String,
             metricsEnabled: Boolean,

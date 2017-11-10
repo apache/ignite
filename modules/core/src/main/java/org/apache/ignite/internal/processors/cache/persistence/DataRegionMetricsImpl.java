@@ -59,6 +59,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private volatile HitRateMetrics pageReplaceRate = new HitRateMetrics(60_000, 5);
 
     /** */
+    private volatile HitRateMetrics pageReplaceAge = new HitRateMetrics(60_000, 5);
+
+    /** */
     private final DataRegionConfiguration memPlcCfg;
 
     /** */
@@ -103,7 +106,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        return ((float) allocRate.getRate()) / rateTimeInterval;
+        return ((float)allocRate.getRate() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +145,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
-        return ((float) pageReplaceRate.getRate()) / rateTimeInterval;
+        return ((float)pageReplaceRate.getRate() * 1000) / rateTimeInterval;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getPagesReplaceAge() {
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        long rep = pageReplaceRate.getRate();
+
+        return rep == 0 ? 0 : ((float)pageReplaceAge.getRate() / rep);
     }
 
     /** {@inheritDoc} */
@@ -158,9 +171,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Updates pageReplaceRate metric.
      */
-    public void updatePageReplaceRate() {
-        if (metricsEnabled)
+    public void updatePageReplaceRate(long pageAge) {
+        if (metricsEnabled) {
             pageReplaceRate.onHit();
+
+            pageReplaceAge.onHits(pageAge);
+        }
     }
 
     /**
@@ -263,7 +279,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         this.rateTimeInterval = rateTimeInterval;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
+        pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
 
     /**
@@ -281,6 +298,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             subInts = (int) rateTimeInterval / 10;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
+        pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
 }

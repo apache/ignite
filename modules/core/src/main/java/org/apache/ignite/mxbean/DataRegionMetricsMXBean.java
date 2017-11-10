@@ -70,7 +70,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @Override public float getLargeEntriesPagesPercentage();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Percentage of space that is still free and can be filled in.")
+    @MXBeanDescription("The percentage of the used space.")
     @Override public float getPagesFillFactor();
 
     /** {@inheritDoc} */
@@ -80,6 +80,10 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Rate at which pages in memory are replaced with pages from persistent storage (pages per second).")
     @Override public float getPagesReplaceRate();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).")
+    @Override public float getPagesReplaceAge();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Number of pages residing in physical RAM.")

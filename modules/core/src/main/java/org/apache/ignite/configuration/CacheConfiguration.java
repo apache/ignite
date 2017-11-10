@@ -442,6 +442,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
+        maxQryIterCnt = cc.getMaxQueryIteratorsCount();
     }
 
     /**
@@ -1549,9 +1551,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether copy of of the value stored in cache should be created
-     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * Gets the flag indicating whether a copy of the value stored in the on-heap cache
+     * (see {@link #isOnheapCacheEnabled()} should be created for a cache operation return the value.
+     *
+     * Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
+     *
+     * If the on-heap cache is disabled then this flag is of no use.
      *
      * @return Copy on read flag.
      */

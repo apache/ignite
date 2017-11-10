@@ -219,36 +219,35 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
-                addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.getName());
+                addDataRegion(memCfg, dataRegionCfg);
         }
 
         addDataRegion(
             memCfg,
-            memCfg.getDefaultDataRegionConfiguration(),
-            memCfg.getDefaultDataRegionConfiguration().getName()
+            memCfg.getDefaultDataRegionConfiguration()
         );
 
         addDataRegion(
             memCfg,
             createSystemDataRegion(
                 memCfg.getSystemRegionInitialSize(),
-                memCfg.getSystemRegionMaxSize()
-            ),
-            SYSTEM_DATA_REGION_NAME
+                memCfg.getSystemRegionMaxSize(),
+                CU.isPersistenceEnabled(memCfg)
+            )
         );
     }
 
     /**
      * @param dataStorageCfg Database config.
      * @param dataRegionCfg Data region config.
-     * @param dataRegionName Data region name.
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     private void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
-        DataRegionConfiguration dataRegionCfg,
-        String dataRegionName
+        DataRegionConfiguration dataRegionCfg
     ) throws IgniteCheckedException {
+        String dataRegionName = dataRegionCfg.getName();
+
         String dfltMemPlcName = dataStorageCfg.getDefaultDataRegionConfiguration().getName();
 
         if (dfltMemPlcName == null)
@@ -316,15 +315,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param sysCacheInitSize Initial size of PageMemory to be created for system cache.
      * @param sysCacheMaxSize Maximum size of PageMemory to be created for system cache.
+     * @param persistenceEnabled Persistence enabled flag.
      *
      * @return {@link DataRegionConfiguration configuration} of DataRegion for system cache.
      */
-    private DataRegionConfiguration createSystemDataRegion(long sysCacheInitSize, long sysCacheMaxSize) {
+    private DataRegionConfiguration createSystemDataRegion(
+        long sysCacheInitSize,
+        long sysCacheMaxSize,
+        boolean persistenceEnabled
+    ) {
         DataRegionConfiguration res = new DataRegionConfiguration();
 
         res.setName(SYSTEM_DATA_REGION_NAME);
         res.setInitialSize(sysCacheInitSize);
         res.setMaxSize(sysCacheMaxSize);
+        res.setPersistenceEnabled(persistenceEnabled);
 
         return res;
     }
@@ -574,10 +579,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!F.isEmpty(memMetricsMap)) {
             DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
 
-            if (memMetrics == null)
-                return null;
-            else
-                return new DataRegionMetricsSnapshot(memMetrics);
+            return memMetrics == null ? null : new DataRegionMetricsSnapshot(memMetrics);
         }
         else
             return null;
@@ -663,13 +665,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             U.error(log, "Failed to unregister MBean for memory metrics: " +
                 name, e);
         }
-    }
-
-    /**
-     *
-     */
-    public boolean persistenceEnabled() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -794,7 +789,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionConfiguration plcCfg = memPlc.config();
 
-        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plcCfg.isPersistenceEnabled())
             return;
 
         long memorySize = plcCfg.getMaxSize();
@@ -851,7 +846,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pageMem Page memory.
      */
     private PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
-        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || CU.isPersistenceEnabled(cctx.gridConfig()))
+        if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plc.isPersistenceEnabled())
             return new NoOpPageEvictionTracker();
 
         assert pageMem instanceof PageMemoryNoStoreImpl : pageMem.getClass();
@@ -885,12 +880,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return null;
 
         final PdsFolderSettings folderSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-        final String folderName;
 
-        if(folderSettings.isCompatible())
-            folderName = String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_");
-        else
-            folderName = folderSettings.folderName();
+        final String folderName = folderSettings.isCompatible() ?
+            String.valueOf(folderSettings.consistentId()).replaceAll("[:,\\.]", "_") :
+            folderSettings.folderName();
 
         return buildPath(path, folderName);
     }
