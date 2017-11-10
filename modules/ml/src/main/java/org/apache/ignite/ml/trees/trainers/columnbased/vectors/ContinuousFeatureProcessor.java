@@ -26,7 +26,7 @@ import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.RegionInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.RegionProjection;
 
-import static org.apache.ignite.ml.trees.trainers.columnbased.vectors.Utils.splitByBitSet;
+import static org.apache.ignite.ml.trees.trainers.columnbased.vectors.FeatureVectorProcessorUtils.splitByBitSet;
 
 /**
  * Container of projection of samples on continuous feature.

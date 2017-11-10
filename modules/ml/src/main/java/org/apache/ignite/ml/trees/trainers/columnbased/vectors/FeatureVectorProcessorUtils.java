@@ -21,7 +21,7 @@ import com.zaxxer.sparsebits.SparseBitSet;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /** Utility class for feature vector processors. */
-public class Utils {
+public class FeatureVectorProcessorUtils {
     /**
      * Split target array into two (left and right) arrays by bitset.
      *

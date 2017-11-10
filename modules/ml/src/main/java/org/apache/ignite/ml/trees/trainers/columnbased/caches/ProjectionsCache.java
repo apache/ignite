@@ -209,7 +209,7 @@ public class ProjectionsCache {
         int curBlockIdx = -1;
         List<RegionProjection> block = null;
 
-        Object affKey = affinity.apply(featureIdx);
+        Object affinityKey = affinity.apply(featureIdx);
 
         while (itr.hasNext()) {
             int i = itr.nextInt();
@@ -217,7 +217,7 @@ public class ProjectionsCache {
             int blockIdx = i / blockSize;
 
             if (blockIdx != curBlockIdx) {
-                block = cache.localPeek(key(featureIdx, blockIdx, affKey, trainingUUID));
+                block = cache.localPeek(key(featureIdx, blockIdx, affinityKey, trainingUUID));
                 curBlockIdx = blockIdx;
             }
 
