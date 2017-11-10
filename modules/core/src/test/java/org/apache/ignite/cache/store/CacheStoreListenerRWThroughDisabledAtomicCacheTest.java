@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', 'IgniteMavenGenerator', function($scope, Version, maven) {
-    const ctrl = this;
+package org.apache.ignite.cache.store;
 
-    this.$onInit = () => {
-        // Watchers definition.
-        const clusterWatcher = (value) => {
-            delete ctrl.data;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
-            if (!value)
-                return;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
-            ctrl.data = maven.generate($scope.cluster, Version.currentSbj.getValue());
-        };
-
-        // Setup watchers.
-        Version.currentSbj.subscribe({
-            next: clusterWatcher
-        });
-
-        $scope.$watch('cluster', clusterWatcher);
-    };
-}];
+/**
+ * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
+ * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
+ */
+public class CacheStoreListenerRWThroughDisabledAtomicCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+}
