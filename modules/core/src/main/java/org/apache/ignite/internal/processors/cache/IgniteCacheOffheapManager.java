@@ -65,7 +65,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cacheId Cache ID.
-     * @param destroy Destroy data flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     public void stopCache(int cacheId, boolean destroy);
 
