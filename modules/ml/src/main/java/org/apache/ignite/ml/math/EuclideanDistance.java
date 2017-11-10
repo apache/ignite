@@ -44,4 +44,15 @@ public class EuclideanDistance implements DistanceMeasure {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        return true;
+    }
 }

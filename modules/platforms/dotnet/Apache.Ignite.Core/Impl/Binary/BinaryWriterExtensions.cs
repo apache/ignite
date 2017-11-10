@@ -184,31 +184,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             writer.Stream.WriteInt(pos, cnt);
         }
 
+ 
         /// <summary>
-        /// Writes a collection with a specific element writer 
+        /// Writes the collection of write-aware items.
         /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="vals">Values.</param>
-        /// <param name="writeAction">A custom write action to apply to each element.</param>
-        public static void WriteEnumerable<T>(this BinaryWriter writer, IEnumerable<T> vals, 
-            Action<T, IBinaryRawWriter> writeAction)
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
         {
             Debug.Assert(writer != null);
-            Debug.Assert(vals != null);
-            Debug.Assert(writeAction != null);
 
-            var pos = writer.Stream.Position;
-            writer.WriteInt(0);  // Reserve count.
-
-            var cnt = 0;
-
-            foreach (var val in vals)
+            if (collection != null)
             {
-                writeAction(val, writer);
-                cnt++;
-            }
+                writer.WriteInt(collection.Count);
 
-            writer.Stream.WriteInt(pos, cnt);
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    x.Write(writer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
     }
 }

@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -156,7 +157,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+            SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
 
             qry.setPageSize(fetchSize);
@@ -237,6 +238,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
      * @return Flag to update metadata on demand.
      */
     protected boolean updateMetadata() {
+        return false;
+    }
+
+    /**
+     * @return Flag to update enable server side updates.
+     */
+    protected boolean skipReducerOnUpdate() {
         return false;
     }
 

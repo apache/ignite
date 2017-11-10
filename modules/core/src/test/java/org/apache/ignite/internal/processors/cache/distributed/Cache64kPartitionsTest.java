@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -43,8 +45,14 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
 
         cfg.setActiveOnStart(false);
 
-        if (persistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        if (persistenceEnabled) {
+            DataStorageConfiguration memCfg = new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setWalMode(WALMode.LOG_ONLY);
+
+            cfg.setDataStorageConfiguration(memCfg);
+        }
 
         return cfg;
     }

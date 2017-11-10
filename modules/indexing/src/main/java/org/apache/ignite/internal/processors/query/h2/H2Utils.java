@@ -247,8 +247,7 @@ public class H2Utils {
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, GridH2RowDescriptor desc, int type)
-        throws IgniteCheckedException {
+    public static Object convert(Object val, GridH2RowDescriptor desc, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 

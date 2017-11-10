@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -34,6 +28,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -41,13 +36,13 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -68,13 +63,28 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.LOCAL_ONLY;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.VAL_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2CollocationModel.buildCollocationModel;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
@@ -189,6 +199,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row put(GridH2Row row);
 
     /**
+     * Puts row.
+     *
+     * @param row Row.
+     * @return {@code True} if existing row row has been replaced.
+     */
+    public abstract boolean putx(GridH2Row row);
+
+    /**
      * Remove row from index.
      *
      * @param row Row.
@@ -197,13 +215,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row remove(SearchRow row);
 
     /**
-     * Remove row from index, does not return removed row.
+     * Removes row from index.
      *
      * @param row Row.
+     * @return {@code True} if row has been removed.
      */
-    public void removex(SearchRow row) {
-        remove(row);
-    }
+    public abstract boolean removex(SearchRow row);
 
     /**
      * @param ses Session.
@@ -247,17 +264,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     /** {@inheritDoc} */
     @Override public GridH2Table getTable() {
         return (GridH2Table)super.getTable();
-    }
-
-    /**
-     * Filters rows from expired ones and using predicate.
-     *
-     * @param cursor GridCursor over rows.
-     * @param filter Optional filter.
-     * @return Filtered iterator.
-     */
-    protected GridCursor<GridH2Row> filter(GridCursor<GridH2Row> cursor, IndexingQueryFilter filter) {
-        return new FilteringCursor(cursor, U.currentTimeMillis(), filter, getTable().cacheName());
     }
 
     /**
@@ -804,26 +810,23 @@ public abstract class GridH2IndexBase extends BaseIndex {
     protected int segmentForRow(SearchRow row) {
         assert row != null;
 
+        if (segmentsCount() == 1 || ctx == null)
+            return 0;
+
         CacheObject key;
 
-        if (ctx != null) {
-            final Value keyColValue = row.getValue(KEY_COL);
+        final Value keyColValue = row.getValue(KEY_COL);
 
-            assert keyColValue != null;
+        assert keyColValue != null;
 
-            final Object o = keyColValue.getObject();
+        final Object o = keyColValue.getObject();
 
-            if (o instanceof CacheObject)
-                key = (CacheObject)o;
-            else
-                key = ctx.toCacheKeyObject(o);
+        if (o instanceof CacheObject)
+            key = (CacheObject)o;
+        else
+            key = ctx.toCacheKeyObject(o);
 
-            return segmentForPartition(ctx.affinity().partition(key));
-        }
-
-        assert segmentsCount() == 1;
-
-        return 0;
+        return segmentForPartition(ctx.affinity().partition(key));
     }
 
     /**
@@ -1562,7 +1565,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    protected GridCursor<GridH2Row> doFind0(
+    protected H2Cursor doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
@@ -1572,99 +1575,11 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * Cursor which filters by expiration time and predicate.
-     */
-    protected static class FilteringCursor implements GridCursor<GridH2Row> {
-        /** */
-        private final GridCursor<GridH2Row> cursor;
-        /** */
-        private final IgniteBiPredicate<Object, Object> fltr;
-
-        /** */
-        private final long time;
-
-        /** Is value required for filtering predicate? */
-        private final boolean isValRequired;
-
-        /** */
-        private GridH2Row next;
-
-        /**
-         * @param cursor GridCursor.
-         * @param time Time for expired rows filtering.
-         * @param qryFilter Filter.
-         * @param cacheName Cache name.
-         */
-        protected FilteringCursor(GridCursor<GridH2Row> cursor, long time, IndexingQueryFilter qryFilter,
-            String cacheName) {
-            this.cursor = cursor;
-
-            this.time = time;
-
-            if (qryFilter != null) {
-                this.fltr = qryFilter.forCache(cacheName);
-
-                this.isValRequired = qryFilter.isValueRequired();
-            }
-            else {
-                this.fltr = null;
-
-                this.isValRequired = false;
-            }
-        }
-
-        /**
-         * @param row Row.
-         * @return If this row was accepted.
-         */
-        @SuppressWarnings("unchecked")
-        protected boolean accept(GridH2Row row) {
-            if (row.expireTime() != 0 && row.expireTime() <= time)
-                return false;
-
-            if (fltr == null)
-                return true;
-
-            Object key = row.getValue(KEY_COL).getObject();
-            Object val = isValRequired ? row.getValue(VAL_COL).getObject() : null;
-
-            assert key != null;
-            assert !isValRequired || val != null;
-
-            return fltr.apply(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean next() throws IgniteCheckedException {
-            next = null;
-
-            while (cursor.next()) {
-                GridH2Row t = cursor.get();
-
-                if (accept(t)) {
-                    next = t;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridH2Row get() throws IgniteCheckedException {
-            if (next == null)
-                throw new NoSuchElementException();
-
-            return next;
-        }
-    }
-
-    /**
      *
      */
     private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
         /** */
-        private final GridCursor<GridH2Row> cursor;
+        private final H2Cursor cursor;
 
         /** Next element. */
         private GridH2Row next;
@@ -1672,18 +1587,13 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /**
          * @param cursor Cursor.
          */
-        private CursorIteratorWrapper(GridCursor<GridH2Row> cursor) {
+        private CursorIteratorWrapper(H2Cursor cursor) {
             assert cursor != null;
 
             this.cursor = cursor;
 
-            try {
-                if (cursor.next())
-                    next = cursor.get();
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
         }
 
         /** {@inheritDoc} */
@@ -1693,19 +1603,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         /** {@inheritDoc} */
         @Override public GridH2Row next() {
-            try {
-                GridH2Row res = next;
+            GridH2Row res = next;
 
-                if (cursor.next())
-                    next = cursor.get();
-                else
-                    next = null;
+            if (cursor.next())
+                next = (GridH2Row)cursor.get();
+            else
+                next = null;
 
-                return res;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return res;
         }
 
         /** {@inheritDoc} */
