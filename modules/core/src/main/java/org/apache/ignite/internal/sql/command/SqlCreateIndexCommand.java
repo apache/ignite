@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +36,7 @@ import java.util.Set;
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -168,7 +172,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return parseIdentifier(lex, IF);
     }
 
-    /*
     /**
      * Parses inline size option if exists.
      *
@@ -180,7 +183,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
         if (matchesKeyword(nextTok, INLINE_SIZE)) {
             lex.shift();
 
-            int stmtInlineSize = parseInt(lex);
+            int stmtInlineSize = SqlParserUtils.parseInt(lex);
             if (stmtInlineSize < 0)
                 throw error(lex, "Inline size should be positive: " + stmtInlineSize);
 
