@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
@@ -33,7 +34,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.distributed.CacheUtils;
@@ -57,7 +57,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** Random or sequential access mode. */
     private int acsMode;
     /** Matrix uuid. */
-    private IgniteUuid uuid;
+    private UUID uuid;
 
     /** Actual distributed storage. */
     private IgniteCache<
@@ -91,7 +91,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
         cache = newCache();
 
-        uuid = IgniteUuid.randomUuid();
+        uuid = UUID.randomUUID();
     }
 
     /**
@@ -114,6 +114,9 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        // TODO: Possibly we should add a fix of https://issues.apache.org/jira/browse/IGNITE-6862 here commented below.
+        // cfg.setReadFromBackup(false);
 
         // Random cache name.
         cfg.setName(CACHE_NAME);
@@ -205,7 +208,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
 
     /** Build cache key for row/column. */
     public RowColMatrixKey getCacheKey(int idx) {
-        return new SparseMatrixKey(idx, uuid, null);
+        return new SparseMatrixKey(idx, uuid, idx);
     }
 
     /** {@inheritDoc} */
@@ -239,7 +242,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
         cols = in.readInt();
         acsMode = in.readInt();
         stoMode = in.readInt();
-        uuid = (IgniteUuid)in.readObject();
+        uuid = (UUID)in.readObject();
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
@@ -304,7 +307,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 
@@ -312,7 +315,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     @Override public Set<RowColMatrixKey> getAllKeys() {
         int range = stoMode == ROW_STORAGE_MODE ? rows : cols;
 
-        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), null)).collect(Collectors.toSet());
+        return IntStream.range(0, range).mapToObj(i -> new SparseMatrixKey(i, getUUID(), i)).collect(Collectors.toSet());
     }
 
     /** {@inheritDoc} */
