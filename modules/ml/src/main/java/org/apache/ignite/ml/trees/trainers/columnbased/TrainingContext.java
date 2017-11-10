@@ -18,9 +18,6 @@
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
 import com.zaxxer.sparsebits.SparseBitSet;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.DoubleStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -33,6 +30,10 @@ import org.apache.ignite.ml.trees.trainers.columnbased.caches.FeaturesCache;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.CategoricalFeatureProcessor;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousFeatureProcessor;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.FeatureProcessor;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.DoubleStream;
 
 import static org.apache.ignite.ml.trees.trainers.columnbased.caches.FeaturesCache.COLUMN_DECISION_TREE_TRAINER_FEATURES_CACHE_NAME;
 

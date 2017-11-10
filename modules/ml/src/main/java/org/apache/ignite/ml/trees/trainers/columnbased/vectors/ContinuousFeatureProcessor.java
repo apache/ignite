@@ -18,13 +18,14 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.vectors;
 
 import com.zaxxer.sparsebits.SparseBitSet;
-import java.util.Arrays;
-import java.util.Comparator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
 import org.apache.ignite.ml.trees.RegionInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.RegionProjection;
+
+import java.util.Arrays;
+import java.util.Comparator;
 
 import static org.apache.ignite.ml.trees.trainers.columnbased.vectors.FeatureVectorProcessorUtils.splitByBitSet;
 

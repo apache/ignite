@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
@@ -26,6 +24,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * ODBC Connection Context.

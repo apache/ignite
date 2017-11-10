@@ -17,14 +17,15 @@
 
 package org.apache.ignite.p2p;
 
-import java.lang.reflect.Constructor;
-import java.net.URL;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.lang.reflect.Constructor;
+import java.net.URL;
 
 /**
  */

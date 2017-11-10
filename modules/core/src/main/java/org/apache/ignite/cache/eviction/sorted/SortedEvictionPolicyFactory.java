@@ -17,10 +17,11 @@
 
 package org.apache.ignite.cache.eviction.sorted;
 
-import java.io.Serializable;
-import java.util.Comparator;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+
+import java.io.Serializable;
+import java.util.Comparator;
 
 /**
  * Factory class for {@link SortedEvictionPolicy}.

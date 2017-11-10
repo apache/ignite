@@ -17,14 +17,6 @@
 
 package org.apache.ignite.ml.trees;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.StorageConstants;
@@ -39,6 +31,10 @@ import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer
 import org.apache.ignite.ml.trees.trainers.columnbased.MatrixColumnDecisionTreeTrainerInput;
 import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.ContinuousSplitCalculators;
 import org.apache.ignite.ml.trees.trainers.columnbased.regcalcs.RegionCalculators;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
 /** Tests behaviour of ColumnDecisionTreeTrainer. */
 public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.util;
 
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Utility class for reading MNIST dataset.

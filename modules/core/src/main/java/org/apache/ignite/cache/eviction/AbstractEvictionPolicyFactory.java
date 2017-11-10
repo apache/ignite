@@ -17,8 +17,9 @@
 
 package org.apache.ignite.cache.eviction;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.util.typedef.internal.A;
+
+import javax.cache.configuration.Factory;
 
 /**
  * Common functionality implementation for eviction policies factories.

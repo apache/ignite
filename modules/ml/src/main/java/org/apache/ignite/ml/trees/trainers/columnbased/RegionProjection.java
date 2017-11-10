@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
+import org.apache.ignite.ml.trees.RegionInfo;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.trees.RegionInfo;
 
 /**
  * Projection of region on given feature.

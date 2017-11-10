@@ -17,16 +17,7 @@
 
 package org.apache.ignite.ml.clustering;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import javax.cache.Cache;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
@@ -41,6 +32,11 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.math.util.MatrixUtil;
+
+import javax.cache.Cache;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static org.apache.ignite.ml.math.distributed.CacheUtils.distributedFold;
 import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;

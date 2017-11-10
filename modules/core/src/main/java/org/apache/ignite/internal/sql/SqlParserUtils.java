@@ -21,9 +21,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
-import static org.apache.ignite.internal.sql.SqlKeyword.IF;
-import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+import static org.apache.ignite.internal.sql.SqlKeyword.*;
 
 /**
  * Parser utility methods.

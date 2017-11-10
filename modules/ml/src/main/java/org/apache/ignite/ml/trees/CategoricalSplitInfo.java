@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.trees;
 
-import java.util.BitSet;
 import org.apache.ignite.ml.trees.nodes.CategoricalSplitNode;
 import org.apache.ignite.ml.trees.nodes.SplitNode;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
+
+import java.util.BitSet;
 
 /**
  * Information about split of categorical feature.

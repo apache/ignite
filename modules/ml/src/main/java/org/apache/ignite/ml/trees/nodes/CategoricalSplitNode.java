@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.trees.nodes;
 
-import java.util.BitSet;
 import org.apache.ignite.ml.math.Vector;
+
+import java.util.BitSet;
 
 /**
  * Split node by categorical feature.

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
-import java.util.Map;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Input for {@see ColumnDecisionTreeTrainer}.

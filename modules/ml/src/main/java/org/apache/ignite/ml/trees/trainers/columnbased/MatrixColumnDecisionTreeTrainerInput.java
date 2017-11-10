@@ -17,12 +17,6 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
@@ -31,6 +25,13 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.jetbrains.annotations.NotNull;
+
+import javax.cache.Cache;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Adapter of SparseDistributedMatrix to ColumnDecisionTreeTrainerInput.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased.caches;
 
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -27,6 +26,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.trees.ContinuousRegionInfo;
 import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
 import org.apache.ignite.ml.trees.trainers.columnbased.TrainingContext;
+
+import java.util.UUID;
 
 /**
  * Class for operations related to cache containing training context for {@link ColumnDecisionTreeTrainer}.

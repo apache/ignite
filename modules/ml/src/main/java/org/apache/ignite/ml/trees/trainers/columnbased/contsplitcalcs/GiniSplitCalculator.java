@@ -18,6 +18,11 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs;
 
 import it.unimi.dsi.fastutil.doubles.Double2IntArrayMap;
+import org.apache.ignite.ml.trees.ContinuousRegionInfo;
+import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
+import org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousSplitInfo;
+import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -25,10 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.stream.DoubleStream;
-import org.apache.ignite.ml.trees.ContinuousRegionInfo;
-import org.apache.ignite.ml.trees.ContinuousSplitCalculator;
-import org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousSplitInfo;
-import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 
 /**
  * Calculator for Gini impurity.

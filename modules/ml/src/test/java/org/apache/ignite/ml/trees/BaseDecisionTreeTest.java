@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.trees;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledVectorDouble;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Arrays;
 
 /**
  * Base class for decision trees test.

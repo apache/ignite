@@ -18,23 +18,6 @@
 package org.apache.ignite.ml.trees.performance;
 
 import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
@@ -78,6 +61,15 @@ import org.apache.ignite.stream.StreamTransformer;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.log4j.Level;
 import org.junit.Assert;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Various benchmarks for hand runs.

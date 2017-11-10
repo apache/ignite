@@ -17,12 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.configuration.Factory;
+import java.io.Serializable;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
 

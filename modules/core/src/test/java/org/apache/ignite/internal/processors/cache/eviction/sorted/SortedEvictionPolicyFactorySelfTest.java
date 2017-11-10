@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
+
+import javax.cache.configuration.Factory;
 
 /**
  * Sorted eviction policy tests.

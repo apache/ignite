@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.fifo;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
+
+import javax.cache.configuration.Factory;
 
 /**
  * FIFO eviction policy tests.

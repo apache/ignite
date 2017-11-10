@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.trees.trainers.columnbased;
 
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 
 /**
  * Class representing a simple index in 2d matrix in the form (row, col).

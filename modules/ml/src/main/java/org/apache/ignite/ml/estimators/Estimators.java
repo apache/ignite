@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.estimators;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /** Estimators. */
 public class Estimators {

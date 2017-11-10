@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.lru;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
+
+import javax.cache.configuration.Factory;
 
 /**
  * LRU Eviction policy tests.

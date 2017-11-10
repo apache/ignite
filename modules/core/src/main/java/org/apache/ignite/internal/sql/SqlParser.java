@@ -22,16 +22,8 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
-import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
-import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
-import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
-import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
-import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
-import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
-import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
-import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
-import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
+import static org.apache.ignite.internal.sql.SqlKeyword.*;
+import static org.apache.ignite.internal.sql.SqlParserUtils.*;
 
 /**
  * SQL parser.

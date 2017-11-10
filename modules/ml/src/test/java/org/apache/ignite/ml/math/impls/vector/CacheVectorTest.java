@@ -17,12 +17,6 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.stream.IntStream;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,6 +30,9 @@ import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
+import java.io.*;
+import java.util.stream.IntStream;
 
 /**
  * Tests for {@link CacheVector}.

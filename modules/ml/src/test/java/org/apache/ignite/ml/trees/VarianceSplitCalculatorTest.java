@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.trees;
 
-import java.util.stream.DoubleStream;
 import org.apache.ignite.ml.trees.trainers.columnbased.contsplitcalcs.VarianceSplitCalculator;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 import org.junit.Test;
+
+import java.util.stream.DoubleStream;
 
 /**
  * Test for {@link VarianceSplitCalculator}.

@@ -18,31 +18,17 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.*;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
-import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
-import static org.apache.ignite.internal.sql.SqlKeyword.IF;
-import static org.apache.ignite.internal.sql.SqlKeyword.ON;
-import static org.apache.ignite.internal.sql.SqlParserUtils.error;
-import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
-import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
+import static org.apache.ignite.internal.sql.SqlKeyword.*;
+import static org.apache.ignite.internal.sql.SqlParserUtils.*;
 
 /**
  * CREATE INDEX command.

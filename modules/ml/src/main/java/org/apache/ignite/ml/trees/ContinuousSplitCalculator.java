@@ -17,8 +17,9 @@
 
 package org.apache.ignite.ml.trees;
 
-import java.util.stream.DoubleStream;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
+
+import java.util.stream.DoubleStream;
 
 /**
  * This class is used for calculation of best split by continuous feature.

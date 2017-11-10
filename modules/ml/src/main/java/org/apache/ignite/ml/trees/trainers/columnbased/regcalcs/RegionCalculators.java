@@ -18,13 +18,14 @@
 package org.apache.ignite.ml.trees.trainers.columnbased.regcalcs;
 
 import it.unimi.dsi.fastutil.doubles.Double2IntOpenHashMap;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.stream.DoubleStream;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainerInput;
 
 /** Some commonly used functions for calculations of regions of space which correspond to decision tree leaf nodes. */
 public class RegionCalculators {
