@@ -28,7 +28,7 @@ namespace
     {
         affectedRows.clear();
 
-        if (protocolVersion < ProtocolVersion::VERSION_2_3_0)
+        if (protocolVersion < ProtocolVersion::VERSION_2_3_2)
             affectedRows.push_back(reader.ReadInt64());
         else
         {

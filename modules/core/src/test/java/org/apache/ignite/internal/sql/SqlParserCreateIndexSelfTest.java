@@ -90,6 +90,10 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate("schema", "CREATE INDEX idx ON tbl(a)", "schema", "TBL", "IDX", "A", false);
         parseValidate("sChema", "CREATE INDEX idx ON tbl(a)", "sChema", "TBL", "IDX", "A", false);
 
+        // No index name.
+        parseValidate(null, "CREATE INDEX ON tbl(a)", null, "TBL", null, "A", false);
+        parseValidate(null, "CREATE INDEX ON schema.tbl(a)", "SCHEMA", "TBL", null, "A", false);
+
         // NOT EXISTS
         SqlCreateIndexCommand cmd;
 
