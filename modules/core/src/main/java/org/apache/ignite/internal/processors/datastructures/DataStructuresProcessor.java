@@ -661,7 +661,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 break;
                             } catch (IgniteCheckedException e) {
                                 if (X.hasCause(e, InterruptedException.class))
-                                    Thread.interrupted();
+                                    isInterrupted = Thread.interrupted();
                                 else
                                     throw e;
                             }
