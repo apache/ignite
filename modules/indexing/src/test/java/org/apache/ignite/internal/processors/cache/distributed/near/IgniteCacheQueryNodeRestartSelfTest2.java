@@ -32,20 +32,27 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -235,8 +242,10 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     while (!locks.compareAndSet(g, 0, 1));
 
                     try {
+                        IgniteEx grid = grid(g);
+
                         if (rnd.nextBoolean()) { // Partitioned query.
-                            IgniteCache<?,?> cache = grid(g).cache("pu");
+                            IgniteCache<?,?> cache = grid.cache("pu");
 
                             SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
 
@@ -246,17 +255,30 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 qry.setPageSize(3);
 
                             try {
-                                assertEquals(pRes, cache.query(qry).getAll());
+                                try(Transaction tx = grid.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                                    TransactionIsolation.REPEATABLE_READ)) {
+
+                                    tx.timeout(1000);
+
+                                    IgniteCache<Integer, Company> co = grid.cache("co");
+
+                                    Company c = co.get(rnd.nextInt(COMPANY_CNT));
+
+                                    assertEquals(pRes, cache.query(qry).getAll());
+                                }
                             } catch (CacheException e) {
                                 // Interruptions are expected here.
-                                if (e.getCause() instanceof IgniteInterruptedCheckedException)
+                                if (e.getCause() instanceof IgniteInterruptedCheckedException ||
+                                    e.getCause() instanceof InterruptedException ||
+                                    e.getCause() instanceof ClusterTopologyException ||
+                                    e.getCause() instanceof TransactionTimeoutException)
                                     continue;
 
                                 if (e.getCause() instanceof QueryCancelledException)
                                     fail("Retry is expected");
 
                                 if (!smallPageSize)
-                                    e.printStackTrace();
+                                    U.error(grid.log(), "On large page size must retry.", e);
 
                                 assertTrue("On large page size must retry.", smallPageSize);
 
@@ -286,13 +308,13 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                     continue;
 
                                 if (!failedOnRemoteFetch) {
-                                    e.printStackTrace();
+                                    U.error(grid.log(), "Must fail inside of GridResultPage.fetchNextPage or subclass.", e);
 
                                     fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                                 }
                             }
                         } else { // Replicated query.
-                            IgniteCache<?, ?> cache = grid(g).cache("co");
+                            IgniteCache<?, ?> cache = grid.cache("co");
 
                             assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
                         }
@@ -358,7 +380,14 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         restartsDone.set(true);
 
-        fut2.get();
+        try {
+            fut2.get(10_000);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            U.dumpThreads(log);
+
+            fail("Stopping restarts timeout.");
+        }
 
         info("Restarts stopped.");
 
