@@ -338,7 +338,7 @@ public class BlockMatrixStorage extends CacheUtils implements MatrixStorage, Sto
      *
      * Get affinity key for the given id.
      */
-    private IgniteUuid getAffinityKey(long blockIdRow, long blockIdCol) {
+    private UUID getAffinityKey(long blockIdRow, long blockIdCol) {
         return null;
     }
 
