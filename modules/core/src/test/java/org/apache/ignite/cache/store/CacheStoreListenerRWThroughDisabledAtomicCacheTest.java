@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  * This class tests that redundant calls of {@link CacheStoreSessionListener#onSessionStart(CacheStoreSession)}
  * and {@link CacheStoreSessionListener#onSessionEnd(CacheStoreSession, boolean)} are not executed.
  */
-public class CacheStoreListenerRWThroughDisabledAtomicCache extends CacheStoreSessionListenerReadWriteThroughDisabled {
+public class CacheStoreListenerRWThroughDisabledAtomicCacheTest extends CacheStoreSessionListenerReadWriteThroughDisabledTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;

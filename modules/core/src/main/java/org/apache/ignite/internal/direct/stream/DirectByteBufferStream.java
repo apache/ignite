@@ -116,6 +116,10 @@ public interface DirectByteBufferStream {
      */
     public void writeLongArray(long[] val);
 
+    /**
+     * @param val Value.
+     * @param len Length.
+     */
     public void writeLongArray(long[] val, int len);
 
     /**
