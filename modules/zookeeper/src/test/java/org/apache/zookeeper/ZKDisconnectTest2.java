@@ -20,17 +20,24 @@ package org.apache.zookeeper;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.curator.test.TestingCluster;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.ZKClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.ZKClusterNodeNew;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  *
  */
-public class ZKDisconnectTest {
+public class ZKDisconnectTest2 {
+    /** */
+    private static final Logger LOG = LoggerFactory.getLogger(ZKDisconnectTest2.class);
+
     public static class TestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
         private static TestClientCnxnSocketNIO instance;
 
@@ -51,11 +58,11 @@ public class ZKDisconnectTest {
 
             if (blockConnect != null) {
                 try {
-                    System.out.println("TestClientCnxnSocketNIO block connected");
+                    LOG.info("TestClientCnxnSocketNIO block connected");
 
                     blockConnect.await();
 
-                    System.out.println("TestClientCnxnSocketNIO finish block");
+                    LOG.info("TestClientCnxnSocketNIO finish block");
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -81,45 +88,48 @@ public class ZKDisconnectTest {
 
     public static void main(String[] args) {
         try {
-            TestingCluster zkCluster = new TestingCluster(1);
+            final TestingCluster zkCluster = new TestingCluster(1);
             zkCluster.start();
 
             Thread.sleep(1000);
 
-            System.out.println("ZK started\n");
+            LOG.info("ZK started\n");
 
             System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, TestClientCnxnSocketNIO.class.getName());
 
-            ZKClusterNode node1 = new ZKClusterNode("n1");
+            ZKClusterNodeNew node1 = new ZKClusterNodeNew("n1");
             node1.join(zkCluster.getConnectString());
 
-            ZKClusterNode node2 = new ZKClusterNode("n2");
+            ZKClusterNodeNew node2 = new ZKClusterNodeNew("n2");
             node2.join(zkCluster.getConnectString());
 
-            System.out.println("Client connected");
+            LOG.info("Clients connected");
 
-            Thread.sleep(1000);
+            Thread.sleep(3000);
 
-            System.out.println("Close channel");
+            LOG.info("Close channel");
 
             TestClientCnxnSocketNIO.instance.blockConnect = new CountDownLatch(1);
             TestClientCnxnSocketNIO.instance.testClose();
 
-            System.out.println("Closed");
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ZKClusterNodeNew node3 = new ZKClusterNodeNew("n3");
+                    node3.join(zkCluster.getConnectString(), 2000);
 
-            ZKClusterNode node3 = new ZKClusterNode("n3");
-            node3.join(zkCluster.getConnectString());
+                    return null;
+                }
+            }, "start");
 
-            System.out.println("Node started");
+            Thread.sleep(3000);
 
-            node3.stop();
-
-            ZKClusterNode node4 = new ZKClusterNode("n4");
-            node4.join(zkCluster.getConnectString());
-
-            System.out.println("Node stopped");
+            LOG.info("Stop block");
 
             TestClientCnxnSocketNIO.instance.blockConnect.countDown();
+
+            fut.get();
+
+            LOG.info("Done");
 
             Thread.sleep(60_000);
         }

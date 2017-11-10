@@ -27,10 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.zookeeper.AsyncCallback;
+import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
@@ -39,12 +41,16 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.reflect.generics.tree.Tree;
 
 /**
  *
  */
 public class ZKClusterNodeNew implements Watcher {
+    private static final Logger LOG = LoggerFactory.getLogger(ZKClusterNodeNew.class);
+
     /** */
     private static final String CLUSTER_PATH = "/cluster";
 
@@ -101,7 +107,7 @@ public class ZKClusterNodeNew implements Watcher {
     }
 
     private void log(String msg) {
-        System.out.println(nodeName + ": " + msg);
+        LOG.info(nodeName + ": " + msg);
     }
 
     @Override public void process(WatchedEvent event) {
@@ -473,11 +479,15 @@ public class ZKClusterNodeNew implements Watcher {
         }
     }
 
-    public void join(String connectString) throws Exception {
+    public void join(String connectString ) throws Exception {
+        join(connectString, 0);
+    }
+
+    public void join(String connectString, long timeout) throws Exception {
         log("Start connect " + connectString);
 
         try {
-            zk = new ZooKeeper(connectString, 5000, this);
+            zk = new ZooKeeper(connectString, 5_000, this);
 
             if (zk.exists(CLUSTER_PATH, false) == null) {
                 List<Op> initOps = new ArrayList<>();
@@ -507,10 +517,21 @@ public class ZKClusterNodeNew implements Watcher {
 
             List<OpResult> res = zk.multi(joinOps);
 
-            connectLatch.await();
+            if (timeout > 0) {
+                if (!connectLatch.await(timeout, TimeUnit.MILLISECONDS)) {
+                    LOG.info("Connect timed out, start failed.");
 
-            System.out.println("Node joined: " + nodeId);
-        } catch (Exception e) {
+                    zk.close();
+
+                    throw new Exception("Connect timed out, start failed.");
+                }
+            }
+            else
+                connectLatch.await();
+
+            log("Node joined: " + nodeId);
+        }
+        catch (Exception e) {
             log("Connect failed: " + e);
 
             e.printStackTrace(System.out);
