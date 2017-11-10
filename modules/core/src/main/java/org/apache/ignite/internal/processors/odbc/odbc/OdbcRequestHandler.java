@@ -239,13 +239,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query().querySqlFieldsNoCache(qry, true);
 
-            long rowsAffected = 0;
+            long rowsAffected = getRowsAffected(qryCur);
 
-            if (!qryCur.isQuery()) {
-                rowsAffected = getRowsAffected(qryCur);
-
+            if (!qryCur.isQuery())
                 qryCur.close();
-            }
             else
                 qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -334,6 +331,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Number of table rows affected.
      */
     private static long getRowsAffected(QueryCursor<List<?>> qryCur) {
+        QueryCursorImpl<List<?>> qryCur0 = (QueryCursorImpl<List<?>>)qryCur;
+
+        if (qryCur0.isQuery())
+            return -1;
+
         Iterator<List<?>> iter = qryCur.iterator();
 
         if (iter.hasNext()) {
