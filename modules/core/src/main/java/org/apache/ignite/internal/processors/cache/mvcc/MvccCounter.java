@@ -40,7 +40,7 @@ public class MvccCounter implements Message {
      *
      */
     public MvccCounter() {
-        // No-po.
+        // No-op.
     }
 
     /**
