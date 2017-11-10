@@ -41,6 +41,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -81,6 +82,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     private static final String ALIVE_NODES_PATH = CLUSTER_PATH + "/alive";
+
+    /** */
+    private static final byte[] EMPTY_BYTES = new byte[0];
 
     /** */
     private String connectString;
@@ -173,7 +177,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        // TODO
+        // TODO ZK
         List<ClusterNode> nodes;
 
         synchronized (curTop) {
@@ -195,7 +199,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Nullable @Override public ClusterNode getNode(UUID nodeId) {
-        // TODO
+        // TODO ZK 
         synchronized (curTop) {
             for (ClusterNode node : curTop.values()) {
                 if (node.id().equals(nodeId))
@@ -208,7 +212,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
-        // TODO
+        // TODO ZK
         return getNode(nodeId) != null;
     }
 
@@ -243,12 +247,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void disconnect() throws IgniteSpiException {
-        // TODO
+        // TODO ZK
     }
 
     /** {@inheritDoc} */
     @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator auth) {
-        // TODO
+        // TODO ZK
     }
 
     /** {@inheritDoc} */
@@ -258,19 +262,19 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-        // TODO
+        // TODO ZK
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public void failNode(UUID nodeId, @Nullable String warning) {
-        // TODO
+        // TODO ZK
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClientMode() throws IllegalStateException {
-        // TODO
+        // TODO ZK
         return false;
     }
 
@@ -283,7 +287,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         locNode = new ZookeeperClusterNode(ignite.configuration().getNodeId(),
             locNodeVer,
             locNodeAttrs,
-            consistentId());
+            consistentId(),
+            ignite.configuration().isClientMode());
 
         locNode.local(true);
 
@@ -301,9 +306,23 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         try {
             initLocalNode();
 
-            zk = new ZooKeeper(connectString, sesTimeout, zkWatcher);
+            DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
 
-            // TODO: properly handle first node start and init after full cluster restart.
+            exchange.collect(discoDataBag);
+
+            String threadName = Thread.currentThread().getName();
+
+            // ZK generates internal threads' names using current thread name.
+            Thread.currentThread().setName("zk-" + igniteInstanceName);
+
+            try {
+                zk = new ZooKeeper(connectString, sesTimeout, zkWatcher);
+            }
+            finally {
+                Thread.currentThread().setName(threadName);
+            }
+
+            // TODO ZK: properly handle first node start and init after full cluster restart.
             if (zk.exists(IGNITE_PATH, false) == null) {
                 log.info("Initialize Zookeeper nodes.");
 
@@ -311,11 +330,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                 ZKClusterData clusterData = new ZKClusterData(U.currentTimeMillis());
 
-                initOps.add(Op.create(IGNITE_PATH, new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                initOps.add(Op.create(IGNITE_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
                 initOps.add(Op.create(CLUSTER_PATH, marshal(clusterData), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(JOIN_HIST_PATH, new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(ALIVE_NODES_PATH, new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(EVENTS_PATH, new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                initOps.add(Op.create(JOIN_HIST_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                initOps.add(Op.create(ALIVE_NODES_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                initOps.add(Op.create(EVENTS_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
 
                 zk.multi(initOps);
             }
@@ -330,12 +349,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
             List<Op> joinOps = new ArrayList<>();
 
-            byte[] nodeData = marshal(locNode);
+            ZKJoiningNodeData joinData = new ZKJoiningNodeData(locNode, discoDataBag.joiningNodeData());
+
+            byte[] nodeData = marshal(joinData);
 
             String zkNode = "/" + locNode.id().toString() + "-";
 
             joinOps.add(Op.create(JOIN_HIST_PATH + zkNode, nodeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL));
-            joinOps.add(Op.create(ALIVE_NODES_PATH + zkNode, nodeData, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL));
+            joinOps.add(Op.create(ALIVE_NODES_PATH + zkNode, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL));
 
             List<OpResult> res = zk.multi(joinOps);
 
@@ -402,7 +423,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         final UUID nodeId;
 
         /** */
-        transient ZookeeperClusterNode clusterNode;
+        transient ZKJoiningNodeData joinData;
 
         /**
          * @param order Node order.
@@ -496,16 +517,20 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                     if (joinHist.put(data.order, data) == null) {
                         try {
-                            byte[] nodeData = zk.getData(path + "/" + child, null, null);
+                            byte[] bytes = zk.getData(path + "/" + child, null, null);
 
-                            assert nodeData.length > 0;
+                            assert bytes.length > 0;
 
-                            data.clusterNode = unmarshal(nodeData);
+                            ZKJoiningNodeData joinData = unmarshal(bytes);
 
-                            data.clusterNode.order(data.order);
+                            assert joinData.node != null;
+
+                            joinData.node.order(data.order);
+
+                            data.joinData = joinData;
                         }
                         catch (Exception e) {
-                            // TODO
+                            // TODO ZK
                             U.error(log, "Failed to get node data: " + e, e);
                         }
                     }
@@ -591,12 +616,32 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                 ZKNodeData data = joinHist.get(nextJoinOrder);
 
                 if (data != null) {
-                    curTop.put(data.clusterNode.order(), data.clusterNode);
+                    ZKJoiningNodeData joinData = data.joinData;
 
-                    evts.put(v, new ZKDiscoveryEvent(EventType.EVT_NODE_JOINED,
+                    assert joinData != null : data;
+
+                    curTop.put(joinData.node.order(), joinData.node);
+
+                    ZKDiscoveryEvent joinEvt = new ZKDiscoveryEvent(EventType.EVT_NODE_JOINED,
                         v,
-                        data.clusterNode,
-                        new ArrayList<>(curTop.values())));
+                        joinData.node,
+                        new ArrayList<>(curTop.values()));
+
+                    if (!joinData.node.id().equals(locNode.nodeId)) {
+                        DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(joinData.node.id());
+
+                        joiningNodeBag.joiningNodeData(joinData.joiningNodeData);
+
+                        exchange.onExchange(joiningNodeBag);
+
+                        DiscoveryDataBag collectBag = new DiscoveryDataBag(joinData.node.id(), new HashSet<Integer>());
+
+                        exchange.collect(collectBag);
+
+                        joinEvt.discoveryData(joinData.joiningNodeData, collectBag.commonData());
+                    }
+
+                    evts.put(v, joinEvt);
 
                     if (!newNodes.nodesByOrder.containsKey(data.order)) {
                         v++;
@@ -700,11 +745,15 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                     boolean locJoin = false;
 
                     if (lastEvt == null) {
-                        locNode.order(e.node.order());
-
                         locJoin = e.evtType == EventType.EVT_NODE_JOINED && e.node.id().equals(locNode.id());
 
-                        fireEvt = locJoin;
+                        if (locJoin) {
+                            locNode.order(e.node.order());
+
+                            fireEvt = true;
+                        }
+                        else
+                            fireEvt = false;
                     }
                     else
                         fireEvt = e.topVer > lastEvt.topVer;
@@ -721,11 +770,25 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                                     assert old == null : node;
                                 }
+
+                                DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
+
+                                dataBag.joiningNodeData(e.joiningNodeData);
+                                dataBag.commonData(e.commonData);
+
+                                exchange.onExchange(dataBag);
                             }
                             else {
                                 switch (e.evtType) {
                                     case EventType.EVT_NODE_JOINED: {
                                         ZookeeperClusterNode node = e.node;
+
+                                        DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
+
+                                        dataBag.joiningNodeData(e.joiningNodeData);
+                                        dataBag.commonData(e.commonData);
+
+                                        exchange.onExchange(dataBag);
 
                                         Object old = curTop.put(node.order(), node);
 
@@ -836,6 +899,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         @GridToStringInclude
         final int topVer;
 
+        /** */
+        Map<Integer, Serializable> joiningNodeData;
+
+        /** */
+        Map<Integer, Serializable> commonData;
+
         /**
          * @param evtType
          * @param topVer
@@ -847,6 +916,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             this.topVer = topVer;
             this.node = node;
             this.allNodes = allNodes;
+        }
+
+        /**
+         *
+         */
+        void discoveryData(Map<Integer, Serializable> joiningNodeData, Map<Integer, Serializable> commonData) {
+            this.joiningNodeData = joiningNodeData;
+            this.commonData = commonData;
         }
 
         /** {@inheritDoc} */
@@ -884,6 +961,26 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
          */
         public ZKClusterData(long gridStartTime) {
             this.gridStartTime = gridStartTime;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ZKJoiningNodeData implements Serializable {
+        /** */
+        private final ZookeeperClusterNode node;
+
+        /** */
+        private final Map<Integer, Serializable> joiningNodeData;
+
+        /**
+         * @param node Node.
+         * @param joiningNodeData Discovery data.
+         */
+        ZKJoiningNodeData(ZookeeperClusterNode node, Map<Integer, Serializable> joiningNodeData) {
+            this.node = node;
+            this.joiningNodeData = joiningNodeData;
         }
     }
 }

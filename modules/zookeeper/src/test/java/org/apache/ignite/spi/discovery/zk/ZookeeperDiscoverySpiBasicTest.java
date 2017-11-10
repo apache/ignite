@@ -21,10 +21,14 @@ import java.util.List;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -48,6 +52,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         zkSpi.setConnectString(zkCluster.getConnectString());
 
         cfg.setDiscoverySpi(zkSpi);
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        cfg.setMarshaller(new JdkMarshaller());
 
         return cfg;
     }
@@ -75,7 +87,55 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStartStop() throws Exception {
+    public void testStartStop_1_Node() throws Exception {
+        startGrid(0);
+
+        waitForTopology(1);
+
+        stopGrid(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStop_2_Nodes_WithCache() throws Exception {
+        startGrids(2);
+
+        for (Ignite node : G.allGrids()) {
+            IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
+
+            assertNotNull(cache);
+
+            for (int i = 0; i < 100; i++) {
+                cache.put(i, node.name());
+
+                assertEquals(node.name(), cache.get(i));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStop_2_Nodes() throws Exception {
+        startGrid(0);
+
+        waitForTopology(1);
+
+        startGrid(1);
+
+        waitForTopology(2);
+
+        for (Ignite node : G.allGrids())
+            node.compute().broadcast(new DummyCallable(null));
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStop1() throws Exception {
         startGridsMultiThreaded(5, false);
 
         waitForTopology(5);
@@ -83,8 +143,30 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         stopGrid(0);
 
         waitForTopology(4);
+
+        for (Ignite node : G.allGrids())
+            node.compute().broadcast(new DummyCallable(null));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStop2() throws Exception {
+        startGridsMultiThreaded(10, false);
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                stopGrid(idx);
+            }
+        }, 3, "stop-node-thread");
+
+        waitForTopology(7);
+    }
+
+    /**
+     * @param expSize Expected nodes number.
+     * @throws Exception If failed.
+     */
     private void waitForTopology(final int expSize) throws Exception {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -109,5 +191,25 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 return true;
             }
         }, 5000));
+    }
+
+    /**
+     *
+     */
+    private static class DummyCallable implements IgniteCallable<Object> {
+        /** */
+        private byte[] data;
+
+        /**
+         * @param data Data.
+         */
+        DummyCallable(byte[] data) {
+            this.data = data;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            return data;
+        }
     }
 }

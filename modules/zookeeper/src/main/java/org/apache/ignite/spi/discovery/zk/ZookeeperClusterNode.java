@@ -59,19 +59,24 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
     /** */
     private transient boolean loc;
 
-    /** TODO */
+    /** TODO ZK */
     private transient ClusterMetrics metrics;
+
+    /** */
+    private boolean client;
 
     /**
      * @param id Node ID.
      * @param ver Node version.
      * @param attrs Node attributes.
      * @param consistentId Consistent ID.
+     * @param client Client node flag.
      */
     public ZookeeperClusterNode(UUID id,
         IgniteProductVersion ver,
         Map<String, Object> attrs,
-        Serializable consistentId) {
+        Serializable consistentId,
+        boolean client) {
         assert id != null;
         assert consistentId != null;
 
@@ -79,6 +84,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         this.ver = ver;
         this.attrs = U.sealMap(attrs);
         this.consistentId = consistentId;
+        this.client = client;
     }
 
     /** {@inheritDoc} */
@@ -181,7 +187,7 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return false;
+        return client;
     }
 
     /** {@inheritDoc} */
