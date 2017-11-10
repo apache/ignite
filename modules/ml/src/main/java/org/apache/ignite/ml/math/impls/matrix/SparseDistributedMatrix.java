@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.impls.matrix;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -211,7 +212,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return ((SparseDistributedMatrixStorage)getStorage()).getUUID();
     }
 }

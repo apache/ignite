@@ -21,7 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -32,17 +36,21 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.KeyMapper;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.distributed.keys.impl.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.BlockMatrixKey;
+import org.apache.ignite.ml.math.distributed.keys.MatrixCacheKey;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.BlockEntry;
 
 /**
@@ -131,7 +139,7 @@ public class CacheUtils {
      * @return Sum obtained using sparse logic.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> double sparseSum(IgniteUuid matrixUuid, String cacheName) {
+    public static <K, V> double sparseSum(UUID matrixUuid, String cacheName) {
         A.notNull(matrixUuid, "matrixUuid");
         A.notNull(cacheName, "cacheName");
 
@@ -198,7 +206,7 @@ public class CacheUtils {
      * @return Minimum value obtained using sparse logic.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> double sparseMin(IgniteUuid matrixUuid, String cacheName) {
+    public static <K, V> double sparseMin(UUID matrixUuid, String cacheName) {
         A.notNull(matrixUuid, "matrixUuid");
         A.notNull(cacheName, "cacheName");
 
@@ -235,7 +243,7 @@ public class CacheUtils {
      * @return Maximum value obtained using sparse logic.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> double sparseMax(IgniteUuid matrixUuid, String cacheName) {
+    public static <K, V> double sparseMax(UUID matrixUuid, String cacheName) {
         A.notNull(matrixUuid, "matrixUuid");
         A.notNull(cacheName, "cacheName");
 
@@ -316,7 +324,7 @@ public class CacheUtils {
      * @param mapper Mapping {@link IgniteFunction}.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> void sparseMap(IgniteUuid matrixUuid, IgniteDoubleFunction<Double> mapper, String cacheName) {
+    public static <K, V> void sparseMap(UUID matrixUuid, IgniteDoubleFunction<Double> mapper, String cacheName) {
         A.notNull(matrixUuid, "matrixUuid");
         A.notNull(cacheName, "cacheName");
         A.notNull(mapper, "mapper");
@@ -350,12 +358,12 @@ public class CacheUtils {
      *
      * @param matrixUuid Matrix uuid.
      */
-    private static <K> IgnitePredicate<K> sparseKeyFilter(IgniteUuid matrixUuid) {
+    private static <K> IgnitePredicate<K> sparseKeyFilter(UUID matrixUuid) {
         return key -> {
-            if (key instanceof BlockMatrixKey)
-                return ((BlockMatrixKey)key).matrixId().equals(matrixUuid);
-            else if (key instanceof RowColMatrixKey)
-                return ((RowColMatrixKey)key).matrixId().equals(matrixUuid);
+            if (key instanceof MatrixCacheKey)
+                return ((MatrixCacheKey)key).matrixId().equals(matrixUuid);
+            else if (key instanceof IgniteBiTuple)
+                return ((IgniteBiTuple<Integer, UUID>)key).get2().equals(matrixUuid);
             else
                 throw new UnsupportedOperationException();
         };
@@ -400,6 +408,76 @@ public class CacheUtils {
                     (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     fun.accept(new CacheEntry<>(entry, cache));
             }
+        });
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param fun An operation that accepts a cache entry and processes it.
+     * @param ignite Ignite.
+     * @param keysGen Keys generator.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     */
+    public static <K, V> void update(String cacheName, Ignite ignite,
+        IgniteBiFunction<Ignite, Cache.Entry<K, V>, Stream<Cache.Entry<K, V>>> fun, IgniteSupplier<Set<K>> keysGen) {
+        bcast(cacheName, ignite, () -> {
+            Ignite ig = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ig.getOrCreateCache(cacheName);
+
+            Affinity<K> affinity = ig.affinity(cacheName);
+            ClusterNode locNode = ig.cluster().localNode();
+
+            Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(locNode);
+
+            if (ks == null)
+                return;
+
+            Map<K, V> m = new ConcurrentHashMap<>();
+
+            ks.parallelStream().forEach(k -> {
+                V v = cache.localPeek(k);
+                if (v != null)
+                    (fun.apply(ignite, new CacheEntryImpl<>(k, v))).forEach(ent -> m.put(ent.getKey(), ent.getValue()));
+            });
+
+            cache.putAll(m);
+        });
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param fun An operation that accepts a cache entry and processes it.
+     * @param ignite Ignite.
+     * @param keysGen Keys generator.
+     * @param <K> Cache key object type.
+     * @param <V> Cache value object type.
+     */
+    public static <K, V> void update(String cacheName, Ignite ignite, IgniteConsumer<Cache.Entry<K, V>> fun,
+        IgniteSupplier<Set<K>> keysGen) {
+        bcast(cacheName, ignite, () -> {
+            Ignite ig = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ig.getOrCreateCache(cacheName);
+
+            Affinity<K> affinity = ig.affinity(cacheName);
+            ClusterNode locNode = ig.cluster().localNode();
+
+            Collection<K> ks = affinity.mapKeysToNodes(keysGen.get()).get(locNode);
+
+            if (ks == null)
+                return;
+
+            Map<K, V> m = new ConcurrentHashMap<>();
+
+            for (K k : ks) {
+                V v = cache.localPeek(k);
+                fun.accept(new CacheEntryImpl<>(k, v));
+                m.put(k, v);
+            }
+
+            long before = System.currentTimeMillis();
+            cache.putAll(m);
+            System.out.println("PutAll took: " + (System.currentTimeMillis() - before));
         });
     }
 
@@ -463,11 +541,11 @@ public class CacheUtils {
      * @param folder Folder.
      * @param keyFilter Key filter.
      * @param accumulator Accumulator.
-     * @param zeroVal Zero value.
+     * @param zeroValSupp Zero value supplier.
      */
     public static <K, V, A> A distributedFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal) {
-        return sparseFold(cacheName, folder, keyFilter, accumulator, zeroVal, null, null, 0,
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp) {
+        return sparseFold(cacheName, folder, keyFilter, accumulator, zeroValSupp, null, null, 0,
             false);
     }
 
@@ -478,17 +556,17 @@ public class CacheUtils {
      * @param folder Folder.
      * @param keyFilter Key filter.
      * @param accumulator Accumulator.
-     * @param zeroVal Zero value.
-     * @param defVal Def value.
-     * @param defKey Def key.
+     * @param zeroValSupp Zero value supplier.
+     * @param defVal Default value.
+     * @param defKey Default key.
      * @param defValCnt Def value count.
      * @param isNilpotent Is nilpotent.
      */
     private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, A zeroVal, V defVal, K defKey, long defValCnt,
-        boolean isNilpotent) {
+        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey,
+        long defValCnt, boolean isNilpotent) {
 
-        A defRes = zeroVal;
+        A defRes = zeroValSupp.get();
 
         if (!isNilpotent)
             for (int i = 0; i < defValCnt; i++)
@@ -504,7 +582,7 @@ public class CacheUtils {
             Affinity affinity = ignite.affinity(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
 
-            A a = zeroVal;
+            A a = zeroValSupp.get();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
             for (int part = 0; part < partsCnt; part++) {
@@ -519,16 +597,54 @@ public class CacheUtils {
 
             return a;
         });
-        totalRes.add(defRes);
-        return totalRes.stream().reduce(zeroVal, accumulator);
+        return totalRes.stream().reduce(defRes, accumulator);
+    }
+
+    public static <K, V, A, W> A reduce(String cacheName, Ignite ignite,
+        IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
+        IgniteSupplier<W> supp,
+        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen, IgniteBinaryOperator<A> comb,
+        IgniteSupplier<A> zeroValSupp) {
+
+        A defRes = zeroValSupp.get();
+
+        Collection<A> totalRes = bcast(cacheName, ignite, () -> {
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            A a = zeroValSupp.get();
+
+            W w = supp.get();
+
+            for (Cache.Entry<K, V> kvEntry : entriesGen.get())
+                a = acc.apply(w, kvEntry, a);
+
+            return a;
+        });
+
+        return totalRes.stream().reduce(defRes, comb);
+    }
+
+    public static <K, V, A, W> A reduce(String cacheName, IgniteTriFunction<W, Cache.Entry<K, V>, A, A> acc,
+        IgniteSupplier<W> supp,
+        IgniteSupplier<Iterable<Cache.Entry<K, V>>> entriesGen, IgniteBinaryOperator<A> comb,
+        IgniteSupplier<A> zeroValSupp) {
+        return reduce(cacheName, Ignition.localIgnite(), acc, supp, entriesGen, comb, zeroValSupp);
     }
 
     /**
      * @param cacheName Cache name.
      * @param run {@link Runnable} to broadcast to cache nodes for given cache name.
      */
+    public static void bcast(String cacheName, Ignite ignite, IgniteRunnable run) {
+        ignite.compute(ignite.cluster().forDataNodes(cacheName)).broadcast(run);
+    }
+
+    /**
+     * Broadcast runnable to data nodes of given cache.
+     * @param cacheName Cache name.
+     * @param run Runnable.
+     */
     public static void bcast(String cacheName, IgniteRunnable run) {
-        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
+        bcast(cacheName, ignite(), run);
     }
 
     /**
@@ -537,6 +653,18 @@ public class CacheUtils {
      * @param <A> Type returned by the callable.
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
-        return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
+        return bcast(cacheName, ignite(), call);
+    }
+
+    /**
+     * Broadcast callable to data nodes of given cache.
+     * @param cacheName Cache name.
+     * @param ignite Ignite instance.
+     * @param call Callable to broadcast.
+     * @param <A> Type of callable result.
+     * @return Results of callable from each node.
+     */
+    public static <A> Collection<A> bcast(String cacheName, Ignite ignite, IgniteCallable<A> call) {
+        return ignite.compute(ignite.cluster().forDataNodes(cacheName)).broadcast(call);
     }
 }
