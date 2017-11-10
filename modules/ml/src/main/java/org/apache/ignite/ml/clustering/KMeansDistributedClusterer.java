@@ -192,7 +192,7 @@ public class KMeansDistributedClusterer extends BaseKMeansClusterer<SparseDistri
 
                 return list;
             },
-            key -> key.dataStructureId().equals(uid),
+            key -> key.dataStructureId.equals(uid),
             (list1, list2) -> {
                 list1.addAll(list2);
                 return list1;
