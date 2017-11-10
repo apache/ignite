@@ -147,7 +147,7 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
         if (obj == null || obj.getClass() != getClass())
             return false;
 
-        BlockMatrixKey that = (BlockMatrixKey)obj;
+        MatrixBlockKey that = (MatrixBlockKey)obj;
 
         return blockIdRow == that.blockIdRow && blockIdCol == that.blockIdCol && matrixUuid.equals(that.matrixUuid)
                 && F.eq(affinityKey, that.affinityKey);
@@ -155,7 +155,7 @@ public class MatrixBlockKey implements org.apache.ignite.ml.math.distributed.key
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BlockMatrixKey.class, this);
+        return S.toString(MatrixBlockKey.class, this);
     }
 
 

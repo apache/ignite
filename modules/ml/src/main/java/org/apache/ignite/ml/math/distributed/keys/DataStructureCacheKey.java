@@ -26,7 +26,7 @@ public interface DataStructureCacheKey {
     /**
      * @return matrix id.
      */
-    public UUID matrixId();
+    public UUID dataStructureId();
 
     /**
      * @return affinity key.

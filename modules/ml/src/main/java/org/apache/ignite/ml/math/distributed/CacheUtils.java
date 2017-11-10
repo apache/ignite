@@ -35,10 +35,7 @@ import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.distributed.keys.impl.VectorBlockKey;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteConsumer;
-import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.*;
 import org.apache.ignite.ml.math.impls.matrix.MatrixBlockEntry;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 
@@ -564,8 +561,8 @@ public class CacheUtils {
      * @param isNilpotent Is nilpotent.
      */
     private static <K, V, A> A sparseFold(String cacheName, IgniteBiFunction<Cache.Entry<K, V>, A, A> folder,
-        IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey,
-        long defValCnt, boolean isNilpotent) {
+                                          IgnitePredicate<K> keyFilter, BinaryOperator<A> accumulator, IgniteSupplier<A> zeroValSupp, V defVal, K defKey,
+                                          long defValCnt, boolean isNilpotent) {
 
         A defRes = zeroValSupp.get();
 
@@ -674,7 +671,7 @@ public class CacheUtils {
      * @param mapper Mapping {@link IgniteFunction}.
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> void sparseMapForVector(IgniteUuid vectorUuid, IgniteDoubleFunction<V> mapper, String cacheName) {
+    public static <K, V> void sparseMapForVector(UUID vectorUuid, IgniteDoubleFunction<V> mapper, String cacheName) {
         A.notNull(vectorUuid, "vectorUuid");
         A.notNull(cacheName, "cacheName");
         A.notNull(mapper, "mapper");
