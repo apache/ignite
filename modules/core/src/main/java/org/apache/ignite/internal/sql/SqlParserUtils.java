@@ -91,22 +91,29 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parse integer value.
+     * Parse integer value (positive or negative).
      *
      * @param lex Lexer.
      * @return Integer value.
      */
     public static int parseInt(SqlLexer lex) {
+        int sign = 1;
+
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.MINUS) {
+            sign = -1;
+            lex.shift();
+        }
+
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
-                return Integer.parseInt(lex.token());
+                return sign * Integer.parseInt(lex.token());
             }
             catch (NumberFormatException e) {
                 // No-op.
             }
         }
 
-        throw errorUnexpectedToken(lex, "[number]");
+        throw errorUnexpectedToken(lex, "[integer]");
     }
 
     /**
@@ -136,9 +143,9 @@ public class SqlParserUtils {
 
             String first = lex.token();
 
-            SqlLexerToken nextToken = lex.lookAhead();
+            SqlLexerToken nextTok = lex.lookAhead();
 
-            if (nextToken.tokenType() == SqlLexerTokenType.DOT) {
+            if (nextTok.tokenType() == SqlLexerTokenType.DOT) {
                 lex.shift();
 
                 String second = parseIdentifier(lex);
