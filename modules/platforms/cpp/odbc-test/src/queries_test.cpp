@@ -771,6 +771,14 @@ BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_3_0)
     InsertTestBatch(11, 20, 9);
 }
 
+BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_3_2)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache;PROTOCOL_VERSION=2.3.2");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
 BOOST_AUTO_TEST_CASE(TestTwoRowsInt8)
 {
     CheckTwoRowsInt<signed char>(SQL_C_STINYINT);
@@ -2377,6 +2385,23 @@ BOOST_AUTO_TEST_CASE(TestMultipleMixedStatementsNoFetch)
         else if (i == stmtCnt - 1)
             BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
     }
+}
+
+BOOST_AUTO_TEST_CASE(TestCloseAfterEmptyUpdate)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR query[] = "update TestType set strField='test' where _key=42";
+
+    SQLRETURN ret = SQLExecDirect(stmt, &query[0], SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
 

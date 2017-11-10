@@ -1026,7 +1026,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert desc != null : cctx.name();
 
-                    ctx.query().onCacheStop0(cctx.name(), false);
+                    boolean rmvIdx = !cache.context().group().persistenceEnabled();
+
+                    ctx.query().onCacheStop0(cctx.name(), rmvIdx);
                     ctx.query().onCacheStart0(cctx, desc.schema());
                 }
             }
@@ -1131,6 +1133,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cache Cache to stop.
      * @param cancel Cancel flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
@@ -1150,7 +1153,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cache.stop();
 
-        ctx.kernalContext().query().onCacheStop(ctx, destroy);
+        ctx.kernalContext().query().onCacheStop(ctx, !cache.context().group().persistenceEnabled() || destroy);
 
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
@@ -1961,7 +1964,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
-     * @param destroy Cache destroy flag.
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      * @return Stopped cache context.
      */
     private GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
@@ -2695,6 +2698,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param sql If the cache needs to be destroyed only if it was created as the result of SQL {@code CREATE TABLE}
      * command.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @param restart Restart flag.
      * @return Future that will be completed when cache is destroyed.
      */
     public IgniteInternalFuture<Boolean> dynamicDestroyCache(String cacheName, boolean sql, boolean checkThreadTx,
@@ -2716,6 +2720,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cacheNames Collection of cache names to destroy.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @param restart Restart flag.
      * @return Future that will be completed when cache is destroyed.
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
@@ -2726,6 +2731,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cacheNames Collection of cache names to destroy.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @param restart Restart flag.
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data
      * @return Future that will be completed when cache is destroyed.
      */
     public IgniteInternalFuture<?> dynamicDestroyCaches(Collection<String> cacheNames, boolean checkThreadTx,
