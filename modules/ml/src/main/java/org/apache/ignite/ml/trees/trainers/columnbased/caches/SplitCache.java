@@ -44,7 +44,7 @@ import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer
  */
 public class SplitCache {
     /** Name of splits cache. */
-    public static final String COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME = "COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME";
+    public static final String CACHE_NAME = "COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME";
 
     /**
      * Class used for keys in the splits cache.
@@ -152,7 +152,7 @@ public class SplitCache {
 
         cfg.setOnheapCacheEnabled(true);
 
-        cfg.setName(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME);
+        cfg.setName(CACHE_NAME);
 
         return ignite.getOrCreateCache(cfg);
     }
@@ -163,7 +163,7 @@ public class SplitCache {
      * @return Affinity function used in splits cache.
      */
     public static Affinity<SplitKey> affinity() {
-        return Ignition.localIgnite().affinity(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME);
+        return Ignition.localIgnite().affinity(CACHE_NAME);
     }
 
     /**

@@ -48,7 +48,7 @@ public class ProjectionsCache {
      * Name of cache which is used for storing data of region projections on features of {@link
      * ColumnDecisionTreeTrainer}.
      */
-    public static final String COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME = "COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME";
+    public static final String CACHE_NAME = "COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME";
 
     /**
      * Key of region projections cache.
@@ -150,7 +150,7 @@ public class ProjectionsCache {
      * @return Affinity service for region projections cache.
      */
     public static Affinity<RegionKey> affinity() {
-        return Ignition.localIgnite().affinity(COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME);
+        return Ignition.localIgnite().affinity(CACHE_NAME);
     }
 
     /**
@@ -181,7 +181,7 @@ public class ProjectionsCache {
 
         cfg.setOnheapCacheEnabled(true);
 
-        cfg.setName(COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME);
+        cfg.setName(CACHE_NAME);
 
         return ignite.getOrCreateCache(cfg);
     }

@@ -70,8 +70,6 @@ import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.ml.trees.trainers.columnbased.caches.FeaturesCache.getFeatureCacheKey;
-import static org.apache.ignite.ml.trees.trainers.columnbased.caches.ProjectionsCache.COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME;
-import static org.apache.ignite.ml.trees.trainers.columnbased.caches.SplitCache.COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME;
 
 /**
  * This trainer stores observations as columns and features as rows.
@@ -223,7 +221,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             IgniteCache<RegionKey, List<RegionProjection>> projCache = ProjectionsCache.getOrCreate(ignite);
             IgniteCache<FeatureKey, double[]> featuresCache = FeaturesCache.getOrCreate(ignite);
 
-            Affinity<RegionKey> targetAffinity = ignite.affinity(COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME);
+            Affinity<RegionKey> targetAffinity = ignite.affinity(ProjectionsCache.CACHE_NAME);
 
             ClusterNode locNode = ignite.cluster().localNode();
 
@@ -312,7 +310,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
             if (regIdx >= 0 && bestInfoGain > MIN_INFO_GAIN) {
                 before = System.currentTimeMillis();
 
-                SplitInfo bi = ignite.compute().affinityCall(COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME,
+                SplitInfo bi = ignite.compute().affinityCall(ProjectionsCache.CACHE_NAME,
                     input.affinityKey(bestFeatureIdx, ignite),
                     () -> {
                         TrainingContext<ContinuousRegionInfo> ctx = ContextCache.getOrCreate(ignite).get(uuid);
@@ -335,7 +333,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
                 // Request bitset for split region.
                 int ind = best.info.regionIndex();
 
-                SparseBitSet bs = ignite.compute().affinityCall(COLUMN_DECISION_TREE_TRAINER_PROJECTIONS_CACHE_NAME,
+                SparseBitSet bs = ignite.compute().affinityCall(ProjectionsCache.CACHE_NAME,
                     input.affinityKey(bestFeatureIdx, ignite),
                     () -> {
                         Ignite ignite = Ignition.localIgnite();
@@ -497,7 +495,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
         UUID trainingUUID) {
         Set<Integer> featureIndexes = IntStream.range(0, featuresCnt).boxed().collect(Collectors.toSet());
 
-        return CacheUtils.reduce(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME, ignite,
+        return CacheUtils.reduce(SplitCache.CACHE_NAME, ignite,
             (Object ctx, Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>> e, IgniteBiTuple<Integer, IgniteBiTuple<Integer, Double>> r) ->
                 Functions.MAX_GENERIC(new IgniteBiTuple<>(e.getKey().featureIdx(), e.getValue()), r, comparator()),
             () -> null,
@@ -524,7 +522,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     private void updateSplitCache(int lastSplitRegionIdx, int regsCnt, int featuresCnt,
         IgniteCurriedBiFunction<Ignite, Integer, Object> affinity,
         UUID trainingUUID) {
-        CacheUtils.update(COLUMN_DECISION_TREE_TRAINER_SPLIT_CACHE_NAME, ignite,
+        CacheUtils.update(SplitCache.CACHE_NAME, ignite,
             (Ignite ign, Cache.Entry<SplitKey, IgniteBiTuple<Integer, Double>> e) -> {
                 Integer bestRegIdx = e.getValue().get1();
                 int fIdx = e.getKey().featureIdx();
