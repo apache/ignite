@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -112,15 +113,31 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
-                                @Override public void onSessionOpened(GridNioSession ses)
-                                    throws IgniteCheckedException {
-                                    proceedSessionOpened(ses);
-                                }
-                            },
-                            new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false)
+                        GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
+                            @Override public void onSessionOpened(GridNioSession ses)
+                                throws IgniteCheckedException {
+                                proceedSessionOpened(ses);
+                            }
                         };
+
+                        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
+
+                        GridNioFilter[] filters;
+
+                        if (cliConnCfg.isSslEnabled()) {
+                            GridNioSslFilter sslFilter =
+                                new GridNioSslFilter(cliConnCfg.getSslContextFactory().create(),
+                                    true, ByteOrder.nativeOrder(), log);
+
+                            sslFilter.directMode(true);
+
+                            sslFilter.wantClientAuth(true);
+                            sslFilter.needClientAuth(true);
+
+                            filters = new GridNioFilter[] {openSesFilter, codecFilter, sslFilter};
+                        }
+                        else
+                            filters = new GridNioFilter[] {openSesFilter, codecFilter};
 
                         int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
 

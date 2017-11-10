@@ -97,20 +97,23 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
     /** Lazy query execution property. */
-    private BooleanProperty useSSL = new BooleanProperty(
-        "Use SSL", "Use SSL connection", false, false);
+    private BooleanProperty useSSL = new BooleanProperty("useSSL",
+        "Use SSL connection", false, false);
 
     /** Client certificate key store url. */
     private StringProperty clientCertificateKeyStoreUrl = new StringProperty("clientCertificateKeyStoreUrl",
-        "Client certificate key store URL", System.getProperty("javax.net.ssl.keyStore"), null, false, null);
+        "Client certificate key store URL",
+        System.getProperty("javax.net.ssl.keyStore"), null, false, null);
 
     /** Client certificate key store password. */
     private StringProperty clientCertificateKeyStorePassword = new StringProperty("clientCertificateKeyStorePassword",
-        "Client certificate key store password", System.getProperty("javax.net.ssl.keyStorePassword"), null, false, null);
+        "Client certificate key store password",
+        System.getProperty("javax.net.ssl.keyStorePassword"), null, false, null);
 
     /** Client certificate key store type. */
     private StringProperty clientCertificateKeyStoreType = new StringProperty("clientCertificateKeyStoreType",
-        "Client certificate key store type", System.getProperty("javax.net.ssl.keyStoreType"), null, false, null);
+        "Client certificate key store type",
+        System.getProperty("javax.net.ssl.keyStoreType", "JKS"), null, false, null);
 
     /** Trusted certificate key store url. */
     private StringProperty trustCertificateKeyStoreUrl = new StringProperty("trustCertificateKeyStoreUrl",
@@ -122,13 +125,17 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Trusted certificate key store type. */
     private StringProperty trustCertificateKeyStoreType = new StringProperty("trustCertificateKeyStoreType",
-        "Trusted certificate key store type", System.getProperty("javax.net.ssl.trustStoreType"), null, false, null);
+        "Trusted certificate key store type",
+        System.getProperty("javax.net.ssl.trustStoreType", "JKS"), null, false, null);
 
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        useSSL,
+        clientCertificateKeyStoreUrl, clientCertificateKeyStorePassword, clientCertificateKeyStoreType,
+        trustCertificateKeyStoreUrl, trustCertificateKeyStorePassword, trustCertificateKeyStoreType
     };
 
     /** {@inheritDoc} */
