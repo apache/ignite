@@ -30,18 +30,27 @@ public class ZKSimpleTest {
 
         System.out.println("ZK started\n");
 
-        ZKClusterNodeNew node0 = new ZKClusterNodeNew("n0");
-        node0.join(zkCluster.getConnectString());
-
         ZKClusterNodeNew node1 = new ZKClusterNodeNew("n1");
         node1.join(zkCluster.getConnectString());
 
         ZKClusterNodeNew node2 = new ZKClusterNodeNew("n2");
         node2.join(zkCluster.getConnectString());
 
-        System.out.println("Stop node");
+        ZKClusterNodeNew node3 = new ZKClusterNodeNew("n3");
+        node3.join(zkCluster.getConnectString());
 
-        node1.stop();
+//        ZKClusterNodeNew node4 = new ZKClusterNodeNew("n4");
+//        node4.join(zkCluster.getConnectString());
+
+        System.out.println("Stop n2");
+
+        node2.stop();
+
+        //Thread.sleep(5000);
+
+        System.out.println("Stop n3");
+
+        node3.stop();
 
         System.out.println("Done");
 
