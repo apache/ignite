@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -30,8 +32,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -56,6 +61,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
 
+    /** Index creation parallelism level. */
+    private int parallel;
+
+    /** Parallel index creation workers interruption flag. */
+    private volatile boolean interrupted;
+
     /**
      * Constructor.
      *
@@ -63,13 +74,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @param cancel Cancellation token.
+     * @param parallel Index creation parallelism level.
      */
     public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
-        String tblName, SchemaIndexOperationCancellationToken cancel) {
+        String tblName, SchemaIndexOperationCancellationToken cancel, int parallel) {
         this.qryProc = qryProc;
         this.cacheName = cacheName;
         this.tblName = tblName;
         this.cancel = cancel;
+        this.parallel = parallel;
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
@@ -80,13 +93,55 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** {@inheritDoc} */
     @Override public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         assert clo != null;
+        assert parallel > 0;
 
         FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
 
-        Collection<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+        List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
 
-        for (GridDhtLocalPartition part : parts)
-            processPartition(part, filterClo);
+        if (!parts.isEmpty())
+            if (parallel == 1)
+                for (GridDhtLocalPartition part : parts)
+                    processPartition(part, filterClo);
+            else
+                processPartitionsConcurrently(parts, filterClo);
+    }
+
+    /**
+     * Processes partitions list concurrently.
+     *
+     * @param parts Local cache partitions list.
+     * @param filterClo Closure to be applied to the cache entries (rows) for index creating.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processPartitionsConcurrently(final List<GridDhtLocalPartition> parts,
+        final FilteringVisitorClosure filterClo) throws IgniteCheckedException {
+
+        int parallel0 = Math.min(parallel, Runtime.getRuntime().availableProcessors());
+
+        int[] ranges = U.getRanges(parts.size(), parallel0, 1);
+
+        List<GridFutureAdapter<Void>> futs = new ArrayList<>(parallel0);
+
+        for (int i = 0; i < parallel0; i++) {
+            if (ranges[i]  < ranges[i + 1]) {
+                final List<GridDhtLocalPartition> partsSublist = parts.subList(ranges[i], ranges[i + 1]);
+
+                GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+                futs.add(fut);
+
+                PartitionsIndexingWorker worker = new PartitionsIndexingWorker(fut, partsSublist, filterClo);
+
+                if (i == parallel0 - 1)  // Last chunk of partitions is treated by the current thread.
+                    worker.run();
+                else
+                    new Thread(worker).start();
+            }
+        }
+
+        for (GridFutureAdapter<Void> fut: futs)
+            fut.get();
     }
 
     /**
@@ -198,6 +253,58 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
             if (qryProc.belongsToTable(cctx, cacheName, tblName, row.key(), row.value()))
                 target.apply(row);
+        }
+    }
+
+    /**
+     * Partitions index update worker.
+     */
+    private class PartitionsIndexingWorker extends GridWorker {
+
+        /** Partitions to be indexed. */
+        private final List<GridDhtLocalPartition> parts;
+
+        /** Indexing closure. */
+        private final FilteringVisitorClosure filterClo;
+
+        /** Processing result future. */
+        private final GridFutureAdapter<Void> fut;
+
+        /**
+         * Constructor.
+         *
+         * @param fut Processing result future.
+         * @param parts Partitions to be indexed.
+         * @param filterClo Indexing closure.
+         */
+        private PartitionsIndexingWorker(GridFutureAdapter<Void> fut, List<GridDhtLocalPartition> parts,
+            FilteringVisitorClosure filterClo) {
+            super(cctx.igniteInstanceName(), "parallel-idx-creation-worker",
+                cctx.logger(SchemaIndexCacheVisitorImpl.class.getName()));
+            this.parts = parts;
+            this.filterClo = filterClo;
+            this.fut = fut;
+        }
+
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            for (GridDhtLocalPartition part : parts)
+                if (!interrupted)
+                    try {
+                        processPartition(part, filterClo);
+
+                        fut.onDone();
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(e);
+
+                        interrupted = true;
+                    }
+                else {
+                    // Another thread threw an exception which will be rethrown, so it's ok to call done() here.
+                    fut.onDone();
+
+                    break;
+                }
         }
     }
 }

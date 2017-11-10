@@ -35,12 +35,15 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
+import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseKeyIntValue;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipComma;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
@@ -62,6 +65,9 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** Spatial index flag. */
     private boolean spatial;
+
+    /** Parallelism level. */
+    private int parallel;
 
     /** Columns. */
     @GridToStringInclude
@@ -103,6 +109,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
+     * @return Parallelism level.
+     */
+    public int parallel() {
+        return parallel;
+    }
+
+    /**
      * @return Spatial index flag.
      */
     public boolean spatial() {
@@ -141,6 +154,11 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         parseColumnList(lex);
 
+        // Default parallelism level is about 25% of available cores.
+        parallel = getDefaultParallelismLevel();
+
+        parseIndexProperties(lex);
+
         return this;
     }
 
@@ -165,7 +183,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
             throw errorUnexpectedToken(lex, "(");
 
         while (true) {
-            perseIndexColumn(lex);
+            parseIndexColumn(lex);
 
             if (skipCommaOrRightParenthesis(lex))
                 break;
@@ -175,7 +193,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /**
      * @param lex Lexer.
      */
-    private void perseIndexColumn(SqlLexer lex) {
+    private void parseIndexColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
         boolean desc = false;
 
@@ -205,6 +223,56 @@ public class SqlCreateIndexCommand implements SqlCommand {
             throw error(lex, "Column already defined: " + col.name());
 
         cols.add(col);
+    }
+
+    /**
+     * Parses CREATE INDEX command properties.
+     *
+     * @param lex Lexer.
+     */
+    private void parseIndexProperties(SqlLexer lex) {
+        boolean found = true;
+
+        // TODO: How to handle duplicated properties e.g. "CREATE INDEX ... PARALLEL 1, PARALLEL 3"?
+        while (found && lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            lex.shift();
+
+            switch (lex.token()) {
+                case PARALLEL:
+                    parseParallelProperty(lex);
+
+                    break;
+
+                default: found = false;
+            }
+
+            skipComma(lex);
+        }
+    }
+
+    /**
+     * Parses parallelism level.
+     *
+     * @param lex Lexer.
+     */
+    private void parseParallelProperty(SqlLexer lex) {
+        Integer par = parseKeyIntValue(lex, PARALLEL);
+
+        if (par == null)
+            throw error(lex, "Missed parallelism level");
+        else if (par < 1)
+            throw error(lex, "Illegal parallelism level value: [parallel=" + par + ']');
+        else
+            parallel = par;
+    }
+
+    /**
+     * Returns default parallelism level
+     *
+     * @return default parallelism level
+     */
+    public static int getDefaultParallelismLevel() {
+        return Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
     }
 
     /** {@inheritDoc} */

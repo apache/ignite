@@ -41,6 +41,9 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** Ignore operation if index exists. */
     private final boolean ifNotExists;
 
+    /** Index creation parallelism level */
+    private final int parallel;
+
     /**
      * Constructor.
      *
@@ -50,14 +53,16 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      * @param tblName Table name.
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
+     * @param parallel Index creation parallelism level.
      */
     public SchemaIndexCreateOperation(UUID opId, String cacheName, String schemaName, String tblName, QueryIndex idx,
-        boolean ifNotExists) {
+        boolean ifNotExists, int parallel) {
         super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
         this.idx = idx;
         this.ifNotExists = ifNotExists;
+        this.parallel = parallel;
     }
 
     /** {@inheritDoc} */
@@ -84,6 +89,15 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      */
     public boolean ifNotExists() {
         return ifNotExists;
+    }
+
+    /**
+     * Gets index creation parallelism level.
+     *
+     * @return Index creation parallelism level.
+     */
+    public int parallel() {
+        return parallel;
     }
 
     /** {@inheritDoc} */

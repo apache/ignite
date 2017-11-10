@@ -136,8 +136,8 @@ public class DdlStatementsProcessor {
 
                 newIdx.setFields(flds);
 
-                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd0.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd0.ifNotExists());
+                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
+                    newIdx, cmd0.ifNotExists(), cmd0.parallel());
             }
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;

@@ -10182,6 +10182,36 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Splits given integer range into approximately equal parts.
+     *
+     * @param range given range (from zero).
+     * @param parts parts number on which range has to be split to.
+     * @param batchSize minimum batch size for range parts.
+     * @return array of range intervals.
+     */
+    public static int[] getRanges(int range, int parts, int batchSize) {
+        if (range < 1 || parts < 1 || batchSize < 1)
+            throw new IllegalArgumentException("Range, parts and batchSize should all be > 0. [range=" + range +
+                ", parts=" + parts + ", batchSize=" + batchSize +']');
+
+        int[] ranges = new int[parts + 1];
+
+        ranges[0] = 0;
+
+        int rangesSize = Math.max(range / parts, batchSize);
+
+        for (int i = 1; i <= parts; i++) {
+            int nextVal = ranges[i - 1] + rangesSize;
+
+            ranges[i] = nextVal < range ? nextVal : range;
+        }
+
+        ranges[parts] = range;
+
+        return ranges;
+    }
+
+    /**
      * @param lock Lock.
      */
     public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
