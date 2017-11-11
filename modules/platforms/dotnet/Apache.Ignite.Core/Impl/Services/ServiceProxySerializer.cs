@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 // switch to BinaryMode.Deserialize mode to avoid IService casting exception
                 reader = marsh.StartUnmarshal(stream, BinaryMode.Deserialize);
-                failedCfgs = reader.ReadCollectionRaw(f => new ServiceConfiguration(f));
+                failedCfgs = reader.ReadNullableCollectionRaw(f => new ServiceConfiguration(f));
             }
             catch (Exception e)
             {

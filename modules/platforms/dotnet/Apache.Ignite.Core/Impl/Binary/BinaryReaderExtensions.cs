@@ -126,5 +126,24 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return res;
         }
+
+        /// <summary>
+        /// Reads a nullable collection. The collection could be produced by Java 
+        /// PlatformUtils.writeNullableCollection() from org.apache.ignite.internal.processors.platform.utils package.
+        /// </summary>
+        public static ICollection<T> ReadNullableCollectionRaw<T, TReader>(this TReader reader,
+            Func<TReader, T> factory) where TReader : IBinaryRawReader
+        {
+            Debug.Assert(reader != null);
+            Debug.Assert(factory != null);
+
+            var hasVal = reader.ReadBoolean();
+
+            if (!hasVal)
+            {
+                return null;
+            }
+            return ReadCollectionRaw(reader, factory);
+        }
     }
 }

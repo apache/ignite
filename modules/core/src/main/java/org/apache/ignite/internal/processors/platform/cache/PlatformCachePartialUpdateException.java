@@ -50,10 +50,10 @@ public class PlatformCachePartialUpdateException extends PlatformExtendedExcepti
 
     /** {@inheritDoc} */
     @Override public void writeData(BinaryRawWriterEx writer) {
-        Collection<Object> keys = ((CachePartialUpdateCheckedException)getCause()).failedKeys();
+        Collection keys = ((CachePartialUpdateCheckedException)getCause()).failedKeys();
 
         writer.writeBoolean(keepBinary);
 
-        PlatformUtils.writeCollection(writer, keys);
+        PlatformUtils.writeNullableCollection(writer, keys);
     }
 }

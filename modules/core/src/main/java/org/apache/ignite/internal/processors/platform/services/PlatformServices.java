@@ -735,9 +735,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         Collection<ServiceConfiguration> failedCfgs = null;
 
-        if (err instanceof ServiceDeploymentException) {
+        if (err instanceof ServiceDeploymentException)
             failedCfgs = ((ServiceDeploymentException)err).getFailedConfigurations();
-        }
 
         // write a collection of failed service configurations
         PlatformUtils.writeNullableCollection(writer, failedCfgs, new PlatformWriterClosure<ServiceConfiguration>() {
