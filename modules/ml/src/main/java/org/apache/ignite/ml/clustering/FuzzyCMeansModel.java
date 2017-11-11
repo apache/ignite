@@ -16,17 +16,17 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
     private DistanceMeasure measure;
 
     /**
-     * Constructor that creates FCM model by centers and measure
+     * Constructor that creates FCM model by centers and measure.
      *
-     * @param centers array of centers
-     * @param measure distance measure
+     * @param centers Array of centers.
+     * @param measure Distance measure.
      */
     public FuzzyCMeansModel(Vector[] centers, DistanceMeasure measure) {
         this.centers = Arrays.copyOf(centers, centers.length);
         this.measure = measure;
     }
 
-    /** Distance measure used while clusterization */
+    /** Distance measure used while clusterization. */
     public DistanceMeasure distanceMeasure() {
         return measure;
     }
@@ -41,10 +41,11 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
         return Arrays.copyOf(centers, centers.length);
     }
 
-    /** Predict closest center index for a given vector.
+    /**
+     * Predict closest center index for a given vector.
      *
      * @param val Vector.
-     * @return index of the closest center or -1 if it can't be found
+     * @return Index of the closest center or -1 if it can't be found.
      */
     @Override public Integer predict(Vector val) {
         int index = -1;
@@ -61,8 +62,9 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
         return index;
     }
 
-    @Override
-    public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
+
+    /** {@inheritDoc} */
+    @Override public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
         FuzzyCMeansModelFormat modelData = new FuzzyCMeansModelFormat(centers, measure);
 
         exporter.save(modelData, path);

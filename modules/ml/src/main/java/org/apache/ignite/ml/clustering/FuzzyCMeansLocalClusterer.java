@@ -31,25 +31,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/** Implements the local version of Fuzzy C-Means algorithm for weighted data */
+/** Implements the local version of Fuzzy C-Means algorithm for weighted points. */
 public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLocalOnHeapMatrix> implements
         WeightedClusterer<DenseLocalOnHeapMatrix, FuzzyCMeansModel> {
 
-    /** maximum number of iterations */
+    /** The maximum number of iterations. */
     private int maxIterations;
 
-    /** the random numbers generator used to choose primary centers */
+    /** The random numbers generator that is used to choose primary centers. */
     private Random rand;
 
     /**
-     * Constructor that stores all required parameters
+     * Constructor that retains all required parameters.
      *
-     * @param measure distance measure
-     * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param stopCondition flag that tells when algorithm should stop
-     * @param maxDelta max distance between old and new centers which indicates when algorithm should stop
-     * @param maxIterations the maximum number of iterations
-     * @param seed seed for random numbers generator
+     * @param measure Distance measure.
+     * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
+     * @param stopCondition Flag that tells when algorithm should stop
+     * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
+     *                 membership matrix elements for which algorithm must stop.
+     * @param maxIterations The maximum number of FCM iterations.
      */
     public FuzzyCMeansLocalClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
                                      double maxDelta, int maxIterations, Long seed) {
@@ -59,34 +59,29 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
     }
 
     /** {@inheritDoc} */
-    @Override
-    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k) {
+    @Override public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k) {
         List<Double> ones = new ArrayList<>(Collections.nCopies(points.rowSize(), 1.0));
         return cluster(points, k, ones);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k, List<Double> weights)
+    @Override public FuzzyCMeansModel cluster(DenseLocalOnHeapMatrix points, int k, List<Double> weights)
             throws MathIllegalArgumentException, ConvergenceException {
         GridArgumentCheck.notNull(points, "points");
         GridArgumentCheck.notNull(weights, "weights");
 
-        if (points.rowSize() != weights.size()) {
+        if (points.rowSize() != weights.size())
             throw new MathIllegalArgumentException("The number of points and the number of weights are not equal");
-        }
 
-        if (k < 2) {
+        if (k < 2)
             throw new MathIllegalArgumentException("The number of clusters is less than 2");
-        }
 
         Matrix centers = new DenseLocalOnHeapMatrix(k, points.columnSize());
         Matrix distances = new DenseLocalOnHeapMatrix(k, points.rowSize());
         Matrix membership = new DenseLocalOnHeapMatrix(k, points.rowSize());
         Vector weightsVector = new DenseLocalOnHeapVector(weights.size());
-        for (int i = 0; i < weights.size(); i++) {
+        for (int i = 0; i < weights.size(); i++)
             weightsVector.setX(i, weights.get(i));
-        }
 
         initializeCenters(centers, points, k, weightsVector);
 
@@ -97,37 +92,34 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
             Matrix newMembership = calculateMembership(distances, weightsVector);
             Matrix newCenters = calculateNewCenters(points, newMembership);
 
-            if (this.stopCondition == StopCondition.STABLE_CENTERS) {
+            if (this.stopCondition == StopCondition.STABLE_CENTERS)
                 finished = areCentersStable(centers, newCenters);
-            } else {
+            else
                 finished = areMembershipStable(membership, newMembership);
-            }
 
             centers = newCenters;
             membership = newMembership;
             iteration++;
         }
 
-        if (iteration == maxIterations) {
+        if (iteration == maxIterations)
             throw new ConvergenceException("Fuzzy C-Means algorithm has not converged after " +
                     Integer.toString(iteration) + " iterations");
-        }
 
         Vector[] centersArray = new Vector[k];
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++)
             centersArray[i] = centers.getRow(i);
-        }
 
         return new FuzzyCMeansModel(centersArray, measure);
     }
 
     /**
-     * Choose k centers according to their weights
+     * Choose {@code k} centers according to their weights.
      *
-     * @param centers output matrix
-     * @param points matrix of source points
-     * @param k number of centers
-     * @param weights weights vector
+     * @param centers Output matrix containing primary centers.
+     * @param points Matrix of source points.
+     * @param k The number of centers.
+     * @param weights Vector of weights.
      */
     private void initializeCenters(Matrix centers, Matrix points, int k, Vector weights) {
         //int dimensions = points.columnSize();
@@ -161,28 +153,26 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
     }
 
     /**
-     * Calculate matrix of distances form each point to each center
+     * Calculate matrix of distances form each point to each center.
      *
-     * @param distances output matrix
-     * @param points matrix of source points
-     * @param centers matrix of centers
+     * @param distances Output matrix.
+     * @param points Matrix that contains source points.
+     * @param centers Matrix that contains centers.
      */
     private void calculateDistances(Matrix distances, Matrix points, Matrix centers) {
         int numPoints = points.rowSize();
         int numCenters = centers.rowSize();
 
-        for (int i = 0; i < numCenters; i++) {
-            for (int j = 0; j < numPoints; j++) {
+        for (int i = 0; i < numCenters; i++)
+            for (int j = 0; j < numPoints; j++)
                 distances.set(i, j, distance(centers.viewRow(i), points.viewRow(j)));
-            }
-        }
     }
 
     /**
-     * Calculate membership matrix
+     * Calculate membership matrix.
      *
-     * @param distances matrix of distances
-     * @param weights vector of weights
+     * @param distances Matrix of distances.
+     * @param weights Vector of weights.
      * @
      */
     private Matrix calculateMembership(Matrix distances, Vector weights) {
@@ -193,15 +183,17 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
 
         for (int i = 0; i < numCenters; i++) {
             for (int j = 0; j < numPoints; j++) {
-                double invertedFuzzyWeight = 0;
+                double invertedFuzzyWeight = 0.0;
+
                 for (int k = 0; k < numCenters; k++) {
                     double value = Math.pow(distances.get(i, j) / distances.get(k, j),
                             fuzzyMembershipCoefficient);
-                    if (Double.isNaN(value)) {
+                    if (Double.isNaN(value))
                         value = 1.0;
-                    }
+
                     invertedFuzzyWeight += value;
                 }
+
                 double weight = 1.0 / invertedFuzzyWeight * weights.getX(j);
                 newMembership.setX(i, j, Math.pow(weight, exponentialWeight));
             }
@@ -210,58 +202,55 @@ public class FuzzyCMeansLocalClusterer extends BaseFuzzyCMeansClusterer<DenseLoc
     }
 
     /**
-     * Calculate new centers using membership matrix
+     * Calculate new centers using membership matrix.
      *
-     * @param points matrix of source points
-     * @param membership membership matrix`
-     * @return matrix of centers
+     * @param points Matrix of source points
+     * @param membership Matrix that contains membership coefficients.
+     * @return Matrix that contains new centers.
      */
     private Matrix calculateNewCenters(Matrix points, Matrix membership) {
         Vector membershipSums = membership.foldRows(row -> row.sum());
         Matrix newCenters = membership.times(points);
 
         int numCenters = newCenters.rowSize();
-        for (int i = 0; i < numCenters; i++) {
+        for (int i = 0; i < numCenters; i++)
             newCenters.viewRow(i).divide(membershipSums.getX(i));
-        }
 
         return newCenters;
     }
 
     /**
-     * Check if centers have moved insignificantly
+     * Check if centers have moved insignificantly.
      *
-     * @param centers old centers
-     * @param newCenters new centers
-     * @return the result of comparison
+     * @param centers Old centers.
+     * @param newCenters New centers.
+     * @return The result of comparison.
      */
     private boolean areCentersStable(Matrix centers, Matrix newCenters) {
         int numCenters = centers.rowSize();
-        for (int i = 0; i < numCenters; i++) {
-            if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxDelta) {
+        for (int i = 0; i < numCenters; i++)
+            if (distance(centers.viewRow(i), newCenters.viewRow(i)) > maxDelta)
                 return false;
-            }
-        }
+
         return true;
     }
 
     /**
-     * Check if membership changes insignificantly
+     * Check if membership matrix has changed insignificantly.
      *
-     * @param membership old membership
-     * @param newMembership new membership
-     * @return the result of comparison
+     * @param membership Old membership matrix.
+     * @param newMembership New membership matrix.
+     * @return The result of comparison.
      */
     private boolean areMembershipStable(Matrix membership, Matrix newMembership) {
         int numCenters = membership.rowSize();
         int numPoints = membership.columnSize();
-        for (int i = 0; i < numCenters; i++) {
-            for (int j = 0; j < numPoints; j++) {
-                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxDelta) {
+
+        for (int i = 0; i < numCenters; i++)
+            for (int j = 0; j < numPoints; j++)
+                if (Math.abs(newMembership.getX(i, j) - membership.getX(i, j)) > maxDelta)
                     return false;
-                }
-            }
-        }
+
         return true;
     }
 }

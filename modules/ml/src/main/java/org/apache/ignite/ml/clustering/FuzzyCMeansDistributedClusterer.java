@@ -41,34 +41,35 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/** Implements distributed version of Fuzzy C-Means clusterization on equal-weighted points */
+/** This class implements distributed version of Fuzzy C-Means clusterization of equal-weighted points. */
 public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<SparseDistributedMatrix> {
-    /** Random numbers generator which is used in centers selection */
+    /** Random numbers generator which is used in centers selection. */
     private Random random;
 
-    /** The value that is used to initialize random numbers generator */
+    /** The value that is used to initialize random numbers generator. */
     private long seed;
 
-    /** The number of initialization steps each of which adds some number of candidates for being a center */
+    /** The number of initialization steps each of which adds some number of candidates for being a center. */
     private int initializationSteps;
 
-    /** The maximum number of iterations of K-Means algorithm which selects the required number of centers */
+    /** The maximum number of iterations of K-Means algorithm which selects the required number of centers. */
     private int kMeansMaxIterations;
 
-    /** The maximum number of FCM iterations */
+    /** The maximum number of FCM iterations. */
     private int cMeansMaxIterations;
 
     /**
-     * Constructor that stores all required parameters
+     * Constructor that retains all required parameters.
      *
-     * @param measure distance measure
-     * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param stopCondition flag that tells when algorithm should stop
-     * @param maxDelta max distance between old and new centers which indicates when algorithm should stop
-     * @param cMeansMaxIterations the maximum number of FCM iterations
-     * @param seed seed for random numbers generator
-     * @param initializationSteps number of steps in primary centers selection (the more steps, the more candidates)
-     * @param kMeansMaxIterations maximum number of K-Means iteration in primary centers selection
+     * @param measure Distance measure.
+     * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
+     * @param stopCondition Flag that tells when algorithm should stop
+     * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
+     *                 membership matrix elements for which algorithm must stop.
+     * @param cMeansMaxIterations The maximum number of FCM iterations.
+     * @param seed Seed for random numbers generator.
+     * @param initializationSteps Number of steps of primary centers selection (the more steps, the more candidates).
+     * @param kMeansMaxIterations The maximum number of K-Means iteration in primary centers selection.
      */
     public FuzzyCMeansDistributedClusterer(DistanceMeasure measure, double exponentialWeight,
                                            StopCondition stopCondition, double maxDelta, int cMeansMaxIterations,
@@ -83,14 +84,12 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /** {@inheritDoc} */
-    @Override
-    public FuzzyCMeansModel cluster(SparseDistributedMatrix points, int k)
+    @Override public FuzzyCMeansModel cluster(SparseDistributedMatrix points, int k)
             throws MathIllegalArgumentException, ConvergenceException {
         GridArgumentCheck.notNull(points, "points");
 
-        if (k < 2) {
+        if (k < 2)
             throw new MathIllegalArgumentException("The number of clusters is less than 2");
-        }
 
         Vector[] centers = initializeCenters(points, k);
 
@@ -102,11 +101,10 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
             MembershipsAndSums newMembershipsAndSums = calculateMembership(points, centers);
             Vector[] newCenters = calculateNewCenters(points, newMembershipsAndSums, k);
 
-            if (stopCondition == StopCondition.STABLE_CENTERS) {
+            if (stopCondition == StopCondition.STABLE_CENTERS)
                 finished = isFinished(centers, newCenters);
-            } else {
+            else
                 finished = isFinished(membershipsAndSums, newMembershipsAndSums);
-            }
 
             centers = newCenters;
             membershipsAndSums = newMembershipsAndSums;
@@ -114,20 +112,19 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
             iteration++;
         }
 
-        if (iteration == cMeansMaxIterations) {
+        if (iteration == cMeansMaxIterations)
             throw new ConvergenceException("Fuzzy C-Means algorithm has not converged after " +
                     Integer.toString(iteration) + " iterations");
-        }
 
         return new FuzzyCMeansModel(centers, measure);
     }
 
     /**
-     * Choose k primary centers from source points
+     * Choose k primary centers from source points.
      *
-     * @param points matrix with source points
-     * @param k number of centers
-     * @return array of primary centers
+     * @param points Matrix with source points.
+     * @param k Number of centers.
+     * @return Array of primary centers.
      */
     private Vector[] initializeCenters(SparseDistributedMatrix points, int k) {
         int pointsNumber = points.rowSize();
@@ -149,9 +146,8 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         while(step < initializationSteps) {
             ConcurrentHashMap<Integer, Double> newCosts = getNewCosts(cacheName, uuid, newCenters);
 
-            for (Integer key : newCosts.keySet()) {
+            for (Integer key : newCosts.keySet())
                 costs.merge(key, newCosts.get(key), Math::min);
-            }
 
             double costsSum = costs.values().stream().mapToDouble(Double::valueOf).sum();
 
@@ -165,12 +161,12 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * Calculate new minimum distances from each point to nearest center
+     * Calculate new distances from each point to the nearest center.
      *
-     * @param cacheName cache name of point matrix
-     * @param uuid uuid of point matrix
-     * @param newCenters list of centers that was added on previous step
-     * @return hash map of distances
+     * @param cacheName Cache name of point matrix.
+     * @param uuid Uuid of point matrix
+     * @param newCenters The list of centers that was added on previous step
+     * @return Hash map with distances
      */
     private ConcurrentHashMap<Integer, Double> getNewCosts(String cacheName, IgniteUuid uuid,
                                                            List<Vector> newCenters) {
@@ -180,11 +176,8 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                 ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
                     Vector vector = VectorUtils.fromMap(vectorWithIndex.getValue(), false);
 
-                    for (Vector center : newCenters) {
-                        map.merge(vectorWithIndex.getKey().index(),
-                                  distance(vector, center),
-                                  Functions.MIN);
-                    }
+                    for (Vector center : newCenters)
+                        map.merge(vectorWithIndex.getKey().index(), distance(vector, center), Functions.MIN);
 
                     return map;
                 },
@@ -197,14 +190,14 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * choose some number of center candidates from source points according to their costs
+     * Choose some number of center candidates from source points according to their costs.
      *
-     * @param cacheName cache name of point matrix
-     * @param uuid uuid of point matrix
-     * @param costs hash map with costs (distances to nearest center)
-     * @param costsSum sum of costs
-     * @param k the estimated number of centers
-     * @return the list of new candidates
+     * @param cacheName Cache name of point matrix.
+     * @param uuid Uuid of point matrix.
+     * @param costs Hash map with costs (distances to nearest center).
+     * @param costsSum The sum of costs.
+     * @param k The estimated number of centers.
+     * @return The list of new candidates.
      */
     private List<Vector> getNewCenters(String cacheName, IgniteUuid uuid,
                                        ConcurrentHashMap<Integer, Double> costs, double costsSum, int k) {
@@ -217,9 +210,8 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     double probability = (costs.get(index) * 2.0 * k) / costsSum;
 
-                    if (random.nextDouble() < probability) {
+                    if (random.nextDouble() < probability)
                         centers.add(vector);
-                    }
 
                     return centers;
                 },
@@ -232,13 +224,13 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * Weight candidates and use K-Means to choose required number of them
+     * Weight candidates and use K-Means to choose required number of them.
      *
-     * @param cacheName cache name of the point matrix
-     * @param uuid uuid of the point matrix
-     * @param centers list of candidates
-     * @param k the estimated number of centers
-     * @return k centers
+     * @param cacheName Cache name of the point matrix.
+     * @param uuid Uuid of the point matrix.
+     * @param centers The list of candidates.
+     * @param k The estimated number of centers.
+     * @return {@code k} centers.
      */
     private Vector[] chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers, int k) {
         centers = centers.stream().distinct().collect(Collectors.toList());
@@ -247,9 +239,8 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
         List<Double> weights = new ArrayList<>(centers.size());
 
-        for (int i = 0; i < centers.size(); i++) {
+        for (int i = 0; i < centers.size(); i++)
             weights.add(i, Double.valueOf(weightsMap.getOrDefault(i, 0)));
-        }
 
         DenseLocalOnHeapMatrix centersMatrix = MatrixUtil.fromList(centers, true);
 
@@ -258,17 +249,16 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * Weight each center with number of points for which it is the nearest
+     * Weight each center with number of points for which this center is the nearest.
      *
-     * @param cacheName cache name of the point matrix
-     * @param uuid uuid of the point matrix
-     * @param centers list of centers
-     * @return hash map of weights
+     * @param cacheName Cache name of the point matrix.
+     * @param uuid Uuid of the point matrix.
+     * @param centers The list of centers.
+     * @return Hash map with weights.
      */
     public ConcurrentHashMap<Integer, Integer> weightCenters(String cacheName, IgniteUuid uuid, List<Vector> centers) {
-        if (centers.size() == 0) {
+        if (centers.size() == 0)
             return new ConcurrentHashMap<>();
-        }
 
         return CacheUtils.distributedFold(cacheName,
                 (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
@@ -300,11 +290,11 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * calculate matrix of membership coefficients for each point and each center
+     * Calculate matrix of membership coefficients for each point and each center.
      *
-     * @param points matrix with source points
-     * @param centers array of current centers
-     * @return membership matrix and sums of membership coefficient for each center
+     * @param points Matrix with source points.
+     * @param centers Array of current centers.
+     * @return Membership matrix and sums of membership coefficients for each center.
      */
     private MembershipsAndSums calculateMembership(SparseDistributedMatrix points, Vector[] centers) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
@@ -320,19 +310,20 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     Vector distances = new DenseLocalOnHeapVector(centers.length);
                     Vector pointMemberships = new DenseLocalOnHeapVector(centers.length);
 
-                    for (int i = 0; i < centers.length; i++) {
+                    for (int i = 0; i < centers.length; i++)
                         distances.setX(i, distance(centers[i], point));
-                    }
 
                     for (int i = 0; i < centers.length; i++) {
                         double invertedFuzzyWeight = 0.0;
+
                         for (int j = 0; j < centers.length; j++) {
                             double value = Math.pow(distances.getX(i) / distances.getX(j), fuzzyMembershipCoefficient);
-                            if (Double.isNaN(value)) {
+                            if (Double.isNaN(value))
                                 value = 1.0;
-                            }
+
                             invertedFuzzyWeight += value;
                         }
+
                         double membership = Math.pow(1.0 / invertedFuzzyWeight, exponentialWeight);
                         pointMemberships.setX(i, membership);
                     }
@@ -351,21 +342,20 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
     }
 
     /**
-     * Calculate new centers according to membership matrix
+     * Calculate new centers according to membership matrix.
      *
-     * @param points matrix with source points
-     * @param membershipsAndSums membership matrix and sums of membership coefficient for each center
-     * @param k number of centers
-     * @return array of new centers
+     * @param points Matrix with source points.
+     * @param membershipsAndSums Membership matrix and sums of membership coefficient for each center.
+     * @param k The number of centers.
+     * @return Array of new centers.
      */
     private Vector[] calculateNewCenters(SparseDistributedMatrix points, MembershipsAndSums membershipsAndSums, int k) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
         IgniteUuid uuid = points.getUUID();
 
         DenseLocalOnHeapVector[] centerSumsArray = new DenseLocalOnHeapVector[k];
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++)
             centerSumsArray[i] = new DenseLocalOnHeapVector(points.columnSize());
-        }
 
         Vector[] centers = CacheUtils.distributedFold(cacheName,
                 (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
@@ -384,83 +374,78 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                 },
                 key -> key.matrixId().equals(uuid),
                 (sums1, sums2) -> {
-                    for (int i = 0; i < k; i++) {
+                    for (int i = 0; i < k; i++)
                         sums1[i] = sums1[i].plus(sums2[i]);
-                    }
+
                     return sums1;
                 },
                 centerSumsArray);
 
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++)
             centers[i] = centers[i].divide(membershipsAndSums.membershipSums.getX(i));
-        }
 
         return centers;
     }
 
     /**
-     * Check if centers have moved insignificantly
+     * Check if centers have moved insignificantly.
      *
-     * @param centers old centers
-     * @param newCenters new centers
-     * @return the result of comparison
+     * @param centers Old centers.
+     * @param newCenters New centers.
+     * @return The result of comparison.
      */
     private boolean isFinished(Vector[] centers, Vector[] newCenters) {
         int numCenters = centers.length;
 
-        for (int i = 0; i < numCenters; i++) {
-            if (distance(centers[i], newCenters[i]) > maxDelta) {
+        for (int i = 0; i < numCenters; i++)
+            if (distance(centers[i], newCenters[i]) > maxDelta)
                 return false;
-            }
-        }
 
         return true;
     }
 
     /**
-     * Check memberships delta
+     * Check memberships difference.
      *
-     * @param membershipsAndSums old memberships
-     * @param newMembershipsAndSums new memberships
-     * @return the result of comparison
+     * @param membershipsAndSums Old memberships.
+     * @param newMembershipsAndSums New memberships.
+     * @return The result of comparison.
      */
     private boolean isFinished(MembershipsAndSums membershipsAndSums, MembershipsAndSums newMembershipsAndSums) {
-        if (membershipsAndSums == null) {
+        if (membershipsAndSums == null)
             return false;
-        }
 
         double currentMaxDelta = 0.0;
         for (Integer key : membershipsAndSums.memberships.keySet()) {
             double distance = measure.compute(membershipsAndSums.memberships.get(key),
                                               newMembershipsAndSums.memberships.get(key));
-            if (distance > currentMaxDelta) {
+            if (distance > currentMaxDelta)
                 currentMaxDelta = distance;
-            }
         }
 
         return currentMaxDelta <= maxDelta;
     }
 
-    /** Service class used to optimize counting of membership sums */
+    /** Service class used to optimize counting of membership sums. */
     private class MembershipsAndSums {
-        /** Membership matrix */
+        /** Membership matrix. */
         public ConcurrentHashMap<Integer, Vector> memberships = new ConcurrentHashMap<>();
 
-        /** Membership sums */
+        /** Membership sums. */
         public Vector membershipSums;
 
         /**
-         * Default constructor
+         * Default constructor.
          *
-         * @param k number of centers
+         * @param k The number of centers.
          */
         public MembershipsAndSums(int k) {
             membershipSums = new DenseLocalOnHeapVector(k);
         }
 
         /**
-         * Merge results of calculation for different parts of points
-         * @param another another part of memberships and sums
+         * Merge results of calculation for different parts of points.
+         * @param another Another part of memberships and sums.
          */
         public void merge(MembershipsAndSums another) {
             memberships.putAll(another.memberships);

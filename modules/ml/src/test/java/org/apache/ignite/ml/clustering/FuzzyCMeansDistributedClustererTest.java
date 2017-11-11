@@ -29,22 +29,19 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
+/** Tests that checks distributed Fuzzy C-Means clusterer */
 public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 1;
 
     /** Grid instance. */
     private Ignite ignite;
 
-    /**
-     * Default constructor.
-     */
+    /** Default constructor. */
     public FuzzyCMeansDistributedClustererTest() {
         super(false);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
     }
@@ -60,7 +57,7 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
-    /** test that algorithm gives correct results on a small sample - 4 centers at the plane */
+    /** Test that algorithm gives correct results on a small sample - 4 centers on the plane. */
     @Test
     public void testTwoDimensionsLittleData() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -93,7 +90,7 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         assertEquals(0, measure.compute(centers[3], new DenseLocalOnHeapVector(new double[]{-10, 10})), 1);
     }
 
-    /** perform N tests each of which contains M random points placed around K centers in 2D */
+    /** Perform N tests each of which contains M random points placed around K centers on the plane. */
     @Test
     public void testTwoDimensionsRandomlyPlacedPointsAndCenters() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -116,10 +113,10 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Test given clusterer for points placed randomly around vertexes of a regular polygon`
+     * Test given clusterer on points placed randomly around vertexes of a regular polygon.
      *
-     * @param distributedClusterer tested clusterer
-     * @param seed seed for the random numbers generator
+     * @param distributedClusterer Tested clusterer.
+     * @param seed Seed for the random numbers generator.
      */
     public void performRandomTest(FuzzyCMeansDistributedClusterer distributedClusterer, long seed) {
         final int minNumCenters = 2;

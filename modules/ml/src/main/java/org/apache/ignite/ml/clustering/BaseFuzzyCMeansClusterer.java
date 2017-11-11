@@ -23,29 +23,30 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 
+/** The abstract class that defines the basic interface of Fuzzy C-Means clusterers */
 public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clusterer<T, FuzzyCMeansModel> {
 
-    /** distance measure */
+    /** Distance measure. */
     protected DistanceMeasure measure;
 
-    /** specific constant which is used in calculating of membership matrix */
+    /** Specific constant which is used in calculating of membership matrix. */
     protected double exponentialWeight;
 
-    /** max distance between old and new centers or max delta of membership matrix elements for which
-     *  algorithm should stop */
+    /** The maximum distance between old and new centers or the maximum difference between new and old membership matrix
+     *  elements for which algorithm must stop. */
     protected double maxDelta;
 
-    /** flag that tells when algorithm should stop, if centers have moved insignificantly
-     *  or if memberships delta is small enough */
+    /** The flag that tells when algorithm should stop. */
     protected StopCondition stopCondition;
 
     /**
-     * Constructor that stores some required parameters
+     * Constructor that stores some required parameters.
      *
-     * @param measure distance measure
-     * @param exponentialWeight specific constant which is used in calculating of membership matrix
-     * @param stopCondition flag that tells when algorithm should stop
-     * @param maxDelta max distance between old and new centers or max delta of memberships for which algorithm should stop
+     * @param measure Distance measure.
+     * @param exponentialWeight Specific constant which is used in calculating of membership matrix.
+     * @param stopCondition Flag that tells when algorithm should stop
+     * @param maxDelta The maximum distance between old and new centers or maximum difference between new and old
+     *                 membership matrix elements for which algorithm must stop.
      */
     protected BaseFuzzyCMeansClusterer(DistanceMeasure measure, double exponentialWeight, StopCondition stopCondition,
                                        double maxDelta) {
@@ -58,26 +59,33 @@ public abstract class BaseFuzzyCMeansClusterer<T extends Matrix> implements Clus
     /**
      * Perform a cluster analysis on the given set of points.
      *
-     * @param points the set of points
-     * @return a list of clusters
-     * @throws MathIllegalArgumentException if points are null or the number of data points is not compatible with this
-     * clusterer
-     * @throws ConvergenceException if the algorithm has not yet converged after the maximum number of iterations has
-     * been exceeded
+     * @param points The set of points.
+     * @return A list of clusters.
+     * @throws MathIllegalArgumentException If points are null or the number of data points is not compatible with this
+     *                                      clusterer.
+     * @throws ConvergenceException If the algorithm has not yet converged after the maximum number of iterations has
+     *                              been exceeded.
      */
     public abstract FuzzyCMeansModel cluster(T points, int k);
 
     /**
      * Calculates the distance between two vectors. * with the configured {@link DistanceMeasure}.
      *
-     * @return the distance between the two points
+     * @return The distance between two points.
      */
     protected double distance(final Vector v1, final Vector v2) {
         return measure.compute(v1, v2);
     }
 
+    /** Enumeration that contains different conditions under which algorithm must stop */
     public enum StopCondition {
+        /** Algorithm stops if the maximum distance between new and old centers is less than {@link #maxDelta}. */
         STABLE_CENTERS,
+
+        /**
+         * Algorithm stops if the maximum difference between elements of new and old membership matrix is less than
+         * {@link #maxDelta}.
+         */
         STABLE_MEMBERSHIPS
     }
 }

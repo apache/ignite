@@ -30,9 +30,10 @@ import java.util.Comparator;
 
 import static org.junit.Assert.*;
 
+/** Tests that checks local Fuzzy C-Means clusterer */
 public class FuzzyCMeansLocalClustererTest {
 
-    /** test FCM for points that forms three clusters on the line */
+    /** Test FCM on points that forms three clusters on the line. */
     @Test
     public void equalWeightsOneDimension() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -54,7 +55,7 @@ public class FuzzyCMeansLocalClustererTest {
         assertEquals(8.5, centers[2].getX(0), 2);
     }
 
-    /** test FCM for points that forms four clusters on the plane */
+    /** Test FCM on points that forms four clusters on the plane. */
     @Test
     public void equalWeightsTwoDimensions() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -80,7 +81,7 @@ public class FuzzyCMeansLocalClustererTest {
         assertEquals(0, measure.compute(centers[3], new DenseLocalOnHeapVector(new double[]{-10, 10})), 1);
     }
 
-    /** test FCM for points with same coordinates*/
+    /** Test FCM on points which have the equal coordinates. */
     @Test
     public void checkCentersOfTheSamePointsTwoDimensions() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -96,13 +97,12 @@ public class FuzzyCMeansLocalClustererTest {
         for (int i = 0; i < k; i++) {
             Vector center = model.centers()[i];
 
-            for (int j = 0; j < 2; j++) {
+            for (int j = 0; j < 2; j++)
                 assertEquals(expected.getX(j), center.getX(j), 1);
-            }
         }
     }
 
-    /** test FCM for points on sphere */
+    /** Test FCM on points located on the circle. */
     @Test
     public void checkCentersLocationOnSphere() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -122,13 +122,13 @@ public class FuzzyCMeansLocalClustererTest {
         FuzzyCMeansModel model = clusterer.cluster(pointMatrix, k);
 
         Vector sum = model.centers()[0];
-        for (int i = 1; i < k; i++) {
+        for (int i = 1; i < k; i++)
             sum = sum.plus(model.centers()[i]);
-        }
+
         assertEquals(0, sum.kNorm(1), 1);
     }
 
-    /** test FCM for points on line */
+    /** Test FCM on points that forms the line located on the plane. */
     @Test
     public void test2DLineClustering() {
         BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -149,13 +149,12 @@ public class FuzzyCMeansLocalClustererTest {
         for (int i = 0; i < k; i++) {
             Vector center = centers[i];
 
-            for (int j = 0; j < 2; j++) {
+            for (int j = 0; j < 2; j++)
                 assertEquals(expected[i].getX(j), center.getX(j), 0.5);
-            }
         }
     }
 
-    /** test FCM for points that have different weights */
+    /** Test FCM on points that have different weights. */
     @Test
     public void differentWeightsOneDimension() {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -176,7 +175,7 @@ public class FuzzyCMeansLocalClustererTest {
         assertTrue(centers1[0].get(0) - centers2[0].get(0) > 0.5);
     }
 
-    /** test FCM for illegal number of clusters */
+    /** Test FCM on illegal number of clusters. */
     @Test(expected = MathIllegalArgumentException.class)
     public void testIllegalNumberOfClusters() {
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
@@ -186,7 +185,7 @@ public class FuzzyCMeansLocalClustererTest {
         FuzzyCMeansModel cluster = clusterer.cluster(new DenseLocalOnHeapMatrix(points), 1);
     }
 
-    /** test FCM for different amounts of points and weights */
+    /** Test FCM on different numbers of points and weights. */
     @Test(expected = MathIllegalArgumentException.class)
     public void testDifferentAmountsOfPointsAndWeights(){
         FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
