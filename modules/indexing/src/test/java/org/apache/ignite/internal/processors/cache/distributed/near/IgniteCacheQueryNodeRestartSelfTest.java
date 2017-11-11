@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryRestartRequiredException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -50,6 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -268,7 +268,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCommonAbstractTest 
                                     e.getCause() instanceof InterruptedException ||
                                     e.getCause() instanceof ClusterTopologyException ||
                                     e.getCause() instanceof TransactionTimeoutException ||
-                                    e.getCause() instanceof QueryRestartRequiredException)
+                                    e.getCause() instanceof TransactionException)
                                     continue;
 
                                 if (e.getCause() instanceof QueryCancelledException)
@@ -378,7 +378,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCommonAbstractTest 
         restartsDone.set(true);
 
         try {
-            fut2.get(10_000);
+            fut2.get(20_000);
         }
         catch (IgniteFutureTimeoutCheckedException e) {
             U.dumpThreads(log);

@@ -46,9 +46,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.QueryRestartRequiredException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -92,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -562,12 +561,13 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-            final AffinityTopologyVersion lastVer = h2.lastTopologyVersion();
+            boolean distributedExchange = h2.distributedExchange(topVer);
 
-            // If topology is changed and we are inside transaction, break query execution.
-            if (lastVer.compareTo(topVer) > 0 && ctx.cache().context().tm().userTx() != null)
-                throw new CacheException("Topology is changed while executing query inside transaction.",
-                    new QueryRestartRequiredException());
+            // If topology is changed and we are inside a transaction, break query execution.
+            // Otherwise, exchange will be waiting forever for current tx.
+            if (distributedExchange && ctx.cache().context().tm().userTx() != null)
+                throw new CacheException(new TransactionException("Topology is changed while executing query inside a transaction. " +
+                    "Please restart the transaction and try again."));
 
             List<Integer> cacheIds = qry.cacheIds();
 

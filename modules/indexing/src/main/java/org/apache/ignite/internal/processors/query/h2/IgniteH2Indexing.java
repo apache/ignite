@@ -56,6 +56,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -162,6 +163,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -2478,10 +2482,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Last topology version.
+     * @param readyVer Ready topology version.
+     *
+     * @return {@code true} if pending distributed exchange exists.
      */
-    public AffinityTopologyVersion lastTopologyVersion() {
-        return ctx.cache().context().exchange().lastTopologyFuture().initialVersion();
+    public boolean distributedExchange(AffinityTopologyVersion readyVer) {
+        GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+
+        AffinityTopologyVersion initVer = fut.initialVersion();
+
+        DiscoveryEvent evt = fut.firstEvent();
+
+        boolean ignore = evt.node().isClient() &&
+            (evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED);
+
+        return initVer.compareTo(readyVer) > 0 && !ignore;
     }
 
     /**
