@@ -28,6 +28,7 @@ import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
@@ -35,9 +36,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import javax.cache.Cache;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -140,7 +139,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         ConcurrentHashMap<Integer, Double> costs = new ConcurrentHashMap<>();
 
         int step = 0;
-        IgniteUuid uuid = points.getUUID();
+        UUID uuid = points.getUUID();
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
 
         while(step < initializationSteps) {
@@ -168,12 +167,12 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param newCenters The list of centers that was added on previous step
      * @return Hash map with distances
      */
-    private ConcurrentHashMap<Integer, Double> getNewCosts(String cacheName, IgniteUuid uuid,
+    private ConcurrentHashMap<Integer, Double> getNewCosts(String cacheName, UUID uuid,
                                                            List<Vector> newCenters) {
         return CacheUtils.distributedFold(cacheName,
                 (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
-                ConcurrentHashMap<Integer, Double>,
-                ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
+                        ConcurrentHashMap<Integer, Double>,
+                        ConcurrentHashMap<Integer, Double>>)(vectorWithIndex, map) -> {
                     Vector vector = VectorUtils.fromMap(vectorWithIndex.getValue(), false);
 
                     for (Vector center : newCenters)
@@ -186,7 +185,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     map1.putAll(map2);
                     return map1;
                 },
-                new ConcurrentHashMap<>());
+                ConcurrentHashMap::new);
     }
 
     /**
@@ -199,10 +198,10 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param k The estimated number of centers.
      * @return The list of new candidates.
      */
-    private List<Vector> getNewCenters(String cacheName, IgniteUuid uuid,
+    private List<Vector> getNewCenters(String cacheName, UUID uuid,
                                        ConcurrentHashMap<Integer, Double> costs, double costsSum, int k) {
         return CacheUtils.distributedFold(cacheName,
-                (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
+                (IgniteBiFunction<Cache.Entry<SparseMatrixKey, Map<Integer, Double>>,
                                   List<Vector>,
                                   List<Vector>>)(vectorWithIndex, centers) -> {
                     Integer index = vectorWithIndex.getKey().index();
@@ -220,7 +219,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     list1.addAll(list2);
                     return list1;
                 },
-                new ArrayList<>());
+                ArrayList::new);
     }
 
     /**
@@ -232,7 +231,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param k The estimated number of centers.
      * @return {@code k} centers.
      */
-    private Vector[] chooseKCenters(String cacheName, IgniteUuid uuid, List<Vector> centers, int k) {
+    private Vector[] chooseKCenters(String cacheName, UUID uuid, List<Vector> centers, int k) {
         centers = centers.stream().distinct().collect(Collectors.toList());
 
         ConcurrentHashMap<Integer, Integer> weightsMap = weightCenters(cacheName, uuid, centers);
@@ -256,7 +255,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      * @param centers The list of centers.
      * @return Hash map with weights.
      */
-    public ConcurrentHashMap<Integer, Integer> weightCenters(String cacheName, IgniteUuid uuid, List<Vector> centers) {
+    public ConcurrentHashMap<Integer, Integer> weightCenters(String cacheName, UUID uuid, List<Vector> centers) {
         if (centers.size() == 0)
             return new ConcurrentHashMap<>();
 
@@ -286,7 +285,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     map1.putAll(map2);
                     return map1;
                 },
-                new ConcurrentHashMap<>());
+                ConcurrentHashMap::new);
     }
 
     /**
@@ -298,8 +297,10 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      */
     private MembershipsAndSums calculateMembership(SparseDistributedMatrix points, Vector[] centers) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
-        IgniteUuid uuid = points.getUUID();
+        UUID uuid = points.getUUID();
         double fuzzyMembershipCoefficient = 2 / (exponentialWeight - 1);
+
+        MembershipsAndSumsSupplier supplier = new MembershipsAndSumsSupplier(centers.length);
 
         return CacheUtils.distributedFold(cacheName,
                 (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
@@ -338,7 +339,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
                     mem1.merge(mem2);
                     return mem1;
                 },
-                new MembershipsAndSums(centers.length));
+                supplier);
     }
 
     /**
@@ -351,11 +352,9 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
      */
     private Vector[] calculateNewCenters(SparseDistributedMatrix points, MembershipsAndSums membershipsAndSums, int k) {
         String cacheName = ((SparseDistributedMatrixStorage) points.getStorage()).cacheName();
-        IgniteUuid uuid = points.getUUID();
+        UUID uuid = points.getUUID();
 
-        DenseLocalOnHeapVector[] centerSumsArray = new DenseLocalOnHeapVector[k];
-        for (int i = 0; i < k; i++)
-            centerSumsArray[i] = new DenseLocalOnHeapVector(points.columnSize());
+        CentersArraySupplier supplier = new CentersArraySupplier(k, points.columnSize());
 
         Vector[] centers = CacheUtils.distributedFold(cacheName,
                 (IgniteBiFunction<Cache.Entry<SparseMatrixKey, ConcurrentHashMap<Integer, Double>>,
@@ -379,7 +378,7 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
 
                     return sums1;
                 },
-                centerSumsArray);
+                supplier);
 
         for (int i = 0; i < k; i++)
             centers[i] = centers[i].divide(membershipsAndSums.membershipSums.getX(i));
@@ -450,6 +449,62 @@ public class FuzzyCMeansDistributedClusterer extends BaseFuzzyCMeansClusterer<Sp
         public void merge(MembershipsAndSums another) {
             memberships.putAll(another.memberships);
             membershipSums = membershipSums.plus(another.membershipSums);
+        }
+    }
+
+    /** Service class that is used to create new {@link MembershipsAndSums} instances. */
+    private class MembershipsAndSumsSupplier implements IgniteSupplier<MembershipsAndSums> {
+        /** The number of centers */
+        int k;
+
+        /**
+         * Constructor that retains the number of centers.
+         *
+         * @param k The number of centers.
+         */
+        public MembershipsAndSumsSupplier(int k) {
+            this.k = k;
+        }
+
+        /**
+         * Create new instance of {@link MembershipsAndSums}.
+         *
+         * @return {@link MembershipsAndSums} object.
+         */
+        @Override public MembershipsAndSums get() {
+            return new MembershipsAndSums(k);
+        }
+    }
+
+    /** Service class that is used to create new arrays of vectors. */
+    private class CentersArraySupplier implements IgniteSupplier<Vector[]> {
+        /** The number of centers. */
+        int k;
+
+        /** The number of coordinates. */
+        int dim;
+
+        /**
+         * Constructor that retains all required parameters.
+         *
+         * @param k The number of centers.
+         * @param dim The number of coordinates.
+         */
+        public CentersArraySupplier(int k, int dim) {
+            this.k = k;
+            this.dim = dim;
+        }
+
+        /**
+         * Create new array of vectors.
+         *
+         * @return Array of vectors.
+         */
+        @Override public Vector[] get() {
+            DenseLocalOnHeapVector[] centerSumsArray = new DenseLocalOnHeapVector[k];
+            for (int i = 0; i < k; i++)
+                centerSumsArray[i] = new DenseLocalOnHeapVector(dim);
+            return centerSumsArray;
         }
     }
 }

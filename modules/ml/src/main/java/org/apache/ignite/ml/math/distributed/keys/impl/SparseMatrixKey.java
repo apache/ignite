@@ -21,30 +21,24 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.BinaryUtils;
+import java.util.UUID;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
  * Key implementation for {@link SparseDistributedMatrix}.
  */
-public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binarylizable {
+public class SparseMatrixKey implements RowColMatrixKey, Externalizable {
     /** */
     private int idx;
     /** */
-    private IgniteUuid matrixId;
+    private UUID matrixId;
     /** */
-    private IgniteUuid affinityKey;
+    @AffinityKeyMapped
+    private Object affinityKey;
 
     /**
      * Default constructor (required by Externalizable).
@@ -56,7 +50,7 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binaryl
     /**
      * Build Key.
      */
-    public SparseMatrixKey(int idx, IgniteUuid matrixId, IgniteUuid affinityKey) {
+    public SparseMatrixKey(int idx, UUID matrixId, Object affinityKey) {
         assert idx >= 0 : "Index must be positive.";
         assert matrixId != null : "Matrix id can`t be null.";
 
@@ -71,54 +65,35 @@ public class SparseMatrixKey implements RowColMatrixKey, Externalizable, Binaryl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid matrixId() {
+    @Override public UUID matrixId() {
         return matrixId;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid affinityKey() {
+    @Override public Object affinityKey() {
         return affinityKey;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, matrixId);
-        U.writeGridUuid(out, affinityKey);
+//        U.writeGridUuid(out, matrixId);
+        out.writeObject(matrixId);
+        out.writeObject(affinityKey);
         out.writeInt(idx);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        matrixId = U.readGridUuid(in);
-        affinityKey = U.readGridUuid(in);
-        idx = in.readInt();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter out = writer.rawWriter();
-
-        BinaryUtils.writeIgniteUuid(out, matrixId);
-        BinaryUtils.writeIgniteUuid(out, affinityKey);
-        out.writeInt(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader in = reader.rawReader();
-
-        matrixId = BinaryUtils.readIgniteUuid(in);
-        affinityKey = BinaryUtils.readIgniteUuid(in);
+        matrixId = (UUID)in.readObject();
+        affinityKey = in.readObject();
         idx = in.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = 1;
-
-        res += res * 37 + matrixId.hashCode();
-        res += res * 37 + idx;
-
+        int res = idx;
+        res = 31 * res + (matrixId != null ? matrixId.hashCode() : 0);
+        res = 31 * res + (affinityKey != null ? affinityKey.hashCode() : 0);
         return res;
     }
 

@@ -31,7 +31,7 @@ import java.util.Random;
 
 /** Tests that checks distributed Fuzzy C-Means clusterer */
 public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest {
-    private static final int NODE_COUNT = 1;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     private Ignite ignite;

@@ -20,13 +20,13 @@ package org.apache.ignite.ml.math.impls.matrix;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -190,7 +190,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
     }
 
     /** */
-    private IgniteUuid getUUID() {
+    private UUID getUUID() {
         return ((BlockMatrixStorage)getStorage()).getUUID();
     }
 
