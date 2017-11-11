@@ -62,7 +62,6 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
         return index;
     }
 
-
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
         FuzzyCMeansModelFormat modelData = new FuzzyCMeansModelFormat(centers, measure);
