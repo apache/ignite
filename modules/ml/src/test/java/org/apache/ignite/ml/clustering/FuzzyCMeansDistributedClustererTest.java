@@ -73,9 +73,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
 
         SparseDistributedMatrix pointMatrix = new SparseDistributedMatrix(16, 2,
                 StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
             pointMatrix.setRow(i, points[i]);
-        }
 
         FuzzyCMeansModel model = clusterer.cluster(pointMatrix, 4);
 
@@ -107,9 +106,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
                 exponentialWeight, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
                 maxCentersDelta, maxIterations, seed, 2, 50);
 
-        for (int i = 0; i < numOfTests; i++) {
+        for (int i = 0; i < numOfTests; i++)
             performRandomTest(distributedClusterer, i);
-        }
     }
 
     /**
@@ -154,9 +152,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
 
         SparseDistributedMatrix pointMatrix = new SparseDistributedMatrix(numPoints, 2,
                 StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-        for (int i = 0; i < numPoints; i++) {
+        for (int i = 0; i < numPoints; i++)
             pointMatrix.setRow(i, points[i]);
-        }
 
         FuzzyCMeansModel model = distributedClusterer.cluster(pointMatrix, numCenters);
         Vector[] computedCenters = model.centers();
