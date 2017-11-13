@@ -17,5 +17,35 @@
 
 package org.apache.ignite.ml.trainers.group.chain;
 
-public class ResultAndChanges {
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+
+public class ResultAndChanges<R> {
+    private R res;
+    private Map<String, Map> updates = new ConcurrentHashMap<>();
+
+    public ResultAndChanges(R res) {
+        this.res = res;
+    }
+
+    public static <R> ResultAndChanges<R> of(R res) {
+        return new ResultAndChanges<>(res);
+    }
+
+    public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
+        String name = cache.getName();
+
+        updates.computeIfAbsent(name, s -> new ConcurrentHashMap());
+        updates.get(name).put(key, val);
+    }
+
+    void processUpdates(Ignite ignite) {
+        for (Map.Entry<String, Map> entry : updates.entrySet()) {
+            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(entry.getKey());
+
+            cache.putAll(entry.getValue());
+        }
+    }
 }

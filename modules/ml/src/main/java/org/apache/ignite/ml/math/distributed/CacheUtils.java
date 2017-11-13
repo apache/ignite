@@ -40,9 +40,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.KeyMapper;
-import org.apache.ignite.ml.math.distributed.keys.BlockMatrixKey;
 import org.apache.ignite.ml.math.distributed.keys.MatrixCacheKey;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -475,9 +473,7 @@ public class CacheUtils {
                 m.put(k, v);
             }
 
-            long before = System.currentTimeMillis();
             cache.putAll(m);
-            System.out.println("PutAll took: " + (System.currentTimeMillis() - before));
         });
     }
 

@@ -41,13 +41,13 @@ import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
+import org.apache.ignite.ml.trainers.group.chain.ResultAndChanges;
 import org.jetbrains.annotations.Nullable;
 
-public class GroupTrainerTask<K, S, V, G, U extends Serializable, D> extends ComputeTaskAdapter<Void, U> {
+public class GroupTrainerTask<K, S, V, G, U extends Serializable> extends ComputeTaskAdapter<Void, U> {
     private final IgniteSupplier<G> contextExtractor;
     private UUID trainingUUID;
-    private IgniteFunction<EntryAndContext<K, V, G>, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> worker;
-    IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer;
+    private IgniteFunction<EntryAndContext<K, V, G>, ResultAndChanges<U>> worker;
     // TODO: Also use this reducer on local steps.
     private IgniteBinaryOperator<U> reducer;
     private String cacheName;
@@ -58,8 +58,7 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable, D> extends Com
 
     public GroupTrainerTask(UUID trainingUUID,
         IgniteSupplier<G> ctxExtractor,
-        IgniteFunction<EntryAndContext<K, V, G>, IgniteBiTuple<Map.Entry<GroupTrainerCacheKey, D>, U>> remoteWorker,
-        IgniteConsumer<Map<GroupTrainerCacheKey, D>> remoteConsumer,
+        IgniteFunction<EntryAndContext<K, V, G>, ResultAndChanges<U>> remoteWorker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
         IgniteBinaryOperator<U> reducer,
         String cacheName,
@@ -68,7 +67,6 @@ public class GroupTrainerTask<K, S, V, G, U extends Serializable, D> extends Com
         this.trainingUUID = trainingUUID;
         this.contextExtractor = ctxExtractor;
         this.worker = remoteWorker;
-        this.remoteConsumer = remoteConsumer;
         this.keysSupplier = keysSupplier;
         this.reducer = reducer;
         this.cacheName = cacheName;

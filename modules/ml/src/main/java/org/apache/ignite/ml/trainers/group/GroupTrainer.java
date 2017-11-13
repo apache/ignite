@@ -29,6 +29,7 @@ import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
+import org.apache.ignite.ml.trainers.group.chain.ResultAndChanges;
 
 public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
@@ -52,7 +53,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
         DistributedTrainerWorkersChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributedWrite(this::initGlobal, (t, lc) -> data::keys, this::reduceGlobalInitData).
+            thenDistributed(this::initGlobal, (t, lc) -> data::keys, this::reduceGlobalInitData).
             thenLocally(this::processInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), this::reduceFinalResults).
@@ -66,7 +67,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract LC initialLocalContext(T data);
 
-    protected abstract IR initGlobal(T data, GroupTrainerCacheKey<K> key);
+    protected abstract ResultAndChanges<IR> initGlobal(T data, GroupTrainerCacheKey<K> key);
 
     protected abstract IR reduceGlobalInitData(IR data1, IR data2);
 
@@ -80,7 +81,7 @@ public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends 
 
     protected abstract Stream<GroupTrainerCacheKey<K>> finalResultKeys(I data, LC locCtx);
 
-    protected abstract <G> Map.Entry<GroupTrainerCacheKey<K>, R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+    protected abstract <G> ResultAndChanges<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
 
     protected abstract R reduceFinalResults(R res1, R res2);
 
