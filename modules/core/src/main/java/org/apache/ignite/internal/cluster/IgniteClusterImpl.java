@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -321,7 +322,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (baselineTop.isEmpty())
                     throw new IgniteException("BaselineTopology must contain at least one node.");
 
-                if (!baselineTop.containsAll(ctx.discovery().aliveServerNodes()))
+                if (onlineBaselineNodesRequestedForRemoval(baselineTop))
                     throw new IgniteException("Removing online nodes from BaselineTopology is not supported.");
             }
 
@@ -333,6 +334,40 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         finally {
             unguard();
         }
+    }
+
+    /** */
+    private boolean onlineBaselineNodesRequestedForRemoval(Collection<BaselineNode> newBlt) {
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+        Set<Object> bltConsIds;
+
+        if (blt == null)
+            return true;
+        else
+            bltConsIds = blt.consistentIds();
+
+        Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
+
+        Collection<Object> newBltConsIds = getConsistentIds(newBlt);
+
+        for (Object oldBltConsId : bltConsIds) {
+            if (aliveNodesConsIds.contains(oldBltConsId)) {
+                if (!newBltConsIds.contains(oldBltConsId))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** */
+    private Collection<Object> getConsistentIds(Collection<? extends BaselineNode> nodes) {
+        ArrayList<Object> res = new ArrayList<>(nodes.size());
+
+        for (BaselineNode n : nodes)
+            res.add(n.consistentId());
+
+        return res;
     }
 
     /** {@inheritDoc} */

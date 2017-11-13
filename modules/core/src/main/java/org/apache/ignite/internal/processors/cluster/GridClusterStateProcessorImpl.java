@@ -293,8 +293,8 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
         if (log.isInfoEnabled())
             U.log(log, "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
-                msg.baselineTopology() == null ? ": null"
-                    : "[id=" + msg.baselineTopology().id() + "]");
+                (msg.baselineTopology() == null ? ": null"
+                    : "[id=" + msg.baselineTopology().id() + "]"));
 
         if (state.transition()) {
             if (isApplicable(msg, state)) {
