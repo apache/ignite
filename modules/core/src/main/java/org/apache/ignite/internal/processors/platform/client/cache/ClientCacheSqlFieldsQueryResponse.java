@@ -59,10 +59,6 @@ class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
         int cnt = fieldsCursor.getColumnsCount();
         writer.writeInt(cnt);
 
-        for (int i = 0; i < cnt; i++) {
-            writer.writeString(fieldsCursor.getFieldName(i));
-        }
-
         cursor.writePage(writer);
     }
 }
