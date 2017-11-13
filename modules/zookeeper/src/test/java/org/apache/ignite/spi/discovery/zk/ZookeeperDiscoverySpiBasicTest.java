@@ -17,20 +17,35 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  *
@@ -44,6 +59,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
     /** */
     private boolean client;
+
+    /** */
+    private static ConcurrentHashMap<UUID, Map<Long, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
+
+    /** */
+    private static volatile boolean err;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,12 +94,57 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
+
+        lsnrs.put(new IgnitePredicate<Event>() {
+            /** */
+            @IgniteInstanceResource
+            private Ignite ignite;
+
+            @Override public boolean apply(Event evt) {
+                try {
+                    DiscoveryEvent discoveryEvt = (DiscoveryEvent)evt;
+
+                    UUID locId = ignite.cluster().localNode().id();
+
+                    Map<Long, DiscoveryEvent> nodeEvts = evts.get(locId);
+
+                    if (nodeEvts == null) {
+                        Object old = evts.put(locId, nodeEvts = new TreeMap<>());
+
+                        assertNull(old);
+
+                        DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
+
+                        nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                    }
+
+                    DiscoveryEvent old = nodeEvts.put(discoveryEvt.topologyVersion(), discoveryEvt);
+
+                    assertNull(old);
+                }
+                catch (Throwable e) {
+                    err = true;
+
+                    info("Unexpected error: " + e);
+                }
+
+                return true;
+            }
+        }, new int[]{EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT});
+
+        cfg.setLocalEventListeners(lsnrs);
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        err = false;
+
+        evts.clear();
 
         if (USE_TEST_CLUSTER) {
             zkCluster = new TestingCluster(1);
@@ -96,6 +162,54 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }
 
         super.afterTest();
+
+        assertFalse("Unexpected error, see log for details", err);
+
+        checkEventsConsistency();
+
+        evts.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkEventsConsistency() throws Exception {
+        for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry : evts.entrySet()) {
+            UUID nodeId = nodeEvtEntry.getKey();
+            Map<Long, DiscoveryEvent> nodeEvts = nodeEvtEntry.getValue();
+
+            for (Map.Entry<UUID, Map<Long, DiscoveryEvent>> nodeEvtEntry0 : evts.entrySet()) {
+                if (!nodeId.equals(nodeEvtEntry0.getKey())) {
+                    Map<Long, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
+
+                    checkEventsConsistency(nodeEvts, nodeEvts0);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param evts1 Received events.
+     * @param evts2 Received events.
+     */
+    private void checkEventsConsistency(Map<Long, DiscoveryEvent> evts1, Map<Long, DiscoveryEvent> evts2) {
+        for (Map.Entry<Long, DiscoveryEvent> e1 : evts1.entrySet()) {
+            DiscoveryEvent evt1 = e1.getValue();
+            DiscoveryEvent evt2 = evts2.get(e1.getKey());
+
+            if (evt2 != null) {
+                assertEquals(evt1.topologyVersion(), evt2.topologyVersion());
+                assertEquals(evt1.eventNode(), evt2.eventNode());
+                assertEquals(evt1.topologyNodes(), evt2.topologyNodes());
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore1() throws Exception {
+
     }
 
     /**
@@ -224,6 +338,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }, THREADS, "stop-node");
 
             waitForTopology(SRVS);
+
+            checkEventsConsistency();
         }
     }
 

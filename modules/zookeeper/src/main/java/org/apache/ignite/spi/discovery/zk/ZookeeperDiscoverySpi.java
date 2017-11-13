@@ -849,53 +849,55 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                         assert lastEvt == null || lastEvt.topVer + 1 == e.topVer : "lastEvt=" + lastEvt + ", nextEvt=" + e;
 
                         if (!crd) {
-                            if (locJoin) {
-                                for (ZookeeperClusterNode node : e.allNodes) {
-                                    assert node.order() > 0 : node;
-
-                                    Object old = curTop.put(node.order(), node);
-
-                                    assert old == null : node;
-                                }
-
-                                DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
-
-                                dataBag.joiningNodeData(e.joiningNodeData);
-                                dataBag.commonData(e.commonData);
-
-                                exchange.onExchange(dataBag);
-                            }
-                            else {
-                                switch (e.evtType) {
-                                    case EventType.EVT_NODE_JOINED: {
-                                        ZookeeperClusterNode node = e.node;
-
-                                        DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
-
-                                        dataBag.joiningNodeData(e.joiningNodeData);
-                                        dataBag.commonData(e.commonData);
-
-                                        exchange.onExchange(dataBag);
+                            synchronized (curTop) {
+                                if (locJoin) {
+                                    for (ZookeeperClusterNode node : e.allNodes) {
+                                        assert node.order() > 0 : node;
 
                                         Object old = curTop.put(node.order(), node);
 
                                         assert old == null : node;
-
-                                        break;
                                     }
 
-                                    case EventType.EVT_NODE_FAILED: {
-                                        ZookeeperClusterNode node = e.node;
+                                    DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
 
-                                        Object failedNode = curTop.remove(node.order());
+                                    dataBag.joiningNodeData(e.joiningNodeData);
+                                    dataBag.commonData(e.commonData);
 
-                                        assert failedNode != null : node;
+                                    exchange.onExchange(dataBag);
+                                }
+                                else {
+                                    switch (e.evtType) {
+                                        case EventType.EVT_NODE_JOINED: {
+                                            ZookeeperClusterNode node = e.node;
 
-                                        break;
+                                            DiscoveryDataBag dataBag = new DiscoveryDataBag(e.node.id());
+
+                                            dataBag.joiningNodeData(e.joiningNodeData);
+                                            dataBag.commonData(e.commonData);
+
+                                            exchange.onExchange(dataBag);
+
+                                            Object old = curTop.put(node.order(), node);
+
+                                            assert old == null : node;
+
+                                            break;
+                                        }
+
+                                        case EventType.EVT_NODE_FAILED: {
+                                            ZookeeperClusterNode node = e.node;
+
+                                            Object failedNode = curTop.remove(node.order());
+
+                                            assert failedNode != null : node;
+
+                                            break;
+                                        }
+
+                                        default:
+                                            assert false : e;
                                     }
-
-                                    default:
-                                        assert false : e;
                                 }
                             }
                         }
