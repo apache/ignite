@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
@@ -100,7 +99,8 @@ namespace Apache.Ignite.Core.Tests
 
             // Wait for process to fail.
             Assert.IsNotNull(proc);
-            Assert.IsTrue(TestUtils.WaitForCondition(() => proc.HasExited, 1000));
+            Assert.IsTrue(proc.WaitForExit(10000));
+            Assert.IsTrue(proc.HasExited);
             Assert.AreEqual(-1, proc.ExitCode);
 
             // Check error message.
