@@ -483,10 +483,10 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /**
-     * This method needed for scan query. {@link #GridCacheQueryRequest#partition()} method related with IO policy and cannot be used
+     * This method needed for scan query. {@link #partition()} method related with IO policy and cannot be used
      * for this role. Otherwise Query will be processed in striped pool.
      *
-     * @return partition.
+     * @return partition ID.
      */
     public int partitionId() {
         return part;
