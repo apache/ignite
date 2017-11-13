@@ -468,24 +468,27 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             Debug.Assert(qry != null);
 
+            writer.WriteString(qry.Schema);
+            writer.WriteInt(qry.PageSize);
+            writer.WriteInt(-1);  // maxRows: unlimited
             writer.WriteString(qry.Sql);
             QueryBase.WriteQueryArgs(writer, qry.Arguments);
-            writer.WriteString(qry.Schema);
+
+            // .NET client does not discern between different statements for now.
+            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            writer.WriteByte((byte)StatementType.Any);
+
             writer.WriteBoolean(qry.EnableDistributedJoins);
             writer.WriteBoolean(qry.Local);
             writer.WriteBoolean(qry.ReplicatedOnly);
             writer.WriteBoolean(qry.EnforceJoinOrder);
             writer.WriteBoolean(qry.Colocated);
             writer.WriteBoolean(qry.Lazy);
-            writer.WriteInt(qry.PageSize);
             writer.WriteTimeSpanAsLong(qry.Timeout);
 
             // Always include field names.
             writer.WriteBoolean(true);
 
-            // .NET client does not discern between different statements for now.
-            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
-            writer.WriteByte((byte) StatementType.Any);
         }
 
         /// <summary>
