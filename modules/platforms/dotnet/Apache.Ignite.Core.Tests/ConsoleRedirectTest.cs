@@ -52,10 +52,10 @@ namespace Apache.Ignite.Core.Tests
             _stdErr = Console.Error;
 
             _outSb = new StringBuilder();
-            Console.SetOut(new StringWriter(_outSb));
+            Console.SetOut(new MyStringWriter(_outSb));
 
             _errSb = new StringBuilder();
-            Console.SetError(new StringWriter(_errSb));
+            Console.SetError(new MyStringWriter(_errSb));
         }
 
         /// <summary>
@@ -64,8 +64,12 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            MyStringWriter.Throw = false;
+
             Console.SetOut(_stdOut);
             Console.SetError(_stdErr);
+
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -84,9 +88,12 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the exception in console writer.
         /// </summary>
         [Test]
-        public void TestExceptionInWriter()
+        public void TestExceptionInWriterPropagatesToJavaAndBack()
         {
-            // TODO: Redirect and throw.
+            MyStringWriter.Throw = true;
+
+            var ex = Assert.Throws<IgniteException>(() => Ignition.Start(TestUtils.GetTestConfiguration()));
+            Assert.AreEqual("foo", ex.Message);
         }
 
         /// <summary>
@@ -184,6 +191,26 @@ namespace Apache.Ignite.Core.Tests
                 });
 
                 // Will be stopped automatically on domain unload.
+            }
+        }
+
+        private class MyStringWriter : StringWriter
+        {
+            public static bool Throw { get; set; }
+
+            public MyStringWriter(StringBuilder sb) : base(sb)
+            {
+                // No-op.
+            }
+
+            public override void Write(string value)
+            {
+                if (Throw)
+                {
+                    throw new Exception("foo");
+                }
+
+                base.Write(value);
             }
         }
     }
