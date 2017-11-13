@@ -143,7 +143,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
 
-        idxName = parseIdentifier(lex, IF);
+        idxName = parseIndexName(lex);
 
         skipIfMatchesKeyword(lex, ON);
 
