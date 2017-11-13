@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -3851,7 +3852,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);
 
-            if (desc != null) {
+            if (desc != null || MetaStorage.METASTORAGE_CACHE_NAME.equals(cacheName)) {
                 if (failIfExists) {
                     throw new CacheExistsException("Failed to start cache " +
                         "(a cache with the same name is already started): " + cacheName);
