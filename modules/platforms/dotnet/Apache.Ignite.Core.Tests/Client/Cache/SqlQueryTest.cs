@@ -192,17 +192,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestDml()
         {
-            
-        }
+            var cache = GetClientCache<Person>();
 
-        /// <summary>
-        /// Tests the DML with object arg.
-        /// </summary>
-        [Test]
-        public void TestDmlObjectArg()
-        {
-            // TODO: Do we even need this in the client protocol?
-            
+            var qry = new SqlFieldsQuery("insert into Person (_key, id, name) values (?, ?, ?)", -10, 1, "baz");
+            var res = cache.Query(qry).GetAll();
+
+            Assert.AreEqual(1, res[0][0]);
+            Assert.AreEqual("baz", cache[-10].Name);
         }
 
         /// <summary>
@@ -211,7 +207,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private static void InitCache(string cacheName)
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, Person>(
-                new CacheConfiguration(cacheName, typeof(Person)));
+                new CacheConfiguration(cacheName, new QueryEntity(typeof(int), typeof(Person))));
 
             cache.RemoveAll();
 
