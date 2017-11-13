@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -39,6 +41,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     /** Include field names flag. */
     private final boolean includeFieldNames;
 
+    /** Expected statement type. */
+    private JdbcStatementType stmtType;
+
     /**
      * Ctor.
      *
@@ -47,7 +52,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        qry = new SqlFieldsQuery(reader.readString())
+        // TODO: Strive to have the same request/response format as in JdbcQueryExecuteRequest.
+
+        qry = new SqlFieldsQueryEx(reader.readString())
                 .setArgs(PlatformCache.readQueryArgs(reader))
                 .setSchema(reader.readString())
                 .setDistributedJoins(reader.readBoolean())
@@ -60,6 +67,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
                 .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
 
         includeFieldNames = reader.readBoolean();
+        stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
     }
 
     /** {@inheritDoc} */

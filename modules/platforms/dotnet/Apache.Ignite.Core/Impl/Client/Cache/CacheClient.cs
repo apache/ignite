@@ -483,8 +483,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             // Always include field names.
             writer.WriteBoolean(true);
 
-            // TODO: Query type flag (Unknow, SQL, DML)
-            // TODO: Compare binary protocol format with JDBC
+            // .NET client does not discern between different statements for now.
+            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            writer.WriteByte((byte) StatementType.Any);
         }
 
         /// <summary>

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// <para />
     /// When the client knows expected kind of query, we can fail earlier on server.
     /// </summary>
-    internal enum QueryType
+    internal enum StatementType : byte
     {
         /// <summary>
         /// Any query, SQL or DML.
