@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
@@ -31,10 +32,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -42,10 +46,12 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  *
@@ -66,13 +72,24 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private static volatile boolean err;
 
+    /** */
+    private boolean testSockNio;
+
+    /** */
+    private ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        if (testSockNio)
+            System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+        spis.put(igniteInstanceName, zkSpi);
 
         if (USE_TEST_CLUSTER) {
             assert zkCluster != null;
@@ -114,14 +131,18 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
                         assertNull(old);
 
-                        DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
+                        synchronized (nodeEvts) {
+                            DiscoveryLocalJoinData locJoin = ((IgniteKernal)ignite).context().discovery().localJoin();
 
-                        nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                            nodeEvts.put(locJoin.event().topologyVersion(), locJoin.event());
+                        }
                     }
 
-                    DiscoveryEvent old = nodeEvts.put(discoveryEvt.topologyVersion(), discoveryEvt);
+                    synchronized (nodeEvts) {
+                        DiscoveryEvent old = nodeEvts.put(discoveryEvt.topologyVersion(), discoveryEvt);
 
-                    assertNull(old);
+                        assertNull(old);
+                    }
                 }
                 catch (Throwable e) {
                     err = true;
@@ -142,30 +163,50 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        err = false;
-
-        evts.clear();
-
         if (USE_TEST_CLUSTER) {
             zkCluster = new TestingCluster(1);
             zkCluster.start();
         }
 
+        reset();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         if (zkCluster != null) {
-            zkCluster.close();
+            try {
+                zkCluster.close();
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to stop Zookeeper client: " + e, e);
+            }
 
             zkCluster = null;
         }
 
         super.afterTest();
 
-        assertFalse("Unexpected error, see log for details", err);
+        try {
+            assertFalse("Unexpected error, see log for details", err);
 
-        checkEventsConsistency();
+            checkEventsConsistency();
+        }
+        finally {
+            reset();
+        }
+    }
+
+    /**
+     *
+     */
+    private void reset() {
+        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
+
+        ZkTestClientCnxnSocketNIO.reset();
+
+        System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
+
+        err = false;
 
         evts.clear();
     }
@@ -209,7 +250,149 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConnectionRestore1() throws Exception {
+        testSockNio = true;
 
+        Ignite node0 = startGrid(0);
+
+        ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+        c0.closeSocket(false);
+
+        startGrid(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore2() throws Exception {
+        testSockNio = true;
+
+        Ignite node0 = startGrid(0);
+
+        ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+        c0.closeSocket(false);
+
+        startGridsMultiThreaded(1, 5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_NonCoordinator1() throws Exception {
+        connectionRestore_NonCoordinator(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_NonCoordinator2() throws Exception {
+        connectionRestore_NonCoordinator(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void connectionRestore_NonCoordinator(boolean failWhenDisconnected) throws Exception {
+        testSockNio = true;
+
+        Ignite node0 = startGrid(0);
+        Ignite node1 = startGrid(1);
+
+        ZkTestClientCnxnSocketNIO c1 = ZkTestClientCnxnSocketNIO.forNode(node1);
+
+        c1.closeSocket(true);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        }, "start-node");
+
+        checkEvents(node0.configuration().getNodeId(), joinEvent(3));
+
+        if (failWhenDisconnected) {
+            ZookeeperDiscoverySpi spi = spis.get(getTestIgniteInstanceName(2));
+
+            spi.closeClient();
+
+            checkEvents(node0.configuration().getNodeId(), failEvent(4));
+        }
+
+        c1.allowConnect();
+
+        checkEvents(ignite(1).configuration().getNodeId(), joinEvent(3), failEvent(4));
+
+        if (!failWhenDisconnected)
+            fut.get();
+    }
+
+    private static DiscoveryEvent joinEvent(long topVer) {
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_JOINED, null);
+
+        expEvt.topologySnapshot(topVer, null);
+
+        return expEvt;
+    }
+
+    private static DiscoveryEvent failEvent(long topVer) {
+        DiscoveryEvent expEvt = new DiscoveryEvent(null, null, EventType.EVT_NODE_FAILED, null);
+
+        expEvt.topologySnapshot(topVer, null);
+
+        return expEvt;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param expEvts Expected events.
+     * @throws Exception If fialed.
+     */
+    private void checkEvents(final UUID nodeId, final DiscoveryEvent...expEvts) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Map<Long, DiscoveryEvent> nodeEvts = evts.get(nodeId);
+
+                if (nodeEvts == null) {
+                    info("No events for node: " + nodeId);
+
+                    return false;
+                }
+
+                synchronized (nodeEvts) {
+                    for (DiscoveryEvent expEvt : expEvts) {
+                        DiscoveryEvent evt0 = nodeEvts.get(expEvt.topologyVersion());
+
+                        if (evt0 == null) {
+                            info("No event for version: " + expEvt.topologyVersion());
+
+                            return false;
+                        }
+
+                        assertEquals(expEvt.type(), evt0.type());
+                    }
+                }
+
+                return true;
+            }
+        }, 10000));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore4() throws Exception {
+        testSockNio = true;
+
+        Ignite node0 = startGrid(0);
+
+        ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+        c0.closeSocket(false);
+
+        startGrid(1);
     }
 
     /**
@@ -291,6 +474,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         for (Ignite node : G.allGrids())
             node.compute().broadcast(new DummyCallable(null));
+
+        startGrid(0);
+
+        waitForTopology(5);
     }
 
     /**

@@ -112,6 +112,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private ZooKeeper zk;
 
     /** */
+    private CuratorFramework zkCurator;
+
+    /** */
     private int sesTimeout = 5000;
 
     /** */
@@ -319,6 +322,14 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             log.debug("Local node initialized: " + locNode);
     }
 
+    private boolean igniteClusterStarted() throws Exception {
+        boolean started = zkCurator.checkExists().forPath(IGNITE_PATH) != null &&
+            zkCurator.checkExists().forPath(ALIVE_NODES_PATH) != null &&
+            !zk.getChildren(ALIVE_NODES_PATH, false).isEmpty();
+
+        return started;
+    }
+
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         try {
@@ -333,14 +344,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             // ZK generates internal threads' names using current thread name.
             Thread.currentThread().setName("zk-" + igniteInstanceName);
 
-            CuratorFramework c;
-
             try {
-                c = CuratorFrameworkFactory.newClient(connectString, sesTimeout, sesTimeout, new RetryForever(500));
+                zkCurator = CuratorFrameworkFactory.newClient(connectString, sesTimeout, sesTimeout, new RetryForever(500));
 
-                c.start();
+                zkCurator.start();
 
-                zk = c.getZookeeperClient().getZooKeeper();
+                zk = zkCurator.getZookeeperClient().getZooKeeper();
                 // zk = new ZooKeeper(connectString, sesTimeout, zkWatcher);
             }
             finally {
@@ -348,28 +357,24 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             }
 
             for (;;) {
-                boolean started = zk.exists(IGNITE_PATH, false) != null &&
-                    zk.exists(ALIVE_NODES_PATH, false) != null &&
-                    !zk.getChildren(ALIVE_NODES_PATH, false).isEmpty();
+                boolean started = igniteClusterStarted();
 
                 if (!started) {
-                    InterProcessMutex mux = new InterProcessMutex(c, IGNITE_INIT_LOCK_PATH);
+                    InterProcessMutex mux = new InterProcessMutex(zkCurator, IGNITE_INIT_LOCK_PATH);
 
                     mux.acquire();
 
                     try {
-                        started = zk.exists(IGNITE_PATH, false) != null &&
-                            zk.exists(ALIVE_NODES_PATH, false) != null &&
-                            !zk.getChildren(ALIVE_NODES_PATH, false).isEmpty();
+                        started = igniteClusterStarted();
 
                         if (!started) {
                             log.info("First node starts, reset ZK state");
 
-                            if (zk.exists(IGNITE_PATH, false) != null)
-                                ZKUtil.deleteRecursive(zk, IGNITE_PATH);
+                            if (zkCurator.checkExists().forPath(IGNITE_PATH) != null)
+                                zkCurator.delete().deletingChildrenIfNeeded().forPath(IGNITE_PATH);
 
                             // TODO ZK: properly handle first node start and init after full cluster restart.
-                            if (zk.exists(IGNITE_PATH, false) == null) {
+                            if (zkCurator.checkExists().forPath(IGNITE_PATH) == null) {
                                 log.info("Initialize Zookeeper nodes.");
 
                                 List<Op> initOps = new ArrayList<>();
@@ -401,8 +406,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             gridStartTime = clusterData.gridStartTime;
 
             zk.getData(EVENTS_PATH, zkWatcher, dataUpdateCallback, null);
-            zk.getChildren(ALIVE_NODES_PATH, zkWatcher, nodesUpdateCallback, null);
             zk.getChildren(JOIN_HIST_PATH, zkWatcher, nodesUpdateCallback, null);
+            zk.getChildren(ALIVE_NODES_PATH, zkWatcher, nodesUpdateCallback, null);
 
             List<Op> joinOps = new ArrayList<>();
 
@@ -435,6 +440,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
+        closeZkClient();
+    }
+
+    private void closeZkClient() {
         if (zk != null) {
             try {
                 log.info("Close Zookeeper client.");
@@ -487,13 +496,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         final UUID nodeId;
 
         /** */
+        final String zkPath;
+
+        /** */
         transient ZKJoiningNodeData joinData;
 
         /**
          * @param order Node order.
          * @param nodeId Node ID.
          */
-        ZKNodeData(long order, UUID nodeId) {
+        ZKNodeData(String zkPath, long order, UUID nodeId) {
+            this.zkPath = zkPath;
             this.order = order;
             this.nodeId = nodeId;
         }
@@ -550,7 +563,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         int nodeOrder = Integer.parseInt(path.substring(ID_LEN + 1)) + 1;
 
-        return new ZKNodeData(nodeOrder, nodeId);
+        return new ZKNodeData(path, nodeOrder, nodeId);
     }
 
     /** */
@@ -562,69 +575,88 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     private ZKAliveNodes curAlive;
 
+    private void readJoinNodeData(ZKNodeData data, String path) throws Exception {
+        //byte[] bytes = zk.getData(path, null, null);
+        byte[] bytes = zkCurator.getData().forPath(path);
+
+        assert bytes.length > 0;
+
+        ZKJoiningNodeData joinData = unmarshal(bytes);
+
+        assert joinData.node != null && joinData.joiningNodeData != null : joinData;
+
+        joinData.node.order(data.order);
+
+        data.joinData = joinData;
+    }
+
     /**
      *
      */
     class NodesUpdateCallback implements AsyncCallback.Children2Callback {
         @Override public void processResult(int rc, String path, Object ctx, List<String> children, Stat stat) {
-            if (children == null || children.isEmpty())
-                return;
+            try {
+                if (children == null || children.isEmpty())
+                    return;
 
-            if (path.equals(JOIN_HIST_PATH)) {
-                log.info("Join nodes changed [rc=" + rc +
-                    ", path=" + path +
-                    ", nodes=" + children +
-                    ", ver=" + (stat != null ? stat.getCversion() : null) + ']');
+                if (path.equals(JOIN_HIST_PATH)) {
+                    log.info("Join nodes changed [rc=" + rc +
+                        ", path=" + path +
+                        ", nodes=" + children +
+                        ", ver=" + (stat != null ? stat.getCversion() : null) + ']');
 
-                for (String child : children) {
-                    ZKNodeData data = parseNodePath(child);
+                    for (String child : children) {
+                        ZKNodeData data = parseNodePath(child);
 
-                    if (joinHist.put(data.order, data) == null) {
-                        try {
-                            log.info("New joined node data: " + data);
+                        if (joinHist.put(data.order, data) == null) {
+                            try {
+                                log.info("New joined node data: " + data);
 
-                            byte[] bytes = zk.getData(path + "/" + child, null, null);
-
-                            assert bytes.length > 0;
-
-                            ZKJoiningNodeData joinData = unmarshal(bytes);
-
-                            assert joinData.node != null && joinData.joiningNodeData != null : joinData;
-
-                            joinData.node.order(data.order);
-
-                            data.joinData = joinData;
-                        }
-                        catch (Exception e) {
-                            // TODO ZK
-                            U.error(log, "Failed to get node data: " + e, e);
+                                readJoinNodeData(data, path + "/" + child);
+                            }
+                            catch (Exception e) {
+                                // TODO ZK
+                                U.error(log, "Failed to get node data: " + e, e);
+                            }
                         }
                     }
                 }
-            }
-            else if (path.equals(ALIVE_NODES_PATH)) {
-                log.info("Alive nodes changed [rc=" + rc +
-                    ", path=" + path +
-                    ", nodes=" + children +
-                    ", ver=" + (stat != null ? stat.getCversion() : null) + ']');
+                else if (path.equals(ALIVE_NODES_PATH)) {
+                    log.info("Alive nodes changed [rc=" + rc +
+                        ", path=" + path +
+                        ", nodes=" + children +
+                        ", ver=" + (stat != null ? stat.getCversion() : null) + ']');
 
-                assert stat != null;
+                    assert stat != null;
 
-                TreeMap<Long, ZKNodeData> nodes = new TreeMap<>();
+                    TreeMap<Long, ZKNodeData> nodes = new TreeMap<>();
 
-                for (String child : children) {
-                    ZKNodeData data = parseNodePath(child);
+                    for (String child : children) {
+                        ZKNodeData data = parseNodePath(child);
 
-                    nodes.put(data.order, data);
+                        nodes.put(data.order, data);
+                    }
+
+                    ZKAliveNodes newAlive = new ZKAliveNodes(stat.getCversion(), nodes);
+
+                    generateEvents(curAlive, newAlive);
+
+                    curAlive = newAlive;
                 }
+            }
+            catch (Throwable e) {
+                log.info("Uncaught error: " + e);
 
-                ZKAliveNodes newAlive = new ZKAliveNodes(stat.getCversion(), nodes);
-
-                generateEvents(curAlive, newAlive);
-
-                curAlive = newAlive;
+                throw e;
             }
         }
+    }
+
+    /**
+     * For testing only.
+     */
+    public void closeClient() {
+        closeZkClient();
     }
 
     /** */
@@ -694,6 +726,21 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                     joinedNodes.add(joined.order);
 
                     ZKNodeData data = joinHist.get(joined.order);
+
+                    if (data == null) {
+                        try {
+                            readJoinNodeData(joined, JOIN_HIST_PATH + "/" + joined.zkPath);
+
+                            assert joined.joinData != null : joined;
+
+                            joinHist.put(joined.order, joined);
+
+                            data = joined;
+                        }
+                        catch (Exception e) {
+                            U.error(log, "Failed to read node data: " + e);
+                        }
+                    }
 
                     assert data != null : joined;
 
@@ -792,7 +839,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         newEvents.ver = expVer + 1;
 
         try {
-            zk.setData(EVENTS_PATH, marshal(newEvents), expVer);
+            zkCurator.setData().forPath(EVENTS_PATH, marshal(newEvents));
+
+            // zk.setData(EVENTS_PATH, marshal(newEvents), expVer);
         }
         catch (Exception e) {
             U.error(log, "Events update error: " + e, e);
