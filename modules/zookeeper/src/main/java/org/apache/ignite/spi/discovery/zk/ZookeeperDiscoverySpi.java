@@ -28,6 +28,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.retry.RetryForever;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -56,6 +60,7 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -70,6 +75,9 @@ import org.jetbrains.annotations.Nullable;
 public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** */
     private static final String IGNITE_PATH = "/ignite";
+
+    /** */
+    private static final String IGNITE_INIT_LOCK_PATH = "/igniteLock";
 
     /** */
     private static final String CLUSTER_PATH = IGNITE_PATH + "/cluster";
@@ -263,7 +271,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
         // TODO ZK
-        throw new UnsupportedOperationException();
+        //throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -315,37 +323,76 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             // ZK generates internal threads' names using current thread name.
             Thread.currentThread().setName("zk-" + igniteInstanceName);
 
+            CuratorFramework c;
+
             try {
-                zk = new ZooKeeper(connectString, sesTimeout, zkWatcher);
+                c = CuratorFrameworkFactory.newClient(connectString, sesTimeout, sesTimeout, new RetryForever(500));
+
+                c.start();
+
+                zk = c.getZookeeperClient().getZooKeeper();
+                // zk = new ZooKeeper(connectString, sesTimeout, zkWatcher);
             }
             finally {
                 Thread.currentThread().setName(threadName);
             }
 
-            // TODO ZK: properly handle first node start and init after full cluster restart.
-            if (zk.exists(IGNITE_PATH, false) == null) {
-                log.info("Initialize Zookeeper nodes.");
+            for (;;) {
+                boolean started = zk.exists(IGNITE_PATH, false) != null &&
+                    zk.exists(ALIVE_NODES_PATH, false) != null &&
+                    !zk.getChildren(ALIVE_NODES_PATH, false).isEmpty();
 
-                List<Op> initOps = new ArrayList<>();
+                if (!started) {
+                    InterProcessMutex mux = new InterProcessMutex(c, IGNITE_INIT_LOCK_PATH);
 
-                ZKClusterData clusterData = new ZKClusterData(U.currentTimeMillis());
+                    mux.acquire();
 
-                initOps.add(Op.create(IGNITE_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(CLUSTER_PATH, marshal(clusterData), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(JOIN_HIST_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(ALIVE_NODES_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
-                initOps.add(Op.create(EVENTS_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                    try {
+                        started = zk.exists(IGNITE_PATH, false) != null &&
+                            zk.exists(ALIVE_NODES_PATH, false) != null &&
+                            !zk.getChildren(ALIVE_NODES_PATH, false).isEmpty();
 
-                zk.multi(initOps);
+                        if (!started) {
+                            log.info("First node starts, reset ZK state");
+
+                            if (zk.exists(IGNITE_PATH, false) != null)
+                                ZKUtil.deleteRecursive(zk, IGNITE_PATH);
+
+                            // TODO ZK: properly handle first node start and init after full cluster restart.
+                            if (zk.exists(IGNITE_PATH, false) == null) {
+                                log.info("Initialize Zookeeper nodes.");
+
+                                List<Op> initOps = new ArrayList<>();
+
+                                ZKClusterData clusterData = new ZKClusterData(U.currentTimeMillis());
+
+                                initOps.add(Op.create(IGNITE_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(CLUSTER_PATH, marshal(clusterData), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(JOIN_HIST_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(ALIVE_NODES_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(EVENTS_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+
+                                zk.multi(initOps);
+                            }
+
+                            break;
+                        }
+                    }
+                    finally {
+                        mux.release();
+                    }
+                }
+                else
+                    break;
             }
 
             ZKClusterData clusterData = unmarshal(zk.getData(CLUSTER_PATH, false, null));
 
             gridStartTime = clusterData.gridStartTime;
 
-            zk.getData(EVENTS_PATH, true, dataUpdateCallback, null);
-            zk.getChildren(ALIVE_NODES_PATH, true, nodesUpdateCallback, null);
-            zk.getChildren(JOIN_HIST_PATH, true, nodesUpdateCallback, null);
+            zk.getData(EVENTS_PATH, zkWatcher, dataUpdateCallback, null);
+            zk.getChildren(ALIVE_NODES_PATH, zkWatcher, nodesUpdateCallback, null);
+            zk.getChildren(JOIN_HIST_PATH, zkWatcher, nodesUpdateCallback, null);
 
             List<Op> joinOps = new ArrayList<>();
 
@@ -942,9 +989,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             log.info("Process event [type=" + event.getType() + ", state=" + event.getState() + ", path=" + event.getPath() + ']');
 
             if (event.getType() == Event.EventType.NodeChildrenChanged) {
-                zk.getChildren(event.getPath(), true, nodesUpdateCallback, null);
+                zk.getChildren(event.getPath(), this, nodesUpdateCallback, null);
             } else if (event.getType() == Event.EventType.NodeDataChanged) {
-                zk.getData(event.getPath(), true, dataUpdateCallback, null);
+                zk.getData(event.getPath(), this, dataUpdateCallback, null);
             }
         }
     }

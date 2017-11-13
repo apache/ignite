@@ -39,17 +39,24 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private TestingCluster zkCluster;
 
+    /** */
+    private static final boolean USE_TEST_CLUSTER = true;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
 
-        assert zkCluster != null;
-
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
-        zkSpi.setConnectString(zkCluster.getConnectString());
+        if (USE_TEST_CLUSTER) {
+            assert zkCluster != null;
+
+            zkSpi.setConnectString(zkCluster.getConnectString());
+        }
+        else
+            zkSpi.setConnectString("localhost:2181");
 
         cfg.setDiscoverySpi(zkSpi);
 
@@ -68,8 +75,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        zkCluster = new TestingCluster(1);
-        zkCluster.start();
+        if (USE_TEST_CLUSTER) {
+            zkCluster = new TestingCluster(1);
+            zkCluster.start();
+        }
 
     }
 
