@@ -358,7 +358,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         try {
             String cacheName = randomString();
 
-            queryProcessor(node()).dynamicIndexCreate(cacheName, cacheName, TBL_NAME, idx, false).get();
+            queryProcessor(node()).dynamicIndexCreate(cacheName, cacheName, TBL_NAME, idx, false, 0).get();
         }
         catch (SchemaOperationException e) {
             assertEquals(SchemaOperationException.CODE_CACHE_NOT_FOUND, e.code());

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static org.apache.ignite.internal.sql.command.SqlCreateIndexCommand.getDefaultParallelismLevel;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
@@ -38,44 +37,44 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      */
     public void testCreateIndex() throws Exception {
         // Base.
-        parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", null, "A", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC)", null, "TBL", "IDX", null, "A", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)", null, "TBL", "IDX", null, "A", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", 0, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC)", null, "TBL", "IDX", 0, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)", null, "TBL", "IDX", 0, "A", true);
 
         // Case (in)sensitivity.
-        parseValidate(null, "CREATE INDEX IDX ON TBL(COL)", null, "TBL", "IDX", null, "COL", false);
-        parseValidate(null, "CREATE INDEX iDx ON tBl(cOl)", null, "TBL", "IDX", null, "COL", false);
+        parseValidate(null, "CREATE INDEX IDX ON TBL(COL)", null, "TBL", "IDX", 0, "COL", false);
+        parseValidate(null, "CREATE INDEX iDx ON tBl(cOl)", null, "TBL", "IDX", 0, "COL", false);
 
-        parseValidate(null, "CREATE INDEX \"idx\" ON tbl(col)", null, "TBL", "idx", null, "COL", false);
-        parseValidate(null, "CREATE INDEX \"iDx\" ON tbl(col)", null, "TBL", "iDx", null, "COL", false);
+        parseValidate(null, "CREATE INDEX \"idx\" ON tbl(col)", null, "TBL", "idx", 0, "COL", false);
+        parseValidate(null, "CREATE INDEX \"iDx\" ON tbl(col)", null, "TBL", "iDx", 0, "COL", false);
 
-        parseValidate(null, "CREATE INDEX idx ON \"tbl\"(col)", null, "tbl", "IDX", null, "COL", false);
-        parseValidate(null, "CREATE INDEX idx ON \"tBl\"(col)", null, "tBl", "IDX", null, "COL", false);
+        parseValidate(null, "CREATE INDEX idx ON \"tbl\"(col)", null, "tbl", "IDX", 0, "COL", false);
+        parseValidate(null, "CREATE INDEX idx ON \"tBl\"(col)", null, "tBl", "IDX", 0, "COL", false);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(\"col\")", null, "TBL", "IDX", null, "col", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\")", null, "TBL", "IDX", null, "cOl", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"col\")", null, "TBL", "IDX", 0, "col", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\")", null, "TBL", "IDX", 0, "cOl", false);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" ASC)", null, "TBL", "IDX", null, "cOl", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" DESC)", null, "TBL", "IDX", null, "cOl", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" ASC)", null, "TBL", "IDX", 0, "cOl", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(\"cOl\" DESC)", null, "TBL", "IDX", 0, "cOl", true);
 
         // Columns.
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b)", null, "TBL", "IDX", null, "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b)", null, "TBL", "IDX", 0, "A", false, "B", false);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b)", null, "TBL", "IDX", null, "A", false, "B", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b ASC)", null, "TBL", "IDX", null, "A", false, "B", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b ASC)", null, "TBL", "IDX", null, "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b)", null, "TBL", "IDX", 0, "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b ASC)", null, "TBL", "IDX", 0, "A", false, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b ASC)", null, "TBL", "IDX", 0, "A", false, "B", false);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b)", null, "TBL", "IDX", null, "A", true, "B", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC)", null, "TBL", "IDX", null, "A", false, "B", true);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b DESC)", null, "TBL", "IDX", null, "A", true, "B", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b)", null, "TBL", "IDX", 0, "A", true, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC)", null, "TBL", "IDX", 0, "A", false, "B", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b DESC)", null, "TBL", "IDX", 0, "A", true, "B", true);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b DESC)", null, "TBL", "IDX", null, "A", false, "B", true);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b ASC)", null, "TBL", "IDX", null, "A", true, "B", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a ASC, b DESC)", null, "TBL", "IDX", 0, "A", false, "B", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b ASC)", null, "TBL", "IDX", 0, "A", true, "B", false);
 
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c)", null, "TBL", "IDX", null, "A", false, "B", false, "C", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b, c)", null, "TBL", "IDX", null, "A", true, "B", false, "C", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC, c)", null, "TBL", "IDX", null, "A", false, "B", true, "C", false);
-        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c DESC)", null, "TBL", "IDX", null, "A", false, "B", false, "C", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c)", null, "TBL", "IDX", 0, "A", false, "B", false, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC, b, c)", null, "TBL", "IDX", 0, "A", true, "B", false, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b DESC, c)", null, "TBL", "IDX", 0, "A", false, "B", true, "C", false);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a, b, c DESC)", null, "TBL", "IDX", 0, "A", false, "B", false, "C", true);
 
         // Negative cases.
         assertParseError(null, "CREATE INDEX idx ON tbl()", "Unexpected token");
@@ -84,25 +83,25 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null, "CREATE INDEX idx ON tbl(b, a, a)", "Column already defined: A");
 
         // Tests with schema.
-        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
-        parseValidate(null, "CREATE INDEX idx ON \"schema\".tbl(a)", "schema", "TBL", "IDX", null, "A", false);
-        parseValidate(null, "CREATE INDEX idx ON \"sChema\".tbl(a)", "sChema", "TBL", "IDX", null, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON \"schema\".tbl(a)", "schema", "TBL", "IDX", 0, "A", false);
+        parseValidate(null, "CREATE INDEX idx ON \"sChema\".tbl(a)", "sChema", "TBL", "IDX", 0, "A", false);
 
-        parseValidate("SCHEMA", "CREATE INDEX idx ON tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
-        parseValidate("schema", "CREATE INDEX idx ON tbl(a)", "schema", "TBL", "IDX", null, "A", false);
-        parseValidate("sChema", "CREATE INDEX idx ON tbl(a)", "sChema", "TBL", "IDX", null, "A", false);
+        parseValidate("SCHEMA", "CREATE INDEX idx ON tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
+        parseValidate("schema", "CREATE INDEX idx ON tbl(a)", "schema", "TBL", "IDX", 0, "A", false);
+        parseValidate("sChema", "CREATE INDEX idx ON tbl(a)", "sChema", "TBL", "IDX", 0, "A", false);
 
         // No index name.
-        parseValidate(null, "CREATE INDEX ON tbl(a)", null, "TBL", null, null, "A", false);
-        parseValidate(null, "CREATE INDEX ON schema.tbl(a)", "SCHEMA", "TBL", null, null, "A", false);
+        parseValidate(null, "CREATE INDEX ON tbl(a)", null, "TBL", null, 0, "A", false);
+        parseValidate(null, "CREATE INDEX ON schema.tbl(a)", "SCHEMA", "TBL", null, 0, "A", false);
 
         // NOT EXISTS
         SqlCreateIndexCommand cmd;
 
-        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
+        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
         assertFalse(cmd.ifNotExists());
 
-        cmd = parseValidate(null, "CREATE INDEX IF NOT EXISTS idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
+        cmd = parseValidate(null, "CREATE INDEX IF NOT EXISTS idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
         assertTrue(cmd.ifNotExists());
 
         assertParseError(null, "CREATE INDEX IF idx ON tbl(a)", "Unexpected token: \"IDX\"");
@@ -111,10 +110,10 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null, "CREATE INDEX NOT EXISTS idx ON tbl(a)", "Unexpected token: \"NOT\"");
 
         // SPATIAL
-        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
+        cmd = parseValidate(null, "CREATE INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
         assertFalse(cmd.spatial());
 
-        cmd = parseValidate(null, "CREATE SPATIAL INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", null, "A", false);
+        cmd = parseValidate(null, "CREATE SPATIAL INDEX idx ON schema.tbl(a)", "SCHEMA", "TBL", "IDX", 0, "A", false);
         assertTrue(cmd.spatial());
 
         // UNIQUE
@@ -130,9 +129,9 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL 1", null, "TBL", "IDX", 1, "A", true);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL  3", null, "TBL", "IDX", 3, "A", true);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)   PARALLEL  7", null, "TBL", "IDX", 7, "A", true);
+        parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)   PARALLEL  0", null, "TBL", "IDX", 0, "A", true);
         assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL ", "Failed to parse SQL statement \"CREATE INDEX idx ON tbl(a DESC) PARALLEL [*]\"");
         assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL abc", "Unexpected token: \"ABC\"");
-        assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL 0", "Illegal parallelism level value: [parallel=0]");
         // TODO: support for the negative and float numbers in parser
         // parseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL -2", "Illegal parallelism level value: [parallel=-2]");
     }
@@ -150,7 +149,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      * @return Command.
      */
     private static SqlCreateIndexCommand parseValidate(String schema, String sql, String expSchemaName,
-        String expTblName, String expIdxName, Integer expParallel, Object... expColDefs) {
+        String expTblName, String expIdxName, int expParallel, Object... expColDefs) {
         SqlCreateIndexCommand cmd = (SqlCreateIndexCommand)new SqlParser(schema, sql).nextCommand();
 
         validate(cmd, expSchemaName, expTblName, expIdxName, expParallel, expColDefs);
@@ -169,13 +168,11 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      * @param expColDefs Expected column definitions.
      */
     private static void validate(SqlCreateIndexCommand cmd, String expSchemaName, String expTblName, String expIdxName,
-        Integer expParallel, Object... expColDefs) {
+        int expParallel, Object... expColDefs) {
         assertEquals(expSchemaName, cmd.schemaName());
         assertEquals(expTblName, cmd.tableName());
         assertEquals(expIdxName, cmd.indexName());
-
-        if (expParallel == null)
-            assertEquals(getDefaultParallelismLevel(), cmd.parallel());
+        assertEquals(expParallel, cmd.parallel());
 
         if (F.isEmpty(expColDefs) || expColDefs.length % 2 == 1)
             throw new IllegalArgumentException("Column definitions must be even.");

@@ -97,16 +97,18 @@ public class SqlParserUtils {
      * @return Integer value.
      */
     public static int parseInt(SqlLexer lex) {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+        SqlLexerToken nextToken = lex.lookAhead();
+
+        if (nextToken.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
-                return Integer.parseInt(lex.token());
+                return Integer.parseInt(nextToken.token());
             }
             catch (NumberFormatException e) {
                 // No-op.
             }
         }
 
-        throw errorUnexpectedToken(lex, "[number]");
+        throw errorUnexpectedToken(nextToken, "[number]");
     }
 
     /**

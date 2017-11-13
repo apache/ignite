@@ -2169,25 +2169,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Entry point for index procedure.
-     *
-     * @param cacheName Cache name.
-     * @param schemaName Schema name.
-     * @param tblName Table name.
-     * @param idx Index.
-     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
-     * @return Future completed when index is created.
-     */
-    // TODO: Remove and refactor tests.
-    public IgniteInternalFuture<?> dynamicIndexCreate(String cacheName, String schemaName, String tblName,
-        QueryIndex idx, boolean ifNotExists) {
-        SchemaAbstractOperation op = new SchemaIndexCreateOperation(UUID.randomUUID(), cacheName, schemaName, tblName,
-            idx, ifNotExists, 1); // As before
-
-        return startIndexOperationDistributed(op);
-    }
-
-    /**
      * Entry point for index drop procedure
      *
      * @param cacheName Cache name.

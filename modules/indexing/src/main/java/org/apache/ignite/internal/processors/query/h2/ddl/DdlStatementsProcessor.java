@@ -229,9 +229,8 @@ public class DdlStatementsProcessor {
 
                 newIdx.setFields(flds);
 
-                // TODO: Set default parallellism.
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd.ifNotExists());
+                    newIdx, cmd.ifNotExists(), 0);
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
                 GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;

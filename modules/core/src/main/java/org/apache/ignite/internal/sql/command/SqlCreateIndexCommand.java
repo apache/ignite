@@ -65,8 +65,10 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /** Spatial index flag. */
     private boolean spatial;
 
-    /** Parallelism level. */
-    // TODO: Initialize to special value meaning "default".
+    /**
+     * Parallelism level. <code>parallel=0</code> means that a default number
+     * of cores will be used during index creation (e.g. 25% of available cores).
+     */
     private int parallel;
 
     /** Columns. */
@@ -154,9 +156,6 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
         parseColumnList(lex);
 
-        // Default parallelism level is about 25% of available cores.
-        parallel = getDefaultParallelismLevel();
-
         parseIndexProperties(lex);
 
         return this;
@@ -238,25 +237,16 @@ public class SqlCreateIndexCommand implements SqlCommand {
                 case PARALLEL:
                     lex.shift();
 
-                    // TODO: New operation to parse without shift in order to validate and show error on correct position.
                     parallel = parseInt(lex);
 
-                    if (parallel < 1)
+                    if (parallel < 0)
                         throw error(lex, "Illegal " + PARALLEL + " value: " + parallel);
+
+                    lex.shift();
 
                     break;
             }
         }
-    }
-
-    /**
-     * Returns default parallelism level
-     *
-     * @return default parallelism level
-     */
-    // TODO: Remove.
-    public static int getDefaultParallelismLevel() {
-        return Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
     }
 
     /** {@inheritDoc} */

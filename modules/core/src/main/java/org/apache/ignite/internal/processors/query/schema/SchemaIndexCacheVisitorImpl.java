@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -33,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -79,14 +78,18 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
         String tblName, SchemaIndexOperationCancellationToken cancel, int parallel) {
-        // TODO: If "parallel" is default, then pick Runtime.cores() / 4.
-        // TODO: Min with processor count.
 
         this.qryProc = qryProc;
         this.cacheName = cacheName;
         this.tblName = tblName;
         this.cancel = cancel;
-        this.parallel = parallel;
+
+        int cores = Runtime.getRuntime().availableProcessors();
+
+        if (parallel > 0)
+            this.parallel = Math.min(cores, parallel);
+        else if (parallel == 0)
+            this.parallel =  Math.max(1, cores / 4); // Default value = 25% of available cores
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
@@ -123,32 +126,26 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     private void processPartitionsConcurrently(final List<GridDhtLocalPartition> parts,
         final FilteringVisitorClosure filterClo) throws IgniteCheckedException {
-        int parallel0 = Math.min(parallel, Runtime.getRuntime().availableProcessors());
 
-        int[] ranges = U.getRanges(parts.size(), parallel0, 1);
+        GridCompoundFuture<Void, Void> compFut = new GridCompoundFuture<>();
 
-        // TODO: Use GridCompundFuture (do not forget init()!)
-        List<GridFutureAdapter<Void>> futs = new ArrayList<>(parallel0);
+        for (int i = 0; i < parallel; i++) {
 
-        for (int i = 0; i < parallel0; i++) {
-            if (ranges[i]  < ranges[i + 1]) {
-                final List<GridDhtLocalPartition> partsSublist = parts.subList(ranges[i], ranges[i + 1]);
+            GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-                GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+            compFut.add(fut);
 
-                futs.add(fut);
+            PartitionsIndexingWorker worker = new PartitionsIndexingWorker(fut, parts, i, filterClo);
 
-                PartitionsIndexingWorker worker = new PartitionsIndexingWorker(fut, partsSublist, filterClo);
-
-                if (i == parallel0 - 1)  // Last chunk of partitions is treated by the current thread.
-                    worker.run();
-                else
-                    new Thread(worker).start();
-            }
+            if (i == parallel - 1)  // Last chunk of partitions is treated by the current thread.
+                worker.run();
+            else
+                new Thread(worker).start();
         }
 
-        for (GridFutureAdapter<Void> fut: futs)
-            fut.get();
+        compFut.markInitialized();
+
+        compFut.get();
     }
 
     /**
@@ -268,8 +265,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     private class PartitionsIndexingWorker extends GridWorker {
 
-        /** Partitions to be indexed. */
-        private final List<GridDhtLocalPartition> parts;
+        /** Partition number remainder of division to be indexed by this worker. */
+        private final int remainder;
 
         /** Indexing closure. */
         private final FilteringVisitorClosure filterClo;
@@ -277,20 +274,25 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         /** Processing result future. */
         private final GridFutureAdapter<Void> fut;
 
+        /** Cache partitions to be indexed. */
+        private final List<GridDhtLocalPartition> parts;
+
         /**
          * Constructor.
          *
          * @param fut Processing result future.
-         * @param parts Partitions to be indexed.
+         * @param parts Cache partitions to be indexed.
+         * @param remainder Partition number remainder of division to be indexed by this worker.
          * @param filterClo Indexing closure.
          */
-        private PartitionsIndexingWorker(GridFutureAdapter<Void> fut, List<GridDhtLocalPartition> parts,
-            FilteringVisitorClosure filterClo) {
-            // TODO: Make sure name is unique (use schema/index name and runner counter).
-            super(cctx.igniteInstanceName(), "parallel-idx-creation-worker",
-                cctx.logger(SchemaIndexCacheVisitorImpl.class.getName()));
-            this.parts = parts;
+        private PartitionsIndexingWorker(final GridFutureAdapter<Void> fut,
+            final List<GridDhtLocalPartition> parts, int remainder, FilteringVisitorClosure filterClo) {
+            super(cctx.igniteInstanceName(), "parallel-idx-creation-worker-" + cacheName + "-" + tblName + "-"
+                    + remainder, cctx.logger(SchemaIndexCacheVisitorImpl.class.getName()));
+
+            this.remainder = remainder;
             this.filterClo = filterClo;
+            this.parts = parts;
             this.fut = fut;
         }
 
@@ -298,17 +300,21 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             Throwable err = null;
 
             try {
-                for (GridDhtLocalPartition part : parts) {
+                for (int i = 0; i < parts.size(); i++) {
                     if (failed)
                         break;
 
-                    processPartition(part, filterClo);
+                    if (i % parallel == remainder) {
+                        GridDhtLocalPartition part = parts.get(i);
+
+                        processPartition(part, filterClo);
+                    }
                 }
             }
             catch (Throwable e) {
                 err = e;
 
-                // TODO: print error in the log, use U.error().
+                U.error(log, "Error during parallel index creation on thread " + name(), e);
 
                 failed = true;
             }
