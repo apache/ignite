@@ -1729,6 +1729,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.addAll(clientMsgWorkers.values());
         threads.add(tcpSrvr);
         threads.add(ipFinderCleaner);
+        threads.add(prevNodeConnChecker);
+        threads.add(nextNodeConnChecker);
         threads.add(msgWorker);
         threads.add(statsPrinter);
 
@@ -2031,6 +2033,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param msg Message.
      */
     private void processMessageFailedNodes(TcpDiscoveryAbstractMessage msg) {
+        if (log.isDebugEnabled())
+            log.debug("Processing message failed nodes: " + msg);
+
         Collection<UUID> msgFailedNodes = msg.failedNodes();
 
         if (msgFailedNodes != null) {
@@ -2040,7 +2045,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 sndId = msg.creatorNodeId();
 
             if (sndId != null) {
-                if (ring.node(sndId) == null) {
+                if (locNode.internalOrder() > 0 && ring.node(sndId) == null) {
                     if (log.isDebugEnabled()) {
                         log.debug("Ignore message failed nodes, sender node is not alive [nodeId=" + sndId +
                             ", failedNodes=" + msgFailedNodes + ']');
@@ -2126,7 +2131,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             synchronized (mux) {
                 TcpDiscoveryNode prevNode = ring.prevNode(failedNodes.keySet());
 
-                if (prevNode != null && prevNode.id().equals(msg.senderNodeId())) {
+                if (prevNode != null && prevNode.id().equals(msg.senderNodeId()) &&
+                    (lastPrevNodeTime != 0 || msg instanceof TcpDiscoveryNodeAddedMessage)) {
+
+                    if (log.isDebugEnabled())
+                        log.debug("Message from the previous node, updating the last time received [msg=" + msg + ']');
+
                     lastPrevNodeTime = U.currentTimeMillis();
 
                     mux.notifyAll();
@@ -4328,8 +4338,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                     spi.collectExchangeData(dataPacket);
-
-                    processMessageFailedNodes(msg);
                 }
 
                 if (log.isDebugEnabled())
@@ -4460,8 +4468,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Notify outside of synchronized block.
                 if (dataPacket != null)
                     spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
-
-                processMessageFailedNodes(msg);
             }
 
             if (sendMessageToRemotes(msg))
@@ -5746,6 +5752,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryNode prevNode = ring.prevNode(failedNodes.keySet());
 
                     if (prevNode == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("No previous node, terminating connection check");
+
                         lastPrevNodeTime = 0;
 
                         return 0;
