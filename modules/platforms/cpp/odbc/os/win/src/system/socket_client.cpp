@@ -283,7 +283,7 @@ namespace ignite
 #else // use old hardcore WSAIoctl
 
                 // WinSock structure for KeepAlive timing settings
-                struct tcp_keepalive settings;
+                struct tcp_keepalive settings = {0};
                 settings.onoff = 1;
                 settings.keepalivetime = KEEP_ALIVE_IDLE_TIME * 1000;
                 settings.keepaliveinterval = KEEP_ALIVE_PROBES_PERIOD * 1000;
