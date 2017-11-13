@@ -41,9 +41,6 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     /** Include field names flag. */
     private final boolean includeFieldNames;
 
-    /** Expected statement type. */
-    private JdbcStatementType stmtType;
-
     /**
      * Ctor.
      *
@@ -53,8 +50,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         super(reader);
 
         // TODO: Strive to have the same request/response format as in JdbcQueryExecuteRequest.
+        // TODO: We have different argument format.
 
-        qry = new SqlFieldsQueryEx(reader.readString())
+        qry = new SqlFieldsQuery(reader.readString())
                 .setArgs(PlatformCache.readQueryArgs(reader))
                 .setSchema(reader.readString())
                 .setDistributedJoins(reader.readBoolean())
@@ -67,7 +65,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
                 .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
 
         includeFieldNames = reader.readBoolean();
-        stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+        reader.readByte(); // Skip statement type.
+
+        //stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
     }
 
     /** {@inheritDoc} */
