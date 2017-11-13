@@ -429,7 +429,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         CountDownLatch idxLatch1 = blockIndexing(srv1);
         CountDownLatch idxLatch2 = blockIndexing(srv2);
 
-        QueryField c = c("salary", Float.class.getName());
+        QueryField c = c("salary", Double.class.getName());
 
         final IgniteInternalFuture<?> idxFut = addCols(srv1, QueryUtils.DFLT_SCHEMA, c);
 
