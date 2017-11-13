@@ -141,6 +141,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithCacheGroupAndLegacyParamName() throws Exception {
+        doTestCreateTable(CACHE_NAME, "MyGroup", null, null, true);
+    }
+
+    /**
      * Test that {@code CREATE TABLE} actually creates new cache from template,
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
@@ -484,10 +492,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) {
+        doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
+     * H2 table and type descriptor on all nodes, optionally with cache type check.
+     * @param tplCacheName Template cache name.
+     * @param cacheGrp Cache group name, or {@code null} if no group is set.
+     * @param cacheMode Expected cache mode, or {@code null} if no check is needed.
+     * @param writeSyncMode Expected write sync mode, or {@code null} if no check is needed.
+     * @param useLegacyCacheGrpParamName Whether legacy (harder-to-read) cache group param name should be used.
+     * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
+     */
+    private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
+        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams) {
+        String cacheGrpParamName = useLegacyCacheGrpParamName ? "cacheGroup" : "cache_group";
+
         String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"" +
-            (F.isEmpty(cacheGrp) ? "" : ",\"cache_group=" + cacheGrp + '"');
+            (F.isEmpty(cacheGrp) ? "" : ",\"" + cacheGrpParamName + '=' + cacheGrp + '"');
 
         for (String p : additionalParams)
             sql += ",\"" + p + "\"";
@@ -944,7 +969,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: name");
 
         execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
-            "\"Name\")) WITH wrap_key,wrap_value,\"affinity_key='Name'\"");
+            "\"Name\")) WITH wrap_key,wrap_value,\"affinityKey='Name'\"");
 
         assertAffinityCacheConfiguration("E", "Name");
 
