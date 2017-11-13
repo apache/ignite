@@ -35,7 +35,7 @@ public abstract class ReentrantProcessor<T>
         if (entry.exists()) {
             GridCacheLockState2Base<T> state = entry.getValue();
 
-            LockedModified result = tryLock(state);
+            LockedModified result = lock(state);
 
             // Write result if necessary
             if (result.modified) {
@@ -49,5 +49,5 @@ public abstract class ReentrantProcessor<T>
     }
 
     /** */
-    protected abstract LockedModified tryLock(GridCacheLockState2Base<T> state);
+    protected abstract LockedModified lock(GridCacheLockState2Base<T> state);
 }

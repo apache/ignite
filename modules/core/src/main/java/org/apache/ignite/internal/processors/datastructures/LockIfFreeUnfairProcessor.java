@@ -56,7 +56,7 @@ public final class LockIfFreeUnfairProcessor extends ReentrantProcessor<UUID> {
         nodeId = new UUID(in.readLong(), in.readLong());
     }
 
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<UUID> state) {
+    @Override protected LockedModified lock(GridCacheLockState2Base<UUID> state) {
         return state.lockIfFree(nodeId);
     }
 }

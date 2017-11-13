@@ -46,7 +46,7 @@ public final class LockOrRemoveFairProcessor extends ReentrantProcessor<LockOwne
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<LockOwner> state) {
+    @Override protected LockedModified lock(GridCacheLockState2Base<LockOwner> state) {
         return state.lockOrRemove(owner);
     }
 

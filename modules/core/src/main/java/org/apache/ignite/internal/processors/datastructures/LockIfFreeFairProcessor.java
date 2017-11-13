@@ -46,7 +46,7 @@ public final class LockIfFreeFairProcessor extends ReentrantProcessor<LockOwner>
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<LockOwner> state) {
+    @Override protected LockedModified lock(GridCacheLockState2Base<LockOwner> state) {
         return state.lockIfFree(owner);
     }
 

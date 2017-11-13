@@ -29,7 +29,7 @@ public final class AcquireFairProcessor extends ReentrantProcessor<LockOwner> {
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<LockOwner> state) {
+    @Override protected LockedModified lock(GridCacheLockState2Base<LockOwner> state) {
         return state.lockOrAdd(owner);
     }
 

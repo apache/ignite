@@ -29,7 +29,7 @@ public final class AcquireUnfairProcessor extends ReentrantProcessor<UUID> {
     }
 
     /** {@inheritDoc} */
-    @Override protected LockedModified tryLock(GridCacheLockState2Base<UUID> state) {
+    @Override protected LockedModified lock(GridCacheLockState2Base<UUID> state) {
         return state.lockOrAdd(nodeId);
     }
 
