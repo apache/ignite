@@ -2906,6 +2906,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<TcpDiscoveryNode> failedNodes;
 
+            Collection<TcpDiscoveryNode> notSentNodes = new ArrayList<>();
+
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
@@ -3161,11 +3163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
 
                         try {
-                            boolean failure;
-
-                            synchronized (mux) {
-                                failure = ServerImpl.this.failedNodes.size() < failedNodes.size();
-                            }
+                            boolean failure = !notSentNodes.isEmpty();
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
@@ -3366,6 +3364,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (!failedNodes.contains(next)) {
                         failedNodes.add(next);
 
+                        notSentNodes.add(next);
+
                         if (state == CONNECTED) {
                             Exception err = errs != null ?
                                 U.exceptionWithSuppressed("Failed to send message to next node [msg=" + msg +
@@ -3389,38 +3389,27 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             lastNextNodeTime = sent ? U.currentTimeMillis() : 0;
 
-            synchronized (mux) {
-                Iterator<TcpDiscoveryNode> it = failedNodes.iterator();
-
-                while (it.hasNext()) {
-                    TcpDiscoveryNode failedNode = it.next();
-
-                    if (failedNodesMsgSent.contains(failedNode.id()))
-                        it.remove();
-                }
-            }
-
-            if (!failedNodes.isEmpty()) {
+            if (!notSentNodes.isEmpty()) {
                 if (state == CONNECTED) {
                     if (!sent && log.isDebugEnabled())
                         // Message has not been sent due to some problems.
                         log.debug("Message has not been sent: " + msg);
 
                     if (log.isDebugEnabled())
-                        log.debug("Detected failed nodes: " + failedNodes);
+                        log.debug("Detected failed nodes: " + notSentNodes);
                 }
 
                 synchronized (mux) {
-                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                    for (TcpDiscoveryNode failedNode : notSentNodes) {
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
                             ServerImpl.this.failedNodes.put(failedNode, locNodeId);
                     }
 
-                    for (TcpDiscoveryNode failedNode : failedNodes)
+                    for (TcpDiscoveryNode failedNode : notSentNodes)
                         failedNodesMsgSent.add(failedNode.id());
                 }
 
-                for (TcpDiscoveryNode n : failedNodes)
+                for (TcpDiscoveryNode n : notSentNodes)
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
 
                 if (!sent) {
