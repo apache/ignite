@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 args[3] = igniteId;
                 args[4] = mem.SynchronizeOutput();
 
-                // OnStart receives InteropProcessor referece and stores it.
+                // OnStart receives InteropProcessor reference and stores it.
                 var methodId = env.Jvm.MethodId;
                 env.CallStaticVoidMethod(methodId.PlatformIgnition, methodId.PlatformIgnitionStart, args);
             }
