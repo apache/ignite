@@ -148,7 +148,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
     /**
      * Assert index state on all <b>affinity</b> nodes.
-     *  @param cacheName Cache name.
+     *
+     * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idxName Index name.
      * @param inlineSize Inline size.
@@ -161,7 +162,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
     /**
      * Assert index state on all nodes.
-     *  @param cacheName Cache name.
+     *
+     * @param cacheName Cache name.
      * @param checkNonAffinityNodes Whether existence of {@link GridQueryIndexDescriptor} must be checked on non
      *     affinity nodes as well.
      * @param tblName Table name.
@@ -177,7 +179,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
     /**
      * Assert index state on particular node.
-     *  @param node Node.
+     *
+     * @param node Node.
      * @param checkNonAffinityNode Whether existence of {@link GridQueryIndexDescriptor} must be checked regardless of
      * whether this node is affinity node or not.
      * @param cacheName Cache name.

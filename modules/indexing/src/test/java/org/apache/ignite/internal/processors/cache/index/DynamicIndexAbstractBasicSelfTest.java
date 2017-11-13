@@ -724,10 +724,11 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Verifies that no index is created.
+     * Verifies that no index is created and an exception is thrown.
      *
      * @param inlineSize Inline size value in the CREATE INDEX statement.
-     * @throws Exception If failed.
+     * @param igniteQryErrorCode Expected error code in the thrown exception.
+     * @throws Exception If failed for any other reason than the expected exception.
      */
     private void checkNoIndexIsCreatedForInlineSize(final int inlineSize, int igniteQryErrorCode) throws Exception {
         assertSchemaException(new RunnableX() {

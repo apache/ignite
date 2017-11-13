@@ -1355,25 +1355,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand))
                 return null;
         }
-        catch (SqlParseException e) {
-            // Cannot parse, return.
-            if (log.isDebugEnabled())
-                log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
-
-            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
-                throw new IgniteSQLException("Failed to parse DDL statement [stmt=" + qry.getSql() + ']', e.code(), e);
-            else
-                return null;
-        }
         catch (Exception e) {
             // Cannot parse, return.
             if (log.isDebugEnabled())
                 log.debug("Failed to parse SQL with native parser [qry=" + qry.getSql() + ", err=" + e + ']');
 
-            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
-                throw new IgniteSQLException("Failed to parse DDL statement [stmt=" + qry.getSql() + ']', e);
-            else
+            if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
                 return null;
+
+            int exCode = IgniteQueryErrorCode.UNKNOWN;
+            if (e instanceof SqlParseException)
+                exCode = ((SqlParseException) e).code();
+
+            throw new IgniteSQLException("Failed to parse DDL statement [stmt=" + qry.getSql() + ']', exCode, e);
         }
 
         // Execute.
