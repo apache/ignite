@@ -684,10 +684,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                     ZKNodeData data = joinHist.get(joined.order);
 
-                    ZKJoiningNodeData joinData = data.joinData;
+                    assert data != null : joined;
 
-                    if (joinData == null)
-                        System.out.println();
+                    ZKJoiningNodeData joinData = data.joinData;
 
                     assert joinData != null : data;
 

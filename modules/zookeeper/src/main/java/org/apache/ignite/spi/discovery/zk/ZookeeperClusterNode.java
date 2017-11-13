@@ -202,6 +202,6 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ZookeeperClusterNode [id=" + id + ", order=" + order + ']';
+        return "ZookeeperClusterNode [id=" + id + ", order=" + order + ", client=" + client + ']';
     }
 }
