@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -28,8 +27,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// </summary>
     internal class ClientFieldsQueryCursor : ClientQueryCursorBase<IList<object>>, IFieldsQueryCursor
     {
-        /** Column count. */
-        private readonly int _columnCount;
+        /** */
+        private string[] _fieldNames;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
@@ -55,34 +54,33 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                     return res;
                 })
         {
-            Debug.Assert(columnCount > 0);
-
-            _columnCount = columnCount;
+            // No-op.
         }
 
         /** <inheritdoc /> */
         public IList<string> FieldNames
         {
-            get
-            {
-                // TODO: Lazy-load.
-                return null;
-            }
+            get { return _fieldNames ?? (_fieldNames = GetFieldNames()); }
         }
 
         /// <summary>
-        /// Reads the columns.
+        /// Gets the field names.
         /// </summary>
-        private static string[] ReadColumns(IBinaryRawReader reader)
+        private string[] GetFieldNames()
         {
-            var res = new string[reader.ReadInt()];
+            return Ignite.Socket.DoOutInOp(ClientOp.QuerySqlFieldsCursorGetFieldNames,
+                w => w.WriteLong(CursorId), s =>
+                {
+                    IBinaryRawReader r = Ignite.Marshaller.StartUnmarshal(s);
+                    var res = new string[r.ReadInt()];
 
-            for (var i = 0; i < res.Length; i++)
-            {
-                res[i] = reader.ReadString();
-            }
+                    for (var i = 0; i < res.Length; i++)
+                    {
+                        res[i] = r.ReadString();
+                    }
 
-            return res;
+                    return res;
+                });
         }
     }
 }

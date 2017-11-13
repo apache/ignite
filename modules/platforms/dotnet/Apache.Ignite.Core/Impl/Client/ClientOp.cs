@@ -53,6 +53,7 @@ namespace Apache.Ignite.Core.Impl.Client
         QuerySql = 29,
         QuerySqlCursorGetPage = 30,
         QuerySqlFields = 31,
-        QuerySqlFieldsCursorGetPage = 32
+        QuerySqlFieldsCursorGetPage = 32,
+        QuerySqlFieldsCursorGetFieldNames = 33
     }
 }
