@@ -49,24 +49,44 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     public ClientCacheSqlFieldsQueryRequest(BinaryRawReaderEx reader) {
         super(reader);
 
-        // TODO: Strive to have the same request/response format as in JdbcQueryExecuteRequest.
-
-        qry = new SqlFieldsQuery(reader.readString())
-                .setArgs(PlatformCache.readQueryArgs(reader))
+        // Same request format as in JdbcQueryExecuteRequest.
+        SqlFieldsQuery qry = new SqlFieldsQuery("")
                 .setSchema(reader.readString())
-                .setDistributedJoins(reader.readBoolean())
+                .setPageSize(reader.readInt());
+
+        reader.readInt();  // maxRows
+
+        qry.setSql(reader.readString())
+                .setArgs(PlatformCache.readQueryArgs(reader));
+
+        JdbcStatementType stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+
+        qry.setDistributedJoins(reader.readBoolean())
                 .setLocal(reader.readBoolean())
                 .setReplicatedOnly(reader.readBoolean())
                 .setEnforceJoinOrder(reader.readBoolean())
                 .setCollocated(reader.readBoolean())
                 .setLazy(reader.readBoolean())
-                .setPageSize(reader.readInt())
                 .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
 
         includeFieldNames = reader.readBoolean();
-        reader.readByte(); // Skip statement type.
 
-        //stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
+        if (stmtType != JdbcStatementType.ANY_STATEMENT_TYPE) {
+            qry = new SqlFieldsQueryEx(qry.getSql(),
+                    stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
+                    .setSchema(qry.getSchema())
+                    .setPageSize(qry.getPageSize())
+                    .setArgs(qry.getArgs())
+                    .setDistributedJoins(qry.isDistributedJoins())
+                    .setLocal(qry.isLocal())
+                    .setReplicatedOnly(qry.isReplicatedOnly())
+                    .setEnforceJoinOrder(qry.isEnforceJoinOrder())
+                    .setCollocated(qry.isCollocated())
+                    .setLazy(qry.isLazy())
+                    .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
+        }
+
+        this.qry = qry;
     }
 
     /** {@inheritDoc} */
