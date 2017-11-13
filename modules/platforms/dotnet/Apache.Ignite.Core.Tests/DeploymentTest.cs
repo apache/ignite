@@ -75,16 +75,32 @@ namespace Apache.Ignite.Core.Tests
         /// Tests missing JARs.
         /// </summary>
         [Test]
-        public void TestIncompleteDeployment()
+        public void TestMissingJarsCauseProperException()
         {
-            DeployTo(_tempFolder);
+            // Create temp folder
+            var folder = _tempFolder;
+            DeployTo(folder);
 
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            // Build classpath
+            var classpath = string.Join(";",
+                Directory.GetFiles(folder).Where(x => !x.Contains("ignite-core-")).Select(Path.GetFileName));
+
+            // Start a node and make sure it works properly
+            var exePath = Path.Combine(folder, "Apache.Ignite.exe");
+
+            var proc = IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
-                IgniteHome = _tempFolder
-            };
+                "-jvmClasspath=" + classpath,
+                "-J-ea",
+                "-J-Xms512m",
+                "-J-Xmx512m"
+            });
 
-            Ignition.Start(cfg);
+            // Java class is not found (did you set IGNITE_HOME environment variable?): org/apache/ignite/internal/processors/platform/PlatformIgnition
+
+            Assert.IsNotNull(proc);
+
+            VerifyNodeStarted(exePath);
         }
 
         /// <summary>
