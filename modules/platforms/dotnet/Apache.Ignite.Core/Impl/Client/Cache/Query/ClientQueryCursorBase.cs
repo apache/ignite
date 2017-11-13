@@ -85,21 +85,5 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 base.Dispose(disposing);
             }
         }
-
-        /// <summary>
-        /// Gets the ignite.
-        /// </summary>
-        public IgniteClient Ignite
-        {
-            get { return _ignite; }
-        }
-
-        /// <summary>
-        /// Gets the cursor identifier.
-        /// </summary>
-        public long CursorId
-        {
-            get { return _cursorId; }
-        }
     }
 }
