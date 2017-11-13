@@ -187,6 +187,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests the DML.
+        /// </summary>
+        [Test]
+        public void TestDml()
+        {
+            
+        }
+
+        /// <summary>
+        /// Tests the DML with object arg.
+        /// </summary>
+        [Test]
+        public void TestDmlObjectArg()
+        {
+            // TODO: Do we even need this in the client protocol?
+            
+        }
+
+        /// <summary>
         /// Initializes the cache.
         /// </summary>
         private static void InitCache(string cacheName)

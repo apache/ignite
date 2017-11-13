@@ -50,7 +50,6 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         super(reader);
 
         // TODO: Strive to have the same request/response format as in JdbcQueryExecuteRequest.
-        // TODO: We have different argument format.
 
         qry = new SqlFieldsQuery(reader.readString())
                 .setArgs(PlatformCache.readQueryArgs(reader))
