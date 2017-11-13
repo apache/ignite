@@ -536,15 +536,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (c.failed) {
                             ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
 
-                            for (GridNioSession ses0 : nioSrvr.sessions()) {
-                                ConnectionKey key0 = ses0.meta(CONN_IDX_META);
-
-                                if (ses0.accepted() && key0 != null &&
-                                    key0.nodeId().equals(connKey.nodeId()) &&
-                                    key0.connectionIndex() == connKey.connectionIndex() &&
-                                    key0.connectCount() < connKey.connectCount())
-                                    ses0.close();
-                            }
+                            closeStaleConnections(connKey);
                         }
                     }
                 }
@@ -564,10 +556,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (oldClient instanceof GridTcpNioCommunicationClient) {
                             if (log.isInfoEnabled())
                                 log.info("Received incoming connection when already connected " +
-                                "to this node, rejecting [locNode=" + locNode.id() +
-                                ", rmtNode=" + sndId + ']');
+                                    "to this node, rejecting [locNode=" + locNode.id() +
+                                    ", rmtNode=" + sndId + ']');
 
                             ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
+
+                            closeStaleConnections(connKey);
 
                             return;
                         }
@@ -596,10 +590,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                                 if (log.isInfoEnabled())
                                     log.info("Received incoming connection when already connected " +
-                                    "to this node, rejecting [locNode=" + locNode.id() +
-                                    ", rmtNode=" + sndId + ']');
+                                        "to this node, rejecting [locNode=" + locNode.id() +
+                                        ", rmtNode=" + sndId + ']');
 
                                 ses.send(new RecoveryLastReceivedMessage(ALREADY_CONNECTED));
+
+                                closeStaleConnections(connKey);
 
                                 fut.onDone(oldClient);
 
@@ -652,6 +648,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 connected(recoveryDesc, ses, rmtNode, msg0.received(), true, !hasShmemClient);
                         }
                     }
+                }
+            }
+
+            /**
+             * @param connKey Connection key.
+             */
+            private void closeStaleConnections(ConnectionKey connKey) {
+                for (GridNioSession ses0 : nioSrvr.sessions()) {
+                    ConnectionKey key0 = ses0.meta(CONN_IDX_META);
+
+                    if (ses0.accepted() && key0 != null &&
+                        key0.nodeId().equals(connKey.nodeId()) &&
+                        key0.connectionIndex() == connKey.connectionIndex() &&
+                        key0.connectCount() < connKey.connectCount())
+                        ses0.close();
                 }
             }
 
