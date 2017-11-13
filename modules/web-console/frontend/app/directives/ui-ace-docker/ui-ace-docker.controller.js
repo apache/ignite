@@ -18,20 +18,22 @@
 export default ['$scope', 'IgniteVersion', 'IgniteDockerGenerator', function($scope, Version, docker) {
     const ctrl = this;
 
-    // Watchers definition.
-    const clusterWatcher = () => {
-        delete ctrl.data;
+    this.$onInit = () => {
+        // Watchers definition.
+        const clusterWatcher = () => {
+            delete ctrl.data;
 
-        if (!$scope.cluster)
-            return;
+            if (!$scope.cluster)
+                return;
 
-        ctrl.data = docker.generate($scope.cluster, Version.currentSbj.getValue());
+            ctrl.data = docker.generate($scope.cluster, Version.currentSbj.getValue());
+        };
+
+        // Setup watchers.
+        Version.currentSbj.subscribe({
+            next: clusterWatcher
+        });
+
+        $scope.$watch('cluster', clusterWatcher);
     };
-
-    // Setup watchers.
-    Version.currentSbj.subscribe({
-        next: clusterWatcher
-    });
-
-    $scope.$watch('cluster', clusterWatcher);
 }];
