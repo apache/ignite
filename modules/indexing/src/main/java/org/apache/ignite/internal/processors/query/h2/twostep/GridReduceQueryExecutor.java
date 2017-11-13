@@ -566,8 +566,9 @@ public class GridReduceQueryExecutor {
             // If topology is changed and we are inside a transaction, break query execution.
             // Otherwise, exchange will be waiting forever for current tx.
             if (distributedExchange && ctx.cache().context().tm().userTx() != null)
-                throw new CacheException(new TransactionException("Topology is changed while executing query inside a transaction. " +
-                    "Please restart the transaction and try again."));
+                throw new CacheException(
+                    new TransactionException("Topology is changed while executing query inside a transaction. " +
+                        "Please restart the transaction and try again."));
 
             List<Integer> cacheIds = qry.cacheIds();
 
