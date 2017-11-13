@@ -97,7 +97,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
-    @Override void removeNode(UUID id) {
+    @Override void onNodeRemoved(UUID id) {
         sync.globalSync.remove(id);
     }
 

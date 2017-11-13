@@ -98,7 +98,7 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
      *
      * @param id node id.
      */
-    abstract void removeNode(UUID id);
+    abstract void onNodeRemoved(UUID id);
 
     /**
      * Return release message processer.

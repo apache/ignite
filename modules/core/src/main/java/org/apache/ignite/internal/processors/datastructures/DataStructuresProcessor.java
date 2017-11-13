@@ -164,7 +164,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                             else if (ds instanceof GridCacheLockEx)
                                 ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
                             else if (ds instanceof GridCacheLockEx2) {
-                                ((GridCacheLockEx2)ds).removeNode(leftNodeId);
+                                ((GridCacheLockEx2)ds).onNodeRemoved(leftNodeId);
                             }
                         }
 
