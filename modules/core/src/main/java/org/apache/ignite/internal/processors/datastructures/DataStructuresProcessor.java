@@ -515,7 +515,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final String grpName;
 
-        if (type.equals(REENTRANT_LOCK2))
+        if (REENTRANT_LOCK2.equals(type))
             grpName = DEFAULT_REENTRANT_LOCK_GROUP_NAME;
         else if (type.isVolatile())
             grpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
@@ -536,7 +536,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             CacheConfiguration tcfg = cacheConfiguration(cfg, cacheName, grpName);
 
-            if (type.equals(REENTRANT_LOCK2)) {
+            if (REENTRANT_LOCK2.equals(type)) {
                 tcfg.setAtomicityMode(ATOMIC);
 
                 // New reentrant lock doesn't need any query.
@@ -616,7 +616,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         throw e;
                     }
 
-                    if (type.equals(REENTRANT_LOCK2)) {
+                    if (REENTRANT_LOCK2.equals(type)) {
                         if (isHandlersAdded.compareAndSet(false, true)) {
                             cache.context().io().addCacheHandler(cache.context().cacheId(), GridCacheLockImpl2Fair.ReleasedThreadMessage.class,
                                 new IgniteBiInClosure<UUID, GridCacheLockImpl2Fair.ReleasedThreadMessage>() {
