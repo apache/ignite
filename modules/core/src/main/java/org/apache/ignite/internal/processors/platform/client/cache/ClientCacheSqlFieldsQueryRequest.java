@@ -50,41 +50,35 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.
-        SqlFieldsQuery qry = new SqlFieldsQuery("")
-                .setSchema(reader.readString())
-                .setPageSize(reader.readInt());
-
+        String schema = reader.readString();
+        int pageSize = reader.readInt();
         reader.readInt();  // maxRows
-
-        qry.setSql(reader.readString())
-                .setArgs(PlatformCache.readQueryArgs(reader));
-
+        String sql = reader.readString();
+        Object[] args = PlatformCache.readQueryArgs(reader);
         JdbcStatementType stmtType = JdbcStatementType.fromOrdinal(reader.readByte());
-
-        qry.setDistributedJoins(reader.readBoolean())
-                .setLocal(reader.readBoolean())
-                .setReplicatedOnly(reader.readBoolean())
-                .setEnforceJoinOrder(reader.readBoolean())
-                .setCollocated(reader.readBoolean())
-                .setLazy(reader.readBoolean())
-                .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
-
+        boolean distributedJoins = reader.readBoolean();
+        boolean loc = reader.readBoolean();
+        boolean replicatedOnly = reader.readBoolean();
+        boolean enforceJoinOrder = reader.readBoolean();
+        boolean collocated = reader.readBoolean();
+        boolean lazy = reader.readBoolean();
+        int timeout = (int) reader.readLong();
         includeFieldNames = reader.readBoolean();
 
-        if (stmtType != JdbcStatementType.ANY_STATEMENT_TYPE) {
-            qry = new SqlFieldsQueryEx(qry.getSql(),
-                    stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                    .setSchema(qry.getSchema())
-                    .setPageSize(qry.getPageSize())
-                    .setArgs(qry.getArgs())
-                    .setDistributedJoins(qry.isDistributedJoins())
-                    .setLocal(qry.isLocal())
-                    .setReplicatedOnly(qry.isReplicatedOnly())
-                    .setEnforceJoinOrder(qry.isEnforceJoinOrder())
-                    .setCollocated(qry.isCollocated())
-                    .setLazy(qry.isLazy())
-                    .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
-        }
+        SqlFieldsQuery qry = stmtType == JdbcStatementType.ANY_STATEMENT_TYPE
+                ? new SqlFieldsQuery(sql)
+                : new SqlFieldsQueryEx(sql,stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE);
+
+        qry.setSchema(schema)
+                .setPageSize(pageSize)
+                .setArgs(args)
+                .setDistributedJoins(distributedJoins)
+                .setLocal(loc)
+                .setReplicatedOnly(replicatedOnly)
+                .setEnforceJoinOrder(enforceJoinOrder)
+                .setCollocated(collocated)
+                .setLazy(lazy)
+                .setTimeout(timeout, TimeUnit.MILLISECONDS);
 
         this.qry = qry;
     }
