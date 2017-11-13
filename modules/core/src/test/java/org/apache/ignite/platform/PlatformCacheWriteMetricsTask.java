@@ -240,8 +240,18 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
+        @Override public long getSizeLong() {
+            return getSize();
+        }
+
+        /** {@inheritDoc} */
         @Override public int getKeySize() {
             return 30;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getKeySizeLong() {
+            return getKeySize();
         }
 
         /** {@inheritDoc} */
