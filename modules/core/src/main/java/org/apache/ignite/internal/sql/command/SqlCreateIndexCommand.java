@@ -23,6 +23,7 @@ import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -129,7 +130,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
 
-        idxName = parseIdentifier(lex, IF);
+        idxName = parseIndexName(lex);
 
         skipIfMatchesKeyword(lex, ON);
 
@@ -141,6 +142,19 @@ public class SqlCreateIndexCommand implements SqlCommand {
         parseColumnList(lex);
 
         return this;
+    }
+
+    /**
+     * Pasrse index name.
+     *
+     * @param lex Lexer.
+     * @return Index name.
+     */
+    private static @Nullable String parseIndexName(SqlLexer lex) {
+        if (matchesKeyword(lex.lookAhead(), ON))
+            return null;
+
+        return parseIdentifier(lex, IF);
     }
 
     /*

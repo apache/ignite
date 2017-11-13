@@ -18,6 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledAtomicCacheTest;
+import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledTransactionalCacheTest;
+import org.apache.ignite.cache.store.CacheStoreSessionListenerWriteBehindEnabledTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
 import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
@@ -276,6 +279,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
 
         suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
+        suite.addTestSuite(CacheStoreListenerRWThroughDisabledAtomicCacheTest.class);
+        suite.addTestSuite(CacheStoreListenerRWThroughDisabledTransactionalCacheTest.class);
+        suite.addTestSuite(CacheStoreSessionListenerWriteBehindEnabledTest.class);
 
         suite.addTestSuite(CacheClientStoreSelfTest.class);
         suite.addTestSuite(CacheStoreUsageMultinodeStaticStartAtomicTest.class);

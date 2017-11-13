@@ -362,7 +362,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param affectedRows Affected rows.
      */
     private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
-        if (ver.compareTo(OdbcConnectionContext.VER_2_3_0) < 0) {
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 
             for (Long value : affectedRows)
