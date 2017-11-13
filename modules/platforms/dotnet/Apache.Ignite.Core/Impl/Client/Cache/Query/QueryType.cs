@@ -24,8 +24,19 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// </summary>
     internal enum QueryType
     {
-        Unknown = 0,
-        Sql = 1,
-        Dml = 2
+        /// <summary>
+        /// Any query, SQL or DML.
+        /// </summary>
+        Any = 0,
+
+        /// <summary>
+        /// Select query, "SELECT .. FROM".
+        /// </summary>
+        Select = 1,
+
+        /// <summary>
+        /// Update (DML) query, "UPDATE .. ", "INSERT INTO ..".
+        /// </summary>
+        Update = 2
     }
 }
