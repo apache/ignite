@@ -482,6 +482,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             // Always include field names.
             writer.WriteBoolean(true);
+
+            // TODO: Query type flag (Unknow, SQL, DML)
+            // TODO: Compare binary protocol format with JDBC
         }
 
         /// <summary>
