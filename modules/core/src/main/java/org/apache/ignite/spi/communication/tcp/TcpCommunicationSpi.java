@@ -478,19 +478,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (rmtNode == null) {
                     DiscoverySpi discoverySpi = ignite().configuration().getDiscoverySpi();
 
-                    assert discoverySpi instanceof TcpDiscoverySpi;
-
-                    TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi) discoverySpi;
-
-                    ClusterNode node0 = tcpDiscoverySpi.getNode0(sndId);
-
                     boolean unknownNode = true;
 
-                    if (node0 != null) {
-                        assert node0.isClient() : node0;
+                    if (discoverySpi instanceof TcpDiscoverySpi) {
+                        TcpDiscoverySpi tcpDiscoverySpi = (TcpDiscoverySpi) discoverySpi;
 
-                        if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
-                            unknownNode = false;
+                        ClusterNode node0 = tcpDiscoverySpi.getNode0(sndId);
+
+                        if (node0 != null) {
+                            assert node0.isClient() : node0;
+
+                            if (node0.version().compareTo(VERSION_SINCE_CLIENT_COULD_WAIT_TO_CONNECT) >= 0)
+                                unknownNode = false;
+                        }
                     }
 
                     if (unknownNode) {

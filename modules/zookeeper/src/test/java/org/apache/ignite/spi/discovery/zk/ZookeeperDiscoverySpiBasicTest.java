@@ -42,6 +42,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** */
     private static final boolean USE_TEST_CLUSTER = true;
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -67,6 +70,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setMarshaller(new JdkMarshaller());
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -155,7 +160,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids())
             node.compute().broadcast(new DummyCallable(null));
 
-        awaitPartitionMapExchange();
+        //awaitPartitionMapExchange();
     }
 
     /**
@@ -191,6 +196,35 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(0, 3);
 
         waitForTopology(10);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopWithClients() throws Exception {
+        final int SRVS = 3;
+
+        startGrids(SRVS);
+
+        client = true;
+
+        final int THREADS = 30;
+
+        for (int i = 0; i < 5; i++) {
+            info("Iteration: " + i);
+
+            startGridsMultiThreaded(SRVS, THREADS);
+
+            waitForTopology(SRVS + THREADS);
+
+            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+                @Override public void apply(Integer idx) {
+                    stopGrid(idx + 3);
+                }
+            }, THREADS, "stop-node");
+
+            waitForTopology(SRVS);
+        }
     }
 
     /**

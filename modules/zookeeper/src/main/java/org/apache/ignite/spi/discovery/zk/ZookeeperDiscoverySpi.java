@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -36,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -415,9 +417,16 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
             List<OpResult> res = zk.multi(joinOps);
 
-            log.info("Waiting for local join event.");
+            log.info("Waiting for local join event [nodeId=" + locNode.id() + ", name=" + igniteInstanceName + ']');
 
-            joinLatch.await();
+            for(;;) {
+                if (!joinLatch.await(10, TimeUnit.SECONDS)) {
+                    U.warn(log, "Waiting for local join event [nodeId=" + locNode.id() + ", name=" + igniteInstanceName + ']');
+                }
+                else
+                    break;
+            }
+
         }
         catch (Exception e) {
             throw new IgniteSpiException(e);
@@ -572,13 +581,15 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                     if (joinHist.put(data.order, data) == null) {
                         try {
+                            log.info("New joined node data: " + data);
+
                             byte[] bytes = zk.getData(path + "/" + child, null, null);
 
                             assert bytes.length > 0;
 
                             ZKJoiningNodeData joinData = unmarshal(bytes);
 
-                            assert joinData.node != null;
+                            assert joinData.node != null && joinData.joiningNodeData != null : joinData;
 
                             joinData.node.order(data.order);
 
@@ -697,6 +708,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                         joinData.node,
                         new ArrayList<>(curTop.values()));
 
+                    log.info("ZK event [type=JOIN, node=" + joinData.node.id() + ", ver=" + v + ']');
+
                     if (!joinData.node.id().equals(locNode.nodeId)) {
                         DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(joinData.node.id());
 
@@ -720,6 +733,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                         assert failedNode != null : data.order;
 
+                        log.info("ZK event [type=FAIL, node=" + failedNode.id() + ", ver=" + v + ']');
+
                         evts.put(v, new ZKDiscoveryEvent(EventType.EVT_NODE_FAILED,
                             v,
                             failedNode,
@@ -735,6 +750,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                             assert failedNode != null : oldData.order;
 
+                            log.info("ZK event [type=FAIL, node=" + failedNode.id() + ", ver=" + v + ']');
+
                             evts.put(v, new ZKDiscoveryEvent(EventType.EVT_NODE_FAILED,
                                 v,
                                 failedNode,
@@ -747,7 +764,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             }
         }
 
-        log.info("Generated discovery events on coordinator: " + evts);
+        log.info("Generated discovery events on coordinator [vers=" + evts.keySet() + ", evts=" + evts + ']');
 
         ZKDiscoveryEvents newEvents;
 
@@ -761,9 +778,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         else {
             TreeMap<Integer, ZKDiscoveryEvent> evts0 = new TreeMap<>(curCrdEvts.evts);
 
-            evts0.putAll(evts);
+            for (ZKDiscoveryEvent e : evts.values()) {
+                assert !evts0.containsKey(e.topVer) : "[newEvt=" + e + ", oldEvt=" + evts0.get(e.topVer) + ']';
 
-            newEvents = new ZKDiscoveryEvents(newNodes, evts);
+                evts0.put(e.topVer, e);
+            }
+
+            newEvents = new ZKDiscoveryEvents(newNodes, evts0);
 
             expVer = curCrdEvts.ver;
         }
@@ -774,9 +795,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             zk.setData(EVENTS_PATH, marshal(newEvents), expVer);
         }
         catch (Exception e) {
-            log.info("Events update error: " + e);
-
-            e.printStackTrace(System.out);
+            U.error(log, "Events update error: " + e, e);
         }
 
         curCrdEvts = newEvents;
@@ -953,6 +972,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     static class ZKDiscoveryEvent implements Serializable {
         /** */
         @GridToStringInclude
+        final int topVer;
+
+        /** */
+        @GridToStringInclude
         final int evtType;
 
         /** */
@@ -960,12 +983,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         final ZookeeperClusterNode node;
 
         /** */
-        @GridToStringInclude
+        @GridToStringExclude
         final List<ZookeeperClusterNode> allNodes;
-
-        /** */
-        @GridToStringInclude
-        final int topVer;
 
         /** */
         Map<Integer, Serializable> joiningNodeData;
