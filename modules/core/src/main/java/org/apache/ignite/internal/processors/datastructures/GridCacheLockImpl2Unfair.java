@@ -78,12 +78,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         this.key = key;
         this.ctx = lockView.context();
 
-        IgniteLogger log = ctx.logger(getClass());
-
         // final for passing into anonymous classes.
         final Latch listener = new Latch();
 
-        sync = new LocalSync(new GlobalUnfairSync(ctx.localNodeId(), key, lockView, listener, ctx, log));
+        sync = new LocalSync(new GlobalUnfairSync(ctx.localNodeId(), key, lockView, listener, ctx,
+            ctx.logger(getClass())));
 
         releaser = new IgniteInClosure<GridCacheIdMessage>() {
             @Override public void apply(GridCacheIdMessage message) {
