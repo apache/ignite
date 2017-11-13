@@ -16,7 +16,7 @@
  */
 
  import controller from './activities-user-dialog.controller';
- import templateUrl from './activities-user-dialog.jade';
+ import templateUrl from './activities-user-dialog.tpl.pug';
 
  export default ['$modal', ($modal) => ({ show = true, user }) => {
      const ActivitiesUserDialog = $modal({

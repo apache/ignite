@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean' foo='15' />
                             </lifecycleBeans>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true' writeBehindCoalescing='false'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
@@ -162,6 +162,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cacheCfg.WriteThrough);
             Assert.IsInstanceOf<MyPolicyFactory>(cacheCfg.ExpiryPolicyFactory);
             Assert.IsTrue(cacheCfg.EnableStatistics);
+            Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -645,6 +646,7 @@ namespace Apache.Ignite.Core.Tests
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(55),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
+                        WriteBehindCoalescing = false,
                         WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
                         NearConfiguration = new NearCacheConfiguration
                         {

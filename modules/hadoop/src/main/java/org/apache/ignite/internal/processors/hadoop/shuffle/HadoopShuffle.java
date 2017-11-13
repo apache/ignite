@@ -63,7 +63,7 @@ public class HadoopShuffle extends HadoopComponent {
         super.start(ctx);
 
         ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP_MSG, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 onMessageReceived(nodeId, (HadoopMessage)msg);
             }
         });

@@ -38,9 +38,6 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /** */
     private GridSqlAst offset;
 
-    /** */
-    private boolean distinct;
-
     /**
      * @return Offset.
      */
@@ -53,20 +50,6 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
      */
     public void offset(GridSqlAst offset) {
         this.offset = offset;
-    }
-
-    /**
-     * @return Distinct.
-     */
-    public boolean distinct() {
-        return distinct;
-    }
-
-    /**
-     * @param distinct New distinct.
-     */
-    public void distinct(boolean distinct) {
-        this.distinct = distinct;
     }
 
     /**

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.compute.ComputeJob;
@@ -318,6 +317,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
     /**
      * @param obj Object to inject.
+     * @param ann Annotation enum.
+     * @param dep Grid deployment object.
+     * @param depCls Grid deployment class.
+     * @param param Resource to inject.
+     * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException If failed to inject.
      */
     private boolean inject(Object obj, GridResourceIoc.ResourceAnnotation ann, @Nullable GridDeployment dep,

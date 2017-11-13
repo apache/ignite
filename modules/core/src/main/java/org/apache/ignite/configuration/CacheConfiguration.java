@@ -192,6 +192,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default batch size for write-behind cache store. */
     public static final int DFLT_WRITE_BEHIND_BATCH_SIZE = 512;
 
+    /** Default write coalescing for write-behind cache store. */
+    public static final boolean DFLT_WRITE_BEHIND_COALESCING = true;
+
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
@@ -343,6 +346,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize = DFLT_WRITE_BEHIND_BATCH_SIZE;
+
+    /** Write coalescing flag for write-behind cache store */
+    private boolean writeBehindCoalescing = DFLT_WRITE_BEHIND_COALESCING;
 
     /** Maximum number of query iterators that can be stored. */
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
@@ -505,6 +511,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
+        writeBehindCoalescing = cc.getWriteBehindCoalescing();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
@@ -1456,6 +1463,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
+
+        return this;
+    }
+
+    /**
+     * Write coalescing flag for write-behind cache store operations. Store operations (get or remove)
+     * with the same key are combined or coalesced to single, resulting operation
+     * to reduce pressure to underlying cache store.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_WRITE_BEHIND_COALESCING}.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteBehindCoalescing() {
+        return writeBehindCoalescing;
+    }
+
+    /**
+     * Sets write coalescing flag for write-behind cache.
+     *
+     * @param writeBehindCoalescing Write coalescing flag.
+     * @see #getWriteBehindCoalescing()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setWriteBehindCoalescing(boolean writeBehindCoalescing) {
+        this.writeBehindCoalescing = writeBehindCoalescing;
 
         return this;
     }

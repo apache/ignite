@@ -3,6 +3,7 @@
     "S3": {"artifactId": "ignite-aws"},
     "GoogleStorage": {"artifactId": "ignite-gce"},
     "ZooKeeper": {"artifactId": "ignite-zookeeper"},
+    "Kubernetes": {"artifactId": "ignite-kubernetes"},
 
     "Log4j": {"artifactId": "ignite-log4j"},
     "Log4j2": {"artifactId": "ignite-log4j2"},

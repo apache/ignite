@@ -17,6 +17,8 @@
 
 import angular from 'angular';
 
+import templateUrl from 'views/settings/profile.tpl.pug';
+
 angular
 .module('ignite-console.states.profile', [
     'ui.router'
@@ -26,7 +28,7 @@ angular
     $stateProvider
     .state('settings.profile', {
         url: '/profile',
-        templateUrl: '/settings/profile.html',
+        templateUrl,
         onEnter: AclRoute.checkAccess('profile'),
         metaTags: {
             title: 'User profile'

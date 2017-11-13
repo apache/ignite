@@ -245,10 +245,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// Adds the handler.
         /// </summary>
-        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func, 
+        private void AddHandler(UnmanagedCallbackOp op, InLongLongLongObjectOutLongFunc func,
             bool allowUninitialized = false)
         {
-            _inLongLongLongObjectOutLongHandlers[(int)op] 
+            _inLongLongLongObjectOutLongHandlers[(int)op]
                 = new InLongLongLongObjectOutLongHandler(func, allowUninitialized);
         }
 
@@ -885,21 +885,49 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region IMPLEMENTATION: SERVICES
 
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "User processor can throw any exception")]
         private long ServiceInit(long memPtr)
         {
-            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            return SafeCall(() =>
             {
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    try
+                    {
+                        var reader = _ignite.Marshaller.StartUnmarshal(stream);
 
-                bool srvKeepBinary = reader.ReadBoolean();
-                var svc = reader.ReadObject<IService>();
+                        var srvKeepBinary = reader.ReadBoolean();
+                        var svc = reader.ReadObject<IService>();
 
-                ResourceProcessor.Inject(svc, _ignite);
+                        ResourceProcessor.Inject(svc, _ignite);
 
-                svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
+                        svc.Init(new ServiceContext(_ignite.Marshaller.StartUnmarshal(stream, srvKeepBinary)));
 
-                return _handleRegistry.Allocate(svc);
-            }
+                        stream.Reset();
+
+                        stream.WriteBool(true); // Success.
+
+                        stream.SynchronizeOutput();
+
+                        return _handleRegistry.Allocate(svc);
+                    }
+                    catch (Exception e)
+                    {
+                        stream.Reset();
+
+                        var writer = _ignite.Marshaller.StartMarshal(stream);
+
+                        BinaryUtils.WriteInvocationResult(writer, false, e);
+
+                        _ignite.Marshaller.FinishMarshal(writer);
+
+                        stream.SynchronizeOutput();
+
+                        return 0;
+                    }
+                }
+            });
         }
 
         private long ServiceExecute(long memPtr)
@@ -1248,7 +1276,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         #endregion
-        
+
         /// <summary>
         /// Callbacks pointer.
         /// </summary>

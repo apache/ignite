@@ -361,7 +361,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param cancel {@code True} if future is being cancelled.
      * @return {@code True} if result was set by this call.
      */
-    private boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
+    protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
         boolean notify = false;
 
         try {

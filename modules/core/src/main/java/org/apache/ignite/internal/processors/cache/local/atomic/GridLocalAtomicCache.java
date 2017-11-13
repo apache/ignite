@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
@@ -142,6 +142,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
     /** {@inheritDoc} */
     @Override protected boolean put0(K key, V val, CacheEntryPredicate filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         Boolean res = (Boolean)updateAllInternal(UPDATE,
@@ -158,29 +162,50 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         assert res != null;
 
+        if (statsEnabled && Boolean.TRUE.equals(res))
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
+
         return res;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
-        return updateAllAsync0(F0.asMap(key, val),
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<V> fut = updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             true,
             false,
             filter);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
-        return updateAllAsync0(F0.asMap(key, val),
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<Boolean> fut = updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             false,
             false,
             filter);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -230,7 +255,16 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndRemoveAsync0(K key) {
-        return removeAllAsync0(Collections.singletonList(key), true, false, null);
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        IgniteInternalFuture<V> fut = removeAllAsync0(Collections.singletonList(key), true, false, null);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -259,6 +293,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean remove0(K key, final CacheEntryPredicate filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         Boolean rmv = (Boolean)updateAllInternal(DELETE,
@@ -274,6 +312,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             opCtx != null && opCtx.isKeepBinary());
 
         assert rmv != null;
+
+        if (statsEnabled && Boolean.TRUE.equals(rmv))
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return rmv;
     }
@@ -303,6 +344,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean deserializeBinary,
         boolean needVer) throws IgniteCheckedException
     {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
@@ -313,6 +358,9 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         assert m.isEmpty() || m.size() == 1 : m.size();
 
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
         return F.firstValue(m);
     }
 
@@ -322,15 +370,24 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllInternal(keys,
+        Map<K, V> result = getAllInternal(keys,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             taskName,
             deserializeBinary,
             false,
             needVer);
+
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+        return result;
     }
 
     /** {@inheritDoc} */
@@ -348,15 +405,24 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         A.notNull(keys, "keys");
 
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
         final boolean storeEnabled = ctx.readThrough();
 
-        return asyncOp(new Callable<Map<K, V>>() {
+        IgniteInternalFuture<Map<K, V>> fut = asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
                 return getAllInternal(keys, swapOrOffheap, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
             }
         });
-    }
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+        return fut;
+   }
 
     /**
      * Entry point to all public API get methods.
@@ -389,7 +455,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
-        Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
+        Map<K, V> vals = U.newHashMap(keys.size());
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -397,97 +463,144 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
         boolean success = true;
+        final boolean offheapRead = ctx.offheapRead(expiry, false);
+        final boolean evt = !skipVals;
 
         for (K key : keys) {
             if (key == null)
                 throw new NullPointerException("Null key.");
 
-            GridCacheEntryEx entry = null;
-
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            while (true) {
-                try {
-                    entry = swapOrOffheap ? entryEx(cacheKey) : peekEx(cacheKey);
+            boolean skipEntry = false;
 
-                    if (entry != null) {
-                        CacheObject v;
+            if (offheapRead) {
+                GridCacheSwapEntry swapEntry = ctx.swap().readSwapEntry(cacheKey);
 
-                        if (needVer) {
-                            EntryGetResult res = entry.innerGetVersioned(
+                if (swapEntry != null) {
+                    long expireTime = swapEntry.expireTime();
+
+                    if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                        skipEntry = true;
+
+                        ctx.addResult(vals,
+                            cacheKey,
+                            swapEntry.value(),
+                            skipVals,
+                            false,
+                            deserializeBinary,
+                            true,
+                            null,
+                            swapEntry.version(),
+                            0,
+                            0,
+                            needVer);
+
+                        if (configuration().isStatisticsEnabled() && !skipVals)
+                            metrics0().onRead(true);
+
+                        if (evt) {
+                            ctx.events().readEvent(cacheKey,
                                 null,
-                                null,
-                                /*swap*/swapOrOffheap,
-                                /*unmarshal*/true,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
+                                swapEntry.value(),
                                 subjId,
-                                null,
                                 taskName,
-                                expiry,
-                                !deserializeBinary,
-                                null);
+                                !deserializeBinary);
+                        }
+                    }
+                }
+                else
+                    success = false;
+            }
+            else
+                skipEntry = false;
 
-                            if (res != null) {
-                                ctx.addResult(
-                                    vals,
-                                    cacheKey,
-                                    res,
-                                    skipVals,
-                                    false,
-                                    deserializeBinary,
-                                    true,
-                                    needVer);
+            if (!skipEntry) {
+                GridCacheEntryEx entry = null;
+
+                CacheObject v;
+
+                while (true) {
+                    try {
+                        entry = swapOrOffheap ? entryEx(cacheKey) : peekEx(cacheKey);
+
+                        if (entry != null) {
+                            if (needVer) {
+                                EntryGetResult res = entry.innerGetVersioned(
+                                    null,
+                                    null,
+                                    /*swap*/swapOrOffheap,
+                                    /*unmarshal*/true,
+                                    /*update-metrics*/false,
+                                    /*event*/!skipVals,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary,
+                                    null);
+
+                                if (res != null) {
+                                    ctx.addResult(
+                                        vals,
+                                        cacheKey,
+                                        res,
+                                        skipVals,
+                                        false,
+                                        deserializeBinary,
+                                        true,
+                                        needVer);
+                                }
+                                else
+                                    success = false;
                             }
-                            else
-                                success = false;
+                            else {
+                                v = entry.innerGet(
+                                    null,
+                                    null,
+                                    /*swap*/swapOrOffheap,
+                                    /*read-through*/false,
+                                    /*update-metrics*/true,
+                                    /*event*/!skipVals,
+                                    /*temporary*/false,
+                                    subjId,
+                                    null,
+                                    taskName,
+                                    expiry,
+                                    !deserializeBinary);
+
+                                if (v != null) {
+                                    ctx.addResult(vals,
+                                        cacheKey,
+                                        v,
+                                        skipVals,
+                                        false,
+                                        deserializeBinary,
+                                        true,
+                                        null,
+                                        0,
+                                        0);
+                                }
+                                else
+                                    success = false;
+                            }
                         }
                         else {
-                            v = entry.innerGet(
-                                null,
-                                null,
-                                /*swap*/swapOrOffheap,
-                                /*read-through*/false,
-                                /**update-metrics*/true,
-                                /**event*/!skipVals,
-                                /**temporary*/false,
-                                subjId,
-                                null,
-                                taskName,
-                                expiry,
-                                !deserializeBinary);
+                            if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                                metrics0().onRead(false);
 
-                            if (v != null) {
-                                ctx.addResult(vals,
-                                    cacheKey,
-                                    v,
-                                    skipVals,
-                                    false,
-                                    deserializeBinary,
-                                    true,
-                                    null,
-                                    0,
-                                    0);
-                            }
-                            else
-                                success = false;
+                            success = false;
                         }
-                    }
-                    else {
-                        if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
-                            metrics0().onRead(false);
 
-                        success = false;
+                        break; // While.
                     }
-
-                    break; // While.
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // No-op, retry.
-                }
-                finally {
-                    if (entry != null)
-                        ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op, retry.
+                    }
+                    finally {
+                        if (entry != null)
+                            ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
+                    }
                 }
 
                 if (!success && storeEnabled)

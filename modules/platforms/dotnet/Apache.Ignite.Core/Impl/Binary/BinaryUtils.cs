@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: boolean. */
         public const byte TypeBool = 8;
-        
+
         /** Type: decimal. */
         public const byte TypeDecimal = 30;
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-        
+
         /** Type: binary object. */
         public const byte TypeBinary = 27;
 
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: enum array. */
         public const byte TypeArrayEnum = 29;
-        
+
         /** Type: native job holder. */
         public const byte TypeNativeJobHolder = 77;
 
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: entry predicate holder. */
         public const byte TypeCacheEntryPredicateHolder = 90;
-        
+
         /** Type: message filter holder. */
         public const byte TypeMessageListenerHolder = 92;
 
@@ -198,13 +198,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
-        
+
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-        
+
         /** Byte "0". */
         public const byte ByteZero = 0;
 
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
-        
+
         /** Bindig flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -616,7 +616,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
-        
+
         /// <summary>
         /// Write nullable date array.
         /// </summary>
@@ -638,7 +638,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     stream.WriteByte(HdrNull);
             }
         }
-        
+
         /**
          * <summary>Write string in UTF8 encoding.</summary>
          * <param name="val">String.</param>
@@ -878,7 +878,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="val">Decimal value.</param>
          * <param name="stream">Stream.</param>
          */
-        public static void WriteDecimal(decimal val, IBinaryStream stream) 
+        public static void WriteDecimal(decimal val, IBinaryStream stream)
         {
             // Vals are:
             // [0] = lo
@@ -886,14 +886,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             // [2] = high
             // [3] = flags
             int[] vals = decimal.GetBits(val);
-            
+
             // Get start index skipping leading zeros.
             int idx = vals[2] != 0 ? 2 : vals[1] != 0 ? 1 : vals[0] != 0 ? 0 : -1;
-                        
-            // Write scale and negative flag.
-            int scale = (vals[3] & 0x00FF0000) >> 16; 
 
-            stream.WriteInt(((vals[3] & 0x80000000) == 0x80000000) ? (int)((uint)scale | 0x80000000) : scale);
+            // Write scale and negative flag.
+            int scale = (vals[3] & 0x00FF0000) >> 16;
+
+            stream.WriteInt(scale);
+
+            Boolean neg = vals[3] < 0;
 
             if (idx == -1)
             {
@@ -904,7 +906,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
             {
                 int len = (idx + 1) << 2;
-                
+
                 // Write data.
                 for (int i = idx; i >= 0; i--)
                 {
@@ -914,7 +916,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     int part16 = (curPart >> 16) & 0xFF;
                     int part8 = (curPart >> 8) & 0xFF;
                     int part0 = curPart & 0xFF;
-                    
+
                     if (i == idx)
                     {
                         // Possibly skipping some values here.
@@ -924,12 +926,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len + 1);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len);
 
-                            stream.WriteByte((byte)part24);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part24 | -0x80) : part24));
                             stream.WriteByte((byte)part16);
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
@@ -940,12 +944,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 1);
 
-                            stream.WriteByte((byte)part16);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
                         }
@@ -955,12 +961,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 1);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 2);
 
-                            stream.WriteByte((byte)part8);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
                         }
                         else
@@ -969,12 +977,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 2);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 3);
 
-                            stream.WriteByte((byte)part0);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part0 | -0x80) : part0));
                         }
                     }
                     else
@@ -997,24 +1007,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             int scale = stream.ReadInt();
 
-            bool neg;
+            bool neg = false;
 
-            if (scale < 0)
+            byte[] mag = ReadByteArray(stream);
+
+            if ((sbyte)mag[0] < 0)
             {
-                scale = scale & 0x7FFFFFFF;
+                mag[0] &= 0x7F;
 
                 neg = true;
             }
-            else
-                neg = false;
-
-            byte[] mag = ReadByteArray(stream);
 
             if (scale < 0 || scale > 28)
                 throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);
 
             if (mag.Length > 13)
-                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " + 
+                throw new BinaryObjectException("Decimal magnitude overflow (must be less than 96 bits): " +
                     mag.Length * 8);
 
             if (mag.Length == 13 && mag[0] != 0)
@@ -1108,7 +1116,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="val">The value.</param>
@@ -1151,12 +1159,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             jBytes[13] = bytes[10]; // f
             jBytes[14] = bytes[9]; // e
             jBytes[15] = bytes[8]; // d
-            
+
             stream.Write(jBytes, 16);
         }
 
         /// <summary>
-        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="stream">The stream.</param>
@@ -1341,7 +1349,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static void WriteCollection(ICollection val, BinaryWriter ctx)
         {
             var valType = val.GetType();
-            
+
             byte colType;
 
             if (valType.IsGenericType)
@@ -1599,7 +1607,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (fieldName.StartsWith("<", StringComparison.Ordinal)
                 && fieldName.EndsWith(">k__BackingField", StringComparison.Ordinal))
                 return fieldName.Substring(1, fieldName.IndexOf(">", StringComparison.Ordinal) - 1);
-            
+
             return fieldName;
         }
 
@@ -1756,7 +1764,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 id = GetStringHashCode(fieldName);
 
             if (id == 0)
-                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " + 
+                throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
                     "[typeId=" + typeId + ", fieldName=" + fieldName + ", idMapper=" + idMapper + ']');
 
             return id;
@@ -1878,7 +1886,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             high = diff / TimeSpan.TicksPerMillisecond;
 
-            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100; 
+            low = (int)(diff % TimeSpan.TicksPerMillisecond) * 100;
         }
 
         /// <summary>

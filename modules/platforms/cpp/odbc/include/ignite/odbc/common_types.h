@@ -156,9 +156,7 @@ namespace ignite
              */
             SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT,
 
-            /**
-             * Driver does not support this function.
-             */
+            /** Driver does not support this function. */
             SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED
         };
 

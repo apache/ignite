@@ -81,6 +81,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     /** */
     private GridCacheVersion ver;
 
+    /** Future start time in nanoseconds. */
+    private final long startTimeNanos;
+
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -132,6 +135,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         futId = IgniteUuid.randomUuid();
 
         ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+
+        startTimeNanos = cctx.config().isStatisticsEnabled() ? System.nanoTime() : 0L;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridNearGetFuture.class);
@@ -224,6 +229,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
             cache().dht().sendTtlUpdateRequest(expiryPlc);
 
+            if (cctx.config().isStatisticsEnabled() && !trackable && !skipVals && err == null)
+                cctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - startTimeNanos);
+
             return true;
         }
 
@@ -248,6 +256,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         final AffinityTopologyVersion topVer
     ) {
+        Throwable exc = cctx.topologyVersionFuture().validateCache(cctx);
+
+        if (exc != null) {
+            onDone(exc);
+
+            return;
+        }
+
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (affNodes.isEmpty()) {

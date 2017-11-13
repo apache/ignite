@@ -128,7 +128,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             ValueLong.get(x));
     }
 
-
     /**
      * Simple table test.
      *
@@ -140,137 +139,147 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        while(x-- > 0) {
+        GridH2QueryContext qctx = new GridH2QueryContext(UUID.randomUUID(), UUID.randomUUID(),
+            Thread.currentThread().getId(), GridH2QueryType.LOCAL);
+
+        try {
+            GridH2QueryContext.set(qctx);
+
+            while (x-- > 0) {
+                UUID id = UUID.randomUUID();
+
+                GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
+                    UUID.randomUUID().toString(), rnd.nextInt(100));
+
+                tbl.doUpdate(row, false);
+            }
+
+            assertEquals(MAX_X, tbl.getRowCountApproximation());
+            assertEquals(MAX_X, tbl.getRowCount(null));
+
+            for (GridH2IndexBase idx : tbl.indexes()) {
+                assertEquals(MAX_X, idx.getRowCountApproximation());
+                assertEquals(MAX_X, idx.getRowCount(null));
+            }
+
+            // Check correct rows order.
+            checkOrdered((GridH2TreeIndex)tbl.indexes().get(0), new Comparator<SearchRow>() {
+                @Override public int compare(SearchRow o1, SearchRow o2) {
+                    UUID id1 = (UUID)o1.getValue(0).getObject();
+                    UUID id2 = (UUID)o2.getValue(0).getObject();
+
+                    return id1.compareTo(id2);
+                }
+            });
+
+            checkOrdered((GridH2TreeIndex)tbl.indexes().get(1), new Comparator<SearchRow>() {
+                @Override public int compare(SearchRow o1, SearchRow o2) {
+                    Long x1 = (Long)o1.getValue(3).getObject();
+                    Long x2 = (Long)o2.getValue(3).getObject();
+
+                    int c = x2.compareTo(x1);
+
+                    if (c != 0)
+                        return c;
+
+                    Timestamp t1 = (Timestamp)o1.getValue(1).getObject();
+                    Timestamp t2 = (Timestamp)o2.getValue(1).getObject();
+
+                    return t1.compareTo(t2);
+                }
+            });
+
+            checkOrdered((GridH2TreeIndex)tbl.indexes().get(2), new Comparator<SearchRow>() {
+                @Override public int compare(SearchRow o1, SearchRow o2) {
+                    String s1 = (String)o1.getValue(2).getObject();
+                    String s2 = (String)o2.getValue(2).getObject();
+
+                    return s2.compareTo(s1);
+                }
+            });
+
+            // Indexes data consistency.
+            ArrayList<? extends Index> idxs = tbl.indexes();
+
+            checkIndexesConsistent((ArrayList<Index>)idxs, null);
+
+            // Check unique index.
             UUID id = UUID.randomUUID();
+            UUID id2 = UUID.randomUUID();
 
-            GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
-                UUID.randomUUID().toString(), rnd.nextInt(100));
+            assertTrue(tbl.doUpdate(row(id, System.currentTimeMillis(), id.toString(), rnd.nextInt(100)), false));
+            assertTrue(tbl.doUpdate(row(id2, System.currentTimeMillis(), id2.toString(), rnd.nextInt(100)), false));
 
-            tbl.doUpdate(row, false);
-        }
+            // Check index selection.
+            checkQueryPlan(conn, "SELECT * FROM T", SCAN_IDX_NAME);
 
-        assertEquals(MAX_X, tbl.getRowCountApproximation());
-        assertEquals(MAX_X, tbl.getRowCount(null));
+            checkQueryPlan(conn, "SELECT * FROM T WHERE ID IS NULL", PK_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE ID = RANDOM_UUID()", PK_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE ID > RANDOM_UUID()", PK_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T ORDER BY ID", PK_NAME);
 
-        for (GridH2IndexBase idx : tbl.indexes()) {
-            assertEquals(MAX_X, idx.getRowCountApproximation());
-            assertEquals(MAX_X, idx.getRowCount(null));
-        }
+            checkQueryPlan(conn, "SELECT * FROM T WHERE STR IS NULL", STR_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE STR = 'aaaa'", STR_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE STR > 'aaaa'", STR_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T ORDER BY STR DESC", STR_IDX_NAME);
 
-        // Check correct rows order.
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(0), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                UUID id1 = (UUID)o1.getValue(0).getObject();
-                UUID id2 = (UUID)o2.getValue(0).getObject();
+            checkQueryPlan(conn, "SELECT * FROM T WHERE X IS NULL", NON_UNIQUE_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE X = 10000", NON_UNIQUE_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T WHERE X > 10000", NON_UNIQUE_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T ORDER BY X DESC", NON_UNIQUE_IDX_NAME);
+            checkQueryPlan(conn, "SELECT * FROM T ORDER BY X DESC, T", NON_UNIQUE_IDX_NAME);
 
-                return id1.compareTo(id2);
+            checkQueryPlan(conn, "SELECT * FROM T ORDER BY T, X DESC", SCAN_IDX_NAME);
+
+            // Simple queries.
+
+            Statement s = conn.createStatement();
+
+            ResultSet rs = s.executeQuery("select id from t where x between 0 and 100");
+
+            int i = 0;
+            while (rs.next())
+                i++;
+
+            assertEquals(MAX_X + 2, i);
+
+            // -----
+
+            rs = s.executeQuery("select id from t where t is not null");
+
+            i = 0;
+            while (rs.next())
+                i++;
+
+            assertEquals(MAX_X + 2, i);
+
+            // ----
+
+            int cnt = 10 + rnd.nextInt(25);
+
+            long t = System.currentTimeMillis();
+
+            for (i = 0; i < cnt; i++) {
+                id = UUID.randomUUID();
+
+                assertTrue(tbl.doUpdate(row(id, t, id.toString(), 51), false));
             }
-        });
 
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(1), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                Long x1 = (Long)o1.getValue(3).getObject();
-                Long x2 = (Long)o2.getValue(3).getObject();
+            rs = s.executeQuery("select x, id from t where x = 51 limit " + cnt);
 
-                int c = x2.compareTo(x1);
+            i = 0;
 
-                if (c != 0)
-                    return c;
+            while (rs.next()) {
+                assertEquals(51, rs.getInt(1));
 
-                Timestamp t1 = (Timestamp)o1.getValue(1).getObject();
-                Timestamp t2 = (Timestamp)o2.getValue(1).getObject();
-
-                return t1.compareTo(t2);
+                i++;
             }
-        });
 
-        checkOrdered((GridH2TreeIndex)tbl.indexes().get(2), new Comparator<SearchRow>() {
-            @Override public int compare(SearchRow o1, SearchRow o2) {
-                String s1 = (String)o1.getValue(2).getObject();
-                String s2 = (String)o2.getValue(2).getObject();
-
-                return s2.compareTo(s1);
-            }
-        });
-
-        // Indexes data consistency.
-        ArrayList<? extends Index> idxs = tbl.indexes();
-
-        checkIndexesConsistent((ArrayList<Index>)idxs, null);
-
-        // Check unique index.
-        UUID id = UUID.randomUUID();
-        UUID id2 = UUID.randomUUID();
-
-        assertTrue(tbl.doUpdate(row(id, System.currentTimeMillis(), id.toString(), rnd.nextInt(100)), false));
-        assertTrue(tbl.doUpdate(row(id2, System.currentTimeMillis(), id2.toString(), rnd.nextInt(100)), false));
-
-        // Check index selection.
-        checkQueryPlan(conn, "SELECT * FROM T", SCAN_IDX_NAME);
-
-        checkQueryPlan(conn, "SELECT * FROM T WHERE ID IS NULL", PK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE ID = RANDOM_UUID()", PK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE ID > RANDOM_UUID()", PK_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY ID", PK_NAME);
-
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR IS NULL", STR_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR = 'aaaa'", STR_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE STR > 'aaaa'", STR_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY STR DESC", STR_IDX_NAME);
-
-        checkQueryPlan(conn, "SELECT * FROM T WHERE X IS NULL", NON_UNIQUE_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE X = 10000", NON_UNIQUE_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T WHERE X > 10000", NON_UNIQUE_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY X DESC", NON_UNIQUE_IDX_NAME);
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY X DESC, T", NON_UNIQUE_IDX_NAME);
-
-        checkQueryPlan(conn, "SELECT * FROM T ORDER BY T, X DESC", SCAN_IDX_NAME);
-
-        // Simple queries.
-
-        Statement s = conn.createStatement();
-
-        ResultSet rs = s.executeQuery("select id from t where x between 0 and 100");
-
-        int i = 0;
-        while (rs.next())
-            i++;
-
-        assertEquals(MAX_X + 2, i);
-
-        // -----
-
-        rs = s.executeQuery("select id from t where t is not null");
-
-        i = 0;
-        while (rs.next())
-            i++;
-
-        assertEquals(MAX_X + 2, i);
-
-        // ----
-
-        int cnt = 10 + rnd.nextInt(25);
-
-        long t = System.currentTimeMillis();
-
-        for (i = 0; i < cnt; i++) {
-            id = UUID.randomUUID();
-
-            assertTrue(tbl.doUpdate(row(id, t, id.toString(), 51), false));
+            assertEquals(cnt, i);
         }
-
-        rs = s.executeQuery("select x, id from t where x = 51 limit " + cnt);
-
-        i = 0;
-
-        while (rs.next()) {
-            assertEquals(51, rs.getInt(1));
-
-            i++;
+        finally {
+            qctx.clearContext(true);
         }
-
-        assertEquals(cnt, i);
     }
 
     /**
@@ -296,6 +305,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         multithreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                GridH2QueryContext.set(new GridH2QueryContext(UUID.randomUUID(), UUID.randomUUID(),
+                    Thread.currentThread().getId(), GridH2QueryType.LOCAL));
+
                 Random rnd = new Random();
 
                 PreparedStatement ps1 = null;
@@ -361,7 +373,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
                         rs = ps1.executeQuery();
 
-                        for (;;) {
+                        for (; ; ) {
                             assertTrue(rs.next());
 
                             if (rs.getObject(1).equals(id))
@@ -383,8 +395,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("InfiniteLoopStatement")
-    public static void main(String ... args) throws Exception {
-        for (int i = 0;;) {
+    public static void main(String... args) throws Exception {
+        for (int i = 0; ; ) {
             GridH2TableSelfTest t = new GridH2TableSelfTest();
 
             t.beforeTest();
@@ -398,7 +410,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-      * @throws Exception If failed.
+     * @throws Exception If failed.
      */
     public void testRangeQuery() throws Exception {
         int rows = 3000;
@@ -408,29 +420,39 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        for (int i = 0 ; i < rows; i++) {
-            UUID id = UUID.randomUUID();
+        GridH2QueryContext qctx = new GridH2QueryContext(UUID.randomUUID(), UUID.randomUUID(),
+            Thread.currentThread().getId(), GridH2QueryType.LOCAL);
 
-            GridH2Row row = row(id, t++, id.toString(), rnd.nextInt(xs));
+        try {
+            GridH2QueryContext.set(qctx);
 
-            assertTrue(tbl.doUpdate(row, false));
+            for (int i = 0; i < rows; i++) {
+                UUID id = UUID.randomUUID();
+
+                GridH2Row row = row(id, t++, id.toString(), rnd.nextInt(xs));
+
+                assertTrue(tbl.doUpdate(row, false));
+            }
+
+            PreparedStatement ps = conn.prepareStatement("select count(*) from t where x = ?");
+
+            int cnt = 0;
+
+            for (int x = 0; x < xs; x++) {
+                ps.setInt(1, x);
+
+                ResultSet rs = ps.executeQuery();
+
+                assertTrue(rs.next());
+
+                cnt += rs.getInt(1);
+            }
+
+            assertEquals(rows, cnt);
         }
-
-        PreparedStatement ps = conn.prepareStatement("select count(*) from t where x = ?");
-
-        int cnt = 0;
-
-        for (int x = 0; x < xs; x++) {
-            ps.setInt(1, x);
-
-            ResultSet rs = ps.executeQuery();
-
-            assertTrue(rs.next());
-
-            cnt += rs.getInt(1);
+        finally {
+            qctx.clearContext(false);
         }
-
-        assertEquals(rows, cnt);
     }
 
     /**
@@ -453,62 +475,82 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
         multithreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Random rnd = new Random();
+                GridH2QueryContext qctx = new GridH2QueryContext(UUID.randomUUID(), UUID.randomUUID(),
+                    Thread.currentThread().getId(), GridH2QueryType.LOCAL);
 
-                int offset = cntr.getAndIncrement() * iterations;
+                try {
+                    GridH2QueryContext.set(qctx);
 
-                synchronized (ids[offset]) {
-                    for (int i = 0; i < iterations; i++) {
-                        UUID id = ids[offset + i];
+                    Random rnd = new Random();
 
-                        int x = rnd.nextInt(50);
+                    int offset = cntr.getAndIncrement() * iterations;
 
-                        GridH2Row row = row(id, t, id.toString(), x);
+                    synchronized (ids[offset]) {
+                        for (int i = 0; i < iterations; i++) {
+                            UUID id = ids[offset + i];
 
-                        assertTrue(tbl.doUpdate(row, false));
+                            int x = rnd.nextInt(50);
+
+                            GridH2Row row = row(id, t, id.toString(), x);
+
+                            assertTrue(tbl.doUpdate(row, false));
+                        }
                     }
-                }
 
-                offset = (offset + iterations) % ids.length;
+                    offset = (offset + iterations) % ids.length;
 
-                synchronized (ids[offset]) {
-                    for (int i = 0; i < iterations; i += 2) {
-                        UUID id = ids[offset + i];
+                    synchronized (ids[offset]) {
+                        for (int i = 0; i < iterations; i += 2) {
+                            UUID id = ids[offset + i];
 
-                        int x = rnd.nextInt(50);
+                            int x = rnd.nextInt(50);
 
-                        GridH2Row row = row(id, t, id.toString(), x);
+                            GridH2Row row = row(id, t, id.toString(), x);
 
-                        if (tbl.doUpdate(row, true))
-                            deleted.incrementAndGet();
+                            if (tbl.doUpdate(row, true))
+                                deleted.incrementAndGet();
+                        }
                     }
-                }
 
-                return null;
+                    return null;
+                }
+                finally {
+                    qctx.clearContext(false);
+                }
             }
         }, threads);
 
         assertTrue(deleted.get() > 0);
 
-        PreparedStatement p = conn.prepareStatement("select count(*) from t where id = ?");
+        GridH2QueryContext qctx = new GridH2QueryContext(UUID.randomUUID(), UUID.randomUUID(),
+            Thread.currentThread().getId(), GridH2QueryType.LOCAL);
 
-        for (int i = 1; i < ids.length; i += 2) {
-            p.setObject(1, ids[i]);
+        try {
+            GridH2QueryContext.set(qctx);
 
-            ResultSet rs = p.executeQuery();
+            PreparedStatement p = conn.prepareStatement("select count(*) from t where id = ?");
+
+            for (int i = 1; i < ids.length; i += 2) {
+                p.setObject(1, ids[i]);
+
+                ResultSet rs = p.executeQuery();
+
+                assertTrue(rs.next());
+
+                assertEquals(1, rs.getInt(1));
+            }
+
+            Statement s = conn.createStatement();
+
+            ResultSet rs = s.executeQuery("select count(*) from t");
 
             assertTrue(rs.next());
 
-            assertEquals(1, rs.getInt(1));
+            assertEquals(ids.length - deleted.get(), rs.getInt(1));
         }
-
-        Statement s = conn.createStatement();
-
-        ResultSet rs = s.executeQuery("select count(*) from t");
-
-        assertTrue(rs.next());
-
-        assertEquals(ids.length - deleted.get(), rs.getInt(1));
+        finally {
+            qctx.clearContext(false);
+        }
     }
 
     /**
@@ -525,7 +567,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             UUID id = UUID.randomUUID();
 
             GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
-                    UUID.randomUUID().toString(), rnd.nextInt(100));
+                UUID.randomUUID().toString(), rnd.nextInt(100));
 
             tbl.doUpdate(row, false);
         }
@@ -569,7 +611,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 String plan = r.getString(1);
 
                 assertTrue("Execution plan for '" + sql + "' query should contain '" + search + "'",
-                        plan.contains(search));
+                    plan.contains(search));
             }
         }
     }
@@ -588,7 +630,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
 
             Iterator<GridH2Row> iter = ((GridH2TreeIndex)idx).rows();
 
-            while(iter.hasNext())
+            while (iter.hasNext())
                 assertTrue(set.add(iter.next()));
 
             //((GridH2SnapTreeSet)((GridH2Index)idx).tree).print();
