@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -85,7 +86,7 @@ class BinaryMetadataFileStore {
     /**
      * @param binMeta Binary metadata to be written to disk.
      */
-    void saveMetadata(BinaryMetadata binMeta) {
+    void writeMetadata(BinaryMetadata binMeta) {
         if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
@@ -122,5 +123,45 @@ class BinaryMetadataFileStore {
                     "; exception was thrown: " + e.getMessage());
             }
         }
+    }
+
+    /**
+     * Checks if binary metadata for the same typeId is already presented on disk.
+     * If so merges it with new metadata and stores the result.
+     * Otherwise just writes new metadata.
+     *
+     * @param binMeta new binary metadata to write to disk.
+     */
+    void mergeAndWriteMetadata(BinaryMetadata binMeta) {
+        BinaryMetadata existingMeta = readMetadata(binMeta.typeId());
+
+        if (existingMeta != null) {
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(existingMeta, binMeta);
+
+            writeMetadata(mergedMeta);
+        } else
+            writeMetadata(binMeta);
+    }
+
+    /**
+     * Reads binary metadata for given typeId.
+     *
+     * @param typeId typeId of BinaryMetadata to be read.
+     */
+    private BinaryMetadata readMetadata(int typeId) {
+        File file = new File(workDir, Integer.toString(typeId) + ".bin");
+
+        if (!file.exists())
+            return null;
+
+        try (FileInputStream in = new FileInputStream(file)) {
+            return U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to restore metadata from file: " + file.getName() +
+                "; exception was thrown: " + e.getMessage());
+        }
+
+        return null;
     }
 }

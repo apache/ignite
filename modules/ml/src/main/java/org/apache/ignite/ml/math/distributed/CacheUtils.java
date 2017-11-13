@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.distributed;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,14 +82,12 @@ public class CacheUtils {
 
         /**
          *
-         *
          */
         public Cache.Entry<K, V> entry() {
             return entry;
         }
 
         /**
-         *
          *
          */
         public IgniteCache<K, V> cache() {
@@ -173,12 +172,8 @@ public class CacheUtils {
      * @return Sum of the values.
      */
     private static double sum(Collection<Double> c) {
-        double sum = 0.0;
-
-        for (double d : c)
-            sum += d;
-
-        return sum;
+        // Fix for IGNITE-6762, some collections could store null values.
+        return c.stream().filter(Objects::nonNull).mapToDouble(Double::doubleValue).sum();
     }
 
     /**
@@ -409,7 +404,8 @@ public class CacheUtils {
 
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part,
+                    (k, v) -> affinity.mapPartitionToNode(p) == locNode && (keyFilter == null || keyFilter.apply(k)))))
                     fun.accept(new CacheEntry<>(entry, cache));
             }
         });
@@ -481,6 +477,7 @@ public class CacheUtils {
 
             long before = System.currentTimeMillis();
             cache.putAll(m);
+            System.out.println("PutAll took: " + (System.currentTimeMillis() - before));
         });
     }
 
@@ -647,7 +644,7 @@ public class CacheUtils {
      * @param run Runnable.
      */
     public static void bcast(String cacheName, IgniteRunnable run) {
-        bcast(cacheName, Ignition.localIgnite(), run);
+        bcast(cacheName, ignite(), run);
     }
 
     /**
@@ -656,7 +653,7 @@ public class CacheUtils {
      * @param <A> Type returned by the callable.
      */
     public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
-        return bcast(cacheName, Ignition.localIgnite(), call);
+        return bcast(cacheName, ignite(), call);
     }
 
     /**

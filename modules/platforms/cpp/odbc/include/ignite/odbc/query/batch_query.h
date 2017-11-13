@@ -106,6 +106,13 @@ namespace ignite
                 virtual int64_t AffectedRows() const;
 
                 /**
+                 * Move to the next result set.
+                 * 
+                 * @return Operaion result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
+                /**
                  * Get SQL query string.
                  *
                  * @return SQL query string.
@@ -142,16 +149,13 @@ namespace ignite
                 meta::ColumnMetaVector resultMeta;
 
                 /** Number of rows affected. */
-                int64_t rowsAffected;
+                std::vector<int64_t> rowsAffected;
 
-                /** Number of parameter sets successfully processed. */
-                int64_t setsProcessed;
+                /** Rows affected index. */
+                size_t rowsAffectedIdx;
 
                 /** Query executed. */
                 bool executed;
-
-                /** Data retrieved. */
-                bool dataRetrieved;
             };
         }
     }

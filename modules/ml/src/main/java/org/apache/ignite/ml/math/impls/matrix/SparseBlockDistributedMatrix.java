@@ -20,12 +20,13 @@ package org.apache.ignite.ml.math.impls.matrix;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
@@ -106,7 +107,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
 
         CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
-            Affinity affinity = ignite.affinity(cacheName);
+            Affinity<BlockMatrixKey> affinity = ignite.affinity(cacheName);
 
             IgniteCache<BlockMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
@@ -122,11 +123,15 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
             // compute Cij locally on each node
             // TODO: IGNITE:5114, exec in parallel
             locKeys.forEach(key -> {
-                long newBlockId = key.blockId();
+                long newBlockIdRow = key.blockRowId();
+                long newBlockIdCol = key.blockColId();
+
+                IgnitePair<Long> newBlockId = new IgnitePair<>(newBlockIdRow, newBlockIdCol);
+
                 BlockEntry blockC = null;
 
-                List<BlockEntry> aRow = matrixA.storage().getRowForBlock(newBlockId, storageC);
-                List<BlockEntry> bCol = matrixB.storage().getColForBlock(newBlockId, storageC);
+                List<BlockEntry> aRow = matrixA.storage().getRowForBlock(newBlockId);
+                List<BlockEntry> bCol = matrixB.storage().getColForBlock(newBlockId);
 
                 for (int i = 0; i < aRow.size(); i++) {
                     BlockEntry blockA = aRow.get(i);
@@ -137,7 +142,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
                     blockC = blockC == null ? tmpBlock : new BlockEntry(blockC.plus(tmpBlock));
                 }
 
-                cache.put(storageC.getCacheKey(newBlockId), blockC);
+                cache.put(storageC.getCacheKey(newBlockIdRow, newBlockIdCol), blockC);
             });
         });
 
@@ -185,7 +190,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
     }
 
     /** */
-    private IgniteUuid getUUID() {
+    private UUID getUUID() {
         return ((BlockMatrixStorage)getStorage()).getUUID();
     }
 
