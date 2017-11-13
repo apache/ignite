@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
@@ -85,8 +86,9 @@ namespace Apache.Ignite.Core.Tests
             var classpath = string.Join(";",
                 Directory.GetFiles(folder).Where(x => !x.Contains("ignite-core-")).Select(Path.GetFileName));
 
-            // Start a node and make sure it works properly
+            // Start a node and check the exception.
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
+            var reader = new ListDataReader();
 
             var proc = IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
@@ -94,13 +96,18 @@ namespace Apache.Ignite.Core.Tests
                 "-J-ea",
                 "-J-Xms512m",
                 "-J-Xmx512m"
-            });
+            }, outReader: reader);
 
-            // Java class is not found (did you set IGNITE_HOME environment variable?): org/apache/ignite/internal/processors/platform/PlatformIgnition
-
+            // Wait for process to fail.
             Assert.IsNotNull(proc);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => proc.HasExited, 1000));
+            Assert.AreEqual(-1, proc.ExitCode);
 
-            VerifyNodeStarted(exePath);
+            // Check error message.
+            Assert.AreEqual("ERROR: Apache.Ignite.Core.Common.IgniteException: Java class is not found " +
+                            "(did you set IGNITE_HOME environment variable?): " +
+                            "org/apache/ignite/internal/processors/platform/PlatformIgnition",
+                reader.GetOutput().First());
         }
 
         /// <summary>
