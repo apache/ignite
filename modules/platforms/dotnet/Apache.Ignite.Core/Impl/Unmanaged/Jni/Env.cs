@@ -159,6 +159,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             get { return _jvm; }
         }
 
+        /// <summary>
+        /// Calls the static void method.
+        /// </summary>
         public void CallStaticVoidMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
         {
             _callStaticVoidMethod(_envPtr, cls.Target, methodId, argsPtr);
@@ -166,6 +169,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             ExceptionCheck();
         }
 
+        /// <summary>
+        /// Calls the static bool method.
+        /// </summary>
         public bool CallStaticBoolMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
         {
             var res = _callStaticBoolMethod(_envPtr, cls.Target, methodId, argsPtr);
@@ -175,6 +181,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return res > 0;
         }
 
+        /// <summary>
+        /// Calls the object method.
+        /// </summary>
         public GlobalRef CallObjectMethod(GlobalRef obj, IntPtr methodId, long* argsPtr = null)
         {
             var lref = _callObjectMethod(_envPtr, obj.Target, methodId, argsPtr);
@@ -184,6 +193,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return NewGlobalRef(lref);
         }
 
+        /// <summary>
+        /// Calls the long method.
+        /// </summary>
         public long CallLongMethod(GlobalRef obj, IntPtr methodId, long* argsPtr = null)
         {
             var res = _callLongMethod(_envPtr, obj.Target, methodId, argsPtr);
@@ -193,6 +205,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return res;
         }
 
+        /// <summary>
+        /// Calls the void method.
+        /// </summary>
         public void CallVoidMethod(GlobalRef obj, IntPtr methodId, long* argsPtr = null)
         {
             _callVoidMethod(_envPtr, obj.Target, methodId, argsPtr);
@@ -200,7 +215,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             ExceptionCheck();
         }
 
-        public GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
+        /// <summary>
+        /// Calls the static object method.
+        /// </summary>
+        private GlobalRef CallStaticObjectMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
         {
             var res = _callStaticObjectMethod(_envPtr, cls.Target, methodId, argsPtr);
 
@@ -209,6 +227,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return NewGlobalRef(res);
         }
 
+        /// <summary>
+        /// Finds the class.
+        /// </summary>
         public GlobalRef FindClass(string name)
         {
             var res = _findClass(_envPtr, name);
@@ -222,7 +243,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return NewGlobalRef(res);
         }
 
-        public GlobalRef GetObjectClass(GlobalRef obj)
+        /// <summary>
+        /// Gets the object class.
+        /// </summary>
+        private GlobalRef GetObjectClass(GlobalRef obj)
         {
             var res = _getObjectClass(_envPtr, obj.Target);
 
@@ -231,6 +255,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return NewGlobalRef(res);
         }
 
+        /// <summary>
+        /// Gets the static method identifier.
+        /// </summary>
         public IntPtr GetStaticMethodId(GlobalRef clazz, string name, string signature)
         {
             var res = _getStaticMethodId(_envPtr, clazz.Target, name, signature);
@@ -244,6 +271,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return res;
         }
 
+        /// <summary>
+        /// Gets the method identifier.
+        /// </summary>
         public IntPtr GetMethodId(GlobalRef clazz, string name, string signature)
         {
             var res = _getMethodId(_envPtr, clazz.Target, name, signature);
@@ -257,7 +287,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return res;
         }
 
-        public GlobalRef NewStringUtf(sbyte* utf)
+        /// <summary>
+        /// Creates new jstring from UTF chars.
+        /// </summary>
+        private GlobalRef NewStringUtf(sbyte* utf)
         {
             if (utf == null)
             {
@@ -271,6 +304,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return NewGlobalRef(res);
         }
 
+        /// <summary>
+        /// Creates new jstring from string.
+        /// </summary>
         public GlobalRef NewStringUtf(string str)
         {
             if (str == null)
@@ -284,12 +320,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 return NewStringUtf(chars);
             }
-            finally 
+            finally
             {
                 Marshal.FreeHGlobal(new IntPtr(chars));
             }
         }
 
+        /// <summary>
+        /// Gets the utf chars from jstring.
+        /// </summary>
         private IntPtr GetStringUtfChars(IntPtr jstring)
         {
             Debug.Assert(jstring != IntPtr.Zero);
@@ -298,11 +337,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return _getStringUtfChars(_envPtr, jstring, &isCopy);
         }
 
+        /// <summary>
+        /// Releases the string utf chars allocated by <see cref="GetStringUtfChars"/>.
+        /// </summary>
         private void ReleaseStringUtfChars(IntPtr jstring, IntPtr chars)
         {
             _releaseStringUtfChars(_envPtr, jstring, chars);
         }
 
+        /// <summary>
+        /// Gets the length of the jstring.
+        /// </summary>
         private int GetStringUtfLength(IntPtr jstring)
         {
             Debug.Assert(jstring != IntPtr.Zero);
@@ -310,6 +355,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return _getStringUtfLength(_envPtr, jstring);
         }
 
+        /// <summary>
+        /// Registers the native callbacks.
+        /// </summary>
         public void RegisterNatives(GlobalRef clazz, NativeMethod[] methods)
         {
             Debug.Assert(methods != null);
@@ -325,7 +373,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
         }
 
-        public string JStringToString(GlobalRef jstring)
+        /// <summary>
+        /// Converts jstring to string.
+        /// </summary>
+        private string JStringToString(GlobalRef jstring)
         {
             if (jstring == null)
             {
@@ -335,6 +386,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return JStringToString(jstring.Target);
         }
 
+        /// <summary>
+        /// Converts jstring to string.
+        /// </summary>
         public string JStringToString(IntPtr jstring)
         {
             if (jstring == IntPtr.Zero)
@@ -355,6 +409,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
         }
 
+        /// <summary>
+        /// Creates a new global reference from a local reference pointer.
+        /// </summary>
         public GlobalRef NewGlobalRef(IntPtr lref)
         {
             if (lref == IntPtr.Zero)
@@ -369,11 +426,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             return res;
         }
 
+        /// <summary>
+        /// Deletes the global reference.
+        /// </summary>
         public void DeleteGlobalRef(IntPtr gref)
         {
             _deleteGlobalRef(_envPtr, gref);
         }
 
+        /// <summary>
+        /// Throws an exception to java.
+        /// </summary>
         public void ThrowToJava(Exception e)
         {
             Debug.Assert(e != null);
@@ -386,7 +449,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     _throwNew(_envPtr, cls.Target, new IntPtr(msgChars));
                 }
             }
-            finally 
+            finally
             {
                 Marshal.FreeHGlobal(new IntPtr(msgChars));
             }
