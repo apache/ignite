@@ -18,10 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -30,8 +28,8 @@ import org.apache.ignite.testframework.GridTestUtils;
  * Test printing warning in setAddresses when there is at least one wrong ip address.
  */
 public class TcpDiscoveryVmIpFinderSetAddressesWarningTest
-        extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
-    /** String logger.*/
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
+    /** String logger. */
     private GridStringLogger strLog = new GridStringLogger();
 
     /**
@@ -43,7 +41,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest
         // No-op.
     }
 
-    /** {@inheritDoc}*/
+    /** {@inheritDoc} */
     @Override protected TcpDiscoveryVmIpFinder ipFinder() {
         TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
@@ -58,17 +56,33 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest
      * @throws Exception If any error occurs.
      */
     public void testWarningOccursOnlyOnFirstInvalidAddress() throws Exception {
-        String wrongAddr1 = "527.0.0.1:45555";
+        String wrongAddr1 = "0.0.0.0";
 
-        String wrongAddr2 = "some-dns-name";
+        String wrongAddr2 = "fake-dns-name";
 
         GridTestUtils.setFieldValue(finder, "log", strLog);
 
-        finder.setAddresses(Arrays.asList(wrongAddr1, "8.8.8.8", wrongAddr2, "127.0.0.1:"));
+        finder.setAddresses(Arrays.asList(wrongAddr1, wrongAddr2));
 
         assertTrue(strLog.toString().contains(wrongAddr1));
 
         assertFalse(strLog.toString().contains(wrongAddr2));
+    }
+
+    /**
+     * Set right address and check that it's not logging.
+     *
+     * @throws Exception If any error occurs.
+     */
+    public void testWarningWithRightAddress() throws Exception {
+        String rightAddr = "127.0.0.1";
+
+        GridTestUtils.setFieldValue(finder, "log", strLog);
+
+        finder.setAddresses(Collections.singleton(rightAddr));
+
+        assertFalse(strLog.toString().contains(rightAddr));
+
     }
 
     /**

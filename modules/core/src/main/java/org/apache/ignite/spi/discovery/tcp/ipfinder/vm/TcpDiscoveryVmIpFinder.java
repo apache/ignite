@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +51,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_DISCOVERY_ADDR
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  * </ul>
  */
-public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -137,7 +138,6 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     @IgniteSpiConfiguration(optional = true)
     public synchronized TcpDiscoveryVmIpFinder setAddresses(Collection<String> addrs) throws IgniteSpiException {
-
         if (F.isEmpty(addrs))
             return this;
 
@@ -145,6 +145,7 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         for (String ipStr : addrs)
             newAddrs.addAll(address(ipStr));
+
         this.addrs = newAddrs;
 
         return this;
@@ -159,7 +160,6 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @throws IgniteSpiException If failed.
      */
     private Collection<InetSocketAddress> address(String ipStr) throws IgniteSpiException {
-
         ipStr = ipStr.trim();
 
         String errMsg = "Failed to parse provided address: " + ipStr;
@@ -202,12 +202,12 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param ipStr Address string
      * @param regexDelim Port regex delimiter.
      * @param errMsg Error message.
-     * @return Socket addresses (may contain 1 or more addresses if provided string includes port range).
+     * @return Socket addresses (may contain 1 or more addresses if provided string
+     *      includes port range).
      * @throws IgniteSpiException If failed.
      */
     private Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
         throws IgniteSpiException {
-
         String[] tokens = ipStr.split(regexDelim);
 
         if (tokens.length == 2) {
@@ -224,6 +224,7 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
 
                     Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
 
+                    // Upper bound included.
                     for (int i = port1; i <= port2; i++) {
                         InetSocketAddress inetSockAddr = new InetSocketAddress(addrStr, i);
                         res.add(inetSockAddr);
@@ -260,12 +261,26 @@ public class  TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * @param wrongInetSockAddr InetSocketAddress that can be wrong..
      */
     private void logFirstInvalidAddress(InetSocketAddress wrongInetSockAddr) {
-        if (U.isWindows() && wrongInetSockAddr.isUnresolved() && allAddrCorrect) {
-            log.warning(String.format("Wrong ip address in Windows OS [%s]." +
-                    " Connection can take a lot of time. If there are any other addresses, " +
-                    "check your address list in ipFinder.", wrongInetSockAddr.getHostName() + ":"
-                    + wrongInetSockAddr.getPort()));
-            allAddrCorrect = false;
+        try {
+            if (U.isWindows() && allAddrCorrect) {
+                Process pingProc = java.lang.Runtime.getRuntime().exec("ping -n 1 " + wrongInetSockAddr.getHostName());
+
+                int returnVal = pingProc.waitFor();
+
+                boolean reachable = (returnVal == 0);
+
+                if (!reachable) {
+                    log.warning(String.format("Wrong ip address in Windows OS [%s]." +
+                        " Connection can take a lot of time. If there are any other addresses, " +
+                        "check your address list in ipFinder.", wrongInetSockAddr.getHostName() + ":"
+                        + wrongInetSockAddr.getPort()));
+
+                    allAddrCorrect = false;
+                }
+            }
+        }
+        catch (InterruptedException | IOException e) {
+            e.printStackTrace();
         }
     }
 

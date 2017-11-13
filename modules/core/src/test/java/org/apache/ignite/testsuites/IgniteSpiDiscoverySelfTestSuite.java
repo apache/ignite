@@ -78,7 +78,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoveryMulticastIpFinderSelfTest.class));
 
         if(U.isWindows())
-        suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSetAddressesWarningTest.class));
+            suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSetAddressesWarningTest.class));
 
         suite.addTest(new TestSuite(TcpDiscoverySelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySpiSelfTest.class));
