@@ -169,7 +169,10 @@ public abstract class WALRecord {
         SNAPSHOT,
 
         /** Metastore data record. */
-        METASTORE_DATA_RECORD;
+        METASTORE_DATA_RECORD,
+
+        /** Exchange record. */
+        EXCHANGE;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

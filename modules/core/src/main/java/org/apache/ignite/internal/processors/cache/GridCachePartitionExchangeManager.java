@@ -926,6 +926,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
     private void refreshPartitions() {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-6857
+        if (cctx.snapshot().snapshotOperationInProgress())
+            return;
+
         ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
         if (oldest == null) {

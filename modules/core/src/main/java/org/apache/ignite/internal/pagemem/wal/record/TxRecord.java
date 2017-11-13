@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -30,9 +31,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
+    @GridToStringInclude
     private TransactionState state;
 
     /** Global transaction identifier within cluster, assigned by transaction coordinator. */
+    @GridToStringInclude
     private GridCacheVersion nearXidVer;
 
     /** Transaction entries write topology version. */

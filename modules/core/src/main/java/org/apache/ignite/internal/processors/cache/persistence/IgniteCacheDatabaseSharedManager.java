@@ -222,12 +222,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
-                addDataRegion(memCfg, dataRegionCfg);
+                addDataRegion(memCfg, dataRegionCfg, true);
         }
 
         addDataRegion(
             memCfg,
-            memCfg.getDefaultDataRegionConfiguration()
+            memCfg.getDefaultDataRegionConfiguration(),
+            true
         );
 
         addDataRegion(
@@ -236,7 +237,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
                 CU.isPersistenceEnabled(memCfg)
-            )
+            ),
+            true
         );
     }
 
@@ -247,7 +249,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void addDataRegion(
         DataStorageConfiguration dataStorageCfg,
-        DataRegionConfiguration dataRegionCfg
+        DataRegionConfiguration dataRegionCfg,
+        boolean trackable
     ) throws IgniteCheckedException {
         String dataRegionName = dataRegionCfg.getName();
 
@@ -258,7 +261,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
 
-        DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics);
+        DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
         dataRegionMap.put(dataRegionName, memPlc);
 
@@ -829,7 +832,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private DataRegion initMemory(
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics,
+        boolean trackable
     ) throws IgniteCheckedException {
         File allocPath = buildAllocPath(plcCfg);
 
@@ -839,7 +843,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 log,
                 allocPath);
 
-        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics);
+        PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
 
         return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
     }
@@ -904,7 +908,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
         DataRegionConfiguration memPlcCfg,
-        DataRegionMetricsImpl memMetrics
+        DataRegionMetricsImpl memMetrics,
+        boolean trackable
     ) {
         memMetrics.persistenceEnabled(false);
 
