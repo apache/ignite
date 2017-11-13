@@ -2484,19 +2484,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @param readyVer Ready topology version.
      *
-     * @return {@code true} if pending distributed exchange exists.
+     * @return {@code true} If pending distributed exchange exists because server node left grid.
      */
-    public boolean distributedExchange(AffinityTopologyVersion readyVer) {
+    public boolean failOnServerNodeLeft(AffinityTopologyVersion readyVer) {
         GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
 
         AffinityTopologyVersion initVer = fut.initialVersion();
 
         DiscoveryEvent evt = fut.firstEvent();
 
-        boolean ignore = evt.node().isClient() &&
-            (evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED);
+        boolean fail = !evt.node().isClient() && (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED);
 
-        return initVer.compareTo(readyVer) > 0 && !ignore;
+        return initVer.compareTo(readyVer) > 0 && fail;
     }
 
     /**

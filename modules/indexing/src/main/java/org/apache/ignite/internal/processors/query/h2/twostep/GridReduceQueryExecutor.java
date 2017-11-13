@@ -59,6 +59,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -561,14 +562,22 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-            boolean distributedExchange = h2.distributedExchange(topVer);
-
-            // If topology is changed and we are inside a transaction, break query execution.
+            // If server node is left and we are inside a transaction, break query execution.
             // Otherwise, exchange will be waiting forever for current tx.
-            if (distributedExchange && ctx.cache().context().tm().userTx() != null)
-                throw new CacheException(
-                    new TransactionException("Topology is changed while executing query inside a transaction. " +
-                        "Please restart the transaction and try again."));
+            final GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+
+            if (h2.failOnServerNodeLeft(topVer) && tx != null) {
+                try {
+                    tx.rollbackAsync().get();
+
+                    throw new CacheException(
+                        new TransactionException("Transaction was rolled back because server node has left grid while executing a query. " +
+                        "Please restart the transaction."));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException("Failed to rollback a transaction.", e);
+                }
+            }
 
             List<Integer> cacheIds = qry.cacheIds();
 
