@@ -195,11 +195,25 @@ public final class Functions {
         };
     }
 
+    public static <A, B, C, D> IgniteCurriedTriFunction<A, B, C, D> curry(IgniteTriFunction<A, B, C, D> f) {
+        return a -> b -> c -> f.apply(a, b, c);
+    }
+
     public static <A, B, C> IgniteCurriedBiFunction<A, B, C> curry(IgniteBiFunction<A, B, C> f) {
         return a -> b -> f.apply(a, b);
     }
 
-    public static <A, B> IgniteFunction<A, IgniteSupplier<B>> curry(IgniteFunction<A, B> f) {
-        return a -> () -> f.apply(a);
+    public static <A, B> IgniteFunction<A, IgniteSupplier<B>> outputSupplier(IgniteFunction<A, B> f) {
+        return a -> {
+            B res = f.apply(a);
+            return () -> res;
+        };
+    }
+
+    public static <A, B, C> IgniteBiFunction<A, B, IgniteSupplier<C>> outputSupplier(IgniteBiFunction<A, B, C> f) {
+        return (a, b) -> {
+            C res = f.apply(a, b);
+            return () -> res;
+        };
     }
 }

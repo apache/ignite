@@ -17,75 +17,74 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.Collection;
+import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.functions.IgniteCurriedBiFunction;
+import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.CacheContext;
-import org.apache.ignite.ml.trainers.group.chain.DC;
 import org.apache.ignite.ml.trainers.group.chain.DistributedTrainerWorkersChain;
-import org.apache.ignite.ml.trainers.group.chain.HasCacheContext;
+import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
-public abstract class GroupTrainer<LC, K, V, I, O, R, M extends Model, T> implements Trainer<M, T> {
-    IgniteCurriedBiFunction<Integer, T, O> init;
-    IgniteCurriedBiFunction<Integer, I, O> worker;
-    IgniteFunction<I, IgniteBiTuple<LC, R>> handler;
-    IgnitePredicate<Collection<O>> stopper;
-    IgniteFunction<Integer, R> result;
-    IgniteFunction<Collection<R>, M> modelProducer;
+public abstract class GroupTrainer<LC, K, V, IR extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends Distributive<K>> implements Trainer<M, T> {
     IgniteCache<GroupTrainerCacheKey<K>, V> cache;
     int nodeLocalEntitiesCount;
     Ignite ignite;
 
     public GroupTrainer(
-        IgniteCurriedBiFunction<Integer, T, O> init,
-        IgniteCurriedBiFunction<Integer, I, O> worker,
-        IgniteFunction<I, IgniteBiTuple<LC, R>> handler,
-        IgnitePredicate<Collection<O>> stopper,
-        IgniteFunction<Integer, R> result,
-        IgniteFunction<Collection<R>, M> modelProducer,
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
-        int nodeLocEntitiesCnt,
+        int initialNodeLocalEntitiesCnt,
         Ignite ignite) {
-        this.init = init;
-        this.worker = worker;
-        this.handler = handler;
-        this.stopper = stopper;
-        this.result = result;
-        this.modelProducer = modelProducer;
         this.cache = cache;
-        this.nodeLocalEntitiesCount = nodeLocEntitiesCnt;
+        this.nodeLocalEntitiesCount = initialNodeLocalEntitiesCnt;
         this.ignite = ignite;
     }
 
     @Override public M train(T data) {
         UUID trainingUUID = UUID.randomUUID();
-        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(initLocalContext(data), trainingUUID, new CacheContext<>(cache), ignite);
-        DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> chain = (i, c) -> i;
+        LC locCtx = initialLocalContext(data);
 
-        chain.
-            thenDistributed().
-            thenDistributed().process()
+        GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, trainingUUID, new CacheContext<>(cache), ignite);
+        DistributedTrainerWorkersChain<LC, K, V, T, GroupTrainingContext<K, V, LC>, T> chain = (i, c) -> i;
 
-        initGlobalContext(data, trainingUUID);
+        M res = chain.
+            thenDistributedWrite(this::initGlobal, (t, lc) -> data::keys, this::reduceGlobalInitData).
+            thenLocally(this::processInitData).
+            thenWhile(this::shouldContinue, trainingLoopStep()).
+            thenDistributed(this::extractContextForModelCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), this::reduceFinalResults).
+            thenLocally(this::mapFinalResult).
+            process(data, ctx);
 
-        return null;
+        cleanup();
+
+        return res;
     }
 
-    protected abstract LC initLocalContext(T data);
+    protected abstract LC initialLocalContext(T data);
 
-    protected abstract I initGlobalContext(T data, UUID trainingUUID);
+    protected abstract IR initGlobal(T data, GroupTrainerCacheKey<K> key);
 
-    protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoop();
+    protected abstract IR reduceGlobalInitData(IR data1, IR data2);
 
-    private <A, B> B execute(ComputeTask<A, B> task, A arg) {
-        return ignite.compute(ignite.cluster().forCacheNodes(cache.getName())).execute(task, arg);
-    }
+    protected abstract I processInitData(IR data, LC locCtx);
+
+    protected abstract DistributedTrainerWorkersChain<LC, K, V, I, GroupTrainingContext<K, V, LC>, I> trainingLoopStep();
+
+    protected abstract boolean shouldContinue(I data);
+
+    protected abstract <G> G extractContextForModelCreation(I data, LC locCtx);
+
+    protected abstract Stream<GroupTrainerCacheKey<K>> finalResultKeys(I data, LC locCtx);
+
+    protected abstract <G> Map.Entry<GroupTrainerCacheKey<K>, R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+
+    protected abstract R reduceFinalResults(R res1, R res2);
+
+    protected abstract M mapFinalResult(R res, LC locCtx);
+
+    protected abstract void cleanup();
 }
