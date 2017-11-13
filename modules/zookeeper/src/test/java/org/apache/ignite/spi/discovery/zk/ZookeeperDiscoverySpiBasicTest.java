@@ -107,6 +107,23 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testRestarts_2_Nodes() throws Exception {
+        startGrid(0);
+
+        for (int i = 0; i < 10; i++) {
+            info("Iteration: " + i);
+
+            startGrid(1);
+
+            waitForTopology(2);
+
+            stopGrid(1);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStartStop_2_Nodes_WithCache() throws Exception {
         startGrids(2);
 
@@ -170,6 +187,10 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         }, 3, "stop-node-thread");
 
         waitForTopology(7);
+
+        startGridsMultiThreaded(0, 3);
+
+        waitForTopology(10);
     }
 
     /**

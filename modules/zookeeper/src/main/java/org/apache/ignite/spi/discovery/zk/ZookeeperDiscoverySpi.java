@@ -292,10 +292,18 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private void initLocalNode() {
         assert ignite != null;
 
-        locNode = new ZookeeperClusterNode(ignite.configuration().getNodeId(),
+        Serializable consistentId = consistentId();
+
+        UUID nodeId = ignite.configuration().getNodeId();
+
+        // TODO ZK
+        if (consistentId == null)
+            consistentId = nodeId;
+
+        locNode = new ZookeeperClusterNode(nodeId,
             locNodeVer,
             locNodeAttrs,
-            consistentId(),
+            consistentId,
             ignite.configuration().isClientMode());
 
         locNode.local(true);
@@ -652,18 +660,34 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         if (oldNodes.ver == newNodes.ver)
             return;
 
-        long nextJoinOrder = oldNodes.nodesByOrder.isEmpty() ? 1 : oldNodes.nodesByOrder.lastKey() + 1;
-
         TreeMap<Integer, ZKDiscoveryEvent> evts = new TreeMap<>();
 
-        Set<Long> failed = new HashSet<>();
+        Set<Long> failedNodes = new HashSet<>();
+        Set<Long> joinedNodes = new HashSet<>();
 
         synchronized (curTop) {
             for (int v = oldNodes.ver + 1; v <= newNodes.ver; v++) {
-                ZKNodeData data = joinHist.get(nextJoinOrder);
+                ZKNodeData joined = null;
 
-                if (data != null) {
+                for (ZKNodeData newData : newNodes.nodesByOrder.values()) {
+                    if (!curTop.containsKey(newData.order) && !joinedNodes.contains(newData.order)) {
+                        joined = newData;
+
+                        break;
+                    }
+                }
+
+                // TODO ZK: process joinHist
+
+                if (joined != null) {
+                    joinedNodes.add(joined.order);
+
+                    ZKNodeData data = joinHist.get(joined.order);
+
                     ZKJoiningNodeData joinData = data.joinData;
+
+                    if (joinData == null)
+                        System.out.println();
 
                     assert joinData != null : data;
 
@@ -702,13 +726,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                             failedNode,
                             new ArrayList<>(curTop.values())));
                     }
-
-                    nextJoinOrder++;
                 }
                 else {
                     for (ZKNodeData oldData : oldNodes.nodesByOrder.values()) {
-                        if (!failed.contains(oldData.order) && !newNodes.nodesByOrder.containsKey(oldData.order)) {
-                            failed.add(oldData.order);
+                        if (!failedNodes.contains(oldData.order) && !newNodes.nodesByOrder.containsKey(oldData.order)) {
+                            failedNodes.add(oldData.order);
 
                             ZookeeperClusterNode failedNode = curTop.remove(oldData.order);
 
@@ -1026,6 +1048,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
          * @param joiningNodeData Discovery data.
          */
         ZKJoiningNodeData(ZookeeperClusterNode node, Map<Integer, Serializable> joiningNodeData) {
+            assert node != null && node.id() != null : node;
+            assert joiningNodeData != null;
+
             this.node = node;
             this.joiningNodeData = joiningNodeData;
         }
