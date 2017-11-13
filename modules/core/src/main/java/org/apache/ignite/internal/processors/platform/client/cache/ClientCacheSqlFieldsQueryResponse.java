@@ -33,14 +33,18 @@ class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
     /** Fields cursor. */
     private final FieldsQueryCursor<List> fieldsCursor;
 
+    /** Include field names flag. */
+    private final boolean includeFieldNames;
+
     /**
      * Ctor.
-     *  @param requestId Request id.
+     * @param requestId Request id.
      * @param cursor Client cursor.
      * @param fieldsCursor Fields cursor.
+     * @param includeFieldNames Whether to include field names.
      */
     ClientCacheSqlFieldsQueryResponse(long requestId, ClientCacheQueryCursor cursor,
-                                      FieldsQueryCursor<List> fieldsCursor) {
+                                      FieldsQueryCursor<List> fieldsCursor, boolean includeFieldNames) {
         super(requestId);
 
         assert cursor != null;
@@ -48,6 +52,7 @@ class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
 
         this.cursor = cursor;
         this.fieldsCursor = fieldsCursor;
+        this.includeFieldNames = includeFieldNames;
     }
 
     /** {@inheritDoc} */
@@ -59,8 +64,10 @@ class ClientCacheSqlFieldsQueryResponse extends ClientResponse {
         int cnt = fieldsCursor.getColumnsCount();
         writer.writeInt(cnt);
 
-        for (int i = 0; i < cnt; i++) {
-            writer.writeString(fieldsCursor.getFieldName(i));
+        if (includeFieldNames) {
+            for (int i = 0; i < cnt; i++) {
+                writer.writeString(fieldsCursor.getFieldName(i));
+            }
         }
 
         cursor.writePage(writer);

@@ -479,6 +479,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(qry.Lazy);
             writer.WriteInt(qry.PageSize);
             writer.WriteTimeSpanAsLong(qry.Timeout);
+
+            // Always include field names.
+            writer.WriteBoolean(true);
         }
 
         /// <summary>

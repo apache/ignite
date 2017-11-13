@@ -36,6 +36,9 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 
+    /** Include field names flag. */
+    private final boolean includeFieldNames;
+
     /**
      * Ctor.
      *
@@ -55,6 +58,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
                 .setLazy(reader.readBoolean())
                 .setPageSize(reader.readInt())
                 .setTimeout((int) reader.readLong(), TimeUnit.MILLISECONDS);
+
+        includeFieldNames = reader.readBoolean();
     }
 
     /** {@inheritDoc} */
@@ -73,7 +78,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
 
             cliCur.id(cursorId);
 
-            return new ClientCacheSqlFieldsQueryResponse(requestId(), cliCur, cur);
+            return new ClientCacheSqlFieldsQueryResponse(requestId(), cliCur, cur, includeFieldNames);
         }
         catch (Exception e) {
             ctx.decrementCursors();
