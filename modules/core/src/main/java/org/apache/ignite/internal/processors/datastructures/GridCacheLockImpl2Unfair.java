@@ -78,7 +78,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         this.key = key;
         this.ctx = lockView.context();
 
-        /* Logger. */
         IgniteLogger log = ctx.logger(getClass());
 
         // final for passing into anonymous classes.
