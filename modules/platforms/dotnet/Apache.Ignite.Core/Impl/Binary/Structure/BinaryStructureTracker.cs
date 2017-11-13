@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             _curStructAction++;
 
-            if (_curStructUpdates == null)
+            if (_curStructUpdates == null && _portStruct != null)
             {
                 var fieldId = _portStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath,
                     _curStructAction);
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         public void UpdateReaderStructure()
         {
             if (_curStructUpdates != null)
-                _desc.UpdateReadStructure(_desc.ReaderTypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateReadStructure(_curStructPath, _curStructUpdates);
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             if (_curStructUpdates != null)
             {
-                _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateWriteStructure(_curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;
 
@@ -115,15 +115,13 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     writer.SaveMetadata(_desc, fields);
                 }
             }
-            else
+            else if (_desc.WriterTypeStructure == null)
             {
-                // Special case when the object is with no properties.
-                // Save meta to Marshaller.
+                // Empty object (no fields).
+                // Null WriterTypeStructure indicates that meta has never been sent for this type.
                 writer.Marshaller.GetBinaryTypeHandler(_desc);
-
-                // Save meta to cluster.
                 writer.SaveMetadata(_desc, null);
-                return;
+                _desc.UpdateWriteStructure(_curStructPath, null);
             }
         }
 

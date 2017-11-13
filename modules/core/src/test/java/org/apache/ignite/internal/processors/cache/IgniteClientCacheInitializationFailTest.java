@@ -298,7 +298,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(String spaceName, boolean destroy) throws IgniteCheckedException {
+        @Override public void unregisterCache(String spaceName, boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 
@@ -309,7 +309,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
+        @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
+            CacheDataRow prevRow) {
             // No-op.
         }
 

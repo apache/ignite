@@ -486,6 +486,9 @@ public class GridSqlQueryParser {
     /** */
     public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
 
+    /** Data region name. */
+    public static final String PARAM_DATA_REGION = "DATA_REGION";
+
     /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
@@ -1395,6 +1398,13 @@ public class GridSqlQueryParser {
 
             case PARAM_WRAP_VALUE:
                 res.wrapValue(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+
+            case PARAM_DATA_REGION:
+                ensureNotEmpty(name, val);
+
+                res.dataRegionName(val);
 
                 break;
 

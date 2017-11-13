@@ -31,9 +31,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -259,16 +259,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-            .setDefaultMemoryPolicyName("default")
-            .setMemoryPolicies(
-                new MemoryPolicyConfiguration()
-                    .setName("default")
-                    .setMaxSize(128 * 1024 * 1024L)
-                    .setInitialSize(128 * 1024 * 1024L)
-            );
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return optimize(cfg);
     }
