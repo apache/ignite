@@ -571,8 +571,8 @@ public class GridReduceQueryExecutor {
                     tx.rollbackAsync().get();
 
                     throw new CacheException(
-                        new TransactionException("Transaction was rolled back because server node has left grid while executing a query. " +
-                        "Please restart the transaction."));
+                        new TransactionException("Transaction was rolled back because server node has left " +
+                            "grid while executing a query. Please restart the transaction."));
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException("Failed to rollback a transaction.", e);
