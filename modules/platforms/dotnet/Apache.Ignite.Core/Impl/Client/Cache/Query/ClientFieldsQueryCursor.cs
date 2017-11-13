@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
@@ -28,9 +29,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// </summary>
     internal class ClientFieldsQueryCursor : ClientQueryCursorBase<IList<object>>, IFieldsQueryCursor
     {
-        /** Column count. */
-        private readonly int _columnCount;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
         /// </summary>
@@ -39,15 +37,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
-        /// <param name="columnCount">The column count.</param>
+        /// <param name="columns">The columns.</param>
         public ClientFieldsQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary,
-            IBinaryStream initialBatchStream, ClientOp getPageOp, int columnCount)
+            IBinaryStream initialBatchStream, ClientOp getPageOp, IList<string> columns)
             : base(ignite, cursorId, keepBinary, initialBatchStream, getPageOp,
                 r =>
                 {
-                    var res = new List<object>(columnCount);
+                    var res = new List<object>(columns.Count);
 
-                    for (var i = 0; i < columnCount; i++)
+                    for (var i = 0; i < columns.Count; i++)
                     {
                         res.Add(r.ReadObject<object>());
                     }
@@ -55,25 +53,18 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                     return res;
                 })
         {
-            Debug.Assert(columnCount > 0);
+            Debug.Assert(columns != null);
 
-            _columnCount = columnCount;
+            FieldNames = new ReadOnlyCollection<string>(columns);
         }
 
         /** <inheritdoc /> */
-        public IList<string> FieldNames
-        {
-            get
-            {
-                // TODO: Lazy-load.
-                return null;
-            }
-        }
+        public IList<string> FieldNames { get; private set; }
 
         /// <summary>
         /// Reads the columns.
         /// </summary>
-        private static string[] ReadColumns(IBinaryRawReader reader)
+        internal static string[] ReadColumns(IBinaryRawReader reader)
         {
             var res = new string[reader.ReadInt()];
 

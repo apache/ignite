@@ -187,8 +187,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(sqlFieldsQuery.Sql, "sqlFieldsQuery.Sql");
 
             return DoOutInOp(ClientOp.QuerySqlFields, w => WriteSqlFieldsQuery(w, sqlFieldsQuery),
-                s => new ClientFieldsQueryCursor(_ignite, s.ReadLong(), _keepBinary, s,
-                    ClientOp.QuerySqlFieldsCursorGetPage, s.ReadInt()));
+                s => new ClientFieldsQueryCursor(
+                    _ignite, s.ReadLong(), _keepBinary, s, ClientOp.QuerySqlFieldsCursorGetPage,
+                    ClientFieldsQueryCursor.ReadColumns(_marsh.StartUnmarshal(s))));
         }
 
         /** <inheritDoc /> */
