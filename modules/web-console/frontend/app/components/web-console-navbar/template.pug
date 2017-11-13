@@ -14,13 +14,22 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-web-console-header
-    web-console-header-left
-        web-console-navbar
-    web-console-header-right
-        include ./includes/header-right
+.wch-content()
+    .wch-nav-item(ng-repeat='item in $ctrl.items')
+        div(ng-if='item.children' ng-click='$event.stopPropagation()'
+                ng-class='{active: $state.includes(item.sref)}'
+                bs-dropdown='item.children'
+                data-placement='bottom-left'
+                data-trigger='hover focus'
+                data-container='self'
+                aria-haspopup='true'
+                aria-expanded='false'
+            )
+                span {{::item.text}}
+                    span.caret
 
-.container.body-container
-    .main-content(ui-view='')
+        a(ng-if='!item.children && item.sref' ui-sref='{{item.sref}}' ui-sref-active='active')
+            | {{::item.text}}
 
-web-console-footer
+        a(ng-if='!item.children && item.click' ng-click='item.click()')
+            | {{::item.text}}

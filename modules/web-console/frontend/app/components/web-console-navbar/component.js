@@ -15,16 +15,20 @@
  * limitations under the License.
  */
 
-export default ['igniteNavbar', ['IgniteNavbar', (IgniteNavbar) => {
-    function controller() {
-        const ctrl = this;
+import template from './template.pug';
 
-        ctrl.items = IgniteNavbar;
+export default {
+    template,
+    controller: class {
+        static $inject = [];
+
+        static items = [{
+            text: 'Configure',
+            sref: 'base.configuration.tabs'
+        }];
+
+        constructor() {
+            this.items = this.constructor.items;
+        }
     }
-
-    return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'navbar'
-    };
-}]];
+};

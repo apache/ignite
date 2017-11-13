@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+import 'rxjs/add/operator/merge';
+
+import { defer } from 'rxjs/observable/defer';
+import { Subject } from 'rxjs/Subject';
+
 export default class Notebook {
     static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData'];
 
@@ -29,6 +34,9 @@ export default class Notebook {
         this.confirmModal = confirmModal;
         this.Messages = Messages;
         this.NotebookData = NotebookData;
+
+        this._list$ = new Subject();
+        this.list$ = defer(() => this.read()).merge(this._list$);
     }
 
     read() {
@@ -36,11 +44,19 @@ export default class Notebook {
     }
 
     create(name) {
-        return this.NotebookData.save({name});
+        return this.NotebookData.save({name})
+            .then((data) => {
+                this._list$.next(this.NotebookData.notebooks);
+                return data;
+            });
     }
 
     save(notebook) {
-        return this.NotebookData.save(notebook);
+        return this.NotebookData.save(notebook)
+            .then((data) => {
+                this._list$.next(this.NotebookData.notebooks);
+                return data;
+            });
     }
 
     find(_id) {
@@ -61,14 +77,14 @@ export default class Notebook {
 
     remove(notebook) {
         return this.confirmModal.confirm(`Are you sure you want to remove notebook: "${notebook.name}"?`)
-            .then(() => this.NotebookData.findIndex(notebook))
             .then((idx) => {
-                this.NotebookData.remove(notebook)
+                return this.NotebookData.remove(notebook)
                     .then(() => {
                         if (this.$state.includes('base.sql.notebook') && this.$state.params.noteId === notebook._id)
                             return this._openNotebook(idx);
                     })
                     .catch(this.Messages.showError);
-            });
+            })
+            .then(() => this._list$.next(this.NotebookData.notebooks));
     }
 }
