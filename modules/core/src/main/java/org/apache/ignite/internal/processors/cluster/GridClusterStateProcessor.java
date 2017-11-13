@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -142,7 +143,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         // Start first node as inactive if persistence is enabled.
-        boolean activeOnStart = !ctx.config().isPersistentStoreEnabled() && ctx.config().isActiveOnStart();
+        boolean activeOnStart = !CU.isPersistenceEnabled(ctx.config()) && ctx.config().isActiveOnStart();
 
         globalState = DiscoveryDataClusterState.createState(activeOnStart);
 
@@ -453,7 +454,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         List<StoredCacheData> storedCfgs = null;
 
-        if (activate && sharedCtx.database().persistenceEnabled()) {
+        if (activate && CU.isPersistenceEnabled(ctx.config())) {
             try {
                 Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
 

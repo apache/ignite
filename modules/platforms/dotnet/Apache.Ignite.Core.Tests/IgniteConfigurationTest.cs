@@ -36,10 +36,12 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
+    using WalMode = Apache.Ignite.Core.PersistentStore.WalMode;
 
     /// <summary>
     /// Tests code-based configuration.
@@ -63,6 +65,8 @@ namespace Apache.Ignite.Core.Tests
         {
             CheckDefaultProperties(new IgniteConfiguration());
             CheckDefaultProperties(new PersistentStoreConfiguration());
+            CheckDefaultProperties(new DataStorageConfiguration());
+            CheckDefaultProperties(new DataRegionConfiguration());
             CheckDefaultProperties(new ClientConnectorConfiguration());
             CheckDefaultProperties(new SqlConnectorConfiguration());
         }
@@ -92,6 +96,9 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
             CheckDefaultValueAttributes(new IgniteClientConfiguration());
+            CheckDefaultValueAttributes(new QueryIndex());
+            CheckDefaultValueAttributes(new DataStorageConfiguration());
+            CheckDefaultValueAttributes(new DataRegionConfiguration());
         }
 
         /// <summary>
@@ -130,6 +137,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
                 Assert.AreEqual(cfg.IgniteInstanceName, resCfg.IgniteInstanceName);
+                Assert.AreEqual(cfg.IgniteHome, resCfg.IgniteHome);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
                 Assert.AreEqual(cfg.MetricsExpireTime, resCfg.MetricsExpireTime);
                 Assert.AreEqual(cfg.MetricsHistorySize, resCfg.MetricsHistorySize);
@@ -216,33 +224,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(eventCfg.ExpirationTimeout, resEventCfg.ExpirationTimeout);
                 Assert.AreEqual(eventCfg.MaxEventCount, resEventCfg.MaxEventCount);
 
-                var memCfg = cfg.MemoryConfiguration;
-                var resMemCfg = resCfg.MemoryConfiguration;
-                Assert.IsNotNull(memCfg);
-                Assert.IsNotNull(resMemCfg);
-                Assert.AreEqual(memCfg.PageSize, resMemCfg.PageSize);
-                Assert.AreEqual(memCfg.ConcurrencyLevel, resMemCfg.ConcurrencyLevel);
-                Assert.AreEqual(memCfg.DefaultMemoryPolicyName, resMemCfg.DefaultMemoryPolicyName);
-                Assert.AreEqual(memCfg.SystemCacheInitialSize, resMemCfg.SystemCacheInitialSize);
-                Assert.AreEqual(memCfg.SystemCacheMaxSize, resMemCfg.SystemCacheMaxSize);
-                Assert.IsNotNull(memCfg.MemoryPolicies);
-                Assert.IsNotNull(resMemCfg.MemoryPolicies);
-                Assert.AreEqual(2, memCfg.MemoryPolicies.Count);
-                Assert.AreEqual(2, resMemCfg.MemoryPolicies.Count);
-
-                for (var i = 0; i < memCfg.MemoryPolicies.Count; i++)
-                {
-                    var plc = memCfg.MemoryPolicies.Skip(i).First();
-                    var resPlc = resMemCfg.MemoryPolicies.Skip(i).First();
-
-                    Assert.AreEqual(plc.PageEvictionMode, resPlc.PageEvictionMode);
-                    Assert.AreEqual(plc.MaxSize, resPlc.MaxSize);
-                    Assert.AreEqual(plc.EmptyPagesPoolSize, resPlc.EmptyPagesPoolSize);
-                    Assert.AreEqual(plc.EvictionThreshold, resPlc.EvictionThreshold);
-                    Assert.AreEqual(plc.Name, resPlc.Name);
-                    Assert.AreEqual(plc.SwapFilePath, resPlc.SwapFilePath);
-                }
-
                 var sql = cfg.SqlConnectorConfiguration;
                 var resSql = resCfg.SqlConnectorConfiguration;
 
@@ -255,28 +236,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(sql.TcpNoDelay, resSql.TcpNoDelay);
                 Assert.AreEqual(sql.ThreadPoolSize, resSql.ThreadPoolSize);
 
-                var pers = cfg.PersistentStoreConfiguration;
-                var resPers = resCfg.PersistentStoreConfiguration;
-
-                Assert.AreEqual(pers.AlwaysWriteFullPages, resPers.AlwaysWriteFullPages);
-                Assert.AreEqual(pers.CheckpointingFrequency, resPers.CheckpointingFrequency);
-                Assert.AreEqual(pers.CheckpointingPageBufferSize, resPers.CheckpointingPageBufferSize);
-                Assert.AreEqual(pers.CheckpointingThreads, resPers.CheckpointingThreads);
-                Assert.AreEqual(pers.LockWaitTime, resPers.LockWaitTime);
-                Assert.AreEqual(pers.PersistentStorePath, resPers.PersistentStorePath);
-                Assert.AreEqual(pers.TlbSize, resPers.TlbSize);
-                Assert.AreEqual(pers.WalArchivePath, resPers.WalArchivePath);
-                Assert.AreEqual(pers.WalFlushFrequency, resPers.WalFlushFrequency);
-                Assert.AreEqual(pers.WalFsyncDelayNanos, resPers.WalFsyncDelayNanos);
-                Assert.AreEqual(pers.WalHistorySize, resPers.WalHistorySize);
-                Assert.AreEqual(pers.WalMode, resPers.WalMode);
-                Assert.AreEqual(pers.WalRecordIteratorBufferSize, resPers.WalRecordIteratorBufferSize);
-                Assert.AreEqual(pers.WalSegments, resPers.WalSegments);
-                Assert.AreEqual(pers.WalSegmentSize, resPers.WalSegmentSize);
-                Assert.AreEqual(pers.WalStorePath, resPers.WalStorePath);
-                Assert.AreEqual(pers.MetricsEnabled, resPers.MetricsEnabled);
-                Assert.AreEqual(pers.RateTimeInterval, resPers.RateTimeInterval);
-                Assert.AreEqual(pers.SubIntervals, resPers.SubIntervals);
+                TestUtils.AssertReflectionEqual(cfg.DataStorageConfiguration, resCfg.DataStorageConfiguration);
             }
         }
 
@@ -306,26 +266,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsNotNull(disco);
                 Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
 
-                // Check memory configuration defaults.
-                var mem = resCfg.MemoryConfiguration;
-
-                Assert.IsNotNull(mem);
-                Assert.AreEqual("dfltPlc", mem.DefaultMemoryPolicyName);
-                Assert.AreEqual(MemoryConfiguration.DefaultPageSize, mem.PageSize);
-                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheInitialSize, mem.SystemCacheInitialSize);
-                Assert.AreEqual(MemoryConfiguration.DefaultSystemCacheMaxSize, mem.SystemCacheMaxSize);
-
-                var plc = mem.MemoryPolicies.Single();
-                Assert.AreEqual("dfltPlc", plc.Name);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEmptyPagesPoolSize, plc.EmptyPagesPoolSize);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultEvictionThreshold, plc.EvictionThreshold);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultInitialSize, plc.InitialSize);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultMaxSize, plc.MaxSize);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultSubIntervals, plc.SubIntervals);
-                Assert.AreEqual(MemoryPolicyConfiguration.DefaultRateTimeInterval, plc.RateTimeInterval);
-
-                // Check PersistentStoreConfiguration defaults.
-                CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
+                // DataStorage defaults.
+                CheckDefaultProperties(resCfg.DataStorageConfiguration);
+                CheckDefaultProperties(resCfg.DataStorageConfiguration.DefaultDataRegionConfiguration);
 
                 // Connector defaults.
                 CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
@@ -588,6 +531,55 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
+            Assert.AreEqual(PersistentStoreConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(DataStorageConfiguration cfg)
+        {
+            Assert.AreEqual(DataStorageConfiguration.DefaultTlbSize, cfg.WalThreadLocalBufferSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointFrequency, cfg.CheckpointFrequency);
+            Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointThreads, cfg.CheckpointThreads);
+            Assert.AreEqual(DataStorageConfiguration.DefaultLockWaitTime, cfg.LockWaitTime);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalFlushFrequency, cfg.WalFlushFrequency);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalFsyncDelayNanos, cfg.WalFsyncDelayNanos);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalHistorySize, cfg.WalHistorySize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalRecordIteratorBufferSize,
+                cfg.WalRecordIteratorBufferSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalSegmentSize, cfg.WalSegmentSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalSegments, cfg.WalSegments);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalMode, cfg.WalMode);
+            Assert.IsFalse(cfg.MetricsEnabled);
+            Assert.AreEqual(DataStorageConfiguration.DefaultMetricsSubIntervalCount, cfg.MetricsSubIntervalCount);
+            Assert.AreEqual(DataStorageConfiguration.DefaultMetricsRateTimeInterval, cfg.MetricsRateTimeInterval);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalPath, cfg.WalPath);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
+            Assert.AreEqual(DataStorageConfiguration.DefaultCheckpointWriteOrder, cfg.CheckpointWriteOrder);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWriteThrottlingEnabled, cfg.WriteThrottlingEnabled);
+
+            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionInitialSize, cfg.SystemRegionInitialSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
+            Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(DataRegionConfiguration cfg)
+        {
+            Assert.AreEqual(DataRegionConfiguration.DefaultEmptyPagesPoolSize, cfg.EmptyPagesPoolSize);
+            Assert.AreEqual(DataRegionConfiguration.DefaultEvictionThreshold, cfg.EvictionThreshold);
+            Assert.AreEqual(DataRegionConfiguration.DefaultInitialSize, cfg.InitialSize);
+            Assert.AreEqual(DataRegionConfiguration.DefaultMaxSize, cfg.MaxSize);
+            Assert.AreEqual(DataRegionConfiguration.DefaultPersistenceEnabled, cfg.PersistenceEnabled);
+            Assert.AreEqual(DataRegionConfiguration.DefaultMetricsRateTimeInterval, cfg.MetricsRateTimeInterval);
+            Assert.AreEqual(DataRegionConfiguration.DefaultMetricsSubIntervalCount, cfg.MetricsSubIntervalCount);
+            Assert.AreEqual(default(long), cfg.CheckpointPageBufferSize);
         }
 
         /// <summary>
@@ -632,8 +624,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
                                                   !p.Name.Contains("ThreadPoolSize") &&
-                                                  !(p.Name == "MaxSize" &&
-                                                    p.DeclaringType == typeof(MemoryPolicyConfiguration))))
+                                                  p.Name != "MaxSize"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -641,7 +632,7 @@ namespace Apache.Ignite.Core.Tests
                 if (attr != null)
                     Assert.AreEqual(attr.Value, propValue, string.Format("{0}.{1}", obj.GetType(), prop.Name));
                 else if (prop.PropertyType.IsValueType)
-                    Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue);
+                    Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue, prop.Name);
                 else
                     Assert.IsNull(propValue);
             }
@@ -678,6 +669,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 IgniteInstanceName = "gridName1",
+                IgniteHome = IgniteHome.Resolve(null),
                 IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
@@ -752,39 +744,6 @@ namespace Apache.Ignite.Core.Tests
                     ExpirationTimeout = TimeSpan.FromSeconds(5),
                     MaxEventCount = 10
                 },
-                MemoryConfiguration = new MemoryConfiguration
-                {
-                    ConcurrencyLevel = 3,
-                    DefaultMemoryPolicyName = "myDefaultPlc",
-                    PageSize = 2048,
-                    SystemCacheInitialSize = 13 * 1024 * 1024,
-                    SystemCacheMaxSize = 15 * 1024 * 1024,
-                    MemoryPolicies = new[]
-                    {
-                        new MemoryPolicyConfiguration
-                        {
-                            Name = "myDefaultPlc",
-                            PageEvictionMode = DataPageEvictionMode.Disabled,
-                            InitialSize = 340 * 1024 * 1024,
-                            MaxSize = 345 * 1024 * 1024,
-                            EvictionThreshold = 0.88,
-                            EmptyPagesPoolSize = 77,
-                            SwapFilePath = "myPath1",
-                            RateTimeInterval = TimeSpan.FromSeconds(35),
-                            SubIntervals = 7
-                        },
-                        new MemoryPolicyConfiguration
-                        {
-                            Name = "customPlc",
-                            PageEvictionMode = DataPageEvictionMode.Disabled,
-                            MaxSize = 456 * 1024 * 1024,
-                            EvictionThreshold = 0.77,
-                            EmptyPagesPoolSize = 66,
-                            SwapFilePath = "somePath2",
-                            MetricsEnabled = true
-                        }
-                    }
-                },
                 PublicThreadPoolSize = 3,
                 StripedThreadPoolSize = 5,
                 ServiceThreadPoolSize = 6,
@@ -805,30 +764,66 @@ namespace Apache.Ignite.Core.Tests
                     TcpNoDelay = false,
                     SocketSendBufferSize = 4096
                 },
-                PersistentStoreConfiguration = new PersistentStoreConfiguration
+                ConsistentId = new MyConsistentId {Data = "abc"},
+                DataStorageConfiguration = new DataStorageConfiguration
                 {
                     AlwaysWriteFullPages = true,
-                    CheckpointingFrequency = TimeSpan.FromSeconds(25),
-                    CheckpointingPageBufferSize = 28 * 1024 * 1024,
-                    CheckpointingThreads = 2,
+                    CheckpointFrequency = TimeSpan.FromSeconds(25),
+                    CheckpointThreads = 2,
                     LockWaitTime = TimeSpan.FromSeconds(5),
-                    PersistentStorePath = Path.GetTempPath(),
-                    TlbSize = 64 * 1024,
+                    StoragePath = Path.GetTempPath(),
+                    WalThreadLocalBufferSize = 64 * 1024,
                     WalArchivePath = Path.GetTempPath(),
                     WalFlushFrequency = TimeSpan.FromSeconds(3),
                     WalFsyncDelayNanos = 3,
                     WalHistorySize = 10,
-                    WalMode = WalMode.LogOnly,
+                    WalMode = Configuration.WalMode.LogOnly,
                     WalRecordIteratorBufferSize = 32 * 1024 * 1024,
                     WalSegments = 6,
                     WalSegmentSize = 5 * 1024 * 1024,
-                    WalStorePath = Path.GetTempPath(),
+                    WalPath = Path.GetTempPath(),
                     MetricsEnabled = true,
-                    SubIntervals = 7,
-                    RateTimeInterval = TimeSpan.FromSeconds(9),
-                    CheckpointWriteOrder = CheckpointWriteOrder.Random
-                },
-                ConsistentId = new MyConsistentId {Data = "abc"}
+                    MetricsSubIntervalCount = 7,
+                    MetricsRateTimeInterval = TimeSpan.FromSeconds(9),
+                    CheckpointWriteOrder = Configuration.CheckpointWriteOrder.Random,
+                    WriteThrottlingEnabled = true,
+                    SystemRegionInitialSize = 64 * 1024 * 1024,
+                    SystemRegionMaxSize = 128 * 1024 * 1024,
+                    ConcurrencyLevel = 1,
+                    PageSize = 8 * 1024,
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = "reg1",
+                        EmptyPagesPoolSize = 50,
+                        EvictionThreshold = 0.8,
+                        InitialSize = 100 * 1024 * 1024,
+                        MaxSize = 150 * 1024 * 1024,
+                        MetricsEnabled = true,
+                        PageEvictionMode = Configuration.DataPageEvictionMode.Random2Lru,
+                        PersistenceEnabled = false,
+                        MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
+                        MetricsSubIntervalCount = 6,
+                        SwapPath = IgniteUtils.GetTempDirectoryName(),
+                        CheckpointPageBufferSize = 28 * 1024 * 1024
+                    },
+                    DataRegionConfigurations = new[]
+                    {
+                        new DataRegionConfiguration
+                        {
+                            Name = "reg2",
+                            EmptyPagesPoolSize = 51,
+                            EvictionThreshold = 0.7,
+                            InitialSize = 101 * 1024 * 1024,
+                            MaxSize = 151 * 1024 * 1024,
+                            MetricsEnabled = false,
+                            PageEvictionMode = Configuration.DataPageEvictionMode.RandomLru,
+                            PersistenceEnabled = false,
+                            MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
+                            MetricsSubIntervalCount = 7,
+                            SwapPath = IgniteUtils.GetTempDirectoryName()
+                        }
+                    }
+                }
             };
         }
 

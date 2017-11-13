@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
@@ -65,6 +66,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override ICacheEntry<TK, TV> Read(BinaryReader reader)
         {
             return new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>());

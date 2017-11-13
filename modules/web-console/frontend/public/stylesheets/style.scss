@@ -304,6 +304,14 @@ body > .wrapper > ui-view {
     }
 }
 
+.use-cache {
+    display: flex;
+
+    input[type="checkbox"] {
+        width: 20px;
+    }
+}
+
 .group-section {
     margin-top: 20px;
 }

@@ -1035,6 +1035,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var elemType = val.GetType().GetElementType();
 
+                Debug.Assert(elemType != null);
+
                 var typeId = ObjTypeId;
 
                 if (elemType != typeof(object))
@@ -1331,9 +1333,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the string hash code using Java algorithm.
+        /// Gets the string hash code using Java algorithm, converting English letters to lower case.
         /// </summary>
-        public static int GetStringHashCode(string val)
+        public static int GetStringHashCodeLowerCase(string val)
         {
             if (val == null)
                 return 0;
@@ -1345,6 +1347,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // ReSharper disable once LoopCanBeConvertedToQuery (performance)
                 foreach (var c in val)
                     hash = 31 * hash + ('A' <= c && c <= 'Z' ? c | 0x20 : c);
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
+        private static int GetStringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+
+            int hash = 0;
+
+            unchecked
+            {
+                // ReSharper disable once LoopCanBeConvertedToQuery (performance)
+                foreach (var c in val)
+                    hash = 31 * hash + c;
             }
 
             return hash;
@@ -1445,7 +1467,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (id == 0)
-                id = GetStringHashCode(fieldName);
+                id = GetStringHashCodeLowerCase(fieldName);
 
             if (id == 0)
                 throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
@@ -1661,6 +1683,20 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte) 
                 || enumType == typeof(short) || enumType == typeof(ushort) || enumType == typeof(uint);
+        }
+
+        /// <summary>
+        /// Converts long to timespan.
+        /// </summary>
+        public static TimeSpan LongToTimeSpan(long ms)
+        {
+            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
+                return TimeSpan.MaxValue;
+
+            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
+                return TimeSpan.MinValue;
+
+            return TimeSpan.FromMilliseconds(ms);
         }
 
         /// <summary>

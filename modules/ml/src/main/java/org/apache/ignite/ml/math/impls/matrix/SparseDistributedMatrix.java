@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.impls.matrix;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -119,7 +120,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
 
         CacheUtils.bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
-            Affinity affinity = ignite.affinity(cacheName);
+            Affinity<RowColMatrixKey> affinity = ignite.affinity(cacheName);
 
             IgniteCache<RowColMatrixKey, BlockEntry> cache = ignite.getOrCreateCache(cacheName);
             ClusterNode locNode = ignite.cluster().localNode();
@@ -211,7 +212,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** */
-    public IgniteUuid getUUID() {
+    public UUID getUUID() {
         return ((SparseDistributedMatrixStorage)getStorage()).getUUID();
     }
 }

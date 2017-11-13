@@ -938,6 +938,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWriteReplace() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
+            new BinaryTypeConfiguration(TestObject.class.getName())
+        ));
+
+        TestObject obj = new TestObject();
+
+        BinaryObject po = marshal(obj, marsh);
+
+        assertEquals(obj, po.deserialize());
+
+        assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
+    }
+
+    /**
      *
      */
     private static class EnclosingObj implements Serializable {
@@ -2623,19 +2640,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         MyTestClass obj = binaryObj.deserialize();
 
         assertEquals("readResolve", obj.s);
-    }
-
-    /**
-     * @throws Exception If ecxeption thrown.
-     */
-    public void testDeclareReadResolveInParent() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(ChildBinary.class.getName())));
-
-        BinaryObjectImpl binaryObj = marshal(new ChildBinary(), marsh);
-
-        ChildBinary singleton = binaryObj.deserialize();
-
-        assertNotNull(singleton.s);
     }
 
     /**
@@ -5117,13 +5121,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public static class ChildBinary extends ParentBinary {
-
-    }
-
-    /**
-     *
-     */
     public static class SimpleEnclosingObject {
         /** */
         private Object simpl;
@@ -5176,25 +5173,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return field.hashCode();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ParentBinary {
-        /** */
-        public String s;
-
-        /**
-         * Package only visibility!!!!
-         *
-         * @return Object.
-         */
-        Object readResolve() {
-            s = "readResolve";
-
-            return this;
         }
     }
 
@@ -5516,5 +5494,85 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         };
 
         abstract boolean isSupported();
+    }
+
+    /** */
+    interface Intf {
+        /** */
+        long value();
+    }
+
+    /** */
+    static class TestObject {
+        /** Value. */
+        Intf val = new IntfImpl();
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestObject obj = (TestObject)o;
+
+            return val.equals(obj.val);
+        }
+    }
+
+    /** */
+    static class IntfImpl extends Cls implements Intf {
+        /** {@inheritDoc} */
+        @Override public long value() {
+            return longValue();
+        }
+    }
+
+    /** */
+    static class Cls implements Serializable {
+        /** Value. */
+        long val;
+
+        /** */
+        public long longValue() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Cls cls = (Cls)o;
+
+            return val == cls.val;
+        }
+
+        /** */
+        private Object writeReplace() {
+            return new SerializationProxy(this);
+        }
+
+        /** */
+        private static class SerializationProxy implements Serializable {
+            /** Value. */
+            private final long val;
+
+            /** */
+            SerializationProxy(Cls a) {
+                val = a.longValue();
+            }
+
+            /** */
+            private Object readResolve() {
+                Cls a = new Cls();
+
+                a.val = val;
+
+                return a;
+            }
+        }
     }
 }

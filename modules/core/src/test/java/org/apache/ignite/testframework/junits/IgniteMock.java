@@ -21,6 +21,10 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -469,18 +473,33 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        return null;
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        return null;
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /**

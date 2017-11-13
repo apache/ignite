@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * File WAL pointer.
  */
 public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Absolute WAL segment file index (incrementing counter) */
     private final long idx;
 

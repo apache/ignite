@@ -73,12 +73,16 @@ const compare = (a, b) => {
 
 export default class IgniteVersion {
     constructor() {
-        this.webConsole = '2.1.0';
+        this.webConsole = '2.2.0';
 
         this.supportedVersions = [
             {
+                label: 'Ignite 2.3',
+                ignite: '2.3.0'
+            },
+            {
                 label: 'Ignite 2.1',
-                ignite: '2.1.0'
+                ignite: '2.2.0'
             },
             {
                 label: 'Ignite 2.0',

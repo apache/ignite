@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -275,6 +276,8 @@ public class MarshallerContextImpl implements MarshallerContext {
         throws IgniteCheckedException
     {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
+
+        fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
 
         cache.put(typeId, new MappedName(clsName, true));
 
@@ -506,7 +509,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
 
-        if (ctx.config().isPersistentStoreEnabled())
+        if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
     }
 

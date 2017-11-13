@@ -22,11 +22,15 @@ namespace Apache.Ignite.Core.PersistentStore
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Configures Apache Ignite persistent store.
+    /// <para />
+    /// Obsolete, use <see cref="DataStorageConfiguration"/>.
     /// </summary>
+    [Obsolete("Use DataStorageConfiguration.")]
     public class PersistentStoreConfiguration
     {
         /// <summary>
@@ -107,6 +111,11 @@ namespace Apache.Ignite.Core.PersistentStore
         public const CheckpointWriteOrder DefaultCheckpointWriteOrder = CheckpointWriteOrder.Sequential;
 
         /// <summary>
+        /// Default value for <see cref="WriteThrottlingEnabled"/>.
+        /// </summary>
+        public const bool DefaultWriteThrottlingEnabled = false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PersistentStoreConfiguration"/> class.
         /// </summary>
         public PersistentStoreConfiguration()
@@ -126,6 +135,7 @@ namespace Apache.Ignite.Core.PersistentStore
             WalArchivePath = DefaultWalArchivePath;
             WalStorePath = DefaultWalStorePath;
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
+            WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
         }
 
         /// <summary>
@@ -156,6 +166,7 @@ namespace Apache.Ignite.Core.PersistentStore
             SubIntervals = reader.ReadInt();
             RateTimeInterval = reader.ReadLongAsTimespan();
             CheckpointWriteOrder = (CheckpointWriteOrder) reader.ReadInt();
+            WriteThrottlingEnabled = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -186,6 +197,7 @@ namespace Apache.Ignite.Core.PersistentStore
             writer.WriteInt(SubIntervals);
             writer.WriteTimeSpanAsLong(RateTimeInterval);
             writer.WriteInt((int) CheckpointWriteOrder);
+            writer.WriteBoolean(WriteThrottlingEnabled);
         }
 
         /// <summary>
@@ -312,5 +324,12 @@ namespace Apache.Ignite.Core.PersistentStore
         /// </summary>
         [DefaultValue(DefaultCheckpointWriteOrder)]
         public CheckpointWriteOrder CheckpointWriteOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether threads that generate dirty
+        /// pages too fast during ongoing checkpoint will be throttled.
+        /// </summary>
+        [DefaultValue(DefaultWriteThrottlingEnabled)]
+        public bool WriteThrottlingEnabled { get; set; }
     }
 }

@@ -17,6 +17,8 @@
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
+import Worker from 'worker!./decompress.worker';
+import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
 const State = {
@@ -25,6 +27,8 @@ const State = {
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
 };
+
+const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 
 class ConnectionState {
     constructor(cluster) {
@@ -80,11 +84,9 @@ export default class IgniteAgentManager {
 
         this.promises = new Set();
 
-        /**
-         * Connection to backend.
-         * @type {Socket}
-         */
-        this.socket = null;
+        this.pool = new SimpleWorkerPool('decompressor', Worker, 4);
+
+        this.socket = null; // Connection to backend.
 
         let cluster;
 
@@ -310,7 +312,7 @@ export default class IgniteAgentManager {
             this.socket.removeListener('disconnect', onDisconnect);
 
             if (err)
-                latch.reject(err);
+                return latch.reject(err);
 
             latch.resolve(res);
         });
@@ -362,7 +364,13 @@ export default class IgniteAgentManager {
      * @private
      */
     _rest(event, ...args) {
-        return this._emit(event, _.get(this.connectionSbj.getValue(), 'cluster.id'), ...args);
+        return this._emit(event, _.get(this.connectionSbj.getValue(), 'cluster.id'), ...args)
+            .then((data) => {
+                if (data.zipped)
+                    return this.pool.postMessage(data.data);
+
+                return data;
+            });
     }
 
     /**
@@ -375,11 +383,10 @@ export default class IgniteAgentManager {
     }
 
     /**
-     * @param {String} [cacheName] Cache name.
      * @returns {Promise}
      */
-    metadata(cacheName) {
-        return this._rest('node:rest', {cmd: 'metadata', cacheName: maskNull(cacheName)})
+    metadata() {
+        return this._rest('node:rest', {cmd: 'metadata'})
             .then((caches) => {
                 let types = [];
 
@@ -499,7 +506,7 @@ export default class IgniteAgentManager {
      */
     querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
         if (this.available('2.0.0')) {
-            const task = this.available('2.1.4-p1') ?
+            const task = this.available(...LAZY_QUERY_SINCE) ?
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
                 this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
 
@@ -552,9 +559,10 @@ export default class IgniteAgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
+     * @param {Boolean} lazy query flag.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local) {
+    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy) {
         // Page size for query.
         const pageSz = 1024;
 
@@ -572,7 +580,7 @@ export default class IgniteAgentManager {
                 });
         };
 
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz)
+        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy)
             .then(fetchResult);
     }
 
@@ -587,7 +595,7 @@ export default class IgniteAgentManager {
                 nid + '=' + queryId);
         }
 
-        return this.visorTask('queryClose', nid, queryId);
+        return this.visorTask('queryClose', nid, nid, queryId);
     }
 
     /**

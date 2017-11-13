@@ -165,6 +165,15 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
+            case OdbcRequest.MORE_RESULTS: {
+                long queryId = reader.readLong();
+                int pageSize = reader.readInt();
+
+                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
+
+                break;
+            }
+
             default:
                 throw new IgniteException("Unknown ODBC command: [cmd=" + cmd + ']');
         }
@@ -233,13 +242,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
 
-            writer.writeLong(res.affectedRows());
+            writeAffectedRows(writer, res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
 
             writer.writeBoolean(res.errorMessage() == null);
-            writer.writeLong(res.rowsAffected());
+            writeAffectedRows(writer, res.affectedRows());
 
             if (res.errorMessage() != null) {
                 writer.writeLong(res.errorSetIdx());
@@ -251,6 +260,33 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
+
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.queryId());
+
+            writer.writeLong(res.queryId());
+
+            Collection<?> items0 = res.items();
+
+            assert items0 != null;
+
+            writer.writeBoolean(res.last());
+
+            writer.writeInt(items0.size());
+
+            for (Object row0 : items0) {
+                if (row0 != null) {
+                    Collection<?> row = (Collection<?>)row0;
+
+                    writer.writeInt(row.size());
+
+                    for (Object obj : row)
+                        SqlListenerUtils.writeObject(writer, obj, true);
+                }
+            }
+        }
+        else if (res0 instanceof OdbcQueryMoreResultsResult) {
+            OdbcQueryMoreResultsResult res = (OdbcQueryMoreResultsResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -319,5 +355,25 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /**
+     * @param writer Writer to use.
+     * @param affectedRows Affected rows.
+     */
+    private void writeAffectedRows(BinaryWriterExImpl writer, Collection<Long> affectedRows) {
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
+            long summ = 0;
+
+            for (Long value : affectedRows)
+                summ += value == null ? 0 : value;
+
+            writer.writeLong(summ);
+        }
+        else {
+            writer.writeInt(affectedRows.size());
+            for (Long value : affectedRows)
+                writer.writeLong(value);
+        }
     }
 }

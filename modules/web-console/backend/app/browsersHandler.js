@@ -181,8 +181,12 @@ module.exports.factory = (_, socketio, configure, errors, mongo) => {
             return agent
                 .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
                 .then((res) => {
-                    if (res.status === 0)
+                    if (res.status === 0) {
+                        if (res.zipped)
+                            return res;
+
                         return JSON.parse(res.data);
+                    }
 
                     throw new Error(res.error);
                 });
@@ -250,6 +254,9 @@ module.exports.factory = (_, socketio, configure, errors, mongo) => {
 
                 this.executeOnNode(agent, demo, params)
                     .then((data) => {
+                        if (data.zipped)
+                            return cb(null, data);
+
                         if (data.finished)
                             return cb(null, data.result);
 

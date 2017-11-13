@@ -397,6 +397,29 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
+    /** Class for private class: 'org.h2.command.CommandList'. */
+    private static final Class<? extends Command> CLS_COMMAND_LIST;
+
+    /** */
+    private static final Getter<Command, Command> LIST_COMMAND;
+
+    /** */
+    private static final Getter<Command, String> REMAINING;
+
+    static {
+        try {
+            CLS_COMMAND_LIST = (Class<? extends Command>)CommandContainer.class.getClassLoader()
+                .loadClass("org.h2.command.CommandList");
+
+            LIST_COMMAND = getter(CLS_COMMAND_LIST, "command");
+
+            REMAINING = getter(CLS_COMMAND_LIST, "remaining");
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** */
     private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_TBL_NAME =
         getter(AlterTableAlterColumn.class, "tableName");
@@ -452,6 +475,15 @@ public class GridSqlQueryParser {
     private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
 
     /** */
+    private static final String PARAM_WRAP_KEY = "WRAP_KEY";
+
+    /** */
+    public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
+
+    /** Data region name. */
+    public static final String PARAM_DATA_REGION = "DATA_REGION";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -482,6 +514,26 @@ public class GridSqlQueryParser {
         assert cmd instanceof CommandContainer;
 
         return PREPARED.get(cmd);
+    }
+
+    /**
+     * @param stmt Prepared statement.
+     * @return Parsed select.
+     */
+    public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
+        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+
+        if (cmd instanceof CommandContainer)
+            return new PreparedWithRemaining(PREPARED.get(cmd), null);
+        else {
+            Class<?> cmdCls = cmd.getClass();
+
+            if (cmdCls.getName().equals("org.h2.command.CommandList")) {
+                return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
+            }
+            else
+                throw new IgniteSQLException("Unexpected statement command");
+        }
     }
 
     /**
@@ -964,7 +1016,8 @@ public class GridSqlQueryParser {
             pkCols.add(gridCol.columnName());
         }
 
-        int valColsNum = cols.size() - pkCols.size();
+        int keyColsNum = pkCols.size();
+        int valColsNum = cols.size() - keyColsNum;
 
         if (valColsNum == 0)
             throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
@@ -1009,6 +1062,44 @@ public class GridSqlQueryParser {
                 processExtraParam(e.getKey(), e.getValue(), res);
         }
 
+        // Process key wrapping.
+        Boolean wrapKey = res.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.keyTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when " + PARAM_KEY_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+
+        res.wrapKey(wrapKey0);
+
+        // Process value wrapping.
+        Boolean wrapVal = res.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                    "columns exist.", IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.valueTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when " + PARAM_VAL_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            res.wrapValue(false);
+        }
+        else
+            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
         if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
@@ -1016,7 +1107,7 @@ public class GridSqlQueryParser {
         if (res.affinityKey() == null) {
             LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
 
-            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1)
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1 && wrapKey0)
                 res.affinityKey(pkCols0.iterator().next());
         }
 
@@ -1290,6 +1381,24 @@ public class GridSqlQueryParser {
                         "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
 
                 res.writeSynchronizationMode(writeSyncMode);
+
+                break;
+
+            case PARAM_WRAP_KEY: {
+                res.wrapKey(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+            }
+
+            case PARAM_WRAP_VALUE:
+                res.wrapValue(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+
+            case PARAM_DATA_REGION:
+                ensureNotEmpty(name, val);
+
+                res.dataRegionName(val);
 
                 break;
 
@@ -1796,6 +1905,44 @@ public class GridSqlQueryParser {
             catch (IllegalAccessException e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PreparedWithRemaining {
+        /** Prepared. */
+        private Prepared prepared;
+
+        /** Remaining sql. */
+        private String remainingSql;
+
+        /**
+         * @param prepared Prepared.
+         * @param sql Remaining SQL.
+         */
+        public PreparedWithRemaining(Prepared prepared, String sql) {
+            this.prepared = prepared;
+
+            if (sql != null)
+                sql = sql.trim();
+
+            remainingSql = !F.isEmpty(sql) ? sql : null;
+        }
+
+        /**
+         * @return Prepared.
+         */
+        public Prepared prepared() {
+            return prepared;
+        }
+
+        /**
+         * @return Remaining SQL.
+         */
+        public String remainingSql() {
+            return remainingSql;
         }
     }
 }

@@ -62,12 +62,7 @@ public class QueryEntityEx extends QueryEntity {
         return notNullFields;
     }
 
-    /**
-     * Sets names of fields that must checked for null.
-     *
-     * @param notNullFields Set of names of fields that must have non-null values.
-     * @return {@code this} for chaining.
-     */
+    /** {@inheritDoc} */
     public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this.notNullFields = notNullFields;
 

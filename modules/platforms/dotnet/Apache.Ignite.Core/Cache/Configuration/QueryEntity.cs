@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
@@ -34,7 +33,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public sealed class QueryEntity : IQueryEntityInternal
+    public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAware
     {
         /** */
         private Type _keyType;
@@ -51,6 +50,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /** */
         private Dictionary<string, string> _aliasMap;
 
+        /** */
         private ICollection<QueryAlias> _aliases;
 
         /// <summary>
@@ -241,9 +241,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             var count = reader.ReadInt();
             Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x =>
-                    new QueryField(reader.ReadString(), reader.ReadString()) {IsKeyField = reader.ReadBoolean()})
-                    .ToList();
+                : Enumerable.Range(0, count).Select(x => new QueryField(reader)).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -259,7 +257,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Writes this instance.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware<IBinaryRawWriter>.Write(IBinaryRawWriter writer)
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
@@ -271,9 +269,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 foreach (var field in Fields)
                 {
-                    writer.WriteString(field.Name);
-                    writer.WriteString(field.FieldTypeName);
-                    writer.WriteBoolean(field.IsKeyField);
+                    field.Write(writer);
                 }
             }
             else
@@ -437,7 +433,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             visitedTypes.Add(type);
 
-            foreach (var memberInfo in GetFieldsAndProperties(type))
+            foreach (var memberInfo in ReflectionUtils.GetFieldsAndProperties(type))
             {
                 var customAttributes = memberInfo.Key.GetCustomAttributes(true);
 
@@ -454,10 +450,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (attr.IsIndexed)
                     {
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
-                            attr.IndexGroups));
+                            attr.IndexGroups)
+                        {
+                            InlineSize = attr.IndexInlineSize,
+                        });
                     }
 
-                    fields.Add(new QueryField(columnName, memberInfo.Value) {IsKeyField = isKey});
+                    fields.Add(new QueryField(columnName, memberInfo.Value)
+                    {
+                        IsKeyField = isKey,
+                        NotNull = attr.NotNull
+                    });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
                 }
@@ -480,33 +483,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
 
             visitedTypes.Remove(type);
-        }
-
-        /// <summary>
-        /// Gets the fields and properties.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns></returns>
-        private static IEnumerable<KeyValuePair<MemberInfo, Type>> GetFieldsAndProperties(Type type)
-        {
-            Debug.Assert(type != null);
-
-            if (type.IsPrimitive)
-                yield break;
-
-            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                                              BindingFlags.DeclaredOnly;
-
-            while (type != typeof (object) && type != null)
-            {
-                foreach (var fieldInfo in type.GetFields(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
-
-                foreach (var propertyInfo in type.GetProperties(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
-
-                type = type.BaseType;
-            }
         }
 
         /// <summary>
