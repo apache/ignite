@@ -214,20 +214,6 @@ public class BinaryContext {
             sysClss.add(TreeSet.class.getName());
         }
 
-        // EntryProcessor for Ignite.reentrantlock
-
-        sysClss.add(AcquireUnfairProcessor.class.getName());
-        sysClss.add(ReleaseUnfairProcessor.class.getName());
-        sysClss.add(LockIfFreeUnfairProcessor.class.getName());
-        sysClss.add(LockOrRemoveUnfairProcessor.class.getName());
-
-        sysClss.add(AcquireFairProcessor.class.getName());
-        sysClss.add(ReleaseFairProcessor.class.getName());
-        sysClss.add(LockIfFreeFairProcessor.class.getName());
-        sysClss.add(LockOrRemoveFairProcessor.class.getName());
-
-        sysClss.add(RemoveProcessor.class.getName());
-
         BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
     }
 
