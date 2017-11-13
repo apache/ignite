@@ -31,6 +31,30 @@
 
 #define SOCKET_ERROR (-1)
 
+namespace
+{
+    /**
+     * Get last socket error message.
+     * @return Last socket error message string.
+     */
+    std::string GetLastSocketErrorMessage()
+    {
+        std::string res = "<Unknown error>";
+        int lastError = errno;
+
+        if (lastError == 0)
+            return res;
+
+        char buffer[1024] = "";
+
+        strerror_r(lastError, buffer, sizeof(buffer));
+
+        res.assign(buffer);
+
+        return res;
+    }
+}
+
 namespace ignite
 {
     namespace odbc
@@ -54,8 +78,6 @@ namespace ignite
 
                 addrinfo hints;
 
-                LOG_MSG("Host: " << hostname << " port: " << port);
-
                 memset(&hints, 0, sizeof(hints));
                 hints.ai_family = AF_UNSPEC;
                 hints.ai_socktype = SOCK_STREAM;
@@ -70,6 +92,8 @@ namespace ignite
 
                 if (res != 0)
                 {
+                    LOG_MSG("Address resolving failed: " << gai_strerror(res));
+
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not resolve host address.");
 
                     return false;
@@ -88,6 +112,8 @@ namespace ignite
 
                     if (socketHandle == SOCKET_ERROR)
                     {
+                        LOG_MSG("Socket creation failed: " << GetLastSocketErrorMessage());
+
                         diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new socket.");
 
                         return false;
@@ -101,6 +127,8 @@ namespace ignite
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
                     if (SOCKET_ERROR == res)
                     {
+                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+
                         Close();
 
                         continue;
@@ -145,6 +173,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP socket send buffer size setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP socket send buffer size");
                 }
@@ -154,6 +184,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP socket receive buffer size setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP socket receive buffer size");
                 }
@@ -163,6 +195,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP no-delay mode setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP no-delay mode");
                 }
@@ -172,6 +206,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive mode setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive mode");
 
@@ -184,6 +220,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive idle timeout setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive idle timeout");
                 }
@@ -193,6 +231,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive probes period setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive probes period");
                 }

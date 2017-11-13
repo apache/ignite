@@ -31,6 +31,52 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/log.h"
 
+namespace
+{
+    /**
+     * Get last socket error message.
+     * @return Last socket error message string.
+     */
+    std::string GetLastSocketErrorMessage()
+    {
+        std::string res = "<Unknown error>";
+        HRESULT hresult = WSAGetLastError();
+
+        if (hresult == 0)
+            return res;
+
+        LPTSTR errorText = NULL;
+
+        DWORD len = FormatMessage(
+            // use system message tables to retrieve error text
+            FORMAT_MESSAGE_FROM_SYSTEM
+            // allocate buffer on local heap for error text
+            | FORMAT_MESSAGE_ALLOCATE_BUFFER
+            // We're not passing insertion parameters
+            | FORMAT_MESSAGE_IGNORE_INSERTS,
+            // unused with FORMAT_MESSAGE_FROM_SYSTEM
+            NULL,
+            hresult,
+            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+            // output
+            reinterpret_cast<LPTSTR>(&errorText),
+            // minimum size for output buffer
+            0,
+            // arguments - see note
+            NULL);
+
+        if (NULL != errorText)
+        {
+            if (len != 0)
+                res.assign(errorText, len);
+
+            LocalFree(errorText);
+        }
+
+        return res;
+    }
+}
+
 namespace ignite
 {
     namespace odbc
@@ -61,6 +107,8 @@ namespace ignite
 
                     if (!networkInited)
                     {
+                        LOG_MSG("Netwirking initialisation failed: " << GetLastSocketErrorMessage());
+
                         diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not initialize Windows networking.");
 
                         return false;
@@ -85,6 +133,8 @@ namespace ignite
 
                 if (res != 0)
                 {
+                    LOG_MSG("Address resolving failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not resolve host address.");
 
                     return false;
@@ -103,6 +153,8 @@ namespace ignite
 
                     if (socketHandle == INVALID_SOCKET)
                     {
+                        LOG_MSG("Socket creation failed: " << GetLastSocketErrorMessage());
+
                         diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new socket.");
 
                         return false;
@@ -116,6 +168,8 @@ namespace ignite
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
                     if (SOCKET_ERROR == res)
                     {
+                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+
                         Close();
 
                         continue;
@@ -158,6 +212,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP socket send buffer size setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP socket send buffer size");
                 }
@@ -167,6 +223,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP socket receive buffer size setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP socket receive buffer size");
                 }
@@ -176,6 +234,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP no-delay mode setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP no-delay mode");
                 }
@@ -185,6 +245,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive mode setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive mode");
 
@@ -202,6 +264,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive idle timeout setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive idle timeout");
                 }
@@ -211,6 +275,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive probes period setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive probes period");
                 }
@@ -242,6 +308,8 @@ namespace ignite
 
                 if (SOCKET_ERROR == res)
                 {
+                    LOG_MSG("TCP keep-alive params setup failed: " << GetLastSocketErrorMessage());
+
                     diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
                         "Can not set up TCP keep-alive idle timeout and probes period");
                 }
