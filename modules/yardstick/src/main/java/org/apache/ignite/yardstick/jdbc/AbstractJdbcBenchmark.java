@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -39,9 +40,6 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
 
     /** JDBC URL. */
     private String url;
-
-    /** URL monitor. */
-    private final Object urlMon = new Object();
 
     /** Each connection is also a transaction, so we better pin them to threads. */
     protected ThreadLocal<Connection> conn = new ThreadLocal<Connection>() {
@@ -62,6 +60,35 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     };
 
     /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        if (url == null) {
+            if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
+                for (ClusterNode n : ignite().cluster().forClients().nodes()) {
+                    if (!n.isLocal()) {
+                        for (String addr : n.addresses()) {
+                            if (!addr.equals("127.0.0.1") && !addr.equals("localhost")
+                                && !addr.equals("172.17.0.1")) {
+                                url = JdbcThinUtils.URL_PREFIX + addr + '/';
+
+                                println("Found remote node: " + addr);
+
+                                break;
+                            }
+                        }
+
+                        if (url != null)
+                            break;
+                    }
+                }
+            }
+            else
+                url = args.jdbcUrl();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         synchronized (threadConnections) {
             for (Connection conn : threadConnections)
@@ -79,32 +106,6 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @throws SQLException On error.
      */
     private Connection connection() throws SQLException {
-        synchronized (urlMon) {
-            if (url == null) {
-                if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
-                    for (ClusterNode n : ignite().cluster().forClients().nodes()) {
-                        if (!n.isLocal()) {
-                            for (String addr : n.addresses()) {
-                                if (!addr.equals("127.0.0.1") && !addr.equals("localhost")
-                                    && !addr.equals("172.17.0.1")) {
-                                    url = JdbcThinUtils.URL_PREFIX + addr + '/';
-
-                                    println("Found remote node: " + addr);
-
-                                    break;
-                                }
-                            }
-
-                            if (url != null)
-                                break;
-                        }
-                    }
-                }
-                else
-                    url = args.jdbcUrl();
-            }
-        }
-
         println("JDBC connect to: " + url);
 
         Connection conn = DriverManager.getConnection(url);
