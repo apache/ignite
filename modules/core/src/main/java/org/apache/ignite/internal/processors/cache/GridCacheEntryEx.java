@@ -870,11 +870,10 @@ public interface GridCacheEntryEx {
      * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
      * @param clo Closure to apply to key, value, and expiration time.
-     * @param link Link.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
+    public void updateIndex(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException,
         GridCacheEntryRemovedException;
 
     /**

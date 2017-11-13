@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,6 +40,9 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends GridCacheSharedManagerAdapter implements IgniteChangeGlobalStateSupport {
     /** Snapshot started lock filename. */
     public static final String SNAPSHOT_RESTORE_STARTED_LOCK_FILENAME = "snapshot-started.loc";
+
+    /** Temp files completeness marker. */
+    public static final String TEMP_FILES_COMPLETENESS_MARKER = "finished.tmp";
 
     /**
      * Try to start local snapshot operation if it's required by discovery event.
@@ -67,11 +72,11 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      *
      * @return {@code true} if next operation must be snapshot, {@code false} if checkpoint must be executed.
      */
-    public boolean onMarkCheckPointBegin(
+    public IgniteFuture<?> onMarkCheckPointBegin(
         T snapshotOperation,
         PartitionAllocationMap map
     ) throws IgniteCheckedException {
-        return false;
+        return null;
     }
 
     /**

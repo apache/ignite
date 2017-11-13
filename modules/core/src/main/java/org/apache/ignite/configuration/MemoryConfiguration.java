@@ -57,7 +57,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     </property>
  *     }
  * </pre>
+ *
+ * @deprecated Use {@link DataStorageConfiguration} instead.
  */
+@Deprecated
 public class MemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -66,7 +69,7 @@ public class MemoryConfiguration implements Serializable {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final long DFLT_MEMORY_POLICY_INITIAL_SIZE = 256L * 1024 * 1024;
 
-    /** Fraction of available memory to allocate for default MemoryPolicy. */
+    /** Fraction of available memory to allocate for default DataRegion. */
     private static final double DFLT_MEMORY_POLICY_FRACTION = 0.2;
 
     /** Default memory policy's size is 20% of physical memory available on current machine. */
@@ -83,7 +86,7 @@ public class MemoryConfiguration implements Serializable {
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;
 
-    /** This name is assigned to default MemoryPolicy if no user-defined default MemPlc is specified */
+    /** This name is assigned to default DataRegion if no user-defined default MemPlc is specified */
     public static final String DFLT_MEM_PLC_DEFAULT_NAME = "default";
 
     /** Size of a memory chunk reserved for system cache initially. */
@@ -101,7 +104,7 @@ public class MemoryConfiguration implements Serializable {
     /** A name of the memory policy that defines the default memory region. */
     private String dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    /** Size of memory (in bytes) to use for default DataRegion. */
     private long dfltMemPlcSize = DFLT_MEMORY_POLICY_MAX_SIZE;
 
     /** Memory policies. */

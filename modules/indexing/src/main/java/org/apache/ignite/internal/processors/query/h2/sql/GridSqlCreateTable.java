@@ -77,6 +77,9 @@ public class GridSqlCreateTable extends GridSqlStatement {
     /** Forcefully turn single column value into an Object. */
     private Boolean wrapVal;
 
+    /** Data region. */
+    private String dataRegionName;
+
     /** Extra WITH-params. */
     private List<String> params;
 
@@ -302,6 +305,20 @@ public class GridSqlCreateTable extends GridSqlStatement {
      */
     public void wrapValue(boolean wrapVal) {
         this.wrapVal = wrapVal;
+    }
+
+    /**
+     * @return Data region name.
+     */
+    public String dataRegionName() {
+        return dataRegionName;
+    }
+
+    /**
+     * @param dataRegionName Data region name.
+     */
+    public void dataRegionName(String dataRegionName) {
+        this.dataRegionName = dataRegionName;
     }
 
     /**

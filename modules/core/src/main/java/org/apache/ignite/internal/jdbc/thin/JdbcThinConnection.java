@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SKIP_REDUCER_ON_UPDATE;
 
 /**
  * JDBC connection implementation.
@@ -136,10 +137,11 @@ public class JdbcThinConnection implements Connection {
         int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
 
         boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
+        boolean skipReducerOnUpdate  = extractBoolean(props, PROP_SKIP_REDUCER_ON_UPDATE, false);
 
         try {
             cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursor, lazyExec, sockSndBuf, sockRcvBuf, tcpNoDelay);
+                autoCloseServerCursor, lazyExec, sockSndBuf, sockRcvBuf, tcpNoDelay, skipReducerOnUpdate);
 
             cliIo.start();
         }

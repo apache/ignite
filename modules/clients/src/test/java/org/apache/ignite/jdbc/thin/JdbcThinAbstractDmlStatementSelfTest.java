@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -41,9 +42,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** SQL SELECT query for verification. */
     static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
@@ -67,7 +65,7 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     @Override protected void beforeTest() throws Exception {
         ignite(0).getOrCreateCache(cacheConfig());
 
-        conn = DriverManager.getConnection(URL);
+        conn = createConnection();
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
     }
@@ -79,6 +77,14 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         conn.close();
 
         assertTrue(conn.isClosed());
+    }
+
+    /**
+     * @return JDBC connection.
+     * @throws SQLException On error.
+     */
+    protected Connection createConnection() throws SQLException {
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
     }
 
     /** {@inheritDoc} */

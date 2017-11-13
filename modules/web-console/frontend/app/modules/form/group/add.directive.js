@@ -18,23 +18,21 @@
 const template = '<i class="group-legend-btn fa fa-plus"></i>';
 
 export default ['igniteFormGroupAdd', ['$tooltip', ($tooltip) => {
-    const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
-        const content = Array.prototype.slice
-            .apply($transclude($scope))
-            .reduce((html, el) => html += el.outerHTML || el.textContent || el, '');
-
-        $tooltip($element, { title: content });
-
-        $element.closest('.group').find('.group-legend').append($element);
-    };
-
     return {
         restrict: 'E',
         scope: {},
         template,
-        link,
+        link($scope, $el, $attr, $ctrl, $transclude) {
+            $transclude((clone) => {
+                const title = Array.from(clone)
+                    .reduce((html, el) => html += el.outerHTML || el.textContent || el, '');
+                const legend = $el.closest('.group').find('.group-legend');
+
+                $tooltip($el, {title});
+                legend.append($el);
+            });
+        },
         replace: true,
-        transclude: true,
-        require: ['^form']
+        transclude: true
     };
 }]];

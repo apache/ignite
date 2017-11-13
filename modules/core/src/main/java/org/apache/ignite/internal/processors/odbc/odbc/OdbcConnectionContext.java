@@ -37,8 +37,14 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.5: added "lazy" flag. */
     public static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
+    /** Version 2.3.0: added "skipReducerOnUpdate" flag. */
+    public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
+
+    /** Version 2.3.2: added multiple statements support. */
+    public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_2;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -60,6 +66,8 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_3_0);
+        SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
 
@@ -98,8 +106,13 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazy = reader.readBoolean();
 
+        boolean skipReducerOnUpdate = false;
+
+        if (ver.compareTo(VER_2_3_0) >= 0)
+            skipReducerOnUpdate = reader.readBoolean();
+
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy);
+                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate);
 
         parser = new OdbcMessageParser(ctx, ver);
     }

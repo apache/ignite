@@ -104,8 +104,13 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
+        boolean skipReducerOnUpdate = false;
+
+        if (ver.compareTo(VER_2_3_0) >= 0)
+            skipReducerOnUpdate = reader.readBoolean();
+
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, ver);
 
         parser = new JdbcMessageParser(ctx);
     }
