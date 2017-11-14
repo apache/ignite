@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -98,6 +99,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     private static final String CUSTOM_EVTS_PATH = CLUSTER_PATH + "/customEvts";
+
+    /** */
+    private static final String DISCO_EVTS_HIST_PATH = CLUSTER_PATH + "/evtsHist";
 
     /** */
     private static final byte[] EMPTY_BYTES = new byte[0];
@@ -439,6 +443,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                                 initOps.add(Op.create(JOIN_HIST_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
                                 initOps.add(Op.create(ALIVE_NODES_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
                                 initOps.add(Op.create(EVENTS_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(DISCO_EVTS_HIST_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
+                                initOps.add(Op.create(CUSTOM_EVTS_PATH, EMPTY_BYTES, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT));
 
                                 zk.multi(initOps);
                             }
@@ -569,17 +575,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         final UUID nodeId;
 
         /** */
-        final String zkPath;
-
-        /** */
         transient ZKJoiningNodeData joinData;
 
         /**
          * @param order Node order.
          * @param nodeId Node ID.
          */
-        ZKNodeData(String zkPath, long order, UUID nodeId) {
-            this.zkPath = zkPath;
+        ZKNodeData(long order, UUID nodeId) {
             this.order = order;
             this.nodeId = nodeId;
         }
@@ -602,9 +604,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         @GridToStringInclude
         final TreeMap<Long, ZKNodeData> nodesByOrder;
 
-        /** */
-        final TreeMap<UUID, ZKNodeData> nodesById;
-
         /**
          * @param ver
          * @param nodesByOrder
@@ -612,11 +611,15 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         ZKAliveNodes(int ver, TreeMap<Long, ZKNodeData> nodesByOrder) {
             this.ver = ver;
             this.nodesByOrder = nodesByOrder;
+        }
 
-            nodesById = new TreeMap<>();
+        ZKNodeData nodeById(UUID nodeId) {
+            for (ZKNodeData nodeData : nodesByOrder.values()) {
+                if (nodeId.equals(nodeData.nodeId))
+                    return nodeData;
+            }
 
-            for (ZKNodeData nodeData : nodesByOrder.values())
-                nodesById.put(nodeData.nodeId, nodeData);
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -636,7 +639,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         int nodeOrder = Integer.parseInt(path.substring(ID_LEN + 1)) + 1;
 
-        return new ZKNodeData(path, nodeOrder, nodeId);
+        return new ZKNodeData(nodeOrder, nodeId);
     }
 
     /** */
@@ -767,7 +770,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private void generateEvents(ZKAliveNodes oldNodes, ZKAliveNodes newNodes) {
         assert newNodes != null;
 
-        ZKNodeData locNode = newNodes.nodesById.get(this.locNode.id());
+        ZKNodeData locNode = newNodes.nodeById(this.locNode.id());
 
         if (locNode == null)
             return;
@@ -912,20 +915,35 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         if (curCrdEvts == null) {
             expVer = 0;
 
-            newEvents = new ZKDiscoveryEvents(nextJoinOrder, newNodes, evts);
+            newEvents = new ZKDiscoveryEvents(nextJoinOrder, newNodes, new TreeSet<>(evts.keySet()));
         }
         else {
-            TreeMap<Integer, ZKDiscoveryEvent> evts0 = new TreeMap<>(curCrdEvts.evts);
+//            TreeMap<Integer, ZKDiscoveryEvent> evts0 = new TreeMap<>(curCrdEvts.evts);
+//
+//            for (ZKDiscoveryEvent e : evts.values()) {
+//                assert !evts0.containsKey(e.topVer) : "[newEvt=" + e + ", oldEvt=" + evts0.get(e.topVer) + ']';
+//
+//                evts0.put(e.topVer, e);
+//            }
+            TreeSet<Integer> evts0 = new TreeSet<>(curCrdEvts.evts);
 
             for (ZKDiscoveryEvent e : evts.values()) {
-                assert !evts0.containsKey(e.topVer) : "[newEvt=" + e + ", oldEvt=" + evts0.get(e.topVer) + ']';
+                assert !evts0.contains(e.topVer) : "[newEvt=" + e + ", oldEvts=" + evts0 + ']';
 
-                evts0.put(e.topVer, e);
+                evts0.add(e.topVer);
             }
 
             newEvents = new ZKDiscoveryEvents(nextJoinOrder, newNodes, evts0);
 
             expVer = curCrdEvts.ver;
+        }
+
+        try {
+            for (ZKDiscoveryEvent evt : evts.values())
+                zkCurator.create().withMode(CreateMode.PERSISTENT).forPath(DISCO_EVTS_HIST_PATH + "/" + evt.topVer, marshal(evt));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to create discovery event node: " + e, e);
         }
 
         newEvents.ver = expVer + 1;
@@ -951,6 +969,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     private ZKDiscoveryEvent lastEvt;
 
+    private int lastProcessed = -1;
+
     /**
      *
      */
@@ -968,9 +988,25 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                 newEvts.ver = stat.getVersion();
 
-                for (ZKDiscoveryEvent e : newEvts.evts.values()) {
+                for (Integer evtVer : newEvts.evts) {
+                    if (evtVer > lastProcessed)
+                        lastProcessed = evtVer;
+                    else
+                        continue;
+
                     boolean fireEvt;
                     boolean locJoin = false;
+
+                    ZKDiscoveryEvent e;
+
+                    try {
+                        e = unmarshal(zkCurator.getData().forPath(DISCO_EVTS_HIST_PATH + "/" + evtVer));
+                    }
+                    catch (Exception err) {
+                        U.error(log, "Failed to read discovery event: " + err, err);
+
+                        continue;
+                    }
 
                     if (lastEvt == null) {
                         locJoin = e.evtType == EventType.EVT_NODE_JOINED && e.node.id().equals(locNode.id());
@@ -1095,7 +1131,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         /** */
         @GridToStringInclude
-        final TreeMap<Integer, ZKDiscoveryEvent> evts;
+        final TreeSet<Integer> evts;
 
         /** */
         final long nextJoinOrder;
@@ -1104,7 +1140,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
          * @param aliveNodes
          * @param evts
          */
-        ZKDiscoveryEvents(long nextJoinOrder, ZKAliveNodes aliveNodes, TreeMap<Integer, ZKDiscoveryEvent> evts) {
+        ZKDiscoveryEvents(long nextJoinOrder, ZKAliveNodes aliveNodes, TreeSet<Integer> evts) {
             this.nextJoinOrder = nextJoinOrder;
             this.aliveNodes = aliveNodes;
             this.evts = evts;
