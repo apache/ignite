@@ -376,7 +376,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         gridStartTime = clusterData.gridStartTime;
 
         zk.getData(EVENTS_PATH, zkWatcher, dataUpdateCallback, null);
-        zk.getChildren(JOIN_HIST_PATH, zkWatcher, zkChildrenUpdateCallback, null);
+        //zk.getChildren(JOIN_HIST_PATH, zkWatcher, zkChildrenUpdateCallback, null);
         zk.getChildren(ALIVE_NODES_PATH, zkWatcher, zkChildrenUpdateCallback, null);
 
         ZKJoiningNodeData joinData = new ZKJoiningNodeData(locNode, discoDataBag.joiningNodeData());
@@ -1120,7 +1120,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                             try {
                                 String zkNode = JOIN_HIST_PATH + "/" + locNode.id().toString() + "-" + String.format("%010d", locNode.internalOrder() - 1);
 
-                                zkCurator.delete().forPath(zkNode);
+                                zkCurator.delete().inBackground().forPath(zkNode);
                             }
                             catch (Exception err) {
                                 U.error(log, "Failed to delete join history data");
