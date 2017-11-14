@@ -1598,8 +1598,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 mergedJoinExchMsgs = new LinkedHashMap<>();
 
             if (msg != null) {
-                // TODO ZK
-                // assert msg.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(node.order()));
+                assert msg.exchangeId().topologyVersion().equals(new AffinityTopologyVersion(node.order()));
 
                 if (log.isInfoEnabled()) {
                     log.info("Merge server join exchange, message received [curFut=" + initialVersion() +

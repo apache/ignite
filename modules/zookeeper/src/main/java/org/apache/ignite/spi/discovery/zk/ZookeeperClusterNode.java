@@ -47,6 +47,9 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
     private Serializable consistentId;
 
     /** */
+    private long internalOrder;
+
+    /** */
     private long order;
 
     /** */
@@ -154,9 +157,19 @@ public class ZookeeperClusterNode implements ClusterNode, Serializable {
         return order;
     }
 
+    public long internalOrder() {
+        return internalOrder;
+    }
+
     /**
-     * @param order Order of the node.
+     * @param internalOrder Order of the node.
      */
+    public void internalOrder(long internalOrder) {
+        assert internalOrder > 0 : internalOrder;
+
+        this.internalOrder = internalOrder;
+    }
+
     public void order(long order) {
         assert order > 0 : order;
 

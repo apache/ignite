@@ -2522,9 +2522,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             switch (type) {
                 case EVT_NODE_JOINED: {
-// TODO ZK
-//                    assert !discoOrdered || topVer.topologyVersion() == node.order() : "Invalid topology version [topVer=" + topVer +
-//                        ", node=" + node + ']';
+                    assert !discoOrdered || topVer.topologyVersion() == node.order() : "Invalid topology version [topVer=" + topVer +
+                        ", node=" + node + ']';
 
                     try {
                         checkAttributes(F.asList(node));

@@ -78,6 +78,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean testSockNio;
 
     /** */
+    private int sesTimeout;
+
+    /** */
     private ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
@@ -91,7 +94,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
-        zkSpi.setSessionTimeout(10_000);
+        zkSpi.setSessionTimeout(sesTimeout > 0 ? sesTimeout : 10_000);
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -386,6 +389,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void connectionRestore_Coordinator(int initNodes, int startNodes, int failCnt) throws Exception {
+        sesTimeout = 30_000;
         testSockNio = true;
 
         Ignite node0 = startGrids(initNodes);

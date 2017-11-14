@@ -380,12 +380,18 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                 zkCurator.getCuratorListenable().addListener(new CuratorListener() {
                     @Override public void eventReceived(CuratorFramework client, CuratorEvent evt) throws Exception {
-                        log.info("Curator event: " + evt.getType());
+                        IgniteLogger log = ZookeeperDiscoverySpi.this.log;
+
+                        if (log != null)
+                            log.info("Curator event: " + evt.getType());
                     }
                 });
                 zkCurator.getConnectionStateListenable().addListener(new ConnectionStateListener() {
                     @Override public void stateChanged(CuratorFramework client, ConnectionState newState) {
-                        log.info("Curator event, connection: " + newState);
+                        IgniteLogger log = ZookeeperDiscoverySpi.this.log;
+
+                        if (log != null)
+                            log.info("Curator event, connection: " + newState);
                     }
                 });
 
@@ -644,7 +650,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         assert joinData != null && joinData.node != null && joinData.joiningNodeData != null : joinData;
 
-        joinData.node.order(data.order);
+        joinData.node.internalOrder(data.order);
 
         data.joinData = joinData;
     }
@@ -823,7 +829,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                 ZKJoiningNodeData joinData = joined.joinData;
 
                 synchronized (curTop) {
-                    curTop.put(joinData.node.order(), joinData.node);
+                    joinData.node.order(v);
+
+                    curTop.put(joinData.node.internalOrder(), joinData.node);
 
                     ZKDiscoveryEvent joinEvt = new ZKDiscoveryEvent(EventType.EVT_NODE_JOINED,
                         v,
@@ -963,6 +971,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                         locJoin = e.evtType == EventType.EVT_NODE_JOINED && e.node.id().equals(locNode.id());
 
                         if (locJoin) {
+                            assert e.node.order() > 0 && e.node.internalOrder() > 0 : e.node;
+
+                            locNode.internalOrder(e.node.internalOrder());
                             locNode.order(e.node.order());
 
                             fireEvt = true;
@@ -980,9 +991,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                             synchronized (curTop) {
                                 if (locJoin) {
                                     for (ZookeeperClusterNode node : e.allNodes) {
-                                        assert node.order() > 0 : node;
+                                        assert node.internalOrder() > 0 : node;
 
-                                        Object old = curTop.put(node.order(), node);
+                                        Object old = curTop.put(node.internalOrder(), node);
 
                                         assert old == null : node;
                                     }
@@ -1006,7 +1017,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                                             exchange.onExchange(dataBag);
 
-                                            Object old = curTop.put(node.order(), node);
+                                            Object old = curTop.put(node.internalOrder(), node);
 
                                             assert old == null : node;
 
@@ -1016,7 +1027,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                                         case EventType.EVT_NODE_FAILED: {
                                             ZookeeperClusterNode node = e.node;
 
-                                            Object failedNode = curTop.remove(node.order());
+                                            Object failedNode = curTop.remove(node.internalOrder());
 
                                             assert failedNode != null : node;
 
@@ -1160,7 +1171,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private class ZookeeperWatcher implements Watcher {
         /** {@inheritDoc} */
         @Override public void process(WatchedEvent event) {
-            log.info("Process event [type=" + event.getType() + ", state=" + event.getState() + ", path=" + event.getPath() + ']');
+            IgniteLogger log = ZookeeperDiscoverySpi.this.log;
+
+            if (log != null)
+                log.info("Process event [type=" + event.getType() + ", state=" + event.getState() + ", path=" + event.getPath() + ']');
 
             if (event.getType() == Event.EventType.NodeChildrenChanged) {
                 zk.getChildren(event.getPath(), this, nodesUpdateCallback, null);
