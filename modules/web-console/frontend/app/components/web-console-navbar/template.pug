@@ -15,7 +15,7 @@
     limitations under the License.
 
 .wch-content()
-    .wch-nav-item(ng-repeat='item in $ctrl.items')
+    .wch-nav-item(ng-repeat='item in $ctrl.items' ng-if='!item.hidden')
         div(ng-if='item.children' ng-click='$event.stopPropagation()'
                 ng-class='{active: $state.includes(item.sref)}'
                 bs-dropdown='item.children'

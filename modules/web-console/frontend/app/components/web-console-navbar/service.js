@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-export default ['IgniteNavbar', [function() {
-    const items = [];
+export default class {
+    static $inject = [];
 
-    this.push = function(data) {
-        items.push(data);
-    };
+    constructor() {
+        this.items = [{
+            text: 'Configure',
+            sref: 'base.configuration.tabs'
+        }];
+    }
 
-    this.$get = [function() {
-        return items;
-    }];
-}]];
+    visible(text, visible) {
+        const item = _.find(this.items, { text });
+        item.hidden = !visible;
+    }
+}

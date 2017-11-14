@@ -20,15 +20,10 @@ import template from './template.pug';
 export default {
     template,
     controller: class {
-        static $inject = [];
+        static $inject = ['WebConsoleNavbarSrv'];
 
-        static items = [{
-            text: 'Configure',
-            sref: 'base.configuration.tabs'
-        }];
-
-        constructor() {
-            this.items = this.constructor.items;
+        constructor(webConsoleNavbarSrv) {
+            this.items = webConsoleNavbarSrv.items;
         }
     }
 };

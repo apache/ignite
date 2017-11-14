@@ -17,15 +17,12 @@
 
 import angular from 'angular';
 
-import IgniteNavbar from './Navbar.provider';
 import IgniteUserbar from './Userbar.provider';
-
 import igniteUserbar from './userbar.directive';
 
 angular
 .module('ignite-console.navbar', [
 
 ])
-.provider(...IgniteNavbar)
 .provider(...IgniteUserbar)
 .directive(...igniteUserbar);

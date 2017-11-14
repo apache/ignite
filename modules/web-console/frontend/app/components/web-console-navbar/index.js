@@ -17,7 +17,9 @@
 
 import angular from 'angular';
 import component from './component';
+import service from './service';
 
 export default angular
     .module('ignite-console.web-console-navbar', [])
+    .service('WebConsoleNavbarSrv', service)
     .component('webConsoleNavbar', component);
