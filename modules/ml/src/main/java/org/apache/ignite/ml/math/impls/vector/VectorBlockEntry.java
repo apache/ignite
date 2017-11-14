@@ -15,16 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.distributed.keys;
+package org.apache.ignite.ml.math.impls.vector;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+
+import org.apache.ignite.ml.math.Vector;
+
 
 /**
- * Cache key for {@link SparseDistributedMatrix}.
+ * Block for {@link SparseBlockDistributedVector}.
  */
-public interface RowColMatrixKey extends DataStructureCacheKey {
-    /**
-     *  Return index value(blockId, Row/Col index, etc.)
-     */
-    public int index();
+public final class VectorBlockEntry extends SparseLocalVector {
+    /** Max block size. */
+    public static final int MAX_BLOCK_SIZE = 32;
+
+    /** */
+    public VectorBlockEntry() {
+        // No-op.
+    }
+
+    /** */
+    public VectorBlockEntry(int size) {
+        super(size, RANDOM_ACCESS_MODE);
+        assert size <= MAX_BLOCK_SIZE;
+    }
+
+    /** */
+    public VectorBlockEntry(Vector v) {
+        assert v.size() <= MAX_BLOCK_SIZE;
+
+        setStorage(v.getStorage());
+    }
+
 }

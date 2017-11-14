@@ -17,14 +17,19 @@
 
 package org.apache.ignite.ml.math.distributed.keys;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import java.util.UUID;
 
 /**
- * Cache key for {@link SparseDistributedMatrix}.
+ * Base matrix cache key.
  */
-public interface RowColMatrixKey extends DataStructureCacheKey {
+public interface DataStructureCacheKey {
     /**
-     *  Return index value(blockId, Row/Col index, etc.)
+     * @return matrix id.
      */
-    public int index();
+    public UUID dataStructureId();
+
+    /**
+     * @return affinity key.
+     */
+    public Object affinityKey();
 }
