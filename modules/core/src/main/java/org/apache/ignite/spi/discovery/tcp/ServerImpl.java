@@ -3423,6 +3423,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 lastNextNodeTime = 0;
             }
 
+            Iterator<TcpDiscoveryNode> it = notSentNodes.iterator();
+
+            while (it.hasNext()) {
+                if (failedNodesMsgSent.contains(it.next().id()))
+                    it.remove();
+            }
 
             if (!notSentNodes.isEmpty()) {
                 if (state == CONNECTED) {

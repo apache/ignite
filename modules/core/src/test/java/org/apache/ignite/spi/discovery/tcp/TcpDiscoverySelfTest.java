@@ -1966,13 +1966,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     log.info("Count1: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 3);
 
                     cnt = stats.receivedMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
 
                     log.info("Count2: " + cnt);
 
-                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 3);
                 }
             }
         }
