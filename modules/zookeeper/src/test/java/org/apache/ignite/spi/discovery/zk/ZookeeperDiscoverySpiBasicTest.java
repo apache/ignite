@@ -24,6 +24,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -88,6 +89,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         cfg.setConsistentId(igniteInstanceName);
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+        zkSpi.setSessionTimeout(30_000);
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -194,6 +197,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         finally {
             reset();
         }
+
+        stopAllGrids();
     }
 
     /**
@@ -223,7 +228,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 if (!nodeId.equals(nodeEvtEntry0.getKey())) {
                     Map<Long, DiscoveryEvent> nodeEvts0 = nodeEvtEntry0.getValue();
 
-                    checkEventsConsistency(nodeEvts, nodeEvts0);
+                    synchronized (nodeEvts) {
+                        synchronized (nodeEvts0) {
+                            checkEventsConsistency(nodeEvts, nodeEvts0);
+                        }
+                    }
                 }
             }
         }
@@ -291,6 +300,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param failWhenDisconnected {@code True} if fail node while another node is disconnected.
      * @throws Exception If failed.
      */
     private void connectionRestore_NonCoordinator(boolean failWhenDisconnected) throws Exception {
@@ -311,22 +321,127 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         }, "start-node");
 
-        checkEvents(node0.configuration().getNodeId(), joinEvent(3));
+        checkEvents(node0, joinEvent(3));
 
         if (failWhenDisconnected) {
             ZookeeperDiscoverySpi spi = spis.get(getTestIgniteInstanceName(2));
 
             spi.closeClient();
 
-            checkEvents(node0.configuration().getNodeId(), failEvent(4));
+            checkEvents(node0, failEvent(4));
         }
 
         c1.allowConnect();
 
-        checkEvents(ignite(1).configuration().getNodeId(), joinEvent(3), failEvent(4));
+        checkEvents(ignite(1), joinEvent(3));
+
+        if (failWhenDisconnected)
+            checkEvents(ignite(1), failEvent(4));
 
         if (!failWhenDisconnected)
             fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_Coordinator1() throws Exception {
+        connectionRestore_Coordinator(1, 1, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_Coordinator1_1() throws Exception {
+        connectionRestore_Coordinator(1, 1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_Coordinator2() throws Exception {
+        connectionRestore_Coordinator(1, 3, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionRestore_Coordinator3() throws Exception {
+        connectionRestore_Coordinator(3, 3, 0);
+    }
+
+    /**
+     * @param initNodes Number of initially started nodes.
+     * @param startNodes Number of nodes to start after coordinator loose connection.
+     * @throws Exception If failed.
+     */
+    private void connectionRestore_Coordinator(int initNodes, int startNodes, int failCnt) throws Exception {
+        testSockNio = true;
+
+        Ignite node0 = startGrids(initNodes);
+
+        ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+        c0.closeSocket(true);
+
+        final AtomicInteger nodeIdx = new AtomicInteger(initNodes);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                try {
+                    startGrid(nodeIdx.getAndIncrement());
+                }
+                catch (Exception e) {
+                    error("Start failed: " + e);
+                }
+
+                return null;
+            }
+        }, startNodes, "start-node");
+
+        int cnt = 0;
+
+        for (int i = initNodes; i < initNodes + startNodes; i++) {
+            ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
+
+            spi.waitConnectStart();
+
+            if (cnt < failCnt)
+                spi.closeClient();
+        }
+
+        c0.allowConnect();
+
+        DiscoveryEvent[] expEvts = new DiscoveryEvent[startNodes];
+
+        for (int i = 0; i < startNodes; i++)
+            expEvts[i] = joinEvent(initNodes + i + 1);
+
+        for (int i = 0; i < initNodes; i++)
+            checkEvents(ignite(i), expEvts);
+
+        fut.get();
+
+        waitForTopology(initNodes + startNodes - failCnt);
+    }
+
+    /**
+     * @param nodeName Node name.
+     * @return Node's discovery SPI.
+     * @throws Exception If failed.
+     */
+    private ZookeeperDiscoverySpi waitSpi(final String nodeName) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return spis.contains(nodeName);
+            }
+        }, 5000);
+
+        ZookeeperDiscoverySpi spi = spis.get(nodeName);
+
+        assertNotNull("Failed to get SPI for node: " + nodeName, spi);
+
+        return spi;
     }
 
     private static DiscoveryEvent joinEvent(long topVer) {
@@ -343,6 +458,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         expEvt.topologySnapshot(topVer, null);
 
         return expEvt;
+    }
+
+    /**
+     * @param node Node.
+     * @param expEvts Expected events.
+     * @throws Exception If fialed.
+     */
+    private void checkEvents(final Ignite node, final DiscoveryEvent...expEvts) throws Exception {
+        checkEvents(node.cluster().localNode().id(), expEvts);
     }
 
     /**
