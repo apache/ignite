@@ -111,6 +111,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             InitHandlers();
         }
 
+        /** <inheritdoc /> */
+        public override object InitializeLifetimeService()
+        {
+            // Ensure that cross-AppDomain reference lives forever.
+            return null;
+        }
+
         /// <summary>
         /// Gets the handle registry.
         /// </summary>
