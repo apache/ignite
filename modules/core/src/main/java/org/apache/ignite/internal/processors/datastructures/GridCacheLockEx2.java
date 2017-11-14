@@ -79,6 +79,7 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isFailoverSafe() {
         return true;
     }
