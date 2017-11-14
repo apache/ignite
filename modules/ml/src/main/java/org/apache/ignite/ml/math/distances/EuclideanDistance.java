@@ -14,51 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.ml.math.distances;
 
-package org.apache.ignite.ml;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
- * K-means model representation.
- *
- * @see Exportable
- * @see Exporter
+ * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
  */
-public class KMeansModelFormat implements Serializable {
-    /** Centers of clusters. */
-    private final Vector[] centers;
+public class EuclideanDistance implements DistanceMeasure {
+    /** Serializable version identifier. */
+    private static final long serialVersionUID = 1717556319784040040L;
 
-    /** Distance measure. */
-    private final DistanceMeasure distance;
-
-    /** */
-    public KMeansModelFormat(Vector[] centers, DistanceMeasure distance) {
-        this.centers = centers;
-        this.distance = distance;
-    }
-
-    /** */
-    public DistanceMeasure getDistance() {
-        return distance;
-    }
-
-    /** */
-    public Vector[] getCenters() {
-        return centers;
+    /** {@inheritDoc} */
+    @Override public double compute(Vector a, Vector b)
+        throws CardinalityException {
+        return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // No-op
+    }
 
-        res = res * 37 + distance.hashCode();
-        res = res * 37 + Arrays.hashCode(centers);
-
-        return res;
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op
     }
 
     /** {@inheritDoc} */
@@ -69,9 +55,6 @@ public class KMeansModelFormat implements Serializable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        KMeansModelFormat that = (KMeansModelFormat)obj;
-
-        return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
+        return true;
     }
-
 }

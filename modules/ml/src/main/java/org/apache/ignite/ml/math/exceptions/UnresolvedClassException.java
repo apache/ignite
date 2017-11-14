@@ -14,25 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math;
 
-import java.io.Externalizable;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+package org.apache.ignite.ml.math.exceptions;
+
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.ml.math.Vector;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
+ * This exception is used to indicate any error condition accessing matrix elements by invalid column index.
  */
-public interface DistanceMeasure extends Externalizable {
-    /**
-     * Compute the distance between two n-dimensional vectors.
-     * <p>
-     * The two vectors are required to have the same dimension.
-     *
-     * @param a the first vector
-     * @param b the second vector
-     * @return the distance between the two vectors
-     * @throws CardinalityException if the array lengths differ.
-     */
-    public double compute(Vector a, Vector b) throws CardinalityException;
+public class UnresolvedClassException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    public UnresolvedClassException(Vector v, double[] classes) {
+        super("Unresolved class from list of classes: " + classes.toString() + " for vector " + v.toString());
+    }
 }

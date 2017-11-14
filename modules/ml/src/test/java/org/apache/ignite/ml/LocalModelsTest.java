@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.After;
 import org.junit.Assert;

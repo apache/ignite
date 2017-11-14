@@ -14,18 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math;
+package org.apache.ignite.ml.math.distances;
+
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * Calculates the L<sub>2</sub> (Euclidean) distance between two points.
  */
-public class EuclideanDistance implements DistanceMeasure {
+public class L1Distance implements DistanceMeasure {
     /** Serializable version identifier. */
     private static final long serialVersionUID = 1717556319784040040L;
 

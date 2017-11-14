@@ -19,7 +19,7 @@ package org.apache.ignite.ml.clustering;
 
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
