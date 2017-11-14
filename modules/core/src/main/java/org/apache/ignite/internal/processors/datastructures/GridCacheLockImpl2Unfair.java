@@ -596,6 +596,23 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /** */
+        private void releaseGlobalLockIfNeed() {
+            if (lock.tryLock()) {
+                try {
+                    if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
+                        if (isGloballyLocked) {
+                            globalSync.release();
+
+                            isGloballyLocked = false;
+                        }
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
+        }
+
+        /** */
         private void releaseGlobalLock() {
             if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
                 globalSync.release();
@@ -661,7 +678,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 lock.lockInterruptibly();
             }
             catch (InterruptedException e) {
-                releaseGlobalLock();
+                releaseGlobalLockIfNeed();
 
                 throw e;
             }
@@ -687,6 +704,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 return true;
             }
 
+            // tryLock don't wait for other threads and increment threadCount only under the lock.
             if (lock.tryLock()) {
                 if (isGloballyLocked) {
                     threadCount.incrementAndGet();
@@ -723,9 +741,9 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
             long start = System.nanoTime();
 
-            if (lock.tryLock(time, unit)) {
-                threadCount.incrementAndGet();
+            threadCount.incrementAndGet();
 
+            if (lock.tryLock(time, unit)) {
                 if (isGloballyLocked) {
                     reentrantCount.increment();
 
@@ -752,6 +770,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                     }
                 }
             }
+
+            releaseGlobalLockIfNeed();
 
             return false;
         }
