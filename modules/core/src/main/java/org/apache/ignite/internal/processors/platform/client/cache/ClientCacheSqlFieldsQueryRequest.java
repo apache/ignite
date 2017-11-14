@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -25,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import java.util.List;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
+public class ClientCacheSqlFieldsQueryRequest extends ClientRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 
@@ -85,12 +85,15 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCache cache = cache(ctx);
-
         ctx.incrementCursors();
 
         try {
-            FieldsQueryCursor<List> cur = cache.query(qry);
+            List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
+                    .querySqlFieldsNoCache(qry, true, true);
+
+            assert curs.size() == 1;
+
+            FieldsQueryCursor cur = curs.get(0);
 
             ClientCacheFieldsQueryCursor cliCur = new ClientCacheFieldsQueryCursor(
                     cur, qry.getPageSize(), ctx);
