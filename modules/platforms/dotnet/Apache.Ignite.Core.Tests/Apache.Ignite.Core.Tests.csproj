@@ -94,6 +94,7 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
