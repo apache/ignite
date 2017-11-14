@@ -22,8 +22,8 @@ export default {
     controller: class {
         static $inject = ['WebConsoleNavbarSrv'];
 
-        constructor(webConsoleNavbarSrv) {
-            this.items = webConsoleNavbarSrv.items;
+        constructor(webConsoleNavbarSrv, ...args) {
+            this.items = webConsoleNavbarSrv.items = args;
         }
     }
 };

@@ -170,7 +170,6 @@ angular.module('ignite-console', [
     'ignite-console.branding',
     'ignite-console.socket',
     'ignite-console.agent',
-    'ignite-console.sql',
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
@@ -184,6 +183,7 @@ angular.module('ignite-console', [
     'ignite-console.dialog',
     'ignite-console.navbar',
     'ignite-console.configuration',
+    'ignite-console.sql',
     'ignite-console.getting-started',
     'ignite-console.loading',
     // Ignite configuration module.

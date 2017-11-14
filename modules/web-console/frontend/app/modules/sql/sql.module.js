@@ -61,8 +61,8 @@ angular.module('ignite-console.sql', [
 }])
 .service('QueriesNavbar', QueriesNavbar)
 .service('CreateQueryDialog', CreateQueryDialog)
-.decorator('WebConsoleNavbarSrv', ['$delegate', 'QueriesNavbar', function($delegate, QueriesNavbar) {
-    $delegate.items.push(QueriesNavbar);
+.decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
+    $delegate[0].controller.$inject.push('QueriesNavbar');
     return $delegate;
 }])
 .service('IgniteNotebookData', NotebookData)
