@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
@@ -142,30 +143,30 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     public void testReentrantLockMultinode(final boolean fair) throws Exception {
         List<IgniteInternalFuture<Void>> futs = new ArrayList<>();
 
-        for (int i = 0; i < NODES_CNT; i++) {
-            final int inx = i;
+        final AtomicInteger inx = new AtomicInteger(0);
 
-            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    IgniteLock lock = createReentrantLock(inx, fair ? "lock1" : "lock2", fair);
-
+        GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    IgniteLock lock = createReentrantLock(inx.getAndIncrement(), fair ? "lock1" : "lock2", fair);
                     lock.lock();
 
                     try {
                         assertTrue(lock.isLocked());
                         Thread.sleep(1_000L);
                     }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     finally {
                         lock.unlock();
                     }
-
-                    return null;
                 }
-            }));
-        }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get(30_000L);
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, NODES_CNT, "worker").get(30_000L);
     }
 
     /**
