@@ -30,6 +30,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -70,8 +73,8 @@ public abstract class AbstractWalRecordsIterator
      */
     @NotNull protected final GridCacheSharedContext sharedCtx;
 
-    /** Serializer of current version to read headers. */
-    @NotNull private final RecordSerializer serializer;
+    /** Serializer factory. */
+    @NotNull private final RecordSerializerFactory serializerFactory;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     @NotNull protected final FileIOFactory ioFactory;
@@ -82,20 +85,20 @@ public abstract class AbstractWalRecordsIterator
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
-     * @param serializer Serializer of current version to read headers.
+     * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
      * @param bufSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
-        @NotNull final RecordSerializer serializer,
+        @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
         final int bufSize
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
-        this.serializer = serializer;
+        this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
 
         buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
@@ -156,8 +159,12 @@ public abstract class AbstractWalRecordsIterator
             try {
                 curRec = advanceRecord(currWalSegment);
 
-                if (curRec != null)
+                if (curRec != null) {
+                    if (curRec.get2().type() == null)
+                        continue; // Record was skipped by filter of current serializer, should read next record.
+
                     return;
+                }
                 else {
                     currWalSegment = advanceSegment(currWalSegment);
 
@@ -277,7 +284,7 @@ public abstract class AbstractWalRecordsIterator
             try {
                 int serVer = FileWriteAheadLogManager.readSerializerVersion(fileIO);
 
-                RecordSerializer ser = FileWriteAheadLogManager.forVersion(sharedCtx, serVer);
+                RecordSerializer ser = serializerFactory.createSerializer(serVer);
 
                 FileInput in = new FileInput(fileIO, buf);
 

@@ -2973,6 +2973,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             chp.walFilesDeleted = deleted;
+
+            if (!chp.cpPages.isEmpty())
+                cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
         }
 
         /**

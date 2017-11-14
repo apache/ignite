@@ -22,15 +22,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.*;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
@@ -46,6 +47,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * <li>Data</li>
  * <li>CRC or zero padding</li>
  * </ul>
+ * Also, optimization for skipping deserialization of records of unwanted types.
+ * If {@link #readTypeFilter} is specified, {@link FilteredRecord} is read instead of unnecessary record.
  */
 public class RecordV2Serializer implements RecordSerializer {
     /** Length of WAL Pointer: Index (8) + File offset (4) + Record length (4) */
@@ -56,6 +59,12 @@ public class RecordV2Serializer implements RecordSerializer {
 
     /** Write pointer. */
     private final boolean writePointer;
+
+    /**
+     * Record type filter.
+     * {@link FilteredRecord} is deserialized instead of original record if type doesn't match filter.
+     */
+    private final IgnitePredicate<RecordType> readTypeFilter;
 
     /** Record read/write functional interface. */
     private final RecordIO recordIO = new RecordIO() {
@@ -77,7 +86,18 @@ public class RecordV2Serializer implements RecordSerializer {
 
             FileWALPointer ptr = readPositionAndCheckPoint(in, expPtr);
 
-            return dataSerializer.readRecord(recType, in);
+            if (readTypeFilter != null && !readTypeFilter.apply(recType)) {
+                int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
+
+                assert toSkip >= 0 : "Too small saved record length: " + ptr;
+
+                in.readFully(new byte[toSkip]);
+
+                return new FilteredRecord();
+            }
+            else
+                return dataSerializer.readRecord(recType, in);
+
         }
 
         /** {@inheritDoc} */
@@ -100,10 +120,14 @@ public class RecordV2Serializer implements RecordSerializer {
      * Create an instance of Record V2 serializer.
      *
      * @param dataSerializer V2 data serializer.
+     * @param readTypeFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
+     * if type doesn't match filter.
      */
-    public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer) {
+    public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer,
+        IgnitePredicate<RecordType> readTypeFilter) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
+        this.readTypeFilter = readTypeFilter;
     }
 
     /** {@inheritDoc} */

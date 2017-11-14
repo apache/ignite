@@ -102,6 +102,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int truncate(WALPointer ptr);
 
     /**
+     * @param ptr Ptr.
+     */
+    public void allowCompressionUntil(WALPointer ptr);
+
+    /**
      * @return Total number of segments in the WAL archive.
      */
     public int walArchiveSegments();
