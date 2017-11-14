@@ -562,23 +562,6 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-            // If server node is left and we are inside a transaction, break query execution.
-            // Otherwise, exchange will be waiting forever for current tx.
-            final GridNearTxLocal tx = ctx.cache().context().tm().userTx();
-
-            if (h2.failOnServerNodeLeft(topVer) && tx != null) {
-                try {
-                    tx.rollbackAsync().get();
-
-                    throw new CacheException(
-                        new TransactionException("Transaction was rolled back because server node has left " +
-                            "grid while executing a query. Please restart the transaction."));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException("Failed to rollback a transaction.", e);
-                }
-            }
-
             List<Integer> cacheIds = qry.cacheIds();
 
             Collection<ClusterNode> nodes = null;
@@ -775,8 +758,16 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
-                else // Send failed.
-                    retry = true;
+                else {
+                    // If some messages were not sent, and we are inside transaction, break query execution.
+                    // Otherwise, exchange on server node left will be waiting forever for current tx.
+                    if (ctx.cache().context().tm().userTx() != null)
+                        throw new CacheException(new TransactionException("Some of topology nodes failed during query " +
+                            "execution inside transaction. It's recommended to rollback and retry transaction whenever " +
+                            "possible."));
+                    else
+                        retry = true; // In other cases retry is possible.
+                }
 
                 Iterator<List<?>> resIter = null;
 
