@@ -1160,6 +1160,13 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         assertEquals(10,
             cache.query(new SqlFieldsQuery("select idxVal1 from MvccTestSqlIndexValue").setLocal(loc)).getAll().size());
 
+        assertEquals(10,
+            cache.query(new SqlFieldsQuery("" +
+                "select (select count (*) from MvccTestSqlIndexValue where idxVal1 = t1.idxVal1) as c1," +
+                " (select 0 from dual) as c2" +
+                " from MvccTestSqlIndexValue as t1" +
+                " join (select * from MvccTestSqlIndexValue) as t2 on t1.idxVal1 = t2.idxVal1").setLocal(loc)).getAll().size());
+
         checkSingleResult(cache,
             new SqlFieldsQuery("select max(idxVal1) from MvccTestSqlIndexValue").setLocal(loc), 9);
 

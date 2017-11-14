@@ -112,8 +112,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
@@ -157,7 +160,6 @@ import org.h2.index.Index;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
@@ -892,7 +894,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridH2QueryContext ctx = new GridH2QueryContext(nodeId, nodeId, 0, LOCAL)
             .filter(filter).distributedJoinMode(OFF);
 
-        final MvccQueryTracker mvccTracker = mvccTracker(p, ctx);
+        final MvccQueryTracker mvccTracker = mvccTracker(stmt);
+
+        if (mvccTracker != null)
+            ctx.mvccFilter(new H2TreeMvccFilterClosure(mvccTracker.mvccVersion()));
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1217,7 +1222,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         PreparedStatement stmt = preparedStatementWithParams(conn, sql, params, true);
 
-        MvccQueryTracker mvccTracker = mvccTracker(GridSqlQueryParser.prepared(stmt), qctx);
+        MvccQueryTracker mvccTracker = mvccTracker(stmt);
+
+        if (mvccTracker != null)
+            qctx.mvccFilter(new H2TreeMvccFilterClosure(mvccTracker.mvccVersion()));
 
         GridH2QueryContext.set(qctx);
 
@@ -1243,27 +1251,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param p Prepared query.
-     * @param qctx Query context.
+     * @param p Prepared statement.
      * @return MVCC query tracker or {@code null} if MVCC is disabled for involved caches.
      */
-    private MvccQueryTracker mvccTracker(Prepared p, GridH2QueryContext qctx) {
-        GridCacheContext cctx = null;
+    private MvccQueryTracker mvccTracker(PreparedStatement p) {
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+        parser.parse(GridSqlQueryParser.prepared(p));
 
         boolean mvccEnabled = false;
 
-        for (Table table : GridSqlQueryParser.query(p).getTables()) {
-            if (table instanceof GridH2Table)
+        GridCacheContext cctx = null;
+
+        // check all involved caches
+        for (Object o : parser.objectsMap().values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
                 if (cctx == null)
-                    mvccEnabled = (cctx = ((GridH2Table)table).cache()).mvccEnabled();
-                else if ((((GridH2Table)table).cache()).mvccEnabled() != mvccEnabled)
+                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
+                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
                     throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+            }
         }
 
-        if (!mvccEnabled)
+        // TODO IGNITE-6888
+        if (cctx == null)
             return null;
-
-        assert cctx != null;
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -1282,8 +1297,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
-
-        qctx.mvccFilter(new H2TreeMvccFilterClosure(tracker.mvccVersion()));
 
         return tracker;
     }
