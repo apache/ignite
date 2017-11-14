@@ -212,6 +212,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
         $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
 
+        $ctrl.demoStarted = false;
+
         let stopTopology = null;
 
         const _tryStopRefresh = function(paragraph) {
@@ -836,7 +838,6 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
         /**
          * Update caches list.
-         * @private
          */
         const _refreshFn = () =>
             agentMgr.topology(true)
@@ -873,6 +874,15 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         if (!_.includes(cacheNames, paragraph.cacheName))
                             paragraph.cacheName = _.head(cacheNames);
                     });
+
+                    // Await for demo caches.
+                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && _.nonEmpty(cacheNames)) {
+                        $ctrl.demoStarted = true;
+
+                        Loading.finish('sqlLoading');
+
+                        _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
+                    }
                 })
                 .catch((err) => Messages.showError(err));
 
@@ -880,10 +890,11 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters')
                 .then(() => Loading.start('sqlLoading'))
                 .then(_refreshFn)
-                .then(() => Loading.finish('sqlLoading'))
                 .then(() => {
-                    $root.IgniteDemoMode && _.forEach($scope.notebook.paragraphs, (paragraph) => $scope.execute(paragraph));
-
+                    if (!$root.IgniteDemoMode)
+                        Loading.finish('sqlLoading');
+                })
+                .then(() => {
                     stopTopology = $interval(_refreshFn, 5000, 0, false);
                 });
 
@@ -1626,8 +1637,24 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
         };
 
+        /**
+         * Generate file name with query results.
+         *
+         * @param paragraph {Object} Query paragraph .
+         * @param all {Boolean} All result export flag.
+         * @returns {string}
+         */
+        const exportFileName = (paragraph, all) => {
+            const args = paragraph.queryArgs;
+
+            if (args.type === 'SCAN')
+                return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
+
+            return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
+        };
+
         $scope.exportCsv = function(paragraph) {
-            _export(paragraph.name + '.csv', paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
+            _export(exportFileName(paragraph, false), paragraph.gridOptions.columnDefs, paragraph.meta, paragraph.rows);
 
             // paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
@@ -1643,7 +1670,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
                     : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
-                .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
+                .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => paragraph.ace && paragraph.ace.focus());
         };

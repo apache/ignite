@@ -1705,10 +1705,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow)
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
+        assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
 
@@ -1728,7 +1730,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
 
-            if (prevRow != null) {
+            if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
                     coctx,
                     key,
@@ -1739,14 +1741,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (prevValDesc != null)
                         idx.remove(cctx, prevValDesc, prevRow);
 
-                    prevRow = null; // Row has already been removed from another table indexes
+                    // Row has already been removed from another table indexes
+                    prevRow = null;
                 }
             }
 
             if (desc == null)
                 return;
 
-            idx.store(cctx, desc, newRow, prevRow);
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();

@@ -310,7 +310,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow) {
+            CacheDataRow prevRow, boolean prevRowAvailable) {
             // No-op.
         }
 
