@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Interface representing a single node from baseline topology.
  */
 public interface BaselineNode {
     /**
