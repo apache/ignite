@@ -17,32 +17,73 @@
 
 package org.apache.ignite.ml.regressions;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.exceptions.NullArgumentException;
 import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Tests for {@link OLSMultipleLinearRegression}.
  */
-public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegressionTest {
+
+@GridCommonTest(group = "Distributed Models")
+public class DistributedBlockOLSMultipleLinearRegressionTest extends GridCommonAbstractTest {
     /** */
     private double[] y;
 
     /** */
     private double[][] x;
 
-    /** */
-    @Before
-    @Override public void setUp() {
+    private AbstractMultipleLinearRegression regression;
+
+    /** Number of nodes in grid */
+    private static final int NODE_COUNT = 3;
+
+    private static final double PRECISION = 1E-12;
+
+    /** Grid instance. */
+    private Ignite ignite;
+
+    public DistributedBlockOLSMultipleLinearRegressionTest(){
+
+        super(false);
+
+
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
+        ignite = grid(NODE_COUNT);
+
+        ignite.configuration().setPeerClassLoadingEnabled(true);
+
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+
         y = new double[] {11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         x = new double[6][];
         x[0] = new double[] {0, 0, 0, 0, 0};
@@ -51,39 +92,24 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         x[3] = new double[] {0, 0, 4.0, 0, 0};
         x[4] = new double[] {0, 0, 0, 5.0, 0};
         x[5] = new double[] {0, 0, 0, 0, 6.0};
-        super.setUp();
+
+        regression = createRegression();
     }
 
     /** */
-    @Override protected OLSMultipleLinearRegression createRegression() {
+    protected OLSMultipleLinearRegression createRegression() {
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
+        regression.newSampleData(new SparseBlockDistributedVector(y), new SparseBlockDistributedMatrix(x));
         return regression;
-    }
-
-    /** */
-    @Override protected int getNumberOfRegressors() {
-        return x[0].length + 1;
-    }
-
-    /** */
-    @Override protected int getSampleSize() {
-        return y.length;
-    }
-
-    /** */
-    @Test(expected = MathIllegalArgumentException.class)
-    public void cannotAddSampleDataWithSizeMismatch() {
-        double[] y = new double[] {1.0, 2.0};
-        double[][] x = new double[1][];
-        x[0] = new double[] {1.0, 0};
-        createRegression().newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
     }
 
     /** */
     @Test
     public void testPerfectFit() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         double[] betaHat = regression.estimateRegressionParameters();
+        System.out.println("Beta hat is " + betaHat);
         TestUtils.assertEquals(new double[] {11.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0, 4.0 / 5.0, 5.0 / 6.0},
             betaHat,
             1e-13);
@@ -92,7 +118,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             1e-13);
         Matrix errors = regression.estimateRegressionParametersVariance();
         final double[] s = {1.0, -1.0 / 2.0, -1.0 / 3.0, -1.0 / 4.0, -1.0 / 5.0, -1.0 / 6.0};
-        Matrix refVar = new DenseLocalOnHeapMatrix(s.length, s.length);
+        Matrix refVar = new SparseBlockDistributedMatrix(s.length, s.length);
         for (int i = 0; i < refVar.rowSize(); i++)
             for (int j = 0; j < refVar.columnSize(); j++) {
                 if (i == 0) {
@@ -120,6 +146,8 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testLongly() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         // Y values are first, then independent vars
         // Each row is one observation
         double[] design = new double[] {
@@ -146,7 +174,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
         // Estimate the model
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from NIST
         double[] betaHat = mdl.estimateRegressionParameters();
@@ -191,7 +219,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
         // Estimate model without intercept
         mdl.setNoIntercept(true);
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from R
         betaHat = mdl.estimateRegressionParameters();
@@ -232,6 +260,8 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testSwissFertility() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
         double[] design = new double[] {
             80.2, 17.0, 15, 12, 9.96,
             83.1, 45.1, 6, 9, 84.84,
@@ -287,7 +317,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
         // Estimate the model
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from R
         double[] betaHat = mdl.estimateRegressionParameters();
@@ -342,7 +372,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
         // Estimate the model with no intercept
         mdl = new OLSMultipleLinearRegression();
         mdl.setNoIntercept(true);
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         // Check expected beta values from R
         betaHat = mdl.estimateRegressionParameters();
@@ -389,6 +419,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testHat() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         /*
          * This example is from "The Hat Matrix in Regression and ANOVA",
@@ -414,10 +445,9 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
 
         // Estimate the model
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(design, nobs, nvars, new SparseBlockDistributedMatrix());
 
         Matrix hat = mdl.calculateHat();
-
 
         // Reference data is upper half of symmetric hat matrix
         double[] refData = new double[] {
@@ -458,9 +488,10 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testYVariance() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         // assumes: y = new double[]{11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
+        mdl.newSampleData(new SparseBlockDistributedVector(y), new SparseBlockDistributedMatrix(x));
         TestUtils.assertEquals(mdl.calculateYVariance(), 3.5, 0);
     }
 
@@ -469,6 +500,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testNewSample2() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] y = new double[] {1, 2, 3, 4};
         double[][] x = new double[][] {
             {19, 22, 33},
@@ -477,35 +509,68 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             {27, 37, 47}
         };
         OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-        regression.newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
+        regression.newSampleData(new SparseBlockDistributedVector(y), new SparseBlockDistributedMatrix(x));
         Matrix combinedX = regression.getX().copy();
         Vector combinedY = regression.getY().copy();
-        regression.newXSampleData(new DenseLocalOnHeapMatrix(x));
-        regression.newYSampleData(new DenseLocalOnHeapVector(y));
-        Assert.assertEquals(combinedX, regression.getX());
-        Assert.assertEquals(combinedY, regression.getY());
+        regression.newXSampleData(new SparseBlockDistributedMatrix(x));
+        regression.newYSampleData(new SparseBlockDistributedVector(y));
+        for (int i = 0; i < combinedX.rowSize(); i++) {
+            for (int j = 0; j < combinedX.columnSize(); j++)
+                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+
+        }
+        for (int i = 0; i < combinedY.size(); i++)
+            Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
+
+
 
         // No intercept
         regression.setNoIntercept(true);
-        regression.newSampleData(new DenseLocalOnHeapVector(y), new DenseLocalOnHeapMatrix(x));
+        regression.newSampleData(new SparseBlockDistributedVector(y), new SparseBlockDistributedMatrix(x));
         combinedX = regression.getX().copy();
         combinedY = regression.getY().copy();
-        regression.newXSampleData(new DenseLocalOnHeapMatrix(x));
-        regression.newYSampleData(new DenseLocalOnHeapVector(y));
-        Assert.assertEquals(combinedX, regression.getX());
-        Assert.assertEquals(combinedY, regression.getY());
+        regression.newXSampleData(new SparseBlockDistributedMatrix(x));
+        regression.newYSampleData(new SparseBlockDistributedVector(y));
+
+        for (int i = 0; i < combinedX.rowSize(); i++) {
+            for (int j = 0; j < combinedX.columnSize(); j++)
+                Assert.assertEquals(combinedX.get(i,j), regression.getX().get(i,j), PRECISION);
+
+        }
+        for (int i = 0; i < combinedY.size(); i++)
+            Assert.assertEquals(combinedY.get(i), regression.getY().get(i), PRECISION);
+
     }
 
     /** */
     @Test(expected = NullArgumentException.class)
     public void testNewSampleDataYNull() {
-        createRegression().newSampleData(null, new DenseLocalOnHeapMatrix(new double[][] {{1}}));
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        try {
+            createRegression().newSampleData(null, new SparseBlockDistributedMatrix(new double[][] {{1}}));
+            fail("NullArgumentException");
+        }
+        catch (NullArgumentException e) {
+            return;
+        }
+        fail("NullArgumentException");
     }
 
     /** */
-    @Test(expected = NullArgumentException.class)
     public void testNewSampleDataXNull() {
-        createRegression().newSampleData(new DenseLocalOnHeapVector(new double[] {}), null);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        try {
+            createRegression().newSampleData(new SparseBlockDistributedVector(new double[] {1}), null);
+            fail("NullArgumentException");
+        }
+        catch (NullArgumentException e) {
+            return;
+        }
+        fail("NullArgumentException");
+
+
     }
 
     /**
@@ -514,6 +579,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testWampler1() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             1, 0,
             6, 1,
@@ -553,7 +619,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             off2 += (nvars + 1);
             off += 2;
         }
-        mdl.newSampleData(tmp, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(tmp, nobs, nvars, new SparseBlockDistributedMatrix());
         double[] betaHat = mdl.estimateRegressionParameters();
         TestUtils.assertEquals(betaHat,
             new double[] {
@@ -581,6 +647,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testWampler2() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             1.00000, 0,
             1.11111, 1,
@@ -620,7 +687,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             off2 += (nvars + 1);
             off += 2;
         }
-        mdl.newSampleData(tmp, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(tmp, nobs, nvars, new SparseBlockDistributedMatrix());
         double[] betaHat = mdl.estimateRegressionParameters();
         TestUtils.assertEquals(betaHat,
             new double[] {
@@ -648,6 +715,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testWampler3() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             760, 0,
             -2042, 1,
@@ -687,7 +755,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             off2 += (nvars + 1);
             off += 2;
         }
-        mdl.newSampleData(tmp, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(tmp, nobs, nvars, new SparseBlockDistributedMatrix());
         double[] betaHat = mdl.estimateRegressionParameters();
         TestUtils.assertEquals(betaHat,
             new double[] {
@@ -717,6 +785,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
      */
     @Test
     public void testWampler4() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         double[] data = new double[] {
             75901, 0,
             -204794, 1,
@@ -756,7 +825,7 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
             off2 += (nvars + 1);
             off += 2;
         }
-        mdl.newSampleData(tmp, nobs, nvars, new DenseLocalOnHeapMatrix());
+        mdl.newSampleData(tmp, nobs, nvars, new SparseBlockDistributedMatrix());
         double[] betaHat = mdl.estimateRegressionParameters();
         TestUtils.assertEquals(betaHat,
             new double[] {
@@ -783,38 +852,83 @@ public class OLSMultipleLinearRegressionTest extends AbstractMultipleLinearRegre
     /**
      * Anything requiring beta calculation should advertise SME.
      */
-    @Test(expected = SingularMatrixException.class)
     public void testSingularCalculateBeta() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression(1e-15);
-        mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new DenseLocalOnHeapMatrix());
-        mdl.calculateBeta();
+        mdl.newSampleData(new double[] {1, 2, 3, 1, 2, 3, 1, 2, 3}, 3, 2, new SparseBlockDistributedMatrix());
+
+        try {
+            mdl.calculateBeta();
+            fail("SingularMatrixException");
+        }
+        catch (SingularMatrixException e) {
+            return;
+        }
+        fail("SingularMatrixException");
+
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateBeta() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.calculateBeta();
+
+        try {
+            mdl.calculateBeta();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
+
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
     public void testNoDataNPECalculateHat() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.calculateHat();
+
+        try {
+            mdl.calculateHat();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
     }
 
     /** */
-    @Test(expected = NullPointerException.class)
     public void testNoDataNPESSTO() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.calculateTotalSumOfSquares();
+
+        try {
+            mdl.calculateTotalSumOfSquares();
+            fail("java.lang.NullPointerException");
+        }
+        catch (NullPointerException e) {
+            return;
+        }
+        fail("java.lang.NullPointerException");
+
+
     }
 
     /** */
-    @Test(expected = MathIllegalArgumentException.class)
     public void testMathIllegalArgumentException() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.validateSampleData(new DenseLocalOnHeapMatrix(1, 2), new DenseLocalOnHeapVector(1));
+
+
+        try {
+            mdl.validateSampleData(new SparseBlockDistributedMatrix(1, 2), new SparseBlockDistributedVector(1));
+            fail("MathIllegalArgumentException");
+        }
+        catch (MathIllegalArgumentException e) {
+            return;
+        }
+        fail("MathIllegalArgumentException");
     }
 }
