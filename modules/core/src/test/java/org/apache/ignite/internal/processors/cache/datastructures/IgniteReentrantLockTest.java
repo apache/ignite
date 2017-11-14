@@ -143,7 +143,6 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         List<IgniteInternalFuture<Void>> futs = new ArrayList<>();
 
         for (int i = 0; i < NODES_CNT; i++) {
-            final Ignite ignite = grid(i);
             final int inx = i;
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
