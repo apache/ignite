@@ -149,7 +149,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Start servers.
         Ignite srv1 = ignitionStart(serverConfiguration(1), null);
         Ignite srv2 = ignitionStart(serverConfiguration(2), null);
-        ignitionStart(serverConfiguration(3, true), finishLatch);
+        Ignite srv3 = ignitionStart(serverConfiguration(3, true), finishLatch);
 
         UUID srv1Id = srv1.cluster().localNode().id();
         UUID srv2Id = srv2.cluster().localNode().id();
@@ -175,7 +175,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut1.get();
 
-        checkNodesState(TBL_NAME, c("age", Integer.class.getName()));
+        // Port number is for srv2.
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, 10801, c("age", Integer.class.getName()));
 
         // Test migration from normal server to non-affinity server.
         idxLatch = blockIndexing(srv2Id);
@@ -191,7 +192,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut2.get();
 
-        checkNodesState(TBL_NAME, c("city", String.class.getName()));
+        // Let's actually create cache on non affinity server.
+        srv3.cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "PERSON"));
+
+        // Port number is for srv3.
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, 10802, c("city", String.class.getName()));
     }
 
     /**
@@ -239,7 +244,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, c1, c2);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c1, c2);
     }
 
     /**
@@ -276,7 +281,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         U.await(finishLatch);
 
-        checkNodesState(TBL_NAME, c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c);
     }
 
     /**
@@ -335,7 +340,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         finishLatch.await();
 
         // Make sure new column is there.
-        checkNodesState(TBL_NAME, c("v", Integer.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("v", Integer.class.getName()));
 
         run(srv1, "update person set \"v\" = case when mod(id, 2) <> 0 then substring(name, 7, length(name) - 6) " +
             "else null end");
@@ -429,7 +434,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         CountDownLatch idxLatch1 = blockIndexing(srv1);
         CountDownLatch idxLatch2 = blockIndexing(srv2);
 
-        QueryField c = c("salary", Float.class.getName());
+        QueryField c = c("salary", Double.class.getName());
 
         final IgniteInternalFuture<?> idxFut = addCols(srv1, QueryUtils.DFLT_SCHEMA, c);
 
@@ -449,7 +454,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Validate index state.
         idxFut.get();
 
-        checkNodesState(TBL_NAME, c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c);
     }
 
     /**
@@ -655,7 +660,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             }
         });
 
-        checkNodeState((IgniteEx)cli, schemaName, TBL_NAME, cols);
+        checkTableState(schemaName, TBL_NAME, cols);
     }
 
     /**
@@ -844,7 +849,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         idxQry += ')';
 
-        checkNodesState(TBL_NAME, expCols);
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, expCols);
 
         put(cli, 0, 500);
 
