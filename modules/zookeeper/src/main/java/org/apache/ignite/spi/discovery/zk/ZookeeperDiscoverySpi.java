@@ -829,7 +829,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                 }
             }
 
-            // TODO ZK: process joinHist
+            // TODO ZK: first send, then process?
 
             if (joined != null) {
                 assert joined.joinData != null : joined;
