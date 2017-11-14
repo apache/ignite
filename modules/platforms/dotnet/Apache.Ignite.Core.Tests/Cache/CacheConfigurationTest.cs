@@ -81,10 +81,17 @@ namespace Apache.Ignite.Core.Tests.Cache
                             Name = "myMemPolicy",
                             InitialSize = 77 * 1024 * 1024,
                             MaxSize = 99 * 1024 * 1024
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName,
+                            InitialSize = 55 * 1024 * 1024,
+                            MaxSize = 88 * 1024 * 1024
                         }
                     }
                 },
 #pragma warning restore 618
+                DataStorageConfiguration = null,
                 SpringConfigUrl = "Config\\cache-default.xml"
             };
 

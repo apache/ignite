@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
-    using System;
-
     /// <summary>
-    /// Unmanaged target.
+    /// JNI call result.
     /// </summary>
-    internal unsafe interface IUnmanagedTarget : IDisposable
+    internal enum JniResult
     {
-        /// <summary>
-        /// Context.
-        /// </summary>
-        void* Context { get; }
-
-        /// <summary>
-        /// Target.
-        /// </summary>
-        void* Target { get; }
-
-        /// <summary>
-        /// Creates new instance with same context and different target.
-        /// </summary>
-        IUnmanagedTarget ChangeTarget(void* target);
+        Success = 0,
+        // ReSharper disable UnusedMember.Global
+        // Some statuses are not used directly, but will be displayed as part of error message.
+        Error = -1,
+        ThreadDetached = -2,
+        VersionError = -3,
+        NotEnoughMemory = -4,
+        AlreadyExists = -5,
+        InvalidArguments = -6
     }
 }

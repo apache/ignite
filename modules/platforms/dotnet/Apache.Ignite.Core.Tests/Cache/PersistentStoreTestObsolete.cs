@@ -60,7 +60,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     WalStorePath = Path.Combine(_tempDir, "WalStore"),
                     WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
                     MetricsEnabled = true
-                }
+                },
+                DataStorageConfiguration = null
             };
 
             const string cacheName = "persistentCache";
@@ -116,7 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PersistentStoreConfiguration = new PersistentStoreConfiguration()
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(),
+                DataStorageConfiguration = null
             };
 
             // Default config, inactive by default (IsActiveOnStart is ignored when persistence is enabled).
