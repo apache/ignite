@@ -88,4 +88,6 @@ if [ -z "$JVM_OPTS" ] ; then
     fi
 fi
 
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
+
 "$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"

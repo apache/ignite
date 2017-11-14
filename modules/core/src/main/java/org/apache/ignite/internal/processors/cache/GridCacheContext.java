@@ -90,7 +90,6 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -1591,23 +1590,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Checks if at least one of the given keys belongs to one of the given partitions.
-     *
-     * @param keys Collection of keys to check.
-     * @param movingParts Collection of partitions to check against.
-     * @return {@code True} if there exist a key in collection {@code keys} that belongs
-     *      to one of partitions in {@code movingParts}
-     */
-    public boolean hasKey(Iterable<? extends K> keys, Collection<Integer> movingParts) {
-        for (K key : keys) {
-            if (movingParts.contains(affinity().partition(key)))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Check whether conflict resolution is required.
      *
      * @return {@code True} in case DR is required.
@@ -1895,44 +1877,123 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean keepCacheObjects,
         boolean deserializeBinary,
         boolean cpy,
-        final GridCacheVersion ver) {
-        assert key != null;
-        assert val != null || skipVals;
+        final GridCacheVersion ver,
+        final long expireTime,
+        final long ttl) {
+        // Creates EntryGetResult
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null,
+            ver, expireTime, ttl, ver != null);
+    }
 
-        if (!keepCacheObjects) {
-            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
-
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
-
-            assert key0 != null : key;
-            assert val0 != null : val;
-
-            map.put((K1)key0, ver != null ? (V1)new T2<>(val0, ver) : (V1)val0);
-        }
-        else
-            map.put((K1)key,
-                (V1)(ver != null ?
-                    (V1)new T2<>(skipVals ? true : val, ver) :
-                    skipVals ? true : val));
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param getRes EntryGetResult.
+     * @param skipVals Skip values.
+     * @param keepCacheObjects Keep CacheObject.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param cpy Copy flag.
+     * @param needVer Need version flag.
+     */
+    @SuppressWarnings("unchecked")
+    public <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        EntryGetResult getRes,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializeBinary,
+        boolean cpy,
+        boolean needVer) {
+        // Uses getRes as result.
+        addResult(map, key, getRes.<CacheObject>value(), skipVals, keepCacheObjects, deserializeBinary, cpy, getRes,
+            null, 0, 0, needVer);
     }
 
     /**
      * @param map Map.
      * @param key Key.
      * @param val Value.
-     * @param skipVals Skip values flag.
-     * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializeBinary Deserialize binary flag.
+     * @param skipVals Skip values.
+     * @param keepCacheObjects Keep CacheObject.
+     * @param deserializeBinary Deserialize binary.
      * @param cpy Copy flag.
+     * @param getRes EntryGetResult.
+     * @param ver Version.
+     * @param expireTime Entry expire time.
+     * @param ttl Entry TTL.
+     * @param needVer Need version flag.
      */
+    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
         boolean skipVals,
         boolean keepCacheObjects,
         boolean deserializeBinary,
-        boolean cpy) {
-        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null);
+        boolean cpy,
+        @Nullable EntryGetResult getRes,
+        final GridCacheVersion ver,
+        final long expireTime,
+        final long ttl,
+        boolean needVer) {
+        assert key != null;
+        assert val != null || skipVals;
+
+        if (!keepCacheObjects) {
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary, cpy);
+
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary, cpy);
+
+            assert key0 != null : key;
+            assert val0 != null : val;
+
+            V1 v = createValue(ver, expireTime, ttl, val0, getRes, needVer);
+
+            map.put((K1)key0, v);
+        }
+        else {
+            Object val0 = skipVals ? true : val;
+
+            V1 v = createValue(ver, expireTime, ttl, val0, getRes, needVer);
+
+            map.put((K1)key, v);
+        }
+    }
+
+    /**
+     * Creates new EntryGetResult or uses existing one.
+     *
+     * @param ver Version.
+     * @param expireTime Entry expire time.
+     * @param ttl Entry TTL.
+     * @param val Value.
+     * @param getRes EntryGetResult
+     * @param needVer Need version flag.
+     * @return EntryGetResult or value.
+     */
+    @SuppressWarnings("unchecked")
+    private <V1> V1 createValue(final GridCacheVersion ver,
+        final long expireTime,
+        final long ttl,
+        final Object val,
+        @Nullable final EntryGetResult getRes,
+        final boolean needVer) {
+        final V1 v;
+
+        if (!needVer)
+            v = (V1) val;
+        else if (getRes == null) {
+            v = expireTime != 0 || ttl != 0
+                ? (V1)new EntryGetWithTtlResult(val, ver, false, expireTime, ttl)
+                : (V1)new EntryGetResult(val, ver, false);
+        }
+        else {
+            getRes.value(val);
+
+            v = (V1)getRes;
+        }
+
+        return v;
     }
 
     /**

@@ -22,7 +22,8 @@ import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.SparkContext
+import org.apache.log4j.Logger
 
 /**
  * Ignite context.
@@ -34,7 +35,7 @@ class IgniteContext(
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     standalone: Boolean = true
-    ) extends Serializable with Logging {
+    ) extends Serializable  {
     private val cfgClo = new Once(cfgF)
 
     private val igniteHome = IgniteUtils.getIgniteHome
@@ -47,7 +48,7 @@ class IgniteContext(
         if (workers <= 0)
             throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
 
-        logInfo("Will start Ignite nodes on " + workers + " workers")
+        Logging.log.info("Will start Ignite nodes on " + workers + " workers")
 
         // Start ignite server node on each worker in server mode.
         sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ ignite())
@@ -126,7 +127,7 @@ class IgniteContext(
         val home = IgniteUtils.getIgniteHome
 
         if (home == null && igniteHome != null) {
-            logInfo("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
+            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
 
             IgniteUtils.nullifyHomeDirectory()
 
@@ -143,7 +144,7 @@ class IgniteContext(
         }
         catch {
             case e: IgniteException ⇒
-                logError("Failed to start Ignite.", e)
+                Logging.log.error("Failed to start Ignite.", e)
 
                 throw e
         }
@@ -161,7 +162,7 @@ class IgniteContext(
                 sparkContext.getExecutorStorageStatus.length)
 
             if (workers > 0) {
-                logInfo("Will stop Ignite nodes on " + workers + " workers")
+                Logging.log.info("Will stop Ignite nodes on " + workers + " workers")
 
                 // Start ignite server node on each worker in server mode.
                 sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ doClose())
@@ -199,4 +200,13 @@ private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
 
         res
     }
+}
+
+/**
+  * Spark uses log4j by default. Using this logger in IgniteContext as well.
+  *
+  * This object is used to avoid problems with log4j serialization.
+  */
+object Logging extends Serializable {
+    @transient lazy val log = Logger.getLogger(classOf[IgniteContext])
 }

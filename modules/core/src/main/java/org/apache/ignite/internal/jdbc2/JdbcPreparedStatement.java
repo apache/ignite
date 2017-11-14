@@ -61,11 +61,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSet executeQuery() throws SQLException {
         ensureNotClosed();
 
-        ResultSet rs = executeQuery(sql);
-
-        args = null;
-
-        return rs;
+        return executeQuery(sql);
     }
 
     /** {@inheritDoc} */
@@ -227,9 +223,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */

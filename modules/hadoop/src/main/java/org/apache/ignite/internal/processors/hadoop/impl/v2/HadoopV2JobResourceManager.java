@@ -123,7 +123,9 @@ class HadoopV2JobResourceManager {
 
             JobConf cfg = ctx.getJobConf();
 
-            String mrDir = cfg.get("mapreduce.job.dir");
+            Collection<URL> clsPathUrls = new ArrayList<>();
+
+            String mrDir = cfg.get(MRJobConfig.MAPREDUCE_JOB_DIR);
 
             if (mrDir != null) {
                 stagingDir = new Path(new URI(mrDir));
@@ -144,27 +146,22 @@ class HadoopV2JobResourceManager {
 
                 File jarJobFile = new File(jobLocDir, "job.jar");
 
-                Collection<URL> clsPathUrls = new ArrayList<>();
-
                 clsPathUrls.add(jarJobFile.toURI().toURL());
 
                 rsrcSet.add(jarJobFile);
                 rsrcSet.add(new File(jobLocDir, "job.xml"));
-
-                processFiles(jobLocDir, ctx.getCacheFiles(), download, false, null, MRJobConfig.CACHE_LOCALFILES);
-                processFiles(jobLocDir, ctx.getCacheArchives(), download, true, null, MRJobConfig.CACHE_LOCALARCHIVES);
-                processFiles(jobLocDir, ctx.getFileClassPaths(), download, false, clsPathUrls, null);
-                processFiles(jobLocDir, ctx.getArchiveClassPaths(), download, true, clsPathUrls, null);
-
-                if (!clsPathUrls.isEmpty()) {
-                    clsPath = new URL[clsPathUrls.size()];
-
-                    clsPathUrls.toArray(clsPath);
-                }
             }
             else if (!jobLocDir.mkdirs())
                 throw new IgniteCheckedException("Failed to create local job directory: "
                     + jobLocDir.getAbsolutePath());
+
+            processFiles(jobLocDir, ctx.getCacheFiles(), download, false, null, MRJobConfig.CACHE_LOCALFILES);
+            processFiles(jobLocDir, ctx.getCacheArchives(), download, true, null, MRJobConfig.CACHE_LOCALARCHIVES);
+            processFiles(jobLocDir, ctx.getFileClassPaths(), download, false, clsPathUrls, null);
+            processFiles(jobLocDir, ctx.getArchiveClassPaths(), download, true, clsPathUrls, null);
+
+            if (!clsPathUrls.isEmpty())
+                clsPath = clsPathUrls.toArray(new URL[clsPathUrls.size()]);
 
             setLocalFSWorkingDirectory(jobLocDir);
         }

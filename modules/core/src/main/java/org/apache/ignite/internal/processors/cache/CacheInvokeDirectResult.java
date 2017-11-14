@@ -45,7 +45,7 @@ public class CacheInvokeDirectResult implements Message {
     private CacheObject res;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Exception err;
 

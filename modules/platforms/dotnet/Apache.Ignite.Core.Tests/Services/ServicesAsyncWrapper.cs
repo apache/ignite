@@ -104,7 +104,14 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            _services.DeployAsync(configuration).Wait();
+            try
+            {
+                _services.DeployAsync(configuration).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException;
+            }
         }
 
         /** <inheritDoc /> */

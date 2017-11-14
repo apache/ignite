@@ -34,5 +34,11 @@ public enum GridTaskThreadContextKey {
     TC_TIMEOUT,
 
     /** Security subject ID. */
-    TC_SUBJ_ID
+    TC_SUBJ_ID,
+
+    /** IO manager policy. */
+    TC_IO_POLICY,
+
+    /** Skip authorization for the task. */
+    TC_SKIP_AUTH
 }

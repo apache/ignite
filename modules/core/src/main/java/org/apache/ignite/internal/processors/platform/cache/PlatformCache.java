@@ -815,7 +815,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (pred != null)
             filter = platformCtx.createCacheEntryFilter(pred, 0);
 
-        Object[] args = reader.readObjectArray();
+        Object[] args = null;
+
+        int argCnt = reader.readInt();
+
+        if (argCnt > 0) {
+            args = new Object[argCnt];
+
+            for (int i = 0; i < argCnt; i++)
+                args[i] = reader.readObjectDetached();
+        }
 
         if (loc)
             cache.localLoadCache(filter, args);
