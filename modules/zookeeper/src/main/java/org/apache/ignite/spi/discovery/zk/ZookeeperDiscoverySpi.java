@@ -31,7 +31,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.retry.RetryForever;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -373,6 +377,17 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
             try {
                 zkCurator = CuratorFrameworkFactory.newClient(connectString, sesTimeout, sesTimeout, new RetryForever(500));
+
+                zkCurator.getCuratorListenable().addListener(new CuratorListener() {
+                    @Override public void eventReceived(CuratorFramework client, CuratorEvent evt) throws Exception {
+                        log.info("Curator event: " + evt.getType());
+                    }
+                });
+                zkCurator.getConnectionStateListenable().addListener(new ConnectionStateListener() {
+                    @Override public void stateChanged(CuratorFramework client, ConnectionState newState) {
+                        log.info("Curator event, connection: " + newState);
+                    }
+                });
 
                 zkCurator.start();
 

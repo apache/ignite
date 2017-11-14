@@ -36,6 +36,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -90,7 +91,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
 
-        zkSpi.setSessionTimeout(30_000);
+        zkSpi.setSessionTimeout(10_000);
 
         spis.put(igniteInstanceName, zkSpi);
 
@@ -315,7 +316,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(2);
+                try {
+                    startGrid(2);
+                }
+                catch (Exception e) {
+                    info("Start error: " + e);
+                }
 
                 return null;
             }
@@ -335,11 +341,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         checkEvents(ignite(1), joinEvent(3));
 
-        if (failWhenDisconnected)
+        if (failWhenDisconnected) {
             checkEvents(ignite(1), failEvent(4));
 
-        if (!failWhenDisconnected)
-            fut.get();
+            IgnitionEx.stop(getTestIgniteInstanceName(2), true, true);
+        }
+
+        fut.get();
+
+        waitForTopology(failWhenDisconnected ? 2 : 3);
     }
 
     /**
