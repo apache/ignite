@@ -16,13 +16,10 @@
  */
 
 import angular from 'angular';
+import component from './component';
+import service from './service';
 
-import IgniteUserbar from './Userbar.provider';
-import igniteUserbar from './userbar.directive';
-
-angular
-.module('ignite-console.navbar', [
-
-])
-.provider(...IgniteUserbar)
-.directive(...igniteUserbar);
+export default angular
+    .module('ignite-console.web-console-navbar', [])
+    .service('WebConsoleNavbarSrv', service)
+    .component('webConsoleNavbar', component);

@@ -16,15 +16,18 @@
  */
 
 import angular from 'angular';
+import webConsoleNavbar from 'app/components/web-console-navbar';
 
 import NotebookData from './Notebook.data';
 import Notebook from './Notebook.service';
-import notebook from './notebook.controller';
 import controller from './sql.controller';
+import QueriesNavbar from './services/queries-navbar';
+import CreateQueryDialog from './services/create-query-dialog';
 
 import sqlTplUrl from 'app/../views/sql/sql.tpl.pug';
 
 angular.module('ignite-console.sql', [
+    webConsoleNavbar.name,
     'ui.router'
 ])
 .config(['$stateProvider', ($stateProvider) => {
@@ -56,6 +59,11 @@ angular.module('ignite-console.sql', [
             controllerAs: '$ctrl'
         });
 }])
+.service('QueriesNavbar', QueriesNavbar)
+.service('CreateQueryDialog', CreateQueryDialog)
+.decorator('WebConsoleNavbarSrv', ['$delegate', 'QueriesNavbar', function($delegate, QueriesNavbar) {
+    $delegate.items.push(QueriesNavbar);
+    return $delegate;
+}])
 .service('IgniteNotebookData', NotebookData)
-.service('IgniteNotebook', Notebook)
-.controller('notebookController', notebook);
+.service('IgniteNotebook', Notebook);

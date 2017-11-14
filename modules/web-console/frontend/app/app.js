@@ -116,6 +116,7 @@ import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
+import webConsoleNavbar from './components/web-console-navbar';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
@@ -190,6 +191,7 @@ angular.module('ignite-console', [
     // Components
     webConsoleHeader.name,
     webConsoleFooter.name,
+    webConsoleNavbar.name,
     igniteIcon.name,
     igniteServices.name,
     versionPicker.name,

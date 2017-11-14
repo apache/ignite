@@ -14,33 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-nav-item
-    a(ui-sref='base.configuration.tabs' ui-sref-active='active')
-        | Configure
-
-.wch-nav-item(ng-controller='notebookController')
-    a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ui-sref-active='active')
-        | Queries
-
-    div(ng-if='!IgniteDemoMode')
-        div(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
-            a(ng-click='createNotebook()') Queries
-
-        div(ng-if='notebooks.length'
-            ng-click='$event.stopPropagation()'
-            ng-class='{active: $state.includes("base.sql")}'
-            bs-dropdown='notebooks'
-            data-placement='bottom-left'
-            data-trigger='hover focus'
-            data-container='self'
-            aria-haspopup='true'
-            aria-expanded='false'
-        )
-            span Queries
-                span.caret
-
-.wch-content(ignite-navbar)
-    .wch-nav-item(ng-repeat='item in navbar.items')
+.wch-content()
+    .wch-nav-item(ng-repeat='item in $ctrl.items' ng-if='!item.hidden')
         div(ng-if='item.children' ng-click='$event.stopPropagation()'
                 ng-class='{active: $state.includes(item.sref)}'
                 bs-dropdown='item.children'
@@ -53,5 +28,8 @@
                 span {{::item.text}}
                     span.caret
 
-        a(ng-if='!item.children' ui-sref='{{item.sref}}' ui-sref-active='active')
+        a(ng-if='!item.children && item.sref' ui-sref='{{item.sref}}' ui-sref-active='active')
+            | {{::item.text}}
+
+        a(ng-if='!item.children && item.click' ng-click='item.click()')
             | {{::item.text}}

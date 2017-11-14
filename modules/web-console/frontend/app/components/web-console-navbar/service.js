@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-export default ['igniteNavbar', ['IgniteNavbar', (IgniteNavbar) => {
-    function controller() {
-        const ctrl = this;
+export default class {
+    static $inject = [];
 
-        ctrl.items = IgniteNavbar;
+    constructor() {
+        this.items = [{
+            text: 'Configure',
+            sref: 'base.configuration.tabs'
+        }];
     }
 
-    return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'navbar'
-    };
-}]];
+    visible(text, visible) {
+        const item = _.find(this.items, { text });
+        item.hidden = !visible;
+    }
+}

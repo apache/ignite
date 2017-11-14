@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-export default ['IgniteNavbar', [function() {
-    const items = [];
+import template from './template.pug';
 
-    this.push = function(data) {
-        items.push(data);
-    };
+export default {
+    template,
+    controller: class {
+        static $inject = ['WebConsoleNavbarSrv'];
 
-    this.$get = [function() {
-        return items;
-    }];
-}]];
+        constructor(webConsoleNavbarSrv) {
+            this.items = webConsoleNavbarSrv.items;
+        }
+    }
+};
