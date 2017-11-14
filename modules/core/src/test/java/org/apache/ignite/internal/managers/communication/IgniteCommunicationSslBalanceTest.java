@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+package org.apache.ignite.internal.managers.communication;
 
-import cols from './cols.directive.js';
-import row from './row.directive.js';
-
-export default angular
-    .module('list-editable-cols', [
-    ])
-    .directive('listEditableCols', cols)
-    .directive('listEditableItemView', row)
-    .directive('listEditableItemEdit', row);
+/**
+ *
+ */
+public class IgniteCommunicationSslBalanceTest extends IgniteCommunicationBalanceTest {
+    /** {@inheritDoc} */
+    @Override protected boolean sslEnabled() {
+        return true;
+    }
+}
