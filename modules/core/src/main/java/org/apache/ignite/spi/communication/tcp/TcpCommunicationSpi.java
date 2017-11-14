@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioMessageReaderFactory;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.nio.GridNioMessageWriterFactory;
-import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
@@ -138,7 +137,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -696,7 +694,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    rcvdMsgsCnt.increment();
+                    stats.onMessageReceived(msg, connKey.nodeId());
 
                     if (msg instanceof RecoveryLastReceivedMessage) {
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
@@ -1111,34 +1109,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
-    /** Received messages count. */
-    private final LongAdder8 rcvdMsgsCnt = new LongAdder8();
-
-    /** Sent messages count.*/
-    private final LongAdder8 sentMsgsCnt = new LongAdder8();
-
-    /** Received bytes count. */
-    private final LongAdder8 rcvdBytesCnt = new LongAdder8();
-
-    /** Sent bytes count.*/
-    private final LongAdder8 sentBytesCnt = new LongAdder8();
-
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
 
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping;
 
-    /** metrics listener. */
-    private final GridNioMetricsListener metricsLsnr = new GridNioMetricsListener() {
-        @Override public void onBytesSent(int bytesCnt) {
-            sentBytesCnt.add(bytesCnt);
-        }
-
-        @Override public void onBytesReceived(int bytesCnt) {
-            rcvdBytesCnt.add(bytesCnt);
-        }
-    };
+    /** Statistics. */
+    private final TcpCommunicationStatistics stats = new TcpCommunicationStatistics();
 
     /** Client connect futures. */
     private final ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
@@ -1821,22 +1799,58 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return sentMsgsCnt.intValue();
+        return stats.sentMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return sentBytesCnt.longValue();
+        return stats.sentBytesCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return rcvdMsgsCnt.intValue();
+        return stats.receivedMessagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return rcvdBytesCnt.longValue();
+        return stats.receivedBytesCount();
+    }
+
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Long> getReceivedMessagesByType() {
+        return stats.receivedMessagesByType();
+    }
+
+    /**
+     * Gets received messages counts (grouped by node).
+     *
+     * @return Map containing sender nodes and respective counts.
+     */
+    public Map<String, Long> getReceivedMessagesByNode() {
+        return stats.receivedMessagesByNode();
+    }
+
+    /**
+     * Gets sent messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Long> getSentMessagesByType() {
+        return stats.sentMessagesByType();
+    }
+
+    /**
+     * Gets sent messages counts (grouped by node).
+     *
+     * @return Map containing receiver nodes and respective counts.
+     */
+    public Map<String, Long> getSentMessagesByNode() {
+        return stats.receivedMessagesByNode();
     }
 
     /** {@inheritDoc} */
@@ -1848,12 +1862,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
-        // Can't use 'reset' method because it is not thread-safe
-        // according to javadoc.
-        sentMsgsCnt.add(-sentMsgsCnt.sum());
-        rcvdMsgsCnt.add(-rcvdMsgsCnt.sum());
-        sentBytesCnt.add(-sentBytesCnt.sum());
-        rcvdBytesCnt.add(-rcvdBytesCnt.sum());
+        stats.resetMetrics();
     }
 
     /**
@@ -2315,7 +2324,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         .socketReceiveBufferSize(sockRcvBuf)
                         .sendQueueLimit(msgQueueLimit)
                         .directMode(true)
-                        .metricsListener(metricsLsnr)
+                        .metricsListener(stats)
                         .writeTimeout(sockWriteTimeout)
                         .selectorSpins(selectorSpins)
                         .filters(filters)
@@ -2607,7 +2616,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.release();
 
                     if (!retry)
-                        sentMsgsCnt.increment();
+                        stats.onMessageSent(msg, node.id());
                     else {
                         removeNodeClient(node.id(), client);
 
@@ -2884,7 +2893,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             try {
                 client = new GridShmemCommunicationClient(
                     connIdx,
-                    metricsLsnr,
+                    stats,
                     port,
                     timeoutHelper.nextTimeoutChunk(connTimeout),
                     log,
@@ -4001,7 +4010,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 };
 
                 IpcToNioAdapter<Message> adapter = new IpcToNioAdapter<>(
-                    metricsLsnr,
+                    stats,
                     log,
                     endpoint,
                     srvLsnr,
@@ -5143,6 +5152,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Override public long getReceivedBytesCount() {
             return TcpCommunicationSpi.this.getReceivedBytesCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Long> getReceivedMessagesByType() {
+            return TcpCommunicationSpi.this.stats.receivedMessagesByType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Long> getReceivedMessagesByNode() {
+            return TcpCommunicationSpi.this.stats.receivedMessagesByNode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Long> getSentMessagesByType() {
+            return TcpCommunicationSpi.this.stats.sentMessagesByType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Long> getSentMessagesByNode() {
+            return TcpCommunicationSpi.this.stats.sentMessagesByNode();
         }
 
         /** {@inheritDoc} */
