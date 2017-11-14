@@ -32,9 +32,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -66,9 +67,20 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param cols Columns whose presence must be checked.
      */
     static void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
+        checkTableState(schemaName, tblName, ClientConnectorConfiguration.DFLT_PORT, cols);
+    }
+
+    /**
+     * Check that given columns are seen by client.
+     * @param schemaName Schema name to look for the table in.
+     * @param tblName Table name to check.
+     * @param port Port number.
+     * @param cols Columns whose presence must be checked.
+     */
+    static void checkTableState(String schemaName, String tblName, int port, QueryField... cols) throws SQLException {
         List<QueryField> flds = new ArrayList<>();
 
-        try (Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+        try (Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port)) {
             try (ResultSet rs = c.getMetaData().getColumns(null, schemaName, tblName, "%")) {
                 while (rs.next()) {
                     String name = rs.getString("COLUMN_NAME");

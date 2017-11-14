@@ -149,7 +149,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         // Start servers.
         Ignite srv1 = ignitionStart(serverConfiguration(1), null);
         Ignite srv2 = ignitionStart(serverConfiguration(2), null);
-        ignitionStart(serverConfiguration(3, true), finishLatch);
+        Ignite srv3 = ignitionStart(serverConfiguration(3, true), finishLatch);
 
         UUID srv1Id = srv1.cluster().localNode().id();
         UUID srv2Id = srv2.cluster().localNode().id();
@@ -175,7 +175,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut1.get();
 
-        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("age", Integer.class.getName()));
+        // Port number is for srv2.
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, 10801, c("age", Integer.class.getName()));
 
         // Test migration from normal server to non-affinity server.
         idxLatch = blockIndexing(srv2Id);
@@ -191,7 +192,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         colFut2.get();
 
-        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, c("city", String.class.getName()));
+        // Let's actually create cache on non affinity server.
+        srv3.cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "PERSON"));
+
+        // Port number is for srv3.
+        checkTableState(QueryUtils.DFLT_SCHEMA, TBL_NAME, 10802, c("city", String.class.getName()));
     }
 
     /**
