@@ -121,7 +121,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type.IsPrimitive)
                 HandlePrimitive(field, out writeAction, out readAction, raw);
             else if (type.IsArray)
+            {
                 HandleArray(field, out writeAction, out readAction, raw);
+            }
             else
                 HandleOther(field, out writeAction, out readAction, raw, forceTimestamp);
         }
@@ -252,6 +254,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void HandleArray(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
             out BinaryReflectiveReadAction readAction, bool raw)
         {
+            if (field.FieldType.GetArrayRank() > 1)
+            {
+                writeAction = raw
+                    ? GetRawWriter<Array>(field, (w, o) => w.WriteObject(
+                        o == null ? null : new MultidimensionalArrayHolder(o)))
+                    : GetWriter<Array>(field, (f, w, o) => w.WriteObject(f,
+                        o == null ? null : new MultidimensionalArrayHolder(o)));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadObject<object>())
+                    : GetReader(field, (f, r) => r.ReadObject<object>(f));
+
+                return;
+            }
+
             Type elemType = field.FieldType.GetElementType();
 
             if (elemType == typeof (bool))
