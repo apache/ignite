@@ -124,7 +124,6 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         }
 
         /**
-         *
          * @param id cache id.
          * @param name lock name.
          */
@@ -568,7 +567,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
             ArrayDeque<UUID> nodes = globalSync.forceGet().nodes;
 
-            return !(nodes == null || nodes.isEmpty());
+            return !(nodes == null || nodes.isEmpty() ||
+                // The unlock method calls invokeAsync, so ReleaseProcessor can still work on primary node.
+                (globalSync.nodeId.equals(nodes.getFirst()) && nodes.size() == 1)
+            );
         }
 
         /** */
