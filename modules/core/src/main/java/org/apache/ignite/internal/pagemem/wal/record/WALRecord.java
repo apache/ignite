@@ -172,7 +172,10 @@ public abstract class WALRecord {
         METASTORE_DATA_RECORD,
 
         /** Exchange record. */
-        EXCHANGE;
+        EXCHANGE,
+
+        /** Baseline topology record. */
+        BASELINE_TOP_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

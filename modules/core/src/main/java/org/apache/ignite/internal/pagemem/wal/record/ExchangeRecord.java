@@ -2,7 +2,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 public class ExchangeRecord extends TimeStampRecord {
     /** Event. */
-    private Object constId;
+    private Short constId;
 
     /** Type. */
     private Type type;
@@ -12,7 +12,7 @@ public class ExchangeRecord extends TimeStampRecord {
      * @param type Type.
      * @param timeStamp TimeStamp.
      */
-    public ExchangeRecord(Object constId, Type type, long timeStamp) {
+    public ExchangeRecord(Short constId, Type type, long timeStamp) {
         super(timeStamp);
 
         this.constId = constId;
@@ -23,7 +23,7 @@ public class ExchangeRecord extends TimeStampRecord {
      * @param constId Const id.
      * @param type Type.
      */
-    public ExchangeRecord(Object constId, Type type) {
+    public ExchangeRecord(Short constId, Type type) {
         this.constId = constId;
         this.type = type;
     }
@@ -37,7 +37,7 @@ public class ExchangeRecord extends TimeStampRecord {
     /**
      *
      */
-    public Object getConstId() {
+    public Short getConstId() {
         return constId;
     }
 

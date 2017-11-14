@@ -19,12 +19,14 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -81,6 +83,12 @@ public class DiscoCache {
     /** */
     private final AffinityTopologyVersion topVer;
 
+    /** */
+    private final Map<UUID, Short> contIdMap;
+
+    /** */
+    private final Map<Short, UUID> idMap;
+
     /**
      * @param topVer Topology version.
      * @param state Current cluster state.
@@ -109,7 +117,8 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives,
-        IgniteProductVersion minNodeVer) {
+        IgniteProductVersion minNodeVer
+    ) {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
@@ -123,6 +132,29 @@ public class DiscoCache {
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
         this.minNodeVer = minNodeVer;
+
+        BaselineTopology blt = state.baselineTopology();
+
+        if (blt != null) {
+            contIdMap = new HashMap<>();
+            idMap = new HashMap<>();
+
+            Map<Object, Short> m = blt.consistentIdMapping();
+
+            for (ClusterNode node : srvNodes) {
+                Short compactedId = m.get(node.consistentId());
+
+                if (compactedId != null) {
+                    contIdMap.put(node.id(), compactedId);
+
+                    idMap.put(compactedId, node.id());
+                }
+            }
+        }
+        else {
+            contIdMap = null;
+            idMap = null;
+        }
     }
 
     /**
@@ -169,6 +201,16 @@ public class DiscoCache {
     /** @return Daemon nodes. */
     public List<ClusterNode> daemonNodes() {
         return daemonNodes;
+    }
+
+    /** @return Consistent id map UUID -> Short (compacted consistent id). */
+    public Map<UUID, Short> consistentIdMap() {
+        return contIdMap;
+    }
+
+    /** @return Consistent id map Short (compacted consistent id) -> UUID. */
+    public Map<Short, UUID> nodeIdMap() {
+        return idMap;
     }
 
     /**

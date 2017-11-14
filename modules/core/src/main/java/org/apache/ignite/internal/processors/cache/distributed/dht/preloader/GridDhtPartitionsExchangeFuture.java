@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1572,8 +1573,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     else if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
                         type = ExchangeRecord.Type.LEFT;
 
-                    if (type != null)
-                        cctx.wal().log(new ExchangeRecord(firstDiscoEvt.eventNode().consistentId(), type));
+                    BaselineTopology blt = cctx.kernalContext().state().clusterState().baselineTopology();
+
+                    // todo handle merge exchange events
+                    if (type != null && blt != null) {
+                        Short constId = blt.consistentIdMapping().get(firstDiscoEvt.eventNode().consistentId());
+
+                        if (constId != null)
+                            cctx.wal().log(new ExchangeRecord(constId, type));
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Fail during log exchange record.", e);
