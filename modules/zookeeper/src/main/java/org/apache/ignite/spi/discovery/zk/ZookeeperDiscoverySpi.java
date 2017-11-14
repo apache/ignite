@@ -939,6 +939,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         }
 
         try {
+            // TODO ZK: handle case if node exists after crd change.
             for (ZKDiscoveryEvent evt : evts.values())
                 zkCurator.create().withMode(CreateMode.PERSISTENT).forPath(DISCO_EVTS_HIST_PATH + "/" + evt.topVer, marshal(evt));
         }
@@ -969,6 +970,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** */
     private ZKDiscoveryEvent lastEvt;
 
+    /** */
     private int lastProcessed = -1;
 
     /**
@@ -1144,6 +1146,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             this.nextJoinOrder = nextJoinOrder;
             this.aliveNodes = aliveNodes;
             this.evts = evts;
+
+            while (evts.size() > 1000)
+                evts.remove(evts.first());
         }
 
         /** {@inheritDoc} */
