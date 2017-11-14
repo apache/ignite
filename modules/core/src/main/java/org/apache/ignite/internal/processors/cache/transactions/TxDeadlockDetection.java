@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -306,10 +307,64 @@ public class TxDeadlockDetection {
 
             List<GridCacheVersion> cycle = findCycle(wfg, txId);
 
-            if (cycle != null)
+            if (cycle != null && validateWaitForGraph(cycle))
                 onDone(new TxDeadlock(cycle, txs, txLockedKeys, txRequestedKeys));
             else
                 map(res.keys(), res.txLocks());
+        }
+
+        /**
+         * @param cycle Cycle.
+         * @return True if graph is valid.
+         */
+        private boolean validateWaitForGraph(List<GridCacheVersion> cycle) {
+            boolean valid = false;
+
+            GridCacheVersion waitTxId = null;
+
+            for (ListIterator<GridCacheVersion> iter = cycle.listIterator(cycle.size()); iter.hasPrevious(); ) {
+                if (iter.previous().equals(txId)) {
+                    waitTxId = iter.previous();
+
+                    break;
+                }
+            }
+
+            assert waitTxId != null;
+            assert waitTxId != txId;
+
+            Set<IgniteTxKey> keys = txLockedKeys.get(waitTxId);
+
+            for (IgniteTxKey key : keys) {
+                Set<GridCacheVersion> txs = txRequestedKeys.get(key);
+
+                if (txs != null && txs.contains(txId))
+                    valid = true;
+            }
+
+            if (!valid) {
+                wfg.get(txId).remove(waitTxId);
+
+                Map<IgniteTxKey, Set<GridCacheVersion>> map = new HashMap<>(txRequestedKeys);
+
+                for (IgniteTxKey key : txLockedKeys.get(waitTxId)) {
+                    if(this.keys.contains(key)){
+                        Set<GridCacheVersion> versions = map.get(key);
+
+                        if(versions == null)
+                            map.put(key, versions = new HashSet<>());
+
+                        versions.add(txId);
+                    }
+                }
+
+                IgniteLogger log = cctx.logger(TxDeadlockDetection.class);
+
+                //TODO improve log message.
+                log.warning(new TxDeadlock(cycle, txs, txLockedKeys, map).toString(cctx));
+            }
+
+            return valid;
         }
 
         /**
