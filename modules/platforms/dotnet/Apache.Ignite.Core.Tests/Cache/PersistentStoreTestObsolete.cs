@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests the persistent store. Uses the obsolete API. See <see cref="PersistenceTest"/> for the actual API.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class PersistentStoreTestObsolete
     {
         /** Temp dir for WAL. */
