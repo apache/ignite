@@ -1363,7 +1363,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK))
                 return null;
 
-            int exCode = IgniteQueryErrorCode.UNKNOWN;
+            int exCode = IgniteQueryErrorCode.PARSING;
             if (e instanceof SqlParseException)
                 exCode = ((SqlParseException) e).code();
 
