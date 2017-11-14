@@ -249,6 +249,7 @@ namespace Apache.Ignite.Core.Tests
             // When Spring XML is used, .NET overrides Spring.
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                DataStorageConfiguration = null,
                 SpringConfigUrl = @"config\spring-test.xml",
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57

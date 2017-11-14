@@ -161,10 +161,12 @@
     <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
+    <Compile Include="Process\ListDataReader.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />
+    <Compile Include="MultiAppDomainTest.cs" />
     <Compile Include="Plugin\Cache\CacheJavaPluginConfiguration.cs" />
     <Compile Include="Plugin\Cache\CacheJavaPluginTest.cs" />
     <Compile Include="Plugin\PluginTest.cs" />
