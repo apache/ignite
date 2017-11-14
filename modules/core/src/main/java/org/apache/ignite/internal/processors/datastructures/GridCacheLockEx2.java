@@ -101,9 +101,9 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
     abstract void onNodeRemoved(UUID id);
 
     /**
-     * Return release message processer.
+     * Return release message handler.
      *
-     * @return release message processer.
+     * @return release message handler.
      */
     public abstract IgniteInClosure<GridCacheIdMessage> getReleaser();
 
@@ -203,6 +203,28 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
                 exception = null;
                 lock.unlock();
             }
+        }
+    }
+
+    /** Thread local counter for reentrant locking. */
+    static class ReentrantCount extends ThreadLocal<Integer> {
+        /** {@inheritDoc} */
+        @Override protected Integer initialValue() {
+            return 0;
+        }
+
+        /** Increment thread local count. */
+        void increment() {
+            int count = get();
+
+            assert count != Integer.MAX_VALUE : "Maximum lock count exceeded";
+
+            set(count+1);
+        }
+
+        /** Decrement thread local count. */
+        void decrement() {
+            set(get()-1);
         }
     }
 }
