@@ -126,7 +126,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort());
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort(), *this);
 
             if (!connected)
             {
