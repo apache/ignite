@@ -1537,10 +1537,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestJaggedArrays()
         {
-            int[][] ints = {new[] {1, 2}, new[] {2, 3}};
+            int[][] ints = {new[] {1, 2, 3}, new[] {4, 5, 6}};
             Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
 
-            uint[][][] uints = {new[] {new uint[] {1, 2}, new uint[] {2, 3}}};
+            uint[][][] uints = {new[] {new uint[] {1, 2, 3}, new uint[] {4, 5}}};
             Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
 
             PropertyType[][][] objs = {new[] {new[] {new PropertyType {Field1 = 42}}}};
@@ -1563,10 +1563,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestMultidimensionalArrays()
         {
-            int[,] ints = {{1, 2}, {3, 4}};
+            int[,] ints = {{1, 2, 3}, {4, 5, 6}};
             Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
 
-            uint[,,] uints = {{{1, 2}, {3, 4}}, {{5, 6}, {7, 8}}};
+            uint[,,] uints = {{{1, 2, 3}, {4, 5, 6}}, {{7, 8, 9}, {10, 11, 12}}};
             Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
 
             PropertyType[,] objs = {{new PropertyType {Field1 = 123}}};
