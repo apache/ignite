@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.tree.MvccDataRow;
@@ -75,14 +76,7 @@ public class H2RowFactory {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr) throws IgniteCheckedException {
-        MvccDataRow row = new MvccDataRow(cctx.group(),
-            0,
-            link,
-            -1, // TODO IGNITE-3478: get partition from link.
-            null,
-            mvccCrdVer,
-            mvccCntr);
-
-        return rowDesc.createRow(row, null);
+        return rowDesc.createRow(new MvccDataRow(cctx.group(),0, link,
+            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr), null);
     }
 }

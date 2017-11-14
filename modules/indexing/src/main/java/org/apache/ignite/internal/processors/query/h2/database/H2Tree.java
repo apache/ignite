@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -133,20 +131,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object filter)
+    @Override protected GridH2Row getRow(BPlusIO<GridH2SearchRow> io, long pageAddr, int idx, Object ignore)
         throws IgniteCheckedException {
-        if (filter != null) {
-            // Filter out not interesting partitions without deserializing the row.
-            IndexingQueryCacheFilter filter0 = (IndexingQueryCacheFilter)filter;
-
-            long link = ((H2RowLinkIO)io).getLink(pageAddr, idx);
-
-            int part = PageIdUtils.partId(PageIdUtils.pageId(link));
-
-            if (!filter0.applyPartition(part))
-                return null;
-        }
-
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 

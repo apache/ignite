@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeMvccFilterClosure;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -85,7 +85,7 @@ public class GridH2QueryContext {
     private GridH2CollocationModel qryCollocationMdl;
 
     /** */
-    private H2TreeMvccFilterClosure mvccFilter;
+    private MvccCoordinatorVersion mvccVer;
 
     /**
      * @param locNodeId Local node ID.
@@ -119,16 +119,16 @@ public class GridH2QueryContext {
     /**
      * @return Mvcc version.
      */
-    @Nullable public H2TreeMvccFilterClosure mvccFilter() {
-        return mvccFilter;
+    @Nullable public MvccCoordinatorVersion mvccVersion() {
+        return mvccVer;
     }
 
     /**
-     * @param mvccFilter Mvcc filter.
+     * @param mvccVer Mvcc version.
      * @return {@code this}.
      */
-    public GridH2QueryContext mvccFilter(H2TreeMvccFilterClosure mvccFilter) {
-        this.mvccFilter = mvccFilter;
+    public GridH2QueryContext mvccVersion(MvccCoordinatorVersion mvccVer) {
+        this.mvccVer = mvccVer;
 
         return this;
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorVersion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.assertMvccVersionValid;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinatorsProcessor.unmaskCoordinatorVersion;
@@ -32,29 +34,53 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheCoordinators
 /**
  *
  */
-public class H2TreeMvccFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRow, GridH2Row> {
+public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRow, GridH2Row> {
     /** */
     private final MvccCoordinatorVersion mvccVer;
+    /** */
+    private final IndexingQueryCacheFilter filter;
 
     /**
+     * @param filter Cache filter.
      * @param mvccVer Mvcc version.
      */
-    public H2TreeMvccFilterClosure(MvccCoordinatorVersion mvccVer) {
-        assert mvccVer != null;
+    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccCoordinatorVersion mvccVer) {
+        assert filter != null || mvccVer != null;
 
+        this.filter = filter;
         this.mvccVer = mvccVer;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(BPlusTree<GridH2SearchRow, GridH2Row> tree,
-        BPlusIO<GridH2SearchRow> io,
-        long pageAddr,
-        int idx)  throws IgniteCheckedException {
-        H2RowLinkIO rowIo = (H2RowLinkIO)io;
+    @Override public boolean apply(BPlusTree<GridH2SearchRow, GridH2Row> tree, BPlusIO<GridH2SearchRow> io,
+        long pageAddr, int idx)  throws IgniteCheckedException {
 
-        assert rowIo.storeMvccInfo() : rowIo;
+        return (filter  == null || applyFilter((H2RowLinkIO)io, pageAddr, idx))
+            && (mvccVer == null || applyMvcc((H2RowLinkIO)io, pageAddr, idx));
+    }
 
-        long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+    /**
+     * @param io Row IO.
+     * @param pageAddr Page address.
+     * @param idx Item index.
+     * @return {@code True} if row passes the filter.
+     */
+    private boolean applyFilter(H2RowLinkIO io, long pageAddr, int idx) {
+        assert filter != null;
+
+        return filter.applyPartition(PageIdUtils.partId(PageIdUtils.pageId(io.getLink(pageAddr, idx))));
+    }
+
+    /**
+     * @param io Row IO.
+     * @param pageAddr Page address.
+     * @param idx Item index.
+     * @return {@code True} if row passes the filter.
+     */
+    private boolean applyMvcc(H2RowLinkIO io, long pageAddr, int idx) {
+        assert io.storeMvccInfo() : io;
+
+        long rowCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
 
         assert unmaskCoordinatorVersion(rowCrdVer) == rowCrdVer : rowCrdVer;
         assert rowCrdVer > 0 : rowCrdVer;
@@ -62,12 +88,12 @@ public class H2TreeMvccFilterClosure implements H2Tree.TreeRowClosure<GridH2Sear
         int cmp = Long.compare(mvccVer.coordinatorVersion(), rowCrdVer);
 
         if (cmp == 0) {
-            long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
+            long rowCntr = io.getMvccCounter(pageAddr, idx);
 
             cmp = Long.compare(mvccVer.counter(), rowCntr);
 
             return cmp >= 0 &&
-                !newVersionAvailable(rowIo, pageAddr, idx) &&
+                !newVersionAvailable(io, pageAddr, idx) &&
                 !mvccVer.activeTransactions().contains(rowCntr);
         }
         else
@@ -101,6 +127,6 @@ public class H2TreeMvccFilterClosure implements H2Tree.TreeRowClosure<GridH2Sear
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(H2TreeMvccFilterClosure.class, this);
+        return S.toString(H2TreeFilterClosure.class, this);
     }
 }

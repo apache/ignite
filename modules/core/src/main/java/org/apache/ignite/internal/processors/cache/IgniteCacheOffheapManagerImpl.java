@@ -763,11 +763,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                             curPart = ds.partId();
 
-                            // TODO IGNITE-3478, mvcc with cache groups.
-                            if (grp.mvccEnabled())
-                                cur = ds.mvccCursor(mvccVer);
-                            else
-                                cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                            cur = ds.cursor(cacheId, mvccVer);
                         }
                         else
                             break;
@@ -2048,67 +2044,30 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> mvccCursor(final MvccCoordinatorVersion ver)
+        @Override public GridCursor<? extends CacheDataRow> cursor(MvccCoordinatorVersion ver)
             throws IgniteCheckedException {
-            // TODO IGNITE-3478: more optimal cursor, e.g. pass some 'isVisible' closure.
-            final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
 
-            return new GridCursor<CacheDataRow>() {
-                /** */
-                private CacheDataRow curRow;
+            if (ver != null) {
+                assert grp.mvccEnabled();
 
-                @Override public boolean next() throws IgniteCheckedException {
-                    KeyCacheObject curKey = curRow != null ? curRow.key() : null;
+                // TODO IGNITE-3478: more optimal cursor, e.g. pass some 'isVisible' closure.
+                return new MvccCursor(dataTree.find(null, null), ver);
+            }
 
-                    curRow = null;
-
-                    while (cur.next()) {
-                        CacheDataRow row = cur.get();
-
-                        long rowCrdVerMasked = row.mvccCoordinatorVersion();
-
-                        if (ver != null) {
-                            long rowCrdVer = unmaskCoordinatorVersion(rowCrdVerMasked);
-
-                            if (rowCrdVer > ver.coordinatorVersion())
-                                continue;
-
-                            if (rowCrdVer == ver.coordinatorVersion() && row.mvccCounter() > ver.counter())
-                                continue;
-
-                            MvccLongList txs = ver.activeTransactions();
-
-                            if (txs != null && rowCrdVer == ver.coordinatorVersion() && txs.contains(row.mvccCounter()))
-                                continue;
-                        }
-
-                        if (curKey != null && row.key().equals(curKey))
-                            continue;
-
-                        if (versionForRemovedValue(rowCrdVerMasked)) {
-                            curKey = row.key();
-
-                            continue;
-                        }
-
-                        curRow = row;
-
-                        break;
-                    }
-
-                    return curRow != null;
-                }
-
-                @Override public CacheDataRow get() throws IgniteCheckedException {
-                    return curRow;
-                }
-            };
+            return dataTree.find(null, null);
         }
 
         /** {@inheritDoc}
          * @param cacheId*/
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
             return cursor(cacheId, null, null);
+        }
+
+        /** {@inheritDoc}
+         * @param cacheId*/
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
+            MvccCoordinatorVersion ver) throws IgniteCheckedException {
+            return cursor(cacheId, null, null, null, ver);
         }
 
         /** {@inheritDoc} */
@@ -2120,6 +2079,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper, Object x) throws IgniteCheckedException {
+            return cursor(cacheId, lower, upper, null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
+            KeyCacheObject upper, Object x, MvccCoordinatorVersion ver) throws IgniteCheckedException {
             SearchRow lowerRow;
             SearchRow upperRow;
 
@@ -2132,6 +2097,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             else {
                 lowerRow = lower != null ? new SearchRow(CU.UNDEFINED_CACHE_ID, lower) : null;
                 upperRow = upper != null ? new SearchRow(CU.UNDEFINED_CACHE_ID, upper) : null;
+            }
+
+            if (ver != null) {
+                assert grp.mvccEnabled();
+
+                // TODO IGNITE-3478: more optimal cursor, e.g. pass some 'isVisible' closure.
+                return new MvccCursor(dataTree.find(lowerRow, upperRow, x), ver);
             }
 
             return dataTree.find(lowerRow, upperRow, x);
@@ -2286,6 +2258,67 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             else
                 return 0;
         }
-    }
 
+        /** */
+        private final class MvccCursor implements GridCursor<CacheDataRow> {
+            /** */
+            private final GridCursor<? extends CacheDataRow> cur;
+            /** */
+            private final MvccCoordinatorVersion ver;
+            /** */
+            private CacheDataRow curRow;
+
+            /** */
+            MvccCursor(GridCursor<? extends CacheDataRow> cur, MvccCoordinatorVersion ver) {
+                this.cur = cur;
+                this.ver = ver;
+            }
+
+            @Override public boolean next() throws IgniteCheckedException {
+                KeyCacheObject curKey = curRow != null ? curRow.key() : null;
+
+                curRow = null;
+
+                while (cur.next()) {
+                    CacheDataRow row = cur.get();
+
+                    long rowCrdVerMasked = row.mvccCoordinatorVersion();
+
+                    if (ver != null) {
+                        long rowCrdVer = unmaskCoordinatorVersion(rowCrdVerMasked);
+
+                        if (rowCrdVer > ver.coordinatorVersion())
+                            continue;
+
+                        if (rowCrdVer == ver.coordinatorVersion() && row.mvccCounter() > ver.counter())
+                            continue;
+
+                        MvccLongList txs = ver.activeTransactions();
+
+                        if (txs != null && rowCrdVer == ver.coordinatorVersion() && txs.contains(row.mvccCounter()))
+                            continue;
+                    }
+
+                    if (curKey != null && row.key().equals(curKey))
+                        continue;
+
+                    if (versionForRemovedValue(rowCrdVerMasked)) {
+                        curKey = row.key();
+
+                        continue;
+                    }
+
+                    curRow = row;
+
+                    break;
+                }
+
+                return curRow != null;
+            }
+
+            @Override public CacheDataRow get() throws IgniteCheckedException {
+                return curRow;
+            }
+        }
+    }
 }

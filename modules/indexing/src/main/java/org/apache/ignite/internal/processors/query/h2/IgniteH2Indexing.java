@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeMvccFilterClosure;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
@@ -898,7 +897,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final MvccQueryTracker mvccTracker = mvccTracker(stmt);
 
         if (mvccTracker != null)
-            ctx.mvccFilter(new H2TreeMvccFilterClosure(mvccTracker.mvccVersion()));
+            ctx.mvccVersion(mvccTracker.mvccVersion());
 
         return new GridQueryFieldsResultAdapter(meta, null) {
             @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1226,7 +1225,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccQueryTracker mvccTracker = mvccTracker(stmt);
 
         if (mvccTracker != null)
-            qctx.mvccFilter(new H2TreeMvccFilterClosure(mvccTracker.mvccVersion()));
+            qctx.mvccVersion(mvccTracker.mvccVersion());
 
         GridH2QueryContext.set(qctx);
 

@@ -31,14 +31,15 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO IGNITE-3478: make sure clean up is called when related future is forcibly finished, i.e. on cache stop
+ *
  */
+@SuppressWarnings("unchecked")
 public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     /** */
     private MvccCoordinator mvccCrd;
 
     /** */
-    private MvccCoordinatorVersion mvccVer;
+    private volatile MvccCoordinatorVersion mvccVer;
 
     /** */
     @GridToStringExclude
@@ -77,24 +78,22 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     }
 
     /** {@inheritDoc} */
-    @Nullable public MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        synchronized (this) {
-            if (mvccVer != null) {
-                assert mvccCrd != null : this;
+    @Override @Nullable public synchronized MvccCoordinatorVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        if (mvccVer != null) {
+            assert mvccCrd != null : this;
 
-                if (!mvccCrd.equals(newCrd)) {
-                    mvccCrd = newCrd; // Need notify new coordinator.
+            if (!mvccCrd.equals(newCrd)) {
+                mvccCrd = newCrd; // Need notify new coordinator.
 
-                    return mvccVer;
-                }
-                else
-                    return null;
+                return mvccVer;
             }
-            else if (mvccCrd != null)
-                mvccCrd = null; // Mark for remap.
-
-            return null;
+            else
+                return null;
         }
+        else if (mvccCrd != null)
+            mvccCrd = null; // Mark for remap.
+
+        return null;
     }
 
     /**
@@ -172,7 +171,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         }
 
         synchronized (this) {
-            this.mvccCrd = mvccCrd0;
+            mvccCrd = mvccCrd0;
         }
 
         MvccCoordinator curCrd = cctx.topology().mvccCoordinator();
@@ -192,7 +191,6 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
             }
         }
 
-        // TODO IGNITE-3478: get rid of future creation in 'requestQueryCounter'.
         IgniteInternalFuture<MvccCoordinatorVersion> cntrFut =
             cctx.shared().coordinators().requestQueryCounter(mvccCrd0);
 

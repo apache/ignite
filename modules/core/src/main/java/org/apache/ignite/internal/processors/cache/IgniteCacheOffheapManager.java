@@ -650,11 +650,11 @@ public interface IgniteCacheOffheapManager {
         public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
 
         /**
+         * @param ver Mvcc version.
          * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public GridCursor<? extends CacheDataRow> mvccCursor(MvccCoordinatorVersion ver)
-            throws IgniteCheckedException;
+        public GridCursor<? extends CacheDataRow> cursor(MvccCoordinatorVersion ver) throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.
@@ -662,6 +662,15 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param ver Mvcc version.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId,
+            MvccCoordinatorVersion ver) throws IgniteCheckedException;
 
         /**
          * @param cacheId Cache ID.
@@ -683,6 +692,18 @@ public interface IgniteCacheOffheapManager {
          */
         public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
             KeyCacheObject upper, Object x) throws IgniteCheckedException;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         * @param ver Mvcc version.
+         * @return Data cursor.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower,
+            KeyCacheObject upper, Object x, MvccCoordinatorVersion ver) throws IgniteCheckedException;
 
         /**
          * Destroys the tree associated with the store.

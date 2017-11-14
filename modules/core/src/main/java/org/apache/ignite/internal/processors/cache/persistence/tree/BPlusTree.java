@@ -4928,26 +4928,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (upperBound != null && cnt != startIdx)
                 cnt = findUpperBound(pageAddr, io, startIdx, cnt);
 
-            cnt -= startIdx;
+            int cnt0 = cnt - startIdx;
 
-            if (cnt == 0)
+            if (cnt0 == 0)
                 return false;
 
             if (rows == EMPTY)
-                rows = (T[])new Object[cnt];
+                rows = (T[])new Object[cnt0];
 
             int resCnt = 0;
 
-            for (int i = 0; i < cnt; i++) {
-                int itemIdx = startIdx + i;
-
-                if (c == null || c.apply(BPlusTree.this, io, pageAddr, itemIdx)) {
-                    T r = getRow(io, pageAddr, itemIdx, x);
-
-                    if (r != null) {
-                        rows = GridArrays.set(rows, resCnt++, r);
-                    }
-                }
+            for (int idx = startIdx; idx < cnt; idx++) {
+                if (c == null || c.apply(BPlusTree.this, io, pageAddr, idx))
+                    rows = GridArrays.set(rows, resCnt++, getRow(io, pageAddr, idx, x));
             }
 
             if (resCnt == 0) {
