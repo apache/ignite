@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** Callbacks. */
         private readonly Callbacks _callbacks;
 
-        /** Static instamce */
+        /** Static instance */
         private static volatile Jvm _instance;
 
         /** Sync. */
