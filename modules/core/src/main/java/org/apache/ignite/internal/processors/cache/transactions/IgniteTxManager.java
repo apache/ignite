@@ -2167,6 +2167,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     }
                     // Special case for optimal sequence of nodes processing.
                     else if (nearTxLoc && requestedKeys != null && requestedKeys.contains(txKey)) {
+                        assert !txEntry.nodeId().equals(cctx.localNodeId()) : "Should not process local keys.";
+
                         TxLock txLock = new TxLock(
                             tx.nearXidVersion(),
                             tx.nodeId(),

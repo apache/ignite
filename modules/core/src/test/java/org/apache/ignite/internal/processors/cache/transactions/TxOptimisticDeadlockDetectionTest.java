@@ -249,9 +249,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
         catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
 
-            //TODO "if" statement will be removed after fixing https://issues.apache.org/jira/browse/IGNITE-6445
-            if (!e.getMessage().equals("Failed to detect deadlock"))
-                fail();
+            fail();
         }
         finally {
             if (cache != null)
