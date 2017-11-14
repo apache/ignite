@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
+package org.apache.ignite.ml.math.distributed.keys;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.UUID;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * Base matrix cache key.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    OLSMultipleLinearRegressionTest.class, DistributedOLSMultipleLinearRegressionTest.class, DistributedBlockOLSMultipleLinearRegressionTest.class
-})
-public class RegressionsTestSuite {
-    // No-op.
+public interface DataStructureCacheKey {
+    /**
+     * @return matrix id.
+     */
+    public UUID dataStructureId();
+
+    /**
+     * @return affinity key.
+     */
+    public Object affinityKey();
 }

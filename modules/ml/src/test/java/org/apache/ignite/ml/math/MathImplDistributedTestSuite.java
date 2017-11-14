@@ -21,7 +21,10 @@ import org.apache.ignite.ml.math.impls.matrix.CacheMatrixTest;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedBlockMatrixTest;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrixTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorageTest;
+import org.apache.ignite.ml.math.impls.storage.vector.SparseDistributedVectorStorageTest;
 import org.apache.ignite.ml.math.impls.vector.CacheVectorTest;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVectorTest;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVectorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,11 +33,14 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CacheVectorTest.class,
-    CacheMatrixTest.class,
-    SparseDistributedMatrixStorageTest.class,
-    SparseDistributedMatrixTest.class,
-    SparseDistributedBlockMatrixTest.class
+        CacheVectorTest.class,
+        CacheMatrixTest.class,
+        SparseDistributedMatrixStorageTest.class,
+        SparseDistributedMatrixTest.class,
+        SparseDistributedBlockMatrixTest.class,
+        SparseDistributedVectorStorageTest.class,
+        SparseDistributedVectorTest.class,
+        SparseBlockDistributedVectorTest.class
 })
 public class MathImplDistributedTestSuite {
     // No-op.

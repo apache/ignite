@@ -17,20 +17,14 @@
 
 package org.apache.ignite.ml.math.util;
 
-import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.matrix.*;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+
+import java.util.List;
 
 /**
  * Utility class for various matrix operations.
@@ -71,7 +65,7 @@ public class MatrixUtil {
      * @return Like matrix.
      */
     public static Matrix like(Matrix matrix, int rows, int cols) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapMatrix(rows, cols);
         else
             return matrix.like(rows, cols);
@@ -85,7 +79,7 @@ public class MatrixUtil {
      * @return Like vector.
      */
     public static Vector likeVector(Matrix matrix, int crd) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
+        if (isCopyLikeSupport(matrix))
             return new DenseLocalOnHeapVector(crd);
         else
             return matrix.likeVector(crd);
