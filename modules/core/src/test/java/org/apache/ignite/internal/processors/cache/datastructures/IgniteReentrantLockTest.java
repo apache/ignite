@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -103,8 +104,11 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
             IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
 
             // Other node can still don't see update.
-            while (lock.isLocked())
-                ;
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return !lock.isLocked();
+                }
+            }, 500L);
 
             lock.lock();
 
