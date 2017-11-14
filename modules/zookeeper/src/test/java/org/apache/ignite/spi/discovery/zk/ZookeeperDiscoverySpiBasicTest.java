@@ -486,7 +486,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @param nodeId Node ID.
      * @param expEvts Expected events.
-     * @throws Exception If fialed.
+     * @throws Exception If failed.
      */
     private void checkEvents(final UUID nodeId, final DiscoveryEvent...expEvts) throws Exception {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -516,6 +516,21 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 return true;
             }
         }, 10000));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClusterRestart() throws Exception {
+        startGridsMultiThreaded(3, false);
+
+        stopAllGrids();
+
+        evts.clear();
+
+        startGridsMultiThreaded(3, false);
+
+        waitForTopology(3);
     }
 
     /**
