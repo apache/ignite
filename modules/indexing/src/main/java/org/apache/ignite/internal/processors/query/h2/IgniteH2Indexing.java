@@ -570,7 +570,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-        @Nullable CacheDataRow prevRow) throws IgniteCheckedException {
+        @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         String cacheName = cctx.name();
 
         H2TableDescriptor tbl = tableDescriptor(schema(cacheName), cacheName, type.name());
@@ -578,7 +578,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow);
+        tbl.table().update(row, prevRow, prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
