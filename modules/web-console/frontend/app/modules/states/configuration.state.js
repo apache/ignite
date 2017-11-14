@@ -16,6 +16,7 @@
  */
 
 import angular from 'angular';
+import webConsoleNavbar from 'app/components/web-console-navbar';
 
 // Common directives.
 import previewPanel from './configuration/preview-panel.directive.js';
@@ -40,7 +41,11 @@ import igfsCtrl from 'Controllers/igfs-controller';
 
 import base2 from 'views/base2.pug';
 
-angular.module('ignite-console.states.configuration', ['ui.router'])
+export default angular
+    .module('ignite-console.states.configuration', [
+        webConsoleNavbar.name,
+        'ui.router'
+    ])
     .directive(...previewPanel)
     // Summary screen
     .directive(...summaryTabs)
@@ -49,6 +54,16 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     .service('IgniteConfigurationResource', ConfigurationResource)
     .run(['$templateCache', ($templateCache) => {
         $templateCache.put('summary-tabs.html', summaryTabsTemplateUrl);
+    }])
+    .service('ConfigurationNavbar', class {
+        constructor() {
+            this.text = 'Configure';
+            this.sref = 'base.configuration.tabs';
+        }
+    })
+    .decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
+        $delegate[0].controller.$inject.push('ConfigurationNavbar');
+        return $delegate;
     }])
     // Configure state provider.
     .config(['$stateProvider', ($stateProvider) => {

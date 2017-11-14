@@ -19,14 +19,16 @@ export default class {
     static $inject = [];
 
     constructor() {
-        this.items = [{
-            text: 'Configure',
-            sref: 'base.configuration.tabs'
-        }];
+
     }
 
     visible(text, visible) {
+        if (!this.items)
+            return;
+
         const item = _.find(this.items, { text });
-        item.hidden = !visible;
+
+        if (item)
+            item.hidden = !visible;
     }
 }
