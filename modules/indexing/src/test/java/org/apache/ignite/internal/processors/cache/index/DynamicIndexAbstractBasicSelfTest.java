@@ -41,7 +41,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -199,7 +198,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
@@ -441,7 +440,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, randomString(), idx, false);
             }
@@ -517,7 +516,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         final QueryIndex idx = index(IDX_NAME_1, field(randomString()));
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false);
             }
@@ -592,7 +591,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         throws Exception {
         initialize(mode, atomicityMode, near);
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_2_ESCAPED));
 
@@ -773,7 +772,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     private void checkDropNoIndex(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near) throws Exception {
         initialize(mode, atomicityMode, near);
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexDrop(CACHE_NAME, IDX_NAME_1, false);
             }
@@ -877,18 +876,24 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     public void testFailOnLocalCache() throws Exception {
         for (Ignite node : Ignition.allGrids()) {
             if (!node.configuration().isClientMode())
-                createSqlCache(node, cacheConfiguration().setCacheMode(LOCAL));
+                createSqlCache(node, localCacheConfiguration());
         }
 
         final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
 
-        assertSchemaException(new RunnableX() {
+        assertIgniteSqlException(new RunnableX() {
             @Override public void run() throws Exception {
                 dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true);
             }
         }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
+
+        assertIgniteSqlException(new RunnableX() {
+            @Override public void run() throws Exception {
+                dynamicIndexDrop(CACHE_NAME, IDX_NAME_LOCAL, true);
+            }
+        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -1101,8 +1106,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param r Runnable.
      * @param expCode Error code.
      */
-    protected static void assertSchemaException(RunnableX r, int expCode) {
-        assertSchemaException(r, null, expCode);
+    protected static void assertIgniteSqlException(RunnableX r, int expCode) {
+        assertIgniteSqlException(r, null, expCode);
     }
 
     /**
@@ -1112,7 +1117,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param msg Exception message to expect, or {@code null} if it can be waived.
      * @param expCode Error code.
      */
-    protected static void assertSchemaException(RunnableX r, String msg, int expCode) {
+    private static void assertIgniteSqlException(RunnableX r, String msg, int expCode) {
         try {
             r.run();
         }

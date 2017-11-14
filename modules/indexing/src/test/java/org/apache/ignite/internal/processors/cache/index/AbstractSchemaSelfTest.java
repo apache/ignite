@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,13 +52,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Tests for dynamic schema changes.
  */
@@ -78,6 +77,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
     /** Index name 2 escaped. */
     protected static final String IDX_NAME_2_ESCAPED = "idx_2";
+
+    /** Index name 2. */
+    protected static final String IDX_NAME_LOCAL = "IDX_LOC";
 
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";

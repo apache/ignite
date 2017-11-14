@@ -115,6 +115,8 @@ public class DdlStatementsProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
+                isDdlSupported(tbl);
+
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd0.indexName());
@@ -146,6 +148,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
+                    isDdlSupported(tbl);
+
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
                 }
