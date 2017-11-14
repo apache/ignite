@@ -2906,12 +2906,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<TcpDiscoveryNode> failedNodes;
 
+            Collection<UUID> failedNodesMsgSent;
+
             Collection<TcpDiscoveryNode> notSentNodes = new ArrayList<>();
 
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
+                failedNodes = new HashSet<>(ServerImpl.this.failedNodes.keySet());
+
+                failedNodesMsgSent = new HashSet<>(ServerImpl.this.failedNodesMsgSent);
 
                 state = spiState;
             }
@@ -2925,7 +2929,27 @@ class ServerImpl extends TcpDiscoveryImpl {
             UUID locNodeId = getLocalNodeId();
 
             while (true) {
-                TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
+                TcpDiscoveryNode newNext = ring.nextNode(notSentNodes);
+
+                if (newNext != null && failedNodes.contains(newNext)) {
+                    if (!failedNodesMsgSent.contains(newNext.id()))
+                        U.warn(log, "Skip next node from failed nodes list: " + newNext);
+
+                    notSentNodes.add(newNext);
+
+                    if (next != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Closing socket to next (send skipped): " + next);
+
+                        next = null;
+
+                        U.closeQuiet(sock);
+
+                        sock = null;
+                    }
+
+                    continue;
+                }
 
                 if (newNext == null) {
                     if (log.isDebugEnabled())
@@ -2953,13 +2977,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "New next node [newNext=" + newNext + ", formerNext=" + next +
                             ", ring=" + ring + ", failedNodes=" + failedNodes + ']');
 
-                    U.closeQuiet(sock);
-
-                    sock = null;
-
                     next = newNext;
 
                     newNextNode = true;
+
+                    U.closeQuiet(sock);
+
+                    sock = null;
                 }
                 else if (log.isTraceEnabled())
                     log.trace("Next node remains the same [nextId=" + next.id() +
@@ -3387,10 +3411,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     break;
             }
 
-            if (log.isTraceEnabled())
-                log.trace("Message sent to the next node, updating the last time sent [msg=" + msg + ']');
+            if (sent) {
+                if (log.isTraceEnabled())
+                    log.trace("Message was sent to the next node, updating the last time sent");
 
-            lastNextNodeTime = sent ? U.currentTimeMillis() : 0;
+                lastNextNodeTime = U.currentTimeMillis();
+            } else {
+                if (log.isTraceEnabled())
+                    log.trace("Message was not sent to the next node, clearing the last time sent");
+
+                lastNextNodeTime = 0;
+            }
+
 
             if (!notSentNodes.isEmpty()) {
                 if (state == CONNECTED) {
@@ -3409,7 +3441,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     for (TcpDiscoveryNode failedNode : notSentNodes)
-                        failedNodesMsgSent.add(failedNode.id());
+                        ServerImpl.this.failedNodesMsgSent.add(failedNode.id());
                 }
 
                 for (TcpDiscoveryNode n : notSentNodes)
@@ -7088,8 +7120,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (msg == null)
                     noMessageLoop();
-                else
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Processing message [msg=" + msg + ", remaining=" + queue.size() + ']');
+
                     processMessage(msg);
+                }
             }
         }
 
