@@ -107,7 +107,7 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
      */
     public abstract IgniteInClosure<GridCacheIdMessage> getReleaser();
 
-    /** */
+    /** Reused latch where await can return an exception in case if the releasing thread failed. */
     protected static class Latch {
         /** */
         private final ReentrantLock lock = new ReentrantLock();
@@ -118,10 +118,10 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
         /** */
         private int count = 0;
 
-        /** */
+        /** The exception will non-null if release is impossible. */
         private IgniteException exception;
 
-        /** */
+        /** Release latch. */
         public void release() {
             lock.lock();
             try {
@@ -134,7 +134,11 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
             }
         }
 
-        /** */
+        /**
+         * Sending exception to the waiting thread.
+         *
+         * @param exception the reason why the release is impossible.
+         */
         public void fail(IgniteException exception) {
             lock.lock();
             try {
@@ -149,7 +153,12 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
         }
 
         /**
-         * @throws IgniteException */
+         * Waiting for release or faild.
+         *
+         * @throws IgniteException if release is impossible.
+         * @throws InterruptedException if the current thread is interrupted
+         *         while waiting.
+         * */
         public void await() throws InterruptedException {
             lock.lock();
             try {
@@ -167,7 +176,16 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
         }
 
         /**
-         * @throws IgniteException */
+         * Waiting for release or faild.
+         *
+         * @param timeout the maximum time to wait.
+         * @param unit the time unit of the {@code timeout} argument.
+         * @return {@code true} if the release was called and {@code false}
+         *         if the waiting time elapsed before the count reached zero.
+         * @throws IgniteException if release is impossible.
+         * @throws InterruptedException if the current thread is interrupted
+         *         while waiting.
+         */
         public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
             lock.lock();
             try {
