@@ -39,11 +39,13 @@ namespace
      */
     std::string GetLastSocketErrorMessage()
     {
-        std::string res = "<Unknown error>";
-        HRESULT hresult = WSAGetLastError();
+        HRESULT lastError = WSAGetLastError();
+        std::stringstream res;
 
-        if (hresult == 0)
-            return res;
+        res << "error_code=" << lastError;
+
+        if (lastError == 0)
+            return res.str();
 
         LPTSTR errorText = NULL;
 
@@ -56,7 +58,7 @@ namespace
             | FORMAT_MESSAGE_IGNORE_INSERTS,
             // unused with FORMAT_MESSAGE_FROM_SYSTEM
             NULL,
-            hresult,
+            lastError,
             MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
             // output
             reinterpret_cast<LPTSTR>(&errorText),
@@ -68,12 +70,12 @@ namespace
         if (NULL != errorText)
         {
             if (len != 0)
-                res.assign(errorText, len);
+                res << ", msg=" << std::string(errorText, len);
 
             LocalFree(errorText);
         }
 
-        return res;
+        return res.str();
     }
 }
 
@@ -107,7 +109,7 @@ namespace ignite
 
                     if (!networkInited)
                     {
-                        LOG_MSG("Netwirking initialisation failed: " << GetLastSocketErrorMessage());
+                        LOG_MSG("Networking initialisation failed: " << GetLastSocketErrorMessage());
 
                         diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not initialize Windows networking.");
 

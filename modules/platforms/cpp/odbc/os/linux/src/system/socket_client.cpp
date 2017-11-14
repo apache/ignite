@@ -39,19 +39,21 @@ namespace
      */
     std::string GetLastSocketErrorMessage()
     {
-        std::string res = "<Unknown error>";
         int lastError = errno;
+        std::stringstream res;
+
+        res << "error_code=" << lastError;
 
         if (lastError == 0)
-            return res;
+            return res.str();
 
         char buffer[1024] = "";
 
         strerror_r(lastError, buffer, sizeof(buffer));
 
-        res.assign(buffer);
+        res << ", msg=" << buffer;
 
-        return res;
+        return res.str();
     }
 }
 
