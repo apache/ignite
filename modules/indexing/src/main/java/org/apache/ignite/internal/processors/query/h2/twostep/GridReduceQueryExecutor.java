@@ -59,7 +59,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -562,6 +561,14 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
+            // If topology is changed and we are inside a transaction, break query execution.
+            // Otherwise, next exchange has a chance waiting forever for current tx.
+            if (h2.topologyVersionChanged(topVer) && ctx.cache().context().tm().userTx() != null) {
+                throw new CacheException(new TransactionException("Some of topology nodes failed during query " +
+                    "execution inside transaction. It's recommended to rollback and retry transaction whenever " +
+                    "possible."));
+            }
+
             List<Integer> cacheIds = qry.cacheIds();
 
             Collection<ClusterNode> nodes = null;
@@ -758,16 +765,8 @@ public class GridReduceQueryExecutor {
                         }
                     }
                 }
-                else {
-                    // If some messages were not sent, and we are inside transaction, break query execution.
-                    // Otherwise, exchange on server node left will be waiting forever for current tx.
-                    if (ctx.cache().context().tm().userTx() != null)
-                        throw new CacheException(new TransactionException("Some of topology nodes failed during query " +
-                            "execution inside transaction. It's recommended to rollback and retry transaction whenever " +
-                            "possible."));
-                    else
-                        retry = true; // In other cases retry is possible.
-                }
+                else // Send failed.
+                    retry = true;
 
                 Iterator<List<?>> resIter = null;
 

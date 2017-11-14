@@ -2482,6 +2482,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param ver Version to compare.
+     *
+     * @return {@code true} If topology version changed comparing to given version.
+     */
+    public boolean topologyVersionChanged(AffinityTopologyVersion ver) {
+        GridDhtPartitionsExchangeFuture fut = ctx.cache().context().exchange().lastTopologyFuture();
+
+        return fut.initialVersion().compareTo(ver) > 0;
+    }
+
+    /**
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
