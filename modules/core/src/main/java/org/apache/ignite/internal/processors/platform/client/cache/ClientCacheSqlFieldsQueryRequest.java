@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -50,7 +51,6 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.
-        // TODO: Get schema from cache.
         String schema = reader.readString();
         int pageSize = reader.readInt();
         reader.readInt();  // maxRows
@@ -89,6 +89,19 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
         ctx.incrementCursors();
 
         try {
+            // When schema is not specified, try using cache.
+            // Query may have all schema names included, so we don't throw an error yet if we can't find schema.
+            if (qry.getSchema() == null) {
+                DynamicCacheDescriptor desc = cacheDescriptor(ctx);
+
+                if (desc != null) {
+                    String schema = QueryUtils.normalizeSchemaName(desc.cacheName(),
+                            desc.cacheConfiguration().getSqlSchema());
+
+                    qry.setSchema(schema);
+                }
+            }
+
             List<FieldsQueryCursor<List<?>>> curs = ctx.kernalContext().query()
                     .querySqlFieldsNoCache(qry, true, true);
 
