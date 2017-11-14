@@ -2134,8 +2134,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (prevNode != null && prevNode.id().equals(msg.senderNodeId()) &&
                     (lastPrevNodeTime != 0 || msg instanceof TcpDiscoveryNodeAddedMessage)) {
 
-                    if (log.isDebugEnabled())
-                        log.debug("Message from the previous node, updating the last time received [msg=" + msg + ']');
+                    if (log.isTraceEnabled())
+                        log.trace("Message received from the previous node, updating the last time received [msg=" + msg + ']');
 
                     lastPrevNodeTime = U.currentTimeMillis();
 
@@ -3386,6 +3386,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else
                     break;
             }
+
+            if (log.isTraceEnabled())
+                log.trace("Message sent to the next node, updating the last time sent [msg=" + msg + ']');
 
             lastNextNodeTime = sent ? U.currentTimeMillis() : 0;
 
@@ -5679,21 +5682,34 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
+                if (nextCheckTime == 0)
+                    nextCheckTime = U.currentTimeMillis();
+
                 while (!isInterrupted()) {
                     if (exiting())
                         return;
 
-                    if (nextCheckTime == 0)
-                        nextCheckTime = U.currentTimeMillis();
+                    if (log.isTraceEnabled())
+                        log.trace("Check connection");
 
                     nextCheckTime = checkConnection();
 
-                    long remain = nextCheckTime == 0 ? connCheckFreq : (nextCheckTime - U.currentTimeMillis());
+                    if (log.isTraceEnabled())
+                        log.trace("Connection checked [nextCheckTime=" + nextCheckTime + ']');
 
-                    if (remain > 0)
+                    if (nextCheckTime == 0)
+                        nextCheckTime = U.currentTimeMillis() + connCheckFreq;
+
+                    while (true) {
+                        long remain = nextCheckTime - U.currentTimeMillis();
+
+                        if (remain < 10)
+                            break;
+
                         synchronized (mux) {
                             mux.wait(remain);
                         }
+                    }
                 }
             }
             catch (InterruptedException ignore) {
@@ -5830,10 +5846,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return nextCheckTime;
 
                     if (!ring.hasRemoteServerNodes()) {
+                        if (log.isDebugEnabled())
+                            log.debug("No next node, terminating connection check");
+
                         lastNextNodeTime = 0;
 
                         return 0;
                     }
+                    if (log.isDebugEnabled())
+                        log.debug("Keep alive connection to the next node");
 
                     msgWorker.sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
                 }
