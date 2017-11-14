@@ -26,12 +26,12 @@ import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 
-/** */
+/** The base class for shared lock state. */
 public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
     /** */
     private long gridStartTime;
 
-    /** Queue containing nodes that are waiting to acquire this lock, used to ensure fairness. */
+    /** Queue containing nodes that are waiting to acquire this lock. */
     @GridToStringInclude
     public ArrayDeque<T> nodes;
 
@@ -48,13 +48,6 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         nodesSet = new HashSet<>();
 
         this.gridStartTime = gridStartTime;
-    }
-
-    /** Clone constructor. */
-    protected GridCacheLockState2Base(GridCacheLockState2Base<T> state) {
-        nodes = new ArrayDeque<>(state.nodes);
-        nodesSet = new HashSet<>(state.nodesSet);
-        gridStartTime = state.gridStartTime;
     }
 
     /**
@@ -183,6 +176,7 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         if (nodes.getFirst().equals(owner))
             return result;
 
+        // Optimization for fast contains.
         if (!nodesSet.contains(owner)) {
             nodes.add(owner);
             nodesSet.add(owner);
@@ -208,11 +202,16 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         return nodes.getFirst();
     }
 
-    /** */
-    public abstract T removeNode(UUID id);
+    /**
+     * Remove all lock-owners from one node.
+     *
+     * @param id failed node.
+     * @return a lock-owner which can take lock cause other node has failed.
+     */
+    public abstract T onNodeRemoved(UUID id);
 
-    /** */
-    public abstract void writeItem(ObjectOutput out, T item) throws IOException;
+    /** Write T object to stream. */
+    protected abstract void writeItem(ObjectOutput out, T item) throws IOException;
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -229,8 +228,8 @@ public abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStruc
         }
     }
 
-    /** */
-    public abstract T readItem(ObjectInput in) throws IOException;
+    /** Read T object from stream. */
+    protected abstract T readItem(ObjectInput in) throws IOException;
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {

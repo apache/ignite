@@ -60,7 +60,7 @@ public final class RemoveProcessor<T> implements EntryProcessor<GridCacheInterna
         if (entry.exists()) {
             GridCacheLockState2Base<T> state = entry.getValue();
 
-            T nextOwner = state.removeNode(nodeId);
+            T nextOwner = state.onNodeRemoved(nodeId);
 
             // Always update value in right using.
             entry.setValue(state);

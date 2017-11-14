@@ -45,13 +45,8 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
         super(gridStartTime);
     }
 
-    /** Clone constructor. */
-    protected GridCacheLockState2Fair(GridCacheLockState2Base<LockOwner> state) {
-        super(state);
-    }
-
     /** {@inheritDoc} */
-    @Override public LockOwner removeNode(UUID id) {
+    @Override public LockOwner onNodeRemoved(UUID id) {
         if (nodes == null || nodes.isEmpty())
             return null;
 
@@ -59,7 +54,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
 
         Iterator<LockOwner> iter = nodes.iterator();
 
-        LockOwner result = null;
+        LockOwner nextOwner = null;
 
         while (iter.hasNext()) {
             LockOwner tuple = iter.next();
@@ -68,11 +63,11 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
                 nodesSet.remove(tuple);
                 iter.remove();
             }
-            else if (lockReleased && result == null)
-                result = tuple;
+            else if (lockReleased && nextOwner == null)
+                nextOwner = tuple;
         }
 
-        return result;
+        return nextOwner;
     }
 
     /** {@inheritDoc} */
