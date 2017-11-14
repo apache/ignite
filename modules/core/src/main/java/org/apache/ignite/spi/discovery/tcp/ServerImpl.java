@@ -99,6 +99,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -178,6 +179,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** */
     private IgniteThreadPoolExecutor utilityPool;
+
+    /** False if there are more than one unavailable IP address in IP finder */
+    boolean firstUnavailableAddress = true;
 
     /** Nodes ring. */
     @GridToStringExclude
@@ -1271,6 +1275,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 errs.add(e);
             }
             catch (IOException | IgniteCheckedException e) {
+                if(firstUnavailableAddress && (X.hasCause(e, SocketException.class) || X.hasCause(e, SocketTimeoutException.class))) {
+                    log.info(String.format("Unavailabe ip address in Windows OS [%s]." +
+                        " Connection can take a lot of time. If there are any other addresses, " +
+                        "check your address list in ipFinder.", addr.getAddress().toString().substring(1)));
+                    firstUnavailableAddress = false;
+                }
+
                 if (log.isDebugEnabled())
                     log.error("Exception on direct send: " + e.getMessage(), e);
 
