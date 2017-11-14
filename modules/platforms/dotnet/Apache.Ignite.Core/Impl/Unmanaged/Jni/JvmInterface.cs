@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Unmanaged
+namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
+    using System;
     using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Unmanaged callback handler function pointers.
+    /// JavaVM interface.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    internal unsafe struct UnmanagedCallbackHandlers
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct JvmInterface
     {
-        internal void* target;
+        // ReSharper disable MemberCanBePrivate.Global
+        public IntPtr reserved0;
+        public IntPtr reserved1;
+        public IntPtr reserved2;
 
-        internal void* error;
-
-        internal void* loggerLog;
-        internal void* loggerIsLevelEnabled;
-
-        internal void* inLongOutLong;
-        internal void* inLongLongObjectOutLong;
+        public IntPtr DestroyJavaVM;
+        public IntPtr AttachCurrentThread;
+        public IntPtr DetachCurrentThread;
+        public IntPtr GetEnv;
+        public IntPtr AttachCurrentThreadAsDaemon;
     }
 }
