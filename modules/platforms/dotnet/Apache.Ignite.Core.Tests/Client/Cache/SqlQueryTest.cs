@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual("ID", cursor.FieldNames.Single());
 
             // All items local.
-            // TODO: Ticket number - apaschenko.
+            // TODO: IGNITE-5571 - exception should be fixed.
             qry.Local = true;
             Assert.Throws<IgniteClientException>(() => Assert.Greater(Count, cache.Query(qry).Count()));
 
