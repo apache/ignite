@@ -128,8 +128,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual("ID", cursor.FieldNames.Single());
 
             // All items local.
+            // TODO: Ticket number - apaschenko.
             qry.Local = true;
-            Assert.Greater(Count, cache.Query(qry).Count());
+            Assert.Throws<IgniteClientException>(() => Assert.Greater(Count, cache.Query(qry).Count()));
 
             // Filter.
             qry = new SqlFieldsQuery("select Name from Person where Id = ?", 1)

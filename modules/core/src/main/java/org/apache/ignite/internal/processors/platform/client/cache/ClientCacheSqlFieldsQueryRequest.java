@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlFieldsQueryRequest extends ClientRequest {
+public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 
@@ -50,6 +50,7 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientRequest {
         super(reader);
 
         // Same request format as in JdbcQueryExecuteRequest.
+        // TODO: Get schema from cache.
         String schema = reader.readString();
         int pageSize = reader.readInt();
         reader.readInt();  // maxRows
