@@ -47,8 +47,7 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
     @Override void writeEntry(BinaryRawWriterEx writer, List e) {
         assert e.size() == columnCount;
 
-        for (Object o : e) {
+        for (Object o : e)
             writer.writeObjectDetached(o);
-        }
     }
 }
