@@ -23,40 +23,43 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 
-/** EntryProcessor for lock acquire operation. */
-public final class LockIfFreeUnfairProcessor extends ReentrantProcessor<UUID> {
+/** */
+public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwner> {
     /** */
     private static final long serialVersionUID = -5203497119206044926L;
 
     /** */
-    private UUID nodeId;
+    private LockOwner owner;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public LockIfFreeUnfairProcessor() {
+    public AcquireIfFreeFairProcessor() {
         // No-op.
     }
 
     /** */
-    public LockIfFreeUnfairProcessor(UUID nodeId) {
-        assert nodeId != null;
+    public AcquireIfFreeFairProcessor(LockOwner owner) {
+        assert owner != null;
 
-        this.nodeId = nodeId;
+        this.owner = owner;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected LockedModified lock(GridCacheLockState2Base<LockOwner> state) {
+        return state.lockIfFree(owner);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(nodeId.getMostSignificantBits());
-        out.writeLong(nodeId.getLeastSignificantBits());
+        out.writeLong(owner.nodeId.getMostSignificantBits());
+        out.writeLong(owner.nodeId.getLeastSignificantBits());
+        out.writeLong(owner.threadId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = new UUID(in.readLong(), in.readLong());
-    }
-
-    @Override protected LockedModified lock(GridCacheLockState2Base<UUID> state) {
-        return state.lockIfFree(nodeId);
+        UUID nodeId = new UUID(in.readLong(), in.readLong());
+        owner = new LockOwner(nodeId, in.readLong());
     }
 }

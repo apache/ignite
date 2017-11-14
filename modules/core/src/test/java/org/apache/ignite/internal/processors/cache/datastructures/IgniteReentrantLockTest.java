@@ -61,10 +61,6 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
         atomicCfg.setCacheMode(CacheMode.REPLICATED);
 
-        /*atomicCfg.setCacheMode(CacheMode.PARTITIONED);
-
-        atomicCfg.setBackups(1);*/
-
         cfg.setAtomicConfiguration(atomicCfg);
 
         return cfg;
@@ -104,9 +100,15 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      */
     public void testReentrantLock(final boolean fair) throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            IgniteLock lock = createReentrantLock(i, fair?"lock1":"lock2", fair);
+            IgniteLock lock = createReentrantLock(i, fair ? "lock1" : "lock2", fair);
 
-            while (lock.isLocked());
+            // Other node can still don't see update.
+            while (lock.isLocked())
+                ;
+
+            lock.lock();
+
+            assertTrue(lock.isLocked());
 
             lock.lock();
 
@@ -114,8 +116,11 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             lock.unlock();
 
-            // Method unlock() is async, so we may not see the result for a while.
-            while (lock.isLocked());
+            assertTrue(lock.isLocked());
+
+            lock.unlock();
+
+            assertFalse(lock.isLocked());
         }
     }
 
@@ -139,14 +144,15 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgniteLock lock = createReentrantLock(inx, fair?"lock1":"lock2", fair);
+                    IgniteLock lock = createReentrantLock(inx, fair ? "lock1" : "lock2", fair);
 
                     lock.lock();
 
                     try {
                         assertTrue(lock.isLocked());
                         Thread.sleep(1_000L);
-                    } finally {
+                    }
+                    finally {
                         lock.unlock();
                     }
 
@@ -185,7 +191,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgniteLock lock = createReentrantLock(inx, fair ? "lock1": "lock2", fair);
+                    IgniteLock lock = createReentrantLock(inx, fair ? "lock1" : "lock2", fair);
 
                     UUID id = grid(inx).cluster().localNode().id();
 
@@ -238,7 +244,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReentrantLockMultinodeFailoverMultilocks(final boolean fair) throws Exception {
-        List<IgniteInternalFuture<Void>> futs = new ArrayList<>(NODES_CNT*2);
+        List<IgniteInternalFuture<Void>> futs = new ArrayList<>(NODES_CNT * 2);
 
         for (int i = 0; i < NODES_CNT; i++) {
             final int inx = i;
@@ -246,8 +252,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgniteLock lock1 = createReentrantLock(inx, fair ? "lock1f": "lock1u", fair);
-                    IgniteLock lock2 = createReentrantLock(inx, fair ? "lock2f": "lock2u", fair);
+                    IgniteLock lock1 = createReentrantLock(inx, fair ? "lock1f" : "lock1u", fair);
+                    IgniteLock lock2 = createReentrantLock(inx, fair ? "lock2f" : "lock2u", fair);
 
                     UUID id = grid(inx).cluster().localNode().id();
 
@@ -281,7 +287,6 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                 }
             }));
         }
-
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get(60_000L);

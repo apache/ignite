@@ -321,10 +321,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private final ReleaseUnfairProcessor releaseProcessor;
 
         /** */
-        private final LockIfFreeUnfairProcessor lockIfFreeProcessor;
+        private final AcquireIfFreeUnfairProcessor lockIfFreeProcessor;
 
         /** */
-        private final LockOrRemoveUnfairProcessor lockOrRemoveProcessor;
+        private final AcquireOrRemoveUnfairProcessor lockOrRemoveProcessor;
 
         /** Key for shared lock state. */
         private final GridCacheInternalKey key;
@@ -369,8 +369,8 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
             acquireProcessor = new AcquireUnfairProcessor(nodeId);
             releaseProcessor = new ReleaseUnfairProcessor(nodeId);
-            lockIfFreeProcessor = new LockIfFreeUnfairProcessor(nodeId);
-            lockOrRemoveProcessor = new LockOrRemoveUnfairProcessor(nodeId);
+            lockIfFreeProcessor = new AcquireIfFreeUnfairProcessor(nodeId);
+            lockOrRemoveProcessor = new AcquireOrRemoveUnfairProcessor(nodeId);
 
             acquireListener = new IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<Boolean>>>() {
                 @Override public void apply(IgniteInternalFuture<EntryProcessorResult<Boolean>> future) {
@@ -421,7 +421,14 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             return lockView.invokeAsync(key, acquireProcessor);
         }
 
-        /** */
+        /**
+         * Acquires the lock only if it is not held by another node at the time
+         * of invocation.
+         *
+         * @return {@code true} if the lock was free and was acquired by the
+         *          current node, or the lock was already held by the current
+         *          node; and {@code false} otherwise.
+         */
         private boolean tryAcquire() {
             try {
                 return lockView.invoke(key, lockIfFreeProcessor).get();
@@ -447,68 +454,72 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             }
         }
 
-        /** */
-        private boolean waitForRelease() {
-            try {
-                latch.await();
+        /**
+         *
+         * @return {@true} if await finished well, {@false} if InterruptedException has been thrown or timeout.
+         */
+        private void waitForRelease() throws InterruptedException {
+            latch.await();
+        }
 
-                return true;
-            }
-            catch (InterruptedException ignored) {
-                return false;
-            }
+        /** */
+        private void waitForReleaseUninterruptibly() {
+            latch.awaitUninterruptibly();
         }
 
         /**
-         * @param timeout
-         * @param unit
-         * @return true if await finished well, false if InterruptedException has been thrown or timeout.
+         * @param timeout the maximum time to wait.
+         * @param unit the time unit of the {@code timeout} argument.
+         * @return {@true} if await finished well, {@false} if InterruptedException has been thrown or timeout.
          */
-        private boolean waitForRelease(long timeout, TimeUnit unit) {
-            try {
-                return latch.await(timeout, unit);
-            }
-            catch (InterruptedException ignored) {
-                return false;
-            }
+        private boolean waitForRelease(long timeout, TimeUnit unit) throws InterruptedException {
+            return latch.await(timeout, unit);
         }
 
         /** */
         private void acquire() {
-            while (true) {
-                tryAcquireOrAdd().listen(acquireListener);
+            tryAcquireOrAdd().listen(acquireListener);
 
-                if (waitForRelease())
-                    break;
-            }
+            waitForReleaseUninterruptibly();
         }
 
-        /** */
-        private boolean acquire(long timeout, TimeUnit unit) {
-            while (true) {
-                tryAcquireOrAdd().listen(acquireListener);
+        /**
+         *
+         * @param timeout the maximum time to wait.
+         * @param unit the time unit of the {@code timeout} argument.
+         * @return {@true} if locked, or {@false} if InterruptedException has been thrown or timeout.
+         */
+        private boolean acquire(long timeout, TimeUnit unit) throws InterruptedException {
+            tryAcquireOrAdd().listen(acquireListener);
 
-                if (waitForRelease(timeout, unit))
-                    break;
-
-                return acquireOrRemove();
+            try {
+                if (!waitForRelease(timeout, unit)) {
+                    if (!acquireOrRemove())
+                        return false;
+                }
+            }
+            catch (InterruptedException e) {
+                if (!acquireOrRemove())
+                    throw e;
             }
 
             return true;
         }
 
-        /** */
-        private boolean acquireInterruptibly() {
-            while (true) {
-                tryAcquireOrAdd().listen(acquireListener);
+        /**
+         *
+         * @return {@true} if locked, or {@false} if InterruptedException has been thrown.
+         */
+        private void acquireInterruptibly() throws InterruptedException {
+            tryAcquireOrAdd().listen(acquireListener);
 
-                if (waitForRelease())
-                    break;
-
-                return acquireOrRemove();
+            try {
+                waitForRelease();
             }
-
-            return true;
+            catch (InterruptedException e) {
+                if (!acquireOrRemove())
+                    throw e;
+            }
         }
 
         /** Return shared lock state directly. */
@@ -536,15 +547,15 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         private final AtomicLong threadCount = new AtomicLong();
 
         /** */
-        private volatile boolean onGlobalLock = false;
+        private volatile boolean isGloballyLocked = false;
 
         /** */
         private final GlobalUnfairSync globalSync;
 
-        /** */
+        /** Max time of local lock holding. */
         private static final long MAX_TIME = 50_000_000L;
 
-        /** */
+        /** Time when we shoud release global lock. */
         private volatile long nextFinish;
 
         /** */
@@ -562,28 +573,26 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             if (reentrantCount.get() > 0)
                 return true;
 
-            if (onGlobalLock || lock.isLocked())
+            if (isGloballyLocked || lock.isLocked())
                 return true;
 
             ArrayDeque<UUID> nodes = globalSync.forceGet().nodes;
 
             return !(nodes == null || nodes.isEmpty() ||
-                // The unlock method calls invokeAsync, so ReleaseProcessor can still work on primary node.
+                // The unlock method calls invokeAsync, so release processor can still work on primary node.
                 (globalSync.nodeId.equals(nodes.getFirst()) && nodes.size() == 1)
             );
         }
 
         /** */
-        private boolean holdGlobalLockInterruptibly() {
-            if (!onGlobalLock) {
-                if (!globalSync.acquireInterruptibly())
-                    return false;
+        private void holdGlobalLockInterruptibly() throws InterruptedException {
+            if (!isGloballyLocked) {
+                globalSync.acquireInterruptibly();
 
-                onGlobalLock = true;
+                isGloballyLocked = true;
 
                 nextFinish = MAX_TIME + System.nanoTime();
             }
-            return true;
         }
 
         /** */
@@ -591,7 +600,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             if (threadCount.decrementAndGet() <= 0 || System.nanoTime() >= nextFinish) {
                 globalSync.release();
 
-                onGlobalLock = false;
+                isGloballyLocked = false;
             }
         }
 
@@ -607,10 +616,10 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
 
             lock.lock();
 
-            if (!onGlobalLock) {
+            if (!isGloballyLocked) {
                 globalSync.acquire();
 
-                onGlobalLock = true;
+                isGloballyLocked = true;
 
                 nextFinish = MAX_TIME + System.nanoTime();
             }
@@ -621,6 +630,12 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         /** {@inheritDoc} */
         @Override public void unlock() {
             assert reentrantCount.get() > 0;
+
+            if (reentrantCount.get() > 1) {
+                reentrantCount.decrement();
+
+                return;
+            }
 
             try {
                 releaseGlobalLock();
@@ -651,12 +666,14 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 throw e;
             }
 
-            if (!holdGlobalLockInterruptibly()) {
+            try {
+                holdGlobalLockInterruptibly();
+            } catch (InterruptedException e) {
                 threadCount.decrementAndGet();
 
                 lock.unlock();
 
-                throw new InterruptedException();
+                throw e;
             }
 
             reentrantCount.increment();
@@ -671,7 +688,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             }
 
             if (lock.tryLock()) {
-                if (onGlobalLock) {
+                if (isGloballyLocked) {
                     threadCount.incrementAndGet();
 
                     reentrantCount.increment();
@@ -680,7 +697,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 }
                 else {
                     if (globalSync.tryAcquire()) {
-                        onGlobalLock = true;
+                        isGloballyLocked = true;
 
                         threadCount.incrementAndGet();
 
@@ -707,9 +724,9 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
             long start = System.nanoTime();
 
             if (lock.tryLock(time, unit)) {
-                if (onGlobalLock) {
-                    threadCount.incrementAndGet();
+                threadCount.incrementAndGet();
 
+                if (isGloballyLocked) {
                     reentrantCount.increment();
 
                     return true;
@@ -717,14 +734,21 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
                 else {
                     long left = unit.toNanos(time) - (System.nanoTime() - start);
 
-                    if (globalSync.acquire(left, TimeUnit.NANOSECONDS)) {
-                        onGlobalLock = true;
+                    try {
+                        if (globalSync.acquire(left, TimeUnit.NANOSECONDS)) {
+                            isGloballyLocked = true;
 
-                        threadCount.incrementAndGet();
+                            reentrantCount.increment();
 
-                        reentrantCount.increment();
+                            return true;
+                        }
+                    }
+                    catch (InterruptedException e) {
+                        threadCount.decrementAndGet();
 
-                        return true;
+                        lock.unlock();
+
+                        throw e;
                     }
                 }
             }

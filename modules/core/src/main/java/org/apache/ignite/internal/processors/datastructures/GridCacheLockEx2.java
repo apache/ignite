@@ -156,6 +156,27 @@ public abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable
          * Waiting for release or faild.
          *
          * @throws IgniteException if release is impossible.
+         * */
+        public void awaitUninterruptibly() {
+            lock.lock();
+            try {
+                if (count-- <= 0) {
+                    condition.awaitUninterruptibly();
+                }
+                if (exception != null) {
+                    throw exception;
+                }
+            }
+            finally {
+                exception = null;
+                lock.unlock();
+            }
+        }
+
+        /**
+         * Waiting for release or faild.
+         *
+         * @throws IgniteException if release is impossible.
          * @throws InterruptedException if the current thread is interrupted
          *         while waiting.
          * */
