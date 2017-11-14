@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "ignite/common/common.h"
+#include "ignite/odbc/diagnostic/diagnosable.h"
 
 namespace ignite
 {
@@ -34,6 +35,15 @@ namespace ignite
             class SocketClient
             {
             public:
+                /** Buffers size */
+                enum { BUFFER_SIZE = 0x10000 };
+
+                /** The time in seconds the connection needs to remain idle before starts sending keepalive probes. */
+                enum { KEEP_ALIVE_IDLE_TIME = 60 };
+
+                /** The time in seconds between individual keepalive probes. */
+                enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
+
                 /**
                  * Constructor.
                  */
@@ -49,9 +59,10 @@ namespace ignite
                  *
                  * @param hostname Remote host name.
                  * @param port TCP service port.
+                 * @param diag Diagnostics collector.
                  * @return True on success.
                  */
-                bool Connect(const char* hostname, uint16_t port);
+                bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
 
                 /**
                  * Close established connection.
@@ -73,7 +84,7 @@ namespace ignite
                 /**
                  * Receive data from established connection.
                  *
-                 * @param data Pointer to data buffer.
+                 * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
                  * @return Number of bytes that have been received on success and negative
                  *         value on failure.
@@ -81,6 +92,11 @@ namespace ignite
                 int Receive(int8_t* buffer, size_t size);
 
             private:
+                /**
+                 * Tries set socket options.
+                 */
+                void TrySetOptions(diagnostic::Diagnosable& diag);
+
                 intptr_t socketHandle;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)

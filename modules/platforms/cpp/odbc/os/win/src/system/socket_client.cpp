@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <mstcpip.h>
 
 #include <cstring>
 
@@ -29,6 +30,54 @@
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/log.h"
+
+namespace
+{
+    /**
+     * Get last socket error message.
+     * @return Last socket error message string.
+     */
+    std::string GetLastSocketErrorMessage()
+    {
+        HRESULT lastError = WSAGetLastError();
+        std::stringstream res;
+
+        res << "error_code=" << lastError;
+
+        if (lastError == 0)
+            return res.str();
+
+        LPTSTR errorText = NULL;
+
+        DWORD len = FormatMessage(
+            // use system message tables to retrieve error text
+            FORMAT_MESSAGE_FROM_SYSTEM
+            // allocate buffer on local heap for error text
+            | FORMAT_MESSAGE_ALLOCATE_BUFFER
+            // We're not passing insertion parameters
+            | FORMAT_MESSAGE_IGNORE_INSERTS,
+            // unused with FORMAT_MESSAGE_FROM_SYSTEM
+            NULL,
+            lastError,
+            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+            // output
+            reinterpret_cast<LPTSTR>(&errorText),
+            // minimum size for output buffer
+            0,
+            // arguments - see note
+            NULL);
+
+        if (NULL != errorText)
+        {
+            if (len != 0)
+                res << ", msg=" << std::string(errorText, len);
+
+            LocalFree(errorText);
+        }
+
+        return res.str();
+    }
+}
 
 namespace ignite
 {
@@ -47,7 +96,7 @@ namespace ignite
                 Close();
             }
 
-            bool SocketClient::Connect(const char* hostname, uint16_t port)
+            bool SocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
             {
                 static bool networkInited = false;
 
@@ -59,10 +108,15 @@ namespace ignite
                     networkInited = (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
 
                     if (!networkInited)
+                    {
+                        LOG_MSG("Networking initialisation failed: " << GetLastSocketErrorMessage());
+
+                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not initialize Windows networking.");
+
                         return false;
+                    }
                 }
 
-                addrinfo *result = NULL;
                 addrinfo hints;
 
                 LOG_MSG("Host: " << hostname << " port: " << port);
@@ -76,10 +130,17 @@ namespace ignite
                 converter << port;
 
                 // Resolve the server address and port
+                addrinfo *result = NULL;
                 int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
 
                 if (res != 0)
+                {
+                    LOG_MSG("Address resolving failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not resolve host address.");
+
                     return false;
+                }
 
                 // Attempt to connect to an address until one succeeds
                 for (addrinfo *it = result; it != NULL; it = it->ai_next)
@@ -93,12 +154,24 @@ namespace ignite
                     socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
                     if (socketHandle == INVALID_SOCKET)
+                    {
+                        LOG_MSG("Socket creation failed: " << GetLastSocketErrorMessage());
+
+                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new socket.");
+
                         return false;
+                    }
+
+                    diag.GetDiagnosticRecords().Reset();
+
+                    TrySetOptions(diag);
 
                     // Connect to server.
                     res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
-                    if (res == SOCKET_ERROR)
+                    if (SOCKET_ERROR == res)
                     {
+                        LOG_MSG("Connection failed: " << GetLastSocketErrorMessage());
+
                         Close();
 
                         continue;
@@ -130,6 +203,121 @@ namespace ignite
             {
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
+
+            void SocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
+            {
+                BOOL trueOpt = TRUE;
+                int bufSizeOpt = BUFFER_SIZE;
+
+                int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
+                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP socket send buffer size setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP socket send buffer size");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF,
+                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP socket receive buffer size setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP socket receive buffer size");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP no-delay mode setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP no-delay mode");
+                }
+
+                res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
+                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP keep-alive mode setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive mode");
+
+                    // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
+                    return;
+                }
+
+                // This option is available starting with Windows 10, version 1709.
+#if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
+                DWORD idleOpt = KEEP_ALIVE_IDLE_TIME;
+                DWORD idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE,
+                    reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP keep-alive idle timeout setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive idle timeout");
+                }
+
+                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
+                    reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP keep-alive probes period setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive probes period");
+                }
+#else // use old hardcore WSAIoctl
+
+                // WinSock structure for KeepAlive timing settings
+                struct tcp_keepalive settings = {0};
+                settings.onoff = 1;
+                settings.keepalivetime = KEEP_ALIVE_IDLE_TIME * 1000;
+                settings.keepaliveinterval = KEEP_ALIVE_PROBES_PERIOD * 1000;
+
+                // pointers for WinSock call
+                DWORD bytesReturned;
+                WSAOVERLAPPED overlapped;
+                overlapped.hEvent = NULL;
+
+                // Set KeepAlive settings
+                res = WSAIoctl(
+                    socketHandle,
+                    SIO_KEEPALIVE_VALS,
+                    &settings,
+                    sizeof(struct tcp_keepalive),
+                    NULL,
+                    0,
+                    &bytesReturned,
+                    &overlapped,
+                    NULL
+                );
+
+                if (SOCKET_ERROR == res)
+                {
+                    LOG_MSG("TCP keep-alive params setup failed: " << GetLastSocketErrorMessage());
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up TCP keep-alive idle timeout and probes period");
+                }
+#endif
+            }
+
         }
     }
 }
