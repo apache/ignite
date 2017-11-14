@@ -200,10 +200,10 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
-        int duration = 90 * 1000;
+        int duration = 60 * 1000;
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
-        final int nodeLifeTime = 2 * 1000;
+        final int nodeLifeTime = 1 * 1000;
         final int logFreq = 10;
 
         startGridsMultiThreaded(GRID_CNT);
@@ -377,14 +377,16 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCommonAbstractTest 
 
         restartsDone.set(true);
 
-        try {
-            fut2.get(20_000);
-        }
-        catch (IgniteFutureTimeoutCheckedException e) {
-            U.dumpThreads(log);
+        fut2.get(); // Wait forever.
 
-            fail("Stopping restarts timeout.");
-        }
+//        try {
+//            fut2.get(20_000);
+//        }
+//        catch (IgniteFutureTimeoutCheckedException e) {
+//            U.dumpThreads(log);
+//
+//            fail("Stopping restarts timeout.");
+//        }
 
         info("Restarts stopped.");
 
