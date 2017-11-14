@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Cache.Query
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Fields query cursor.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
     {
         /// <summary>
