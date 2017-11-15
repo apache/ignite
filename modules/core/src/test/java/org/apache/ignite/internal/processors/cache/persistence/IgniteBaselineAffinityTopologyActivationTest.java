@@ -359,6 +359,14 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         nodeA.cluster().setBaselineTopology(baselineNodes(nodeA.cluster().forServers().nodes()));
 
+        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return grid("A").active();
+            }
+        }, 10_000);
+
+        assertEquals(true, activated);
+
         verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeC});
 
         stopAllGrids(false);
@@ -366,7 +374,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         nodeA = startGridWithConsistentId("A");
         nodeC = startGridWithConsistentId("C");
 
-        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return grid("A").active();
             }

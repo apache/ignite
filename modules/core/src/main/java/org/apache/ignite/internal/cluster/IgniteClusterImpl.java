@@ -288,12 +288,41 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public boolean active() {
-        return false;
+        guard();
+
+        try {
+            return ctx.state().publicApiActiveState();
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
+        guard();
 
+        try {
+            ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
+
+        ArrayList baselineNodes = new ArrayList(srvNodes.size());
+
+        for (ClusterNode clN : srvNodes)
+            baselineNodes.add(clN);
+
+        return baselineNodes;
     }
 
     /** {@inheritDoc} */
