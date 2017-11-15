@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             // Write length (so that part of the config can be skipped).
             var len = writer.Stream.Position - pos - 4;
-            writer.Stream.WriteInt(len, pos);
+            writer.Stream.WriteInt(pos, len);
         }
         /// <summary>
         /// Reads the config.

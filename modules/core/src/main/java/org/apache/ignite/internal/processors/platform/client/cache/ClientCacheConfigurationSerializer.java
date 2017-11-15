@@ -107,7 +107,7 @@ public class ClientCacheConfigurationSerializer {
             writer.writeInt(0);
 
         // Write length (so that part of the config can be skipped).
-        writer.writeInt(pos, writer.out().position() - pos);
+        writer.writeInt(pos, writer.out().position() - pos - 4);
     }
 
     /**
