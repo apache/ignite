@@ -908,6 +908,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
                 }
             }
             else {
+                // TODO ZK: case when at start there are zk nodes for dead ClusterNodes which will be expired later.
                 for (ZKNodeData oldData : oldNodes.nodesByOrder.values()) {
                     if (!failedNodes.contains(oldData.order) && !newNodes.nodesByOrder.containsKey(oldData.order)) {
                         failedNodes.add(oldData.order);
