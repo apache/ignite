@@ -315,12 +315,12 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
         // TODO ZK
-        try {
-            zkCurator.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(CUSTOM_EVTS_PATH, marshal(msg));
-        }
-        catch (Exception e) {
-            throw new IgniteSpiException(e);
-        }
+//        try {
+//            zkCurator.create().withMode(CreateMode.PERSISTENT_SEQUENTIAL).forPath(CUSTOM_EVTS_PATH, marshal(msg));
+//        }
+//        catch (Exception e) {
+//            throw new IgniteSpiException(e);
+//        }
     }
 
     /** {@inheritDoc} */
