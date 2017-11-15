@@ -24,6 +24,8 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
@@ -257,6 +259,38 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 assertEquals(evt1.topologyNodes(), evt2.topologyNodes());
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSegmentation1() throws Exception {
+        sesTimeout = 2000;
+        testSockNio = true;
+
+        Ignite node0 = startGrid(0);
+
+        final CountDownLatch l = new CountDownLatch(1);
+
+        node0.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event event) {
+                l.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_NODE_SEGMENTED);
+
+        ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
+
+        c0.closeSocket(true);
+
+        Thread.sleep(4_000);
+
+        info("Allow connect");
+
+        c0.allowConnect();
+
+        assertTrue(l.await(10, TimeUnit.SECONDS));
     }
 
     /**

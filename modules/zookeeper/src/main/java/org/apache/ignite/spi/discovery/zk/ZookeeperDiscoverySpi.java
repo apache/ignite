@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -425,6 +426,19 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
                         if (log != null)
                             log.info("Curator event, connection: " + newState);
+
+                        if (newState == ConnectionState.LOST) {
+                            U.warn(log, "Connection was lost, local node SEGMENTED");
+
+                            zkCurator.close();
+
+                            lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
+                                0,
+                                locNode,
+                                Collections.<ClusterNode>emptyList(),
+                                Collections.<Long, Collection<ClusterNode>>emptyMap(),
+                                null);
+                        }
                     }
                 });
 
