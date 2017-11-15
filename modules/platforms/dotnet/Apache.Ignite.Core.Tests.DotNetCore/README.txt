@@ -11,4 +11,5 @@ NuGet packages for cross-platform tests.
 
 How to run:
 1) Build Ignite.NET (only on Windows): run build.bat
-2) Build and run cross-platform tests (any OS): dotnet test
+2) Clear NuGet caches: nuget locals all -clear 
+3) Build and run cross-platform tests (any OS): dotnet test
