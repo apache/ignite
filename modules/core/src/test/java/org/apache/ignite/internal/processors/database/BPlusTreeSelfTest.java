@@ -1807,6 +1807,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             return io.getLookupRow(this, pageAddr, idx);
         }
 
+        /** {@inheritDoc} */
+        @Override protected boolean isRowMatching(BPlusIO<Long> io, long pageAddr, int idx,
+            Object filter) throws IgniteCheckedException {
+            return true;
+        }
+
         /**
          * @return Thread ID.
          */

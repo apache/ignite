@@ -123,6 +123,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx, Object filter)
         throws IgniteCheckedException {
+        return isRowMatching(io, pageAddr, idx, filter) ? (GridH2Row)io.getLookupRow(this, pageAddr, idx) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isRowMatching(BPlusIO<SearchRow> io, long pageAddr, int idx, Object filter)
+        throws IgniteCheckedException {
+
         if (filter != null) {
             // Filter out not interesting partitions without deserializing the row.
             IndexingQueryCacheFilter filter0 = (IndexingQueryCacheFilter)filter;
@@ -132,10 +139,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             int part = PageIdUtils.partId(PageIdUtils.pageId(link));
 
             if (!filter0.applyPartition(part))
-                return null;
+                return false;
         }
 
-        return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+        return true;
     }
 
     /**

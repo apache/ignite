@@ -275,7 +275,15 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
-            return treeForRead(threadLocalSegment()).size();
+            IndexingQueryFilter f = threadLocalFilter();
+            IndexingQueryCacheFilter p = null;
+
+            if (f != null) {
+                String cacheName = getTable().cacheName();
+                p = f.forCache(cacheName);
+            }
+
+            return treeForRead(threadLocalSegment()).countMatchingRows(p);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
