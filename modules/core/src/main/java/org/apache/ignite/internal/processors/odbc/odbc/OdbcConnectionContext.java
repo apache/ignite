@@ -37,8 +37,11 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.5: added "lazy" flag. */
     public static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
+    /** Version 2.1.8: back-ported query timeout. Non-compatible with 2.3.X */
+    public static final ClientListenerProtocolVersion VER_2_1_8 = ClientListenerProtocolVersion.create(2, 1, 8);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_5;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_1_8;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -60,6 +63,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
 
