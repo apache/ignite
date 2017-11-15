@@ -387,8 +387,10 @@ public class QueryUtils {
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(qryEntity.findKeyType(), null);
-        Class<?> valCls = U.classForName(qryEntity.findValueType(), null);
+        // We better box these types - otherwise, if user provides, say, raw 'byte' for
+        // key or value (which they could), we'll deem key or value as Object which clearly is not right.
+        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);

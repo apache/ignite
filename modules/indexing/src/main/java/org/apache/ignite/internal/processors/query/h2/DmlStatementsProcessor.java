@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -116,7 +115,7 @@ public class DmlStatementsProcessor {
     private static final int PLAN_CACHE_SIZE = 1024;
 
     /** Update plans cache. */
-    private final ConcurrentMap<H2DmlPlanKey, UpdatePlan> planCache =
+    private final ConcurrentMap<H2CachedStatementKey, UpdatePlan> planCache =
         new GridBoundedConcurrentLinkedHashMap<>(PLAN_CACHE_SIZE);
 
     /**
@@ -137,7 +136,7 @@ public class DmlStatementsProcessor {
      * @param cacheName Cache name.
      */
     public void onCacheStop(String cacheName) {
-        Iterator<Map.Entry<H2DmlPlanKey, UpdatePlan>> iter = planCache.entrySet().iterator();
+        Iterator<Map.Entry<H2CachedStatementKey, UpdatePlan>> iter = planCache.entrySet().iterator();
 
         while (iter.hasNext()) {
             UpdatePlan plan = iter.next().getValue();
@@ -461,7 +460,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        H2DmlPlanKey planKey = new H2DmlPlanKey(schema, p.getSQL(), loc, fieldsQry);
+        H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
 
         UpdatePlan res = (errKeysPos == null ? planCache.get(planKey) : null);
 

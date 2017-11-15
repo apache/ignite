@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Statement cache.
  */
-public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
+public class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedStatement> {
     /** */
     private int size;
 
@@ -43,7 +43,7 @@ public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean removeEldestEntry(Map.Entry<String, PreparedStatement> eldest) {
+    @Override protected boolean removeEldestEntry(Map.Entry<H2CachedStatementKey, PreparedStatement> eldest) {
         boolean rmv = size() > size;
 
         if (rmv) {
@@ -53,6 +53,16 @@ public class H2StatementCache extends LinkedHashMap<String, PreparedStatement> {
         }
 
         return rmv;
+    }
+
+    /**
+     * Get statement for given schema and SQL.
+     * @param schemaName Schema name.
+     * @param sql SQL statement.
+     * @return Cached {@link PreparedStatement}, or {@code null} if
+     */
+    @Nullable public PreparedStatement get(String schemaName, String sql) {
+        return get(new H2CachedStatementKey(schemaName, sql));
     }
 
     /**

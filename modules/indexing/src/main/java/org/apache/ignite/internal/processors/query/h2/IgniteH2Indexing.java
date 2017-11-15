@@ -375,7 +375,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (useStmtCache) {
             H2StatementCache cache = getStatementsCacheForCurrentThread();
 
-            PreparedStatement stmt = cache.get(sql);
+            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+
+            PreparedStatement stmt = cache.get(key);
 
             if (stmt != null && !stmt.isClosed() && !((JdbcStatement)stmt).isCancelled() &&
                 !GridSqlQueryParser.prepared(stmt).needRecompile()) {
@@ -386,7 +388,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             stmt = prepare0(c, sql);
 
-            cache.put(sql, stmt);
+            cache.put(key, stmt);
 
             return stmt;
         }
@@ -1434,7 +1436,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Second, let's check if we already have a parsed statement...
             PreparedStatement cachedStmt;
 
-            if ((cachedStmt = getStatementsCacheForCurrentThread().get(qry.getSql())) != null) {
+            if ((cachedStmt = getStatementsCacheForCurrentThread().get(schemaName, qry.getSql())) != null) {
                 Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                 // We may use this cached statement only for local queries and non queries.
