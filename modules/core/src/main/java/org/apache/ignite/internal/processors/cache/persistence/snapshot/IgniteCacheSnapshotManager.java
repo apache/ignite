@@ -170,4 +170,11 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
     }
+
+    /**
+     * @return {@code True} if TX READ records must be logged in WAL.
+     */
+    public boolean needTxReadLogging() {
+        return false;
+    }
 }

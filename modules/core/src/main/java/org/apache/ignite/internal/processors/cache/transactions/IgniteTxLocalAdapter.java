@@ -648,18 +648,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cacheCtx.group().persistenceEnabled() && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ)
-                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter())));
+                                    if (cacheCtx.group().persistenceEnabled()) {
+                                        if (!writeEntries().isEmpty() && op != NOOP && op != RELOAD &&
+                                            (op != READ || cctx.snapshot().needTxReadLogging())) {
+                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                0,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter())));
+                                        }
+                                    }
 
                                     if (op == CREATE || op == UPDATE) {
                                         assert val != null : txEntry;

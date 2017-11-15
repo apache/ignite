@@ -2075,6 +2075,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 break;
 
+            case READ:
+                // do nothing
+                break;
+
             default:
                 throw new IgniteCheckedException("Invalid operation for WAL entry update: " + dataEntry.op());
         }
