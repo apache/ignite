@@ -238,12 +238,32 @@ public class GridClusterStateProcessorImpl extends GridProcessorAdapter implemen
 
             return joinFut;
         }
-        else if (!ctx.clientNode() && !ctx.isDaemon() && !state.active() && state.baselineTopology() != null &&
-            state.baselineTopology().isSatisfied(discoCache.serverNodes())) {
-            changeGlobalState0(true, state.baselineTopology());
-        }
+        else if (!ctx.clientNode()
+                && !ctx.isDaemon()
+                && !state.active()
+                && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes()))
+                changeGlobalState0(true, state.baselineTopology());
 
         return null;
+    }
+
+    /**
+     * Checks whether all conditions to meet BaselineTopology are satisfied.
+     */
+    private boolean isBaselineSatisfied(BaselineTopology blt, List<ClusterNode> serverNodes) {
+        if (blt == null)
+            return false;
+
+        if (blt.consistentIds() == null)
+            return false;
+
+        if (//only node participating in BaselineTopology is allowed to send activation command...
+            blt.consistentIds().contains(ctx.discovery().localNode().consistentId())
+                //...and with this node BaselineTopology is reached
+                && blt.isSatisfied(serverNodes))
+            return true;
+
+        return false;
     }
 
     /** {@inheritDoc} */

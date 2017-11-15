@@ -29,9 +29,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -62,16 +62,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         if (consId != null)
             cfg.setConsistentId(consId);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-        pCfg.setWalMode(WALMode.LOG_ONLY);
-
-        cfg.setPersistentStoreConfiguration(pCfg);
+            ).setWalMode(WALMode.LOG_ONLY)
+        );
 
         return cfg;
     }
@@ -503,6 +500,31 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         assertTrue(clusterActive);
 
         checkDataInCache((IgniteEx) ig);
+    }
+
+    /**
+     *
+     */
+    public void testNoAutoActivationOnJoinNewNodeToInactiveCluster() throws Exception {
+        startGrids(2);
+
+        IgniteEx srv = grid(0);
+
+        srv.active(true);
+
+        awaitPartitionMapExchange();
+
+        assertTrue(srv.active());
+
+        srv.active(false);
+
+        assertFalse(srv.active());
+
+        startGrid(2);
+
+        Thread.sleep(3_000);
+
+        assertFalse(srv.active());
     }
 
     /**

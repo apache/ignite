@@ -87,6 +87,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected Map<String, DataRegion> dataRegionMap;
 
     /** */
+    private volatile boolean dataRegionsInitialized;
+
+    /** */
     protected Map<String, DataRegionMetrics> memMetricsMap;
 
     /** */
@@ -213,6 +216,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed to initialize swap path.
      */
     protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        if (dataRegionsInitialized)
+            return;
+
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
         int dataRegions = dataRegionCfgs == null ? 0 : dataRegionCfgs.length;
@@ -240,6 +246,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             ),
             true
         );
+
+        dataRegionsInitialized = true;
     }
 
     /**
@@ -647,6 +655,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             dataRegionMap.clear();
 
             dataRegionMap = null;
+
+            dataRegionsInitialized = false;
         }
     }
 
@@ -948,6 +958,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
+
+        initDataRegions(memCfg);
 
         registerMetricsMBeans();
 
