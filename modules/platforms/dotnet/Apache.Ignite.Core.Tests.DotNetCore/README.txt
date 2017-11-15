@@ -12,5 +12,5 @@ NuGet packages for cross-platform tests.
 How to run:
 1) Build Ignite.NET (only on Windows):  build -version 0.0.1
    Special 0.0.1 version override is used so that we don't have to change package reference in csproj file on each release.
-2) Clear NuGet caches: nuget locals all -clear 
+2) Clear NuGet caches: dotnet nuget locals all --clear
 3) Build and run cross-platform tests (any OS): dotnet test
