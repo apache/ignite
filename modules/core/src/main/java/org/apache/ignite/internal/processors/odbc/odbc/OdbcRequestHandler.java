@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -203,7 +204,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param args Arguments.
      * @return Query instance.
      */
-    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args) {
+    private SqlFieldsQueryEx makeQuery(String schema, String sql, Object[] args, int timeout) {
         SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
 
         qry.setArgs(args);
@@ -215,6 +216,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(lazy);
         qry.setSchema(schema);
         qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
+
+        qry.setTimeout(timeout, TimeUnit.SECONDS);
 
         return qry;
     }
@@ -243,7 +246,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                     ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
 
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
@@ -285,7 +288,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 log.debug("ODBC query parsed [reqId=" + req.requestId() + ", original=" + req.sqlQuery() +
                         ", parsed=" + sql + ']');
 
-            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments());
+            SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout());
 
             Object[][] paramSet = req.arguments();
 
