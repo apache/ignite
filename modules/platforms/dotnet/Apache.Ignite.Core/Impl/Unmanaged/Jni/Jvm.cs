@@ -79,19 +79,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             var env = AttachCurrentThread();
             _methodId = new MethodId(env);
-            _callbacks = GetCallbacks(env, this);
+
+            // Keep AppDomain check here to avoid JITting GetCallbacksFromDefaultDomain method on .NET Core
+            // (which fails due to _AppDomain usage).
+            _callbacks = AppDomain.CurrentDomain.IsDefaultAppDomain()
+                ? new Callbacks(env, this)
+                : GetCallbacksFromDefaultDomain();
         }
 
         /// <summary>
         /// Gets the callbacks.
         /// </summary>
-        private static Callbacks GetCallbacks(Env env, Jvm jvm)
+        private static Callbacks GetCallbacksFromDefaultDomain()
         {
-            if (AppDomain.CurrentDomain.IsDefaultAppDomain())
-            {
-                return new Callbacks(env, jvm);
-            }
-
             // JVM exists once per process, and JVM callbacks exist once per process.
             // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
             // Non-default appDomains should delegate this logic to the default one.
