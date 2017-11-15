@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Statement cache.
  */
-public class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedStatement> {
+class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, PreparedStatement> {
     /** */
     private int size;
 
@@ -59,7 +59,7 @@ public class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, Prepar
      * Get statement for given schema and SQL.
      * @param schemaName Schema name.
      * @param sql SQL statement.
-     * @return Cached {@link PreparedStatement}, or {@code null} if
+     * @return Cached {@link PreparedStatement}, or {@code null} if none found.
      */
     @Nullable public PreparedStatement get(String schemaName, String sql) {
         return get(new H2CachedStatementKey(schemaName, sql));
@@ -79,5 +79,15 @@ public class H2StatementCache extends LinkedHashMap<H2CachedStatementKey, Prepar
      */
     public void updateLastUsage() {
         lastUsage = U.currentTimeMillis();
+    }
+
+    /**
+     * Remove statement for given schema and SQL.
+     * @param schemaName Schema name.
+     * @param sql SQL statement.
+     * @return Cached {@link PreparedStatement}, or {@code null} if none found.
+     */
+    @Nullable public PreparedStatement remove(String schemaName, String sql) {
+        return remove(new H2CachedStatementKey(schemaName, sql));
     }
 }

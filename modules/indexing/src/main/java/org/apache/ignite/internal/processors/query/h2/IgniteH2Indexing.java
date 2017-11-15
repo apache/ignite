@@ -367,11 +367,45 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @param c Connection.
      * @param sql SQL.
+     * @return <b>Cached</b> prepared statement.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Nullable private PreparedStatement cachedStatement(Connection c, String sql) {
+        try {
+            return prepareStatement(c, sql, true, true);
+        }
+        catch (SQLException e) {
+            // We actually don't except anything SQL related here as we're supposed to work with cache only.
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * @param c Connection.
+     * @param sql SQL.
      * @param useStmtCache If {@code true} uses statement cache.
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache) throws SQLException {
+    @SuppressWarnings("ConstantConditions")
+    @NotNull private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache)
+        throws SQLException {
+        return prepareStatement(c, sql, useStmtCache, false);
+    }
+
+    /**
+     * @param c Connection.
+     * @param sql SQL.
+     * @param useStmtCache If {@code true} uses statement cache.
+     * @param cachedOnly Whether parsing should be avoided if statement has not been found in cache.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    @Nullable private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache,
+        boolean cachedOnly) throws SQLException {
+        // We can't avoid parsing and avoid using cache at the same time.
+        assert useStmtCache || !cachedOnly;
+
         if (useStmtCache) {
             H2StatementCache cache = getStatementsCacheForCurrentThread();
 
@@ -385,6 +419,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 return stmt;
             }
+
+            if (cachedOnly)
+                return null;
 
             stmt = prepare0(c, sql);
 
@@ -1436,7 +1473,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Second, let's check if we already have a parsed statement...
             PreparedStatement cachedStmt;
 
-            if ((cachedStmt = getStatementsCacheForCurrentThread().get(schemaName, qry.getSql())) != null) {
+            if ((cachedStmt = cachedStatement(connectionForSchema(schemaName), qry.getSql())) != null) {
                 Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                 // We may use this cached statement only for local queries and non queries.
@@ -1643,7 +1680,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
         if (remainingSql != null || hasTwoStep)
-            getStatementsCacheForCurrentThread().remove(qry.getSql());
+            getStatementsCacheForCurrentThread().remove(schemaName, qry.getSql());
 
         if (!hasTwoStep)
             return new ParsingResult(prepared, newQry, remainingSql, null, null, null);
