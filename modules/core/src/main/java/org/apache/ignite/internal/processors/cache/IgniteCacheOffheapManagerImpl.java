@@ -1348,8 +1348,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (pendingEntries != null && oldRow.expireTime() != 0)
                     pendingEntries.removex(new PendingRow(cacheId, oldRow.expireTime(), oldRow.link()));
 
-                if (newRow.link() != oldRow.link())
-                    rowStore.removeRow(oldRow.link());
+//                if (newRow.link() != oldRow.link())
+//                    rowStore.removeRow(oldRow.link());
             }
 
             if (pendingEntries != null && expireTime != 0) {

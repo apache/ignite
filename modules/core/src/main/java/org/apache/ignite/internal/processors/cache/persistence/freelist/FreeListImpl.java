@@ -160,11 +160,11 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             // Reread free space after update.
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-//            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
-//                int bucket = bucket(newFreeSpace, false);
-//
-//                put(null, pageId, page, pageAddr, bucket);
-//            }
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int bucket = bucket(newFreeSpace, false);
+
+                put(null, pageId, page, pageAddr, bucket);
+            }
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import java.util.Random;
 import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -146,8 +147,15 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
         IgniteEx ig = grid(0);
 
         BinaryObjectBuilder bob = ig.binary().builder("CustomType");
+        Random rnd = new Random();
 
-        bob.setField("field0", "val0");
+        byte [] b0 = new byte[2500];
+        final byte [] b1 = new byte[2500];
+
+        rnd.nextBytes(b0);
+        rnd.nextBytes(b1);
+
+        bob.setField("field0", b0);
         bob.setField("field1", "val1");
         bob.setField("field2", "val2");
 
@@ -158,13 +166,13 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
 
         ig.cache(CACHE_NAME).put("key", bob.build());
 
-        stopAllGrids(false);
-
-        System.out.println("+++ WAL +++");
-
-        printWal();
-
-        System.exit(0);
+//        stopAllGrids(false);
+//
+//        System.out.println("+++ WAL +++");
+//
+//        printWal();
+//
+//        System.exit(0);
 
         ig.cache(CACHE_NAME).<String, BinaryObject>withKeepBinary().invoke("key", new CacheEntryProcessor<String, BinaryObject, Void>() {
             @Override
@@ -172,7 +180,7 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
                 Object... objects) throws EntryProcessorException {
                 BinaryObjectBuilder bob = entry.getValue().toBuilder();
 
-                bob.setField("field0", "val01");
+                bob.setField("field0", b1);
 
                 entry.setValue(bob.build());
 
@@ -186,6 +194,9 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
 
         printWal();
     }
+
+
+
 
     /**
      * @throws IgniteCheckedException On error.
