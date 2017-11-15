@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -69,9 +68,6 @@ namespace Apache.Ignite.Core.Impl
         /** File: jvm.dll. */
         internal const string FileJvmDll = "jvm.dll";
 
-        /** File: Ignite.Jni.dll. */
-        internal const string FileIgniteJniDll = "ignite.jni.dll";
-        
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
         
@@ -135,9 +131,6 @@ namespace Apache.Ignite.Core.Impl
 
             // 1. Load JNI dll.
             LoadJvmDll(configJvmDllPath, log);
-
-            // 2. Load GG JNI dll.
-            UnmanagedUtils.Initialize();
 
             _loaded = true;
         }
@@ -238,7 +231,7 @@ namespace Apache.Ignite.Core.Impl
         /// Formats the Win32 error.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        public static string FormatWin32Error(int errorCode)
+        private static string FormatWin32Error(int errorCode)
         {
             if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
             {
@@ -252,9 +245,7 @@ namespace Apache.Ignite.Core.Impl
             if (errorCode == NativeMethods.ERROR_MOD_NOT_FOUND)
             {
                 return "DLL could not be loaded (126: ERROR_MOD_NOT_FOUND). " +
-                       "This can be caused by missing dependencies. " +
-                       "Make sure that Microsoft Visual C++ 2010 Redistributable Package is installed " +
-                       "(https://www.microsoft.com/en-us/download/details.aspx?id=14632).";
+                       "This can be caused by missing dependencies. ";
             }
 
             return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
@@ -335,75 +326,6 @@ namespace Apache.Ignite.Core.Impl
                                 yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
                         }
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
-        /// </summary>
-        /// <param name="resourceName">Resource name.</param>
-        /// <param name="fileName">Name of the resulting file.</param>
-        /// <returns>
-        /// Path to a temp file with an unpacked resource.
-        /// </returns>
-        public static string UnpackEmbeddedResource(string resourceName, string fileName)
-        {
-            var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
-                .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
-
-            return WriteResourceToTempFile(dllRes, fileName);
-        }
-
-        /// <summary>
-        /// Writes the resource to temporary file.
-        /// </summary>
-        /// <param name="resource">The resource.</param>
-        /// <param name="name">File name prefix</param>
-        /// <returns>Path to the resulting temp file.</returns>
-        private static string WriteResourceToTempFile(string resource, string name)
-        {
-            // Dll file name should not be changed, so we create a temp folder with random name instead.
-            var file = Path.Combine(GetTempDirectoryName(), name);
-
-            using (var src = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource))
-            using (var dest = File.OpenWrite(file))
-            {
-                // ReSharper disable once PossibleNullReferenceException
-                src.CopyTo(dest);
-
-                return file;
-            }
-        }
-
-        /// <summary>
-        /// Tries to clean temporary directories created with <see cref="GetTempDirectoryName"/>.
-        /// </summary>
-        internal static void TryCleanTempDirectories()
-        {
-            var dt = DateTime.Now;
-
-            foreach (var dir in Directory.EnumerateDirectories(Path.GetTempPath(), DirIgniteTmp + "*"))
-            {
-                if ((dt - Directory.GetCreationTime(dir)).TotalMinutes < 1)
-                {
-                    // Do not clean up recently created temp directories:
-                    // they may be used by currently starting up nodes.
-                    // This is a workaround for multiple node startup problem, see IGNITE-5730.
-                    continue;
-                }
-
-                try
-                {
-                    Directory.Delete(dir, true);
-                }
-                catch (IOException)
-                {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
                 }
             }
         }

@@ -384,9 +384,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param newRow New row.
      * @param mvccVer Mvcc version for update.
      * @param prevRow Previous row.
+     * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow)
+    public void store(CacheDataRow newRow, @Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
@@ -406,7 +407,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             if (qryProcEnabled)
-                qryProc.store(cctx, newRow, mvccVer, prevRow);
+                qryProc.store(cctx, newRow, mvccVer, prevRow, prevRowAvailable);
         }
         finally {
             invalidateResultCache();

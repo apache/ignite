@@ -1706,14 +1706,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx,
-        CacheDataRow newRow,
-        @Nullable MvccCoordinatorVersion mvccVer,
-        @Nullable CacheDataRow prevRow) throws IgniteCheckedException
-    {
+    public void store(GridCacheContext cctx, CacheDataRow newRow,@Nullable MvccCoordinatorVersion mvccVer, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable)
+        throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
         assert !cctx.mvccEnabled() || mvccVer != null;
+        assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
 
@@ -1733,7 +1732,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
 
-            if (prevRow != null) {
+            if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
                     coctx,
                     key,
@@ -1744,7 +1743,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (prevValDesc != null)
                         idx.remove(cctx, prevValDesc, prevRow);
 
-                    prevRow = null; // Row has already been removed from another table indexes
+                    // Row has already been removed from another table indexes
+                    prevRow = null;
                 }
             }
 
@@ -1753,14 +1753,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (cctx.mvccEnabled()) {
                 // Add new mvcc value.
-                idx.store(cctx, desc, newRow, null, null);
+                idx.store(cctx, desc, newRow, null, null, true);
 
                 // Set info about more recent version for previous record.
                 if (prevRow != null)
-                    idx.store(cctx, desc, prevRow, null, mvccVer);
+                    idx.store(cctx, desc, prevRow, null, mvccVer, true);
             }
             else
-                idx.store(cctx, desc, newRow, prevRow, null);
+                idx.store(cctx, desc, newRow, prevRow, null, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
@@ -2354,7 +2354,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (cctx.mvccEnabled()) {
                 if (newVer != null) {
                     // Set info about more recent version for previous record.
-                    idx.store(cctx, desc, val, null, newVer);
+                    idx.store(cctx, desc, val, null, newVer, true);
                 }
                 else
                     idx.remove(cctx, desc, val);

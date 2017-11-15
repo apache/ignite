@@ -220,13 +220,15 @@ public interface GridQueryIndexing {
      * @param row New row.
      * @param prevRow Previous row.
      * @param newVer Version of new mvcc value inserted for the same key.
+     * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
     public void store(GridCacheContext cctx,
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        @Nullable MvccCoordinatorVersion newVer) throws IgniteCheckedException;
+        @Nullable MvccCoordinatorVersion newVer,
+        boolean prevRowAvailable) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
