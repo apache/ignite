@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -73,6 +74,8 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
 
         CacheConfiguration<String, BinaryObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
+
         cfg.setCacheConfiguration(ccfg);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -80,7 +83,7 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
                     .setCheckpointPageBufferSize(DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE + 1))
-            .setWalMode(WALMode.BACKGROUND)
+            .setWalMode(WALMode.DEFAULT)
             .setWalThreadLocalBufferSize(640000000);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -120,7 +123,7 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     private void initGrid() throws Exception {
-        startGrids(2);
+        startGrids(1);
 
         factory = new IgniteWalIteratorFactory(new NullLogger(),
             grid(0).configuration().getDataStorageConfiguration().getPageSize(),
@@ -140,7 +143,7 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
     public void testPrint() throws Exception {
         initGrid();
 
-        IgniteEx ig = grid(1);
+        IgniteEx ig = grid(0);
 
         BinaryObjectBuilder bob = ig.binary().builder("CustomType");
 
@@ -150,14 +153,18 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
 
         ig.cache(CACHE_NAME).put("key", bob.build());
 
+        ig.cache(CACHE_NAME).remove("key");
+
+
+        ig.cache(CACHE_NAME).put("key", bob.build());
+
         stopAllGrids(false);
 
-        System.out.println("+++ PUT WAL +++");
+        System.out.println("+++ WAL +++");
 
         printWal();
 
-        initGrid();
-        ig = grid(1);
+        System.exit(0);
 
         ig.cache(CACHE_NAME).<String, BinaryObject>withKeepBinary().invoke("key", new CacheEntryProcessor<String, BinaryObject, Void>() {
             @Override
@@ -175,7 +182,7 @@ public class IgnitePutUpdateWalPrintTest extends GridCommonAbstractTest {
 
         stopAllGrids(false);
 
-        System.out.println("+++ UPDATE WAL +++");
+        System.out.println("+++ WAL +++");
 
         printWal();
     }
