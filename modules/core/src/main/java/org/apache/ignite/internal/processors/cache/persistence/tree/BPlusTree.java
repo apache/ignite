@@ -1960,6 +1960,65 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * FIXME
+     *
+     * @param x
+     * @return
+     * @throws IgniteCheckedException
+     */
+    public long countMatchingRows(Object x) throws IgniteCheckedException {
+        checkDestroyed();
+
+        long pageId;
+
+        long metaPage = acquirePage(metaPageId);
+        try {
+            pageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+
+        BPlusIO<L> io = null;
+
+        long cnt = 0;
+
+        while (pageId != 0) {
+            long curId = pageId;
+            long curPage = acquirePage(curId);
+            try {
+                long curAddr = readLock(curId, curPage); // No correctness guaranties.
+
+                try {
+                    if (io == null) {
+                        io = io(curAddr);
+
+                        assert io.isLeaf();
+                    }
+
+                    int curPageCnt = io.getCount(curAddr);
+                    for (int i = 0; i < curPageCnt; ++i) {
+                        if (isRowMatching(io, curAddr, i, x))
+                            ++cnt;
+                    }
+
+                    pageId = io.getForward(curAddr);
+                }
+                finally {
+                    readUnlock(curId, curPage, curAddr);
+                }
+            }
+            finally {
+                releasePage(curId, curPage);
+            }
+        }
+
+        checkDestroyed();
+
+        return cnt;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override public final T put(T row) throws IgniteCheckedException {
@@ -4372,6 +4431,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     protected abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
+
+    /**
+     * Tests the row against the filter possibly without deserializing the actual row.
+     *
+     * @param io The IO object.
+     * @param pageAddr The page address.
+     * @param idx Row index within the page.
+     * @param filter The filter object to apply (details are up to subclass implementor).
+     * @return true if row is matching filter, false otherwise.
+     * @throws IgniteCheckedException If execution failed for any reason.
+     */
+    protected abstract boolean isRowMatching(BPlusIO<L> io, long pageAddr, int idx, Object filter) throws IgniteCheckedException;
 
     /**
      * Forward cursor.
