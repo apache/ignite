@@ -82,7 +82,7 @@ abstract class AbstractListener implements Emitter.Listener {
 
                             if (restRes.getData() != null) {
                                 ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
-                                Base64OutputStream b64os = new Base64OutputStream(baos);
+                                Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
                                 GZIPOutputStream gzip = new GZIPOutputStream(b64os);
 
                                 gzip.write(restRes.getData().getBytes(UTF8));
