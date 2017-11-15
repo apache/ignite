@@ -35,12 +35,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
     /** {@inheritDoc} */
     @Override public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
-        long envPtr, long dataPtr) {
-        final PlatformInputStream input = new PlatformExternalMemory(null, dataPtr).input();
-
-        Ignition.setClientMode(input.readBoolean());
-
-        processInput(input, cfg);
+        long envPtr) {
 
         IgniteConfiguration cfg0 = closure(envPtr).apply(cfg);
 
@@ -55,8 +50,12 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
     }
 
     /** {@inheritDoc} */
-    @Override public void init() {
-        // No-op.
+    @Override public void init(long dataPtr) {
+        final PlatformInputStream input = new PlatformExternalMemory(null, dataPtr).input();
+
+        Ignition.setClientMode(input.readBoolean());
+
+        processInput(input);
     }
 
     /**
@@ -71,9 +70,8 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
      * Processes any additional input data.
      *
      * @param input Input stream.
-     * @param cfg Config.
      */
-    protected void processInput(PlatformInputStream input, IgniteConfiguration cfg) {
+    protected void processInput(PlatformInputStream input) {
         // No-op.
     }
 }

@@ -53,6 +53,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final boolean useLogger;
+
     /** Configuration. */
     private IgniteConfiguration cfg;
 
@@ -64,14 +67,19 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param envPtr Environment pointer.
      */
-    public PlatformDotNetConfigurationClosure(long envPtr) {
+    public PlatformDotNetConfigurationClosure(long envPtr, boolean useLogger) {
         super(envPtr);
+
+        this.useLogger = useLogger;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
-        // 3. Validate and copy Interop configuration setting environment pointer along the way.
+        if (useLogger)
+            cfg.setGridLogger(new PlatformLogger());
+
+        // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformDotNetConfiguration))
@@ -103,7 +111,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (ggHome != null)
             U.setIgniteHome(ggHome);
 
-        // 4. Callback to .Net.
+        // Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
 
         // Make sure binary config is right.

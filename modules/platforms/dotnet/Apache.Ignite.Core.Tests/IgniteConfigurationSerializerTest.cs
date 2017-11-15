@@ -98,6 +98,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
             Assert.AreEqual("someId012", cfg.ConsistentId);
+            Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
